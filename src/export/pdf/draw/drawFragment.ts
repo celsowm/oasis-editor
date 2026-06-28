@@ -16,6 +16,8 @@ import {
   resolveOpenTypeFeatureTags,
   underlineStyleDashArray,
   underlineStyleLineWidthPx,
+  WAVY_UNDERLINE_AMPLITUDE_PX,
+  WAVY_UNDERLINE_WAVELENGTH_PX,
 } from "@/core/textStyleMappings.js";
 import { parseHexColorToRgb255, rgb255ToHex } from "@/core/color.js";
 import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
@@ -102,6 +104,25 @@ function blendColorWithWhite(hex: string, alpha: number): string {
   );
 }
 
+function fragmentRectPt(
+  line: EditorLayoutLine,
+  fragment: EditorLayoutFragment,
+  styles: Required<EditorTextStyle>,
+  originX: number,
+  originY: number,
+  yOffset: number,
+  heightShrink: number,
+): { x: number; y: number; width: number; height: number } | null {
+  const bounds = resolveFragmentBounds(line, fragment, styles.fontSize ?? DEFAULT_FONT_SIZE_PX);
+  if (!bounds) return null;
+  return {
+    x: pxToPt(originX + bounds.left),
+    y: pxToPt(originY + line.top + yOffset),
+    width: pxToPt(Math.max(0, bounds.right - bounds.left)),
+    height: pxToPt(Math.max(2, line.height - heightShrink)),
+  };
+}
+
 export function drawFragmentHighlight(
   writer: OasisPdfWriter,
   pageIndex: number,
@@ -111,24 +132,10 @@ export function drawFragmentHighlight(
   originY: number,
   styles: Required<EditorTextStyle>,
 ): void {
-  if (!styles.highlight) {
-    return;
-  }
-  const bounds = resolveFragmentBounds(
-    line,
-    fragment,
-    styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
-  );
-  if (!bounds) {
-    return;
-  }
-  writer.drawRect(pageIndex, {
-    x: pxToPt(originX + bounds.left),
-    y: pxToPt(originY + line.top + 2),
-    width: pxToPt(Math.max(0, bounds.right - bounds.left)),
-    height: pxToPt(Math.max(2, line.height - 4)),
-    fill: styles.highlight,
-  });
+  if (!styles.highlight) return;
+  const rect = fragmentRectPt(line, fragment, styles, originX, originY, 2, 4);
+  if (!rect) return;
+  writer.drawRect(pageIndex, { ...rect, fill: styles.highlight });
 }
 
 // Run shading (w:shd): a solid background fill behind the run's text, drawn
@@ -142,24 +149,10 @@ export function drawFragmentShading(
   originY: number,
   styles: Required<EditorTextStyle>,
 ): void {
-  if (!styles.shading) {
-    return;
-  }
-  const bounds = resolveFragmentBounds(
-    line,
-    fragment,
-    styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
-  );
-  if (!bounds) {
-    return;
-  }
-  writer.drawRect(pageIndex, {
-    x: pxToPt(originX + bounds.left),
-    y: pxToPt(originY + line.top + 2),
-    width: pxToPt(Math.max(0, bounds.right - bounds.left)),
-    height: pxToPt(Math.max(2, line.height - 4)),
-    fill: styles.shading,
-  });
+  if (!styles.shading) return;
+  const rect = fragmentRectPt(line, fragment, styles, originX, originY, 2, 4);
+  if (!rect) return;
+  writer.drawRect(pageIndex, { ...rect, fill: styles.shading });
 }
 
 // Registers an axial gradient for a `w14:textFill` gradient run, returning the
@@ -225,19 +218,10 @@ export function drawFragmentBorder(
   if (!border || border.type === "none" || border.width <= 0) {
     return;
   }
-  const bounds = resolveFragmentBounds(
-    line,
-    fragment,
-    styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
-  );
-  if (!bounds) {
-    return;
-  }
+  const rect = fragmentRectPt(line, fragment, styles, originX, originY, 1, 2);
+  if (!rect) return;
   writer.drawRect(pageIndex, {
-    x: pxToPt(originX + bounds.left),
-    y: pxToPt(originY + line.top + 1),
-    width: pxToPt(Math.max(0, bounds.right - bounds.left)),
-    height: pxToPt(Math.max(2, line.height - 2)),
+    ...rect,
     stroke: border.color,
     lineWidth: pxToPt(Math.max(0.5, border.width * PX_PER_POINT)),
   });
@@ -414,12 +398,10 @@ function drawWavyUnderline(
   stroke: string,
   lineWidthPx: number,
 ): void {
-  const wavelength = 4;
-  const amplitude = 1.5;
   let prevX = x1;
   let prevY = y;
   for (let x = x1; x <= x2; x += 1) {
-    const dy = Math.sin(((x - x1) / wavelength) * Math.PI) * amplitude;
+    const dy = Math.sin(((x - x1) / WAVY_UNDERLINE_WAVELENGTH_PX) * Math.PI) * WAVY_UNDERLINE_AMPLITUDE_PX;
     const curY = y + dy;
     writer.drawLine(pageIndex, {
       x1: pxToPt(prevX),
@@ -573,6 +555,135 @@ async function drawInlineTextBoxFragment(
     textBox.height,
     drawers,
   );
+}
+
+interface TextChunkCtx {
+  writer: OasisPdfWriter;
+  pageIndex: number;
+  baselineY: number;
+  fontSizePt: number;
+  mainColor: string;
+  gradientShadingName: string | undefined;
+  styles: Required<EditorTextStyle>;
+  baseTextOptions: {
+    fontSize: number;
+    bold: boolean | undefined;
+    italic: boolean | undefined;
+    fontResourceName: string;
+    characterSpacing: number;
+    horizontalScale: number;
+    fontFeatures: string[];
+  };
+}
+
+// Paints all per-chunk glyph-level effects for a single text run chunk:
+// emboss/imprint, glow, shadow, reflection, then the primary text (gradient,
+// outline, or plain colour). Called once per whitespace/offset-gap chunk.
+function emitTextChunk(
+  ctx: TextChunkCtx,
+  leftPx: number,
+  text: string,
+): void {
+  const {
+    writer,
+    pageIndex,
+    baselineY,
+    fontSizePt,
+    mainColor,
+    gradientShadingName,
+    styles,
+    baseTextOptions,
+  } = ctx;
+  const offsetPt = pxToPt(1);
+  if (styles.emboss || styles.imprint) {
+    const dir = styles.imprint ? 1 : -1;
+    writer.drawText(pageIndex, {
+      ...baseTextOptions,
+      x: pxToPt(leftPx) + offsetPt * dir,
+      y: pxToPt(baselineY) + offsetPt * dir,
+      text,
+      color: "#BFBFBF",
+    });
+  }
+  if (styles.glow) {
+    // PDF has no blur; approximate with 8 offset copies at half-radius in cardinal
+    // and diagonal directions. Alpha is baked by blending toward white (#FFFFFF).
+    const gl = styles.glow;
+    const r = pxToPt(gl.radiusPt * PX_PER_POINT) * 0.5;
+    const glowColor = blendColorWithWhite(gl.color, (gl.alpha ?? 0.5) * 0.4);
+    const dirs: [number, number][] = [
+      [r, 0],
+      [-r, 0],
+      [0, r],
+      [0, -r],
+      [r * 0.7, r * 0.7],
+      [-r * 0.7, r * 0.7],
+      [r * 0.7, -r * 0.7],
+      [-r * 0.7, -r * 0.7],
+    ];
+    for (const [dx, dy] of dirs) {
+      writer.drawText(pageIndex, {
+        ...baseTextOptions,
+        x: pxToPt(leftPx) + dx,
+        y: pxToPt(baselineY) + dy,
+        text,
+        color: glowColor,
+      });
+    }
+  }
+  if (styles.textShadow) {
+    const ts = styles.textShadow;
+    const dirRad = (ts.dirDeg * Math.PI) / 180;
+    const shadowOffsetPt = pxToPt(ts.distPt * PX_PER_POINT);
+    writer.drawText(pageIndex, {
+      ...baseTextOptions,
+      x: pxToPt(leftPx) + Math.cos(dirRad) * shadowOffsetPt,
+      y: pxToPt(baselineY) + Math.sin(dirRad) * shadowOffsetPt,
+      text,
+      color: ts.color,
+    });
+  } else if (styles.shadow) {
+    writer.drawText(pageIndex, {
+      ...baseTextOptions,
+      x: pxToPt(leftPx) + offsetPt,
+      y: pxToPt(baselineY) + offsetPt,
+      text,
+      color: "#808080",
+    });
+  }
+  if (styles.reflection) {
+    // PDF has no vertical-flip for text; approximate as a downward-shifted copy
+    // blended toward white to simulate the average of startAlpha and endAlpha.
+    const ref = styles.reflection;
+    const avgAlpha = (ref.startAlpha + ref.endAlpha) / 2;
+    const refColor = blendColorWithWhite(mainColor, avgAlpha * 0.6);
+    writer.drawText(pageIndex, {
+      ...baseTextOptions,
+      x: pxToPt(leftPx),
+      y: pxToPt(baselineY) + pxToPt(ref.distPt * PX_PER_POINT) + fontSizePt,
+      text,
+      color: refColor,
+    });
+  }
+  const textOutline = styles.textOutline;
+  writer.drawText(pageIndex, {
+    ...baseTextOptions,
+    x: pxToPt(leftPx),
+    y: pxToPt(baselineY),
+    text,
+    color: mainColor,
+    // A gradient fill paints the glyphs via the shading clip; it supersedes
+    // both the solid color and any outline/stroke render mode.
+    ...(gradientShadingName
+      ? { gradientShadingName }
+      : textOutline
+        ? {
+            renderMode: 2,
+            strokeColor: textOutline.color ?? mainColor,
+            strokeWidth: textOutline.widthPt,
+          }
+        : { renderMode: styles.outline ? 1 : 0 }),
+  });
 }
 
 export async function drawFragmentText(
@@ -764,101 +875,15 @@ export async function drawFragmentText(
     originY,
     styles,
   );
-  const offsetPt = pxToPt(1);
-  // Draws one text chunk applying the glyph-level run effects: emboss/imprint
-  // lay a light relief copy offset behind, shadow lays a gray copy offset, and
-  // outline strokes hollow glyphs via the writer's text render mode.
-  // textOutline (w14) supersedes the legacy boolean outline with real stroke params.
-  const emitChunk = (leftPx: number, text: string): void => {
-    if (styles.emboss || styles.imprint) {
-      const dir = styles.imprint ? 1 : -1;
-      writer.drawText(pageIndex, {
-        ...baseTextOptions,
-        x: pxToPt(leftPx) + offsetPt * dir,
-        y: pxToPt(baselineY) + offsetPt * dir,
-        text,
-        color: "#BFBFBF",
-      });
-    }
-    if (styles.glow) {
-      // PDF has no blur; approximate with 8 offset copies at half-radius in cardinal
-      // and diagonal directions. Alpha is baked by blending toward white (#FFFFFF).
-      const gl = styles.glow;
-      const r = pxToPt(gl.radiusPt * PX_PER_POINT) * 0.5;
-      const glowColor = blendColorWithWhite(gl.color, (gl.alpha ?? 0.5) * 0.4);
-      const dirs: [number, number][] = [
-        [r, 0],
-        [-r, 0],
-        [0, r],
-        [0, -r],
-        [r * 0.7, r * 0.7],
-        [-r * 0.7, r * 0.7],
-        [r * 0.7, -r * 0.7],
-        [-r * 0.7, -r * 0.7],
-      ];
-      for (const [dx, dy] of dirs) {
-        writer.drawText(pageIndex, {
-          ...baseTextOptions,
-          x: pxToPt(leftPx) + dx,
-          y: pxToPt(baselineY) + dy,
-          text,
-          color: glowColor,
-        });
-      }
-    }
-    if (styles.textShadow) {
-      const ts = styles.textShadow;
-      const dirRad = (ts.dirDeg * Math.PI) / 180;
-      const shadowOffsetPt = pxToPt(ts.distPt * PX_PER_POINT);
-      writer.drawText(pageIndex, {
-        ...baseTextOptions,
-        x: pxToPt(leftPx) + Math.cos(dirRad) * shadowOffsetPt,
-        y: pxToPt(baselineY) + Math.sin(dirRad) * shadowOffsetPt,
-        text,
-        color: ts.color,
-      });
-    } else if (styles.shadow) {
-      writer.drawText(pageIndex, {
-        ...baseTextOptions,
-        x: pxToPt(leftPx) + offsetPt,
-        y: pxToPt(baselineY) + offsetPt,
-        text,
-        color: "#808080",
-      });
-    }
-    if (styles.reflection) {
-      // PDF has no vertical-flip for text; approximate as a downward-shifted copy
-      // blended toward white to simulate the average of startAlpha and endAlpha.
-      const ref = styles.reflection;
-      const avgAlpha = (ref.startAlpha + ref.endAlpha) / 2;
-      const refColor = blendColorWithWhite(mainColor, avgAlpha * 0.6);
-      writer.drawText(pageIndex, {
-        ...baseTextOptions,
-        x: pxToPt(leftPx),
-        y: pxToPt(baselineY) + pxToPt(ref.distPt * PX_PER_POINT) + fontSizePt,
-        text,
-        color: refColor,
-      });
-    }
-    const textOutline = styles.textOutline;
-    writer.drawText(pageIndex, {
-      ...baseTextOptions,
-      x: pxToPt(leftPx),
-      y: pxToPt(baselineY),
-      text,
-      color: mainColor,
-      // A gradient fill paints the glyphs via the shading clip; it supersedes
-      // both the solid color and any outline/stroke render mode.
-      ...(gradientShadingName
-        ? { gradientShadingName }
-        : textOutline
-          ? {
-              renderMode: 2,
-              strokeColor: textOutline.color ?? mainColor,
-              strokeWidth: textOutline.widthPt,
-            }
-          : { renderMode: styles.outline ? 1 : 0 }),
-    });
+  const chunkCtx: TextChunkCtx = {
+    writer,
+    pageIndex,
+    baselineY,
+    fontSizePt,
+    mainColor,
+    gradientShadingName,
+    styles,
+    baseTextOptions,
   };
   const chunks =
     paragraphAlign === "justify"
@@ -869,7 +894,7 @@ export async function drawFragmentText(
       .map((c) => (styles.allCaps ? c.char.toUpperCase() : c.char))
       .join("");
     if (chunkText.length === 0) continue;
-    emitChunk(originX + chunk[0]!.left, chunkText);
+    emitTextChunk(chunkCtx, originX + chunk[0]!.left, chunkText);
   }
   // Automatic hyphenation: the last fragment of a hyphenated line draws a
   // render-only trailing hyphen past the last character, in this fragment's
@@ -879,7 +904,7 @@ export async function drawFragmentText(
       line.slots.find((slot) => slot.offset === line.endOffset) ??
       line.slots[line.slots.length - 1];
     if (endSlot) {
-      emitChunk(originX + endSlot.left, "-");
+      emitTextChunk(chunkCtx, originX + endSlot.left, "-");
     }
   }
   if (styles.underline) {

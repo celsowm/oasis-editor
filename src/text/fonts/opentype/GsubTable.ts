@@ -4,6 +4,9 @@ import {
   parseClassDef,
   parseCoverage,
   parseLayoutTableHeader,
+  parseLookupList,
+  readU16Array,
+  readU16OffsetArray,
   type ClassLookup,
 } from "@/text/fonts/opentype/otLayoutCommon.js";
 
@@ -67,10 +70,7 @@ function parseSingleSubst(
   }
   if (format === 2) {
     const glyphCount = reader.u16();
-    const substitutes = new Array<number>(glyphCount);
-    for (let i = 0; i < glyphCount; i += 1) {
-      substitutes[i] = reader.u16();
-    }
+    const substitutes = readU16Array(reader, glyphCount);
     const coverage = parseCoverage(reader, coverageOffset);
     return {
       apply(glyphs, pos) {
@@ -86,27 +86,29 @@ function parseSingleSubst(
   return null;
 }
 
+function parseGlyphSetArray(
+  reader: BinaryReader,
+  offset: number,
+): { coverage: (id: number) => number; sets: number[][] } | null {
+  reader.seek(offset);
+  if (reader.u16() !== 1) return null;
+  const coverageOffset = offset + reader.u16();
+  const count = reader.u16();
+  const setOffsets = readU16OffsetArray(reader, count, offset);
+  const sets = setOffsets.map((setOffset) => {
+    reader.seek(setOffset);
+    return readU16Array(reader, reader.u16());
+  });
+  return { coverage: parseCoverage(reader, coverageOffset), sets };
+}
+
 function parseMultipleSubst(
   reader: BinaryReader,
   offset: number,
 ): SubstSubtable | null {
-  reader.seek(offset);
-  const format = reader.u16();
-  if (format !== 1) return null;
-  const coverageOffset = offset + reader.u16();
-  const sequenceCount = reader.u16();
-  const sequenceOffsets = new Array<number>(sequenceCount);
-  for (let i = 0; i < sequenceCount; i += 1) {
-    sequenceOffsets[i] = offset + reader.u16();
-  }
-  const sequences = sequenceOffsets.map((seqOffset) => {
-    reader.seek(seqOffset);
-    const glyphCount = reader.u16();
-    const ids = new Array<number>(glyphCount);
-    for (let i = 0; i < glyphCount; i += 1) ids[i] = reader.u16();
-    return ids;
-  });
-  const coverage = parseCoverage(reader, coverageOffset);
+  const parsed = parseGlyphSetArray(reader, offset);
+  if (!parsed) return null;
+  const { coverage, sets: sequences } = parsed;
   return {
     apply(glyphs, pos) {
       const glyph = glyphs[pos];
@@ -130,23 +132,9 @@ function parseAlternateSubst(
   reader: BinaryReader,
   offset: number,
 ): SubstSubtable | null {
-  reader.seek(offset);
-  const format = reader.u16();
-  if (format !== 1) return null;
-  const coverageOffset = offset + reader.u16();
-  const altSetCount = reader.u16();
-  const altSetOffsets = new Array<number>(altSetCount);
-  for (let i = 0; i < altSetCount; i += 1) {
-    altSetOffsets[i] = offset + reader.u16();
-  }
-  const altSets = altSetOffsets.map((setOffset) => {
-    reader.seek(setOffset);
-    const glyphCount = reader.u16();
-    const ids = new Array<number>(glyphCount);
-    for (let i = 0; i < glyphCount; i += 1) ids[i] = reader.u16();
-    return ids;
-  });
-  const coverage = parseCoverage(reader, coverageOffset);
+  const parsed = parseGlyphSetArray(reader, offset);
+  if (!parsed) return null;
+  const { coverage, sets: altSets } = parsed;
   return {
     apply(glyphs, pos) {
       const glyph = glyphs[pos];
@@ -176,25 +164,15 @@ function parseLigatureSubst(
   if (format !== 1) return null;
   const coverageOffset = offset + reader.u16();
   const ligSetCount = reader.u16();
-  const ligSetOffsets = new Array<number>(ligSetCount);
-  for (let i = 0; i < ligSetCount; i += 1) {
-    ligSetOffsets[i] = offset + reader.u16();
-  }
+  const ligSetOffsets = readU16OffsetArray(reader, ligSetCount, offset);
   const ligatureSets: Ligature[][] = ligSetOffsets.map((setOffset) => {
     reader.seek(setOffset);
-    const ligCount = reader.u16();
-    const ligOffsets = new Array<number>(ligCount);
-    for (let i = 0; i < ligCount; i += 1) {
-      ligOffsets[i] = setOffset + reader.u16();
-    }
+    const ligOffsets = readU16OffsetArray(reader, reader.u16(), setOffset);
     return ligOffsets.map((ligOffset) => {
       reader.seek(ligOffset);
       const ligatureGlyph = reader.u16();
       const componentCount = reader.u16();
-      const components = new Array<number>(Math.max(0, componentCount - 1));
-      for (let i = 0; i < components.length; i += 1) {
-        components[i] = reader.u16();
-      }
+      const components = readU16Array(reader, Math.max(0, componentCount - 1));
       return { ligatureGlyph, components };
     });
   });
@@ -273,21 +251,9 @@ function parseChainContextSubst(
   reader.seek(offset);
   const format = reader.u16();
   if (format === 3) {
-    const backtrackCount = reader.u16();
-    const backtrackCoverageOffsets = new Array<number>(backtrackCount);
-    for (let i = 0; i < backtrackCount; i += 1) {
-      backtrackCoverageOffsets[i] = offset + reader.u16();
-    }
-    const inputCount = reader.u16();
-    const inputCoverageOffsets = new Array<number>(inputCount);
-    for (let i = 0; i < inputCount; i += 1) {
-      inputCoverageOffsets[i] = offset + reader.u16();
-    }
-    const lookaheadCount = reader.u16();
-    const lookaheadCoverageOffsets = new Array<number>(lookaheadCount);
-    for (let i = 0; i < lookaheadCount; i += 1) {
-      lookaheadCoverageOffsets[i] = offset + reader.u16();
-    }
+    const backtrackCoverageOffsets = readU16OffsetArray(reader, reader.u16(), offset);
+    const inputCoverageOffsets = readU16OffsetArray(reader, reader.u16(), offset);
+    const lookaheadCoverageOffsets = readU16OffsetArray(reader, reader.u16(), offset);
     const substCount = reader.u16();
     const records = readSubstLookupRecords(reader, substCount);
     const backtrack = backtrackCoverageOffsets.map((o) =>
@@ -322,10 +288,7 @@ function parseChainContextSubst(
   if (format === 1) {
     const coverageOffset = offset + reader.u16();
     const ruleSetCount = reader.u16();
-    const ruleSetOffsets = new Array<number>(ruleSetCount);
-    for (let i = 0; i < ruleSetCount; i += 1) {
-      ruleSetOffsets[i] = offset + reader.u16();
-    }
+    const ruleSetOffsets = readU16OffsetArray(reader, ruleSetCount, offset);
     const coverage = parseCoverage(reader, coverageOffset);
     const ruleSets = ruleSetOffsets.map((setOffset) =>
       parseChainRuleSet(reader, setOffset),
@@ -390,23 +353,13 @@ function parseChainRuleSet(
 ): ChainRule[] {
   reader.seek(setOffset);
   const ruleCount = reader.u16();
-  const ruleOffsets = new Array<number>(ruleCount);
-  for (let i = 0; i < ruleCount; i += 1) {
-    ruleOffsets[i] = setOffset + reader.u16();
-  }
+  const ruleOffsets = readU16OffsetArray(reader, ruleCount, setOffset);
   return ruleOffsets.map((ruleOffset) => {
     reader.seek(ruleOffset);
-    const backtrackCount = reader.u16();
-    const backtrack = new Array<number>(backtrackCount);
-    for (let i = 0; i < backtrackCount; i += 1) backtrack[i] = reader.u16();
-    const inputCount = reader.u16();
-    const input = new Array<number>(Math.max(0, inputCount - 1));
-    for (let i = 0; i < input.length; i += 1) input[i] = reader.u16();
-    const lookaheadCount = reader.u16();
-    const lookahead = new Array<number>(lookaheadCount);
-    for (let i = 0; i < lookaheadCount; i += 1) lookahead[i] = reader.u16();
-    const substCount = reader.u16();
-    const records = readSubstLookupRecords(reader, substCount);
+    const backtrack = readU16Array(reader, reader.u16());
+    const input = readU16Array(reader, Math.max(0, reader.u16() - 1));
+    const lookahead = readU16Array(reader, reader.u16());
+    const records = readSubstLookupRecords(reader, reader.u16());
     return { backtrack, input, lookahead, records };
   });
 }
@@ -506,7 +459,7 @@ export class GsubTable {
       const reader = new BinaryReader(bytes);
       const { featureToLookups, lookupListOffset } =
         parseLayoutTableHeader(reader);
-      const lookups = parseLookupList(reader, lookupListOffset);
+      const lookups = parseLookupList(reader, lookupListOffset, parseSubtable);
       return new GsubTable(lookups, featureToLookups);
     } catch {
       return null;
@@ -556,34 +509,3 @@ export class GsubTable {
   }
 }
 
-function parseLookupList(
-  reader: BinaryReader,
-  lookupListOffset: number,
-): GsubLookup[] {
-  reader.seek(lookupListOffset);
-  const lookupCount = reader.u16();
-  const lookupOffsets = new Array<number>(lookupCount);
-  for (let i = 0; i < lookupCount; i += 1) {
-    lookupOffsets[i] = lookupListOffset + reader.u16();
-  }
-  return lookupOffsets.map((lookupOffset) => {
-    reader.seek(lookupOffset);
-    const lookupType = reader.u16();
-    reader.skip(2); // lookupFlag (glyph skipping ignored — no marks in scope)
-    const subTableCount = reader.u16();
-    const subtableOffsets = new Array<number>(subTableCount);
-    for (let i = 0; i < subTableCount; i += 1) {
-      subtableOffsets[i] = lookupOffset + reader.u16();
-    }
-    const subtables: SubstSubtable[] = [];
-    for (const subtableOffset of subtableOffsets) {
-      try {
-        const subtable = parseSubtable(reader, subtableOffset, lookupType);
-        if (subtable) subtables.push(subtable);
-      } catch {
-        // Skip malformed subtable; the feature degrades gracefully.
-      }
-    }
-    return { lookupType, subtables };
-  });
-}

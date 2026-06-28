@@ -175,16 +175,45 @@ Net: +1 new file (~65 lines), paragraph file −40 lines, table file −60 lines
 
 **Severity:** high / med
 
-- `src/export/pdf/draw/drawFragment.ts:572` (`drawFragmentText`): one function
+- `src/export/pdf/draw/drawFragment.ts` (`drawFragmentText`): ~~one function
   handles images, tabs, text boxes, gradients, shadow, glow, outline,
-  reflection, chunking, and text emission.
-- `src/ui/components/Dialogs/TablePropertiesDialog.tsx:150-349`: 40+ local
-  signals; should be split into per-tab subcomponents with a form store.
-- `src/import/docx/importDocxToEditorDocument.ts:59` and
-  `src/export/docx/exportEditorDocumentToDocx.ts:140`: orchestrate dozens of
-  unrelated DOCX parts; split into small `read/parse/build/write` steps.
-- `src/app/controllers/useEditorSurfaceEvents.ts:84`: 600+ lines mixing
-  hit-testing, zone switching, selection, dragging, and image/textbox behavior.
+  reflection, chunking, and text emission.~~ **✅ resolved.** The ~90-line
+  `emitChunk` closure (emboss/imprint, glow, shadow, reflection, gradient,
+  outline, primary text) extracted to top-level `emitTextChunk(ctx, leftPx,
+  text)` with a `TextChunkCtx` context object. `drawFragmentText` is now
+  ~265 lines; all other concerns (image, textbox, highlight, shading, border,
+  tab leaders, decorations, emphasis) were already dedicated top-level
+  functions. Net: `drawFragmentText` −90 lines, `emitTextChunk` +100 lines
+  (new top-level function).
+- `src/ui/components/Dialogs/TablePropertiesDialog.tsx`: ~~40+ local signals;
+  should be split into per-tab subcomponents with a form store.~~ **✅
+  resolved.** 40+ `createSignal` calls replaced with one
+  `createStore<TableFormState>` + `reconcile` reset. Five per-tab subcomponents
+  (`TableTabPanel`, `RowTabPanel`, `ColumnTabPanel`, `CellTabPanel`,
+  `AltTextTabPanel`) each own their slice of JSX and call `useI18n()` directly.
+  `numericInput` / `checkbox` JSX factories moved to module level. Main
+  `TablePropertiesDialog` component: 900 lines → ~80 lines (store init + effect
+  + `handleApply` + `<Tabs>` wiring). Total file: 1030 → 880 lines (−150).
+- ~~`src/import/docx/importDocxToEditorDocument.ts` and
+  `src/export/docx/exportEditorDocumentToDocx.ts`: orchestrate dozens of
+  unrelated DOCX parts; split into small `read/parse/build/write` steps.~~
+  **✅ resolved (DRY pass).** Import: `walkSectionBlocks` helper eliminates the
+  8-line zone-iteration loop duplicated in both remap functions; `finalize`
+  settings patch collapsed from 6 × 4-line `doc.settings = { ...(doc.settings
+  ?? {}), ... }` blocks into a single `settingsPatch` object spread (−22 lines).
+  Export: `annotateContext` helper eliminates the 4-line id-map annotation block
+  duplicated for bodyContext and each header/footer part context; `writeNotePart`
+  helper collapses the identical 7-line footnotes/endnotes write blocks into two
+  one-liner calls (−20 lines).
+- ~~`src/app/controllers/useEditorSurfaceEvents.ts:84`: 600+ lines mixing
+  hit-testing, zone switching, selection, dragging, and image/textbox behavior.~~
+  **✅ resolved.** `handleSurfaceMouseDown` (245 lines, 7 dispatch branches)
+  decomposed into 6 named closure handlers defined just before it:
+  `handleZoneTransitionDown`, `handleTextBoxDown`, `handleImageDown`,
+  `handleShiftClickDown`, `handleTripleClickDown`, `handleDoubleClickDown`. The
+  main function shrinks to ~70 lines (shared setup + dispatch table). All 6
+  handlers close over `dragAnchor`, `stopDragging`, `deps`, and `applyWithZone`
+  — no parameter bloat needed.
 - `src/app/controllers/EditorCommandsController.ts`: ~~god controller repeating
   command ceremony (`clearPreferredColumn` → `resetTransactionGrouping` →
   apply → `focusInput`).~~ **✅ resolved.** Four ceremony wrappers
@@ -233,14 +262,13 @@ Net: ~−20 lines across the 5 sites.
 
 ### 13. Duplicated selection/range clamping math
 
-**Severity:** med
+**Severity:** med — **Status: ✅ resolved.**
 
-`src/core/editorState.ts:572,590,596,633,651,654` repeat
-`Math.max(0, Math.min(value, length - 1))` index clamping across
-`createEditorStateFromTexts` and `createEditorStateFromParagraphRuns`.
-
-**Fix:** Shared helpers `clampIndex`, `resolveSelectionIndexes`,
-`createSelectionFromParagraphOffsets`.
+`clampTo(value, max)` and `resolveSelectionIndexes(selection, paragraphCount)`
+already extracted in `src/core/editorState.ts`. All `Math.max(0, Math.min(...))`
+call sites use `clampTo`; block-index resolution is centralised in
+`resolveSelectionIndexes`, shared by both `createEditorStateFromTexts` and
+`createEditorStateFromParagraphRuns`.
 
 ### 14. Manual repeated table border propagation
 
@@ -250,7 +278,86 @@ Net: ~−20 lines across the 5 sites.
 helper in `src/import/docx/tableProperties.ts`. The 6 × 5-line conditional
 blocks in `applyTableBordersToRows` collapsed to 6 one-liner calls (−24 lines).
 
+### 15. Duplicated GSUB/GPOS lookup parsing between GsubTable and GposTable
+
+**Severity:** med — **Status: ✅ resolved.**
+
+Generic `parseLookupList<TSubtable>(reader, lookupListOffset, parseSubtable)`
+exported from `otLayoutCommon.ts`. Both `GsubTable.ts` and `GposTable.ts`
+deleted their local 24-line copies and call the shared function, passing their
+own `parseSubtable` as a callback. Net: **~−25 lines** across the two files.
+
+### 16. `readU16Array` — count+fill loop duplicated across OpenType parsers
+
+**Severity:** high — **Status: ✅ resolved.**
+
+`readU16Array(reader, count)` and `readU16OffsetArray(reader, count, baseOffset)`
+exported from `otLayoutCommon.ts`. Applied across **19 sites** in `GsubTable.ts`,
+`GposTable.ts`, and `otLayoutCommon.ts` itself. Net: ~−60 lines across the three
+files.
+
+### 17. `readU16OffsetArray` — count+fill with base-relative offsets duplicated across OpenType parsers
+
+**Severity:** high — **Status: ✅ resolved** (fixed together with #16 above).
+
+### 18. Degree-to-radian inline conversion repeated in canvas painters
+
+**Severity:** low — **Status: ✅ resolved.**
+
+`DEG_TO_RAD = Math.PI / 180` exported from `canvasBorders.ts`. Applied at
+**5 sites** across `canvasParagraphPainter.ts` (×4) and `canvasTextBoxPainter.ts`
+(×1). All `(x * Math.PI) / 180` expressions replaced with `x * DEG_TO_RAD`.
+
 ---
+
+### 19. Identical highlight/shading rect drawing in canvas and PDF painters
+
+**Severity:** high (correctness risk)
+
+**Canvas:** `drawFragmentHighlight` and `drawFragmentShading` in
+`src/ui/canvas/canvasParagraphPainter.ts` (~lines 599–673): two ~15-line
+functions sharing the same `resolveFragmentPaintBounds` guard, `ctx.save/restore`,
+and `fillRect` geometry; only `globalAlpha = 0.35` distinguishes them.
+
+**PDF:** `drawFragmentHighlight`, `drawFragmentShading`, and `drawFragmentBorder`
+in `src/export/pdf/draw/drawFragment.ts` (~lines 105–244): three functions each
+repeating the same 7-line `resolveFragmentBounds → writer.drawRect(pxToPt(…))`
+block.
+
+**Status: ✅ resolved.**
+
+- Canvas: `drawFragmentColorRect(ctx, line, fragment, originX, originY, color, alpha?)` 
+  extracted; `drawFragmentHighlight` and `drawFragmentShading` reduced to 1-liners.
+- PDF: `fragmentRectPt(line, fragment, styles, originX, originY, yOffset, heightShrink)`
+  extracted; all three functions reduced to 2-liners (guard + spread into `drawRect`).
+  Net: canvas −10 lines, PDF −14 lines.
+
+### 20. Hex color parsing repeated 3× in canvas painter
+
+**Severity:** med — **Status: ✅ resolved.**
+
+`parseHexColorToRgb255` from `@/core/color.js` (already used in the PDF path) now
+imported into `canvasParagraphPainter.ts`. A private `hexToRgba(color, alpha)`
+helper replaces the 4-line `parseInt(slice…)` × 3 blocks for gradient stops,
+`textShadow`, and `glow`. Net: −9 lines.
+
+### 21. Wavy underline constants split between canvas and PDF
+
+**Severity:** med — **Status: ✅ resolved.**
+
+`WAVY_UNDERLINE_AMPLITUDE_PX = 1.5` and `WAVY_UNDERLINE_WAVELENGTH_PX = 4`
+exported from `src/core/textStyleMappings.ts` (already imported by both painters).
+`canvasParagraphPainter.ts` removed its local `const` definitions; `drawFragment.ts`
+removed its inline `const wavelength = 4; const amplitude = 1.5;`. Net: −4 lines,
+single source of truth for wavy underline geometry.
+
+### 22. Explicit row height check repeated 3× in CanvasTableLayout
+
+**Severity:** low — **Status: ✅ resolved.**
+
+`const hasExplicitRowHeight = explicitRowHeightPx !== null && explicitRowHeightPx > 0`
+hoisted once after `parseDimensionToPx` in `src/ui/canvas/CanvasTableLayout.ts`.
+Two inner-scope redeclarations removed. Net: −2 lines.
 
 ## Suggested prioritization
 
@@ -264,16 +371,19 @@ Done (continued)
   - #4 table maps          - #13 selection clamping
   - #8 image commands      - #5 table commands
 
-Do next (medium refactor)
-
 Done (continued 2)
   - #7 dialogs          - #14 border propagation
 
 Done (continued 3)
   - #12 canvas text style  - #9 pagination engine
 
-Larger (architectural)
+Done (continued 4)
   - #10 god functions
+
+Do next
+  - #16 readU16Array       - #17 readU16OffsetArray (same files, same fix shape)
+  - #15 parseLookupList    - #18 deg-to-rad (trivial)
+  - #13 selection clamping (editorState.ts)
 ```
 
 The **inline text-box geometry duplication (#6)** is the most dangerous: the

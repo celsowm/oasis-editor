@@ -300,6 +300,136 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     deps.focusInputAfterPointerSelection();
   };
 
+  // Named handlers for each dispatch branch of handleSurfaceMouseDown.
+  // All close over the same scope: dragAnchor, stopDragging, deps, applyWithZone.
+
+  const handleZoneTransitionDown = (
+    state: EditorState,
+    hit: SurfaceHit,
+    clickDetail: number,
+  ): void => {
+    if (clickDetail < 2) {
+      dragAnchor = null;
+      stopDragging();
+      deps.focusInputAfterPointerSelection();
+      return;
+    }
+    dragAnchor = null;
+    if (hit.resolvedFromParagraph) {
+      applyWithZone(
+        state,
+        hit.zone,
+        {
+          ...state,
+          selection: { anchor: { ...hit.position }, focus: { ...hit.position } },
+        },
+        hit.position,
+      );
+    } else {
+      applyWithZone(state, hit.zone, state);
+    }
+    stopDragging();
+    deps.focusInputAfterPointerSelection();
+  };
+
+  const handleTextBoxDown = (state: EditorState, hit: SurfaceHit): void => {
+    const textBoxParagraph = deps.getParagraphById(
+      state.document,
+      hit.textBox!.paragraphId,
+    );
+    if (!textBoxParagraph) {
+      deps.focusInputAfterPointerSelection();
+      return;
+    }
+    dragAnchor = null;
+    const start = paragraphOffsetToPosition(textBoxParagraph, hit.textBox!.startOffset);
+    const end = paragraphOffsetToPosition(textBoxParagraph, hit.textBox!.endOffset);
+    applyWithZone(state, hit.zone, setSelection(state, { anchor: start, focus: end }), start);
+    stopDragging();
+    deps.focusInputAfterPointerSelection();
+  };
+
+  const handleImageDown = (
+    state: EditorState,
+    hit: SurfaceHit,
+    event: MouseEvent,
+  ): void => {
+    const imageParagraph = deps.getParagraphById(
+      state.document,
+      hit.image!.paragraphId,
+    );
+    if (!imageParagraph) {
+      deps.focusInputAfterPointerSelection();
+      return;
+    }
+    dragAnchor = null;
+    const start = paragraphOffsetToPosition(imageParagraph, hit.image!.startOffset);
+    const end = paragraphOffsetToPosition(imageParagraph, hit.image!.endOffset);
+    applyWithZone(state, hit.zone, setSelection(state, { anchor: start, focus: end }), start);
+    stopDragging();
+    deps.imageOps.startImageDrag(
+      hit.image!.paragraphId,
+      hit.image!.startOffset,
+      event,
+      {
+        left: hit.image!.left,
+        top: hit.image!.top,
+        width: hit.image!.width,
+        height: hit.image!.height,
+      },
+    );
+    deps.focusInputAfterPointerSelection();
+  };
+
+  const handleShiftClickDown = (state: EditorState, hit: SurfaceHit): void => {
+    dragAnchor = state.selection.anchor;
+    applyWithZone(
+      state,
+      hit.zone,
+      setSelection(state, { anchor: state.selection.anchor, focus: hit.position }),
+      hit.position,
+    );
+    window.addEventListener("mousemove", handleWindowMouseMove);
+    window.addEventListener("mouseup", handleWindowMouseUp);
+    deps.focusInputAfterPointerSelection();
+  };
+
+  const handleTripleClickDown = (
+    state: EditorState,
+    hit: SurfaceHit,
+    paragraph: EditorParagraphNode,
+  ): void => {
+    dragAnchor = null;
+    const range = resolveTripleClickParagraphRange(state, paragraph, hit.zone);
+    applyWithZone(
+      state,
+      hit.zone,
+      setSelection(state, { anchor: range.start, focus: range.end }),
+      range.start,
+    );
+    stopDragging();
+    deps.focusInputAfterPointerSelection();
+  };
+
+  const handleDoubleClickDown = (
+    state: EditorState,
+    hit: SurfaceHit,
+    paragraph: EditorParagraphNode,
+  ): void => {
+    dragAnchor = null;
+    const word = resolveWordSelection(getParagraphText(paragraph), hit.paragraphOffset);
+    const startPos = paragraphOffsetToPosition(paragraph, word.start);
+    const endPos = paragraphOffsetToPosition(paragraph, word.end);
+    applyWithZone(
+      state,
+      hit.zone,
+      setSelection(state, { anchor: startPos, focus: endPos }),
+      startPos,
+    );
+    stopDragging();
+    deps.focusInputAfterPointerSelection();
+  };
+
   const handleSurfaceMouseDown = (event: MouseEvent) => {
     // Non-left mouse buttons (e.g. right-click for context menu) must not
     // alter the selection or steal focus mid-drag.
@@ -353,171 +483,12 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     const paragraph = deps.getParagraphById(state.document, hit.paragraphId);
     const isZoneTransition = hit.zone !== (state.activeZone ?? "main");
 
-    if (isZoneTransition) {
-      if (clickDetail < 2) {
-        dragAnchor = null;
-        stopDragging();
-        deps.focusInputAfterPointerSelection();
-        return;
-      }
-
-      dragAnchor = null;
-      if (hit.resolvedFromParagraph) {
-        applyWithZone(
-          state,
-          hit.zone,
-          {
-            ...state,
-            selection: {
-              anchor: { ...hit.position },
-              focus: { ...hit.position },
-            },
-          },
-          hit.position,
-        );
-      } else {
-        applyWithZone(state, hit.zone, state);
-      }
-      stopDragging();
-      deps.focusInputAfterPointerSelection();
-      return;
-    }
-
-    if (hit.textBox) {
-      const textBoxParagraph = deps.getParagraphById(
-        state.document,
-        hit.textBox.paragraphId,
-      );
-
-      if (!textBoxParagraph) {
-        deps.focusInputAfterPointerSelection();
-        return;
-      }
-
-      dragAnchor = null;
-
-      const start = paragraphOffsetToPosition(
-        textBoxParagraph,
-        hit.textBox.startOffset,
-      );
-
-      const end = paragraphOffsetToPosition(
-        textBoxParagraph,
-        hit.textBox.endOffset,
-      );
-
-      applyWithZone(
-        state,
-        hit.zone,
-        setSelection(state, {
-          anchor: start,
-          focus: end,
-        }),
-        start,
-      );
-
-      stopDragging();
-      deps.focusInputAfterPointerSelection();
-      return;
-    }
-
-    if (hit.image) {
-      const imageParagraph = deps.getParagraphById(
-        state.document,
-        hit.image.paragraphId,
-      );
-      if (!imageParagraph) {
-        deps.focusInputAfterPointerSelection();
-        return;
-      }
-
-      dragAnchor = null;
-      const start = paragraphOffsetToPosition(
-        imageParagraph,
-        hit.image.startOffset,
-      );
-      const end = paragraphOffsetToPosition(
-        imageParagraph,
-        hit.image.endOffset,
-      );
-      applyWithZone(
-        state,
-        hit.zone,
-        setSelection(state, {
-          anchor: start,
-          focus: end,
-        }),
-        start,
-      );
-      stopDragging();
-      deps.imageOps.startImageDrag(
-        hit.image.paragraphId,
-        hit.image.startOffset,
-        event,
-        {
-          left: hit.image.left,
-          top: hit.image.top,
-          width: hit.image.width,
-          height: hit.image.height,
-        },
-      );
-      deps.focusInputAfterPointerSelection();
-      return;
-    }
-
-    if (event.shiftKey && hit.resolvedFromParagraph) {
-      dragAnchor = state.selection.anchor;
-      applyWithZone(
-        state,
-        hit.zone,
-        setSelection(state, {
-          anchor: state.selection.anchor,
-          focus: hit.position,
-        }),
-        hit.position,
-      );
-      window.addEventListener("mousemove", handleWindowMouseMove);
-      window.addEventListener("mouseup", handleWindowMouseUp);
-      deps.focusInputAfterPointerSelection();
-      return;
-    }
-
-    if (clickDetail >= 3 && paragraph) {
-      dragAnchor = null;
-      const range = resolveTripleClickParagraphRange(
-        state,
-        paragraph,
-        hit.zone,
-      );
-      applyWithZone(
-        state,
-        hit.zone,
-        setSelection(state, { anchor: range.start, focus: range.end }),
-        range.start,
-      );
-      stopDragging();
-      deps.focusInputAfterPointerSelection();
-      return;
-    }
-
-    if (clickDetail === 2 && paragraph) {
-      dragAnchor = null;
-      const word = resolveWordSelection(
-        getParagraphText(paragraph),
-        hit.paragraphOffset,
-      );
-      const startPos = paragraphOffsetToPosition(paragraph, word.start);
-      const endPos = paragraphOffsetToPosition(paragraph, word.end);
-      applyWithZone(
-        state,
-        hit.zone,
-        setSelection(state, { anchor: startPos, focus: endPos }),
-        startPos,
-      );
-      stopDragging();
-      deps.focusInputAfterPointerSelection();
-      return;
-    }
+    if (isZoneTransition) { handleZoneTransitionDown(state, hit, clickDetail); return; }
+    if (hit.textBox) { handleTextBoxDown(state, hit); return; }
+    if (hit.image) { handleImageDown(state, hit, event); return; }
+    if (event.shiftKey && hit.resolvedFromParagraph) { handleShiftClickDown(state, hit); return; }
+    if (clickDetail >= 3 && paragraph) { handleTripleClickDown(state, hit, paragraph); return; }
+    if (clickDetail === 2 && paragraph) { handleDoubleClickDown(state, hit, paragraph); return; }
 
     if (!hit.resolvedFromParagraph) {
       deps.focusInputAfterPointerSelection();

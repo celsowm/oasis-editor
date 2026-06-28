@@ -39,6 +39,9 @@ export function isWavyUnderlineStyle(underlineStyle: UnderlineStyle): boolean {
   return underlineStyle === "wave" || underlineStyle === "wavyHeavy";
 }
 
+export const WAVY_UNDERLINE_AMPLITUDE_PX = 1.5;
+export const WAVY_UNDERLINE_WAVELENGTH_PX = 4;
+
 export function underlineStyleLineWidthPx(
   underlineStyle: UnderlineStyle,
 ): number {

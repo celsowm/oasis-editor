@@ -10,6 +10,7 @@ import {
   resolveFloatingObjectRect,
 } from "@/layoutProjection/floatingObjects.js";
 import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
+import { parseHexColorToRgb255 } from "@/core/color.js";
 import {
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
@@ -28,11 +29,14 @@ import {
   type UnderlineStyle,
   underlineStyleDashArray,
   underlineStyleLineWidthPx,
+  WAVY_UNDERLINE_AMPLITUDE_PX,
+  WAVY_UNDERLINE_WAVELENGTH_PX,
 } from "@/core/textStyleMappings.js";
 import { PX_PER_POINT } from "@/layoutProjection/constants.js";
 import {
   CANVAS_DASH_DASHED,
   CANVAS_DASH_DOTTED,
+  DEG_TO_RAD,
   drawBorderBox,
 } from "./canvasBorders.js";
 import { resolveMetricCompatibleFamily } from "@/export/pdf/fonts/officeFontAssets.js";
@@ -54,10 +58,11 @@ export {
 const DOUBLE_STRIKE_OFFSET_PX = 1.3;
 /** Half-spacing between the two lines of a double-underline, in px. */
 const DOUBLE_UNDERLINE_OFFSET_PX = 1.5;
-/** Peak displacement of the wavy underline sine wave, in px. */
-const WAVY_UNDERLINE_AMPLITUDE_PX = 1.5;
-/** Full cycle length of the wavy underline sine wave, in px. */
-const WAVY_UNDERLINE_WAVELENGTH_PX = 4;
+
+function hexToRgba(color: string, alpha: number): string {
+  const [r, g, b] = parseHexColorToRgb255(color) ?? [0, 0, 0];
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
 const canvasTextLogger = createEditorLogger("canvas-text");
 const loggedCanvasFontKeys = new Set<string>();
@@ -186,7 +191,7 @@ function drawImageFragment(
     if (hasTransform) {
       ctx.translate(x + width / 2, y + height / 2);
       if (rotation) {
-        ctx.rotate((rotation * Math.PI) / 180);
+        ctx.rotate(rotation * DEG_TO_RAD);
       }
       ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
       ctx.translate(-(x + width / 2), -(y + height / 2));
@@ -225,7 +230,7 @@ function drawImageFragment(
   ctx.save();
   ctx.translate(x + width / 2, y + height / 2);
   if (rotation) {
-    ctx.rotate((rotation * Math.PI) / 180);
+    ctx.rotate(rotation * DEG_TO_RAD);
   }
   ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
   ctx.drawImage(img, sx, sy, sw, sh, -width / 2, -height / 2, width, height);
@@ -595,18 +600,19 @@ export function drawParagraph(
   }
 }
 
-function drawFragmentHighlight(
+function drawFragmentColorRect(
   ctx: CanvasRenderingContext2D,
   line: EditorLayoutLine,
   fragment: EditorLayoutLine["fragments"][number],
   originX: number,
   originY: number,
   color: string,
+  alpha?: number,
 ) {
   const bounds = resolveFragmentPaintBounds(line, fragment);
   if (!bounds) return;
   ctx.save();
-  ctx.globalAlpha = 0.35;
+  if (alpha !== undefined) ctx.globalAlpha = alpha;
   ctx.fillStyle = color;
   ctx.fillRect(
     originX + bounds.left,
@@ -615,6 +621,17 @@ function drawFragmentHighlight(
     Math.max(2, line.height - 4),
   );
   ctx.restore();
+}
+
+function drawFragmentHighlight(
+  ctx: CanvasRenderingContext2D,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutLine["fragments"][number],
+  originX: number,
+  originY: number,
+  color: string,
+) {
+  drawFragmentColorRect(ctx, line, fragment, originX, originY, color, 0.35);
 }
 
 export function resolveFragmentPaintBounds(
@@ -658,17 +675,7 @@ function drawFragmentShading(
   originY: number,
   color: string,
 ) {
-  const bounds = resolveFragmentPaintBounds(line, fragment);
-  if (!bounds) return;
-  ctx.save();
-  ctx.fillStyle = color;
-  ctx.fillRect(
-    originX + bounds.left,
-    originY + line.top + 2,
-    Math.max(0, bounds.right - bounds.left),
-    Math.max(2, line.height - 4),
-  );
-  ctx.restore();
+  drawFragmentColorRect(ctx, line, fragment, originX, originY, color);
 }
 
 function getRenderedChar(char: string, styles: { allCaps?: boolean }): string {
@@ -715,16 +722,12 @@ function resolveCanvasTextFill(
   const cx = (x0 + x1) / 2;
   const cy = (y0 + y1) / 2;
   const angleDeg = fill.angle ?? 0;
-  const rad = (angleDeg * Math.PI) / 180;
+  const rad = angleDeg * DEG_TO_RAD;
   const dx = (Math.cos(rad) * (x1 - x0)) / 2;
   const dy = (Math.sin(rad) * (y1 - y0)) / 2;
   const gradient = ctx.createLinearGradient(cx - dx, cy - dy, cx + dx, cy + dy);
   for (const stop of fill.stops) {
-    const alpha = stop.alpha ?? 1;
-    const r = Number.parseInt(stop.color.slice(1, 3), 16);
-    const g = Number.parseInt(stop.color.slice(3, 5), 16);
-    const b = Number.parseInt(stop.color.slice(5, 7), 16);
-    gradient.addColorStop(stop.position, `rgba(${r},${g},${b},${alpha})`);
+    gradient.addColorStop(stop.position, hexToRgba(stop.color, stop.alpha ?? 1));
   }
   return gradient;
 }
@@ -789,23 +792,15 @@ function drawStyledText(
   ctx.save();
   if (styles.textShadow) {
     const ts = styles.textShadow;
-    const dirRad = (ts.dirDeg * Math.PI) / 180;
+    const dirRad = ts.dirDeg * DEG_TO_RAD;
     const distPx = ts.distPt * PX_PER_POINT;
-    const alpha = ts.alpha ?? 1;
-    const r = Number.parseInt(ts.color.slice(1, 3), 16);
-    const g = Number.parseInt(ts.color.slice(3, 5), 16);
-    const b = Number.parseInt(ts.color.slice(5, 7), 16);
-    ctx.shadowColor = `rgba(${r},${g},${b},${alpha})`;
+    ctx.shadowColor = hexToRgba(ts.color, ts.alpha ?? 1);
     ctx.shadowBlur = ts.blurPt * PX_PER_POINT;
     ctx.shadowOffsetX = Math.cos(dirRad) * distPx;
     ctx.shadowOffsetY = Math.sin(dirRad) * distPx;
   } else if (styles.glow) {
     const gl = styles.glow;
-    const alpha = gl.alpha ?? 0.7;
-    const r = Number.parseInt(gl.color.slice(1, 3), 16);
-    const g = Number.parseInt(gl.color.slice(3, 5), 16);
-    const b = Number.parseInt(gl.color.slice(5, 7), 16);
-    ctx.shadowColor = `rgba(${r},${g},${b},${alpha})`;
+    ctx.shadowColor = hexToRgba(gl.color, gl.alpha ?? 0.7);
     ctx.shadowBlur = gl.radiusPt * PX_PER_POINT;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;

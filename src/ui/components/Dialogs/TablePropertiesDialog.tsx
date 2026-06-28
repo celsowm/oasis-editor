@@ -1,4 +1,6 @@
-import { createEffect, createMemo, createSignal, Show } from "solid-js";
+import { createEffect, createMemo, Show } from "solid-js";
+import { createStore, reconcile } from "solid-js/store";
+import type { SetStoreFunction } from "solid-js/store";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Dialog } from "./Dialog.js";
 import { DialogFooter } from "./DialogFooter.js";
@@ -148,216 +150,16 @@ function resolveBorder(
   };
 }
 
-export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
-  const t = useI18n();
-  const [activeTab, setActiveTab] = createSignal("table");
-  const [tableWidth, setTableWidth] = createSignal("");
-  const [tableWidthUnit, setTableWidthUnit] =
-    createSignal<TableWidthUnit>("points");
-  const [tableAlign, setTableAlign] =
-    createSignal<TablePropertiesDialogInitialValues["tableAlign"]>("");
-  const [tableIndentLeft, setTableIndentLeft] = createSignal("");
-  const [tableWrapping, setTableWrapping] =
-    createSignal<TablePropertiesDialogInitialValues["tableWrapping"]>("none");
-  const [floatingHorizontalAnchor, setFloatingHorizontalAnchor] =
-    createSignal<
-      TablePropertiesDialogInitialValues["floatingHorizontalAnchor"]
-    >("margin");
-  const [floatingVerticalAnchor, setFloatingVerticalAnchor] =
-    createSignal<TablePropertiesDialogInitialValues["floatingVerticalAnchor"]>(
-      "text",
-    );
-  const [floatingX, setFloatingX] = createSignal("");
-  const [floatingY, setFloatingY] = createSignal("");
-  const [floatingXAlign, setFloatingXAlign] =
-    createSignal<TablePropertiesDialogInitialValues["floatingXAlign"]>("");
-  const [floatingYAlign, setFloatingYAlign] =
-    createSignal<TablePropertiesDialogInitialValues["floatingYAlign"]>("");
-  const [floatingDistanceTop, setFloatingDistanceTop] = createSignal("");
-  const [floatingDistanceRight, setFloatingDistanceRight] = createSignal("");
-  const [floatingDistanceBottom, setFloatingDistanceBottom] = createSignal("");
-  const [floatingDistanceLeft, setFloatingDistanceLeft] = createSignal("");
-  const [floatingOverlap, setFloatingOverlap] =
-    createSignal<TablePropertiesDialogInitialValues["floatingOverlap"]>(
-      "overlap",
-    );
-  const [rowHeight, setRowHeight] = createSignal("");
-  const [rowHeightRule, setRowHeightRule] =
-    createSignal<TablePropertiesDialogInitialValues["rowHeightRule"]>("");
-  const [repeatHeader, setRepeatHeader] = createSignal(false);
-  const [allowBreakAcrossPages, setAllowBreakAcrossPages] = createSignal(true);
-  const [hiddenRow, setHiddenRow] = createSignal(false);
-  const [columnWidth, setColumnWidth] = createSignal("");
-  const [cellWidth, setCellWidth] = createSignal("");
-  const [cellVerticalAlign, setCellVerticalAlign] =
-    createSignal<TablePropertiesDialogInitialValues["cellVerticalAlign"]>("");
-  const [cellTextDirection, setCellTextDirection] =
-    createSignal<TablePropertiesDialogInitialValues["cellTextDirection"]>("");
-  const [cellNoWrap, setCellNoWrap] = createSignal(false);
-  const [cellFitText, setCellFitText] = createSignal(false);
-  const [cellHideMark, setCellHideMark] = createSignal(false);
-  const [marginTop, setMarginTop] = createSignal("");
-  const [marginRight, setMarginRight] = createSignal("");
-  const [marginBottom, setMarginBottom] = createSignal("");
-  const [marginLeft, setMarginLeft] = createSignal("");
-  const [borderStyle, setBorderStyle] = createSignal<BorderStyleValue>("none");
-  const [borderWidth, setBorderWidth] = createSignal("");
-  const [borderColor, setBorderColor] = createSignal("");
-  const [borderTop, setBorderTop] = createSignal(false);
-  const [borderRight, setBorderRight] = createSignal(false);
-  const [borderBottom, setBorderBottom] = createSignal(false);
-  const [borderLeft, setBorderLeft] = createSignal(false);
-  const [borderStart, setBorderStart] = createSignal(false);
-  const [borderEnd, setBorderEnd] = createSignal(false);
-  const [borderTlBr, setBorderTlBr] = createSignal(false);
-  const [borderTrBl, setBorderTrBl] = createSignal(false);
-  const [shading, setShading] = createSignal("");
-  const [altTitle, setAltTitle] = createSignal("");
-  const [altDescription, setAltDescription] = createSignal("");
-
-  createEffect(() => {
-    if (!props.isOpen) return;
-    setActiveTab(props.initial.activeTab ?? "table");
-    setTableWidth(props.initial.tableWidth);
-    setTableWidthUnit(props.initial.tableWidthUnit);
-    setTableAlign(props.initial.tableAlign);
-    setTableIndentLeft(props.initial.tableIndentLeft);
-    setTableWrapping(props.initial.tableWrapping);
-    setFloatingHorizontalAnchor(props.initial.floatingHorizontalAnchor);
-    setFloatingVerticalAnchor(props.initial.floatingVerticalAnchor);
-    setFloatingX(props.initial.floatingX);
-    setFloatingY(props.initial.floatingY);
-    setFloatingXAlign(props.initial.floatingXAlign);
-    setFloatingYAlign(props.initial.floatingYAlign);
-    setFloatingDistanceTop(props.initial.floatingDistanceTop);
-    setFloatingDistanceRight(props.initial.floatingDistanceRight);
-    setFloatingDistanceBottom(props.initial.floatingDistanceBottom);
-    setFloatingDistanceLeft(props.initial.floatingDistanceLeft);
-    setFloatingOverlap(props.initial.floatingOverlap);
-    setRowHeight(props.initial.rowHeight);
-    setRowHeightRule(props.initial.rowHeightRule);
-    setRepeatHeader(props.initial.repeatHeader);
-    setAllowBreakAcrossPages(props.initial.allowBreakAcrossPages);
-    setHiddenRow(props.initial.hiddenRow);
-    setColumnWidth(props.initial.columnWidth);
-    setCellWidth(props.initial.cellWidth);
-    setCellVerticalAlign(props.initial.cellVerticalAlign);
-    setCellTextDirection(props.initial.cellTextDirection);
-    setCellNoWrap(props.initial.cellNoWrap);
-    setCellFitText(props.initial.cellFitText);
-    setCellHideMark(props.initial.cellHideMark);
-    setMarginTop(props.initial.marginTop);
-    setMarginRight(props.initial.marginRight);
-    setMarginBottom(props.initial.marginBottom);
-    setMarginLeft(props.initial.marginLeft);
-    setBorderStyle(props.initial.borderStyle);
-    setBorderWidth(props.initial.borderWidth);
-    setBorderColor(props.initial.borderColor);
-    setBorderTop(props.initial.borderTop);
-    setBorderRight(props.initial.borderRight);
-    setBorderBottom(props.initial.borderBottom);
-    setBorderLeft(props.initial.borderLeft);
-    setBorderStart(props.initial.borderStart);
-    setBorderEnd(props.initial.borderEnd);
-    setBorderTlBr(props.initial.borderTopLeftToBottomRight);
-    setBorderTrBl(props.initial.borderTopRightToBottomLeft);
-    setShading(props.initial.shading);
-    setAltTitle(props.initial.altTitle);
-    setAltDescription(props.initial.altDescription);
-  });
-
-  const borderPreview = createMemo(() => {
-    const border = resolveBorder(borderStyle(), borderWidth(), borderColor());
-    const css = border
-      ? `${border.width}pt ${border.type} ${border.color}`
-      : undefined;
-    return {
-      "background-color": shading().trim() || undefined,
-      "border-top": css && borderTop() ? css : "1px solid #dadce0",
-      "border-right": css && borderRight() ? css : "1px solid #dadce0",
-      "border-bottom": css && borderBottom() ? css : "1px solid #dadce0",
-      "border-left": css && borderLeft() ? css : "1px solid #dadce0",
-    };
-  });
-
-  const handleApply = () => {
-    const border = resolveBorder(borderStyle(), borderWidth(), borderColor());
-    props.onApply(
-      {
-        tableWidth: parseWidth(tableWidth(), tableWidthUnit()),
-        tableAlign: tableAlign() || null,
-        tableIndentLeft: parseWidth(tableIndentLeft(), "points"),
-        tableFloating:
-          tableWrapping() === "around"
-            ? {
-                horizontalAnchor: floatingHorizontalAnchor(),
-                verticalAnchor: floatingVerticalAnchor(),
-                ...(floatingXAlign()
-                  ? {
-                      xAlign: floatingXAlign() as NonNullable<
-                        EditorTableFloatingLayout["xAlign"]
-                      >,
-                    }
-                  : { x: parseNumber(floatingX()) ?? 0 }),
-                ...(floatingYAlign()
-                  ? {
-                      yAlign: floatingYAlign() as NonNullable<
-                        EditorTableFloatingLayout["yAlign"]
-                      >,
-                    }
-                  : { y: parseNumber(floatingY()) ?? 0 }),
-                distanceTop: parseNumber(floatingDistanceTop()) ?? 0,
-                distanceRight: parseNumber(floatingDistanceRight()) ?? 0,
-                distanceBottom: parseNumber(floatingDistanceBottom()) ?? 0,
-                distanceLeft: parseNumber(floatingDistanceLeft()) ?? 0,
-              }
-            : null,
-        tableOverlap: tableWrapping() === "around" ? floatingOverlap() : null,
-        rowHeight: parseWidth(rowHeight(), "points"),
-        rowHeightRule: rowHeightRule() || null,
-        repeatHeader: repeatHeader(),
-        cantSplit: !allowBreakAcrossPages(),
-        hiddenRow: hiddenRow(),
-        columnWidth: parseWidth(columnWidth(), "points"),
-        cellWidth: parseWidth(cellWidth(), "points"),
-        cellVerticalAlign: cellVerticalAlign() || null,
-        cellTextDirection: cellTextDirection() || null,
-        cellNoWrap: cellNoWrap(),
-        cellFitText: cellFitText(),
-        cellHideMark: cellHideMark(),
-        margins: {
-          top: parseNumber(marginTop()),
-          right: parseNumber(marginRight()),
-          bottom: parseNumber(marginBottom()),
-          left: parseNumber(marginLeft()),
-        },
-        borders: {
-          top: borderTop() ? border : null,
-          right: borderRight() ? border : null,
-          bottom: borderBottom() ? border : null,
-          left: borderLeft() ? border : null,
-          start: borderStart() ? border : null,
-          end: borderEnd() ? border : null,
-          topLeftToBottomRight: borderTlBr() ? border : null,
-          topRightToBottomLeft: borderTrBl() ? border : null,
-        },
-        shading: shading().trim() || null,
-        altTitle: altTitle().trim() || null,
-        altDescription: altDescription().trim() || null,
-      },
-      props.initial,
-    );
-    props.onClose();
-  };
-
-  const numericInput = (
-    label: string,
-    value: () => string,
-    setter: (value: string) => void,
-    testId: string,
-    disabled = false,
-    allowNegative = false,
-  ) => (
+// Reusable input factories (module-level; no component-scope captures needed).
+function numericInput(
+  label: string,
+  value: () => string,
+  setter: (value: string) => void,
+  testId: string,
+  disabled = false,
+  allowNegative = false,
+) {
+  return (
     <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
       <label class="oasis-editor-dialog-label">{label}</label>
       <input
@@ -372,14 +174,16 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
       />
     </div>
   );
+}
 
-  const checkbox = (
-    label: string,
-    checked: () => boolean,
-    setter: (value: boolean) => void,
-    testId: string,
-    disabled = false,
-  ) => (
+function checkbox(
+  label: string,
+  checked: () => boolean,
+  setter: (value: boolean) => void,
+  testId: string,
+  disabled = false,
+) {
+  return (
     <label class="oasis-editor-dialog-style-toggle">
       <input
         type="checkbox"
@@ -391,6 +195,840 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
       {label}
     </label>
   );
+}
+
+// Single reactive store replacing 40+ individual signals.
+interface TableFormState {
+  activeTab: string;
+  tableWidth: string;
+  tableWidthUnit: TableWidthUnit;
+  tableAlign: TablePropertiesDialogInitialValues["tableAlign"];
+  tableIndentLeft: string;
+  tableWrapping: TablePropertiesDialogInitialValues["tableWrapping"];
+  floatingHorizontalAnchor: TablePropertiesDialogInitialValues["floatingHorizontalAnchor"];
+  floatingVerticalAnchor: TablePropertiesDialogInitialValues["floatingVerticalAnchor"];
+  floatingX: string;
+  floatingY: string;
+  floatingXAlign: TablePropertiesDialogInitialValues["floatingXAlign"];
+  floatingYAlign: TablePropertiesDialogInitialValues["floatingYAlign"];
+  floatingDistanceTop: string;
+  floatingDistanceRight: string;
+  floatingDistanceBottom: string;
+  floatingDistanceLeft: string;
+  floatingOverlap: TablePropertiesDialogInitialValues["floatingOverlap"];
+  rowHeight: string;
+  rowHeightRule: TablePropertiesDialogInitialValues["rowHeightRule"];
+  repeatHeader: boolean;
+  allowBreakAcrossPages: boolean;
+  hiddenRow: boolean;
+  columnWidth: string;
+  cellWidth: string;
+  cellVerticalAlign: TablePropertiesDialogInitialValues["cellVerticalAlign"];
+  cellTextDirection: TablePropertiesDialogInitialValues["cellTextDirection"];
+  cellNoWrap: boolean;
+  cellFitText: boolean;
+  cellHideMark: boolean;
+  marginTop: string;
+  marginRight: string;
+  marginBottom: string;
+  marginLeft: string;
+  borderStyle: BorderStyleValue;
+  borderWidth: string;
+  borderColor: string;
+  borderTop: boolean;
+  borderRight: boolean;
+  borderBottom: boolean;
+  borderLeft: boolean;
+  borderStart: boolean;
+  borderEnd: boolean;
+  borderTlBr: boolean;
+  borderTrBl: boolean;
+  shading: string;
+  altTitle: string;
+  altDescription: string;
+}
+
+interface TabPanelProps {
+  form: TableFormState;
+  set: SetStoreFunction<TableFormState>;
+}
+
+function TableTabPanel(p: TabPanelProps) {
+  const t = useI18n();
+  return (
+    <div class="oasis-editor-table-properties-panel">
+      <fieldset class="oasis-editor-font-dialog-fieldset">
+        <legend>{t("table.sizeSection")}</legend>
+        <div class="oasis-editor-dialog-row">
+          {numericInput(
+            t("table.preferredWidth"),
+            () => p.form.tableWidth,
+            (v) => p.set("tableWidth", v),
+            "editor-table-properties-table-width",
+          )}
+          <div class="oasis-editor-dialog-input-group">
+            <label class="oasis-editor-dialog-label">
+              {t("table.measureIn")}
+            </label>
+            <select
+              class="oasis-editor-dialog-input"
+              value={p.form.tableWidthUnit}
+              onChange={(e) =>
+                p.set("tableWidthUnit", e.currentTarget.value as TableWidthUnit)
+              }
+              data-testid="editor-table-properties-table-width-unit"
+            >
+              <option value="points">{t("table.points")}</option>
+              <option value="percent">{t("table.percent")}</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+      <fieldset class="oasis-editor-font-dialog-fieldset">
+        <legend>{t("table.alignmentSection")}</legend>
+        <div class="oasis-editor-dialog-style-row">
+          {(["left", "center", "right"] as const).map((align) => (
+            <label class="oasis-editor-dialog-style-toggle">
+              <input
+                type="radio"
+                name="table-align"
+                checked={p.form.tableAlign === align}
+                onChange={() => p.set("tableAlign", align)}
+                data-testid={`editor-table-properties-align-${align}`}
+              />
+              {t(
+                `table.align${align[0]!.toUpperCase()}${align.slice(1)}` as any,
+              )}
+            </label>
+          ))}
+        </div>
+        <div class="oasis-editor-dialog-row">
+          {numericInput(
+            t("table.indentFromLeft"),
+            () => p.form.tableIndentLeft,
+            (v) => p.set("tableIndentLeft", v),
+            "editor-table-properties-indent-left",
+          )}
+        </div>
+      </fieldset>
+      <fieldset class="oasis-editor-font-dialog-fieldset">
+        <legend>{t("table.textWrappingSection")}</legend>
+        <div class="oasis-editor-dialog-style-row">
+          {checkbox(
+            t("table.wrapNone"),
+            () => p.form.tableWrapping === "none",
+            () => p.set("tableWrapping", "none"),
+            "editor-table-properties-wrap-none",
+          )}
+          {checkbox(
+            t("table.wrapAround"),
+            () => p.form.tableWrapping === "around",
+            () => p.set("tableWrapping", "around"),
+            "editor-table-properties-wrap-around",
+          )}
+        </div>
+        <Show when={p.form.tableWrapping === "around"}>
+          <div class="oasis-editor-dialog-row">
+            <label class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+              <span class="oasis-editor-dialog-label">
+                {t("table.horizontalAnchor")}
+              </span>
+              <select
+                class="oasis-editor-dialog-input"
+                value={p.form.floatingHorizontalAnchor}
+                onChange={(e) =>
+                  p.set(
+                    "floatingHorizontalAnchor",
+                    e.currentTarget
+                      .value as TablePropertiesDialogInitialValues["floatingHorizontalAnchor"],
+                  )
+                }
+                data-testid="editor-table-properties-floating-h-anchor"
+              >
+                <option value="margin">{t("table.anchorMargin")}</option>
+                <option value="page">{t("table.anchorPage")}</option>
+                <option value="text">{t("table.anchorText")}</option>
+              </select>
+            </label>
+            <label class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+              <span class="oasis-editor-dialog-label">
+                {t("table.verticalAnchor")}
+              </span>
+              <select
+                class="oasis-editor-dialog-input"
+                value={p.form.floatingVerticalAnchor}
+                onChange={(e) =>
+                  p.set(
+                    "floatingVerticalAnchor",
+                    e.currentTarget
+                      .value as TablePropertiesDialogInitialValues["floatingVerticalAnchor"],
+                  )
+                }
+                data-testid="editor-table-properties-floating-v-anchor"
+              >
+                <option value="margin">{t("table.anchorMargin")}</option>
+                <option value="page">{t("table.anchorPage")}</option>
+                <option value="text">{t("table.anchorText")}</option>
+              </select>
+            </label>
+          </div>
+          <div class="oasis-editor-dialog-row">
+            {numericInput(
+              t("table.positionX"),
+              () => p.form.floatingX,
+              (v) => p.set("floatingX", v),
+              "editor-table-properties-floating-x",
+              Boolean(p.form.floatingXAlign),
+              true,
+            )}
+            {numericInput(
+              t("table.positionY"),
+              () => p.form.floatingY,
+              (v) => p.set("floatingY", v),
+              "editor-table-properties-floating-y",
+              Boolean(p.form.floatingYAlign),
+              true,
+            )}
+            <label class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+              <span class="oasis-editor-dialog-label">
+                {t("table.horizontalAlignment")}
+              </span>
+              <select
+                class="oasis-editor-dialog-input"
+                value={p.form.floatingXAlign}
+                onChange={(e) =>
+                  p.set(
+                    "floatingXAlign",
+                    e.currentTarget
+                      .value as TablePropertiesDialogInitialValues["floatingXAlign"],
+                  )
+                }
+                data-testid="editor-table-properties-floating-x-align"
+              >
+                <option value="">{t("table.explicitOffset")}</option>
+                {(
+                  ["left", "center", "right", "inside", "outside"] as const
+                ).map((value) => (
+                  <option value={value}>{value}</option>
+                ))}
+              </select>
+            </label>
+            <label class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+              <span class="oasis-editor-dialog-label">
+                {t("table.verticalAlignment")}
+              </span>
+              <select
+                class="oasis-editor-dialog-input"
+                value={p.form.floatingYAlign}
+                onChange={(e) =>
+                  p.set(
+                    "floatingYAlign",
+                    e.currentTarget
+                      .value as TablePropertiesDialogInitialValues["floatingYAlign"],
+                  )
+                }
+                data-testid="editor-table-properties-floating-y-align"
+              >
+                <option value="">{t("table.explicitOffset")}</option>
+                {(
+                  ["top", "center", "bottom", "inside", "outside"] as const
+                ).map((value) => (
+                  <option value={value}>{value}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div class="oasis-editor-dialog-row">
+            {numericInput(
+              t("table.distanceTop"),
+              () => p.form.floatingDistanceTop,
+              (v) => p.set("floatingDistanceTop", v),
+              "editor-table-properties-floating-distance-top",
+            )}
+            {numericInput(
+              t("table.distanceRight"),
+              () => p.form.floatingDistanceRight,
+              (v) => p.set("floatingDistanceRight", v),
+              "editor-table-properties-floating-distance-right",
+            )}
+            {numericInput(
+              t("table.distanceBottom"),
+              () => p.form.floatingDistanceBottom,
+              (v) => p.set("floatingDistanceBottom", v),
+              "editor-table-properties-floating-distance-bottom",
+            )}
+            {numericInput(
+              t("table.distanceLeft"),
+              () => p.form.floatingDistanceLeft,
+              (v) => p.set("floatingDistanceLeft", v),
+              "editor-table-properties-floating-distance-left",
+            )}
+          </div>
+          {checkbox(
+            t("table.allowOverlap"),
+            () => p.form.floatingOverlap === "overlap",
+            (value) => p.set("floatingOverlap", value ? "overlap" : "never"),
+            "editor-table-properties-floating-overlap",
+          )}
+        </Show>
+      </fieldset>
+    </div>
+  );
+}
+
+function RowTabPanel(p: TabPanelProps) {
+  const t = useI18n();
+  return (
+    <div class="oasis-editor-table-properties-panel">
+      <div class="oasis-editor-dialog-row">
+        {numericInput(
+          t("table.rowHeight"),
+          () => p.form.rowHeight,
+          (v) => p.set("rowHeight", v),
+          "editor-table-properties-row-height",
+        )}
+        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+          <label class="oasis-editor-dialog-label">
+            {t("table.rowHeightRule")}
+          </label>
+          <select
+            class="oasis-editor-dialog-input"
+            value={p.form.rowHeightRule}
+            onChange={(e) =>
+              p.set(
+                "rowHeightRule",
+                e.currentTarget
+                  .value as TablePropertiesDialogInitialValues["rowHeightRule"],
+              )
+            }
+            data-testid="editor-table-properties-row-height-rule"
+          >
+            <option value="">{t("table.rowAuto")}</option>
+            <option value="atLeast">{t("table.rowAtLeast")}</option>
+            <option value="exact">{t("table.rowExactly")}</option>
+          </select>
+        </div>
+      </div>
+      <div class="oasis-editor-dialog-style-row">
+        {checkbox(
+          t("table.repeatHeader"),
+          () => p.form.repeatHeader,
+          (v) => p.set("repeatHeader", v),
+          "editor-table-properties-repeat-header",
+        )}
+        {checkbox(
+          t("table.allowBreakAcrossPages"),
+          () => p.form.allowBreakAcrossPages,
+          (v) => p.set("allowBreakAcrossPages", v),
+          "editor-table-properties-allow-break",
+        )}
+        {checkbox(
+          t("table.hiddenRow"),
+          () => p.form.hiddenRow,
+          (v) => p.set("hiddenRow", v),
+          "editor-table-properties-hidden-row",
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ColumnTabPanel(p: TabPanelProps) {
+  const t = useI18n();
+  return (
+    <div class="oasis-editor-table-properties-panel">
+      <div class="oasis-editor-dialog-row">
+        {numericInput(
+          t("table.columnWidth"),
+          () => p.form.columnWidth,
+          (v) => p.set("columnWidth", v),
+          "editor-table-properties-column-width",
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CellTabPanel(p: TabPanelProps) {
+  const t = useI18n();
+  const borderPreview = createMemo(() => {
+    const border = resolveBorder(
+      p.form.borderStyle,
+      p.form.borderWidth,
+      p.form.borderColor,
+    );
+    const css = border
+      ? `${border.width}pt ${border.type} ${border.color}`
+      : undefined;
+    return {
+      "background-color": p.form.shading.trim() || undefined,
+      "border-top": css && p.form.borderTop ? css : "1px solid #dadce0",
+      "border-right": css && p.form.borderRight ? css : "1px solid #dadce0",
+      "border-bottom": css && p.form.borderBottom ? css : "1px solid #dadce0",
+      "border-left": css && p.form.borderLeft ? css : "1px solid #dadce0",
+    };
+  });
+
+  return (
+    <div class="oasis-editor-table-properties-panel">
+      <div class="oasis-editor-dialog-row">
+        {numericInput(
+          t("table.cellWidth"),
+          () => p.form.cellWidth,
+          (v) => p.set("cellWidth", v),
+          "editor-table-properties-cell-width",
+        )}
+        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+          <label class="oasis-editor-dialog-label">
+            {t("table.verticalAlignment")}
+          </label>
+          <select
+            class="oasis-editor-dialog-input"
+            value={p.form.cellVerticalAlign}
+            onChange={(e) =>
+              p.set(
+                "cellVerticalAlign",
+                e.currentTarget
+                  .value as TablePropertiesDialogInitialValues["cellVerticalAlign"],
+              )
+            }
+            data-testid="editor-table-properties-cell-valign"
+          >
+            <option value="">{t("table.inherit")}</option>
+            <option value="top">{t("table.valignTop")}</option>
+            <option value="middle">{t("table.valignMiddle")}</option>
+            <option value="bottom">{t("table.valignBottom")}</option>
+          </select>
+        </div>
+        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+          <label class="oasis-editor-dialog-label">
+            {t("table.textDirection")}
+          </label>
+          <select
+            class="oasis-editor-dialog-input"
+            value={p.form.cellTextDirection}
+            onChange={(e) =>
+              p.set(
+                "cellTextDirection",
+                e.currentTarget
+                  .value as TablePropertiesDialogInitialValues["cellTextDirection"],
+              )
+            }
+            data-testid="editor-table-properties-cell-direction"
+          >
+            <option value="">{t("table.inherit")}</option>
+            <option value="lrTb">lrTb</option>
+            <option value="tbRl">tbRl</option>
+            <option value="btLr">btLr</option>
+            <option value="lrTbV">lrTbV</option>
+            <option value="tbRlV">tbRlV</option>
+          </select>
+        </div>
+      </div>
+      <fieldset class="oasis-editor-font-dialog-fieldset">
+        <legend>{t("table.options")}</legend>
+        <div class="oasis-editor-dialog-style-row">
+          {checkbox(
+            t("table.noWrap"),
+            () => p.form.cellNoWrap,
+            (v) => p.set("cellNoWrap", v),
+            "editor-table-properties-cell-nowrap",
+          )}
+          {checkbox(
+            t("table.fitText"),
+            () => p.form.cellFitText,
+            (v) => p.set("cellFitText", v),
+            "editor-table-properties-cell-fit-text",
+          )}
+          {checkbox(
+            t("table.hideMark"),
+            () => p.form.cellHideMark,
+            (v) => p.set("cellHideMark", v),
+            "editor-table-properties-cell-hide-mark",
+          )}
+        </div>
+      </fieldset>
+      <fieldset class="oasis-editor-font-dialog-fieldset">
+        <legend>{t("table.cellMargins")}</legend>
+        <div class="oasis-editor-dialog-row">
+          {numericInput(
+            t("paragraph.borderSideTop"),
+            () => p.form.marginTop,
+            (v) => p.set("marginTop", v),
+            "editor-table-properties-margin-top",
+          )}
+          {numericInput(
+            t("paragraph.borderSideRight"),
+            () => p.form.marginRight,
+            (v) => p.set("marginRight", v),
+            "editor-table-properties-margin-right",
+          )}
+          {numericInput(
+            t("paragraph.borderSideBottom"),
+            () => p.form.marginBottom,
+            (v) => p.set("marginBottom", v),
+            "editor-table-properties-margin-bottom",
+          )}
+          {numericInput(
+            t("paragraph.borderSideLeft"),
+            () => p.form.marginLeft,
+            (v) => p.set("marginLeft", v),
+            "editor-table-properties-margin-left",
+          )}
+        </div>
+      </fieldset>
+      <fieldset class="oasis-editor-font-dialog-fieldset">
+        <legend>{t("paragraph.bordersSection")}</legend>
+        <div class="oasis-editor-dialog-row">
+          <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+            <label class="oasis-editor-dialog-label">
+              {t("paragraph.borderStyleLabel")}
+            </label>
+            <select
+              class="oasis-editor-dialog-input"
+              value={p.form.borderStyle}
+              onChange={(e) => {
+                const next = e.currentTarget.value as BorderStyleValue;
+                p.set("borderStyle", next);
+                if (next === "none") {
+                  p.set("borderTop", false);
+                  p.set("borderRight", false);
+                  p.set("borderBottom", false);
+                  p.set("borderLeft", false);
+                  p.set("borderStart", false);
+                  p.set("borderEnd", false);
+                  p.set("borderTlBr", false);
+                  p.set("borderTrBl", false);
+                } else if (
+                  !p.form.borderTop &&
+                  !p.form.borderRight &&
+                  !p.form.borderBottom &&
+                  !p.form.borderLeft
+                ) {
+                  p.set("borderTop", true);
+                  p.set("borderRight", true);
+                  p.set("borderBottom", true);
+                  p.set("borderLeft", true);
+                }
+              }}
+              data-testid="editor-table-properties-border-style"
+            >
+              <option value="none">{t("paragraph.borderNone")}</option>
+              <option value="solid">{t("paragraph.borderSolid")}</option>
+              <option value="dashed">{t("paragraph.borderDashed")}</option>
+              <option value="dotted">{t("paragraph.borderDotted")}</option>
+            </select>
+          </div>
+          {numericInput(
+            t("paragraph.borderWidthLabel"),
+            () => p.form.borderWidth,
+            (v) => p.set("borderWidth", v),
+            "editor-table-properties-border-width",
+            p.form.borderStyle === "none",
+          )}
+          <div class="oasis-editor-dialog-input-group">
+            <label class="oasis-editor-dialog-label">
+              {t("paragraph.borderColorLabel")}
+            </label>
+            <input
+              type="color"
+              class="oasis-editor-dialog-input"
+              value={p.form.borderColor || DEFAULT_BORDER_COLOR}
+              disabled={p.form.borderStyle === "none"}
+              onInput={(e) => p.set("borderColor", e.currentTarget.value)}
+              data-testid="editor-table-properties-border-color"
+            />
+          </div>
+          <div class="oasis-editor-dialog-input-group">
+            <label class="oasis-editor-dialog-label">
+              {t("paragraph.shadingLabel")}
+            </label>
+            <input
+              type="color"
+              class="oasis-editor-dialog-input"
+              value={p.form.shading || "#ffffff"}
+              onInput={(e) => p.set("shading", e.currentTarget.value)}
+              data-testid="editor-table-properties-shading"
+            />
+          </div>
+        </div>
+        <div class="oasis-editor-dialog-style-row">
+          {checkbox(
+            t("paragraph.borderSideTop"),
+            () => p.form.borderTop,
+            (v) => p.set("borderTop", v),
+            "editor-table-properties-border-top",
+            p.form.borderStyle === "none",
+          )}
+          {checkbox(
+            t("paragraph.borderSideRight"),
+            () => p.form.borderRight,
+            (v) => p.set("borderRight", v),
+            "editor-table-properties-border-right",
+            p.form.borderStyle === "none",
+          )}
+          {checkbox(
+            t("paragraph.borderSideBottom"),
+            () => p.form.borderBottom,
+            (v) => p.set("borderBottom", v),
+            "editor-table-properties-border-bottom",
+            p.form.borderStyle === "none",
+          )}
+          {checkbox(
+            t("paragraph.borderSideLeft"),
+            () => p.form.borderLeft,
+            (v) => p.set("borderLeft", v),
+            "editor-table-properties-border-left",
+            p.form.borderStyle === "none",
+          )}
+          {checkbox(
+            t("table.borderStart"),
+            () => p.form.borderStart,
+            (v) => p.set("borderStart", v),
+            "editor-table-properties-border-start",
+            p.form.borderStyle === "none",
+          )}
+          {checkbox(
+            t("table.borderEnd"),
+            () => p.form.borderEnd,
+            (v) => p.set("borderEnd", v),
+            "editor-table-properties-border-end",
+            p.form.borderStyle === "none",
+          )}
+          {checkbox(
+            t("table.borderTlBr"),
+            () => p.form.borderTlBr,
+            (v) => p.set("borderTlBr", v),
+            "editor-table-properties-border-tlbr",
+            p.form.borderStyle === "none",
+          )}
+          {checkbox(
+            t("table.borderTrBl"),
+            () => p.form.borderTrBl,
+            (v) => p.set("borderTrBl", v),
+            "editor-table-properties-border-trbl",
+            p.form.borderStyle === "none",
+          )}
+        </div>
+        <div
+          class="oasis-editor-table-properties-cell-preview"
+          style={borderPreview()}
+          data-testid="editor-table-properties-cell-preview"
+        />
+      </fieldset>
+    </div>
+  );
+}
+
+function AltTextTabPanel(p: TabPanelProps) {
+  const t = useI18n();
+  return (
+    <div class="oasis-editor-table-properties-panel">
+      <div class="oasis-editor-dialog-input-group">
+        <label class="oasis-editor-dialog-label">{t("table.altTitle")}</label>
+        <input
+          class="oasis-editor-dialog-input"
+          value={p.form.altTitle}
+          onInput={(e) => p.set("altTitle", e.currentTarget.value)}
+          data-testid="editor-table-properties-alt-title"
+        />
+      </div>
+      <div class="oasis-editor-dialog-input-group">
+        <label class="oasis-editor-dialog-label">
+          {t("table.altDescription")}
+        </label>
+        <textarea
+          class="oasis-editor-dialog-input oasis-editor-table-properties-textarea"
+          value={p.form.altDescription}
+          onInput={(e) => p.set("altDescription", e.currentTarget.value)}
+          data-testid="editor-table-properties-alt-description"
+        />
+      </div>
+    </div>
+  );
+}
+
+export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
+  const t = useI18n();
+  const [form, setForm] = createStore<TableFormState>({
+    activeTab: "table",
+    tableWidth: "",
+    tableWidthUnit: "points",
+    tableAlign: "",
+    tableIndentLeft: "",
+    tableWrapping: "none",
+    floatingHorizontalAnchor: "margin",
+    floatingVerticalAnchor: "text",
+    floatingX: "",
+    floatingY: "",
+    floatingXAlign: "",
+    floatingYAlign: "",
+    floatingDistanceTop: "",
+    floatingDistanceRight: "",
+    floatingDistanceBottom: "",
+    floatingDistanceLeft: "",
+    floatingOverlap: "overlap",
+    rowHeight: "",
+    rowHeightRule: "",
+    repeatHeader: false,
+    allowBreakAcrossPages: true,
+    hiddenRow: false,
+    columnWidth: "",
+    cellWidth: "",
+    cellVerticalAlign: "",
+    cellTextDirection: "",
+    cellNoWrap: false,
+    cellFitText: false,
+    cellHideMark: false,
+    marginTop: "",
+    marginRight: "",
+    marginBottom: "",
+    marginLeft: "",
+    borderStyle: "none",
+    borderWidth: "",
+    borderColor: "",
+    borderTop: false,
+    borderRight: false,
+    borderBottom: false,
+    borderLeft: false,
+    borderStart: false,
+    borderEnd: false,
+    borderTlBr: false,
+    borderTrBl: false,
+    shading: "",
+    altTitle: "",
+    altDescription: "",
+  });
+
+  createEffect(() => {
+    if (!props.isOpen) return;
+    setForm(
+      reconcile({
+        activeTab: props.initial.activeTab ?? "table",
+        tableWidth: props.initial.tableWidth,
+        tableWidthUnit: props.initial.tableWidthUnit,
+        tableAlign: props.initial.tableAlign,
+        tableIndentLeft: props.initial.tableIndentLeft,
+        tableWrapping: props.initial.tableWrapping,
+        floatingHorizontalAnchor: props.initial.floatingHorizontalAnchor,
+        floatingVerticalAnchor: props.initial.floatingVerticalAnchor,
+        floatingX: props.initial.floatingX,
+        floatingY: props.initial.floatingY,
+        floatingXAlign: props.initial.floatingXAlign,
+        floatingYAlign: props.initial.floatingYAlign,
+        floatingDistanceTop: props.initial.floatingDistanceTop,
+        floatingDistanceRight: props.initial.floatingDistanceRight,
+        floatingDistanceBottom: props.initial.floatingDistanceBottom,
+        floatingDistanceLeft: props.initial.floatingDistanceLeft,
+        floatingOverlap: props.initial.floatingOverlap,
+        rowHeight: props.initial.rowHeight,
+        rowHeightRule: props.initial.rowHeightRule,
+        repeatHeader: props.initial.repeatHeader,
+        allowBreakAcrossPages: props.initial.allowBreakAcrossPages,
+        hiddenRow: props.initial.hiddenRow,
+        columnWidth: props.initial.columnWidth,
+        cellWidth: props.initial.cellWidth,
+        cellVerticalAlign: props.initial.cellVerticalAlign,
+        cellTextDirection: props.initial.cellTextDirection,
+        cellNoWrap: props.initial.cellNoWrap,
+        cellFitText: props.initial.cellFitText,
+        cellHideMark: props.initial.cellHideMark,
+        marginTop: props.initial.marginTop,
+        marginRight: props.initial.marginRight,
+        marginBottom: props.initial.marginBottom,
+        marginLeft: props.initial.marginLeft,
+        borderStyle: props.initial.borderStyle,
+        borderWidth: props.initial.borderWidth,
+        borderColor: props.initial.borderColor,
+        borderTop: props.initial.borderTop,
+        borderRight: props.initial.borderRight,
+        borderBottom: props.initial.borderBottom,
+        borderLeft: props.initial.borderLeft,
+        borderStart: props.initial.borderStart,
+        borderEnd: props.initial.borderEnd,
+        borderTlBr: props.initial.borderTopLeftToBottomRight,
+        borderTrBl: props.initial.borderTopRightToBottomLeft,
+        shading: props.initial.shading,
+        altTitle: props.initial.altTitle,
+        altDescription: props.initial.altDescription,
+      }),
+    );
+  });
+
+  const handleApply = () => {
+    const border = resolveBorder(
+      form.borderStyle,
+      form.borderWidth,
+      form.borderColor,
+    );
+    props.onApply(
+      {
+        tableWidth: parseWidth(form.tableWidth, form.tableWidthUnit),
+        tableAlign: form.tableAlign || null,
+        tableIndentLeft: parseWidth(form.tableIndentLeft, "points"),
+        tableFloating:
+          form.tableWrapping === "around"
+            ? {
+                horizontalAnchor: form.floatingHorizontalAnchor,
+                verticalAnchor: form.floatingVerticalAnchor,
+                ...(form.floatingXAlign
+                  ? {
+                      xAlign: form.floatingXAlign as NonNullable<
+                        EditorTableFloatingLayout["xAlign"]
+                      >,
+                    }
+                  : { x: parseNumber(form.floatingX) ?? 0 }),
+                ...(form.floatingYAlign
+                  ? {
+                      yAlign: form.floatingYAlign as NonNullable<
+                        EditorTableFloatingLayout["yAlign"]
+                      >,
+                    }
+                  : { y: parseNumber(form.floatingY) ?? 0 }),
+                distanceTop: parseNumber(form.floatingDistanceTop) ?? 0,
+                distanceRight: parseNumber(form.floatingDistanceRight) ?? 0,
+                distanceBottom: parseNumber(form.floatingDistanceBottom) ?? 0,
+                distanceLeft: parseNumber(form.floatingDistanceLeft) ?? 0,
+              }
+            : null,
+        tableOverlap:
+          form.tableWrapping === "around" ? form.floatingOverlap : null,
+        rowHeight: parseWidth(form.rowHeight, "points"),
+        rowHeightRule: form.rowHeightRule || null,
+        repeatHeader: form.repeatHeader,
+        cantSplit: !form.allowBreakAcrossPages,
+        hiddenRow: form.hiddenRow,
+        columnWidth: parseWidth(form.columnWidth, "points"),
+        cellWidth: parseWidth(form.cellWidth, "points"),
+        cellVerticalAlign: form.cellVerticalAlign || null,
+        cellTextDirection: form.cellTextDirection || null,
+        cellNoWrap: form.cellNoWrap,
+        cellFitText: form.cellFitText,
+        cellHideMark: form.cellHideMark,
+        margins: {
+          top: parseNumber(form.marginTop),
+          right: parseNumber(form.marginRight),
+          bottom: parseNumber(form.marginBottom),
+          left: parseNumber(form.marginLeft),
+        },
+        borders: {
+          top: form.borderTop ? border : null,
+          right: form.borderRight ? border : null,
+          bottom: form.borderBottom ? border : null,
+          left: form.borderLeft ? border : null,
+          start: form.borderStart ? border : null,
+          end: form.borderEnd ? border : null,
+          topLeftToBottomRight: form.borderTlBr ? border : null,
+          topRightToBottomLeft: form.borderTrBl ? border : null,
+        },
+        shading: form.shading.trim() || null,
+        altTitle: form.altTitle.trim() || null,
+        altDescription: form.altDescription.trim() || null,
+      },
+      props.initial,
+    );
+    props.onClose();
+  };
 
   return (
     <Dialog
@@ -412,8 +1050,8 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
       }
     >
       <Tabs
-        value={activeTab()}
-        onChange={setActiveTab}
+        value={form.activeTab}
+        onChange={(tab) => setForm("activeTab", tab)}
         ariaLabel={t("table.propertiesTitle")}
         class="oasis-editor-table-properties-tabs"
         items={[
@@ -421,606 +1059,31 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
             id: "table",
             label: t("table.tabTable"),
             testId: "editor-table-properties-tab-table",
-            panel: (
-              <div class="oasis-editor-table-properties-panel">
-                <fieldset class="oasis-editor-font-dialog-fieldset">
-                  <legend>{t("table.sizeSection")}</legend>
-                  <div class="oasis-editor-dialog-row">
-                    {numericInput(
-                      t("table.preferredWidth"),
-                      tableWidth,
-                      setTableWidth,
-                      "editor-table-properties-table-width",
-                    )}
-                    <div class="oasis-editor-dialog-input-group">
-                      <label class="oasis-editor-dialog-label">
-                        {t("table.measureIn")}
-                      </label>
-                      <select
-                        class="oasis-editor-dialog-input"
-                        value={tableWidthUnit()}
-                        onChange={(e) =>
-                          setTableWidthUnit(
-                            e.currentTarget.value as TableWidthUnit,
-                          )
-                        }
-                        data-testid="editor-table-properties-table-width-unit"
-                      >
-                        <option value="points">{t("table.points")}</option>
-                        <option value="percent">{t("table.percent")}</option>
-                      </select>
-                    </div>
-                  </div>
-                </fieldset>
-                <fieldset class="oasis-editor-font-dialog-fieldset">
-                  <legend>{t("table.alignmentSection")}</legend>
-                  <div class="oasis-editor-dialog-style-row">
-                    {(["left", "center", "right"] as const).map((align) => (
-                      <label class="oasis-editor-dialog-style-toggle">
-                        <input
-                          type="radio"
-                          name="table-align"
-                          checked={tableAlign() === align}
-                          onChange={() => setTableAlign(align)}
-                          data-testid={`editor-table-properties-align-${align}`}
-                        />
-                        {t(
-                          `table.align${align[0]!.toUpperCase()}${align.slice(1)}` as any,
-                        )}
-                      </label>
-                    ))}
-                  </div>
-                  <div class="oasis-editor-dialog-row">
-                    {numericInput(
-                      t("table.indentFromLeft"),
-                      tableIndentLeft,
-                      setTableIndentLeft,
-                      "editor-table-properties-indent-left",
-                    )}
-                  </div>
-                </fieldset>
-                <fieldset class="oasis-editor-font-dialog-fieldset">
-                  <legend>{t("table.textWrappingSection")}</legend>
-                  <div class="oasis-editor-dialog-style-row">
-                    {checkbox(
-                      t("table.wrapNone"),
-                      () => tableWrapping() === "none",
-                      () => setTableWrapping("none"),
-                      "editor-table-properties-wrap-none",
-                    )}
-                    {checkbox(
-                      t("table.wrapAround"),
-                      () => tableWrapping() === "around",
-                      () => setTableWrapping("around"),
-                      "editor-table-properties-wrap-around",
-                    )}
-                  </div>
-                  <Show when={tableWrapping() === "around"}>
-                    <div class="oasis-editor-dialog-row">
-                      <label class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-                        <span class="oasis-editor-dialog-label">
-                          {t("table.horizontalAnchor")}
-                        </span>
-                        <select
-                          class="oasis-editor-dialog-input"
-                          value={floatingHorizontalAnchor()}
-                          onChange={(e) =>
-                            setFloatingHorizontalAnchor(
-                              e.currentTarget
-                                .value as TablePropertiesDialogInitialValues["floatingHorizontalAnchor"],
-                            )
-                          }
-                          data-testid="editor-table-properties-floating-h-anchor"
-                        >
-                          <option value="margin">
-                            {t("table.anchorMargin")}
-                          </option>
-                          <option value="page">{t("table.anchorPage")}</option>
-                          <option value="text">{t("table.anchorText")}</option>
-                        </select>
-                      </label>
-                      <label class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-                        <span class="oasis-editor-dialog-label">
-                          {t("table.verticalAnchor")}
-                        </span>
-                        <select
-                          class="oasis-editor-dialog-input"
-                          value={floatingVerticalAnchor()}
-                          onChange={(e) =>
-                            setFloatingVerticalAnchor(
-                              e.currentTarget
-                                .value as TablePropertiesDialogInitialValues["floatingVerticalAnchor"],
-                            )
-                          }
-                          data-testid="editor-table-properties-floating-v-anchor"
-                        >
-                          <option value="margin">
-                            {t("table.anchorMargin")}
-                          </option>
-                          <option value="page">{t("table.anchorPage")}</option>
-                          <option value="text">{t("table.anchorText")}</option>
-                        </select>
-                      </label>
-                    </div>
-                    <div class="oasis-editor-dialog-row">
-                      {numericInput(
-                        t("table.positionX"),
-                        floatingX,
-                        setFloatingX,
-                        "editor-table-properties-floating-x",
-                        Boolean(floatingXAlign()),
-                        true,
-                      )}
-                      {numericInput(
-                        t("table.positionY"),
-                        floatingY,
-                        setFloatingY,
-                        "editor-table-properties-floating-y",
-                        Boolean(floatingYAlign()),
-                        true,
-                      )}
-                      <label class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-                        <span class="oasis-editor-dialog-label">
-                          {t("table.horizontalAlignment")}
-                        </span>
-                        <select
-                          class="oasis-editor-dialog-input"
-                          value={floatingXAlign()}
-                          onChange={(e) =>
-                            setFloatingXAlign(
-                              e.currentTarget
-                                .value as TablePropertiesDialogInitialValues["floatingXAlign"],
-                            )
-                          }
-                          data-testid="editor-table-properties-floating-x-align"
-                        >
-                          <option value="">{t("table.explicitOffset")}</option>
-                          {(
-                            [
-                              "left",
-                              "center",
-                              "right",
-                              "inside",
-                              "outside",
-                            ] as const
-                          ).map((value) => (
-                            <option value={value}>{value}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-                        <span class="oasis-editor-dialog-label">
-                          {t("table.verticalAlignment")}
-                        </span>
-                        <select
-                          class="oasis-editor-dialog-input"
-                          value={floatingYAlign()}
-                          onChange={(e) =>
-                            setFloatingYAlign(
-                              e.currentTarget
-                                .value as TablePropertiesDialogInitialValues["floatingYAlign"],
-                            )
-                          }
-                          data-testid="editor-table-properties-floating-y-align"
-                        >
-                          <option value="">{t("table.explicitOffset")}</option>
-                          {(
-                            [
-                              "top",
-                              "center",
-                              "bottom",
-                              "inside",
-                              "outside",
-                            ] as const
-                          ).map((value) => (
-                            <option value={value}>{value}</option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                    <div class="oasis-editor-dialog-row">
-                      {numericInput(
-                        t("table.distanceTop"),
-                        floatingDistanceTop,
-                        setFloatingDistanceTop,
-                        "editor-table-properties-floating-distance-top",
-                      )}
-                      {numericInput(
-                        t("table.distanceRight"),
-                        floatingDistanceRight,
-                        setFloatingDistanceRight,
-                        "editor-table-properties-floating-distance-right",
-                      )}
-                      {numericInput(
-                        t("table.distanceBottom"),
-                        floatingDistanceBottom,
-                        setFloatingDistanceBottom,
-                        "editor-table-properties-floating-distance-bottom",
-                      )}
-                      {numericInput(
-                        t("table.distanceLeft"),
-                        floatingDistanceLeft,
-                        setFloatingDistanceLeft,
-                        "editor-table-properties-floating-distance-left",
-                      )}
-                    </div>
-                    {checkbox(
-                      t("table.allowOverlap"),
-                      () => floatingOverlap() === "overlap",
-                      (value) =>
-                        setFloatingOverlap(value ? "overlap" : "never"),
-                      "editor-table-properties-floating-overlap",
-                    )}
-                  </Show>
-                </fieldset>
-              </div>
-            ),
+            panel: <TableTabPanel form={form} set={setForm} />,
           },
           {
             id: "row",
             label: t("table.tabRow"),
             testId: "editor-table-properties-tab-row",
-            panel: (
-              <div class="oasis-editor-table-properties-panel">
-                <div class="oasis-editor-dialog-row">
-                  {numericInput(
-                    t("table.rowHeight"),
-                    rowHeight,
-                    setRowHeight,
-                    "editor-table-properties-row-height",
-                  )}
-                  <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-                    <label class="oasis-editor-dialog-label">
-                      {t("table.rowHeightRule")}
-                    </label>
-                    <select
-                      class="oasis-editor-dialog-input"
-                      value={rowHeightRule()}
-                      onChange={(e) =>
-                        setRowHeightRule(
-                          e.currentTarget
-                            .value as TablePropertiesDialogInitialValues["rowHeightRule"],
-                        )
-                      }
-                      data-testid="editor-table-properties-row-height-rule"
-                    >
-                      <option value="">{t("table.rowAuto")}</option>
-                      <option value="atLeast">{t("table.rowAtLeast")}</option>
-                      <option value="exact">{t("table.rowExactly")}</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="oasis-editor-dialog-style-row">
-                  {checkbox(
-                    t("table.repeatHeader"),
-                    repeatHeader,
-                    setRepeatHeader,
-                    "editor-table-properties-repeat-header",
-                  )}
-                  {checkbox(
-                    t("table.allowBreakAcrossPages"),
-                    allowBreakAcrossPages,
-                    setAllowBreakAcrossPages,
-                    "editor-table-properties-allow-break",
-                  )}
-                  {checkbox(
-                    t("table.hiddenRow"),
-                    hiddenRow,
-                    setHiddenRow,
-                    "editor-table-properties-hidden-row",
-                  )}
-                </div>
-              </div>
-            ),
+            panel: <RowTabPanel form={form} set={setForm} />,
           },
           {
             id: "column",
             label: t("table.tabColumn"),
             testId: "editor-table-properties-tab-column",
-            panel: (
-              <div class="oasis-editor-table-properties-panel">
-                <div class="oasis-editor-dialog-row">
-                  {numericInput(
-                    t("table.columnWidth"),
-                    columnWidth,
-                    setColumnWidth,
-                    "editor-table-properties-column-width",
-                  )}
-                </div>
-              </div>
-            ),
+            panel: <ColumnTabPanel form={form} set={setForm} />,
           },
           {
             id: "cell",
             label: t("table.tabCell"),
             testId: "editor-table-properties-tab-cell",
-            panel: (
-              <div class="oasis-editor-table-properties-panel">
-                <div class="oasis-editor-dialog-row">
-                  {numericInput(
-                    t("table.cellWidth"),
-                    cellWidth,
-                    setCellWidth,
-                    "editor-table-properties-cell-width",
-                  )}
-                  <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-                    <label class="oasis-editor-dialog-label">
-                      {t("table.verticalAlignment")}
-                    </label>
-                    <select
-                      class="oasis-editor-dialog-input"
-                      value={cellVerticalAlign()}
-                      onChange={(e) =>
-                        setCellVerticalAlign(
-                          e.currentTarget
-                            .value as TablePropertiesDialogInitialValues["cellVerticalAlign"],
-                        )
-                      }
-                      data-testid="editor-table-properties-cell-valign"
-                    >
-                      <option value="">{t("table.inherit")}</option>
-                      <option value="top">{t("table.valignTop")}</option>
-                      <option value="middle">{t("table.valignMiddle")}</option>
-                      <option value="bottom">{t("table.valignBottom")}</option>
-                    </select>
-                  </div>
-                  <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-                    <label class="oasis-editor-dialog-label">
-                      {t("table.textDirection")}
-                    </label>
-                    <select
-                      class="oasis-editor-dialog-input"
-                      value={cellTextDirection()}
-                      onChange={(e) =>
-                        setCellTextDirection(
-                          e.currentTarget
-                            .value as TablePropertiesDialogInitialValues["cellTextDirection"],
-                        )
-                      }
-                      data-testid="editor-table-properties-cell-direction"
-                    >
-                      <option value="">{t("table.inherit")}</option>
-                      <option value="lrTb">lrTb</option>
-                      <option value="tbRl">tbRl</option>
-                      <option value="btLr">btLr</option>
-                      <option value="lrTbV">lrTbV</option>
-                      <option value="tbRlV">tbRlV</option>
-                    </select>
-                  </div>
-                </div>
-                <fieldset class="oasis-editor-font-dialog-fieldset">
-                  <legend>{t("table.options")}</legend>
-                  <div class="oasis-editor-dialog-style-row">
-                    {checkbox(
-                      t("table.noWrap"),
-                      cellNoWrap,
-                      setCellNoWrap,
-                      "editor-table-properties-cell-nowrap",
-                    )}
-                    {checkbox(
-                      t("table.fitText"),
-                      cellFitText,
-                      setCellFitText,
-                      "editor-table-properties-cell-fit-text",
-                    )}
-                    {checkbox(
-                      t("table.hideMark"),
-                      cellHideMark,
-                      setCellHideMark,
-                      "editor-table-properties-cell-hide-mark",
-                    )}
-                  </div>
-                </fieldset>
-                <fieldset class="oasis-editor-font-dialog-fieldset">
-                  <legend>{t("table.cellMargins")}</legend>
-                  <div class="oasis-editor-dialog-row">
-                    {numericInput(
-                      t("paragraph.borderSideTop"),
-                      marginTop,
-                      setMarginTop,
-                      "editor-table-properties-margin-top",
-                    )}
-                    {numericInput(
-                      t("paragraph.borderSideRight"),
-                      marginRight,
-                      setMarginRight,
-                      "editor-table-properties-margin-right",
-                    )}
-                    {numericInput(
-                      t("paragraph.borderSideBottom"),
-                      marginBottom,
-                      setMarginBottom,
-                      "editor-table-properties-margin-bottom",
-                    )}
-                    {numericInput(
-                      t("paragraph.borderSideLeft"),
-                      marginLeft,
-                      setMarginLeft,
-                      "editor-table-properties-margin-left",
-                    )}
-                  </div>
-                </fieldset>
-                <fieldset class="oasis-editor-font-dialog-fieldset">
-                  <legend>{t("paragraph.bordersSection")}</legend>
-                  <div class="oasis-editor-dialog-row">
-                    <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-                      <label class="oasis-editor-dialog-label">
-                        {t("paragraph.borderStyleLabel")}
-                      </label>
-                      <select
-                        class="oasis-editor-dialog-input"
-                        value={borderStyle()}
-                        onChange={(e) => {
-                          const next = e.currentTarget
-                            .value as BorderStyleValue;
-                          setBorderStyle(next);
-                          if (next === "none") {
-                            setBorderTop(false);
-                            setBorderRight(false);
-                            setBorderBottom(false);
-                            setBorderLeft(false);
-                            setBorderStart(false);
-                            setBorderEnd(false);
-                            setBorderTlBr(false);
-                            setBorderTrBl(false);
-                          } else if (
-                            !borderTop() &&
-                            !borderRight() &&
-                            !borderBottom() &&
-                            !borderLeft()
-                          ) {
-                            setBorderTop(true);
-                            setBorderRight(true);
-                            setBorderBottom(true);
-                            setBorderLeft(true);
-                          }
-                        }}
-                        data-testid="editor-table-properties-border-style"
-                      >
-                        <option value="none">
-                          {t("paragraph.borderNone")}
-                        </option>
-                        <option value="solid">
-                          {t("paragraph.borderSolid")}
-                        </option>
-                        <option value="dashed">
-                          {t("paragraph.borderDashed")}
-                        </option>
-                        <option value="dotted">
-                          {t("paragraph.borderDotted")}
-                        </option>
-                      </select>
-                    </div>
-                    {numericInput(
-                      t("paragraph.borderWidthLabel"),
-                      borderWidth,
-                      setBorderWidth,
-                      "editor-table-properties-border-width",
-                      borderStyle() === "none",
-                    )}
-                    <div class="oasis-editor-dialog-input-group">
-                      <label class="oasis-editor-dialog-label">
-                        {t("paragraph.borderColorLabel")}
-                      </label>
-                      <input
-                        type="color"
-                        class="oasis-editor-dialog-input"
-                        value={borderColor() || DEFAULT_BORDER_COLOR}
-                        disabled={borderStyle() === "none"}
-                        onInput={(e) => setBorderColor(e.currentTarget.value)}
-                        data-testid="editor-table-properties-border-color"
-                      />
-                    </div>
-                    <div class="oasis-editor-dialog-input-group">
-                      <label class="oasis-editor-dialog-label">
-                        {t("paragraph.shadingLabel")}
-                      </label>
-                      <input
-                        type="color"
-                        class="oasis-editor-dialog-input"
-                        value={shading() || "#ffffff"}
-                        onInput={(e) => setShading(e.currentTarget.value)}
-                        data-testid="editor-table-properties-shading"
-                      />
-                    </div>
-                  </div>
-                  <div class="oasis-editor-dialog-style-row">
-                    {checkbox(
-                      t("paragraph.borderSideTop"),
-                      borderTop,
-                      setBorderTop,
-                      "editor-table-properties-border-top",
-                      borderStyle() === "none",
-                    )}
-                    {checkbox(
-                      t("paragraph.borderSideRight"),
-                      borderRight,
-                      setBorderRight,
-                      "editor-table-properties-border-right",
-                      borderStyle() === "none",
-                    )}
-                    {checkbox(
-                      t("paragraph.borderSideBottom"),
-                      borderBottom,
-                      setBorderBottom,
-                      "editor-table-properties-border-bottom",
-                      borderStyle() === "none",
-                    )}
-                    {checkbox(
-                      t("paragraph.borderSideLeft"),
-                      borderLeft,
-                      setBorderLeft,
-                      "editor-table-properties-border-left",
-                      borderStyle() === "none",
-                    )}
-                    {checkbox(
-                      t("table.borderStart"),
-                      borderStart,
-                      setBorderStart,
-                      "editor-table-properties-border-start",
-                      borderStyle() === "none",
-                    )}
-                    {checkbox(
-                      t("table.borderEnd"),
-                      borderEnd,
-                      setBorderEnd,
-                      "editor-table-properties-border-end",
-                      borderStyle() === "none",
-                    )}
-                    {checkbox(
-                      t("table.borderTlBr"),
-                      borderTlBr,
-                      setBorderTlBr,
-                      "editor-table-properties-border-tlbr",
-                      borderStyle() === "none",
-                    )}
-                    {checkbox(
-                      t("table.borderTrBl"),
-                      borderTrBl,
-                      setBorderTrBl,
-                      "editor-table-properties-border-trbl",
-                      borderStyle() === "none",
-                    )}
-                  </div>
-                  <div
-                    class="oasis-editor-table-properties-cell-preview"
-                    style={borderPreview()}
-                    data-testid="editor-table-properties-cell-preview"
-                  />
-                </fieldset>
-              </div>
-            ),
+            panel: <CellTabPanel form={form} set={setForm} />,
           },
           {
             id: "altText",
             label: t("table.tabAltText"),
             testId: "editor-table-properties-tab-alt-text",
-            panel: (
-              <div class="oasis-editor-table-properties-panel">
-                <div class="oasis-editor-dialog-input-group">
-                  <label class="oasis-editor-dialog-label">
-                    {t("table.altTitle")}
-                  </label>
-                  <input
-                    class="oasis-editor-dialog-input"
-                    value={altTitle()}
-                    onInput={(e) => setAltTitle(e.currentTarget.value)}
-                    data-testid="editor-table-properties-alt-title"
-                  />
-                </div>
-                <div class="oasis-editor-dialog-input-group">
-                  <label class="oasis-editor-dialog-label">
-                    {t("table.altDescription")}
-                  </label>
-                  <textarea
-                    class="oasis-editor-dialog-input oasis-editor-table-properties-textarea"
-                    value={altDescription()}
-                    onInput={(e) => setAltDescription(e.currentTarget.value)}
-                    data-testid="editor-table-properties-alt-description"
-                  />
-                </div>
-              </div>
-            ),
+            panel: <AltTextTabPanel form={form} set={setForm} />,
           },
         ]}
       />

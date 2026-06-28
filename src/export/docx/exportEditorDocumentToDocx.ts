@@ -137,6 +137,24 @@ function buildPartContext(
   };
 }
 
+// Writes a notes part (footnotes or endnotes) and its relationships file when
+// images or hyperlinks are present. Avoids duplicating the identical block for
+// footnotes and endnotes inside exportEditorDocumentToDocx.
+function writeNotePart(
+  zip: JSZip,
+  partName: string,
+  part: { xml: string; partContext: DocContext } | null,
+): void {
+  if (!part) return;
+  zip.file(`word/${partName}.xml`, part.xml);
+  if (part.partContext.images.length > 0 || part.partContext.hyperlinks.length > 0) {
+    zip.file(
+      `word/_rels/${partName}.xml.rels`,
+      buildPartRelationshipsXml(part.partContext.images, part.partContext.hyperlinks),
+    );
+  }
+}
+
 export async function exportEditorDocumentToDocx(
   document: EditorDocument,
 ): Promise<ArrayBuffer> {
@@ -164,21 +182,30 @@ export async function exportEditorDocumentToDocx(
   const endnoteIdMap = buildEndnoteIdMap(referencedEndnotes);
   const hasEndnotes = referencedEndnotes.length > 0;
 
-  const bodyContext = buildPartContext(
-    sections.flatMap((section) => section.blocks),
-    numberingContext,
-    buildState,
-    document,
-  );
-  bodyContext.footnoteIdMap = footnoteIdMap;
-  bodyContext.endnoteIdMap = endnoteIdMap;
   // Bookmarks: assign deterministic w:ids once and share the per-paragraph
   // event map across body and header/footer contexts (paragraph ids are unique).
   const bookmarkEvents = buildBookmarkExportPlan(document);
-  bodyContext.bookmarkEventsByParagraph = bookmarkEvents;
   // Comments: same id-assignment + per-paragraph event sharing as bookmarks.
   const commentPlan = buildCommentExportPlan(document);
-  bodyContext.commentEventsByParagraph = commentPlan?.eventsByParagraph;
+
+  // Stamp the shared cross-part references (footnote/endnote id maps, bookmark
+  // and comment event maps) onto a context produced by buildPartContext.
+  const annotateContext = (ctx: DocContext): DocContext => {
+    ctx.footnoteIdMap = footnoteIdMap;
+    ctx.endnoteIdMap = endnoteIdMap;
+    ctx.bookmarkEventsByParagraph = bookmarkEvents;
+    ctx.commentEventsByParagraph = commentPlan?.eventsByParagraph;
+    return ctx;
+  };
+
+  const bodyContext = annotateContext(
+    buildPartContext(
+      sections.flatMap((section) => section.blocks),
+      numberingContext,
+      buildState,
+      document,
+    ),
+  );
   const hasComments = commentPlan !== undefined;
   const parts: PartDefinition[] = [];
   const sectionReferences: SectionReferenceDefinition[] = sections.map(
@@ -200,18 +227,11 @@ export async function exportEditorDocumentToDocx(
       const relPrefix = kind === "header" ? "Header" : "Footer";
       const path = `${kind}${partIndex}.xml`;
       const relId = `rId${relPrefix}${partIndex}`;
-      const context = buildPartContext(
-        blocks,
-        numberingContext,
-        buildState,
-        document,
-      );
       // Footnote/endnote references in headers/footers must use the same
       // numeric ids as the body so they resolve to the correct note bodies.
-      context.footnoteIdMap = footnoteIdMap;
-      context.endnoteIdMap = endnoteIdMap;
-      context.bookmarkEventsByParagraph = bookmarkEvents;
-      context.commentEventsByParagraph = commentPlan?.eventsByParagraph;
+      const context = annotateContext(
+        buildPartContext(blocks, numberingContext, buildState, document),
+      );
       parts.push({
         kind,
         type,
@@ -399,37 +419,8 @@ export async function exportEditorDocumentToDocx(
     }
   }
 
-  if (footnotesPart) {
-    zip.file("word/footnotes.xml", footnotesPart.xml);
-    if (
-      footnotesPart.partContext.images.length > 0 ||
-      footnotesPart.partContext.hyperlinks.length > 0
-    ) {
-      zip.file(
-        "word/_rels/footnotes.xml.rels",
-        buildPartRelationshipsXml(
-          footnotesPart.partContext.images,
-          footnotesPart.partContext.hyperlinks,
-        ),
-      );
-    }
-  }
-
-  if (endnotesPart) {
-    zip.file("word/endnotes.xml", endnotesPart.xml);
-    if (
-      endnotesPart.partContext.images.length > 0 ||
-      endnotesPart.partContext.hyperlinks.length > 0
-    ) {
-      zip.file(
-        "word/_rels/endnotes.xml.rels",
-        buildPartRelationshipsXml(
-          endnotesPart.partContext.images,
-          endnotesPart.partContext.hyperlinks,
-        ),
-      );
-    }
-  }
+  writeNotePart(zip, "footnotes", footnotesPart);
+  writeNotePart(zip, "endnotes", endnotesPart);
 
   if (commentPlan) {
     zip.file("word/comments.xml", buildCommentsPartXml(commentPlan));

@@ -564,9 +564,10 @@ export function buildCanvasTableLayout(options: {
       // Cells carry explicit row heights in real documents; fall back to no-wrap
       // when the height is auto so the flow axis is driven by content length.
       const explicitRowHeightPx = parseDimensionToPx(effectiveRow.height);
+      const hasExplicitRowHeight = explicitRowHeightPx !== null && explicitRowHeightPx > 0;
       const wrapWidth =
         isRotated || cell.style?.noWrap
-          ? isRotated && explicitRowHeightPx !== null && explicitRowHeightPx > 0
+          ? isRotated && hasExplicitRowHeight
             ? Math.max(
                 MIN_TABLE_CELL_CONTENT_WIDTH_PX,
                 explicitRowHeightPx -
@@ -632,8 +633,6 @@ export function buildCanvasTableLayout(options: {
             spacingBefore,
             spacingAfter,
           });
-          const hasExplicitRowHeight =
-            explicitRowHeightPx !== null && explicitRowHeightPx > 0;
           const paragraphStyleSize =
             paragraph.runs[0]?.styles?.fontSize ?? DEFAULT_FONT_SIZE_PX;
           contentNaturalHeightPx = Math.max(
@@ -714,8 +713,6 @@ export function buildCanvasTableLayout(options: {
             projected.lines.length > 0
               ? Math.max(...projected.lines.map((line) => line.height))
               : paragraphHeight;
-          const hasExplicitRowHeight =
-            explicitRowHeightPx !== null && explicitRowHeightPx > 0;
           const flowLength = projected.lines.length
             ? Math.max(
                 ...projected.lines.map((line) => {

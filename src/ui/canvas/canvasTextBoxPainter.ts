@@ -11,6 +11,7 @@ import {
   resolveFloatingObjectRect,
 } from "@/layoutProjection/floatingObjects.js";
 import { buildPresetPath } from "./presetGeometry.js";
+import { DEG_TO_RAD } from "./canvasBorders.js";
 import {
   getTextBoxPadding as getPadding,
   resolveTextBoxRenderHeight,
@@ -210,7 +211,7 @@ export function paintTextBox(
   if (rotation) {
     ctx.save();
     ctx.translate(x + width / 2, y + height / 2);
-    ctx.rotate((rotation * Math.PI) / 180);
+    ctx.rotate(rotation * DEG_TO_RAD);
     ctx.translate(-(x + width / 2), -(y + height / 2));
   }
 

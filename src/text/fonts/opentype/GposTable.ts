@@ -4,6 +4,8 @@ import {
   parseClassDef,
   parseCoverage,
   parseLayoutTableHeader,
+  parseLookupList,
+  readU16OffsetArray,
   type ClassLookup,
 } from "@/text/fonts/opentype/otLayoutCommon.js";
 
@@ -145,10 +147,7 @@ function parsePairPos(
 
   if (format === 1) {
     const pairSetCount = reader.u16();
-    const pairSetOffsets = new Array<number>(pairSetCount);
-    for (let i = 0; i < pairSetCount; i += 1) {
-      pairSetOffsets[i] = offset + reader.u16();
-    }
+    const pairSetOffsets = readU16OffsetArray(reader, pairSetCount, offset);
     const pairSets: Map<number, PairValue>[] = pairSetOffsets.map(
       (setOffset) => {
         reader.seek(setOffset);
@@ -261,37 +260,6 @@ function parseSubtable(
   }
 }
 
-function parseLookupList(
-  reader: BinaryReader,
-  lookupListOffset: number,
-): GposLookup[] {
-  reader.seek(lookupListOffset);
-  const lookupCount = reader.u16();
-  const lookupOffsets = new Array<number>(lookupCount);
-  for (let i = 0; i < lookupCount; i += 1) {
-    lookupOffsets[i] = lookupListOffset + reader.u16();
-  }
-  return lookupOffsets.map((lookupOffset) => {
-    reader.seek(lookupOffset);
-    const lookupType = reader.u16();
-    reader.skip(2); // lookupFlag (glyph skipping ignored — no marks in scope)
-    const subTableCount = reader.u16();
-    const subtableOffsets = new Array<number>(subTableCount);
-    for (let i = 0; i < subTableCount; i += 1) {
-      subtableOffsets[i] = lookupOffset + reader.u16();
-    }
-    const subtables: PosSubtable[] = [];
-    for (const subtableOffset of subtableOffsets) {
-      try {
-        const subtable = parseSubtable(reader, subtableOffset, lookupType);
-        if (subtable) subtables.push(subtable);
-      } catch {
-        // Skip malformed subtable; the feature degrades gracefully.
-      }
-    }
-    return { lookupType, subtables };
-  });
-}
 
 export class GposTable {
   private constructor(
@@ -305,7 +273,7 @@ export class GposTable {
       const reader = new BinaryReader(bytes);
       const { featureToLookups, lookupListOffset } =
         parseLayoutTableHeader(reader);
-      const lookups = parseLookupList(reader, lookupListOffset);
+      const lookups = parseLookupList(reader, lookupListOffset, parseSubtable);
       return new GposTable(lookups, featureToLookups);
     } catch {
       return null;

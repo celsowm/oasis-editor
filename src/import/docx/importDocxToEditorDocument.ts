@@ -446,41 +446,15 @@ export async function importDocxToEditorDocument(
   const hasAssets = Object.keys(assets.assets).length > 0;
 
   const finalize = (doc: EditorDocument): EditorDocument => {
-    if (docSettings.defaultTabStop !== undefined) {
-      doc.settings = {
-        ...(doc.settings ?? {}),
-        defaultTabStop: docSettings.defaultTabStop,
-      };
-    }
-    if (docSettings.allowSpaceOfSameStyleInTable) {
-      doc.settings = {
-        ...(doc.settings ?? {}),
-        allowSpaceOfSameStyleInTable: true,
-      };
-    }
-    if (docSettings.autoHyphenation) {
-      doc.settings = {
-        ...(doc.settings ?? {}),
-        autoHyphenation: true,
-      };
-    }
-    if (docSettings.doNotHyphenateCaps) {
-      doc.settings = {
-        ...(doc.settings ?? {}),
-        doNotHyphenateCaps: true,
-      };
-    }
-    if (docSettings.consecutiveHyphenLimit !== undefined) {
-      doc.settings = {
-        ...(doc.settings ?? {}),
-        consecutiveHyphenLimit: docSettings.consecutiveHyphenLimit,
-      };
-    }
-    if (docSettings.hyphenationZone !== undefined) {
-      doc.settings = {
-        ...(doc.settings ?? {}),
-        hyphenationZone: docSettings.hyphenationZone,
-      };
+    const settingsPatch: NonNullable<EditorDocument["settings"]> = {};
+    if (docSettings.defaultTabStop !== undefined) settingsPatch.defaultTabStop = docSettings.defaultTabStop;
+    if (docSettings.allowSpaceOfSameStyleInTable) settingsPatch.allowSpaceOfSameStyleInTable = true;
+    if (docSettings.autoHyphenation) settingsPatch.autoHyphenation = true;
+    if (docSettings.doNotHyphenateCaps) settingsPatch.doNotHyphenateCaps = true;
+    if (docSettings.consecutiveHyphenLimit !== undefined) settingsPatch.consecutiveHyphenLimit = docSettings.consecutiveHyphenLimit;
+    if (docSettings.hyphenationZone !== undefined) settingsPatch.hyphenationZone = docSettings.hyphenationZone;
+    if (Object.keys(settingsPatch).length > 0) {
+      doc.settings = { ...(doc.settings ?? {}), ...settingsPatch };
     }
     if (fontTable) {
       doc.fontTable = fontTable;
@@ -589,6 +563,24 @@ function buildEditorComments(
   return order.length > 0 ? { items, order } : undefined;
 }
 
+// Calls `visit` for every top-level block in every zone of every section.
+// Used by the footnote/endnote remap passes which each need to reach every
+// block without duplicating the zone-iteration boilerplate.
+function walkSectionBlocks(
+  sections: EditorSection[],
+  visit: (block: EditorBlockNode) => void,
+): void {
+  for (const section of sections) {
+    section.blocks.forEach(visit);
+    section.header?.forEach(visit);
+    section.firstPageHeader?.forEach(visit);
+    section.evenPageHeader?.forEach(visit);
+    section.footer?.forEach(visit);
+    section.firstPageFooter?.forEach(visit);
+    section.evenPageFooter?.forEach(visit);
+  }
+}
+
 /**
  * Walk every paragraph in the sections and convert the transient
  * `__importedFootnoteRef` markers (left by `paragraphs.ts`) into proper
@@ -641,16 +633,7 @@ function remapImportedFootnoteRefsInSections(
       }
     }
   };
-
-  for (const section of sections) {
-    section.blocks.forEach(remapBlock);
-    section.header?.forEach(remapBlock);
-    section.firstPageHeader?.forEach(remapBlock);
-    section.evenPageHeader?.forEach(remapBlock);
-    section.footer?.forEach(remapBlock);
-    section.firstPageFooter?.forEach(remapBlock);
-    section.evenPageFooter?.forEach(remapBlock);
-  }
+  walkSectionBlocks(sections, remapBlock);
 }
 
 /**
@@ -701,14 +684,5 @@ function remapImportedEndnoteRefsInSections(
       }
     }
   };
-
-  for (const section of sections) {
-    section.blocks.forEach(remapBlock);
-    section.header?.forEach(remapBlock);
-    section.firstPageHeader?.forEach(remapBlock);
-    section.evenPageHeader?.forEach(remapBlock);
-    section.footer?.forEach(remapBlock);
-    section.firstPageFooter?.forEach(remapBlock);
-    section.evenPageFooter?.forEach(remapBlock);
-  }
+  walkSectionBlocks(sections, remapBlock);
 }

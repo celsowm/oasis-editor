@@ -19,6 +19,22 @@ export type Coverage = (glyphId: number) => number;
 /** Returns the class of a glyph id (0 when unlisted). */
 export type ClassLookup = (glyphId: number) => number;
 
+export function readU16Array(reader: BinaryReader, count: number): number[] {
+  const array = new Array<number>(count);
+  for (let i = 0; i < count; i += 1) array[i] = reader.u16();
+  return array;
+}
+
+export function readU16OffsetArray(
+  reader: BinaryReader,
+  count: number,
+  baseOffset: number,
+): number[] {
+  const array = new Array<number>(count);
+  for (let i = 0; i < count; i += 1) array[i] = baseOffset + reader.u16();
+  return array;
+}
+
 export function parseCoverage(reader: BinaryReader, offset: number): Coverage {
   reader.seek(offset);
   const format = reader.u16();
@@ -61,10 +77,7 @@ export function parseClassDef(
   if (format === 1) {
     const startGlyph = reader.u16();
     const glyphCount = reader.u16();
-    const classes = new Array<number>(glyphCount);
-    for (let i = 0; i < glyphCount; i += 1) {
-      classes[i] = reader.u16();
-    }
+    const classes = readU16Array(reader, glyphCount);
     return (glyphId) => {
       const index = glyphId - startGlyph;
       return index >= 0 && index < glyphCount ? classes[index]! : 0;
@@ -113,10 +126,7 @@ function parseFeatureList(
     reader.seek(offset);
     reader.skip(2); // featureParamsOffset
     const lookupIndexCount = reader.u16();
-    const lookupIndices = new Array<number>(lookupIndexCount);
-    for (let i = 0; i < lookupIndexCount; i += 1) {
-      lookupIndices[i] = reader.u16();
-    }
+    const lookupIndices = readU16Array(reader, lookupIndexCount);
     return { tag, lookupIndices };
   });
 }
@@ -207,6 +217,36 @@ export function parseLayoutTableHeader(
   }
 
   return { featureToLookups, lookupListOffset };
+}
+
+export function parseLookupList<TSubtable>(
+  reader: BinaryReader,
+  lookupListOffset: number,
+  parseSubtable: (
+    reader: BinaryReader,
+    offset: number,
+    lookupType: number,
+  ) => TSubtable | null,
+): Array<{ lookupType: number; subtables: TSubtable[] }> {
+  reader.seek(lookupListOffset);
+  const lookupCount = reader.u16();
+  const lookupOffsets = readU16OffsetArray(reader, lookupCount, lookupListOffset);
+  return lookupOffsets.map((lookupOffset) => {
+    reader.seek(lookupOffset);
+    const lookupType = reader.u16();
+    reader.skip(2); // lookupFlag (glyph skipping ignored — no marks in scope)
+    const subtableOffsets = readU16OffsetArray(reader, reader.u16(), lookupOffset);
+    const subtables: TSubtable[] = [];
+    for (const subtableOffset of subtableOffsets) {
+      try {
+        const subtable = parseSubtable(reader, subtableOffset, lookupType);
+        if (subtable) subtables.push(subtable);
+      } catch {
+        // Skip malformed subtable; the feature degrades gracefully.
+      }
+    }
+    return { lookupType, subtables };
+  });
 }
 
 /** Ordered (ascending) unique lookup indices referenced by the given tags. */

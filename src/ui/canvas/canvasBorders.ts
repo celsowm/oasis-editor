@@ -1,3 +1,5 @@
+export const DEG_TO_RAD = Math.PI / 180;
+
 /** Canvas `setLineDash` pattern for dashed borders (dash length, gap length). */
 export const CANVAS_DASH_DASHED: [number, number] = [5, 3];
 /** Canvas `setLineDash` pattern for dotted borders (dash length, gap length). */
