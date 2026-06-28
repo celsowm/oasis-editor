@@ -18,7 +18,8 @@ state of the code at audit time and may drift as the code evolves.
 
 ### 1. Duplicated magic constant `14.6667` (11pt default font size)
 
-**Severity:** high
+**Severity:** high — **Status: ✅ resolved.** Centralized as
+`DEFAULT_FONT_SIZE_PX` in `src/core/units.ts`; layer modules re-export it.
 
 Redefined in 10+ files, several as a local `const DEFAULT_FONT_SIZE`:
 
@@ -38,7 +39,10 @@ Redefined in 10+ files, several as a local `const DEFAULT_FONT_SIZE`:
 
 ### 2. Repeated OOXML unit conversions (EMU `12700`, percent `100000`, half-points)
 
-**Severity:** high
+**Severity:** high — **Status: ✅ resolved.** EMU/twips factors plus
+`OOXML_PERCENT_DENOMINATOR` and `OOXML_ROTATION_UNITS` now live solely in
+`src/core/units.ts`; `import/docx/units.ts`, `import/docx/runs/units.ts` and
+`export/docx/text/constants.ts` re-export them.
 
 Conversion literals are scattered across both import and export paths.
 
@@ -60,7 +64,10 @@ const stA = Math.round(reflection.startAlpha * 100000);
 
 ### 3. Duplicated hex color parsing / normalization (4+ modules)
 
-**Severity:** high
+**Severity:** high — **Status: ✅ resolved.** `src/core/color.ts` is now the
+single source (`stripHashPrefix`, `normalizeHex6`, `parseHexColorToRgb255`,
+`rgb255ToHex`); PDF/DOCX export and the DOCX import path consume it instead of
+re-deriving the `/^[0-9a-fA-F]{6}$/` regex.
 
 `.trim().replace(/^#/, "")` plus the `/^[0-9a-fA-F]{6}$/` regex repeated in:
 
@@ -103,17 +110,17 @@ const stA = Math.round(reflection.startAlpha * 100000);
 
 ### 6. Inline text-box geometry duplicated between painting and hit-test/snapshot
 
-**Severity:** high (correctness risk)
+**Severity:** high (correctness risk) — **Status: ✅ resolved.** Added
+`resolveInlineObjectRect(...)` in `src/ui/canvas/canvasInlineReaders.ts`,
+the single source for the bottom-aligned inline rect formula. The painter
+(`canvasParagraphPainter.ts`) and the snapshot readers
+(`collectInlineImagesFromLines` / `collectInlineTextBoxesFromLines`) now both
+call it, so click geometry can no longer drift from rendered geometry. Slot
+resolution stays at each call site.
 
-A `// Geometry mirrors collectInlineTextBoxesFromLines ...` comment at
-`src/ui/canvas/canvasParagraphPainter.ts:443` confirms duplication with
-`src/ui/canvas/CanvasLayoutSnapshot.ts:391,593`.
-
-**Fix:** A single
-`resolveInlineObjectPaintRect(line, slot, object, origin, state, pageIndex)`
-used by both painter and snapshot readers. This is the highest-risk finding:
-the two copies can drift, causing click geometry to diverge from rendered
-geometry.
+Original finding: a `// Geometry mirrors collectInlineTextBoxesFromLines ...`
+comment at `src/ui/canvas/canvasParagraphPainter.ts:443` confirmed duplication
+with `src/ui/canvas/CanvasLayoutSnapshot.ts:391,593`.
 
 ### 7. Near-identical single-field dialog components
 
@@ -240,13 +247,15 @@ rule table.
 ## Suggested prioritization
 
 ```
-Do first (low risk, high payoff)
+Done
   - #1 documentDefaults    - #2 OOXML units
-  - #3 hex color           - #11 named constants
+  - #3 hex color           - #6 inline geometry (click != render risk)
+
+Do next (low risk, high payoff)
+  - #11 named constants
 
 Medium term (refactor with tests)
   - #4 table maps          - #5 table commands
-  - #6 inline geometry (click != render bug risk)
   - #7 dialogs             - #8 image commands
 
 Larger (architectural)

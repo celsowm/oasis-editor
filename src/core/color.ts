@@ -11,6 +11,19 @@ export function stripHashPrefix(color: string): string {
 }
 
 /**
+ * Validates a `#RRGGBB` (or `RRGGBB`) hex color and returns its uppercase
+ * 6-digit body without the leading `#`. Returns `null` when the input is not a
+ * valid 6-digit hex color.
+ */
+export function normalizeHex6(color: string | null | undefined): string | null {
+  if (!color) {
+    return null;
+  }
+  const body = stripHashPrefix(color);
+  return HEX6_PATTERN.test(body) ? body.toUpperCase() : null;
+}
+
+/**
  * Parses a `#RRGGBB` (or `RRGGBB`) hex color into 0–255 integer RGB channels.
  * Returns `null` when the input is not a valid 6-digit hex color.
  */

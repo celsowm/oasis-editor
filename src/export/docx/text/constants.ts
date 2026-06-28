@@ -1,4 +1,9 @@
-export { EMU_PER_PX, EMU_PER_PT } from "@/core/units.js";
+export {
+  EMU_PER_PX,
+  EMU_PER_PT,
+  OOXML_PERCENT_DENOMINATOR,
+  OOXML_ROTATION_UNITS,
+} from "@/core/units.js";
 
 export const DOCX_HIGHLIGHT_COLORS: Record<string, [number, number, number]> = {
   black: [0, 0, 0],
@@ -29,6 +34,3 @@ export const DOCX_HIGHLIGHT_HEX_ALIASES: Record<string, string> = {
   "000000": "black",
   ffffff: "white",
 };
-
-export const OOXML_PERCENT_DENOMINATOR = 100000;
-export const OOXML_ROTATION_UNITS = 60000;

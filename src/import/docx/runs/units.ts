@@ -3,10 +3,18 @@ import {
   EMU_PER_PT,
   PX_PER_INCH,
   PX_PER_POINT,
+  OOXML_PERCENT_DENOMINATOR,
+  OOXML_ROTATION_UNITS,
 } from "@/core/units.js";
-export { EMU_PER_PX, EMU_PER_PT, PX_PER_INCH, PX_PER_POINT };
-export const OOXML_PERCENT_DENOMINATOR = 100000;
-export const OOXML_ROTATION_UNITS = 60000;
+import { normalizeHex6 } from "@/core/color.js";
+export {
+  EMU_PER_PX,
+  EMU_PER_PT,
+  PX_PER_INCH,
+  PX_PER_POINT,
+  OOXML_PERCENT_DENOMINATOR,
+  OOXML_ROTATION_UNITS,
+};
 export const VML_FRACTION_DENOMINATOR = 65536;
 
 export function emuToPx(value: string | null | undefined): number | undefined {
@@ -60,9 +68,6 @@ export function parseCssLengthToPx(
 export function normalizeHexColor(
   value: string | null | undefined,
 ): string | undefined {
-  const trimmed = value?.trim();
-  if (!trimmed || !/^[0-9a-fA-F]{6}$/.test(trimmed)) {
-    return undefined;
-  }
-  return `#${trimmed.toUpperCase()}`;
+  const body = normalizeHex6(value);
+  return body ? `#${body}` : undefined;
 }

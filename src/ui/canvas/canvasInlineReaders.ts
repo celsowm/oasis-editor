@@ -8,6 +8,36 @@ import type {
 // Readers that recover inline image / text-box geometry from the painted canvas
 // lines. Extracted from CanvasLayoutSnapshot.ts (S2).
 
+/**
+ * Single source of truth for the on-canvas rectangle of an inline object
+ * (image or text box) that occupies a line slot. The painter (rendering) and
+ * the snapshot readers (hit-testing / selection overlays) MUST agree on this
+ * geometry; computing it here prevents the two paths from drifting (audit #6).
+ *
+ * The object is bottom-aligned within the line: its top sits at the line
+ * baseline minus the object height, mirroring how Word flows inline drawings.
+ */
+export function resolveInlineObjectRect(params: {
+  originLeft: number;
+  originTop: number;
+  lineTop: number;
+  lineHeight: number;
+  slotLeft: number;
+  objectWidth: number;
+  objectHeight: number;
+}): { left: number; top: number; width: number; height: number } {
+  return {
+    left: params.originLeft + params.slotLeft,
+    top:
+      params.originTop +
+      params.lineTop +
+      params.lineHeight -
+      params.objectHeight,
+    width: params.objectWidth,
+    height: params.objectHeight,
+  };
+}
+
 export function collectInlineImagesFromLines(options: {
   lines: Array<{
     top: number;
@@ -51,6 +81,15 @@ export function collectInlineImagesFromLines(options: {
       if (!slot) {
         continue;
       }
+      const rect = resolveInlineObjectRect({
+        originLeft: options.lineLeftOffset,
+        originTop: options.lineTopOffset,
+        lineTop: line.top,
+        lineHeight: line.height,
+        slotLeft: slot.left,
+        objectWidth: fragment.image.width,
+        objectHeight: fragment.image.height,
+      });
       inlineImages.push({
         paragraphId: options.paragraphId,
         paragraphIndex: options.paragraphIndex,
@@ -59,14 +98,10 @@ export function collectInlineImagesFromLines(options: {
         pageIndex: options.pageIndex,
         startOffset: imageStartOffset,
         endOffset: imageEndOffset,
-        left: options.lineLeftOffset + slot.left,
-        top:
-          options.lineTopOffset +
-          line.top +
-          line.height -
-          fragment.image.height,
-        width: fragment.image.width,
-        height: fragment.image.height,
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
         rotation: fragment.image.rotation,
       });
     }
@@ -121,6 +156,15 @@ export function collectInlineTextBoxesFromLines(options: {
       const height = options.resolveHeight(
         fragment.textBox as unknown as EditorTextBoxData,
       );
+      const rect = resolveInlineObjectRect({
+        originLeft: options.lineLeftOffset,
+        originTop: options.lineTopOffset,
+        lineTop: line.top,
+        lineHeight: line.height,
+        slotLeft: slot.left,
+        objectWidth: fragment.textBox.width,
+        objectHeight: height,
+      });
       inlineTextBoxes.push({
         paragraphId: options.paragraphId,
         paragraphIndex: options.paragraphIndex,
@@ -129,10 +173,10 @@ export function collectInlineTextBoxesFromLines(options: {
         pageIndex: options.pageIndex,
         startOffset,
         endOffset,
-        left: options.lineLeftOffset + slot.left,
-        top: options.lineTopOffset + line.top + line.height - height,
-        width: fragment.textBox.width,
-        height,
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
         rotation: fragment.textBox.rotation,
       });
     }

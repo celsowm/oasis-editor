@@ -34,6 +34,15 @@ export const TWIPS_PER_INCH = 1440;
 export const TWIPS_PER_POINT = 20;
 
 /**
+ * OOXML thousandths-of-a-percent denominator (`100000` == 100%). Used by both
+ * the DOCX import and export paths to convert alpha/position percentages.
+ */
+export const OOXML_PERCENT_DENOMINATOR = 100000;
+
+/** OOXML angle units (60000ths of a degree). */
+export const OOXML_ROTATION_UNITS = 60000;
+
+/**
  * Default document font size in CSS pixels: 11pt (the Calibri default used by
  * Word) expressed as `11 * 96 / 72 ≈ 14.6667`. Single source of truth for the
  * value that was previously redefined across the core, layout, canvas, import,

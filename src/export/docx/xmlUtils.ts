@@ -1,4 +1,5 @@
 import { TWIPS_PER_INCH, PX_PER_INCH, TWIPS_PER_POINT } from "@/core/units.js";
+import { normalizeHex6 } from "@/core/color.js";
 
 export const WORD_NS =
   "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -50,8 +51,5 @@ export function normalizeDocxColor(
   color: string | undefined,
   fallback = "000000",
 ): string {
-  const normalized = color?.trim().replace(/^#/, "");
-  return normalized && /^[0-9a-fA-F]{6}$/.test(normalized)
-    ? normalized.toUpperCase()
-    : fallback;
+  return normalizeHex6(color) ?? fallback;
 }

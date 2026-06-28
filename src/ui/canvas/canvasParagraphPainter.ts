@@ -20,6 +20,7 @@ import { getCachedCanvasImage } from "./canvasImageCache.js";
 import { resolveListPrefix } from "./listNumbering.js";
 import { paintTextBox } from "./canvasTextBoxPainter.js";
 import { resolveTextBoxRenderHeight } from "./textBoxRenderHeight.js";
+import { resolveInlineObjectRect } from "./canvasInlineReaders.js";
 import type { CanvasBlockPainters } from "./canvasBlockPainters.js";
 import {
   isDoubleUnderlineStyle,
@@ -429,33 +430,42 @@ export function drawParagraph(
           const src = resolveImageSrc(state.document, fragment.image.src);
           const img = getCachedCanvasImage(src, onUpdate);
           if (img.complete && img.naturalWidth > 0) {
-            drawImageFragment(
-              ctx,
-              img,
-              fragment.image,
-              originX + slot.left,
-              originY + line.top + line.height - fragment.image.height,
-            );
+            // Shared geometry: keeps paint aligned with hit-testing (audit #6).
+            const rect = resolveInlineObjectRect({
+              originLeft: originX,
+              originTop: originY,
+              lineTop: line.top,
+              lineHeight: line.height,
+              slotLeft: slot.left,
+              objectWidth: fragment.image.width,
+              objectHeight: fragment.image.height,
+            });
+            drawImageFragment(ctx, img, fragment.image, rect.left, rect.top);
           }
         }
       } else if (fragment.textBox && !fragment.textBox.floating) {
         const slot = slotByOffset.get(fragment.startOffset);
         if (slot) {
-          // Geometry mirrors collectInlineTextBoxesFromLines in
-          // CanvasLayoutSnapshot.ts so paint and hit-testing stay aligned.
           const textBox = fragment.textBox;
           const height = resolveTextBoxRenderHeight(textBox, state, pageIndex);
-          const x = originX + slot.left;
-          const y = originY + line.top + line.height - height;
-          const width = textBox.width;
+          // Shared geometry: keeps paint aligned with hit-testing (audit #6).
+          const rect = resolveInlineObjectRect({
+            originLeft: originX,
+            originTop: originY,
+            lineTop: line.top,
+            lineHeight: line.height,
+            slotLeft: slot.left,
+            objectWidth: textBox.width,
+            objectHeight: height,
+          });
           paintTextBox(
             ctx,
             textBox,
             state,
-            x,
-            y,
-            width,
-            height,
+            rect.left,
+            rect.top,
+            rect.width,
+            rect.height,
             pageIndex,
             onUpdate,
             painters,
