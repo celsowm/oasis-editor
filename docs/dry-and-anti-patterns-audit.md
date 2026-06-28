@@ -81,19 +81,17 @@ re-deriving the `/^[0-9a-fA-F]{6}$/` regex.
 
 ### 4. Duplicated table metadata maps between import and export
 
-**Severity:** med
+**Severity:** med — **Status: ✅ resolved.**
 
-- Conditional flags: `src/import/docx/tableProperties.ts:87` vs
-  `src/export/docx/tableXml.ts:51`
-- `tblLook` bitmask: `src/import/docx/tableConditionalFormatting.ts:30` vs
-  `src/import/docx/tableProperties.ts:342`
-- Table margin edges: `src/import/docx/tableProperties.ts:198` vs
-  `src/export/docx/tableXml.ts:209`
-- Table border edges: `src/export/docx/tableXml.ts:150,478`,
-  `src/export/docx/stylesXml.ts:110`
+New `src/core/docxTableMaps.ts` exports:
+- `TABLE_CONDITIONAL_FLAG_ATTRIBUTES` — the 12-entry `[xmlAttr, modelKey][]`
+  map consumed by `import/docx/tableProperties.ts` (parse) and
+  `export/docx/tableXml.ts` (serialize)
+- `TABLE_BORDER_EDGE_KEYS` — the 6-entry `[xmlTag, modelKey][]` map consumed by
+  `export/docx/tableXml.ts` and `export/docx/stylesXml.ts`
 
-**Fix:** Shared constants (`TABLE_*_EDGES`,
-`TABLE_CONDITIONAL_FLAG_ATTRIBUTES`) iterated by both import and export.
+The `tblLook` bitmask and cell-margin edge iteration were different enough (bit
+flags vs XML child lookup) to not warrant further sharing at this time.
 
 ### 5. Copy-pasted table commands (horizontal merge/split ≈ vertical)
 
@@ -144,14 +142,13 @@ shared `DialogFooter`/`DialogActions` component (also duplicated in
 
 ### 8. Image commands repeat "find → map paragraphs → clone runs → preserve selection"
 
-**Severity:** high
+**Severity:** high — **Status: ✅ resolved.**
 
-`src/core/commands/image.ts:98,151,341` repeat the same selection-preserving
-paragraph remap pattern.
-
-**Fix:** Generalize the existing `patchSelectedImageFloating` into
-`patchSelectedImage(state, imageUpdater)` and reuse for resize, rotate, alt,
-floating, and polygon.
+New `patchSelectedImage(state, updater)` holds the common scaffolding (get
+selected run, clone paragraphs, patch matched run, preserve selection).
+`resizeSelectedImage`, `rotateSelectedImage`, `setSelectedImageAlt` are now
+one-liners; `patchSelectedImageFloating` delegates to it too. `setImageWrapPolygon`
+matches by run id rather than selection so stays separate.
 
 ### 9. Parallel, un-abstracted pagination control flow
 
@@ -255,7 +252,11 @@ Done
   - #3 hex color           - #6 inline geometry (click != render risk)
   - #11 named constants
 
-Do next (low risk, medium refactor)
+Done (continued)
+  - #4 table maps          - #13 selection clamping
+  - #8 image commands
+
+Do next (medium refactor)
 
 Medium term (refactor with tests)
   - #4 table maps          - #5 table commands

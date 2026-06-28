@@ -4,6 +4,7 @@ import type {
   EditorTableConditionalFormat,
   EditorTableStyle,
 } from "@/core/model.js";
+import { TABLE_BORDER_EDGE_KEYS } from "@/core/docxTableMaps.js";
 import { escapeXml, pointsToTwips, WORD14_NS } from "./xmlUtils.js";
 import { serializeDocxBorderAttrs } from "./borders.js";
 import { serializeParagraphStyleXml } from "./text/paragraphPropertiesXml.js";
@@ -107,24 +108,14 @@ function serializeTableStyleProperties(
     if (margins) parts.push(`<w:tblCellMar>${margins}</w:tblCellMar>`);
   }
   if (style.borders) {
-    const edges: Array<[string, typeof style.borders.borderTop]> = [
-      ["top", style.borders.borderTop],
-      ["left", style.borders.borderLeft],
-      ["bottom", style.borders.borderBottom],
-      ["right", style.borders.borderRight],
-      ["insideH", style.borders.borderInsideH],
-      ["insideV", style.borders.borderInsideV],
-    ];
-    const borders = edges
-      .filter(
-        (
-          entry,
-        ): entry is [string, NonNullable<typeof style.borders.borderTop>] =>
-          !!entry[1],
+    const { borders } = style;
+    const xml = TABLE_BORDER_EDGE_KEYS.filter(([, key]) => !!borders[key])
+      .map(
+        ([name, key]) =>
+          `<w:${name} ${serializeDocxBorderAttrs(borders[key]!)}`,
       )
-      .map(([name, border]) => `<w:${name} ${serializeDocxBorderAttrs(border)}`)
       .join("");
-    if (borders) parts.push(`<w:tblBorders>${borders}</w:tblBorders>`);
+    if (xml) parts.push(`<w:tblBorders>${xml}</w:tblBorders>`);
   }
   return parts.length > 0 ? `<w:tblPr>${parts.join("")}</w:tblPr>` : "";
 }

@@ -555,34 +555,46 @@ export function createInitialEditorState(): EditorState {
   };
 }
 
+type SelectionSpec = {
+  anchor?: { blockIndex: number; offset: number };
+  focus?: { blockIndex: number; offset: number };
+  blockIndex?: number;
+  offset?: number;
+};
+
+/** Clamps `value` to the closed interval [0, max]. */
+function clampTo(value: number, max: number): number {
+  return Math.max(0, Math.min(value, max));
+}
+
+function resolveSelectionIndexes(
+  selection: SelectionSpec | undefined,
+  paragraphCount: number,
+): { anchorIndex: number; focusIndex: number } {
+  const defaultIndex =
+    selection?.blockIndex ?? selection?.anchor?.blockIndex ?? 0;
+  const anchorIndex = clampTo(
+    selection?.anchor?.blockIndex ?? defaultIndex,
+    paragraphCount - 1,
+  );
+  const focusIndex = clampTo(
+    selection?.focus?.blockIndex ?? selection?.blockIndex ?? anchorIndex,
+    paragraphCount - 1,
+  );
+  return { anchorIndex, focusIndex };
+}
+
 export function createEditorStateFromTexts(
   texts: string[],
-  selection?: {
-    anchor?: { blockIndex: number; offset: number };
-    focus?: { blockIndex: number; offset: number };
-    blockIndex?: number;
-    offset?: number;
-  },
+  selection?: SelectionSpec,
 ): EditorState {
   const paragraphs =
     texts.length > 0
       ? texts.map((text) => createEditorParagraph(text))
       : [createEditorParagraph("")];
-  const defaultIndex =
-    selection?.blockIndex ?? selection?.anchor?.blockIndex ?? 0;
-  const anchorIndex = Math.max(
-    0,
-    Math.min(
-      selection?.anchor?.blockIndex ?? defaultIndex,
-      paragraphs.length - 1,
-    ),
-  );
-  const focusIndex = Math.max(
-    0,
-    Math.min(
-      selection?.focus?.blockIndex ?? selection?.blockIndex ?? anchorIndex,
-      paragraphs.length - 1,
-    ),
+  const { anchorIndex, focusIndex } = resolveSelectionIndexes(
+    selection,
+    paragraphs.length,
   );
   const anchorParagraph = paragraphs[anchorIndex];
   const focusParagraph = paragraphs[focusIndex];
@@ -598,12 +610,12 @@ export function createEditorStateFromTexts(
       anchor: {
         paragraphId: anchorParagraph.id,
         runId: anchorRun.id,
-        offset: Math.max(0, Math.min(anchorOffset, anchorRun.text.length)),
+        offset: clampTo(anchorOffset, anchorRun.text.length),
       },
       focus: {
         paragraphId: focusParagraph.id,
         runId: focusRun.id,
-        offset: Math.max(0, Math.min(focusOffset, focusRun.text.length)),
+        offset: clampTo(focusOffset, focusRun.text.length),
       },
     },
     activeSectionIndex: 0,
@@ -619,58 +631,37 @@ export function createEditorStateFromParagraphRuns(
       image?: EditorImageRunData;
     }>
   >,
-  selection?: {
-    anchor?: { blockIndex: number; offset: number };
-    focus?: { blockIndex: number; offset: number };
-    blockIndex?: number;
-    offset?: number;
-  },
+  selection?: SelectionSpec,
 ): EditorState {
   const paragraphs =
     paragraphsSpec.length > 0
       ? paragraphsSpec.map((runs) => createEditorParagraphFromRuns(runs))
       : [createEditorParagraph("")];
 
-  const defaultIndex =
-    selection?.blockIndex ?? selection?.anchor?.blockIndex ?? 0;
-  const anchorIndex = Math.max(
-    0,
-    Math.min(
-      selection?.anchor?.blockIndex ?? defaultIndex,
-      paragraphs.length - 1,
-    ),
-  );
-  const focusIndex = Math.max(
-    0,
-    Math.min(
-      selection?.focus?.blockIndex ?? selection?.blockIndex ?? anchorIndex,
-      paragraphs.length - 1,
-    ),
+  const { anchorIndex, focusIndex } = resolveSelectionIndexes(
+    selection,
+    paragraphs.length,
   );
   const anchorParagraph = paragraphs[anchorIndex];
   const focusParagraph = paragraphs[focusIndex];
   const anchorOffset = selection?.anchor?.offset ?? selection?.offset ?? 0;
   const focusOffset =
     selection?.focus?.offset ?? selection?.offset ?? anchorOffset;
+  const anchorLength = anchorParagraph.runs.reduce(
+    (sum, run) => sum + run.text.length,
+    0,
+  );
+  const focusLength = focusParagraph.runs.reduce(
+    (sum, run) => sum + run.text.length,
+    0,
+  );
   const anchorPosition = paragraphOffsetToPosition(
     anchorParagraph,
-    Math.max(
-      0,
-      Math.min(
-        anchorOffset,
-        anchorParagraph.runs.reduce((sum, run) => sum + run.text.length, 0),
-      ),
-    ),
+    clampTo(anchorOffset, anchorLength),
   );
   const focusPosition = paragraphOffsetToPosition(
     focusParagraph,
-    Math.max(
-      0,
-      Math.min(
-        focusOffset,
-        focusParagraph.runs.reduce((sum, run) => sum + run.text.length, 0),
-      ),
-    ),
+    clampTo(focusOffset, focusLength),
   );
 
   return {

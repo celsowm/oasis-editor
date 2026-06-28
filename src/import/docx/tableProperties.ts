@@ -11,6 +11,7 @@ import type {
   EditorRevisionMetadata,
   EditorTableConditionalFlags,
 } from "@/core/model.js";
+import { TABLE_CONDITIONAL_FLAG_ATTRIBUTES } from "@/core/docxTableMaps.js";
 import {
   WORD_NS,
   getFirstChildByTagNameNS,
@@ -84,23 +85,9 @@ export function parseTableConditionalFlags(
 ): EditorTableConditionalFlags | undefined {
   const element = getFirstChildByTagNameNS(properties, WORD_NS, "cnfStyle");
   if (!element) return undefined;
-  const names: Array<[string, keyof EditorTableConditionalFlags]> = [
-    ["firstRow", "firstRow"],
-    ["lastRow", "lastRow"],
-    ["firstColumn", "firstCol"],
-    ["lastColumn", "lastCol"],
-    ["oddVBand", "band1Vert"],
-    ["evenVBand", "band2Vert"],
-    ["oddHBand", "band1Horz"],
-    ["evenHBand", "band2Horz"],
-    ["firstRowFirstColumn", "nwCell"],
-    ["firstRowLastColumn", "neCell"],
-    ["lastRowFirstColumn", "swCell"],
-    ["lastRowLastColumn", "seCell"],
-  ];
   const rawBits = getAttributeValue(element, "val") ?? "";
   const flags: EditorTableConditionalFlags = {};
-  names.forEach(([attribute, key], index) => {
+  TABLE_CONDITIONAL_FLAG_ATTRIBUTES.forEach(([attribute, key], index) => {
     const explicit = getAttributeValue(element, attribute);
     if (explicit === "1" || explicit === "true" || explicit === "on") {
       flags[key] = true;

@@ -95,44 +95,11 @@ export function resizeSelectedImage(
   width: number,
   height: number,
 ): EditorState {
-  const selectedImage = getSelectedImageRun(state);
-  if (!selectedImage) {
-    return state;
-  }
-
-  const paragraphs = getParagraphs(state);
-  const { paragraphIndex, run: targetRun } = selectedImage;
-
-  const nextParagraphs = paragraphs.map((candidate, candidateIndex) => {
-    if (candidateIndex !== paragraphIndex) {
-      return cloneParagraph(candidate);
-    }
-
-    return {
-      ...cloneParagraph(candidate),
-      runs: candidate.runs.map((run) =>
-        run.id === targetRun.id && run.kind === "image"
-          ? {
-              ...run,
-              image: {
-                ...run.image,
-                width: Math.max(24, Math.round(width)),
-                height: Math.max(24, Math.round(height)),
-              },
-            }
-          : cloneRun(run),
-      ),
-    };
-  });
-
-  return cloneStateWithParagraphs(
-    state,
-    nextParagraphs,
-    preserveSelectionByParagraphOffsets(
-      nextParagraphs,
-      normalizeSelection(state),
-    ),
-  );
+  return patchSelectedImage(state, (image) => ({
+    ...image,
+    width: Math.max(24, Math.round(width)),
+    height: Math.max(24, Math.round(height)),
+  }));
 }
 
 /** Normalize an angle to the [0, 360) range; `0` collapses to `undefined`. */
@@ -148,44 +115,11 @@ export function rotateSelectedImage(
   state: EditorState,
   rotation: number,
 ): EditorState {
-  const selectedImage = getSelectedImageRun(state);
-  if (!selectedImage) {
-    return state;
-  }
-
   const nextRotation = normalizeRotation(rotation);
-  const paragraphs = getParagraphs(state);
-  const { paragraphIndex, run: targetRun } = selectedImage;
-
-  const nextParagraphs = paragraphs.map((candidate, candidateIndex) => {
-    if (candidateIndex !== paragraphIndex) {
-      return cloneParagraph(candidate);
-    }
-
-    return {
-      ...cloneParagraph(candidate),
-      runs: candidate.runs.map((run) =>
-        run.id === targetRun.id && run.kind === "image"
-          ? {
-              ...run,
-              image: {
-                ...run.image,
-                rotation: nextRotation,
-              },
-            }
-          : cloneRun(run),
-      ),
-    };
-  });
-
-  return cloneStateWithParagraphs(
-    state,
-    nextParagraphs,
-    preserveSelectionByParagraphOffsets(
-      nextParagraphs,
-      normalizeSelection(state),
-    ),
-  );
+  return patchSelectedImage(state, (image) => ({
+    ...image,
+    rotation: nextRotation,
+  }));
 }
 
 export function getSelectedImageWrapPreset(
@@ -205,12 +139,13 @@ export function isSelectedImageFixedPosition(state: EditorState): boolean {
   return isFloatingFixedPosition(image?.floating);
 }
 
-/** Patches the selected image's `floating` field (or removes it for inline). */
-function patchSelectedImageFloating(
+/**
+ * Applies `updater` to the image data of the currently selected image run,
+ * cloning all paragraphs and preserving the selection by paragraph offsets.
+ */
+function patchSelectedImage(
   state: EditorState,
-  next: (
-    floating: EditorImageRunData["floating"],
-  ) => EditorImageRunData["floating"],
+  updater: (image: EditorImageRunData) => EditorImageRunData,
 ): EditorState {
   const selectedImage = getSelectedImageRun(state);
   if (!selectedImage || !getRunImage(selectedImage.run)) {
@@ -224,33 +159,36 @@ function patchSelectedImageFloating(
     if (candidateIndex !== paragraphIndex) {
       return cloneParagraph(candidate);
     }
-
     return {
       ...cloneParagraph(candidate),
-      runs: candidate.runs.map((run) => {
-        if (run.id !== targetRun.id || run.kind !== "image") {
-          return cloneRun(run);
-        }
-        const floating = next(run.image.floating);
-        const image: EditorImageRunData = { ...run.image };
-        if (floating) {
-          image.floating = floating;
-        } else {
-          delete image.floating;
-        }
-        return { ...run, image };
-      }),
+      runs: candidate.runs.map((run) =>
+        run.id === targetRun.id && run.kind === "image"
+          ? { ...run, image: updater(run.image) }
+          : cloneRun(run),
+      ),
     };
   });
 
   return cloneStateWithParagraphs(
     state,
     nextParagraphs,
-    preserveSelectionByParagraphOffsets(
-      nextParagraphs,
-      normalizeSelection(state),
-    ),
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalizeSelection(state)),
   );
+}
+
+/** Patches the selected image's `floating` field (or removes it for inline). */
+function patchSelectedImageFloating(
+  state: EditorState,
+  next: (
+    floating: EditorImageRunData["floating"],
+  ) => EditorImageRunData["floating"],
+): EditorState {
+  return patchSelectedImage(state, (image) => {
+    const floating = next(image.floating);
+    if (floating) return { ...image, floating };
+    const { floating: _removed, ...rest } = image;
+    return rest;
+  });
 }
 
 export function setSelectedImageWrapPreset(
@@ -338,41 +276,10 @@ export function setSelectedImageAlt(
   state: EditorState,
   alt: string | null,
 ): EditorState {
-  const selectedImage = getSelectedImageRun(state);
-  if (!selectedImage || !getRunImage(selectedImage.run)) {
-    return state;
-  }
-
-  const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((candidate, candidateIndex) => {
-    if (candidateIndex !== selectedImage.paragraphIndex) {
-      return cloneParagraph(candidate);
-    }
-
-    return {
-      ...cloneParagraph(candidate),
-      runs: candidate.runs.map((run) =>
-        run.id === selectedImage.run.id && run.kind === "image"
-          ? {
-              ...run,
-              image: {
-                ...run.image,
-                alt: alt ?? undefined,
-              },
-            }
-          : cloneRun(run),
-      ),
-    };
-  });
-
-  return cloneStateWithParagraphs(
-    state,
-    nextParagraphs,
-    preserveSelectionByParagraphOffsets(
-      nextParagraphs,
-      normalizeSelection(state),
-    ),
-  );
+  return patchSelectedImage(state, (image) => ({
+    ...image,
+    alt: alt ?? undefined,
+  }));
 }
 
 export function getSelectedImageCaption(state: EditorState): string | null {

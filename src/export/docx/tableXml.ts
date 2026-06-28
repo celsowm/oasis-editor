@@ -8,6 +8,10 @@ import type {
   EditorTableFloatingLayout,
   EditorTableConditionalFlags,
 } from "@/core/model.js";
+import {
+  TABLE_BORDER_EDGE_KEYS,
+  TABLE_CONDITIONAL_FLAG_ATTRIBUTES,
+} from "@/core/docxTableMaps.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { escapeXml, normalizeDocxColor, pointsToTwips } from "./xmlUtils.js";
 import { serializeDocxBorderAttrs } from "./borders.js";
@@ -48,22 +52,9 @@ function serializeConditionalFlags(
   flags: EditorTableConditionalFlags | undefined,
 ): string {
   if (!flags || Object.keys(flags).length === 0) return "";
-  const attributes: Array<[string, keyof EditorTableConditionalFlags]> = [
-    ["firstRow", "firstRow"],
-    ["lastRow", "lastRow"],
-    ["firstColumn", "firstCol"],
-    ["lastColumn", "lastCol"],
-    ["oddVBand", "band1Vert"],
-    ["evenVBand", "band2Vert"],
-    ["oddHBand", "band1Horz"],
-    ["evenHBand", "band2Horz"],
-    ["firstRowFirstColumn", "nwCell"],
-    ["firstRowLastColumn", "neCell"],
-    ["lastRowFirstColumn", "swCell"],
-    ["lastRowLastColumn", "seCell"],
-  ];
-  const xml = attributes
-    .filter(([, key]) => flags[key] !== undefined)
+  const xml = TABLE_CONDITIONAL_FLAG_ATTRIBUTES.filter(
+    ([, key]) => flags[key] !== undefined,
+  )
     .map(([name, key]) => `w:${name}="${flags[key] ? "1" : "0"}"`)
     .join(" ");
   return xml ? `<w:cnfStyle ${xml}/>` : "";
@@ -475,15 +466,10 @@ function serializeFloatingTableProperties(
 function serializeTableBorders(style: EditorTableNode["style"]): string {
   const borders = style?.borders;
   if (!borders) return "";
-  const edges: Array<[string, EditorBorderStyle | undefined]> = [
-    ["top", borders.borderTop],
-    ["left", borders.borderLeft],
-    ["bottom", borders.borderBottom],
-    ["right", borders.borderRight],
-    ["insideH", borders.borderInsideH],
-    ["insideV", borders.borderInsideV],
-  ];
-  const xml = edges
+  const xml = TABLE_BORDER_EDGE_KEYS.map(([name, key]) => [
+    name,
+    borders[key],
+  ] as [string, EditorBorderStyle | undefined])
     .filter((entry): entry is [string, EditorBorderStyle] => !!entry[1])
     .map(([name, border]) => `<w:${name} ${serializeDocxBorderAttrs(border)}`)
     .join("");
