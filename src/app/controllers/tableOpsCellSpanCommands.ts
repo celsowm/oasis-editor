@@ -60,9 +60,8 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, range.zone)
-      .map(cloneBlock);
+    const targetBlocks = [...deps.getTargetBlocks(current, range.zone)];
+    targetBlocks[range.blockIndex] = cloneBlock(targetBlocks[range.blockIndex]);
     const tableBlock = targetBlocks[range.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -144,9 +143,8 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, range.zone)
-      .map(cloneBlock);
+    const targetBlocks = [...deps.getTargetBlocks(current, range.zone)];
+    targetBlocks[range.blockIndex] = cloneBlock(targetBlocks[range.blockIndex]);
     const tableBlock = targetBlocks[range.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -278,9 +276,8 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
+    const targetBlocks = [...deps.getTargetBlocks(current, location.zone)];
+    targetBlocks[location.blockIndex] = cloneBlock(targetBlocks[location.blockIndex]);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -372,9 +369,8 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
+    const targetBlocks = [...deps.getTargetBlocks(current, location.zone)];
+    targetBlocks[location.blockIndex] = cloneBlock(targetBlocks[location.blockIndex]);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;

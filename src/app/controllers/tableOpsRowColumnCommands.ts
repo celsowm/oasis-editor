@@ -48,9 +48,8 @@ export function createTableRowColumnOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
+    const targetBlocks = [...deps.getTargetBlocks(current, location.zone)];
+    targetBlocks[location.blockIndex] = cloneBlock(targetBlocks[location.blockIndex]);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -218,9 +217,8 @@ export function createTableRowColumnOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
+    const targetBlocks = [...deps.getTargetBlocks(current, location.zone)];
+    targetBlocks[location.blockIndex] = cloneBlock(targetBlocks[location.blockIndex]);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -332,9 +330,8 @@ export function createTableRowColumnOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
+    const targetBlocks = [...deps.getTargetBlocks(current, location.zone)];
+    targetBlocks[location.blockIndex] = cloneBlock(targetBlocks[location.blockIndex]);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -506,9 +503,8 @@ export function createTableRowColumnOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
+    const targetBlocks = [...deps.getTargetBlocks(current, location.zone)];
+    targetBlocks[location.blockIndex] = cloneBlock(targetBlocks[location.blockIndex]);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
