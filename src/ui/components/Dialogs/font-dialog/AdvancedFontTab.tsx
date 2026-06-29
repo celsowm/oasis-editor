@@ -1,7 +1,9 @@
-import { For } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 
 import { WORD_CHARACTER_SCALES } from "./FontDialogTypes.js";
+import { Checkbox } from "@/ui/public/Checkbox.js";
+import { SelectField } from "@/ui/public/SelectField.js";
+import { TextField } from "@/ui/public/TextField.js";
 import type { FontDialogController } from "./FontDialogController.js";
 import type { AdvancedTabValues } from "./FontDialogTypes.js";
 import type {
@@ -27,52 +29,45 @@ export function AdvancedFontTab(props: AdvancedFontTabProps) {
           <label class="oasis-editor-dialog-label">
             {t("dialog.font.advancedScale")}
           </label>
-          <select
-            class="oasis-editor-dialog-input"
+          <SelectField
             value={ctrl.advancedTabValues().characterScale || "100"}
-            onChange={(e) =>
-              ctrl.updateAdvancedTab("characterScale", e.currentTarget.value)
+            onChange={(value) =>
+              ctrl.updateAdvancedTab("characterScale", value)
             }
             data-testid="editor-font-dialog-advanced-scale"
-          >
-            <For each={WORD_CHARACTER_SCALES}>
-              {(scale) => <option value={String(scale)}>{scale}%</option>}
-            </For>
-          </select>
+            options={WORD_CHARACTER_SCALES.map((scale) => ({
+              value: String(scale),
+              label: `${scale}%`,
+            }))}
+          />
         </div>
         <div class="oasis-editor-font-dialog-word-row">
           <label class="oasis-editor-dialog-label">
             {t("dialog.font.advancedSpacing")}
           </label>
-          <select
-            class="oasis-editor-dialog-input"
+          <SelectField
             value={ctrl.advancedTabValues().spacingMode}
-            onChange={(e) =>
+            onChange={(value) =>
               ctrl.updateAdvancedTab(
                 "spacingMode",
-                e.currentTarget.value as AdvancedTabValues["spacingMode"],
+                value as AdvancedTabValues["spacingMode"],
               )
             }
             data-testid="editor-font-dialog-advanced-spacing-mode"
-          >
-            <option value="normal">{t("dialog.font.advancedNormal")}</option>
-            <option value="expanded">
-              {t("dialog.font.advancedExpanded")}
-            </option>
-            <option value="condensed">
-              {t("dialog.font.advancedCondensed")}
-            </option>
-          </select>
+            options={[
+              { value: "normal", label: t("dialog.font.advancedNormal") },
+              { value: "expanded", label: t("dialog.font.advancedExpanded") },
+              { value: "condensed", label: t("dialog.font.advancedCondensed") },
+            ]}
+          />
           <label class="oasis-editor-dialog-label oasis-editor-font-dialog-by-label">
             {t("dialog.font.advancedBy")}
           </label>
-          <input
-            class="oasis-editor-dialog-input oasis-editor-font-dialog-small-input"
+          <TextField
+            class="oasis-editor-font-dialog-small-input"
             value={ctrl.advancedTabValues().spacingAmount}
             disabled={ctrl.advancedTabValues().spacingMode === "normal"}
-            onInput={(e) =>
-              ctrl.updateAdvancedTab("spacingAmount", e.currentTarget.value)
-            }
+            onChange={(value) => ctrl.updateAdvancedTab("spacingAmount", value)}
             data-testid="editor-font-dialog-advanced-spacing-amount"
           />
         </div>
@@ -80,58 +75,56 @@ export function AdvancedFontTab(props: AdvancedFontTabProps) {
           <label class="oasis-editor-dialog-label">
             {t("dialog.font.advancedPosition")}
           </label>
-          <select
-            class="oasis-editor-dialog-input"
+          <SelectField
             value={ctrl.advancedTabValues().positionMode}
-            onChange={(e) =>
+            onChange={(value) =>
               ctrl.updateAdvancedTab(
                 "positionMode",
-                e.currentTarget.value as AdvancedTabValues["positionMode"],
+                value as AdvancedTabValues["positionMode"],
               )
             }
             data-testid="editor-font-dialog-advanced-position-mode"
-          >
-            <option value="normal">{t("dialog.font.advancedNormal")}</option>
-            <option value="raised">{t("dialog.font.advancedRaised")}</option>
-            <option value="lowered">{t("dialog.font.advancedLowered")}</option>
-          </select>
+            options={[
+              { value: "normal", label: t("dialog.font.advancedNormal") },
+              { value: "raised", label: t("dialog.font.advancedRaised") },
+              { value: "lowered", label: t("dialog.font.advancedLowered") },
+            ]}
+          />
           <label class="oasis-editor-dialog-label oasis-editor-font-dialog-by-label">
             {t("dialog.font.advancedBy")}
           </label>
-          <input
-            class="oasis-editor-dialog-input oasis-editor-font-dialog-small-input"
+          <TextField
+            class="oasis-editor-font-dialog-small-input"
             value={ctrl.advancedTabValues().positionAmount}
             disabled={ctrl.advancedTabValues().positionMode === "normal"}
-            onInput={(e) =>
-              ctrl.updateAdvancedTab("positionAmount", e.currentTarget.value)
+            onChange={(value) =>
+              ctrl.updateAdvancedTab("positionAmount", value)
             }
             data-testid="editor-font-dialog-advanced-position-amount"
           />
         </div>
         <div class="oasis-editor-font-dialog-word-row oasis-editor-font-dialog-kerning-row">
-          <label class="oasis-editor-dialog-style-toggle oasis-editor-font-dialog-kerning-toggle">
-            <input
-              type="checkbox"
-              checked={ctrl.advancedTabValues().kerningEnabled}
-              onChange={(e) =>
-                ctrl.setAdvancedTabValues((current) => ({
-                  ...current,
-                  kerningEnabled: e.currentTarget.checked,
-                  kerningThreshold: e.currentTarget.checked
-                    ? current.kerningThreshold || "1"
-                    : current.kerningThreshold,
-                }))
-              }
-              data-testid="editor-font-dialog-advanced-kerning-enabled"
-            />
-            <span>{t("dialog.font.advancedKerning")}</span>
-          </label>
-          <input
-            class="oasis-editor-dialog-input oasis-editor-font-dialog-kerning-input"
+          <Checkbox
+            class="oasis-editor-font-dialog-kerning-toggle"
+            label={t("dialog.font.advancedKerning")}
+            checked={ctrl.advancedTabValues().kerningEnabled}
+            onChange={(checked) =>
+              ctrl.setAdvancedTabValues((current) => ({
+                ...current,
+                kerningEnabled: checked,
+                kerningThreshold: checked
+                  ? current.kerningThreshold || "1"
+                  : current.kerningThreshold,
+              }))
+            }
+            data-testid="editor-font-dialog-advanced-kerning-enabled"
+          />
+          <TextField
+            class="oasis-editor-font-dialog-kerning-input"
             value={ctrl.advancedTabValues().kerningThreshold}
             disabled={!ctrl.advancedTabValues().kerningEnabled}
-            onInput={(e) =>
-              ctrl.updateAdvancedTab("kerningThreshold", e.currentTarget.value)
+            onChange={(value) =>
+              ctrl.updateAdvancedTab("kerningThreshold", value)
             }
             data-testid="editor-font-dialog-advanced-kerning"
           />
@@ -147,115 +140,111 @@ export function AdvancedFontTab(props: AdvancedFontTabProps) {
           <label class="oasis-editor-dialog-label">
             {t("dialog.font.advancedLigatures")}
           </label>
-          <select
-            class="oasis-editor-dialog-input"
+          <SelectField
             value={ctrl.advancedTabValues().ligatures}
-            onChange={(e) =>
-              ctrl.updateAdvancedTab(
-                "ligatures",
-                e.currentTarget.value as EditorLigatures | "",
-              )
+            onChange={(value) =>
+              ctrl.updateAdvancedTab("ligatures", value as EditorLigatures | "")
             }
             data-testid="editor-font-dialog-advanced-ligatures"
-          >
-            <option value="">{t("dialog.font.advancedDefault")}</option>
-            <option value="none">
-              {t("dialog.font.advancedLigaturesNone")}
-            </option>
-            <option value="standard">
-              {t("dialog.font.advancedLigaturesStandard")}
-            </option>
-            <option value="contextual">
-              {t("dialog.font.advancedLigaturesContextual")}
-            </option>
-            <option value="historical">
-              {t("dialog.font.advancedLigaturesHistorical")}
-            </option>
-            <option value="standardContextual">
-              {t("dialog.font.advancedLigaturesStandardContextual")}
-            </option>
-          </select>
+            options={[
+              { value: "", label: t("dialog.font.advancedDefault") },
+              { value: "none", label: t("dialog.font.advancedLigaturesNone") },
+              {
+                value: "standard",
+                label: t("dialog.font.advancedLigaturesStandard"),
+              },
+              {
+                value: "contextual",
+                label: t("dialog.font.advancedLigaturesContextual"),
+              },
+              {
+                value: "historical",
+                label: t("dialog.font.advancedLigaturesHistorical"),
+              },
+              {
+                value: "standardContextual",
+                label: t("dialog.font.advancedLigaturesStandardContextual"),
+              },
+            ]}
+          />
         </div>
         <div class="oasis-editor-font-dialog-word-row">
           <label class="oasis-editor-dialog-label">
             {t("dialog.font.advancedNumberSpacing")}
           </label>
-          <select
-            class="oasis-editor-dialog-input"
+          <SelectField
             value={ctrl.advancedTabValues().numberSpacing}
-            onChange={(e) =>
+            onChange={(value) =>
               ctrl.updateAdvancedTab(
                 "numberSpacing",
-                e.currentTarget.value as EditorNumberSpacing | "",
+                value as EditorNumberSpacing | "",
               )
             }
             data-testid="editor-font-dialog-advanced-number-spacing"
-          >
-            <option value="">{t("dialog.font.advancedDefault")}</option>
-            <option value="proportional">
-              {t("dialog.font.advancedNumberSpacingProportional")}
-            </option>
-            <option value="tabular">
-              {t("dialog.font.advancedNumberSpacingTabular")}
-            </option>
-          </select>
+            options={[
+              { value: "", label: t("dialog.font.advancedDefault") },
+              {
+                value: "proportional",
+                label: t("dialog.font.advancedNumberSpacingProportional"),
+              },
+              {
+                value: "tabular",
+                label: t("dialog.font.advancedNumberSpacingTabular"),
+              },
+            ]}
+          />
         </div>
         <div class="oasis-editor-font-dialog-word-row">
           <label class="oasis-editor-dialog-label">
             {t("dialog.font.advancedNumberForm")}
           </label>
-          <select
-            class="oasis-editor-dialog-input"
+          <SelectField
             value={ctrl.advancedTabValues().numberForm}
-            onChange={(e) =>
+            onChange={(value) =>
               ctrl.updateAdvancedTab(
                 "numberForm",
-                e.currentTarget.value as EditorNumberForm | "",
+                value as EditorNumberForm | "",
               )
             }
             data-testid="editor-font-dialog-advanced-number-form"
-          >
-            <option value="">{t("dialog.font.advancedDefault")}</option>
-            <option value="lining">
-              {t("dialog.font.advancedNumberFormLining")}
-            </option>
-            <option value="oldStyle">
-              {t("dialog.font.advancedNumberFormOldStyle")}
-            </option>
-          </select>
+            options={[
+              { value: "", label: t("dialog.font.advancedDefault") },
+              {
+                value: "lining",
+                label: t("dialog.font.advancedNumberFormLining"),
+              },
+              {
+                value: "oldStyle",
+                label: t("dialog.font.advancedNumberFormOldStyle"),
+              },
+            ]}
+          />
         </div>
         <div class="oasis-editor-font-dialog-word-row">
           <label class="oasis-editor-dialog-label">
             {t("dialog.font.advancedStylisticSet")}
           </label>
-          <select
-            class="oasis-editor-dialog-input"
+          <SelectField
             value={ctrl.advancedTabValues().stylisticSet}
-            onChange={(e) =>
-              ctrl.updateAdvancedTab("stylisticSet", e.currentTarget.value)
-            }
+            onChange={(value) => ctrl.updateAdvancedTab("stylisticSet", value)}
             data-testid="editor-font-dialog-advanced-stylistic-set"
-          >
-            <option value="">{t("dialog.font.advancedDefault")}</option>
-            <For each={Array.from({ length: 20 }, (_, index) => index + 1)}>
-              {(set) => <option value={String(set)}>{set}</option>}
-            </For>
-          </select>
-        </div>
-        <label class="oasis-editor-dialog-style-toggle oasis-editor-font-dialog-contextual-toggle">
-          <input
-            type="checkbox"
-            checked={ctrl.advancedTabValues().contextualAlternates}
-            onChange={(e) =>
-              ctrl.updateAdvancedTab(
-                "contextualAlternates",
-                e.currentTarget.checked,
-              )
-            }
-            data-testid="editor-font-dialog-advanced-contextual-alternates"
+            options={[
+              { value: "", label: t("dialog.font.advancedDefault") },
+              ...Array.from({ length: 20 }, (_, index) => index + 1).map(
+                (set) => ({ value: String(set), label: String(set) }),
+              ),
+            ]}
           />
-          <span>{t("dialog.font.advancedContextualAlternates")}</span>
-        </label>
+        </div>
+        <Checkbox
+          class="oasis-editor-font-dialog-contextual-toggle"
+          label={t("dialog.font.advancedContextualAlternates")}
+          checked={ctrl.advancedTabValues().contextualAlternates}
+          onChange={(checked) =>
+            ctrl.updateAdvancedTab("contextualAlternates", checked)
+          }
+          data-testid="editor-font-dialog-advanced-contextual-alternates"
+        />
       </fieldset>
 
       <fieldset class="oasis-editor-font-dialog-fieldset">

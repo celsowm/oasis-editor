@@ -1,4 +1,5 @@
 import { Dialog } from "./Dialog.js";
+import { DialogFooter } from "./DialogFooter.js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Tabs } from "@/ui/components/Tabs/Tabs.js";
 
@@ -26,22 +27,14 @@ export function FontDialog(props: FontDialogProps) {
       bodyClass="oasis-editor-font-dialog-body"
       size="font"
       footer={
-        <>
-          <button
-            class="oasis-editor-dialog-button oasis-editor-dialog-button-secondary"
-            onClick={props.onClose}
-            data-testid="editor-font-dialog-cancel"
-          >
-            {t("generic.cancel")}
-          </button>
-          <button
-            class="oasis-editor-dialog-button oasis-editor-dialog-button-primary"
-            onClick={ctrl.handleApply}
-            data-testid="editor-font-dialog-apply"
-          >
-            {t("generic.ok")}
-          </button>
-        </>
+        <DialogFooter
+          onCancel={props.onClose}
+          onConfirm={ctrl.handleApply}
+          cancelLabel={t("generic.cancel")}
+          confirmLabel={t("generic.ok")}
+          cancelTestId="editor-font-dialog-cancel"
+          confirmTestId="editor-font-dialog-apply"
+        />
       }
     >
       <Tabs

@@ -1,5 +1,6 @@
 import { createEffect, createSignal } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
+import { TextField } from "@/ui/public/TextField.js";
 import { Dialog } from "./Dialog.js";
 import { DialogFooter } from "./DialogFooter.js";
 
@@ -52,19 +53,15 @@ export function TextInputDialog(props: TextInputDialogProps) {
         />
       }
     >
-      <div class="oasis-editor-dialog-input-group">
-        <label class="oasis-editor-dialog-label">{props.label}</label>
-        <input
-          ref={inputRef}
-          type="text"
-          class="oasis-editor-dialog-input"
-          value={value()}
-          onInput={(e) => setValue(e.currentTarget.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
-          placeholder={props.placeholder}
-          data-testid={props.testIds?.input}
-        />
-      </div>
+      <TextField
+        ref={inputRef}
+        label={props.label}
+        value={value()}
+        onChange={setValue}
+        onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
+        placeholder={props.placeholder}
+        data-testid={props.testIds?.input}
+      />
     </Dialog>
   );
 }

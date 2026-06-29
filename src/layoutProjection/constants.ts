@@ -1,6 +1,12 @@
-export { FOOTNOTE_MARKER_GUTTER_PX } from "./footnotePagination.js";
-
 export { PX_PER_POINT } from "@/core/units.js";
+
+/**
+ * Horizontal gutter (px) reserved for the footnote marker column, shared by the
+ * layout projector, canvas painter and PDF exporter. Lives here (a leaf module)
+ * rather than in `footnotePagination` so consumers don't pull in pagination
+ * logic just to read a constant.
+ */
+export const FOOTNOTE_MARKER_GUTTER_PX = 24;
 
 /**
  * Extra gap (px) inserted between a paragraph border and its text, on top of

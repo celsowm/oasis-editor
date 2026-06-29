@@ -1,5 +1,9 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
+import { Checkbox } from "@/ui/public/Checkbox.js";
+import { FieldRow } from "@/ui/public/FieldRow.js";
+import { NumberField } from "@/ui/public/NumberField.js";
+import { SelectField } from "@/ui/public/SelectField.js";
 import { Dialog } from "./Dialog.js";
 import { DialogFooter } from "./DialogFooter.js";
 
@@ -73,16 +77,16 @@ function parseNumber(value: string): number | null {
 export function ParagraphDialog(props: ParagraphDialogProps) {
   const t = useI18n();
   const [align, setAlign] = createSignal("");
-  const [indentLeft, setIndentLeft] = createSignal("");
-  const [indentRight, setIndentRight] = createSignal("");
+  const [indentLeft, setIndentLeft] = createSignal<number | null>(null);
+  const [indentRight, setIndentRight] = createSignal<number | null>(null);
   const [special, setSpecial] = createSignal<SpecialIndent>("none");
-  const [specialBy, setSpecialBy] = createSignal("");
-  const [spacingBefore, setSpacingBefore] = createSignal("");
-  const [spacingAfter, setSpacingAfter] = createSignal("");
-  const [lineHeight, setLineHeight] = createSignal("");
+  const [specialBy, setSpecialBy] = createSignal<number | null>(null);
+  const [spacingBefore, setSpacingBefore] = createSignal<number | null>(null);
+  const [spacingAfter, setSpacingAfter] = createSignal<number | null>(null);
+  const [lineHeight, setLineHeight] = createSignal<number | null>(null);
   const [shading, setShading] = createSignal("");
   const [borderStyle, setBorderStyle] = createSignal<BorderStyleValue>("none");
-  const [borderWidth, setBorderWidth] = createSignal("");
+  const [borderWidth, setBorderWidth] = createSignal<number | null>(null);
   const [borderColor, setBorderColor] = createSignal("");
   const [sideTop, setSideTop] = createSignal(false);
   const [sideRight, setSideRight] = createSignal(false);
@@ -92,11 +96,11 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
   createEffect(() => {
     if (props.isOpen) {
       setAlign(props.initial.align ?? "");
-      setIndentLeft(props.initial.indentLeft ?? "");
-      setIndentRight(props.initial.indentRight ?? "");
-      setSpacingBefore(props.initial.spacingBefore ?? "");
-      setSpacingAfter(props.initial.spacingAfter ?? "");
-      setLineHeight(props.initial.lineHeight ?? "");
+      setIndentLeft(parseNumber(props.initial.indentLeft ?? ""));
+      setIndentRight(parseNumber(props.initial.indentRight ?? ""));
+      setSpacingBefore(parseNumber(props.initial.spacingBefore ?? ""));
+      setSpacingAfter(parseNumber(props.initial.spacingAfter ?? ""));
+      setLineHeight(parseNumber(props.initial.lineHeight ?? ""));
       setShading(props.initial.shading ?? "");
       const initialBorderStyle = props.initial.borderStyle;
       setBorderStyle(
@@ -106,7 +110,7 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
           ? initialBorderStyle
           : "none",
       );
-      setBorderWidth(props.initial.borderWidth ?? "");
+      setBorderWidth(parseNumber(props.initial.borderWidth ?? ""));
       setBorderColor(props.initial.borderColor ?? "");
       setSideTop(props.initial.borderSideTop ?? false);
       setSideRight(props.initial.borderSideRight ?? false);
@@ -117,29 +121,28 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
       const hanging = parseNumber(props.initial.indentHanging ?? "");
       if (hanging !== null && hanging > 0) {
         setSpecial("hanging");
-        setSpecialBy(props.initial.indentHanging ?? "");
+        setSpecialBy(hanging);
       } else if (firstLine !== null && firstLine > 0) {
         setSpecial("firstLine");
-        setSpecialBy(props.initial.indentFirstLine ?? "");
+        setSpecialBy(firstLine);
       } else {
         setSpecial("none");
-        setSpecialBy("");
+        setSpecialBy(null);
       }
     }
   });
 
   const previewStyle = createMemo(() => {
-    const lh = parseNumber(lineHeight());
-    const left = parseNumber(indentLeft());
-    const right = parseNumber(indentRight());
-    const firstLine =
-      special() === "firstLine" ? parseNumber(specialBy()) : null;
-    const hanging = special() === "hanging" ? parseNumber(specialBy()) : null;
+    const lh = lineHeight();
+    const left = indentLeft();
+    const right = indentRight();
+    const firstLine = special() === "firstLine" ? specialBy() : null;
+    const hanging = special() === "hanging" ? specialBy() : null;
     const textIndent =
       firstLine !== null ? firstLine : hanging !== null ? -hanging : null;
     const borderCss =
       borderStyle() !== "none"
-        ? `${parseNumber(borderWidth()) ?? DEFAULT_BORDER_WIDTH_PT}pt ${borderStyle()} ${
+        ? `${borderWidth() ?? DEFAULT_BORDER_WIDTH_PT}pt ${borderStyle()} ${
             borderColor().trim() || DEFAULT_BORDER_COLOR
           }`
         : undefined;
@@ -162,7 +165,7 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
     if (style === "none") {
       return { top: null, right: null, bottom: null, left: null };
     }
-    const width = parseNumber(borderWidth());
+    const width = borderWidth();
     const border: EditorBorderStyle = {
       type: style,
       width: width !== null && width > 0 ? width : DEFAULT_BORDER_WIDTH_PT,
@@ -177,17 +180,17 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
   };
 
   const handleApply = () => {
-    const by = parseNumber(specialBy());
+    const by = specialBy();
     props.onApply(
       {
         align: (align() || null) as ParagraphDialogApplyValues["align"],
-        indentLeft: parseNumber(indentLeft()),
-        indentRight: parseNumber(indentRight()),
+        indentLeft: indentLeft(),
+        indentRight: indentRight(),
         indentFirstLine: special() === "firstLine" ? by : null,
         indentHanging: special() === "hanging" ? by : null,
-        spacingBefore: parseNumber(spacingBefore()),
-        spacingAfter: parseNumber(spacingAfter()),
-        lineHeight: parseNumber(lineHeight()),
+        spacingBefore: spacingBefore(),
+        spacingAfter: spacingAfter(),
+        lineHeight: lineHeight(),
         shading: shading().trim() || null,
         borders: resolveBorders(),
       },
@@ -212,187 +215,135 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
         />
       }
     >
-      <div class="oasis-editor-dialog-row">
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("paragraph.alignLabel")}
-          </label>
-          <select
-            class="oasis-editor-dialog-input"
-            value={align()}
-            onChange={(e) => setAlign(e.currentTarget.value)}
-            data-testid="editor-paragraph-dialog-align"
-          >
-            <option value="left">{t("paragraph.alignLeft")}</option>
-            <option value="center">{t("paragraph.alignCenter")}</option>
-            <option value="right">{t("paragraph.alignRight")}</option>
-            <option value="justify">{t("paragraph.alignJustify")}</option>
-          </select>
-        </div>
-      </div>
+      <FieldRow>
+        <SelectField
+          label={t("paragraph.alignLabel")}
+          value={align()}
+          onChange={setAlign}
+          data-testid="editor-paragraph-dialog-align"
+          options={[
+            { value: "left", label: t("paragraph.alignLeft") },
+            { value: "center", label: t("paragraph.alignCenter") },
+            { value: "right", label: t("paragraph.alignRight") },
+            { value: "justify", label: t("paragraph.alignJustify") },
+          ]}
+        />
+      </FieldRow>
+
+      <FieldRow>
+        <NumberField
+          label={t("paragraph.indentLeftLabel")}
+          step="1"
+          value={indentLeft() ?? ""}
+          onChange={setIndentLeft}
+          data-testid="editor-paragraph-dialog-indent-left"
+        />
+        <NumberField
+          label={t("paragraph.indentRightLabel")}
+          step="1"
+          value={indentRight() ?? ""}
+          onChange={setIndentRight}
+          data-testid="editor-paragraph-dialog-indent-right"
+        />
+      </FieldRow>
+
+      <FieldRow>
+        <SelectField
+          label={t("paragraph.specialLabel")}
+          value={special()}
+          onChange={(value) => {
+            const next = value as SpecialIndent;
+            setSpecial(next);
+            if (next === "none") setSpecialBy(null);
+          }}
+          data-testid="editor-paragraph-dialog-special"
+          options={[
+            { value: "none", label: t("paragraph.specialNone") },
+            { value: "firstLine", label: t("paragraph.specialFirstLine") },
+            { value: "hanging", label: t("paragraph.specialHanging") },
+          ]}
+        />
+        <NumberField
+          label={t("paragraph.specialByLabel")}
+          min="0"
+          step="1"
+          disabled={special() === "none"}
+          value={specialBy() ?? ""}
+          onChange={setSpecialBy}
+          data-testid="editor-paragraph-dialog-special-by"
+        />
+      </FieldRow>
+
+      <FieldRow>
+        <NumberField
+          label={t("paragraph.spacingBeforeLabel")}
+          min="0"
+          step="1"
+          value={spacingBefore() ?? ""}
+          onChange={setSpacingBefore}
+          data-testid="editor-paragraph-dialog-spacing-before"
+        />
+        <NumberField
+          label={t("paragraph.spacingAfterLabel")}
+          min="0"
+          step="1"
+          value={spacingAfter() ?? ""}
+          onChange={setSpacingAfter}
+          data-testid="editor-paragraph-dialog-spacing-after"
+        />
+        <NumberField
+          label={t("paragraph.lineSpacingLabel")}
+          min="0.5"
+          step="0.05"
+          value={lineHeight() ?? ""}
+          onChange={setLineHeight}
+          data-testid="editor-paragraph-dialog-line-height"
+        />
+      </FieldRow>
 
       <div class="oasis-editor-dialog-row">
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("paragraph.indentLeftLabel")}
-          </label>
-          <input
-            type="number"
-            class="oasis-editor-dialog-input"
-            step="1"
-            value={indentLeft()}
-            onInput={(e) => setIndentLeft(e.currentTarget.value)}
-            data-testid="editor-paragraph-dialog-indent-left"
-          />
-        </div>
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("paragraph.indentRightLabel")}
-          </label>
-          <input
-            type="number"
-            class="oasis-editor-dialog-input"
-            step="1"
-            value={indentRight()}
-            onInput={(e) => setIndentRight(e.currentTarget.value)}
-            data-testid="editor-paragraph-dialog-indent-right"
-          />
-        </div>
-      </div>
-
-      <div class="oasis-editor-dialog-row">
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("paragraph.specialLabel")}
-          </label>
-          <select
-            class="oasis-editor-dialog-input"
-            value={special()}
-            onChange={(e) => {
-              const next = e.currentTarget.value as SpecialIndent;
-              setSpecial(next);
-              if (next === "none") setSpecialBy("");
-            }}
-            data-testid="editor-paragraph-dialog-special"
-          >
-            <option value="none">{t("paragraph.specialNone")}</option>
-            <option value="firstLine">{t("paragraph.specialFirstLine")}</option>
-            <option value="hanging">{t("paragraph.specialHanging")}</option>
-          </select>
-        </div>
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("paragraph.specialByLabel")}
-          </label>
-          <input
-            type="number"
-            class="oasis-editor-dialog-input"
-            min="0"
-            step="1"
-            disabled={special() === "none"}
-            value={specialBy()}
-            onInput={(e) => setSpecialBy(e.currentTarget.value)}
-            data-testid="editor-paragraph-dialog-special-by"
-          />
-        </div>
-      </div>
-
-      <div class="oasis-editor-dialog-row">
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("paragraph.spacingBeforeLabel")}
-          </label>
-          <input
-            type="number"
-            class="oasis-editor-dialog-input"
-            min="0"
-            step="1"
-            value={spacingBefore()}
-            onInput={(e) => setSpacingBefore(e.currentTarget.value)}
-            data-testid="editor-paragraph-dialog-spacing-before"
-          />
-        </div>
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("paragraph.spacingAfterLabel")}
-          </label>
-          <input
-            type="number"
-            class="oasis-editor-dialog-input"
-            min="0"
-            step="1"
-            value={spacingAfter()}
-            onInput={(e) => setSpacingAfter(e.currentTarget.value)}
-            data-testid="editor-paragraph-dialog-spacing-after"
-          />
-        </div>
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("paragraph.lineSpacingLabel")}
-          </label>
-          <input
-            type="number"
-            class="oasis-editor-dialog-input"
-            min="0.5"
-            step="0.05"
-            value={lineHeight()}
-            onInput={(e) => setLineHeight(e.currentTarget.value)}
-            data-testid="editor-paragraph-dialog-line-height"
-          />
-        </div>
-      </div>
-
-      <div class="oasis-editor-dialog-row">
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("paragraph.borderStyleLabel")}
-          </label>
-          <select
-            class="oasis-editor-dialog-input"
-            value={borderStyle()}
-            onChange={(e) => {
-              const next = e.currentTarget.value as BorderStyleValue;
-              setBorderStyle(next);
-              if (next === "none") {
-                setSideTop(false);
-                setSideRight(false);
-                setSideBottom(false);
-                setSideLeft(false);
-              } else if (
-                !sideTop() &&
-                !sideRight() &&
-                !sideBottom() &&
-                !sideLeft()
-              ) {
-                setSideTop(true);
-                setSideRight(true);
-                setSideBottom(true);
-                setSideLeft(true);
-              }
-            }}
-            data-testid="editor-paragraph-dialog-border-style"
-          >
-            <option value="none">{t("paragraph.borderNone")}</option>
-            <option value="solid">{t("paragraph.borderSolid")}</option>
-            <option value="dashed">{t("paragraph.borderDashed")}</option>
-            <option value="dotted">{t("paragraph.borderDotted")}</option>
-          </select>
-        </div>
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("paragraph.borderWidthLabel")}
-          </label>
-          <input
-            type="number"
-            class="oasis-editor-dialog-input"
-            min="0"
-            step="0.25"
-            disabled={borderStyle() === "none"}
-            value={borderWidth()}
-            onInput={(e) => setBorderWidth(e.currentTarget.value)}
-            data-testid="editor-paragraph-dialog-border-width"
-          />
-        </div>
+        <SelectField
+          class="oasis-editor-dialog-input-group-grow"
+          label={t("paragraph.borderStyleLabel")}
+          value={borderStyle()}
+          onChange={(value) => {
+            const next = value as BorderStyleValue;
+            setBorderStyle(next);
+            if (next === "none") {
+              setSideTop(false);
+              setSideRight(false);
+              setSideBottom(false);
+              setSideLeft(false);
+            } else if (
+              !sideTop() &&
+              !sideRight() &&
+              !sideBottom() &&
+              !sideLeft()
+            ) {
+              setSideTop(true);
+              setSideRight(true);
+              setSideBottom(true);
+              setSideLeft(true);
+            }
+          }}
+          data-testid="editor-paragraph-dialog-border-style"
+          options={[
+            { value: "none", label: t("paragraph.borderNone") },
+            { value: "solid", label: t("paragraph.borderSolid") },
+            { value: "dashed", label: t("paragraph.borderDashed") },
+            { value: "dotted", label: t("paragraph.borderDotted") },
+          ]}
+        />
+        <NumberField
+          class="oasis-editor-dialog-input-group-grow"
+          label={t("paragraph.borderWidthLabel")}
+          min="0"
+          step="0.25"
+          disabled={borderStyle() === "none"}
+          value={borderWidth() ?? ""}
+          onChange={setBorderWidth}
+          data-testid="editor-paragraph-dialog-border-width"
+        />
         <div class="oasis-editor-dialog-input-group">
           <label class="oasis-editor-dialog-label">
             {t("paragraph.borderColorLabel")}
@@ -426,46 +377,34 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
             {t("paragraph.borderSidesLabel")}
           </label>
           <div class="oasis-editor-dialog-style-row">
-            <label class="oasis-editor-dialog-style-toggle">
-              <input
-                type="checkbox"
-                disabled={borderStyle() === "none"}
-                checked={sideTop()}
-                onChange={(e) => setSideTop(e.currentTarget.checked)}
-                data-testid="editor-paragraph-dialog-border-side-top"
-              />
-              {t("paragraph.borderSideTop")}
-            </label>
-            <label class="oasis-editor-dialog-style-toggle">
-              <input
-                type="checkbox"
-                disabled={borderStyle() === "none"}
-                checked={sideRight()}
-                onChange={(e) => setSideRight(e.currentTarget.checked)}
-                data-testid="editor-paragraph-dialog-border-side-right"
-              />
-              {t("paragraph.borderSideRight")}
-            </label>
-            <label class="oasis-editor-dialog-style-toggle">
-              <input
-                type="checkbox"
-                disabled={borderStyle() === "none"}
-                checked={sideBottom()}
-                onChange={(e) => setSideBottom(e.currentTarget.checked)}
-                data-testid="editor-paragraph-dialog-border-side-bottom"
-              />
-              {t("paragraph.borderSideBottom")}
-            </label>
-            <label class="oasis-editor-dialog-style-toggle">
-              <input
-                type="checkbox"
-                disabled={borderStyle() === "none"}
-                checked={sideLeft()}
-                onChange={(e) => setSideLeft(e.currentTarget.checked)}
-                data-testid="editor-paragraph-dialog-border-side-left"
-              />
-              {t("paragraph.borderSideLeft")}
-            </label>
+            <Checkbox
+              label={t("paragraph.borderSideTop")}
+              disabled={borderStyle() === "none"}
+              checked={sideTop()}
+              onChange={setSideTop}
+              data-testid="editor-paragraph-dialog-border-side-top"
+            />
+            <Checkbox
+              label={t("paragraph.borderSideRight")}
+              disabled={borderStyle() === "none"}
+              checked={sideRight()}
+              onChange={setSideRight}
+              data-testid="editor-paragraph-dialog-border-side-right"
+            />
+            <Checkbox
+              label={t("paragraph.borderSideBottom")}
+              disabled={borderStyle() === "none"}
+              checked={sideBottom()}
+              onChange={setSideBottom}
+              data-testid="editor-paragraph-dialog-border-side-bottom"
+            />
+            <Checkbox
+              label={t("paragraph.borderSideLeft")}
+              disabled={borderStyle() === "none"}
+              checked={sideLeft()}
+              onChange={setSideLeft}
+              data-testid="editor-paragraph-dialog-border-side-left"
+            />
           </div>
         </div>
       </div>

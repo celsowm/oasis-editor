@@ -195,9 +195,7 @@ function drawLinkAnnotation(
     y: pxToPt(originY + line.top),
     width: pxToPt(linkBounds.right - linkBounds.left),
     height: pxToPt(line.height),
-    ...(isInternal
-      ? { destName: styles.link.slice(1) }
-      : { uri: styles.link }),
+    ...(isInternal ? { destName: styles.link.slice(1) } : { uri: styles.link }),
   });
 }
 
@@ -309,7 +307,15 @@ export async function drawFragmentText(
   const firstChar = chars[0];
   if (!firstChar || text.length === 0) return;
 
-  drawLinkAnnotation(writer, pageIndex, line, fragment, originX, originY, styles);
+  drawLinkAnnotation(
+    writer,
+    pageIndex,
+    line,
+    fragment,
+    originX,
+    originY,
+    styles,
+  );
 
   drawFragmentShading(
     writer,
@@ -392,7 +398,15 @@ export async function drawFragmentText(
     baseTextOptions,
   };
 
-  emitFragmentGlyphs(chunkCtx, chars, originX, styles, line, fragment, paragraphAlign);
+  emitFragmentGlyphs(
+    chunkCtx,
+    chars,
+    originX,
+    styles,
+    line,
+    fragment,
+    paragraphAlign,
+  );
 
   if (styles.underline) {
     drawFragmentDecoration(

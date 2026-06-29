@@ -1,5 +1,6 @@
 import { Show } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
+import { Button } from "@/ui/public/Button.js";
 
 import { OasisBrandMark } from "./OasisBrandMark.js";
 import { enablePreciseFontMode } from "@/ui/app/localFontAccess.js";
@@ -53,20 +54,20 @@ export function WelcomeOverlay(props: WelcomeOverlayProps) {
           <p class="oasis-editor-welcome-body">{t("welcome.body")}</p>
           <p class="oasis-editor-welcome-note">{t("welcome.note")}</p>
           <div class="oasis-editor-welcome-actions">
-            <button
-              class="oasis-editor-dialog-button oasis-editor-dialog-button-secondary"
+            <Button
+              variant="secondary"
               onClick={handleSkip}
               data-testid="editor-welcome-skip"
             >
               {t("welcome.skip")}
-            </button>
-            <button
-              class="oasis-editor-dialog-button oasis-editor-dialog-button-primary"
+            </Button>
+            <Button
+              variant="primary"
               onClick={handleEnable}
               data-testid="editor-welcome-enable"
             >
               {t("welcome.enable")}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

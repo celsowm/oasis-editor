@@ -15,10 +15,10 @@ import {
 } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
 import type { HeaderFooterBlockProjector } from "./headerFooterLayoutContext.js";
+import { FOOTNOTE_MARKER_GUTTER_PX } from "./constants.js";
 
 export const FOOTNOTE_SEPARATOR_HEIGHT = 10;
 export const FOOTNOTE_BLOCK_GAP = 2;
-export const FOOTNOTE_MARKER_GUTTER_PX = 24;
 export const MAX_FOOTNOTE_LAYOUT_ITERATIONS = 4;
 
 function getProjectedBlocksHeight(

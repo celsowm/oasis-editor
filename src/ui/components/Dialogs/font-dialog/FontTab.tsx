@@ -1,7 +1,10 @@
-import { For } from "solid-js";
+import { For, type JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 
 import { UNDERLINE_STYLE_OPTIONS } from "@/ui/components/Toolbar/underlineStyles.js";
+import { SelectField } from "@/ui/public/SelectField.js";
+import { TextField } from "@/ui/public/TextField.js";
+import { ToggleChip } from "@/ui/public/ToggleChip.js";
 import {
   DEFAULT_COLOR,
   DEFAULT_HIGHLIGHT,
@@ -18,104 +21,182 @@ export interface FontTabProps {
   ctrl: FontDialogController;
 }
 
+interface EffectToggle {
+  testId: string;
+  label: string;
+  labelStyle?: JSX.CSSProperties;
+  checked: () => boolean;
+  onChange: (checked: boolean) => void;
+}
+
 export function FontTab(props: FontTabProps) {
   const t = useI18n();
   const { ctrl } = props;
 
+  const effectToggles = (): EffectToggle[] => [
+    {
+      testId: "editor-font-dialog-bold",
+      label: t("dialog.font.bold"),
+      labelStyle: { "font-weight": 700 },
+      checked: () => ctrl.fontTabValues().bold,
+      onChange: (checked) => ctrl.updateFontTab("bold", checked),
+    },
+    {
+      testId: "editor-font-dialog-italic",
+      label: t("dialog.font.italic"),
+      labelStyle: { "font-style": "italic" },
+      checked: () => ctrl.fontTabValues().italic,
+      onChange: (checked) => ctrl.updateFontTab("italic", checked),
+    },
+    {
+      testId: "editor-font-dialog-underline",
+      label: t("dialog.font.underline"),
+      labelStyle: { "text-decoration": "underline" },
+      checked: () => ctrl.fontTabValues().underline,
+      onChange: (checked) =>
+        ctrl.setFontTabValues((current) => ({
+          ...current,
+          underline: checked,
+          underlineStyle: checked
+            ? current.underlineStyle === "none"
+              ? "single"
+              : current.underlineStyle
+            : "none",
+        })),
+    },
+    {
+      testId: "editor-font-dialog-strike",
+      label: t("dialog.font.strike"),
+      labelStyle: { "text-decoration": "line-through" },
+      checked: () => ctrl.fontTabValues().strike,
+      onChange: (checked) =>
+        ctrl.setFontTabValues((current) => ({
+          ...current,
+          strike: checked,
+          doubleStrike: checked ? false : current.doubleStrike,
+        })),
+    },
+    {
+      testId: "editor-font-dialog-double-strike",
+      label: t("dialog.font.doubleStrike"),
+      checked: () => ctrl.fontTabValues().doubleStrike,
+      onChange: (checked) =>
+        ctrl.setFontTabValues((current) => ({
+          ...current,
+          doubleStrike: checked,
+          strike: checked ? false : current.strike,
+        })),
+    },
+    {
+      testId: "editor-font-dialog-superscript",
+      label: t("toolbar.superscript"),
+      checked: () => ctrl.fontTabValues().superscript,
+      onChange: (checked) =>
+        ctrl.setFontTabValues((current) => ({
+          ...current,
+          superscript: checked,
+          subscript: checked ? false : current.subscript,
+        })),
+    },
+    {
+      testId: "editor-font-dialog-subscript",
+      label: t("toolbar.subscript"),
+      checked: () => ctrl.fontTabValues().subscript,
+      onChange: (checked) =>
+        ctrl.setFontTabValues((current) => ({
+          ...current,
+          subscript: checked,
+          superscript: checked ? false : current.superscript,
+        })),
+    },
+    {
+      testId: "editor-font-dialog-small-caps",
+      label: t("dialog.font.smallCaps"),
+      checked: () => ctrl.fontTabValues().smallCaps,
+      onChange: (checked) => ctrl.updateFontTab("smallCaps", checked),
+    },
+    {
+      testId: "editor-font-dialog-all-caps",
+      label: t("dialog.font.allCaps"),
+      checked: () => ctrl.fontTabValues().allCaps,
+      onChange: (checked) => ctrl.updateFontTab("allCaps", checked),
+    },
+    {
+      testId: "editor-font-dialog-hidden",
+      label: t("dialog.font.hidden"),
+      checked: () => ctrl.fontTabValues().hidden,
+      onChange: (checked) => ctrl.updateFontTab("hidden", checked),
+    },
+  ];
+
   return (
     <div class="oasis-editor-font-dialog-panel oasis-editor-font-dialog-font-panel">
       <div class="oasis-editor-dialog-row">
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.familyFilter")}
-          </label>
-          <input
-            class="oasis-editor-dialog-input"
-            value={ctrl.fontTabValues().familyFilter}
-            onInput={(e) =>
-              ctrl.updateFontTab("familyFilter", e.currentTarget.value)
-            }
-            data-testid="editor-font-dialog-family-filter"
-          />
-        </div>
+        <TextField
+          class="oasis-editor-dialog-input-group-grow"
+          label={t("dialog.font.familyFilter")}
+          value={ctrl.fontTabValues().familyFilter}
+          onChange={(value) => ctrl.updateFontTab("familyFilter", value)}
+          data-testid="editor-font-dialog-family-filter"
+        />
       </div>
       <div class="oasis-editor-dialog-row">
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.family")}
-          </label>
-          <select
-            class="oasis-editor-dialog-input"
-            value={ctrl.fontTabValues().fontFamily}
-            onChange={(e) =>
-              ctrl.updateFontTab("fontFamily", e.currentTarget.value)
-            }
-            data-testid="editor-font-dialog-family"
-          >
-            <option value="">—</option>
-            <For each={ctrl.visibleFamilyOptions()}>
-              {(family) => <option value={family}>{family}</option>}
-            </For>
-          </select>
-        </div>
-        <div class="oasis-editor-dialog-input-group oasis-editor-font-dialog-size-group">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.size")}
-          </label>
-          <select
-            class="oasis-editor-dialog-input"
-            value={ctrl.fontTabValues().fontSize}
-            onChange={(e) =>
-              ctrl.updateFontTab("fontSize", e.currentTarget.value)
-            }
-            data-testid="editor-font-dialog-size"
-          >
-            <option value="">—</option>
-            <For each={ctrl.effectiveSizeOptions()}>
-              {(size) => <option value={String(size)}>{size}</option>}
-            </For>
-          </select>
-        </div>
+        <SelectField
+          class="oasis-editor-dialog-input-group-grow"
+          label={t("dialog.font.family")}
+          value={ctrl.fontTabValues().fontFamily}
+          onChange={(value) => ctrl.updateFontTab("fontFamily", value)}
+          data-testid="editor-font-dialog-family"
+          options={[
+            { value: "", label: "—" },
+            ...ctrl.visibleFamilyOptions().map((family) => ({
+              value: family,
+              label: family,
+            })),
+          ]}
+        />
+        <SelectField
+          class="oasis-editor-font-dialog-size-group"
+          label={t("dialog.font.size")}
+          value={ctrl.fontTabValues().fontSize}
+          onChange={(value) => ctrl.updateFontTab("fontSize", value)}
+          data-testid="editor-font-dialog-size"
+          options={[
+            { value: "", label: "—" },
+            ...ctrl.effectiveSizeOptions().map((size) => ({
+              value: String(size),
+              label: String(size),
+            })),
+          ]}
+        />
       </div>
       <div class="oasis-editor-dialog-row">
         <div class="oasis-editor-dialog-input-group oasis-editor-font-dialog-custom-size-group">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.customSize")}
-          </label>
-          <input
-            class="oasis-editor-dialog-input"
+          <TextField
+            label={t("dialog.font.customSize")}
             value={ctrl.fontTabValues().fontSize}
-            onInput={(e) =>
-              ctrl.updateFontTab("fontSize", e.currentTarget.value)
-            }
+            onChange={(value) => ctrl.updateFontTab("fontSize", value)}
             data-testid="editor-font-dialog-custom-size"
           />
           <span class="oasis-editor-dialog-help-text">
             {ctrl.customSizeError()}
           </span>
         </div>
-        <div class="oasis-editor-dialog-input-group oasis-editor-font-dialog-style-list-group">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.styleList")}
-          </label>
-          <select
-            class="oasis-editor-dialog-input"
-            value={ctrl.selectedFontStyle()}
-            onChange={(e) =>
-              ctrl.applyFontStylePreset(
-                e.currentTarget.value as FontStylePreset,
-              )
-            }
-            data-testid="editor-font-dialog-style-list"
-          >
-            <option value="regular">{t("dialog.font.styleRegular")}</option>
-            <option value="italic">{t("dialog.font.styleItalic")}</option>
-            <option value="bold">{t("dialog.font.styleBold")}</option>
-            <option value="boldItalic">
-              {t("dialog.font.styleBoldItalic")}
-            </option>
-          </select>
-        </div>
+        <SelectField
+          class="oasis-editor-font-dialog-style-list-group"
+          label={t("dialog.font.styleList")}
+          value={ctrl.selectedFontStyle()}
+          onChange={(value) =>
+            ctrl.applyFontStylePreset(value as FontStylePreset)
+          }
+          data-testid="editor-font-dialog-style-list"
+          options={[
+            { value: "regular", label: t("dialog.font.styleRegular") },
+            { value: "italic", label: t("dialog.font.styleItalic") },
+            { value: "bold", label: t("dialog.font.styleBold") },
+            { value: "boldItalic", label: t("dialog.font.styleBoldItalic") },
+          ]}
+        />
       </div>
 
       <div class="oasis-editor-dialog-row oasis-editor-font-dialog-color-row">
@@ -183,30 +264,26 @@ export function FontTab(props: FontTabProps) {
       </div>
 
       <div class="oasis-editor-dialog-row">
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.underlineStyle")}
-          </label>
-          <select
-            class="oasis-editor-dialog-input"
-            value={ctrl.fontTabValues().underlineStyle}
-            onChange={(e) =>
-              ctrl.setFontTabValues((current) => ({
-                ...current,
-                underlineStyle: e.currentTarget.value as UnderlineStyleValue,
-                underline: e.currentTarget.value !== "none",
-              }))
-            }
-            data-testid="editor-font-dialog-underline-style"
-          >
-            <option value="none">{t("toolbar.underlineRemove")}</option>
-            <For each={UNDERLINE_STYLE_OPTIONS}>
-              {(option) => (
-                <option value={option.value}>{t(option.labelKey)}</option>
-              )}
-            </For>
-          </select>
-        </div>
+        <SelectField
+          class="oasis-editor-dialog-input-group-grow"
+          label={t("dialog.font.underlineStyle")}
+          value={ctrl.fontTabValues().underlineStyle}
+          onChange={(value) =>
+            ctrl.setFontTabValues((current) => ({
+              ...current,
+              underlineStyle: value as UnderlineStyleValue,
+              underline: value !== "none",
+            }))
+          }
+          data-testid="editor-font-dialog-underline-style"
+          options={[
+            { value: "none", label: t("toolbar.underlineRemove") },
+            ...UNDERLINE_STYLE_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+            })),
+          ]}
+        />
         <div class="oasis-editor-dialog-input-group">
           <label class="oasis-editor-dialog-label">
             {t("dialog.font.underlineColor")}
@@ -234,154 +311,17 @@ export function FontTab(props: FontTabProps) {
             {t("dialog.font.style")}
           </label>
           <div class="oasis-editor-dialog-style-row">
-            <label class="oasis-editor-dialog-style-toggle">
-              <input
-                type="checkbox"
-                checked={ctrl.fontTabValues().bold}
-                onChange={(e) =>
-                  ctrl.updateFontTab("bold", e.currentTarget.checked)
-                }
-                data-testid="editor-font-dialog-bold"
-              />
-              <span style={{ "font-weight": 700 }}>
-                {t("dialog.font.bold")}
-              </span>
-            </label>
-            <label class="oasis-editor-dialog-style-toggle">
-              <input
-                type="checkbox"
-                checked={ctrl.fontTabValues().italic}
-                onChange={(e) =>
-                  ctrl.updateFontTab("italic", e.currentTarget.checked)
-                }
-                data-testid="editor-font-dialog-italic"
-              />
-              <span style={{ "font-style": "italic" }}>
-                {t("dialog.font.italic")}
-              </span>
-            </label>
-            <label class="oasis-editor-dialog-style-toggle">
-              <input
-                type="checkbox"
-                checked={ctrl.fontTabValues().underline}
-                onChange={(e) =>
-                  ctrl.setFontTabValues((current) => ({
-                    ...current,
-                    underline: e.currentTarget.checked,
-                    underlineStyle: e.currentTarget.checked
-                      ? current.underlineStyle === "none"
-                        ? "single"
-                        : current.underlineStyle
-                      : "none",
-                  }))
-                }
-                data-testid="editor-font-dialog-underline"
-              />
-              <span style={{ "text-decoration": "underline" }}>
-                {t("dialog.font.underline")}
-              </span>
-            </label>
-            <label class="oasis-editor-dialog-style-toggle">
-              <input
-                type="checkbox"
-                checked={ctrl.fontTabValues().strike}
-                onChange={(e) =>
-                  ctrl.setFontTabValues((current) => ({
-                    ...current,
-                    strike: e.currentTarget.checked,
-                    doubleStrike: e.currentTarget.checked
-                      ? false
-                      : current.doubleStrike,
-                  }))
-                }
-                data-testid="editor-font-dialog-strike"
-              />
-              <span style={{ "text-decoration": "line-through" }}>
-                {t("dialog.font.strike")}
-              </span>
-            </label>
-            <label class="oasis-editor-dialog-style-toggle">
-              <input
-                type="checkbox"
-                checked={ctrl.fontTabValues().doubleStrike}
-                onChange={(e) =>
-                  ctrl.setFontTabValues((current) => ({
-                    ...current,
-                    doubleStrike: e.currentTarget.checked,
-                    strike: e.currentTarget.checked ? false : current.strike,
-                  }))
-                }
-                data-testid="editor-font-dialog-double-strike"
-              />
-              <span>{t("dialog.font.doubleStrike")}</span>
-            </label>
-            <label class="oasis-editor-dialog-style-toggle">
-              <input
-                type="checkbox"
-                checked={ctrl.fontTabValues().superscript}
-                onChange={(e) =>
-                  ctrl.setFontTabValues((current) => ({
-                    ...current,
-                    superscript: e.currentTarget.checked,
-                    subscript: e.currentTarget.checked
-                      ? false
-                      : current.subscript,
-                  }))
-                }
-                data-testid="editor-font-dialog-superscript"
-              />
-              <span>{t("toolbar.superscript")}</span>
-            </label>
-            <label class="oasis-editor-dialog-style-toggle">
-              <input
-                type="checkbox"
-                checked={ctrl.fontTabValues().subscript}
-                onChange={(e) =>
-                  ctrl.setFontTabValues((current) => ({
-                    ...current,
-                    subscript: e.currentTarget.checked,
-                    superscript: e.currentTarget.checked
-                      ? false
-                      : current.superscript,
-                  }))
-                }
-                data-testid="editor-font-dialog-subscript"
-              />
-              <span>{t("toolbar.subscript")}</span>
-            </label>
-            <label class="oasis-editor-dialog-style-toggle">
-              <input
-                type="checkbox"
-                checked={ctrl.fontTabValues().smallCaps}
-                onChange={(e) =>
-                  ctrl.updateFontTab("smallCaps", e.currentTarget.checked)
-                }
-                data-testid="editor-font-dialog-small-caps"
-              />
-              <span>{t("dialog.font.smallCaps")}</span>
-            </label>
-            <label class="oasis-editor-dialog-style-toggle">
-              <input
-                type="checkbox"
-                checked={ctrl.fontTabValues().allCaps}
-                onChange={(e) =>
-                  ctrl.updateFontTab("allCaps", e.currentTarget.checked)
-                }
-                data-testid="editor-font-dialog-all-caps"
-              />
-              <span>{t("dialog.font.allCaps")}</span>
-            </label>
-            <label class="oasis-editor-dialog-style-toggle">
-              <input
-                type="checkbox"
-                checked={ctrl.fontTabValues().hidden}
-                onChange={(e) =>
-                  ctrl.updateFontTab("hidden", e.currentTarget.checked)
-                }
-                data-testid="editor-font-dialog-hidden"
-              />
-              <span>{t("dialog.font.hidden")}</span>
-            </label>
+            <For each={effectToggles()}>
+              {(toggle) => (
+                <ToggleChip
+                  label={toggle.label}
+                  labelStyle={toggle.labelStyle}
+                  checked={toggle.checked()}
+                  onChange={toggle.onChange}
+                  data-testid={toggle.testId}
+                />
+              )}
+            </For>
           </div>
         </div>
       </div>

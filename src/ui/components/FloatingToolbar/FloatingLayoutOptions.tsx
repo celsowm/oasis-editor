@@ -3,13 +3,12 @@ import {
   Show,
   createMemo,
   createSignal,
-  onCleanup,
-  onMount,
   type Accessor,
   type JSX,
 } from "solid-js";
 import { Portal } from "solid-js/web";
 import { useI18n } from "@/i18n/I18nContext.js";
+import { useSurfaceRect } from "@/ui/components/Toolbar/primitives/useSurfaceRect.js";
 import "./layoutOptions.css";
 import type { WrapPreset } from "@/core/commands/floatingLayout.js";
 import type { LayoutOptionsOverlay } from "@/ui/editorUiTypes.js";
@@ -104,34 +103,11 @@ export function FloatingLayoutOptions(
 ): JSX.Element {
   const t = useI18n();
   const [open, setOpen] = createSignal(false);
-  const [surfaceRect, setSurfaceRect] = createSignal<DOMRect | null>(null);
-  const [tick, setTick] = createSignal(0);
-
-  const refreshSurfaceRect = () => {
-    const surface = props.surfaceRef();
-    setSurfaceRect(surface ? surface.getBoundingClientRect() : null);
-  };
-
-  let frame: number | null = null;
-  const scheduleRefresh = () => {
-    if (frame !== null) return;
-    frame = requestAnimationFrame(() => {
-      frame = null;
-      refreshSurfaceRect();
-      setTick((value) => value + 1);
-    });
-  };
-
-  onMount(() => {
-    refreshSurfaceRect();
-    window.addEventListener("scroll", scheduleRefresh, true);
-    window.addEventListener("resize", scheduleRefresh);
-    onCleanup(() => {
-      window.removeEventListener("scroll", scheduleRefresh, true);
-      window.removeEventListener("resize", scheduleRefresh);
-      if (frame !== null) cancelAnimationFrame(frame);
-    });
-  });
+  const {
+    rect: surfaceRect,
+    tick,
+    refresh: scheduleRefresh,
+  } = useSurfaceRect(props.surfaceRef);
 
   // Close the popup whenever the selection target changes or disappears.
   createMemo(() => {

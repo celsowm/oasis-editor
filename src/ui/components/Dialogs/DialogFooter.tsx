@@ -1,4 +1,5 @@
 import type { JSX } from "solid-js";
+import { Button } from "@/ui/public/Button.js";
 
 interface DialogFooterProps {
   onCancel: () => void;
@@ -12,20 +13,20 @@ interface DialogFooterProps {
 export function DialogFooter(props: DialogFooterProps): JSX.Element {
   return (
     <>
-      <button
-        class="oasis-editor-dialog-button oasis-editor-dialog-button-secondary"
+      <Button
+        variant="secondary"
         onClick={props.onCancel}
         data-testid={props.cancelTestId}
       >
         {props.cancelLabel}
-      </button>
-      <button
-        class="oasis-editor-dialog-button oasis-editor-dialog-button-primary"
+      </Button>
+      <Button
+        variant="primary"
         onClick={props.onConfirm}
         data-testid={props.confirmTestId}
       >
         {props.confirmLabel}
-      </button>
+      </Button>
     </>
   );
 }

@@ -169,6 +169,89 @@
   gap: 2px;
 }
 
+.oasis-editor-ui-radio-group {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.oasis-editor-ui-radio {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  color: var(--oasis-text);
+  cursor: pointer;
+}
+
+.oasis-editor-ui-radio-input {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--oasis-accent);
+}
+
+.oasis-editor-ui-radio-input:focus-visible {
+  outline: none;
+  box-shadow: var(--oasis-focus-ring);
+}
+
+.oasis-editor-ui-radio-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.oasis-editor-ui-field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.oasis-editor-ui-field-row > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.oasis-editor-ui-toggle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--oasis-border-color);
+  border-radius: var(--oasis-radius);
+  padding: 4px 10px;
+  font-size: 13px;
+  color: var(--oasis-text);
+  background: var(--oasis-paper);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.oasis-editor-ui-toggle-chip:hover {
+  background: var(--oasis-hover-bg);
+}
+
+.oasis-editor-ui-toggle-chip.is-active {
+  background: var(--oasis-accent-active);
+  border-color: var(--oasis-accent);
+  color: var(--oasis-accent-active-text);
+}
+
+.oasis-editor-ui-toggle-chip-input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--oasis-accent);
+}
+
+.oasis-editor-ui-toggle-chip-input:focus-visible {
+  outline: none;
+  box-shadow: var(--oasis-focus-ring);
+}
+
 .oasis-editor-ui-dialog-footer {
   display: flex;
   flex-wrap: wrap;
