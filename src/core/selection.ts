@@ -107,7 +107,10 @@ export function normalizeSelection(
 ): NormalizedEditorSelection {
   const paragraphs = providedParagraphs ?? getParagraphs(state);
   const indexById = new Map(
-    paragraphs.map((paragraph, index): readonly [string, number] => [paragraph.id, index] as const),
+    paragraphs.map(
+      (paragraph, index): readonly [string, number] =>
+        [paragraph.id, index] as const,
+    ),
   );
   const rawAnchorIndex = indexById.get(state.selection.anchor.paragraphId) ?? 0;
   const rawFocusIndex = indexById.get(state.selection.focus.paragraphId) ?? 0;

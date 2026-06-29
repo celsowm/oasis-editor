@@ -1,4 +1,9 @@
-import type { EditorState, EditorTextStyle, EditorParagraphNode, EditorTextRun } from "@/core/model.js";
+import type {
+  EditorState,
+  EditorTextStyle,
+  EditorParagraphNode,
+  EditorTextRun,
+} from "@/core/model.js";
 import { getParagraphLength, getParagraphs } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import type {
@@ -50,29 +55,33 @@ export function toggleTextStyle(
     return state;
   }
 
-  const shouldEnable = !touchedRuns.every((run): boolean => Boolean(run.styles?.[key]));
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
-    if (
-      paragraphIndex < normalized.startIndex ||
-      paragraphIndex > normalized.endIndex
-    ) {
-      return paragraph;
-    }
+  const shouldEnable = !touchedRuns.every((run): boolean =>
+    Boolean(run.styles?.[key]),
+  );
+  const nextParagraphs = paragraphs.map(
+    (paragraph, paragraphIndex): EditorParagraphNode => {
+      if (
+        paragraphIndex < normalized.startIndex ||
+        paragraphIndex > normalized.endIndex
+      ) {
+        return paragraph;
+      }
 
-    const startOffset =
-      paragraphIndex === normalized.startIndex
-        ? normalized.startParagraphOffset
-        : 0;
-    const endOffset =
-      paragraphIndex === normalized.endIndex
-        ? normalized.endParagraphOffset
-        : getParagraphLength(paragraph);
+      const startOffset =
+        paragraphIndex === normalized.startIndex
+          ? normalized.startParagraphOffset
+          : 0;
+      const endOffset =
+        paragraphIndex === normalized.endIndex
+          ? normalized.endParagraphOffset
+          : getParagraphLength(paragraph);
 
-    return mapRunsInRange(paragraph, startOffset, endOffset, (run) => ({
-      ...run,
-      styles: setBooleanStyle(run.styles, key, shouldEnable),
-    }));
-  });
+      return mapRunsInRange(paragraph, startOffset, endOffset, (run) => ({
+        ...run,
+        styles: setBooleanStyle(run.styles, key, shouldEnable),
+      }));
+    },
+  );
 
   return cloneStateWithParagraphs(
     state,
@@ -92,30 +101,32 @@ export function clearSelectedTextFormatting(state: EditorState): EditorState {
   }
 
   const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
-    if (
-      paragraphIndex < normalized.startIndex ||
-      paragraphIndex > normalized.endIndex
-    ) {
-      return paragraph;
-    }
+  const nextParagraphs = paragraphs.map(
+    (paragraph, paragraphIndex): EditorParagraphNode => {
+      if (
+        paragraphIndex < normalized.startIndex ||
+        paragraphIndex > normalized.endIndex
+      ) {
+        return paragraph;
+      }
 
-    const startOffset =
-      paragraphIndex === normalized.startIndex
-        ? normalized.startParagraphOffset
-        : 0;
-    const endOffset =
-      paragraphIndex === normalized.endIndex
-        ? normalized.endParagraphOffset
-        : getParagraphLength(paragraph);
+      const startOffset =
+        paragraphIndex === normalized.startIndex
+          ? normalized.startParagraphOffset
+          : 0;
+      const endOffset =
+        paragraphIndex === normalized.endIndex
+          ? normalized.endParagraphOffset
+          : getParagraphLength(paragraph);
 
-    return mapRunsInRange(paragraph, startOffset, endOffset, (run) => {
-      const link = run.styles?.link;
-      const styles: EditorTextStyle =
-        link != null && link !== "" ? { link } : {};
-      return { ...run, styles };
-    });
-  });
+      return mapRunsInRange(paragraph, startOffset, endOffset, (run) => {
+        const link = run.styles?.link;
+        const styles: EditorTextStyle =
+          link != null && link !== "" ? { link } : {};
+        return { ...run, styles };
+      });
+    },
+  );
 
   return cloneStateWithParagraphs(
     state,
@@ -135,28 +146,30 @@ export function setTextStyleValue<K extends ValueTextStyleKey>(
   }
 
   const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
-    if (
-      paragraphIndex < normalized.startIndex ||
-      paragraphIndex > normalized.endIndex
-    ) {
-      return paragraph;
-    }
+  const nextParagraphs = paragraphs.map(
+    (paragraph, paragraphIndex): EditorParagraphNode => {
+      if (
+        paragraphIndex < normalized.startIndex ||
+        paragraphIndex > normalized.endIndex
+      ) {
+        return paragraph;
+      }
 
-    const startOffset =
-      paragraphIndex === normalized.startIndex
-        ? normalized.startParagraphOffset
-        : 0;
-    const endOffset =
-      paragraphIndex === normalized.endIndex
-        ? normalized.endParagraphOffset
-        : getParagraphLength(paragraph);
+      const startOffset =
+        paragraphIndex === normalized.startIndex
+          ? normalized.startParagraphOffset
+          : 0;
+      const endOffset =
+        paragraphIndex === normalized.endIndex
+          ? normalized.endParagraphOffset
+          : getParagraphLength(paragraph);
 
-    return mapRunsInRange(paragraph, startOffset, endOffset, (run) => ({
-      ...run,
-      styles: setValueStyle(run.styles, key, value),
-    }));
-  });
+      return mapRunsInRange(paragraph, startOffset, endOffset, (run) => ({
+        ...run,
+        styles: setValueStyle(run.styles, key, value),
+      }));
+    },
+  );
 
   return cloneStateWithParagraphs(
     state,

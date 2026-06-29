@@ -95,6 +95,7 @@ export function serializeParagraphRunsToHtml(
   document?: Pick<EditorDocument, "assets">,
 ): string {
   return (
-    runs.map((run): string => serializeTextRunToHtml(run, document)).join("") || "<br>"
+    runs.map((run): string => serializeTextRunToHtml(run, document)).join("") ||
+    "<br>"
   );
 }

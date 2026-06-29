@@ -1,3 +1,4 @@
+import type { JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Dialog } from "./Dialog.js";
 import { DialogFooter } from "./DialogFooter.js";
@@ -18,7 +19,9 @@ export type {
   TablePropertiesDialogProps,
 } from "./table-properties/TablePropertiesTypes.js";
 
-export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
+export function TablePropertiesDialog(
+  props: TablePropertiesDialogProps,
+): JSX.Element {
   const t = useI18n();
   const ctrl = useTablePropertiesController(props);
 

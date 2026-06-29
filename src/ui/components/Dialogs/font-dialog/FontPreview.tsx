@@ -1,3 +1,4 @@
+import type { JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 
 export interface FontPreviewProps {
@@ -6,7 +7,7 @@ export interface FontPreviewProps {
   style: Record<string, string | number | undefined>;
 }
 
-export function FontPreview(props: FontPreviewProps) {
+export function FontPreview(props: FontPreviewProps): JSX.Element {
   const t = useI18n();
   return (
     <div

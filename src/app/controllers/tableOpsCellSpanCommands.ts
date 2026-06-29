@@ -8,7 +8,9 @@ import {
   type EditorEditingZone,
   type EditorParagraphNode,
   type EditorState,
-  type EditorTableNode, EditorTableCellNode } from "@/core/model.js";
+  type EditorTableNode,
+  EditorTableCellNode,
+} from "@/core/model.js";
 import {
   commitTableMutation,
   resolveLocationTableMutation,
@@ -38,18 +40,23 @@ interface TableCellSpanOperationsDeps {
 
 export function createTableCellSpanOperations(
   deps: TableCellSpanOperationsDeps,
-) {
+): ReturnType<typeof createTableCellSpanOperationsImpl> {
+  return createTableCellSpanOperationsImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
   const cloneCellSnapshot = (
     cell: NonNullable<EditorTableNode["rows"][number]["cells"][number]>,
-  ) => ({
+  ): EditorTableCellNode => ({
     ...cell,
     style: cell.style ? { ...cell.style } : undefined,
     conditionalStyle: cell.conditionalStyle
       ? { ...cell.conditionalStyle }
       : undefined,
     mergeRevisionState: undefined,
-    blocks: cell.blocks.map((block): EditorBlockNode =>
-      cloneBlock(block),
+    blocks: cell.blocks.map(
+      (block): EditorBlockNode => cloneBlock(block),
     ) as EditorParagraphNode[],
   });
 
@@ -292,15 +299,18 @@ export function createTableCellSpanOperations(
         currentCellCount: 1,
         previousCells: [
           previousCell,
-          ...Array.from({ length: span - 1 }, (_, offset): EditorTableCellNode => {
-            const prior =
-              tableBlock.rows[location.rowIndex + offset + 1]?.cells[
-                location.cellIndex
-              ];
-            return prior
-              ? cloneCellSnapshot(prior)
-              : createEditorTableCell([], preservedColSpan);
-          }),
+          ...Array.from(
+            { length: span - 1 },
+            (_, offset): EditorTableCellNode => {
+              const prior =
+                tableBlock.rows[location.rowIndex + offset + 1]?.cells[
+                  location.cellIndex
+                ];
+              return prior
+                ? cloneCellSnapshot(prior)
+                : createEditorTableCell([], preservedColSpan);
+            },
+          ),
         ],
       };
     }
@@ -350,8 +360,8 @@ export function createTableCellSpanOperations(
       {
         ...cell,
         colSpan: 1,
-        blocks: cell.blocks.map((paragraph): EditorBlockNode =>
-          cloneBlock(paragraph),
+        blocks: cell.blocks.map(
+          (paragraph): EditorBlockNode => cloneBlock(paragraph),
         ) as EditorParagraphNode[],
         ...(revision
           ? {
@@ -376,8 +386,10 @@ export function createTableCellSpanOperations(
             }
           : {}),
       },
-      ...Array.from({ length: span - 1 }, (): EditorTableCellNode =>
-        createEditorTableCell([createEditorParagraph("")]),
+      ...Array.from(
+        { length: span - 1 },
+        (): EditorTableCellNode =>
+          createEditorTableCell([createEditorParagraph("")]),
       ),
     ];
 

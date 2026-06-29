@@ -14,11 +14,21 @@ export interface UseEditorRevisionProps {
   zoomFactor?: () => number;
 }
 
-export function createEditorRevisionController(deps: UseEditorRevisionProps) {
+export function createEditorRevisionController(
+  deps: UseEditorRevisionProps,
+): ReturnType<typeof createEditorRevisionControllerImpl> {
+  return createEditorRevisionControllerImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorRevisionControllerImpl(deps: UseEditorRevisionProps) {
   const [hoveredRevision, setHoveredRevision] =
     createSignal<RevisionBox | null>(null);
 
-  const handleRevisionMouseEnter = (revisionId: string, event: MouseEvent): void => {
+  const handleRevisionMouseEnter = (
+    revisionId: string,
+    event: MouseEvent,
+  ): void => {
     const paragraphs = getParagraphs(deps.state());
     let foundRevision:
       | (EditorRevisionMetadata & { type: RevisionBox["type"] })

@@ -377,7 +377,8 @@ export function resolveResponsiveRibbonGroups(
 
   if (availableWidth !== null && Number.isFinite(availableWidth)) {
     let currentWidth = groups.reduce(
-      (sum, group): number => sum + widthForState("full", widths.get(group.id)!),
+      (sum, group): number =>
+        sum + widthForState("full", widths.get(group.id)!),
       0,
     );
     const targetWidth = Math.max(0, availableWidth);

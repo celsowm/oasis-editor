@@ -1,4 +1,8 @@
-import type { EditorBlockNode, EditorLayoutBlock, EditorLayoutParagraph } from "@/core/model.js";
+import type {
+  EditorBlockNode,
+  EditorLayoutBlock,
+  EditorLayoutParagraph,
+} from "@/core/model.js";
 import { domTextMeasurer } from "@/ui/textMeasurement.js";
 import type { HeaderFooterLayoutContext } from "./headerFooterLayoutContext.js";
 import { projectHeaderFooterBlocksWithDependencies } from "./headerFooterProjection.js";

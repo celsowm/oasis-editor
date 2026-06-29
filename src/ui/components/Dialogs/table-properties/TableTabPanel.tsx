@@ -31,7 +31,7 @@ export function TableTabPanel(props: TablePanelProps): JSX.Element {
           <Grid size={{ xs: 12, md: 6 }}>
             {NumField(
               t("table.preferredWidth"),
-              (): any => form().tableWidth,
+              (): string => form().tableWidth,
               (v): void => set("tableWidth", v),
               "editor-table-properties-table-width",
             )}
@@ -70,23 +70,25 @@ export function TableTabPanel(props: TablePanelProps): JSX.Element {
             )
           }
         >
-          {(["left", "center", "right"] as const).map((align): JSX.Element => (
-            <Radio
-              value={align}
-              label={t(
-                `table.align${align[0]!.toUpperCase()}${align.slice(1)}` as Parameters<
-                  typeof t
-                >[0],
-              )}
-              data-testid={`editor-table-properties-align-${align}`}
-            />
-          ))}
+          {(["left", "center", "right"] as const).map(
+            (align): JSX.Element => (
+              <Radio
+                value={align}
+                label={t(
+                  `table.align${align[0]!.toUpperCase()}${align.slice(1)}` as Parameters<
+                    typeof t
+                  >[0],
+                )}
+                data-testid={`editor-table-properties-align-${align}`}
+              />
+            ),
+          )}
         </RadioGroup>
         <Grid container spacing={1.5}>
           <Grid size={{ xs: 12, md: 6 }}>
             {NumField(
               t("table.indentFromLeft"),
-              (): any => form().tableIndentLeft,
+              (): string => form().tableIndentLeft,
               (v): void => set("tableIndentLeft", v),
               "editor-table-properties-indent-left",
             )}
@@ -156,7 +158,7 @@ export function TableTabPanel(props: TablePanelProps): JSX.Element {
             <Grid size={{ xs: 12, md: 3 }}>
               {NumField(
                 t("table.positionX"),
-                (): any => form().floatingX,
+                (): string => form().floatingX,
                 (v): void => set("floatingX", v),
                 "editor-table-properties-floating-x",
                 Boolean(form().floatingXAlign),
@@ -166,7 +168,7 @@ export function TableTabPanel(props: TablePanelProps): JSX.Element {
             <Grid size={{ xs: 12, md: 3 }}>
               {NumField(
                 t("table.positionY"),
-                (): any => form().floatingY,
+                (): string => form().floatingY,
                 (v): void => set("floatingY", v),
                 "editor-table-properties-floating-y",
                 Boolean(form().floatingYAlign),
@@ -214,7 +216,7 @@ export function TableTabPanel(props: TablePanelProps): JSX.Element {
             <Grid size={{ xs: 12, md: 3 }}>
               {NumField(
                 t("table.distanceTop"),
-                (): any => form().floatingDistanceTop,
+                (): string => form().floatingDistanceTop,
                 (v): void => set("floatingDistanceTop", v),
                 "editor-table-properties-floating-distance-top",
               )}
@@ -222,7 +224,7 @@ export function TableTabPanel(props: TablePanelProps): JSX.Element {
             <Grid size={{ xs: 12, md: 3 }}>
               {NumField(
                 t("table.distanceRight"),
-                (): any => form().floatingDistanceRight,
+                (): string => form().floatingDistanceRight,
                 (v): void => set("floatingDistanceRight", v),
                 "editor-table-properties-floating-distance-right",
               )}
@@ -230,7 +232,7 @@ export function TableTabPanel(props: TablePanelProps): JSX.Element {
             <Grid size={{ xs: 12, md: 3 }}>
               {NumField(
                 t("table.distanceBottom"),
-                (): any => form().floatingDistanceBottom,
+                (): string => form().floatingDistanceBottom,
                 (v): void => set("floatingDistanceBottom", v),
                 "editor-table-properties-floating-distance-bottom",
               )}
@@ -238,7 +240,7 @@ export function TableTabPanel(props: TablePanelProps): JSX.Element {
             <Grid size={{ xs: 12, md: 3 }}>
               {NumField(
                 t("table.distanceLeft"),
-                (): any => form().floatingDistanceLeft,
+                (): string => form().floatingDistanceLeft,
                 (v): void => set("floatingDistanceLeft", v),
                 "editor-table-properties-floating-distance-left",
               )}

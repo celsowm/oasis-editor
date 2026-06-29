@@ -114,8 +114,14 @@ export function createEditorParagraphFromRuns(
     type: "paragraph",
     runs:
       runs.length > 0
-        ? runs.map((run): EditorTextRun =>
-            createEditorStyledRun(run.text, run.styles, run.image, run.textBox),
+        ? runs.map(
+            (run): EditorTextRun =>
+              createEditorStyledRun(
+                run.text,
+                run.styles,
+                run.image,
+                run.textBox,
+              ),
           )
         : [createEditorRun("")],
   };
@@ -419,12 +425,17 @@ export function getDocumentWordCount(document: EditorDocument): number {
   let totalWords = 0;
 
   for (const paragraph of paragraphs) {
-    const text = paragraph.runs.reduce((sum, run): string => sum + run.text, "");
+    const text = paragraph.runs.reduce(
+      (sum, run): string => sum + run.text,
+      "",
+    );
     if (!text.trim()) continue;
 
     // Split by whitespace and punctuation that typically separates words
     // This is a naive implementation but covers basic English/Portuguese needs
-    const words = text.split(/[\s\p{P}]+/u).filter((word): boolean => word.length > 0);
+    const words = text
+      .split(/[\s\p{P}]+/u)
+      .filter((word): boolean => word.length > 0);
     totalWords += words.length;
   }
 
@@ -635,7 +646,9 @@ export function createEditorStateFromParagraphRuns(
 ): EditorState {
   const paragraphs =
     paragraphsSpec.length > 0
-      ? paragraphsSpec.map((runs): EditorParagraphNode => createEditorParagraphFromRuns(runs))
+      ? paragraphsSpec.map(
+          (runs): EditorParagraphNode => createEditorParagraphFromRuns(runs),
+        )
       : [createEditorParagraph("")];
 
   const { anchorIndex, focusIndex } = resolveSelectionIndexes(

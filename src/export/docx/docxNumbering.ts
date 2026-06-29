@@ -40,7 +40,9 @@ export function buildNumberingContext(
       definitionMap.set(key, definition);
       definitions.push(definition);
     }
-    if (!definition.levels.some((candidate): boolean => candidate.level === level)) {
+    if (
+      !definition.levels.some((candidate): boolean => candidate.level === level)
+    ) {
       definition.levels.push({
         kind: paragraph.list.kind,
         level,

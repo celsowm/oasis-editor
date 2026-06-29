@@ -6,6 +6,7 @@ import {
   responsiveCssVars,
   spacingToCss,
   toResponsiveRecord,
+  type Breakpoint,
   type FlexAlign,
   type FlexJustify,
   type FlexWrap,
@@ -33,6 +34,23 @@ export interface GridProps extends ParentProps<
   component?: keyof JSX.IntrinsicElements;
 }
 
+/**
+ * Resolved column-gap for a breakpoint, as a nested `var()` fallback chain from
+ * the requested breakpoint down to `xs` (and finally `0px`). The container sets
+ * `--oasis-grid-column-spacing-*` in its inline style and items inherit it, so
+ * an item can subtract the gap it consumes from its own basis (MUI Grid v2 "gap
+ * compensation"). Without this, columns sized to sum to 12 plus the container's
+ * `column-gap` overflow the row and the last item wraps to its own line.
+ */
+function columnSpacingVar(breakpoint: Breakpoint): string {
+  const index = BREAKPOINTS.indexOf(breakpoint);
+  let expr = "0px";
+  for (let i = 0; i <= index; i++) {
+    expr = `var(--oasis-grid-column-spacing-${BREAKPOINTS[i]}, ${expr})`;
+  }
+  return expr;
+}
+
 function gridSizeVars(
   value: ResponsiveValue<GridSize> | undefined,
 ): JSX.CSSProperties {
@@ -42,7 +60,14 @@ function gridSizeVars(
     const size = record[breakpoint];
     if (size === undefined) continue;
     if (typeof size === "number") {
-      const basis = `calc(${size} / var(--oasis-grid-columns-current) * 100%)`;
+      const gap = columnSpacingVar(breakpoint);
+      // width = span/cols * 100% − gap * (cols − span)/cols.
+      // A full row of spans summing to `cols` then totals exactly
+      // 100% − (count − 1) * gap, leaving room for the container's column-gap.
+      const basis =
+        `calc(${size} / var(--oasis-grid-columns-current) * 100% - ` +
+        `${gap} * (var(--oasis-grid-columns-current) - ${size}) / ` +
+        `var(--oasis-grid-columns-current))`;
       vars[`--oasis-grid-size-basis-${breakpoint}`] = basis;
       vars[`--oasis-grid-size-grow-${breakpoint}`] = "0";
       vars[`--oasis-grid-size-max-${breakpoint}`] = basis;

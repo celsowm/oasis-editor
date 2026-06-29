@@ -10,7 +10,7 @@ import {
 import { cloneEditorState } from "@/core/cloneState.js";
 import { Toolbar } from "./components/Toolbar/Toolbar.js";
 import "./components/FindReplace/findReplace.css";
-import { createTranslator } from "@/i18n/index.js";
+import { createTranslator, type Locale } from "@/i18n/index.js";
 import { I18nProvider } from "@/i18n/I18nContext.js";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 import { syncCanvasDebugApiVisibility } from "./canvas/CanvasDebug.js";
@@ -39,7 +39,11 @@ import { createEditorInteractionRuntime } from "./app/createEditorInteractionRun
 import { createEditorCommandRuntime } from "./app/createEditorCommandRuntime.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
-import type { OasisEditorAppUiProps, OasisEditorAppDocumentProps, OasisEditorAppRuntimeProps } from "@/ui/OasisEditorAppProps.js";
+import type {
+  OasisEditorAppUiProps,
+  OasisEditorAppDocumentProps,
+  OasisEditorAppRuntimeProps,
+} from "@/ui/OasisEditorAppProps.js";
 import { JSX } from "solid-js";
 
 export type {
@@ -55,12 +59,15 @@ export type {
 export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   const runtimeClient = props.runtime?.client ?? createOasisEditorClient();
   const ui = (): OasisEditorAppUiProps => props.ui ?? {};
-  const documentOptions = (): OasisEditorAppDocumentProps => props.document ?? {};
+  const documentOptions = (): OasisEditorAppDocumentProps =>
+    props.document ?? {};
   const runtimeOptions = (): OasisEditorAppRuntimeProps => props.runtime ?? {};
   syncCanvasDebugApiVisibility();
   // Per-instance translator: reads this editor's locale signal, so two editors
   // on the same page translate independently. Provided via I18nProvider below.
-  const translator = createTranslator((): any => ui().locale ?? "pt-BR");
+  const translator = createTranslator(
+    (): Locale => (ui().locale ?? "pt-BR") as Locale,
+  );
   const logger = createEditorLogger("app");
   const { state, commitState, getStateSnapshot } = createEditorAppState({
     initialDocument: documentOptions().initialDocument,
@@ -122,10 +129,14 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   // First-use precise-fonts welcome overlay (rendered inside the editor shell).
   const [welcomeOpen, setWelcomeOpen] = createSignal(false);
 
-  const viewportRef = (): HTMLDivElement | undefined => focusController.viewportRef;
-  const surfaceRef = (): HTMLDivElement | undefined => focusController.surfaceRef;
-  const importInputRef = (): HTMLInputElement | undefined => focusController.importInputRef;
-  const imageInputRef = (): HTMLInputElement | undefined => focusController.imageInputRef;
+  const viewportRef = (): HTMLDivElement | undefined =>
+    focusController.viewportRef;
+  const surfaceRef = (): HTMLDivElement | undefined =>
+    focusController.surfaceRef;
+  const importInputRef = (): HTMLInputElement | undefined =>
+    focusController.importInputRef;
+  const imageInputRef = (): HTMLInputElement | undefined =>
+    focusController.imageInputRef;
   const documentRuntime = createEditorDocumentRuntime({
     documentOptions,
     logger,
@@ -229,7 +240,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     setForcePlainTextPaste: (value): void => {
       forcePlainTextPaste = value;
     },
-    locale: (): any => ui().locale ?? "pt-BR",
+    locale: (): Locale => (ui().locale ?? "pt-BR") as Locale,
     translator,
     runtimeClient,
     runtimeOptions,
@@ -259,6 +270,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     computeFontSizeOptions,
     applyFontDialogValues,
     applyParagraphDialogValues,
+    setParagraphDialogDefault,
     applyTablePropertiesDialogValues,
     buildContextMenuItems,
     handleEditorContextMenu,
@@ -424,6 +436,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           applyImageCaptionCommand={commandsController.applyImageCaptionCommand}
           applyFontDialogValues={applyFontDialogValues}
           applyParagraphDialogValues={applyParagraphDialogValues}
+          setParagraphDialogDefault={setParagraphDialogDefault}
           applyTablePropertiesDialogValues={applyTablePropertiesDialogValues}
           closeContextMenu={closeContextMenu}
         />
@@ -452,7 +465,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           }}
           view={{
             isReadOnly,
-            viewportHeight: (): any => ui().viewportHeight,
+            viewportHeight: (): number | string | undefined =>
+              ui().viewportHeight,
             measuredBlockHeights,
             measuredParagraphLayouts,
             documentLayout,

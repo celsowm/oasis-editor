@@ -2,16 +2,20 @@ import {
   getDocumentSectionsCanonical,
   type EditorLayoutDocument,
   type EditorState,
-  type EditorTableNode, EditorBlockNode } from "@/core/model.js";
+  type EditorTableNode,
+  EditorBlockNode,
+} from "@/core/model.js";
 import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 import type { SnapshotCellRect, TableGeometry } from "./tableResizeTypes.js";
 
 function getAllBlocks(state: EditorState): EditorBlockNode[] {
-  return getDocumentSectionsCanonical(state.document).flatMap((section): EditorBlockNode[] => [
-    ...(section.header ?? []),
-    ...section.blocks,
-    ...(section.footer ?? []),
-  ]);
+  return getDocumentSectionsCanonical(state.document).flatMap(
+    (section): EditorBlockNode[] => [
+      ...(section.header ?? []),
+      ...section.blocks,
+      ...(section.footer ?? []),
+    ],
+  );
 }
 
 export function getTableById(

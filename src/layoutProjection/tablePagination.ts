@@ -1,4 +1,8 @@
-import type { EditorNamedStyle, EditorTableNode, EditorParagraphNode } from "@/core/model.js";
+import type {
+  EditorNamedStyle,
+  EditorTableNode,
+  EditorParagraphNode,
+} from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
 import { domTextMeasurer } from "@/ui/textMeasurement.js";
 import { resolveTableColumnWidthsPx } from "@/ui/tableGeometry.js";
@@ -241,8 +245,9 @@ export function estimateTableRowHeight(
     const cell = {
       ...sourceCell,
       style: formatting?.cellStyle ?? sourceCell.style,
-      blocks: sourceCell.blocks.map((paragraph): EditorParagraphNode =>
-        resolveCachedTableCellParagraph(paragraph, formatting, styles),
+      blocks: sourceCell.blocks.map(
+        (paragraph): EditorParagraphNode =>
+          resolveCachedTableCellParagraph(paragraph, formatting, styles),
       ),
     };
     if (cell.vMerge === "continue") return 0;

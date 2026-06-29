@@ -127,7 +127,8 @@ export function measureLinesFromRects(charRects: CharRect[]): MeasuredLine[] {
     const lineRects = charRects.slice(lineStart, index);
     const firstRect = lineRects[0]!;
     const height = lineRects.reduce(
-      (maxHeight, rect): number => Math.max(maxHeight, normalizeHeight(rect.height)),
+      (maxHeight, rect): number =>
+        Math.max(maxHeight, normalizeHeight(rect.height)),
       0,
     );
     lines.push({
@@ -146,14 +147,40 @@ export function measureLinesFromRects(charRects: CharRect[]): MeasuredLine[] {
 }
 
 export function getCaretSlotRects(charRects: CharRect[]): CaretSlotRect[] {
-  return measureLinesFromRects(charRects).flatMap((line, lineIndex, lines): { left: number; top: number; height: number; }[] => {
-    if (lineIndex === lines.length - 1) {
-      return line.slots.map(({ left, top, height }): { left: number; top: number; height: number; } => ({ left, top, height }));
-    }
-    return line.slots
-      .slice(0, -1)
-      .map(({ left, top, height }): { left: number; top: number; height: number; } => ({ left, top, height }));
-  });
+  return measureLinesFromRects(charRects).flatMap(
+    (
+      line,
+      lineIndex,
+      lines,
+    ): { left: number; top: number; height: number }[] => {
+      if (lineIndex === lines.length - 1) {
+        return line.slots.map(
+          ({
+            left,
+            top,
+            height,
+          }): { left: number; top: number; height: number } => ({
+            left,
+            top,
+            height,
+          }),
+        );
+      }
+      return line.slots
+        .slice(0, -1)
+        .map(
+          ({
+            left,
+            top,
+            height,
+          }): { left: number; top: number; height: number } => ({
+            left,
+            top,
+            height,
+          }),
+        );
+    },
+  );
 }
 
 export function resolveClosestOffsetForBoundaryLine(

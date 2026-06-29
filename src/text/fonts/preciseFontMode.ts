@@ -36,9 +36,9 @@ export function setAvailableLocalFontFamilies(
   families: Iterable<string>,
 ): void {
   availableLocalFamilies = new Set(
-    Array.from(families, (family): string => family.trim().toLowerCase()).filter(
-      Boolean,
-    ),
+    Array.from(families, (family): string =>
+      family.trim().toLowerCase(),
+    ).filter(Boolean),
   );
   setVersion((current): number => current + 1);
 }

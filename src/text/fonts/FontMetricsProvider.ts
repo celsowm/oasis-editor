@@ -74,8 +74,8 @@ function resolveFaceFiles(family: string | null | undefined): FontFaceFiles {
   }
   let files = ROBOTO_FONT_FILES;
   for (const definition of OFFICE_COMPAT_FONT_FAMILIES) {
-    const names = [definition.family, ...definition.aliases].map((name): string =>
-      name.toLowerCase(),
+    const names = [definition.family, ...definition.aliases].map(
+      (name): string => name.toLowerCase(),
     );
     if (names.includes(normalized)) {
       files = definition.files;
@@ -112,8 +112,19 @@ function registerBrowserFontFace(
   });
   document.fonts.add(fontFace);
   return fontFace.load().then(
-    (): { family: string; style: keyof FontFaceFiles; status: "loaded"; } => ({ family, style, status: "loaded" }),
-    (error: unknown): { family: string; style: keyof FontFaceFiles; status: "failed"; error: string; } => ({
+    (): { family: string; style: keyof FontFaceFiles; status: "loaded" } => ({
+      family,
+      style,
+      status: "loaded",
+    }),
+    (
+      error: unknown,
+    ): {
+      family: string;
+      style: keyof FontFaceFiles;
+      status: "failed";
+      error: string;
+    } => ({
       family,
       style,
       status: "failed",
@@ -264,13 +275,23 @@ export async function preloadLayoutFonts(
   }
 
   fontLogger.info("preload:start", {
-    requestedFamilies: requestedFamilies?.map((family): string | null => family ?? null),
+    requestedFamilies: requestedFamilies?.map(
+      (family): string | null => family ?? null,
+    ),
     faceCount: fontFaces.size,
-    faces: Array.from(fontFaces.values()).map((entry): { fileName: string; style: keyof FontFaceFiles; familyNames: string[]; } => ({
-      fileName: entry.fileName,
-      style: entry.style,
-      familyNames: Array.from(entry.familyNames),
-    })),
+    faces: Array.from(fontFaces.values()).map(
+      (
+        entry,
+      ): {
+        fileName: string;
+        style: keyof FontFaceFiles;
+        familyNames: string[];
+      } => ({
+        fileName: entry.fileName,
+        style: entry.style,
+        familyNames: Array.from(entry.familyNames),
+      }),
+    ),
   });
 
   const results = await Promise.all(
@@ -281,12 +302,21 @@ export async function preloadLayoutFonts(
           fileName: entry.fileName,
           style: entry.style,
           bytes: 0,
-          registrations: Array.from(entry.familyNames).map((family): { family: string; style: keyof FontFaceFiles; status: "failed"; error: string; } => ({
-            family,
-            style: entry.style,
-            status: "failed" as const,
-            error: "font asset returned no bytes",
-          })),
+          registrations: Array.from(entry.familyNames).map(
+            (
+              family,
+            ): {
+              family: string;
+              style: keyof FontFaceFiles;
+              status: "failed";
+              error: string;
+            } => ({
+              family,
+              style: entry.style,
+              status: "failed" as const,
+              error: "font asset returned no bytes",
+            }),
+          ),
         };
       }
       sharedProvider.ingest(entry.fileName, bytes);

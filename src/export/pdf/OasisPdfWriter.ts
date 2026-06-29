@@ -174,7 +174,9 @@ export class OasisPdfWriter {
    * duplicates are ignored so destinations stay unique in the names tree.
    */
   addNamedDestination(destination: OasisPdfNamedDestination): void {
-    if (this.namedDestinations.some((d): boolean => d.name === destination.name)) {
+    if (
+      this.namedDestinations.some((d): boolean => d.name === destination.name)
+    ) {
       return;
     }
     this.namedDestinations.push(destination);

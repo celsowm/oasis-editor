@@ -2,7 +2,10 @@ import type {
   EditorBlockNode,
   EditorState,
   EditorTableCellNode,
-  EditorTableRowNode, EditorParagraphNode, EditorTextRun } from "@/core/model.js";
+  EditorTableRowNode,
+  EditorParagraphNode,
+  EditorTextRun,
+} from "@/core/model.js";
 import {
   getDocumentSections,
   getParagraphLength,
@@ -297,7 +300,9 @@ function collectTableRevisionIds(
     if (block.type === "paragraph") continue;
     const tableSelected = block.rows.some((row): boolean =>
       row.cells.some((cell): boolean =>
-        cell.blocks.some((paragraph): boolean => selectedParagraphIds.has(paragraph.id)),
+        cell.blocks.some((paragraph): boolean =>
+          selectedParagraphIds.has(paragraph.id),
+        ),
       ),
     );
     if (tableSelected) {
@@ -306,7 +311,9 @@ function collectTableRevisionIds(
     }
     for (const row of block.rows) {
       const selectedCells = row.cells.filter((cell): boolean =>
-        cell.blocks.some((paragraph): boolean => selectedParagraphIds.has(paragraph.id)),
+        cell.blocks.some((paragraph): boolean =>
+          selectedParagraphIds.has(paragraph.id),
+        ),
       );
       if (selectedCells.length > 0) {
         if (row.style?.revision) revisionIds.add(row.style.revision.id);

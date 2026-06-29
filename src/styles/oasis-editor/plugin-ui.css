@@ -226,7 +226,7 @@
 
   flex-basis: var(--oasis-grid-size-basis-xs, auto);
   flex-grow: var(--oasis-grid-size-grow-xs, 0);
-  flex-shrink: 0;
+  flex-shrink: 1;
   max-width: var(--oasis-grid-size-max-xs, none);
   margin-inline-start: var(--oasis-grid-offset-xs, 0);
 }

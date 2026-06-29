@@ -32,7 +32,9 @@ export function ToggleChip(props: ToggleChipProps): JSX.Element {
         type="checkbox"
         class="oasis-editor-ui-toggle-chip-input"
         checked={local.checked}
-        onChange={(event): void | undefined => local.onChange?.(event.currentTarget.checked)}
+        onChange={(event): void | undefined =>
+          local.onChange?.(event.currentTarget.checked)
+        }
         {...others}
       />
       <span class="oasis-editor-ui-toggle-chip-label" style={local.labelStyle}>

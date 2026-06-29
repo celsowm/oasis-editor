@@ -11,7 +11,9 @@ import type {
   EditorTableRowStyle,
   EditorTableStyle,
   EditorRevisionMetadata,
-  EditorTableConditionalFlags, EditorParagraphStyle } from "@/core/model.js";
+  EditorTableConditionalFlags,
+  EditorParagraphStyle,
+} from "@/core/model.js";
 import { TABLE_CONDITIONAL_FLAG_ATTRIBUTES } from "@/core/docxTableMaps.js";
 import {
   WORD_NS,
@@ -705,7 +707,8 @@ export function collapseCellAutospacing(
   paragraphs: EditorParagraphNode[],
   flags: ParagraphAutospacingFlags[],
 ): void {
-  const styleOf = (paragraph: EditorParagraphNode): EditorParagraphStyle => (paragraph.style ??= {});
+  const styleOf = (paragraph: EditorParagraphNode): EditorParagraphStyle =>
+    (paragraph.style ??= {});
 
   const lastIndex = paragraphs.length - 1;
   for (let index = 0; index < paragraphs.length; index += 1) {

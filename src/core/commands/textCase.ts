@@ -98,36 +98,38 @@ export function transformSelectedText(
   }
 
   const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
-    if (
-      paragraphIndex < normalized.startIndex ||
-      paragraphIndex > normalized.endIndex
-    ) {
-      return paragraph;
-    }
+  const nextParagraphs = paragraphs.map(
+    (paragraph, paragraphIndex): EditorParagraphNode => {
+      if (
+        paragraphIndex < normalized.startIndex ||
+        paragraphIndex > normalized.endIndex
+      ) {
+        return paragraph;
+      }
 
-    const startOffset =
-      paragraphIndex === normalized.startIndex
-        ? normalized.startParagraphOffset
-        : 0;
-    const endOffset =
-      paragraphIndex === normalized.endIndex
-        ? normalized.endParagraphOffset
-        : getParagraphLength(paragraph);
+      const startOffset =
+        paragraphIndex === normalized.startIndex
+          ? normalized.startParagraphOffset
+          : 0;
+      const endOffset =
+        paragraphIndex === normalized.endIndex
+          ? normalized.endParagraphOffset
+          : getParagraphLength(paragraph);
 
-    const selectedText = sliceRuns(paragraph, startOffset, endOffset)
-      .map((run): string => run.text)
-      .join("");
-    const transformed = transform(selectedText);
+      const selectedText = sliceRuns(paragraph, startOffset, endOffset)
+        .map((run): string => run.text)
+        .join("");
+      const transformed = transform(selectedText);
 
-    let cursor = 0;
-    return mapRunsInRange(paragraph, startOffset, endOffset, (run) => {
-      const length = run.text.length;
-      const nextText = transformed.slice(cursor, cursor + length);
-      cursor += length;
-      return { ...run, text: nextText };
-    });
-  });
+      let cursor = 0;
+      return mapRunsInRange(paragraph, startOffset, endOffset, (run) => {
+        const length = run.text.length;
+        const nextText = transformed.slice(cursor, cursor + length);
+        cursor += length;
+        return { ...run, text: nextText };
+      });
+    },
+  );
 
   return cloneStateWithParagraphs(
     state,
@@ -141,5 +143,7 @@ export function changeSelectedTextCase(
   state: EditorState,
   mode: TextCaseMode,
 ): EditorState {
-  return transformSelectedText(state, (text): string => applyCaseTransform(text, mode));
+  return transformSelectedText(state, (text): string =>
+    applyCaseTransform(text, mode),
+  );
 }

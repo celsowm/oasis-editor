@@ -29,7 +29,14 @@ export interface UseEditorStyleProps {
   logger: { info: (msg: string) => void };
 }
 
-export function createEditorStyleController(deps: UseEditorStyleProps) {
+export function createEditorStyleController(
+  deps: UseEditorStyleProps,
+): ReturnType<typeof createEditorStyleControllerImpl> {
+  return createEditorStyleControllerImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorStyleControllerImpl(deps: UseEditorStyleProps) {
   const [pendingCaretTextStyle, setPendingCaretTextStyle] = createSignal<
     EditorTextStyle | undefined
   >(undefined);

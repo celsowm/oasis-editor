@@ -168,7 +168,9 @@ function projectTallestHeaderVariant(
     section.firstPageHeader,
     section.evenPageHeader,
   ]
-    .map((blocks): EditorLayoutBlock[] | undefined => projectHeaderFooterVariant(blocks, contentWidth))
+    .map((blocks): EditorLayoutBlock[] | undefined =>
+      projectHeaderFooterVariant(blocks, contentWidth),
+    )
     .filter((blocks): blocks is EditorLayoutBlock[] => !!blocks);
   return variants.sort(
     (a, b): number => getProjectedBlocksHeight(b) - getProjectedBlocksHeight(a),
@@ -187,7 +189,9 @@ function projectTallestFooterVariant(
     section.firstPageFooter,
     section.evenPageFooter,
   ]
-    .map((blocks): EditorLayoutBlock[] | undefined => projectHeaderFooterVariant(blocks, contentWidth))
+    .map((blocks): EditorLayoutBlock[] | undefined =>
+      projectHeaderFooterVariant(blocks, contentWidth),
+    )
     .filter((blocks): blocks is EditorLayoutBlock[] => !!blocks);
   return variants.sort(
     (a, b): number => getProjectedBlocksHeight(b) - getProjectedBlocksHeight(a),

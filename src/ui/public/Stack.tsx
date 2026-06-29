@@ -4,7 +4,8 @@ import {
   children,
   splitProps,
   type JSX,
-  type ParentProps } from "solid-js";
+  type ParentProps,
+} from "solid-js";
 import { Dynamic } from "solid-js/web";
 import {
   mergeStyles,

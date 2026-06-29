@@ -38,7 +38,14 @@ export interface EditorTableOperationsDeps {
   logger?: EditorLogger;
 }
 
-export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
+export function createEditorTableOperations(
+  deps: EditorTableOperationsDeps,
+): ReturnType<typeof createEditorTableOperationsImpl> {
+  return createEditorTableOperationsImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorTableOperationsImpl(deps: EditorTableOperationsDeps) {
   const getTargetBlocks = (
     state: EditorState,
     zone: EditorEditingZone,

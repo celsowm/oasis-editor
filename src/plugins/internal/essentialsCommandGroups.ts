@@ -80,50 +80,86 @@ export function buildCoreFormattingCommands({
     selectAll: command("selectAll", formatting.selectAll),
     insertFootnote: command("insertFootnote", formatting.insertFootnote),
     pastePlainText: command("pastePlainText", formatting.pastePlainText),
-    bold: command("bold", formatting.bold, (): { isActive: boolean; } => ({
+    bold: command("bold", formatting.bold, (): { isActive: boolean } => ({
       isActive: Boolean(s().bold),
     })),
-    italic: command("italic", formatting.italic, (): { isActive: boolean; } => ({
+    italic: command("italic", formatting.italic, (): { isActive: boolean } => ({
       isActive: Boolean(s().italic),
     })),
-    underline: command("underline", formatting.underline, (): { isActive: boolean; } => ({
-      isActive: Boolean(s().underline),
-    })),
-    strike: command("strike", formatting.strike, (): { isActive: boolean; } => ({
+    underline: command(
+      "underline",
+      formatting.underline,
+      (): { isActive: boolean } => ({
+        isActive: Boolean(s().underline),
+      }),
+    ),
+    strike: command("strike", formatting.strike, (): { isActive: boolean } => ({
       isActive: Boolean(s().strike),
     })),
-    superscript: command("superscript", formatting.superscript, (): { isActive: boolean; } => ({
-      isActive: Boolean(s().superscript),
-    })),
-    subscript: command("subscript", formatting.subscript, (): { isActive: boolean; } => ({
-      isActive: Boolean(s().subscript),
-    })),
+    superscript: command(
+      "superscript",
+      formatting.superscript,
+      (): { isActive: boolean } => ({
+        isActive: Boolean(s().superscript),
+      }),
+    ),
+    subscript: command(
+      "subscript",
+      formatting.subscript,
+      (): { isActive: boolean } => ({
+        isActive: Boolean(s().subscript),
+      }),
+    ),
     link: command(
       "link",
       (): true => (link.prompt(), true),
-      (): { isEnabled: boolean; isActive: boolean; } => ({
+      (): { isEnabled: boolean; isActive: boolean } => ({
         isEnabled: gate.isCommandEnabled("link") && link.canPrompt(),
         isActive: Boolean(s().link),
       }),
     ),
-    alignLeft: command("alignLeft", formatting.alignLeft, (): { isActive: boolean; } => ({
-      isActive: s().align === "left",
-    })),
-    alignCenter: command("alignCenter", formatting.alignCenter, (): { isActive: boolean; } => ({
-      isActive: s().align === "center",
-    })),
-    alignRight: command("alignRight", formatting.alignRight, (): { isActive: boolean; } => ({
-      isActive: s().align === "right",
-    })),
-    alignJustify: command("alignJustify", formatting.alignJustify, (): { isActive: boolean; } => ({
-      isActive: s().align === "justify",
-    })),
-    orderedList: command("orderedList", formatting.orderedList, (): { isActive: boolean; } => ({
-      isActive: s().listKind === "ordered",
-    })),
-    bulletList: command("bulletList", formatting.bulletList, (): { isActive: boolean; } => ({
-      isActive: s().listKind === "bullet",
-    })),
+    alignLeft: command(
+      "alignLeft",
+      formatting.alignLeft,
+      (): { isActive: boolean } => ({
+        isActive: s().align === "left",
+      }),
+    ),
+    alignCenter: command(
+      "alignCenter",
+      formatting.alignCenter,
+      (): { isActive: boolean } => ({
+        isActive: s().align === "center",
+      }),
+    ),
+    alignRight: command(
+      "alignRight",
+      formatting.alignRight,
+      (): { isActive: boolean } => ({
+        isActive: s().align === "right",
+      }),
+    ),
+    alignJustify: command(
+      "alignJustify",
+      formatting.alignJustify,
+      (): { isActive: boolean } => ({
+        isActive: s().align === "justify",
+      }),
+    ),
+    orderedList: command(
+      "orderedList",
+      formatting.orderedList,
+      (): { isActive: boolean } => ({
+        isActive: s().listKind === "ordered",
+      }),
+    ),
+    bulletList: command(
+      "bulletList",
+      formatting.bulletList,
+      (): { isActive: boolean } => ({
+        isActive: s().listKind === "bullet",
+      }),
+    ),
     find: command("find", formatting.find),
     replace: command("replace", formatting.replace),
     toggleTrackChanges: command(
@@ -143,17 +179,17 @@ export function buildCoreFormattingCommands({
     togglePreciseFonts: command(
       "togglePreciseFonts",
       formatting.togglePreciseFonts,
-      (): { isActive: boolean; } => {
+      (): { isActive: boolean } => {
         // Subscribe to the precise-mode version signal so the menu check state
         // tracks toggles made from anywhere (menu, welcome dialog, startup).
         preciseFontModeVersion();
         return { isActive: isPreciseFontModeEnabled() };
       },
     ),
-    undo: command("undo", history.undo, (): { isEnabled: boolean; } => ({
+    undo: command("undo", history.undo, (): { isEnabled: boolean } => ({
       isEnabled: gate.isCommandEnabled("undo") && history.canUndo(),
     })),
-    redo: command("redo", history.redo, (): { isEnabled: boolean; } => ({
+    redo: command("redo", history.redo, (): { isEnabled: boolean } => ({
       isEnabled: gate.isCommandEnabled("redo") && history.canRedo(),
     })),
     pageBreak: command("pageBreak", formatting.pageBreak),
@@ -188,7 +224,7 @@ export function buildCoreFormattingCommands({
       (p): void => {
         formatting.changeTextCase((p as TextCaseMode) ?? "sentence");
       },
-      (): { isEnabled: boolean; } => ({
+      (): { isEnabled: boolean } => ({
         isEnabled:
           gate.isCommandEnabled("changeTextCase") && !selection.isCollapsed(),
       }),
@@ -241,7 +277,7 @@ export function buildDocumentAndBrowserCommands({
     documentStyles: actionCommand(
       "documentStyles",
       (): void => {},
-      (): { isEnabled: true; value: EssentialsDocumentStyleDescriptor[]; } => ({
+      (): { isEnabled: true; value: EssentialsDocumentStyleDescriptor[] } => ({
         isEnabled: true,
         value: document.documentStyles(),
       }),
@@ -249,26 +285,28 @@ export function buildDocumentAndBrowserCommands({
     print: actionCommand(
       "print",
       (): void => browser.print(),
-      (): { isEnabled: true; } => ({ isEnabled: true }),
+      (): { isEnabled: true } => ({ isEnabled: true }),
     ),
     copy: actionCommand(
       "copy",
       (): void => browser.copy(),
-      (): { isEnabled: true; } => ({ isEnabled: true }),
+      (): { isEnabled: true } => ({ isEnabled: true }),
     ),
     exportDocx: actionCommand("exportDocx", (): void => document.exportDocx()),
     exportPdf: actionCommand("exportPdf", (): void => document.exportPdf()),
     importDocument: actionCommand("importDocument", (): void =>
       document.importDocument(),
     ),
-    insertImage: actionCommand("insertImage", (): void => document.insertImage()),
+    insertImage: actionCommand("insertImage", (): void =>
+      document.insertImage(),
+    ),
     insertShape: actionCommand("insertShape", (p): void =>
       document.insertShape(String(p)),
     ),
     unlink: actionCommand(
       "unlink",
       (): void => link.remove(),
-      (): { isEnabled: boolean; isActive: boolean; } => ({
+      (): { isEnabled: boolean; isActive: boolean } => ({
         isEnabled: gate.isCommandEnabled("unlink") && Boolean(s().link),
         isActive: Boolean(s().link),
       }),
@@ -276,7 +314,7 @@ export function buildDocumentAndBrowserCommands({
     editImageAlt: actionCommand(
       "editImageAlt",
       (): void => image.promptAlt(),
-      (): { isEnabled: boolean; isActive: boolean; } => ({
+      (): { isEnabled: boolean; isActive: boolean } => ({
         isEnabled: image.isSelected(),
         isActive: image.isSelected(),
       }),
@@ -284,7 +322,7 @@ export function buildDocumentAndBrowserCommands({
     insertImageCaption: actionCommand(
       "insertImageCaption",
       (): void => image.promptCaption(),
-      (): { isEnabled: boolean; isActive: boolean; } => ({
+      (): { isEnabled: boolean; isActive: boolean } => ({
         isEnabled: image.isSelected(),
         isActive: image.isSelected(),
       }),
@@ -306,12 +344,12 @@ export function buildParagraphAndSectionCommands({
     togglePageBreakBefore: actionCommand(
       "togglePageBreakBefore",
       (): void => paragraph.togglePageBreakBefore(),
-      (): { isActive: boolean; } => ({ isActive: Boolean(s().pageBreakBefore) }),
+      (): { isActive: boolean } => ({ isActive: Boolean(s().pageBreakBefore) }),
     ),
     toggleKeepWithNext: actionCommand(
       "toggleKeepWithNext",
       (): void => paragraph.toggleKeepWithNext(),
-      (): { isActive: boolean; } => ({ isActive: Boolean(s().keepWithNext) }),
+      (): { isActive: boolean } => ({ isActive: Boolean(s().keepWithNext) }),
     ),
     setSpacingAfter: valueCommand(
       "setSpacingAfter",
@@ -355,7 +393,7 @@ export function buildParagraphAndSectionCommands({
           numOrNull(payload.value),
         );
       },
-      (): { isActive: boolean; value: string; } => {
+      (): { isActive: boolean; value: string } => {
         const firstLine = Number(s().indentFirstLine);
         const hanging = Number(s().indentHanging);
         const kind =
@@ -392,7 +430,7 @@ export function buildParagraphAndSectionCommands({
     toggleOrientation: actionCommand(
       "toggleOrientation",
       (): void => section.toggleOrientation(),
-      (): { isActive: boolean; } => ({ isActive: section.isLandscape() }),
+      (): { isActive: boolean } => ({ isActive: section.isLandscape() }),
     ),
     setOrientation: actionCommand("setOrientation", (p): void =>
       section.setOrientation(p as "portrait" | "landscape"),
@@ -408,7 +446,9 @@ export function buildParagraphAndSectionCommands({
       (p): void => {
         section.setPageMargins((p ?? {}) as Partial<EditorPageMargins>);
       },
-      (): { value: EditorPageMargins | undefined; } => ({ value: section.getMargins() }),
+      (): { value: EditorPageMargins | undefined } => ({
+        value: section.getMargins(),
+      }),
     ),
   };
 }
@@ -422,7 +462,7 @@ export function buildTableCommands({
     tableContext: actionCommand(
       "tableContext",
       (): void => {},
-      (): { isEnabled: boolean; isActive: boolean; value: string | null; } => ({
+      (): { isEnabled: boolean; isActive: boolean; value: string | null } => ({
         isEnabled: table.insideTable(),
         isActive: table.insideTable(),
         value: table.selectionLabel(),
@@ -431,21 +471,21 @@ export function buildTableCommands({
     tableMerge: actionCommand(
       "tableMerge",
       (): void => table.merge(),
-      (): { isEnabled: boolean; } => ({
+      (): { isEnabled: boolean } => ({
         isEnabled: gate.isCommandEnabled("tableMerge") && table.canMerge(),
       }),
     ),
     tableSplit: actionCommand(
       "tableSplit",
       (): void => table.split(),
-      (): { isEnabled: boolean; } => ({
+      (): { isEnabled: boolean } => ({
         isEnabled: gate.isCommandEnabled("tableSplit") && table.canSplit(),
       }),
     ),
     tableInsertColumnBefore: actionCommand(
       "tableInsertColumnBefore",
       (): void => table.insertColumnBefore(),
-      (): { isEnabled: boolean; } => ({
+      (): { isEnabled: boolean } => ({
         isEnabled:
           gate.isCommandEnabled("tableInsertColumnBefore") &&
           table.canEditColumn(),
@@ -454,7 +494,7 @@ export function buildTableCommands({
     tableInsertColumnAfter: actionCommand(
       "tableInsertColumnAfter",
       (): void => table.insertColumnAfter(),
-      (): { isEnabled: boolean; } => ({
+      (): { isEnabled: boolean } => ({
         isEnabled:
           gate.isCommandEnabled("tableInsertColumnAfter") &&
           table.canEditColumn(),
@@ -463,7 +503,7 @@ export function buildTableCommands({
     tableDeleteColumn: actionCommand(
       "tableDeleteColumn",
       (): void => table.deleteColumn(),
-      (): { isEnabled: boolean; } => ({
+      (): { isEnabled: boolean } => ({
         isEnabled:
           gate.isCommandEnabled("tableDeleteColumn") && table.canEditColumn(),
       }),
@@ -471,7 +511,7 @@ export function buildTableCommands({
     tableInsertRowBefore: actionCommand(
       "tableInsertRowBefore",
       (): void => table.insertRowBefore(),
-      (): { isEnabled: boolean; } => ({
+      (): { isEnabled: boolean } => ({
         isEnabled:
           gate.isCommandEnabled("tableInsertRowBefore") && table.canEditRow(),
       }),
@@ -479,7 +519,7 @@ export function buildTableCommands({
     tableInsertRowAfter: actionCommand(
       "tableInsertRowAfter",
       (): void => table.insertRowAfter(),
-      (): { isEnabled: boolean; } => ({
+      (): { isEnabled: boolean } => ({
         isEnabled:
           gate.isCommandEnabled("tableInsertRowAfter") && table.canEditRow(),
       }),
@@ -487,7 +527,7 @@ export function buildTableCommands({
     tableDeleteRow: actionCommand(
       "tableDeleteRow",
       (): void => table.deleteRow(),
-      (): { isEnabled: boolean; } => ({
+      (): { isEnabled: boolean } => ({
         isEnabled:
           gate.isCommandEnabled("tableDeleteRow") && table.canEditRow(),
       }),
@@ -502,11 +542,15 @@ export function buildTableCommands({
       table.cellNoBorders(),
     ),
     tableWidth100: actionCommand("tableWidth100", (): void => table.width100()),
-    tableAlignLeft: actionCommand("tableAlignLeft", (): void => table.alignLeft()),
+    tableAlignLeft: actionCommand("tableAlignLeft", (): void =>
+      table.alignLeft(),
+    ),
     tableAlignCenter: actionCommand("tableAlignCenter", (): void =>
       table.alignCenter(),
     ),
-    tableAlignRight: actionCommand("tableAlignRight", (): void => table.alignRight()),
+    tableAlignRight: actionCommand("tableAlignRight", (): void =>
+      table.alignRight(),
+    ),
     tableSetCellWidth: actionCommand("tableSetCellWidth", (p): void =>
       table.setCellWidth(String(p)),
     ),

@@ -48,7 +48,9 @@ export function TextAreaField(props: TextAreaFieldProps): JSX.Element {
         class={`oasis-editor-ui-input oasis-editor-ui-textarea ${local.controlClass ?? ""}`}
         aria-invalid={local.error ? "true" : undefined}
         aria-describedby={describedBy() || undefined}
-        onInput={(event): void | undefined => local.onChange?.(event.currentTarget.value)}
+        onInput={(event): void | undefined =>
+          local.onChange?.(event.currentTarget.value)
+        }
         {...others}
       />
     </FormField>

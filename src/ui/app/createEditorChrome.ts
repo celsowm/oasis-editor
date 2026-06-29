@@ -64,7 +64,14 @@ export interface EditorChromeDeps {
  * `OasisEditorApp` so the composition root only creates and renders contexts
  * instead of mapping every dialog/menu callback by hand (S1).
  */
-export function createEditorChrome(deps: EditorChromeDeps) {
+export function createEditorChrome(
+  deps: EditorChromeDeps,
+): ReturnType<typeof createEditorChromeImpl> {
+  return createEditorChromeImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorChromeImpl(deps: EditorChromeDeps) {
   const {
     computeFontFamilyOptions,
     computeFontSizeOptions,
@@ -150,6 +157,7 @@ export function createEditorChrome(deps: EditorChromeDeps) {
     applyFontDialogValues: fontDialogBridge.applyFontDialogValues,
     applyParagraphDialogValues:
       paragraphDialogBridge.applyParagraphDialogValues,
+    setParagraphDialogDefault: paragraphDialogBridge.setParagraphDialogDefault,
     applyTablePropertiesDialogValues:
       tablePropertiesDialogBridge.applyTablePropertiesDialogValues,
     buildContextMenuItems: contextMenuClipboard.buildContextMenuItems,

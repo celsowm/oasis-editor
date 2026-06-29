@@ -17,7 +17,14 @@ export interface EditorFontOptionsContext {
  * dialog, including the lazily-loaded local font catalogue. Keeps the local-font
  * permission probe and its cache signal out of the composition root.
  */
-export function createEditorFontOptions(ctx: EditorFontOptionsContext) {
+export function createEditorFontOptions(
+  ctx: EditorFontOptionsContext,
+): ReturnType<typeof createEditorFontOptionsImpl> {
+  return createEditorFontOptionsImpl(ctx);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorFontOptionsImpl(ctx: EditorFontOptionsContext) {
   const [localFontFamilyOptions, setLocalFontFamilyOptions] = createSignal<
     string[]
   >([]);

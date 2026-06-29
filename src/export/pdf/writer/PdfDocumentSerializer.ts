@@ -32,7 +32,10 @@ function chunkByteLength(chunk: string | Uint8Array): number {
 
 /** Concatenates string (UTF-8) and binary chunks into one byte buffer. */
 function concatChunks(chunks: Array<string | Uint8Array>): Uint8Array {
-  const total = chunks.reduce((sum, chunk): number => sum + chunkByteLength(chunk), 0);
+  const total = chunks.reduce(
+    (sum, chunk): number => sum + chunkByteLength(chunk),
+    0,
+  );
   const out = new Uint8Array(total);
   let offset = 0;
   for (const chunk of chunks) {
@@ -66,7 +69,9 @@ function encodePdfLiteralString(value: string): string {
  * a byte-order mark, so non-ASCII headings (e.g. accented Portuguese) render.
  */
 function encodePdfTextString(value: string): string {
-  const codePoints = Array.from(value).map((ch): number => ch.codePointAt(0) ?? 0x3f);
+  const codePoints = Array.from(value).map(
+    (ch): number => ch.codePointAt(0) ?? 0x3f,
+  );
   return `<FEFF${encodePdfUtf16Hex(codePoints)}>`;
 }
 
@@ -224,7 +229,9 @@ export function serializePdfDocument(
   let namesObjectId: number | undefined;
   const resolvedDestinations = namedDestinations
     .filter((dest): boolean => pageObjectIds[dest.pageIndex] !== undefined)
-    .sort((a, b): 0 | 1 | -1 => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    .sort((a, b): 0 | 1 | -1 =>
+      a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+    );
   if (resolvedDestinations.length > 0) {
     const namesArray = resolvedDestinations
       .map((dest): string => {
@@ -243,7 +250,9 @@ export function serializePdfDocument(
   // sibling/parent/child cross-links the spec requires. Object ids are
   // pre-allocated so the cross-links can point at not-yet-emitted siblings.
   let outlineRootId: number | undefined;
-  const resolvedNames = new Set(resolvedDestinations.map((dest): string => dest.name));
+  const resolvedNames = new Set(
+    resolvedDestinations.map((dest): string => dest.name),
+  );
   const outlineRoots = buildOutlineTree(
     outlineItems.filter((item): boolean => resolvedNames.has(item.destName)),
   );

@@ -22,7 +22,10 @@ import {
   findPreviousWordBoundary,
   findNextWordBoundary,
 } from "@/core/wordBoundaries.js";
-import { buildTableCellLayout, TableCellLayoutEntry } from "@/core/tableLayout.js";
+import {
+  buildTableCellLayout,
+  TableCellLayoutEntry,
+} from "@/core/tableLayout.js";
 import { getParagraphEntries } from "@/ui/canvas/CanvasGeometry.js";
 import type { CaretBox } from "@/ui/editorUiTypes.js";
 import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
@@ -51,14 +54,22 @@ export interface UseEditorNavigationProps {
   zoomFactor?: () => number;
 }
 
-export function createEditorNavigation(deps: UseEditorNavigationProps) {
+export function createEditorNavigation(
+  deps: UseEditorNavigationProps,
+): ReturnType<typeof createEditorNavigationImpl> {
+  return createEditorNavigationImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorNavigationImpl(deps: UseEditorNavigationProps) {
   const moveSelectionToParagraphBoundary = (
     boundary: "start" | "end",
     extend: boolean,
   ): boolean => {
     const state = deps.state();
     const targetParagraph = getParagraphs(state).find(
-      (paragraph): boolean => paragraph.id === state.selection.focus.paragraphId,
+      (paragraph): boolean =>
+        paragraph.id === state.selection.focus.paragraphId,
     );
     if (!targetParagraph) {
       return false;
@@ -115,7 +126,8 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
     const state = deps.state();
     const paragraphs = getParagraphs(state);
     const focusParagraphIndex = paragraphs.findIndex(
-      (paragraph): boolean => paragraph.id === state.selection.focus.paragraphId,
+      (paragraph): boolean =>
+        paragraph.id === state.selection.focus.paragraphId,
     );
     const focusParagraph = paragraphs[focusParagraphIndex];
     if (!focusParagraph) {
@@ -176,11 +188,15 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
     return moveVerticalSelection(direction, false);
   };
 
-  const moveVerticalSelection = (direction: -1 | 1, extend: boolean): boolean => {
+  const moveVerticalSelection = (
+    direction: -1 | 1,
+    extend: boolean,
+  ): boolean => {
     const state = deps.state();
     const paragraphs = getParagraphs(state);
     const currentIndex = paragraphs.findIndex(
-      (paragraph): boolean => paragraph.id === state.selection.focus.paragraphId,
+      (paragraph): boolean =>
+        paragraph.id === state.selection.focus.paragraphId,
     );
     if (currentIndex === -1) {
       return false;
@@ -243,28 +259,30 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
             }
 
             const scoredCandidates = rowCandidates
-              .map((entry): { entry: TableCellLayoutEntry; distance: number; } => {
-                const paragraphId = entry.cell.blocks[0]?.id;
-                const cellRect = paragraphId
-                  ? snapshot?.paragraphs.find(
-                      (paragraph): boolean | undefined =>
-                        paragraph.paragraphId === paragraphId &&
-                        paragraph.tableCell &&
-                        paragraph.tableCell.tableId === block.id,
-                    )?.tableCell
-                  : null;
-                const left = cellRect?.left ?? desiredX;
-                const right = cellRect
-                  ? cellRect.left + cellRect.width
-                  : desiredX;
-                const distance =
-                  desiredX < left
-                    ? left - desiredX
-                    : desiredX > right
-                      ? desiredX - right
-                      : 0;
-                return { entry, distance };
-              })
+              .map(
+                (entry): { entry: TableCellLayoutEntry; distance: number } => {
+                  const paragraphId = entry.cell.blocks[0]?.id;
+                  const cellRect = paragraphId
+                    ? snapshot?.paragraphs.find(
+                        (paragraph): boolean | undefined =>
+                          paragraph.paragraphId === paragraphId &&
+                          paragraph.tableCell &&
+                          paragraph.tableCell.tableId === block.id,
+                      )?.tableCell
+                    : null;
+                  const left = cellRect?.left ?? desiredX;
+                  const right = cellRect
+                    ? cellRect.left + cellRect.width
+                    : desiredX;
+                  const distance =
+                    desiredX < left
+                      ? left - desiredX
+                      : desiredX > right
+                        ? desiredX - right
+                        : 0;
+                  return { entry, distance };
+                },
+              )
               .sort((left, right): number => left.distance - right.distance);
 
             const candidate = scoredCandidates[0]?.entry;
@@ -276,7 +294,9 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
               direction < 0
                 ? candidate.cell.blocks[candidate.cell.blocks.length - 1]!.id
                 : candidate.cell.blocks[0]!.id;
-            targetIndex = paragraphs.findIndex((p): boolean => p.id === targetId);
+            targetIndex = paragraphs.findIndex(
+              (p): boolean => p.id === targetId,
+            );
             break;
           }
         } else {
@@ -333,13 +353,14 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
 
     deps.setPreferredColumnX(desiredX);
     deps.resetTransactionGrouping();
-    deps.applyTransactionalState((current): EditorState =>
-      setSelection(current, {
-        anchor: extend
-          ? current.selection.anchor
-          : paragraphOffsetToPosition(targetParagraph, offset),
-        focus: paragraphOffsetToPosition(targetParagraph, offset),
-      }),
+    deps.applyTransactionalState(
+      (current): EditorState =>
+        setSelection(current, {
+          anchor: extend
+            ? current.selection.anchor
+            : paragraphOffsetToPosition(targetParagraph, offset),
+          focus: paragraphOffsetToPosition(targetParagraph, offset),
+        }),
     );
     deps.focusInput();
     return true;

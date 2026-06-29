@@ -12,7 +12,10 @@ import {
   TABLE_BORDER_EDGE_KEYS,
   TABLE_CONDITIONAL_FLAG_ATTRIBUTES,
 } from "@/core/docxTableMaps.js";
-import { buildTableCellLayout, TableCellLayoutEntry } from "@/core/tableLayout.js";
+import {
+  buildTableCellLayout,
+  TableCellLayoutEntry,
+} from "@/core/tableLayout.js";
 import { escapeXml, normalizeDocxColor, pointsToTwips } from "./xmlUtils.js";
 import { serializeDocxBorderAttrs } from "./borders.js";
 
@@ -38,7 +41,8 @@ function serializeRevisionAttrs(revision: {
     ? revision.id
     : String(
         Array.from(revision.id).reduce(
-          (hash, character): number => (hash * 31 + character.charCodeAt(0)) >>> 0,
+          (hash, character): number =>
+            (hash * 31 + character.charCodeAt(0)) >>> 0,
           0,
         ),
       );
@@ -471,7 +475,10 @@ function serializeTableBorders(style: EditorTableNode["style"]): string {
       [name, borders[key]] as [string, EditorBorderStyle | undefined],
   )
     .filter((entry): entry is [string, EditorBorderStyle] => !!entry[1])
-    .map(([name, border]): string => `<w:${name} ${serializeDocxBorderAttrs(border)}`)
+    .map(
+      ([name, border]): string =>
+        `<w:${name} ${serializeDocxBorderAttrs(border)}`,
+    )
     .join("");
   return xml ? `<w:tblBorders>${xml}</w:tblBorders>` : "";
 }
@@ -609,7 +616,8 @@ export function serializeTableXml(
   const tableLayout = buildTableCellLayout(table);
   const tableEntriesByKey = new Map(
     tableLayout.map(
-      (entry): readonly [`${number}:${number}`, TableCellLayoutEntry] => [`${entry.rowIndex}:${entry.cellIndex}`, entry] as const,
+      (entry): readonly [`${number}:${number}`, TableCellLayoutEntry] =>
+        [`${entry.rowIndex}:${entry.cellIndex}`, entry] as const,
     ),
   );
   const rowsXml = table.rows
@@ -649,11 +657,16 @@ export function serializeTableXml(
     .join("");
   const gridXml = table.gridCols
     ? `<w:tblGrid>${table.gridCols
-        .map((width): string => `<w:gridCol w:w="${pointsToTwips(width) ?? 0}"/>`)
+        .map(
+          (width): string => `<w:gridCol w:w="${pointsToTwips(width) ?? 0}"/>`,
+        )
         .join("")}${
         table.gridRevision
           ? `<w:tblGridChange ${serializeRevisionAttrs(table.gridRevision)}><w:tblGrid>${table.gridRevision.previous
-              .map((width): string => `<w:gridCol w:w="${pointsToTwips(width) ?? 0}"/>`)
+              .map(
+                (width): string =>
+                  `<w:gridCol w:w="${pointsToTwips(width) ?? 0}"/>`,
+              )
               .join("")}</w:tblGrid></w:tblGridChange>`
           : ""
       }</w:tblGrid>`

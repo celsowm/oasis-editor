@@ -4,7 +4,10 @@ import { BalloonShell } from "@/ui/shells/BalloonShell.js";
 import type {
   OasisEditorAppDocumentProps,
   OasisEditorAppUiProps,
-  OasisEditorLoadingOptions, ToolbarViewMode, ToolbarLayoutMode } from "@/ui/OasisEditorAppProps.js";
+  OasisEditorLoadingOptions,
+  ToolbarViewMode,
+  ToolbarLayoutMode,
+} from "@/ui/OasisEditorAppProps.js";
 
 export interface EditorUiOptionsContext {
   ui: () => OasisEditorAppUiProps;
@@ -37,7 +40,8 @@ export function createEditorUiOptions(ctx: EditorUiOptionsContext) {
     useComposedShell: (): boolean =>
       ui().uiVariant === "docs" || (ui().shell ?? "document") !== "document",
     loadingOptions,
-    loadingLabel: (): string => loadingOptions()?.label ?? "Loading oasis-editor...",
+    loadingLabel: (): string =>
+      loadingOptions()?.label ?? "Loading oasis-editor...",
     shellComponent: () => {
       const s = ui().shell ?? "document";
       if (s === "inline") return InlineShell;

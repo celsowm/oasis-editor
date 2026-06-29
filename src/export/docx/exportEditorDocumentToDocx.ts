@@ -215,7 +215,7 @@ export async function exportEditorDocumentToDocx(
   const hasComments = commentPlan !== undefined;
   const parts: PartDefinition[] = [];
   const sectionReferences: SectionReferenceDefinition[] = sections.map(
-    (): {} => ({}),
+    (): SectionReferenceDefinition => ({}),
   );
   let nextHeaderIndex = 1;
   let nextFooterIndex = 1;
@@ -317,7 +317,9 @@ export async function exportEditorDocumentToDocx(
   }
   const imageExtensions = allImages
     .filter((img): boolean => img.kind === "embedded")
-    .map((img): string | undefined => img.target.split(".").pop()?.toLowerCase())
+    .map((img): string | undefined =>
+      img.target.split(".").pop()?.toLowerCase(),
+    )
     .filter((ext): ext is string => Boolean(ext));
 
   const hasStyles =

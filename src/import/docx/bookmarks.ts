@@ -81,7 +81,9 @@ export function extractBookmarksFromSections(
   const boundaries: CollectedBoundary[] = [];
   const seqRef = { value: 0 };
   const visit = (blocks: EditorBlockNode[] | undefined): void => {
-    blocks?.forEach((block): void => collectFromBlock(block, boundaries, seqRef));
+    blocks?.forEach((block): void =>
+      collectFromBlock(block, boundaries, seqRef),
+    );
   };
 
   for (const section of sections) {
@@ -118,7 +120,9 @@ export function extractBookmarksFromSections(
   const order: string[] = [];
 
   // Iterate starts in document order so the registry order is deterministic.
-  const startBoundaries = boundaries.filter((b): boolean => b.marker.kind === "start");
+  const startBoundaries = boundaries.filter(
+    (b): boolean => b.marker.kind === "start",
+  );
   for (const startBoundary of startBoundaries) {
     const { marker, anchor } = startBoundary;
     const name = marker.name;

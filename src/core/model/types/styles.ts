@@ -119,6 +119,8 @@ export interface EditorParagraphStyle {
   indentRight?: number | null;
   indentFirstLine?: number | null;
   indentHanging?: number | null;
+  /** `w:mirrorIndents`: swap left/right indents on facing pages. */
+  mirrorIndents?: boolean;
   shading?: string | null;
   borderTop?: EditorBorderStyle | null;
   borderRight?: EditorBorderStyle | null;

@@ -56,7 +56,9 @@ export function SectionGroup(props: { api: ToolbarActionApi }): JSX.Element {
         <Button
           icon="scissors"
           data-testid="editor-toolbar-section-break-continuous"
-          onClick={(): unknown => api.commands.execute("sectionBreakContinuous")}
+          onClick={(): unknown =>
+            api.commands.execute("sectionBreakContinuous")
+          }
           tooltip={t("section.secContTooltip")}
         />
       </div>

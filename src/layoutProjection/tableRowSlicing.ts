@@ -22,10 +22,12 @@ export function normalizeCellStartPositions(
   starts: TableCellBlockPosition[] | undefined,
   legacyStarts: number[] | undefined,
 ): TableCellBlockPosition[] {
-  return row.cells.map((_, cellIdx): { blockIndex: number; offset: number | undefined; } => ({
-    blockIndex: starts?.[cellIdx]?.blockIndex ?? legacyStarts?.[cellIdx] ?? 0,
-    offset: starts?.[cellIdx]?.offset,
-  }));
+  return row.cells.map(
+    (_, cellIdx): { blockIndex: number; offset: number | undefined } => ({
+      blockIndex: starts?.[cellIdx]?.blockIndex ?? legacyStarts?.[cellIdx] ?? 0,
+      offset: starts?.[cellIdx]?.offset,
+    }),
+  );
 }
 
 export function positionsToBlockIndexes(
@@ -37,7 +39,9 @@ export function positionsToBlockIndexes(
 export function hasPartialPositions(
   positions: TableCellBlockPosition[] | undefined,
 ): boolean {
-  return positions?.some((position): boolean => (position.offset ?? 0) > 0) ?? false;
+  return (
+    positions?.some((position): boolean => (position.offset ?? 0) > 0) ?? false
+  );
 }
 
 function getParagraphTextLength(paragraph: EditorParagraphNode): number {
@@ -132,11 +136,13 @@ function estimateSingleCellRowSliceHeight(
   table: EditorTableNode,
   rowIndex: number,
 ): number {
-  const starts = row.cells.map((_, idx): TableCellBlockPosition =>
-    idx === cellIndex ? start : { blockIndex: 0 },
+  const starts = row.cells.map(
+    (_, idx): TableCellBlockPosition =>
+      idx === cellIndex ? start : { blockIndex: 0 },
   );
-  const ends = row.cells.map((cell, idx): TableCellBlockPosition =>
-    idx === cellIndex ? end : { blockIndex: 0 },
+  const ends = row.cells.map(
+    (cell, idx): TableCellBlockPosition =>
+      idx === cellIndex ? end : { blockIndex: 0 },
   );
   return estimateTableRowHeight(
     buildRowSliceFromPositions(row, starts, ends),
@@ -269,6 +275,7 @@ export function positionsFinishedRow(
   ends: TableCellBlockPosition[],
 ): boolean {
   return row.cells.every(
-    (cell, cellIdx): boolean => (ends[cellIdx]?.blockIndex ?? 0) >= cell.blocks.length,
+    (cell, cellIdx): boolean =>
+      (ends[cellIdx]?.blockIndex ?? 0) >= cell.blocks.length,
   );
 }

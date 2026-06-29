@@ -30,7 +30,8 @@ export interface EditorZoomController {
  */
 export function createEditorZoom(initial = ZOOM_DEFAULT): EditorZoomController {
   const [zoomPercent, setZoomPercentRaw] = createSignal(clampZoom(initial));
-  const setZoomPercent = (value: number): number => setZoomPercentRaw(clampZoom(value));
+  const setZoomPercent = (value: number): number =>
+    setZoomPercentRaw(clampZoom(value));
   const adjustZoom = (delta: number): number =>
     setZoomPercentRaw((current): number => clampZoom(current + delta));
   const zoomFactor = createMemo((): number => zoomPercent() / 100);

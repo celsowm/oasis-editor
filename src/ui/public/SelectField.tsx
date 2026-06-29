@@ -32,7 +32,12 @@ export function SelectField(props: SelectFieldProps): JSX.Element {
     "class",
     "classList",
     "id",
+    "value",
   ]);
+  const currentValue = (): string =>
+    local.value === undefined || local.value === null
+      ? ""
+      : String(local.value);
   const id = (): string => local.id ?? fallbackId;
   const descriptionId = (): string => `${id()}-description`;
   const errorId = (): string => `${id()}-error`;
@@ -58,12 +63,19 @@ export function SelectField(props: SelectFieldProps): JSX.Element {
         ]
           .filter(Boolean)
           .join(" ")}
-        onChange={(event): void | undefined => local.onChange?.(event.currentTarget.value)}
+        onChange={(event): void | undefined =>
+          local.onChange?.(event.currentTarget.value)
+        }
         {...others}
+        value={currentValue()}
       >
         <For each={local.options}>
           {(option): JSX.Element => (
-            <option value={option.value} disabled={option.disabled}>
+            <option
+              value={option.value}
+              disabled={option.disabled}
+              selected={option.value === currentValue()}
+            >
               {option.label}
             </option>
           )}

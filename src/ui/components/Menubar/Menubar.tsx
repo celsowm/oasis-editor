@@ -29,9 +29,12 @@ export function Menubar(props: MenubarProps): JSX.Element {
   const [activeMenu, setActiveMenu] = createSignal<string | null>(null);
 
   const menuItems = (): MenuItem[] => props.registry.getItems();
-  const visibleMenuItems = (): MenuItem[] => menuItems().filter((item): boolean => !item.hidden);
+  const visibleMenuItems = (): MenuItem[] =>
+    menuItems().filter((item): boolean => !item.hidden);
   const itemByPath = (): Map<string, MenuItem> =>
-    new Map(visibleMenuItems().map((item): [string, MenuItem] => [item.path, item]));
+    new Map(
+      visibleMenuItems().map((item): [string, MenuItem] => [item.path, item]),
+    );
 
   // Build tree from paths (e.g. "File/New")
   const menuTree = (): MenuTreeItem[] => {

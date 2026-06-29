@@ -2,7 +2,9 @@ import type {
   EditorImageRunData,
   EditorLayoutLine,
   EditorPageSettings,
-  EditorState, EditorCaretSlot } from "@/core/model.js";
+  EditorState,
+  EditorCaretSlot,
+} from "@/core/model.js";
 import { resolveImageSrc } from "@/core/model.js";
 import {
   getImageFloatingGeometry,
@@ -111,7 +113,10 @@ export function drawFloatingImagesForParagraph(options: {
 
   for (const line of paragraphLines) {
     const slotByOffset = new Map(
-      line.slots.map((slot): readonly [number, EditorCaretSlot] => [slot.offset, slot] as const),
+      line.slots.map(
+        (slot): readonly [number, EditorCaretSlot] =>
+          [slot.offset, slot] as const,
+      ),
     );
     for (const fragment of line.fragments) {
       const image = fragment.image;
@@ -151,7 +156,10 @@ export function drawInlineImageFragment(
 ): boolean {
   if (!fragment.image || fragment.image.floating) return false;
   const slotByOffset = new Map(
-    line.slots.map((slot): readonly [number, EditorCaretSlot] => [slot.offset, slot] as const),
+    line.slots.map(
+      (slot): readonly [number, EditorCaretSlot] =>
+        [slot.offset, slot] as const,
+    ),
   );
   const slot = slotByOffset.get(fragment.startOffset);
   if (!slot) return false;

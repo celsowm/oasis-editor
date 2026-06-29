@@ -99,13 +99,21 @@ export function arcSegments(
   end: number,
 ): PresetPathSegment[] {
   const steps = Math.max(4, Math.ceil(Math.abs(end - start) / 30));
-  const points = Array.from({ length: steps + 1 }, (_, index): [number, number] =>
-    pointOnEllipse(cx, cy, rx, ry, start + ((end - start) * index) / steps),
+  const points = Array.from(
+    { length: steps + 1 },
+    (_, index): [number, number] =>
+      pointOnEllipse(cx, cy, rx, ry, start + ((end - start) * index) / steps),
   );
-  return points.map(([px, py], index): { type: "move"; x: number; y: number; } | { type: "line"; x: number; y: number; } =>
-    index === 0
-      ? { type: "move", x: px, y: py }
-      : { type: "line", x: px, y: py },
+  return points.map(
+    (
+      [px, py],
+      index,
+    ):
+      | { type: "move"; x: number; y: number }
+      | { type: "line"; x: number; y: number } =>
+      index === 0
+        ? { type: "move", x: px, y: py }
+        : { type: "line", x: px, y: py },
   );
 }
 
@@ -150,16 +158,19 @@ export function starSegments(
   points: number,
   innerRatio = 0.45,
 ): PresetPathSegment[] {
-  const vertices = Array.from({ length: points * 2 }, (_, index): [number, number] => {
-    const radius = index % 2 === 0 ? 1 : innerRatio;
-    return pointOnEllipse(
-      cx,
-      cy,
-      rx * radius,
-      ry * radius,
-      -90 + (180 * index) / points,
-    );
-  });
+  const vertices = Array.from(
+    { length: points * 2 },
+    (_, index): [number, number] => {
+      const radius = index % 2 === 0 ? 1 : innerRatio;
+      return pointOnEllipse(
+        cx,
+        cy,
+        rx * radius,
+        ry * radius,
+        -90 + (180 * index) / points,
+      );
+    },
+  );
   return polygon(vertices);
 }
 

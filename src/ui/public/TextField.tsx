@@ -50,7 +50,9 @@ export function TextField(props: TextFieldProps): JSX.Element {
         ]
           .filter(Boolean)
           .join(" ")}
-        onInput={(event): void | undefined => local.onChange?.(event.currentTarget.value)}
+        onInput={(event): void | undefined =>
+          local.onChange?.(event.currentTarget.value)
+        }
         {...others}
       />
       <Show when={local.description}>

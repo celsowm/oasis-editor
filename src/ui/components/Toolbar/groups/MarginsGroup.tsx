@@ -41,8 +41,9 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
   const activePresetId = createMemo((): string | undefined => {
     const margins = current();
     if (!margins) return undefined;
-    return MARGIN_PRESETS.find((preset): boolean => marginsMatchPreset(margins, preset))
-      ?.id;
+    return MARGIN_PRESETS.find((preset): boolean =>
+      marginsMatchPreset(margins, preset),
+    )?.id;
   });
 
   const applyPreset = (preset: MarginPreset): void => {
@@ -134,8 +135,8 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
                     min="0"
                     step="0.1"
                     value={draft()[field.key] ?? ""}
-                    onInput={(e): { [x: string]: string; } =>
-                      setDraft((d): { [x: string]: string; } => ({
+                    onInput={(e): { [x: string]: string } =>
+                      setDraft((d): { [x: string]: string } => ({
                         ...d,
                         [field.key]: e.currentTarget.value,
                       }))

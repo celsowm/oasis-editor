@@ -56,7 +56,10 @@ function getParagraphTextAtOffset(
   paragraph: CanvasSnapshotParagraph,
   offset: number,
 ): string {
-  return paragraph.paragraph.runs.map((run): string => run.text).join("")[offset] ?? "";
+  return (
+    paragraph.paragraph.runs.map((run): string => run.text).join("")[offset] ??
+    ""
+  );
 }
 
 function isSelectionEdgeWhitespace(char: string): boolean {
@@ -120,7 +123,9 @@ function resolveCaretSlot(
         focusOffset >= paragraph.startOffset &&
         focusOffset <= paragraph.endOffset,
     ) ?? paragraphs[paragraphs.length - 1]!;
-  const slots = containingSegment.lines.flatMap((line): CanvasSnapshotSlot[] => line.slots);
+  const slots = containingSegment.lines.flatMap(
+    (line): CanvasSnapshotSlot[] => line.slots,
+  );
   if (slots.length === 0) {
     return {
       left: containingSegment.left,
@@ -168,7 +173,8 @@ export function computeCanvasSelectionGeometry(
   const surfaceRect = snapshot.surfaceRect;
   const paragraphIndexById = new Map(
     getParagraphs(state).map(
-      (paragraph, index): readonly [string, number] => [paragraph.id, index] as const,
+      (paragraph, index): readonly [string, number] =>
+        [paragraph.id, index] as const,
     ),
   );
   let selectedImageBox: SelectedImageSelectionBox | null = null;
@@ -384,7 +390,9 @@ export function computeCanvasSelectionGeometry(
         }
         if (lineStart >= lineEnd) continue;
 
-        const startSlot = line.slots.find((slot): boolean => slot.offset === lineStart);
+        const startSlot = line.slots.find(
+          (slot): boolean => slot.offset === lineStart,
+        );
         const endSlot =
           line.slots.find((slot): boolean => slot.offset === lineEnd) ??
           line.slots[line.slots.length - 1];

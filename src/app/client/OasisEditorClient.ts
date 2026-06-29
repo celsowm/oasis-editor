@@ -1,5 +1,8 @@
 import type { CommandBus } from "@/core/commands/CommandBus.js";
-import type { CommandRef, ResolvedCommandRef } from "@/core/commands/CommandRef.js";
+import type {
+  CommandRef,
+  ResolvedCommandRef,
+} from "@/core/commands/CommandRef.js";
 import { resolveCommandRef } from "@/core/commands/CommandRef.js";
 import type {
   EditorDocument,
@@ -188,12 +191,16 @@ export function createOasisEditorClient(): OasisEditorClientController {
     };
   };
 
-  const getRuntimeEditor = (): Editor | null => host?.getRuntimeEditor() ?? null;
+  const getRuntimeEditor = (): Editor | null =>
+    host?.getRuntimeEditor() ?? null;
   const requireHost = (): OasisEditorClientHost => {
     if (!host) throw new Error("Oasis editor client is not mounted.");
     return host;
   };
-  const normalizePayload = (command: CommandRef, payloadOverride?: unknown): ResolvedCommandRef => {
+  const normalizePayload = (
+    command: CommandRef,
+    payloadOverride?: unknown,
+  ): ResolvedCommandRef => {
     const resolved = resolveCommandRef(command, payloadOverride);
     if (
       resolved.name === "insertTable" &&

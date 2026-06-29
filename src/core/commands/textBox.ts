@@ -1,7 +1,10 @@
 import type {
   EditorImageFloatingLayout,
   EditorState,
-  EditorTextBoxData, EditorParagraphNode, EditorTextRun } from "@/core/model.js";
+  EditorTextBoxData,
+  EditorParagraphNode,
+  EditorTextRun,
+} from "@/core/model.js";
 import { getParagraphs, getRunTextBox } from "@/core/model.js";
 import { EMU_PER_PX } from "@/core/units.js";
 import { normalizeSelection } from "@/core/selection.js";
@@ -109,23 +112,26 @@ export function rotateSelectedTextBox(
   const { paragraphIndex, run: targetRun } = selected;
 
   const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode => {
-    if (candidateIndex !== paragraphIndex) {
-      return cloneParagraph(candidate);
-    }
+  const nextParagraphs = paragraphs.map(
+    (candidate, candidateIndex): EditorParagraphNode => {
+      if (candidateIndex !== paragraphIndex) {
+        return cloneParagraph(candidate);
+      }
 
-    return {
-      ...cloneParagraph(candidate),
-      runs: candidate.runs.map((run): EditorTextRun =>
-        run.id === targetRun.id && run.kind === "textBox"
-          ? {
-              ...run,
-              textBox: { ...run.textBox, rotation: nextRotation },
-            }
-          : cloneRun(run),
-      ),
-    };
-  });
+      return {
+        ...cloneParagraph(candidate),
+        runs: candidate.runs.map(
+          (run): EditorTextRun =>
+            run.id === targetRun.id && run.kind === "textBox"
+              ? {
+                  ...run,
+                  textBox: { ...run.textBox, rotation: nextRotation },
+                }
+              : cloneRun(run),
+        ),
+      };
+    },
+  );
 
   return cloneStateWithParagraphs(
     state,
@@ -168,28 +174,30 @@ function patchSelectedTextBoxFloating(
 
   const { paragraphIndex, run: targetRun } = selected;
   const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode => {
-    if (candidateIndex !== paragraphIndex) {
-      return cloneParagraph(candidate);
-    }
+  const nextParagraphs = paragraphs.map(
+    (candidate, candidateIndex): EditorParagraphNode => {
+      if (candidateIndex !== paragraphIndex) {
+        return cloneParagraph(candidate);
+      }
 
-    return {
-      ...cloneParagraph(candidate),
-      runs: candidate.runs.map((run): EditorTextRun => {
-        if (run.id !== targetRun.id || run.kind !== "textBox") {
-          return cloneRun(run);
-        }
-        const floating = next(run.textBox.floating);
-        const textBox: EditorTextBoxData = { ...run.textBox };
-        if (floating) {
-          textBox.floating = floating;
-        } else {
-          delete textBox.floating;
-        }
-        return { ...run, textBox };
-      }),
-    };
-  });
+      return {
+        ...cloneParagraph(candidate),
+        runs: candidate.runs.map((run): EditorTextRun => {
+          if (run.id !== targetRun.id || run.kind !== "textBox") {
+            return cloneRun(run);
+          }
+          const floating = next(run.textBox.floating);
+          const textBox: EditorTextBoxData = { ...run.textBox };
+          if (floating) {
+            textBox.floating = floating;
+          } else {
+            delete textBox.floating;
+          }
+          return { ...run, textBox };
+        }),
+      };
+    },
+  );
 
   return cloneStateWithParagraphs(
     state,
@@ -205,8 +213,10 @@ export function setSelectedTextBoxWrapPreset(
   state: EditorState,
   preset: WrapPreset,
 ): EditorState {
-  return patchSelectedTextBoxFloating(state, (floating): EditorImageFloatingLayout | undefined =>
-    wrapPresetToFloating(floating, preset),
+  return patchSelectedTextBoxFloating(
+    state,
+    (floating): EditorImageFloatingLayout | undefined =>
+      wrapPresetToFloating(floating, preset),
   );
 }
 
@@ -214,8 +224,10 @@ export function setSelectedTextBoxFixedPosition(
   state: EditorState,
   fixed: boolean,
 ): EditorState {
-  return patchSelectedTextBoxFloating(state, (floating): EditorImageFloatingLayout | undefined =>
-    floating ? applyMoveWithText(floating, fixed) : floating,
+  return patchSelectedTextBoxFloating(
+    state,
+    (floating): EditorImageFloatingLayout | undefined =>
+      floating ? applyMoveWithText(floating, fixed) : floating,
   );
 }
 
@@ -244,43 +256,45 @@ export function resizeSelectedTextBox(
   const heightDelta = nextHeight - selectedTextBox.height;
 
   const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode => {
-    if (candidateIndex !== paragraphIndex) {
-      return cloneParagraph(candidate);
-    }
+  const nextParagraphs = paragraphs.map(
+    (candidate, candidateIndex): EditorParagraphNode => {
+      if (candidateIndex !== paragraphIndex) {
+        return cloneParagraph(candidate);
+      }
 
-    return {
-      ...cloneParagraph(candidate),
-      runs: candidate.runs.map((run): EditorTextRun => {
-        if (run.id !== targetRun.id || run.kind !== "textBox") {
-          return cloneRun(run);
-        }
+      return {
+        ...cloneParagraph(candidate),
+        runs: candidate.runs.map((run): EditorTextRun => {
+          if (run.id !== targetRun.id || run.kind !== "textBox") {
+            return cloneRun(run);
+          }
 
-        const textBox = run.textBox;
-        const nextTextBox: EditorTextBoxData = {
-          ...textBox,
-          width: nextWidth,
-          height: nextHeight,
-        };
+          const textBox = run.textBox;
+          const nextTextBox: EditorTextBoxData = {
+            ...textBox,
+            width: nextWidth,
+            height: nextHeight,
+          };
 
-        if (changesHeight && textBox.body?.autoFit) {
-          nextTextBox.body = { ...textBox.body, autoFit: false };
-        }
+          if (changesHeight && textBox.body?.autoFit) {
+            nextTextBox.body = { ...textBox.body, autoFit: false };
+          }
 
-        if (textBox.floating) {
-          nextTextBox.floating = shiftFloatingForResize(
-            textBox.floating,
-            widthDelta,
-            heightDelta,
-            growsFromWest,
-            growsFromNorth,
-          );
-        }
+          if (textBox.floating) {
+            nextTextBox.floating = shiftFloatingForResize(
+              textBox.floating,
+              widthDelta,
+              heightDelta,
+              growsFromWest,
+              growsFromNorth,
+            );
+          }
 
-        return { ...run, textBox: nextTextBox };
-      }),
-    };
-  });
+          return { ...run, textBox: nextTextBox };
+        }),
+      };
+    },
+  );
 
   return cloneStateWithParagraphs(
     state,

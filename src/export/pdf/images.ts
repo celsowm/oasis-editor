@@ -49,9 +49,9 @@ async function fetchAsDataUrl(src: string): Promise<string | null> {
   }
   const blob = await response.blob();
   const bytes = new Uint8Array(await blob.arrayBuffer());
-  const binary = Array.from(bytes, (byte): string => String.fromCharCode(byte)).join(
-    "",
-  );
+  const binary = Array.from(bytes, (byte): string =>
+    String.fromCharCode(byte),
+  ).join("");
   const base64 =
     typeof btoa === "function"
       ? btoa(binary)

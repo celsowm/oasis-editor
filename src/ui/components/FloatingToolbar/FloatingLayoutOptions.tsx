@@ -52,7 +52,9 @@ function WrapIcon(props: { preset: WrapPreset }): JSX.Element {
     w: number,
     h: number,
     fill = "#1a73e8",
-  ): JSX.Element => <rect x={x} y={y} width={w} height={h} rx="1.5" fill={fill} />;
+  ): JSX.Element => (
+    <rect x={x} y={y} width={w} height={h} rx="1.5" fill={fill} />
+  );
 
   return (
     <svg viewBox="0 0 40 32" fill="none" aria-hidden="true">
@@ -122,7 +124,7 @@ export function FloatingLayoutOptions(
     props.box() !== null &&
     props.layoutOptions.target() !== null;
 
-  const anchorPos = createMemo((): { left: number; top: number; } | null => {
+  const anchorPos = createMemo((): { left: number; top: number } | null => {
     tick();
     const box = props.box();
     const rect = surfaceRect();
@@ -292,7 +294,9 @@ export function FloatingLayoutOptions(
                     name="oasis-layout-position"
                     checked={!props.layoutOptions.fixedPosition()}
                     disabled={props.layoutOptions.preset() === "inline"}
-                    onChange={(): void => props.layoutOptions.setFixedPosition(false)}
+                    onChange={(): void =>
+                      props.layoutOptions.setFixedPosition(false)
+                    }
                   />
                   {t("layoutOptions.moveWithText")}
                 </label>
@@ -305,7 +309,9 @@ export function FloatingLayoutOptions(
                     name="oasis-layout-position"
                     checked={props.layoutOptions.fixedPosition()}
                     disabled={props.layoutOptions.preset() === "inline"}
-                    onChange={(): void => props.layoutOptions.setFixedPosition(true)}
+                    onChange={(): void =>
+                      props.layoutOptions.setFixedPosition(true)
+                    }
                   />
                   {t("layoutOptions.fixPosition")}
                 </label>

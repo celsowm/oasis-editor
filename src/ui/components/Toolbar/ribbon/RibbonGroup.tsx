@@ -75,7 +75,9 @@ export function RibbonGroup(props: RibbonGroupProps): JSX.Element {
           <Show when={props.group.largeItems.length > 0}>
             <div class="oasis-editor-ribbon-large-items">
               <For each={props.group.largeItems}>
-                {(item): JSX.Element => <ToolbarItemRenderer item={item} api={props.api} />}
+                {(item): JSX.Element => (
+                  <ToolbarItemRenderer item={item} api={props.api} />
+                )}
               </For>
             </div>
           </Show>

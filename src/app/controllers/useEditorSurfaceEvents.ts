@@ -90,7 +90,14 @@ function resolveTripleClickParagraphRange(
   return { start, end };
 }
 
-export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
+export function createEditorSurfaceEvents(
+  deps: UseEditorSurfaceEventsProps,
+): ReturnType<typeof createEditorSurfaceEventsImpl> {
+  return createEditorSurfaceEventsImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
   let dragAnchor: EditorPosition | null = null;
   let dragFrameHandle: number | null = null;
   let dragPendingPoint: { clientX: number; clientY: number } | null = null;

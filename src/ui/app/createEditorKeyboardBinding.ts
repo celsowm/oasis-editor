@@ -56,7 +56,11 @@ export interface EditorKeyboardBindingDeps {
  * and the input-to-layout perf mark. Extracted from `OasisEditorApp` so the
  * composition root no longer hand-wires 26 keyboard callbacks inline (S1).
  */
-export function createEditorKeyboardBinding(deps: EditorKeyboardBindingDeps): { handleKeyDown: (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement; }) => void; } {
+export function createEditorKeyboardBinding(deps: EditorKeyboardBindingDeps): {
+  handleKeyDown: (
+    event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
+  ) => void;
+} {
   const {
     state,
     isReadOnly,

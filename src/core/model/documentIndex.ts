@@ -194,7 +194,9 @@ export class WeakMapDocumentIndexCache implements DocumentIndexCache {
     EditorParagraphNode[]
   >();
 
-  getIndex(document: EditorDocument): Map<string, DocumentParagraphIndexEntry> | undefined {
+  getIndex(
+    document: EditorDocument,
+  ): Map<string, DocumentParagraphIndexEntry> | undefined {
     return this.indexMap.get(document);
   }
   setIndex(
@@ -206,7 +208,10 @@ export class WeakMapDocumentIndexCache implements DocumentIndexCache {
   getParagraphs(document: EditorDocument): EditorParagraphNode[] | undefined {
     return this.paragraphsMap.get(document);
   }
-  setParagraphs(document: EditorDocument, paragraphs: EditorParagraphNode[]): void {
+  setParagraphs(
+    document: EditorDocument,
+    paragraphs: EditorParagraphNode[],
+  ): void {
     this.paragraphsMap.set(document, paragraphs);
   }
 }

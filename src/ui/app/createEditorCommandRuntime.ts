@@ -60,7 +60,14 @@ export interface EditorCommandRuntimeDeps {
  * earlier phases through their returned bags. Extracted from `OasisEditorApp`
  * (S1).
  */
-export function createEditorCommandRuntime(deps: EditorCommandRuntimeDeps) {
+export function createEditorCommandRuntime(
+  deps: EditorCommandRuntimeDeps,
+): ReturnType<typeof createEditorCommandRuntimeImpl> {
+  return createEditorCommandRuntimeImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
   const { document: doc, interaction, runtimeClient } = deps;
 
   const { commandsController, keyboardCommandsController } =

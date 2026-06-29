@@ -31,7 +31,7 @@ export function FloatingTableToolbar(
     refresh: scheduleRefresh,
   } = useSurfaceRect(props.surfaceRef);
 
-  const position = createMemo((): { centerX: number; top: number; } | null => {
+  const position = createMemo((): { centerX: number; top: number } | null => {
     tick();
     if (!props.visible()) {
       return null;

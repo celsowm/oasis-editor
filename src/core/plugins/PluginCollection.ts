@@ -49,7 +49,8 @@ export class PluginCollection {
     ): OasisPlugin => {
       if (typeof ref === "string") {
         const found =
-          byName.get(ref) ?? all.find((candidate): boolean => candidate.name === ref);
+          byName.get(ref) ??
+          all.find((candidate): boolean => candidate.name === ref);
         if (!found) {
           throw new Error(
             `Plugin '${owner.name}' requires missing plugin '${ref}'.`,
@@ -126,7 +127,10 @@ export class PluginCollection {
     }
   }
 
-  private registerPluginCommands(plugin: OasisPlugin, commandNames: string[]): void {
+  private registerPluginCommands(
+    plugin: OasisPlugin,
+    commandNames: string[],
+  ): void {
     if (!plugin.commands) {
       return;
     }
@@ -137,7 +141,10 @@ export class PluginCollection {
     }
   }
 
-  private registerPluginUi(plugin: OasisPlugin, uiCleanups: Unsubscribe[]): void {
+  private registerPluginUi(
+    plugin: OasisPlugin,
+    uiCleanups: Unsubscribe[],
+  ): void {
     for (const action of plugin.ui?.floatingActions ?? []) {
       uiCleanups.push(this.editorInstance.ui.registerFloatingAction(action));
     }

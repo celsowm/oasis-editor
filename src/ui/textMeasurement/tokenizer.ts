@@ -1,7 +1,9 @@
 import type {
   EditorLayoutFragment,
   EditorNamedStyle,
-  EditorParagraphNode, EditorTextRun } from "@/core/model.js";
+  EditorParagraphNode,
+  EditorTextRun,
+} from "@/core/model.js";
 import {
   getRunImage,
   getRunTextBox,
@@ -16,11 +18,16 @@ export function buildParagraphFragments(
 ): EditorLayoutFragment[] {
   let paragraphOffset = 0;
   return paragraph.runs.map((run): EditorLayoutFragment => {
-    const chars = Array.from(run.text).map((char, index): { char: string; paragraphOffset: number; runOffset: number; } => ({
-      char,
-      paragraphOffset: paragraphOffset + index,
-      runOffset: index,
-    }));
+    const chars = Array.from(run.text).map(
+      (
+        char,
+        index,
+      ): { char: string; paragraphOffset: number; runOffset: number } => ({
+        char,
+        paragraphOffset: paragraphOffset + index,
+        runOffset: index,
+      }),
+    );
     const runImage = getRunImage(run);
     const runTextBox = getRunTextBox(run);
     const fragment: EditorLayoutFragment = {
@@ -46,7 +53,11 @@ export function buildMeasuredChars(
   styles: Record<string, EditorNamedStyle> | undefined,
 ): MeasuredChar[] {
   const measured: MeasuredChar[] = [];
-  const runsById = new Map(paragraph.runs.map((run): readonly [string, EditorTextRun] => [run.id, run] as const));
+  const runsById = new Map(
+    paragraph.runs.map(
+      (run): readonly [string, EditorTextRun] => [run.id, run] as const,
+    ),
+  );
   const fallbackFontSize = Math.max(
     DEFAULT_FONT_SIZE,
     ...paragraph.runs.map(

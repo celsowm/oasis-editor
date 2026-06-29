@@ -36,7 +36,10 @@ function pad4(length: number): number {
 }
 
 function concat(chunks: Uint8Array[]): Uint8Array {
-  const total = chunks.reduce((sum, chunk): number => sum + pad4(chunk.byteLength), 0);
+  const total = chunks.reduce(
+    (sum, chunk): number => sum + pad4(chunk.byteLength),
+    0,
+  );
   const result = new Uint8Array(total);
   let offset = 0;
   for (const chunk of chunks) {
@@ -97,7 +100,9 @@ function subsetClosure(
   const loca = font.getRawTableData("loca");
   const head = font.getRawTableData("head");
   if (!glyf || !loca || !head) {
-    return Array.from(new Set([0, ...initialGlyphs])).sort((a, b): number => a - b);
+    return Array.from(new Set([0, ...initialGlyphs])).sort(
+      (a, b): number => a - b,
+    );
   }
 
   const offsets = readLoca(loca, u16(head, 50));
@@ -213,13 +218,15 @@ export class TrueTypePdfFontSubsetter implements FontSubsetter {
     const fontFile = buildSfnt(
       0x00010000,
       new Map(
-        Object.entries(tables).map(([tag, data]): [number, Uint8Array<ArrayBufferLike>] => [
-          (tag.charCodeAt(0) << 24) |
-            (tag.charCodeAt(1) << 16) |
-            (tag.charCodeAt(2) << 8) |
-            tag.charCodeAt(3),
-          data,
-        ]),
+        Object.entries(tables).map(
+          ([tag, data]): [number, Uint8Array<ArrayBufferLike>] => [
+            (tag.charCodeAt(0) << 24) |
+              (tag.charCodeAt(1) << 16) |
+              (tag.charCodeAt(2) << 8) |
+              tag.charCodeAt(3),
+            data,
+          ],
+        ),
       ),
     ).ttf;
     const maxGlyphId = Math.max(0, ...glyphIds);

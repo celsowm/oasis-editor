@@ -21,7 +21,8 @@ export function computeCommentHighlights(
   const surfaceRect = snapshot.surfaceRect;
   const paragraphIndexById = new Map(
     getParagraphs(state).map(
-      (paragraph, index): readonly [string, number] => [paragraph.id, index] as const,
+      (paragraph, index): readonly [string, number] =>
+        [paragraph.id, index] as const,
     ),
   );
 
@@ -63,7 +64,9 @@ export function computeCommentHighlights(
         if (lineStart >= lineEnd) {
           continue;
         }
-        const startSlot = line.slots.find((slot): boolean => slot.offset === lineStart);
+        const startSlot = line.slots.find(
+          (slot): boolean => slot.offset === lineStart,
+        );
         const endSlot =
           line.slots.find((slot): boolean => slot.offset === lineEnd) ??
           line.slots[line.slots.length - 1];

@@ -80,7 +80,9 @@ function sameNumberArray(
   right: number[] | undefined,
 ): boolean {
   if ((left?.length ?? 0) !== (right?.length ?? 0)) return false;
-  return (right ?? []).every((value, index): boolean => left?.[index] === value);
+  return (right ?? []).every(
+    (value, index): boolean => left?.[index] === value,
+  );
 }
 
 function sameTableCellBlockPositions(
@@ -138,10 +140,15 @@ export function canReuseLayoutPage(
     if ((left?.length ?? 0) !== (right?.length ?? 0)) {
       return false;
     }
-    return (right ?? []).every((block, index): boolean => left?.[index] === block);
+    return (right ?? []).every(
+      (block, index): boolean => left?.[index] === block,
+    );
   };
 
-  const sameFootnoteReferences = (left?: string[], right?: string[]): boolean => {
+  const sameFootnoteReferences = (
+    left?: string[],
+    right?: string[],
+  ): boolean => {
     if ((left?.length ?? 0) !== (right?.length ?? 0)) {
       return false;
     }
@@ -181,7 +188,9 @@ export function createLayoutIdentityStabilizer() {
     layout: EditorLayoutDocument,
   ): EditorLayoutDocument {
     const nextBlockCache = new Map<string, EditorLayoutBlock>();
-    const stabilizeBlocks = (blocks: EditorLayoutBlock[] | undefined): EditorLayoutBlock[] | undefined =>
+    const stabilizeBlocks = (
+      blocks: EditorLayoutBlock[] | undefined,
+    ): EditorLayoutBlock[] | undefined =>
       blocks?.map((block): EditorLayoutBlock => {
         const previous = reusableLayoutBlocks.get(block.blockId);
         const stable = canReuseLayoutBlock(previous, block) ? previous : block;
@@ -205,7 +214,9 @@ export function createLayoutIdentityStabilizer() {
     });
 
     reusableLayoutBlocks = nextBlockCache;
-    reusableLayoutPages = new Map(pages.map((page): [string, EditorLayoutPage] => [page.id, page]));
+    reusableLayoutPages = new Map(
+      pages.map((page): [string, EditorLayoutPage] => [page.id, page]),
+    );
     return { pages };
   };
 }

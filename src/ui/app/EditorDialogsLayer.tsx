@@ -24,6 +24,9 @@ export interface EditorDialogsLayerProps {
   applyImageCaptionCommand: (caption: string) => void;
   applyFontDialogValues: ComponentProps<typeof FontDialog>["onApply"];
   applyParagraphDialogValues: ComponentProps<typeof ParagraphDialog>["onApply"];
+  setParagraphDialogDefault: NonNullable<
+    ComponentProps<typeof ParagraphDialog>["onSetDefault"]
+  >;
   applyTablePropertiesDialogValues: ComponentProps<
     typeof TablePropertiesDialog
   >["onApply"];
@@ -35,7 +38,9 @@ export interface EditorDialogsLayerProps {
  * Holds no editor logic — it only binds dialog signals and command callbacks to
  * their respective UI components.
  */
-export function EditorDialogsLayer(props: EditorDialogsLayerProps): JSX.Element {
+export function EditorDialogsLayer(
+  props: EditorDialogsLayerProps,
+): JSX.Element {
   const {
     linkDialog,
     setLinkDialog,
@@ -81,7 +86,9 @@ export function EditorDialogsLayer(props: EditorDialogsLayerProps): JSX.Element 
           setImageCaptionDialog({ ...imageCaptionDialog(), isOpen: false });
           props.focusInput();
         }}
-        onConfirm={(caption): void => props.applyImageCaptionCommand(caption.trim())}
+        onConfirm={(caption): void =>
+          props.applyImageCaptionCommand(caption.trim())
+        }
       />
 
       <FindReplaceDialog fr={props.findReplace} />
@@ -106,6 +113,7 @@ export function EditorDialogsLayer(props: EditorDialogsLayerProps): JSX.Element 
           props.focusInput();
         }}
         onApply={props.applyParagraphDialogValues}
+        onSetDefault={props.setParagraphDialogDefault}
       />
 
       <TablePropertiesDialog

@@ -246,58 +246,60 @@ export function computePercentiles(durations: number[]): {
 // --- Global report (on-demand) ---
 
 export function installGlobalReport(): void {
-  (window as unknown as Record<string, unknown>).__OASIS_PERF_REPORT = (): void => {
-    const layoutDurations = marks
-      .filter((m): boolean => m.name.startsWith("layout:"))
-      .map((m): number => m.duration);
+  (window as unknown as Record<string, unknown>).__OASIS_PERF_REPORT =
+    (): void => {
+      const layoutDurations = marks
+        .filter((m): boolean => m.name.startsWith("layout:"))
+        .map((m): number => m.duration);
 
-    const inputToLayout = marks
-      .filter((m): boolean => m.name === "input-to-layout")
-      .map((m): number => m.duration);
+      const inputToLayout = marks
+        .filter((m): boolean => m.name === "input-to-layout")
+        .map((m): number => m.duration);
 
-    const inputText = marks
-      .filter((m): boolean => m.name === "input:text")
-      .map((m): number => m.duration);
+      const inputText = marks
+        .filter((m): boolean => m.name === "input:text")
+        .map((m): number => m.duration);
 
-    const layoutP = computePercentiles(layoutDurations);
-    const inputToLayoutP = computePercentiles(inputToLayout);
-    const inputTextP = computePercentiles(inputText);
-    const longtaskDurations = longTasks.map((t): number => t.duration);
-    const longtaskP = computePercentiles(longtaskDurations);
+      const layoutP = computePercentiles(layoutDurations);
+      const inputToLayoutP = computePercentiles(inputToLayout);
+      const inputTextP = computePercentiles(inputText);
+      const longtaskDurations = longTasks.map((t): number => t.duration);
+      const longtaskP = computePercentiles(longtaskDurations);
 
-    // eslint-disable-next-line no-console
-    console.group("%c[perf] Summary", "color: #f59e0b; font-weight: bold;");
-    // eslint-disable-next-line no-console
-    console.info(
-      `input:text  → p50=${inputTextP.p50}ms p95=${inputTextP.p95}ms p99=${inputTextP.p99}ms max=${inputTextP.max}ms (n=${inputTextP.count})`,
-    );
-    // eslint-disable-next-line no-console
-    console.info(
-      `input-to-layout → p50=${inputToLayoutP.p50}ms p95=${inputToLayoutP.p95}ms p99=${inputToLayoutP.p99}ms max=${inputToLayoutP.max}ms (n=${inputToLayoutP.count})`,
-    );
-    // eslint-disable-next-line no-console
-    console.info(
-      `layout:sync   → p50=${layoutP.p50}ms p95=${layoutP.p95}ms p99=${layoutP.p99}ms max=${layoutP.max}ms (n=${layoutP.count})`,
-    );
-    // eslint-disable-next-line no-console
-    console.info(
-      `longtasks   → p50=${longtaskP.p50}ms p95=${longtaskP.p95}ms p99=${longtaskP.p99}ms max=${longtaskP.max}ms (n=${longtaskP.count})`,
-    );
-    // eslint-disable-next-line no-console
-    console.groupEnd();
-  };
+      // eslint-disable-next-line no-console
+      console.group("%c[perf] Summary", "color: #f59e0b; font-weight: bold;");
+      // eslint-disable-next-line no-console
+      console.info(
+        `input:text  → p50=${inputTextP.p50}ms p95=${inputTextP.p95}ms p99=${inputTextP.p99}ms max=${inputTextP.max}ms (n=${inputTextP.count})`,
+      );
+      // eslint-disable-next-line no-console
+      console.info(
+        `input-to-layout → p50=${inputToLayoutP.p50}ms p95=${inputToLayoutP.p95}ms p99=${inputToLayoutP.p99}ms max=${inputToLayoutP.max}ms (n=${inputToLayoutP.count})`,
+      );
+      // eslint-disable-next-line no-console
+      console.info(
+        `layout:sync   → p50=${layoutP.p50}ms p95=${layoutP.p95}ms p99=${layoutP.p99}ms max=${layoutP.max}ms (n=${layoutP.count})`,
+      );
+      // eslint-disable-next-line no-console
+      console.info(
+        `longtasks   → p50=${longtaskP.p50}ms p95=${longtaskP.p95}ms p99=${longtaskP.p99}ms max=${longtaskP.max}ms (n=${longtaskP.count})`,
+      );
+      // eslint-disable-next-line no-console
+      console.groupEnd();
+    };
 
-  (window as unknown as Record<string, unknown>).__OASIS_DOM_STATS = () => {
-    const surface = domStatsSurfaceProvider?.() ?? null;
-    const stats = snapshotEditorDomStats(surface);
-    // eslint-disable-next-line no-console
-    console.info(
-      "%c[perf] DOM stats",
-      "color: #f59e0b; font-weight: bold;",
-      stats,
-    );
-    return stats;
-  };
+  (window as unknown as Record<string, unknown>).__OASIS_DOM_STATS =
+    (): ReturnType<typeof snapshotEditorDomStats> => {
+      const surface = domStatsSurfaceProvider?.() ?? null;
+      const stats = snapshotEditorDomStats(surface);
+      // eslint-disable-next-line no-console
+      console.info(
+        "%c[perf] DOM stats",
+        "color: #f59e0b; font-weight: bold;",
+        stats,
+      );
+      return stats;
+    };
 }
 
 export function uninstallGlobalReport(): void {

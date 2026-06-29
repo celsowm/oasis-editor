@@ -276,12 +276,16 @@ function rebuildFont(
   deps: ResolvedWoff2Dependencies,
 ): { ttf: Uint8Array; tables: Record<string, Uint8Array> } {
   const tableMap = new Map<number, Uint8Array>();
-  const tablesByTag = new Map(header.tables.map((t): [number, Woff2Table] => [t.tag, t]));
+  const tablesByTag = new Map(
+    header.tables.map((t): [number, Woff2Table] => [t.tag, t]),
+  );
   const state: TransformState = { glyfInfo: null, numHMetrics: 0 };
   const context: TransformContext = { header, tableMap, tablesByTag, state };
   const transformers = deps.transformers;
 
-  const sortedTables = header.tables.slice().sort((a, b): number => a.tag - b.tag);
+  const sortedTables = header.tables
+    .slice()
+    .sort((a, b): number => a.tag - b.tag);
 
   for (const table of sortedTables) {
     const srcStart = table.srcOffset;

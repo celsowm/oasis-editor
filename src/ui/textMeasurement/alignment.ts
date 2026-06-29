@@ -91,19 +91,29 @@ function justifyLineBySpaces(
   let shift = 0;
   return {
     ...line,
-    slots: line.slots.map((slot): { left: number; paragraphId: string; offset: number; top: number; height: number; } => {
-      while (
-        spaceIndex < spaceOffsets.length &&
-        slot.offset > spaceOffsets[spaceIndex]!
-      ) {
-        shift += gap;
-        spaceIndex += 1;
-      }
-      return {
-        ...slot,
-        left: slot.left + shift,
-      };
-    }),
+    slots: line.slots.map(
+      (
+        slot,
+      ): {
+        left: number;
+        paragraphId: string;
+        offset: number;
+        top: number;
+        height: number;
+      } => {
+        while (
+          spaceIndex < spaceOffsets.length &&
+          slot.offset > spaceOffsets[spaceIndex]!
+        ) {
+          shift += gap;
+          spaceIndex += 1;
+        }
+        return {
+          ...slot,
+          left: slot.left + shift,
+        };
+      },
+    ),
   };
 }
 

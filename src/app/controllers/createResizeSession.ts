@@ -71,7 +71,16 @@ interface ActiveResize {
 export function createResizeSession(
   adapter: ResizeSessionAdapter,
   deps: ResizeSessionDeps,
-) {
+): {
+  start: (
+    paragraphId: string,
+    paragraphOffset: number,
+    handleDirection: ResizeHandleDirection,
+    event: MouseEvent,
+    initialState: EditorState,
+  ) => void;
+  stop: () => void;
+} {
   let active: ActiveResize | null = null;
 
   const selectionForObject = (
@@ -79,7 +88,9 @@ export function createResizeSession(
     paragraphId: string,
     paragraphOffset: number,
   ): EditorState["selection"] | null => {
-    const paragraph = getParagraphs(state).find((p): boolean => p.id === paragraphId);
+    const paragraph = getParagraphs(state).find(
+      (p): boolean => p.id === paragraphId,
+    );
     if (!paragraph) {
       return null;
     }

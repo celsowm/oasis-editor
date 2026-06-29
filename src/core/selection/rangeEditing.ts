@@ -57,33 +57,35 @@ export function deleteSelectionRange(state: EditorState): EditorState {
     const author = "User";
     const date = Date.now();
 
-    const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
-      if (
-        paragraphIndex < normalized.startIndex ||
-        paragraphIndex > normalized.endIndex
-      ) {
-        return cloneParagraph(paragraph);
-      }
-
-      const startOffset =
-        paragraphIndex === normalized.startIndex
-          ? normalized.startParagraphOffset
-          : 0;
-      const endOffset =
-        paragraphIndex === normalized.endIndex
-          ? normalized.endParagraphOffset
-          : getParagraphLength(paragraph);
-
-      return mapRunsInRange(paragraph, startOffset, endOffset, (run) => {
-        if (run.revision?.type === "insert") {
-          return { ...run, text: "" };
+    const nextParagraphs = paragraphs.map(
+      (paragraph, paragraphIndex): EditorParagraphNode => {
+        if (
+          paragraphIndex < normalized.startIndex ||
+          paragraphIndex > normalized.endIndex
+        ) {
+          return cloneParagraph(paragraph);
         }
-        return {
-          ...run,
-          revision: { id: revisionId, type: "delete", author, date },
-        };
-      });
-    });
+
+        const startOffset =
+          paragraphIndex === normalized.startIndex
+            ? normalized.startParagraphOffset
+            : 0;
+        const endOffset =
+          paragraphIndex === normalized.endIndex
+            ? normalized.endParagraphOffset
+            : getParagraphLength(paragraph);
+
+        return mapRunsInRange(paragraph, startOffset, endOffset, (run) => {
+          if (run.revision?.type === "insert") {
+            return { ...run, text: "" };
+          }
+          return {
+            ...run,
+            revision: { id: revisionId, type: "delete", author, date },
+          };
+        });
+      },
+    );
 
     return cloneStateWithParagraphs(
       state,

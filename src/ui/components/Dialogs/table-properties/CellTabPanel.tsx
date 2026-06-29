@@ -48,7 +48,7 @@ export function CellTabPanel(props: TablePanelProps): JSX.Element {
         <Grid size={{ xs: 12, md: 4 }}>
           {NumField(
             t("table.cellWidth"),
-            (): any => form().cellWidth,
+            (): string => form().cellWidth,
             (v): void => set("cellWidth", v),
             "editor-table-properties-cell-width",
           )}
@@ -131,7 +131,7 @@ export function CellTabPanel(props: TablePanelProps): JSX.Element {
           <Grid size={{ xs: 12, md: 3 }}>
             {NumField(
               t("paragraph.borderSideTop"),
-              (): any => form().marginTop,
+              (): string => form().marginTop,
               (v): void => set("marginTop", v),
               "editor-table-properties-margin-top",
             )}
@@ -139,7 +139,7 @@ export function CellTabPanel(props: TablePanelProps): JSX.Element {
           <Grid size={{ xs: 12, md: 3 }}>
             {NumField(
               t("paragraph.borderSideRight"),
-              (): any => form().marginRight,
+              (): string => form().marginRight,
               (v): void => set("marginRight", v),
               "editor-table-properties-margin-right",
             )}
@@ -147,7 +147,7 @@ export function CellTabPanel(props: TablePanelProps): JSX.Element {
           <Grid size={{ xs: 12, md: 3 }}>
             {NumField(
               t("paragraph.borderSideBottom"),
-              (): any => form().marginBottom,
+              (): string => form().marginBottom,
               (v): void => set("marginBottom", v),
               "editor-table-properties-margin-bottom",
             )}
@@ -155,7 +155,7 @@ export function CellTabPanel(props: TablePanelProps): JSX.Element {
           <Grid size={{ xs: 12, md: 3 }}>
             {NumField(
               t("paragraph.borderSideLeft"),
-              (): any => form().marginLeft,
+              (): string => form().marginLeft,
               (v): void => set("marginLeft", v),
               "editor-table-properties-margin-left",
             )}
@@ -207,7 +207,7 @@ export function CellTabPanel(props: TablePanelProps): JSX.Element {
           <Grid size={{ xs: 12, md: 3 }}>
             {NumField(
               t("paragraph.borderWidthLabel"),
-              (): any => form().borderWidth,
+              (): string => form().borderWidth,
               (v): void => set("borderWidth", v),
               "editor-table-properties-border-width",
               borderDisabled(),

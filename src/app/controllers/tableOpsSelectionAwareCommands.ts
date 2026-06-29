@@ -39,6 +39,13 @@ interface TableSelectionAwareCommandsDeps {
 
 export function createTableSelectionAwareCommands(
   deps: TableSelectionAwareCommandsDeps,
+): ReturnType<typeof createTableSelectionAwareCommandsImpl> {
+  return createTableSelectionAwareCommandsImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createTableSelectionAwareCommandsImpl(
+  deps: TableSelectionAwareCommandsDeps,
 ) {
   const withExpandedTableCellSelection = (
     current: EditorState,
@@ -115,8 +122,8 @@ export function createTableSelectionAwareCommands(
       if (!clonedTable) {
         return current;
       }
-      const targetBlocks = currentBlocks.map((block, i): EditorBlockNode =>
-        i === blockIndex ? clonedTable : block,
+      const targetBlocks = currentBlocks.map(
+        (block, i): EditorBlockNode => (i === blockIndex ? clonedTable : block),
       );
       const tableBlock = clonedTable;
 

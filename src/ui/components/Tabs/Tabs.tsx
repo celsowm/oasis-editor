@@ -42,7 +42,10 @@ export function Tabs(props: TabsProps): JSX.Element {
   const baseId = createUniqueId();
   const items = createMemo((): TabsItem[] => props.items);
   const firstEnabledId = createMemo(
-    (): string => items().find((item): boolean => !item.disabled)?.id ?? items()[0]?.id ?? "",
+    (): string =>
+      items().find((item): boolean => !item.disabled)?.id ??
+      items()[0]?.id ??
+      "",
   );
   const [internalValue, setInternalValue] = createSignal(
     props.defaultValue ?? firstEnabledId(),
@@ -52,8 +55,9 @@ export function Tabs(props: TabsProps): JSX.Element {
   );
   const selectedItem = createMemo(
     (): TabsItem | undefined =>
-      items().find((item): boolean => item.id === selectedId() && !item.disabled) ??
-      items().find((item): boolean => !item.disabled),
+      items().find(
+        (item): boolean => item.id === selectedId() && !item.disabled,
+      ) ?? items().find((item): boolean => !item.disabled),
   );
   const rootClass = createMemo((): string =>
     ["oasis-editor-tabs", props.class].filter(Boolean).join(" "),

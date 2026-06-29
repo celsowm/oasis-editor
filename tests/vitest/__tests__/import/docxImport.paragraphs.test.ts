@@ -239,6 +239,15 @@ describe("DOCX paragraph import", () => {
     expect(effectiveStyle.contextualSpacing).toBe(true);
   });
 
+  it("imports direct DOCX mirrored indents", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithContextualSpacing("<w:mirrorIndents/>"),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+
+    expect(paragraph.style?.mirrorIndents).toBe(true);
+  });
+
   it("imports w:lineRule=atLeast as an absolute px line height with the rule", async () => {
     const document = await importDocxToEditorDocument(
       await buildDocxWithContextualSpacing(

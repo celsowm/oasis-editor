@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createSignal, type Setter } from "solid-js";
 import type { EditorDocument, EditorState } from "@/core/model.js";
 import {
   createEditorStateFromDocument,
@@ -9,7 +9,12 @@ import { cloneEditorState } from "@/core/cloneState.js";
 export function createEditorAppState(options: {
   initialDocument?: EditorDocument;
   initialState?: EditorState;
-}) {
+}): {
+  state: EditorState;
+  setStateSignal: Setter<EditorState>;
+  commitState: (next: EditorState) => void;
+  getStateSnapshot: () => EditorState;
+} {
   const initialEditorState = options.initialState
     ? cloneEditorState(options.initialState)
     : options.initialDocument
@@ -21,7 +26,7 @@ export function createEditorAppState(options: {
     createSignal<EditorState>(initialEditorState);
 
   const state = new Proxy({} as EditorState, {
-    get(_, prop): any {
+    get(_, prop): unknown {
       const current = stateAccessor() as unknown;
       if (
         current === null ||
@@ -41,7 +46,7 @@ export function createEditorAppState(options: {
       }
       return Reflect.has(current as object, prop);
     },
-    ownKeys(_) {
+    ownKeys(_): (string | symbol)[] {
       const current = stateAccessor() as unknown;
       if (
         current === null ||
@@ -51,7 +56,7 @@ export function createEditorAppState(options: {
       }
       return Reflect.ownKeys(current as object);
     },
-    getOwnPropertyDescriptor(_, prop) {
+    getOwnPropertyDescriptor(_, prop): PropertyDescriptor | undefined {
       const current = stateAccessor() as unknown;
       if (
         current === null ||

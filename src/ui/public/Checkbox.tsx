@@ -37,7 +37,9 @@ export function Checkbox(props: CheckboxProps): JSX.Element {
         ]
           .filter(Boolean)
           .join(" ")}
-        onChange={(event): void | undefined => local.onChange?.(event.currentTarget.checked)}
+        onChange={(event): void | undefined =>
+          local.onChange?.(event.currentTarget.checked)
+        }
         {...others}
       />
       <span class="oasis-editor-ui-checkbox-copy">

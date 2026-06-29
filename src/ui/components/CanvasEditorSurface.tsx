@@ -11,7 +11,9 @@ import type { EditorSurfaceProps } from "@/ui/editorUiTypes.js";
 import {
   getPageColumnRects,
   type EditorLayoutPage,
-  type EditorState, EditorLayoutDocument } from "@/core/model.js";
+  type EditorState,
+  EditorLayoutDocument,
+} from "@/core/model.js";
 import { buildSegmentTable } from "@/core/tableLayout.js";
 import {
   clearNormalLineHeightCache,
@@ -42,7 +44,17 @@ export { resolveCanvasFooterZoneTop } from "@/ui/canvas/canvasPageRenderer.js";
 
 const surfaceLogger = createEditorLogger("canvas-surface");
 
-function checkBrowserFonts(families: Array<string | null | undefined>) {
+function checkBrowserFonts(families: Array<string | null | undefined>): {
+  status: string;
+  checks: Array<{
+    requested: string | null;
+    metricFamily: string;
+    normal: boolean;
+    bold: boolean;
+    italic: boolean;
+    boldItalic: boolean;
+  }>;
+} {
   if (typeof document === "undefined" || !document.fonts) {
     return { status: "unavailable", checks: [] };
   }
@@ -175,65 +187,73 @@ function CanvasPage(props: {
     getPage: (): EditorLayoutPage => props.page,
     getState: (): EditorState => props.state,
   });
-  const revisionCells = createMemo((): { id: string; left: number; top: number; width: number; height: number; }[] => {
-    const result: Array<{
+  const revisionCells = createMemo(
+    (): {
       id: string;
       left: number;
       top: number;
       width: number;
       height: number;
-    }> = [];
-    let cursorY = props.page.bodyTop ?? props.page.pageSettings.margins.top;
-    const columns = getPageColumnRects(props.page.pageSettings);
-    for (const block of props.page.blocks) {
-      if (block.sourceBlock.type === "table") {
-        const column = columns[block.columnIndex ?? 0] ?? columns[0]!;
-        const sourceTable = block.tableSegment
-          ? buildSegmentTable(block.sourceBlock, block.tableSegment)
-          : block.sourceBlock;
-        let originX = column.left;
-        let originY = cursorY;
-        const floating = sourceTable.style?.floating;
-        if (floating) {
-          const rect = resolveFloatingTableRect({
-            floating,
-            pageSettings: props.page.pageSettings,
-            contentLeft: column.left,
-            contentTop:
-              props.page.bodyTop ?? props.page.pageSettings.margins.top,
-            contentWidth: column.width,
-            anchorTop: cursorY,
-            width: resolveCanvasTableWidth(sourceTable, column.width),
-            height: block.floatingTableHeight ?? 1,
+    }[] => {
+      const result: Array<{
+        id: string;
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+      }> = [];
+      let cursorY = props.page.bodyTop ?? props.page.pageSettings.margins.top;
+      const columns = getPageColumnRects(props.page.pageSettings);
+      for (const block of props.page.blocks) {
+        if (block.sourceBlock.type === "table") {
+          const column = columns[block.columnIndex ?? 0] ?? columns[0]!;
+          const sourceTable = block.tableSegment
+            ? buildSegmentTable(block.sourceBlock, block.tableSegment)
+            : block.sourceBlock;
+          let originX = column.left;
+          let originY = cursorY;
+          const floating = sourceTable.style?.floating;
+          if (floating) {
+            const rect = resolveFloatingTableRect({
+              floating,
+              pageSettings: props.page.pageSettings,
+              contentLeft: column.left,
+              contentTop:
+                props.page.bodyTop ?? props.page.pageSettings.margins.top,
+              contentWidth: column.width,
+              anchorTop: cursorY,
+              width: resolveCanvasTableWidth(sourceTable, column.width),
+              height: block.floatingTableHeight ?? 1,
+              pageIndex: props.page.index,
+            });
+            originX = rect.x;
+            originY = rect.y + (block.floatingTableOffsetY ?? 0);
+          }
+          const layout = buildCanvasTableLayout({
+            table: sourceTable,
+            state: props.state,
             pageIndex: props.page.index,
+            originX,
+            originY,
+            contentWidth: column.width,
+            estimatedHeight: block.floatingTableHeight ?? block.estimatedHeight,
           });
-          originX = rect.x;
-          originY = rect.y + (block.floatingTableOffsetY ?? 0);
+          for (const cell of layout.cells) {
+            if (!cell.revision) continue;
+            result.push({
+              id: cell.revision.id,
+              left: cell.left,
+              top: cell.top,
+              width: cell.width,
+              height: cell.height,
+            });
+          }
         }
-        const layout = buildCanvasTableLayout({
-          table: sourceTable,
-          state: props.state,
-          pageIndex: props.page.index,
-          originX,
-          originY,
-          contentWidth: column.width,
-          estimatedHeight: block.floatingTableHeight ?? block.estimatedHeight,
-        });
-        for (const cell of layout.cells) {
-          if (!cell.revision) continue;
-          result.push({
-            id: cell.revision.id,
-            left: cell.left,
-            top: cell.top,
-            width: cell.width,
-            height: cell.height,
-          });
-        }
+        cursorY += Math.max(0, block.estimatedHeight);
       }
-      cursorY += Math.max(0, block.estimatedHeight);
-    }
-    return result;
-  });
+      return result;
+    },
+  );
 
   createEffect((): void => {
     props.page;

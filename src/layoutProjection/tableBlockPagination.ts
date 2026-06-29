@@ -37,7 +37,10 @@ function resolveFloatingTableWidth(
     if (Number.isFinite(percent)) return contentWidth * (percent / 100);
   }
   if (table.gridCols?.length) {
-    return table.gridCols.reduce((sum, value): number => sum + value, 0) * PX_PER_POINT;
+    return (
+      table.gridCols.reduce((sum, value): number => sum + value, 0) *
+      PX_PER_POINT
+    );
   }
   return contentWidth;
 }
@@ -228,7 +231,9 @@ export function paginateTableBlock(
       const lastRow = sourceBlock.rows[lastRowIndex]!;
       const ends =
         splitEndPositions ??
-        splitEnds?.map((blockIndex): { blockIndex: number; } => ({ blockIndex })) ??
+        splitEnds?.map((blockIndex): { blockIndex: number } => ({
+          blockIndex,
+        })) ??
         [];
       if (positionsFinishedRow(lastRow, ends)) {
         currentCellBlockPositions = undefined;
@@ -269,7 +274,7 @@ export function paginateTableBlock(
             currentCellBlockPositions,
             undefined,
           );
-          const ends = firstRow.cells.map((cell): { blockIndex: number; } => ({
+          const ends = firstRow.cells.map((cell): { blockIndex: number } => ({
             blockIndex: cell.blocks.length,
           }));
           const slicedFirstRow = buildRowSliceFromPositions(
@@ -337,20 +342,21 @@ export function paginateTableBlock(
                 : undefined,
               undefined,
             );
-            const ends = targetRow.cells.map((_, cellIdx): TableCellBlockPosition =>
-              findCellSplitEndPosition(
-                targetRow,
-                cellIdx,
-                starts[cellIdx] ?? { blockIndex: 0 },
-                availableForSplitRow,
-                styles,
-                measurer,
-                defaultTabStop,
-                contentWidth,
-                sourceBlock,
-                rowGroups[groupEndIndex]!.startRowIndex,
-                projectionContext,
-              ),
+            const ends = targetRow.cells.map(
+              (_, cellIdx): TableCellBlockPosition =>
+                findCellSplitEndPosition(
+                  targetRow,
+                  cellIdx,
+                  starts[cellIdx] ?? { blockIndex: 0 },
+                  availableForSplitRow,
+                  styles,
+                  measurer,
+                  defaultTabStop,
+                  contentWidth,
+                  sourceBlock,
+                  rowGroups[groupEndIndex]!.startRowIndex,
+                  projectionContext,
+                ),
             );
 
             if (positionsProgressed(starts, ends)) {
@@ -431,23 +437,24 @@ export function paginateTableBlock(
           currentCellBlockPositions,
           undefined,
         );
-        let ends = starts.map((start, cellIdx): TableCellBlockPosition =>
-          findCellSplitEndPosition(
-            targetRow,
-            cellIdx,
-            start,
-            track.currentMaxHeight,
-            styles,
-            measurer,
-            defaultTabStop,
-            contentWidth,
-            sourceBlock,
-            startRowIndex,
-            projectionContext,
-          ),
+        let ends = starts.map(
+          (start, cellIdx): TableCellBlockPosition =>
+            findCellSplitEndPosition(
+              targetRow,
+              cellIdx,
+              start,
+              track.currentMaxHeight,
+              styles,
+              measurer,
+              defaultTabStop,
+              contentWidth,
+              sourceBlock,
+              startRowIndex,
+              projectionContext,
+            ),
         );
         if (!positionsProgressed(starts, ends)) {
-          ends = starts.map((start, cellIdx): { blockIndex: number; } => ({
+          ends = starts.map((start, cellIdx): { blockIndex: number } => ({
             blockIndex: Math.min(
               targetRow.cells[cellIdx]!.blocks.length,
               start.blockIndex + 1,

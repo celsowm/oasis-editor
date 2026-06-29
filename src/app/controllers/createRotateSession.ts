@@ -50,7 +50,15 @@ interface ActiveRotate {
 export function createRotateSession(
   adapter: RotateSessionAdapter,
   deps: RotateSessionDeps,
-) {
+): {
+  start: (
+    paragraphId: string,
+    paragraphOffset: number,
+    event: MouseEvent & { currentTarget: HTMLElement },
+    initialState: EditorState,
+  ) => void;
+  stop: () => void;
+} {
   let active: ActiveRotate | null = null;
 
   const selectionForObject = (
@@ -58,7 +66,9 @@ export function createRotateSession(
     paragraphId: string,
     paragraphOffset: number,
   ): EditorState["selection"] | null => {
-    const paragraph = getParagraphs(state).find((p): boolean => p.id === paragraphId);
+    const paragraph = getParagraphs(state).find(
+      (p): boolean => p.id === paragraphId,
+    );
     if (!paragraph) {
       return null;
     }

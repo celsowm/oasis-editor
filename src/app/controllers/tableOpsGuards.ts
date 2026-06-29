@@ -24,7 +24,14 @@ interface TableOpsGuardsDeps {
   ) => VerticalTableCellRange | null;
 }
 
-export function createTableOpsGuards(deps: TableOpsGuardsDeps) {
+export function createTableOpsGuards(
+  deps: TableOpsGuardsDeps,
+): ReturnType<typeof createTableOpsGuardsImpl> {
+  return createTableOpsGuardsImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createTableOpsGuardsImpl(deps: TableOpsGuardsDeps) {
   const canMergeSelectedTableCells = (current: EditorState): boolean => {
     const range = deps.resolveHorizontalTableCellRange(current);
     return Boolean(range && range.endCellIndex > range.startCellIndex);

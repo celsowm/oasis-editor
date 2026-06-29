@@ -21,10 +21,14 @@ import { injectEndnotesIntoDocument } from "./endnotePagination.js";
 
 function blockContainsNumPagesField(block: EditorBlockNode): boolean {
   if (block.type === "paragraph") {
-    return block.runs.some((run): boolean => getRunField(run)?.type === "NUMPAGES");
+    return block.runs.some(
+      (run): boolean => getRunField(run)?.type === "NUMPAGES",
+    );
   }
   return block.rows.some((row): boolean =>
-    row.cells.some((cell): boolean => cell.blocks.some(blockContainsNumPagesField)),
+    row.cells.some((cell): boolean =>
+      cell.blocks.some(blockContainsNumPagesField),
+    ),
   );
 }
 

@@ -165,9 +165,12 @@ export function DocumentShell(props: ShellProps): JSX.Element {
                 ...props.layout,
                 documentLayout: props.documentLayout,
                 showHorizontalRuler: props.showChrome,
-                measuredBlockHeights: (): Record<string, number> => props.measuredBlockHeights(),
-                measuredParagraphLayouts: (): Record<string, EditorLayoutParagraph> =>
-                  props.measuredParagraphLayouts(),
+                measuredBlockHeights: (): Record<string, number> =>
+                  props.measuredBlockHeights(),
+                measuredParagraphLayouts: (): Record<
+                  string,
+                  EditorLayoutParagraph
+                > => props.measuredParagraphLayouts(),
                 viewportHeight: props.viewportHeight(),
                 readOnly: props.isReadOnly,
               }}

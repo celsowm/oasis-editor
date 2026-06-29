@@ -1,3 +1,4 @@
+import type { JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { TextInputDialog } from "./TextInputDialog.js";
 
@@ -8,7 +9,7 @@ interface ImageAltDialogProps {
   onConfirm: (alt: string) => void;
 }
 
-export function ImageAltDialog(props: ImageAltDialogProps) {
+export function ImageAltDialog(props: ImageAltDialogProps): JSX.Element {
   const t = useI18n();
   return (
     <TextInputDialog

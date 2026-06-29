@@ -109,7 +109,9 @@ function serializeTableStyleProperties(
   }
   if (style.borders) {
     const { borders } = style;
-    const xml = TABLE_BORDER_EDGE_KEYS.filter(([, key]): boolean => !!borders[key])
+    const xml = TABLE_BORDER_EDGE_KEYS.filter(
+      ([, key]): boolean => !!borders[key],
+    )
       .map(
         ([name, key]): string =>
           `<w:${name} ${serializeDocxBorderAttrs(borders[key]!)}`,
@@ -185,7 +187,9 @@ function serializeNamedStyle(style: EditorNamedStyle): string {
 
     if (ts.conditionalFormats) {
       const orderedKeys = [
-        ...CONDITIONAL_TYPE_ORDER.filter((k): boolean => k in ts.conditionalFormats!),
+        ...CONDITIONAL_TYPE_ORDER.filter(
+          (k): boolean => k in ts.conditionalFormats!,
+        ),
         ...Object.keys(ts.conditionalFormats).filter(
           (k): boolean => !CONDITIONAL_TYPE_ORDER.includes(k),
         ),

@@ -1,9 +1,38 @@
-import { createSignal } from "solid-js";
+import { createSignal, type Accessor, type Setter } from "solid-js";
 import type { FontDialogInitialValues } from "@/ui/components/Dialogs/FontDialog.js";
 import type { ParagraphDialogInitialValues } from "@/ui/components/Dialogs/ParagraphDialog.js";
 import type { TablePropertiesDialogInitialValues } from "@/ui/components/Dialogs/TablePropertiesDialog.js";
 
-export function createEditorDialogs() {
+export interface EditorDialogsState {
+  linkDialog: Accessor<{ isOpen: boolean; initialHref: string }>;
+  setLinkDialog: Setter<{ isOpen: boolean; initialHref: string }>;
+  imageAltDialog: Accessor<{ isOpen: boolean; initialAlt: string }>;
+  setImageAltDialog: Setter<{ isOpen: boolean; initialAlt: string }>;
+  imageCaptionDialog: Accessor<{ isOpen: boolean; initialCaption: string }>;
+  setImageCaptionDialog: Setter<{ isOpen: boolean; initialCaption: string }>;
+  contextMenu: Accessor<{ isOpen: boolean; x: number; y: number }>;
+  setContextMenu: Setter<{ isOpen: boolean; x: number; y: number }>;
+  fontDialog: Accessor<{ isOpen: boolean; initial: FontDialogInitialValues }>;
+  setFontDialog: Setter<{ isOpen: boolean; initial: FontDialogInitialValues }>;
+  paragraphDialog: Accessor<{
+    isOpen: boolean;
+    initial: ParagraphDialogInitialValues;
+  }>;
+  setParagraphDialog: Setter<{
+    isOpen: boolean;
+    initial: ParagraphDialogInitialValues;
+  }>;
+  tablePropertiesDialog: Accessor<{
+    isOpen: boolean;
+    initial: TablePropertiesDialogInitialValues;
+  }>;
+  setTablePropertiesDialog: Setter<{
+    isOpen: boolean;
+    initial: TablePropertiesDialogInitialValues;
+  }>;
+}
+
+export function createEditorDialogs(): EditorDialogsState {
   const [linkDialog, setLinkDialog] = createSignal<{
     isOpen: boolean;
     initialHref: string;
@@ -76,9 +105,13 @@ export function createEditorDialogs() {
       indentRight: "",
       indentFirstLine: "",
       indentHanging: "",
+      mirrorIndents: false,
       spacingBefore: "",
       spacingAfter: "",
       lineHeight: "",
+      lineRule: "",
+      contextualSpacing: false,
+      outlineLevel: "",
       shading: "",
       borderStyle: "",
       borderWidth: "",
@@ -87,6 +120,11 @@ export function createEditorDialogs() {
       borderSideRight: false,
       borderSideBottom: false,
       borderSideLeft: false,
+      pageBreakBefore: false,
+      keepWithNext: false,
+      keepLinesTogether: false,
+      widowControl: true,
+      tabs: [],
     },
   });
   const [tablePropertiesDialog, setTablePropertiesDialog] = createSignal<{

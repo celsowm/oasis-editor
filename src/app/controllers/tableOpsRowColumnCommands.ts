@@ -8,7 +8,9 @@ import {
   type EditorEditingZone,
   type EditorState,
   type EditorTableCellNode,
-  type EditorTableRowNode, EditorParagraphNode } from "@/core/model.js";
+  type EditorTableRowNode,
+  EditorParagraphNode,
+} from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import {
   findCellAtVisualColumn,
@@ -30,6 +32,13 @@ interface TableRowColumnOperationsDeps {
 }
 
 export function createTableRowColumnOperations(
+  deps: TableRowColumnOperationsDeps,
+): ReturnType<typeof createTableRowColumnOperationsImpl> {
+  return createTableRowColumnOperationsImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createTableRowColumnOperationsImpl(
   deps: TableRowColumnOperationsDeps,
 ) {
   const insertSelectedTableRow = (
@@ -122,7 +131,8 @@ export function createTableRowColumnOperations(
       const nextParagraph =
         targetCell?.blocks[0] ??
         blankRow.cells.find(
-          (cell): false | EditorParagraphNode => cell.vMerge !== "continue" && cell.blocks[0],
+          (cell): false | EditorParagraphNode =>
+            cell.vMerge !== "continue" && cell.blocks[0],
         )?.blocks[0] ??
         findFirstNavigableParagraphInTable(tableBlock);
       return commitTableMutation(
@@ -134,11 +144,12 @@ export function createTableRowColumnOperations(
     }
 
     blankRow = createEditorTableRow(
-      sourceRow.cells.map((cell): EditorTableCellNode =>
-        createEditorTableCell(
-          [createEditorParagraph("")],
-          Math.max(1, cell.colSpan ?? 1),
-        ),
+      sourceRow.cells.map(
+        (cell): EditorTableCellNode =>
+          createEditorTableCell(
+            [createEditorParagraph("")],
+            Math.max(1, cell.colSpan ?? 1),
+          ),
       ),
     );
     if (current.trackChangesEnabled) {
@@ -157,7 +168,8 @@ export function createTableRowColumnOperations(
     const nextParagraph =
       targetCell?.blocks[0] ??
       blankRow.cells.find(
-        (cell): false | EditorParagraphNode => cell.vMerge !== "continue" && cell.blocks[0],
+        (cell): false | EditorParagraphNode =>
+          cell.vMerge !== "continue" && cell.blocks[0],
       )?.blocks[0] ??
       findFirstNavigableParagraphInTable(tableBlock);
     return commitTableMutation(

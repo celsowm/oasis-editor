@@ -1,11 +1,12 @@
+import type { JSX } from "solid-js";
 import { type RevisionBox } from "@/ui/editorUiTypes.js";
 
 export interface RevisionOverlayProps {
   box: RevisionBox;
 }
 
-export function RevisionOverlay(props: RevisionOverlayProps) {
-  const formattedDate = () => {
+export function RevisionOverlay(props: RevisionOverlayProps): JSX.Element {
+  const formattedDate = (): string => {
     try {
       return new Date(props.box.date).toLocaleString();
     } catch (e) {
@@ -13,7 +14,7 @@ export function RevisionOverlay(props: RevisionOverlayProps) {
     }
   };
 
-  const label = () => {
+  const label = (): string => {
     if (props.box.type === "insert") return "Inserido por";
     if (props.box.type === "delete") return "Excluído por";
     return "Alterado por";

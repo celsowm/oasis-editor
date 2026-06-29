@@ -47,6 +47,10 @@ export type ValueParagraphStyleKey =
   | "indentRight"
   | "indentFirstLine"
   | "indentHanging"
+  | "mirrorIndents"
+  | "lineRule"
+  | "contextualSpacing"
+  | "outlineLevel"
   | "shading"
   | "borderTop"
   | "borderRight"
@@ -54,6 +58,8 @@ export type ValueParagraphStyleKey =
   | "borderLeft"
   | "tabs"
   | "pageBreakBefore"
-  | "keepWithNext";
+  | "keepWithNext"
+  | "keepLinesTogether"
+  | "widowControl";
 
 export type ParagraphListKind = EditorParagraphListStyle["kind"];

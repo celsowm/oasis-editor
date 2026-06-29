@@ -23,7 +23,14 @@ export interface UseEditorTextInputProps {
   focusInput: () => void;
 }
 
-export function createEditorTextInput(deps: UseEditorTextInputProps) {
+export function createEditorTextInput(
+  deps: UseEditorTextInputProps,
+): ReturnType<typeof createEditorTextInputImpl> {
+  return createEditorTextInputImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorTextInputImpl(deps: UseEditorTextInputProps) {
   const [composing, setComposing] = createSignal(false);
   let suppressedInputText: string | null = null;
 
@@ -74,8 +81,10 @@ export function createEditorTextInput(deps: UseEditorTextInputProps) {
     const pendingStyle = cloneStyle(deps.pendingCaretTextStyle());
     deps.applyTransactionalState(
       (current): EditorState =>
-        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-          insertTextAtSelection(temp, text, pendingStyle),
+        deps.applyTableAwareParagraphEdit(
+          current,
+          (temp): EditorState =>
+            insertTextAtSelection(temp, text, pendingStyle),
         ),
       {
         mergeKey: MERGE_KEYS.insertText,
@@ -117,8 +126,10 @@ export function createEditorTextInput(deps: UseEditorTextInputProps) {
     const pendingStyle = cloneStyle(deps.pendingCaretTextStyle());
     deps.applyTransactionalState(
       (current): EditorState =>
-        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-          insertTextAtSelection(temp, text, pendingStyle),
+        deps.applyTableAwareParagraphEdit(
+          current,
+          (temp): EditorState =>
+            insertTextAtSelection(temp, text, pendingStyle),
         ),
       {
         mergeKey: MERGE_KEYS.insertText,

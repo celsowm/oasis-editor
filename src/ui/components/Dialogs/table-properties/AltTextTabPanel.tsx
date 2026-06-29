@@ -1,11 +1,13 @@
+import type { JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { TextAreaField } from "@/ui/public/TextAreaField.js";
 import { TextField } from "@/ui/public/TextField.js";
 import type { TablePanelProps } from "./TableTabPanel.js";
+import type { TableFormState } from "./TablePropertiesTypes.js";
 
-export function AltTextTabPanel(props: TablePanelProps) {
+export function AltTextTabPanel(props: TablePanelProps): JSX.Element {
   const t = useI18n();
-  const form = () => props.ctrl.form;
+  const form = (): TableFormState => props.ctrl.form;
   const set = props.ctrl.set;
 
   return (

@@ -16,28 +16,34 @@ export interface CommentHighlightOverlayProps {
  * track-changes `RevisionOverlay`). Hit-testing happens on the overlay divs
  * themselves (`pointer-events: auto`), so no canvas hit-test plumbing is needed.
  */
-export function CommentHighlightOverlay(props: CommentHighlightOverlayProps): JSX.Element {
+export function CommentHighlightOverlay(
+  props: CommentHighlightOverlayProps,
+): JSX.Element {
   const [activeCommentId, setActiveCommentId] = createSignal<string | null>(
     null,
   );
 
-  const activeComment = createMemo<EditorComment | null>((): EditorComment | null => {
-    const id = activeCommentId();
-    if (!id) return null;
-    return props.commentsById()[id] ?? null;
-  });
+  const activeComment = createMemo<EditorComment | null>(
+    (): EditorComment | null => {
+      const id = activeCommentId();
+      if (!id) return null;
+      return props.commentsById()[id] ?? null;
+    },
+  );
 
   // Anchor the popup to the first (top-most) highlight box of the active comment.
-  const popupAnchor = createMemo<CommentHighlightBox | null>((): CommentHighlightBox | null => {
-    const id = activeCommentId();
-    if (!id) return null;
-    let best: CommentHighlightBox | null = null;
-    for (const box of props.boxes()) {
-      if (box.commentId !== id) continue;
-      if (!best || box.top < best.top) best = box;
-    }
-    return best;
-  });
+  const popupAnchor = createMemo<CommentHighlightBox | null>(
+    (): CommentHighlightBox | null => {
+      const id = activeCommentId();
+      if (!id) return null;
+      let best: CommentHighlightBox | null = null;
+      for (const box of props.boxes()) {
+        if (box.commentId !== id) continue;
+        if (!best || box.top < best.top) best = box;
+      }
+      return best;
+    },
+  );
 
   const formattedDate = (date: number | undefined): string => {
     if (date === undefined) return "";

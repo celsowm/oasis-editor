@@ -20,10 +20,10 @@ export function getRecentShapes(): string[] {
 
 /** Record a freshly inserted shape, moving it to the front and de-duping. */
 export function pushRecentShape(preset: string): string[] {
-  const next = [preset, ...getRecentShapes().filter((p): boolean => p !== preset)].slice(
-    0,
-    MAX_RECENT,
-  );
+  const next = [
+    preset,
+    ...getRecentShapes().filter((p): boolean => p !== preset),
+  ].slice(0, MAX_RECENT);
   try {
     globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch {

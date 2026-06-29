@@ -17,6 +17,13 @@ import type { ImportProgressPhase } from "./importProgress.js";
 
 function buildImportedDocumentDiagnostics(
   document: Parameters<typeof getDocumentParagraphs>[0],
+): ReturnType<typeof buildImportedDocumentDiagnosticsImpl> {
+  return buildImportedDocumentDiagnosticsImpl(document);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function buildImportedDocumentDiagnosticsImpl(
+  document: Parameters<typeof getDocumentParagraphs>[0],
 ) {
   const paragraphs = getDocumentParagraphs(document);
   const fontCounts = new Map<string, number>();
@@ -96,7 +103,9 @@ export interface DocumentImporterDeps {
   logger: EditorLogger;
 }
 
-export function createDocumentImporter(deps: DocumentImporterDeps): { handleImportFile: (file: File | null) => Promise<void>; } {
+export function createDocumentImporter(deps: DocumentImporterDeps): {
+  handleImportFile: (file: File | null) => Promise<void>;
+} {
   const handleImportFile = async (file: File | null): Promise<void> => {
     if (!file) return;
 

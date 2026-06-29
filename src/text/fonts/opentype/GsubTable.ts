@@ -7,7 +7,9 @@ import {
   parseLookupList,
   readU16Array,
   readU16OffsetArray,
-  type ClassLookup, Coverage } from "@/text/fonts/opentype/otLayoutCommon.js";
+  type ClassLookup,
+  Coverage,
+} from "@/text/fonts/opentype/otLayoutCommon.js";
 
 /**
  * Minimal OpenType GSUB (glyph substitution) parser + apply engine, scoped to the
@@ -117,10 +119,12 @@ function parseMultipleSubst(
       const ids = sequences[index]!;
       if (ids.length === 0) return null;
       const codePoints = glyph.codePoints;
-      const replacement: ShapingGlyph[] = ids.map((id, i): { id: number; codePoints: number[]; } => ({
-        id,
-        codePoints: i === 0 ? codePoints : [],
-      }));
+      const replacement: ShapingGlyph[] = ids.map(
+        (id, i): { id: number; codePoints: number[] } => ({
+          id,
+          codePoints: i === 0 ? codePoints : [],
+        }),
+      );
       glyphs.splice(pos, 1, ...replacement);
       return ids.length;
     },
@@ -164,17 +168,24 @@ function parseLigatureSubst(
   const coverageOffset = offset + reader.u16();
   const ligSetCount = reader.u16();
   const ligSetOffsets = readU16OffsetArray(reader, ligSetCount, offset);
-  const ligatureSets: Ligature[][] = ligSetOffsets.map((setOffset): { ligatureGlyph: number; components: number[]; }[] => {
-    reader.seek(setOffset);
-    const ligOffsets = readU16OffsetArray(reader, reader.u16(), setOffset);
-    return ligOffsets.map((ligOffset): { ligatureGlyph: number; components: number[]; } => {
-      reader.seek(ligOffset);
-      const ligatureGlyph = reader.u16();
-      const componentCount = reader.u16();
-      const components = readU16Array(reader, Math.max(0, componentCount - 1));
-      return { ligatureGlyph, components };
-    });
-  });
+  const ligatureSets: Ligature[][] = ligSetOffsets.map(
+    (setOffset): { ligatureGlyph: number; components: number[] }[] => {
+      reader.seek(setOffset);
+      const ligOffsets = readU16OffsetArray(reader, reader.u16(), setOffset);
+      return ligOffsets.map(
+        (ligOffset): { ligatureGlyph: number; components: number[] } => {
+          reader.seek(ligOffset);
+          const ligatureGlyph = reader.u16();
+          const componentCount = reader.u16();
+          const components = readU16Array(
+            reader,
+            Math.max(0, componentCount - 1),
+          );
+          return { ligatureGlyph, components };
+        },
+      );
+    },
+  );
   const coverage = parseCoverage(reader, coverageOffset);
   return {
     apply(glyphs, pos): 1 | null {
@@ -267,12 +278,14 @@ function parseChainContextSubst(
     );
     const substCount = reader.u16();
     const records = readSubstLookupRecords(reader, substCount);
-    const backtrack = backtrackCoverageOffsets.map((o): Coverage =>
-      parseCoverage(reader, o),
+    const backtrack = backtrackCoverageOffsets.map(
+      (o): Coverage => parseCoverage(reader, o),
     );
-    const input = inputCoverageOffsets.map((o): Coverage => parseCoverage(reader, o));
-    const lookahead = lookaheadCoverageOffsets.map((o): Coverage =>
-      parseCoverage(reader, o),
+    const input = inputCoverageOffsets.map(
+      (o): Coverage => parseCoverage(reader, o),
+    );
+    const lookahead = lookaheadCoverageOffsets.map(
+      (o): Coverage => parseCoverage(reader, o),
     );
     return {
       apply(glyphs, pos, engine): number | null {
@@ -365,14 +378,23 @@ function parseChainRuleSet(
   reader.seek(setOffset);
   const ruleCount = reader.u16();
   const ruleOffsets = readU16OffsetArray(reader, ruleCount, setOffset);
-  return ruleOffsets.map((ruleOffset): { backtrack: number[]; input: number[]; lookahead: number[]; records: SubstLookupRecord[]; } => {
-    reader.seek(ruleOffset);
-    const backtrack = readU16Array(reader, reader.u16());
-    const input = readU16Array(reader, Math.max(0, reader.u16() - 1));
-    const lookahead = readU16Array(reader, reader.u16());
-    const records = readSubstLookupRecords(reader, reader.u16());
-    return { backtrack, input, lookahead, records };
-  });
+  return ruleOffsets.map(
+    (
+      ruleOffset,
+    ): {
+      backtrack: number[];
+      input: number[];
+      lookahead: number[];
+      records: SubstLookupRecord[];
+    } => {
+      reader.seek(ruleOffset);
+      const backtrack = readU16Array(reader, reader.u16());
+      const input = readU16Array(reader, Math.max(0, reader.u16() - 1));
+      const lookahead = readU16Array(reader, reader.u16());
+      const records = readSubstLookupRecords(reader, reader.u16());
+      return { backtrack, input, lookahead, records };
+    },
+  );
 }
 
 // null → glyph-format rule (compare glyph ids); object → class-format rule.

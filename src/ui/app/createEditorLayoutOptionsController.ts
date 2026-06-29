@@ -60,7 +60,9 @@ export function createEditorLayoutOptionsController(
     const target = layoutOptionsTarget();
     if (!target) return;
     resetTransactionGrouping();
-    applyTransactionalState((current): EditorState => apply(current, target), { mergeKey });
+    applyTransactionalState((current): EditorState => apply(current, target), {
+      mergeKey,
+    });
     focusInput();
   };
 
@@ -98,10 +100,12 @@ export function createEditorLayoutOptionsController(
       return false;
     },
     setPreset: (preset: WrapPreset): void => {
-      applyLayoutOptionPatch(MERGE_KEYS.layoutWrapPreset, (current, target): EditorState =>
-        target === "image"
-          ? setSelectedImageWrapPreset(current, preset)
-          : setSelectedTextBoxWrapPreset(current, preset),
+      applyLayoutOptionPatch(
+        MERGE_KEYS.layoutWrapPreset,
+        (current, target): EditorState =>
+          target === "image"
+            ? setSelectedImageWrapPreset(current, preset)
+            : setSelectedTextBoxWrapPreset(current, preset),
       );
       if (preset === "tight" || preset === "through") {
         const selected = getSelectedImageRun(state());

@@ -19,7 +19,10 @@ import {
   type RibbonGroupWidth,
 } from "./ribbonModel.js";
 import { RibbonGroup } from "./RibbonGroup.js";
-import type { RibbonGroupModel, ResolvedRibbonGroupModel } from "@/ui/components/Toolbar/ribbon/ribbonModel.js";
+import type {
+  RibbonGroupModel,
+  ResolvedRibbonGroupModel,
+} from "@/ui/components/Toolbar/ribbon/ribbonModel.js";
 
 export interface RibbonPanelProps {
   activeTab: Accessor<RibbonTabId>;

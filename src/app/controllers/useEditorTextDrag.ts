@@ -74,7 +74,14 @@ function isPositionInsideSelection(
   return true;
 }
 
-export function createEditorTextDrag(deps: EditorTextDragDeps) {
+export function createEditorTextDrag(
+  deps: EditorTextDragDeps,
+): ReturnType<typeof createEditorTextDragImpl> {
+  return createEditorTextDragImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorTextDragImpl(deps: EditorTextDragDeps) {
   const [dragging, setDragging] = createSignal(false);
   const [dropTargetPos, setDropTargetPos] = createSignal<EditorPosition | null>(
     null,
@@ -202,8 +209,10 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
       deps.resetTransactionGrouping();
       deps.applyTransactionalState(
         (current): EditorState =>
-          deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-            moveOrCopySelectionToPosition(temp, destination, { copy }),
+          deps.applyTableAwareParagraphEdit(
+            current,
+            (temp): EditorState =>
+              moveOrCopySelectionToPosition(temp, destination, { copy }),
           ),
         {
           mergeKey: copy

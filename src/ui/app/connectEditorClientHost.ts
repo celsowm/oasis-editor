@@ -1,4 +1,8 @@
-import type { EditorDocument, EditorState, EditorSelection } from "@/core/model.js";
+import type {
+  EditorDocument,
+  EditorState,
+  EditorSelection,
+} from "@/core/model.js";
 import {
   createEditorStateFromDocument,
   createInitialEditorState,
@@ -47,7 +51,8 @@ export function connectEditorClientHost(
   const snapshot = (): EditorState => deps.cloneState(deps.getStateSnapshot());
 
   controller.connectHost({
-    getRuntimeEditor: (): Editor | null => (deps.runtimeReady() ? deps.runtimeEditor() : null),
+    getRuntimeEditor: (): Editor | null =>
+      deps.runtimeReady() ? deps.runtimeEditor() : null,
     getState: (): EditorState => snapshot(),
     getDocument: (): EditorDocument => snapshot().document,
     setDocument: (document): void => {
@@ -80,7 +85,9 @@ export function connectEditorClientHost(
     },
     clearHistory: (): void => deps.clearHistory(),
     importDocx: (file): Promise<void> => deps.docIO.handleImportFile(file),
-    exportDocx: (): Promise<unknown> => Promise.resolve(deps.docIO.handleExportDocx()),
-    exportPdf: (): Promise<unknown> => Promise.resolve(deps.docIO.handleExportPdf()),
+    exportDocx: (): Promise<unknown> =>
+      Promise.resolve(deps.docIO.handleExportDocx()),
+    exportPdf: (): Promise<unknown> =>
+      Promise.resolve(deps.docIO.handleExportPdf()),
   });
 }

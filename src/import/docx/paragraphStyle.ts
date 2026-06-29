@@ -90,6 +90,11 @@ export function normalizeImportedParagraphStyle(
       effective.indentHanging !== defaultEffective.indentHanging
         ? effective.indentHanging
         : undefined,
+    mirrorIndents:
+      style.mirrorIndents !== undefined ||
+      effective.mirrorIndents !== defaultEffective.mirrorIndents
+        ? effective.mirrorIndents
+        : undefined,
     pageBreakBefore:
       style.pageBreakBefore !== undefined ||
       effective.pageBreakBefore !== defaultEffective.pageBreakBefore
@@ -341,6 +346,13 @@ export function parseParagraphStyle(
   const widowControl = parseOnOffProperty(paragraphProperties, "widowControl");
   if (widowControl !== undefined) {
     style.widowControl = widowControl;
+  }
+  const mirrorIndents = parseOnOffProperty(
+    paragraphProperties,
+    "mirrorIndents",
+  );
+  if (mirrorIndents !== undefined) {
+    style.mirrorIndents = mirrorIndents;
   }
 
   const paragraphBorders = getFirstChildByTagNameNS(

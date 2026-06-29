@@ -48,7 +48,9 @@ export function resolveTabAdvancePx(
   // single right tab column, matching Word.
   const tabOrigin = 0;
   const explicitStops = (paragraphStyle.tabs ?? [])
-    .filter((tab): boolean => tab.type !== "clear" && Number.isFinite(tab.position))
+    .filter(
+      (tab): boolean => tab.type !== "clear" && Number.isFinite(tab.position),
+    )
     .map((tab) => ({
       ...tab,
       positionPx: tabOrigin + tab.position * PX_PER_POINT,

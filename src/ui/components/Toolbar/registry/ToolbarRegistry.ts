@@ -30,7 +30,9 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
   private listeners = new Set<() => void>();
 
   register(item: ToolbarItem): void {
-    const index = this.entries.findIndex((entry): boolean => entry.id === item.id);
+    const index = this.entries.findIndex(
+      (entry): boolean => entry.id === item.id,
+    );
     if (index >= 0) {
       this.entries[index] = item;
     } else {
@@ -49,7 +51,9 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
   }
 
   replace(targetId: string, item: ToolbarItem): void {
-    const index = this.entries.findIndex((entry): boolean => entry.id === targetId);
+    const index = this.entries.findIndex(
+      (entry): boolean => entry.id === targetId,
+    );
     if (index < 0) {
       this.register(item);
       return;
@@ -113,7 +117,9 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
     offset: 0 | 1,
   ): void {
     // Drop any pre-existing item with the same id so position is unambiguous.
-    this.entries = this.entries.filter((entry): boolean => entry.id !== item.id);
+    this.entries = this.entries.filter(
+      (entry): boolean => entry.id !== item.id,
+    );
     const targetIndex = this.entries.findIndex(
       (entry): boolean => entry.id === targetId,
     );
@@ -135,14 +141,19 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
       );
       return index >= 0 ? index : null;
     }
-    const index = this.entries.findIndex((entry): boolean => entry.id === target.after);
+    const index = this.entries.findIndex(
+      (entry): boolean => entry.id === target.after,
+    );
     return index >= 0 ? index + 1 : null;
   }
 
   private sortByOrder(): void {
     // Stable sort by `order` (undefined sinks to the end, keeping insertion order).
     this.entries = this.entries
-      .map((item, index): { item: ToolbarItem; index: number; } => ({ item, index }))
+      .map((item, index): { item: ToolbarItem; index: number } => ({
+        item,
+        index,
+      }))
       .sort((a, b): number => {
         const orderA = a.item.order ?? MAX_ORDER;
         const orderB = b.item.order ?? MAX_ORDER;

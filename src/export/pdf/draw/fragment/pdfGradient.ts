@@ -42,7 +42,7 @@ export function resolveGradientShadingName(
       y0: pxToPt(axis.y0),
       x1: pxToPt(axis.x1),
       y1: pxToPt(axis.y1),
-      stops: fill.stops.map((stop): { offset: number; color: string; } => ({
+      stops: fill.stops.map((stop): { offset: number; color: string } => ({
         offset: stop.position,
         color: stop.color,
       })),

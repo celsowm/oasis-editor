@@ -1,3 +1,5 @@
+import type { JSX } from "solid-js";
+
 interface CaretOverlayProps {
   active: boolean;
   left: number;
@@ -6,7 +8,7 @@ interface CaretOverlayProps {
   fixed?: boolean;
 }
 
-export function CaretOverlay(props: CaretOverlayProps) {
+export function CaretOverlay(props: CaretOverlayProps): JSX.Element {
   return (
     <span
       aria-hidden="true"

@@ -47,7 +47,9 @@ import {
   type EditorParagraphStyle,
   type EditorSection,
   type EditorState,
-  type EditorTextStyle, EditorParagraphNode } from "@/core/model.js";
+  type EditorTextStyle,
+  EditorParagraphNode,
+} from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
 import type {
@@ -78,6 +80,13 @@ export interface EditorCommandsControllerDeps
 }
 
 export function createEditorCommandsController(
+  deps: EditorCommandsControllerDeps,
+): ReturnType<typeof createEditorCommandsControllerImpl> {
+  return createEditorCommandsControllerImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorCommandsControllerImpl(
   deps: EditorCommandsControllerDeps,
 ) {
   const {
@@ -141,7 +150,9 @@ export function createEditorCommandsController(
   };
 
   const selectionTouchesList = (): boolean =>
-    getSelectedParagraphRange().some((paragraph): boolean => Boolean(paragraph.list));
+    getSelectedParagraphRange().some((paragraph): boolean =>
+      Boolean(paragraph.list),
+    );
 
   const focusedParagraph = (): EditorParagraphNode | null => {
     const focusParagraphId = state.selection.focus.paragraphId;
@@ -167,10 +178,11 @@ export function createEditorCommandsController(
       return false;
     }
 
-    execParagraph((current): EditorState =>
-      direction === "indent"
-        ? indentParagraphList(current)
-        : outdentParagraphList(current),
+    execParagraph(
+      (current): EditorState =>
+        direction === "indent"
+          ? indentParagraphList(current)
+          : outdentParagraphList(current),
     );
     return true;
   };
@@ -185,14 +197,15 @@ export function createEditorCommandsController(
     clearPreferredColumn();
     resetTransactionGrouping();
     if (selectionCollapsed() && getParagraphText(paragraph).length === 0) {
-      applySelectionAwareParagraphCommand((current): EditorState =>
-        clearParagraphListAtSelection(current),
+      applySelectionAwareParagraphCommand(
+        (current): EditorState => clearParagraphListAtSelection(current),
       );
     } else {
       applyTransactionalState(
         (current): EditorState =>
-          applyTableAwareParagraphEdit(current, (temp): EditorState =>
-            splitListItemAtSelection(temp),
+          applyTableAwareParagraphEdit(
+            current,
+            (temp): EditorState => splitListItemAtSelection(temp),
           ),
         { mergeKey: MERGE_KEYS.splitListItem },
       );
@@ -220,8 +233,8 @@ export function createEditorCommandsController(
     // Extra step between apply and focusInput: ceremony is manual here.
     clearPreferredColumn();
     resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current): EditorState =>
-      outdentParagraphList(current),
+    applySelectionAwareParagraphCommand(
+      (current): EditorState => outdentParagraphList(current),
     );
     event.currentTarget.value = "";
     focusInput();
@@ -302,7 +315,9 @@ export function createEditorCommandsController(
     key: K,
     value: EditorParagraphStyle[K] | null,
   ): void => {
-    execParagraph((current): EditorState => setParagraphStyle(current, key, value));
+    execParagraph(
+      (current): EditorState => setParagraphStyle(current, key, value),
+    );
   };
 
   const toggleParagraphFlagCommand = (
@@ -321,11 +336,15 @@ export function createEditorCommandsController(
   const handleListFormatChange = (
     format: EditorParagraphListStyle["format"],
   ): void => {
-    execParagraph((current): EditorState => setParagraphListFormat(current, format));
+    execParagraph(
+      (current): EditorState => setParagraphListFormat(current, format),
+    );
   };
 
   const handleListStartAtChange = (startAt: number | null): void => {
-    execParagraph((current): EditorState => setParagraphListStartAt(current, startAt));
+    execParagraph(
+      (current): EditorState => setParagraphListStartAt(current, startAt),
+    );
   };
 
   const applyInsertSectionBreakCommand = (
@@ -335,10 +354,12 @@ export function createEditorCommandsController(
   };
 
   const applyInsertPageBreakCommand = (): void => {
-    execTransactional((current): EditorState =>
-      applyTableAwareParagraphEdit(current, (temp): EditorState =>
-        insertPageBreakAtSelection(temp),
-      ),
+    execTransactional(
+      (current): EditorState =>
+        applyTableAwareParagraphEdit(
+          current,
+          (temp): EditorState => insertPageBreakAtSelection(temp),
+        ),
     );
   };
 
@@ -353,8 +374,9 @@ export function createEditorCommandsController(
   };
 
   const handleStyleChange = (styleId: string): void => {
-    execParagraph((current): EditorState =>
-      setParagraphNamedStyle(current, styleId || null),
+    execParagraph(
+      (current): EditorState =>
+        setParagraphNamedStyle(current, styleId || null),
     );
   };
 
@@ -392,9 +414,12 @@ export function createEditorCommandsController(
     if (selectionCollapsed() && !activeLink) {
       return;
     }
-    execTransactional((current): EditorState => setLinkAtSelection(current, href), {
-      mergeKey: MERGE_KEYS.link,
-    });
+    execTransactional(
+      (current): EditorState => setLinkAtSelection(current, href),
+      {
+        mergeKey: MERGE_KEYS.link,
+      },
+    );
   };
 
   const promptForLink = (): void => {
@@ -414,9 +439,12 @@ export function createEditorCommandsController(
     if (!run) {
       return;
     }
-    execTransactional((current): EditorState => setSelectedImageAlt(current, alt), {
-      mergeKey: MERGE_KEYS.imageAlt,
-    });
+    execTransactional(
+      (current): EditorState => setSelectedImageAlt(current, alt),
+      {
+        mergeKey: MERGE_KEYS.imageAlt,
+      },
+    );
   };
 
   const promptForImageAlt = (): void => {

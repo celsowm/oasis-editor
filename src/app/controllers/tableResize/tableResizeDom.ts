@@ -1,4 +1,9 @@
-export function getGuideBounds(viewportRef: () => HTMLElement | undefined): { left: number; top: number; width: number; height: number; } {
+export function getGuideBounds(viewportRef: () => HTMLElement | undefined): {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+} {
   const viewport = viewportRef();
   if (!viewport) {
     return {

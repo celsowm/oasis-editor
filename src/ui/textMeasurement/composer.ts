@@ -239,13 +239,14 @@ function resolveLineFlowBox(options: {
   const ordered = segments
     .slice()
     .sort((a, b): number => a.left - b.left)
-    .map((segment): { left: number; width: number; } => ({
+    .map((segment): { left: number; width: number } => ({
       left: segment.left,
       width: Math.max(1, segment.right - segment.left),
     }));
 
-  const widest = ordered.reduce((best, current): { left: number; width: number; } =>
-    current.width > best.width ? current : best,
+  const widest = ordered.reduce(
+    (best, current): { left: number; width: number } =>
+      current.width > best.width ? current : best,
   );
 
   return {
@@ -299,7 +300,9 @@ export function composeMeasuredParagraphLines(
   const measuredChars = buildMeasuredChars(paragraph, fragments, styles);
   const tokens = tokenizeMeasuredChars(measuredChars);
   const charByOffset = new Map<number, string>(
-    measuredChars.map((char): readonly [number, string] => [char.offset, char.char] as const),
+    measuredChars.map(
+      (char): readonly [number, string] => [char.offset, char.char] as const,
+    ),
   );
   const fallbackFontSize = Math.max(
     DEFAULT_FONT_SIZE,
@@ -567,8 +570,9 @@ export function composeMeasuredParagraphLines(
     ) {
       return null;
     }
-    const langTag = chars.find((char): string | null | undefined => char.style?.language?.value)?.style
-      ?.language?.value;
+    const langTag = chars.find(
+      (char): string | null | undefined => char.style?.language?.value,
+    )?.style?.language?.value;
     const points = findHyphenationPoints(
       word,
       resolveHyphenationLanguage(langTag ?? undefined),

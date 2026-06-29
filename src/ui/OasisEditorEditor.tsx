@@ -25,7 +25,10 @@ import {
   getDocumentSections,
   type EditorLayoutDocument,
   type EditorLayoutParagraph,
-  type EditorState, EditorDocument, EditorPageSettings } from "@/core/model.js";
+  type EditorState,
+  EditorDocument,
+  EditorPageSettings,
+} from "@/core/model.js";
 import {
   getDocumentCharacterCount,
   getDocumentWordCount,
@@ -181,20 +184,23 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
   const layout = (): OasisEditorEditorLayoutProps => props.layout;
   const overlays = (): OasisEditorEditorOverlayProps => props.overlays;
   const refs = (): OasisEditorEditorRefProps => props.refs ?? {};
-  const surfaceHandlers = (): OasisEditorEditorSurfaceHandlers => props.surfaceHandlers;
-  const inputHandlers = (): OasisEditorEditorInputHandlers => props.inputHandlers;
+  const surfaceHandlers = (): OasisEditorEditorSurfaceHandlers =>
+    props.surfaceHandlers;
+  const inputHandlers = (): OasisEditorEditorInputHandlers =>
+    props.inputHandlers;
   const fileHandlers = (): OasisEditorEditorFileHandlers => props.fileHandlers;
   let scrollContentRef: HTMLDivElement | undefined;
   let viewportElement: HTMLDivElement | undefined;
   const [viewportRef, setViewportRef] = createSignal<
     HTMLDivElement | undefined
   >();
-  const pageSettings = (): EditorPageSettings => getDocumentPageSettings(props.state().document);
+  const pageSettings = (): EditorPageSettings =>
+    getDocumentPageSettings(props.state().document);
   // The widest page across all sections drives the shell width. Orientation is a
   // per-section setting, so a landscape section must be able to widen the editor
   // even when the document-level page settings stay portrait — otherwise the
   // wider page overflows and forces a horizontal scrollbar.
-  const widestPageWidth = (): any =>
+  const widestPageWidth = (): number =>
     getDocumentSections(props.state().document).reduce(
       (max, section): number => Math.max(max, section.pageSettings.width),
       0,
@@ -216,32 +222,41 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
     "max-height": viewportHeight(),
     ...(layout().style ?? {}),
   }));
-  const documentForStats = createMemo((): EditorDocument => props.state().document);
+  const documentForStats = createMemo(
+    (): EditorDocument => props.state().document,
+  );
   const characterCount = createMemo((): number =>
     getDocumentCharacterCount(documentForStats()),
   );
-  const wordCount = createMemo((): number => getDocumentWordCount(documentForStats()));
+  const wordCount = createMemo((): number =>
+    getDocumentWordCount(documentForStats()),
+  );
 
   // Zoom state is owned by OasisEditorApp (so the geometry controllers can read
   // it) and threaded in via the layout props. When rendered standalone we fall
   // back to a local signal so the control still works.
   const [localZoomPercent, setLocalZoomPercent] = createSignal(100);
-  const zoomPercent = (): number => layout().zoomPercent?.() ?? localZoomPercent();
+  const zoomPercent = (): number =>
+    layout().zoomPercent?.() ?? localZoomPercent();
   const setZoomPercent = (value: number): void => {
     const clamped = clampZoom(value);
     const lift = layout().setZoomPercent;
     if (lift) lift(clamped);
     else setLocalZoomPercent(clamped);
   };
-  const adjustZoom = (delta: number): void => setZoomPercent(zoomPercent() + delta);
+  const adjustZoom = (delta: number): void =>
+    setZoomPercent(zoomPercent() + delta);
   // z = zoomFactor(): visual scale applied to the shared document layer
   // (.oasis-editor-editor-scroll-content). Because the canvas AND every overlay
   // live inside that layer, scaling it keeps them aligned automatically. Layout
   // stays in unscaled CSS px; the surrounding ".oasis-editor-editor-zoom-sizer"
   // reserves the *scaled* visual size so the scrollbars can reach every edge
   // (CSS transforms don't change layout box size).
-  const fallbackZoomFactor = createMemo((): number => clampZoom(zoomPercent()) / 100);
-  const zoomFactor = (): number => layout().zoomFactor?.() ?? fallbackZoomFactor();
+  const fallbackZoomFactor = createMemo(
+    (): number => clampZoom(zoomPercent()) / 100,
+  );
+  const zoomFactor = (): number =>
+    layout().zoomFactor?.() ?? fallbackZoomFactor();
 
   const [measuredContentHeight, setMeasuredContentHeight] = createSignal(0);
   const [viewportSize, setViewportSize] = createSignal({
@@ -249,7 +264,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
     height: 0,
   });
 
-  const unscaledContentWidth = (): any =>
+  const unscaledContentWidth = (): number =>
     widestPageWidth() + EDITOR_SCROLL_PADDING_PX * 2;
 
   const zoomSizerWidth = createMemo((): number =>
@@ -339,10 +354,15 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
     return pageIndex === -1 ? 1 : pageIndex + 1;
   };
 
-  const selectedImage = createMemo((): SelectedImageBox | null => overlays().selectedImageBox());
-  const selectedTextBox = createMemo((): SelectedTextBoxBox | null => overlays().selectedTextBoxBox());
+  const selectedImage = createMemo((): SelectedImageBox | null =>
+    overlays().selectedImageBox(),
+  );
+  const selectedTextBox = createMemo((): SelectedTextBoxBox | null =>
+    overlays().selectedTextBoxBox(),
+  );
   const commentsById = createMemo<Record<string, EditorComment>>(
-    (): Record<string, EditorComment> => props.state().document.comments?.items ?? {},
+    (): Record<string, EditorComment> =>
+      props.state().document.comments?.items ?? {},
   );
 
   createEffect((): void => {
@@ -438,7 +458,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
               documentLayout={layout().documentLayout}
               measuredBlockHeights={layout().measuredBlockHeights}
               measuredParagraphLayouts={layout().measuredParagraphLayouts}
-              viewportRef={(): HTMLDivElement | undefined => viewportElement ?? undefined}
+              viewportRef={(): HTMLDivElement | undefined =>
+                viewportElement ?? undefined
+              }
               onSurfaceMouseDown={surfaceHandlers().onSurfaceMouseDown}
               onSurfaceClick={surfaceHandlers().onSurfaceClick}
               onSurfaceMouseMove={surfaceHandlers().onSurfaceMouseMove}
@@ -554,9 +576,13 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
             <Show when={overlays().layoutOptions}>
               {(layoutOptions): JSX.Element => (
                 <FloatingLayoutOptions
-                  box={(): SelectedImageBox | null => selectedImage() ?? selectedTextBox()}
+                  box={(): SelectedImageBox | null =>
+                    selectedImage() ?? selectedTextBox()
+                  }
                   layoutOptions={layoutOptions()}
-                  surfaceRef={(): HTMLDivElement | undefined => scrollContentRef}
+                  surfaceRef={(): HTMLDivElement | undefined =>
+                    scrollContentRef
+                  }
                   readOnly={Boolean(layout().readOnly)}
                 />
               )}

@@ -6,7 +6,9 @@ import type {
   EditorState,
   EditorTableNode,
   TableLocation,
-  EditorRevisionMetadata, EditorSection } from "@/core/model.js";
+  EditorRevisionMetadata,
+  EditorSection,
+} from "@/core/model.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,

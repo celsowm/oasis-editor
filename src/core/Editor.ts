@@ -112,7 +112,14 @@ export class Editor implements OasisEditor {
     }
   }
 
-  private createCommandContext() {
+  private createCommandContext(): {
+    editor: this;
+    commands: CommandRegistry;
+    ui: PluginUiRegistry;
+    getState: () => EditorState;
+    getDocument: () => EditorDocument;
+    getSelection: () => EditorSelection;
+  } {
     return {
       editor: this,
       commands: this.commands,

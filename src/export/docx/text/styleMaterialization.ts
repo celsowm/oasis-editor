@@ -26,6 +26,7 @@ export function materializeParagraphStyle(
     indentRight: effective.indentRight,
     indentFirstLine: effective.indentFirstLine,
     indentHanging: effective.indentHanging,
+    mirrorIndents: effective.mirrorIndents,
     pageBreakBefore: effective.pageBreakBefore,
     keepWithNext: effective.keepWithNext,
     keepLinesTogether: effective.keepLinesTogether,

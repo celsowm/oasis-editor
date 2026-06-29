@@ -1,4 +1,8 @@
-import type { EditorState, EditorTextBoxData, EditorParagraphNode } from "@/core/model.js";
+import type {
+  EditorState,
+  EditorTextBoxData,
+  EditorParagraphNode,
+} from "@/core/model.js";
 import { wrapPresetToFloating } from "./floatingLayout.js";
 import { getParagraphs, paragraphOffsetToPosition } from "@/core/model.js";
 import {
@@ -60,8 +64,9 @@ export function insertShapeAtSelection(
   );
   const nextParagraph = insertRunsAtOffset(paragraph, offset, [insertedRun]);
   const paragraphs = getParagraphs(collapsedState);
-  const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode =>
-    candidateIndex === index ? nextParagraph : cloneParagraph(candidate),
+  const nextParagraphs = paragraphs.map(
+    (candidate, candidateIndex): EditorParagraphNode =>
+      candidateIndex === index ? nextParagraph : cloneParagraph(candidate),
   );
 
   return cloneStateWithParagraphs(

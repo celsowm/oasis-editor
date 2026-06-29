@@ -34,9 +34,12 @@ export function InlineShell(props: ShellProps): JSX.Element {
               layout={{
                 ...props.layout,
                 documentLayout: props.documentLayout,
-                measuredBlockHeights: (): Record<string, number> => props.measuredBlockHeights(),
-                measuredParagraphLayouts: (): Record<string, EditorLayoutParagraph> =>
-                  props.measuredParagraphLayouts(),
+                measuredBlockHeights: (): Record<string, number> =>
+                  props.measuredBlockHeights(),
+                measuredParagraphLayouts: (): Record<
+                  string,
+                  EditorLayoutParagraph
+                > => props.measuredParagraphLayouts(),
                 viewportHeight: props.viewportHeight(),
                 readOnly: props.isReadOnly,
               }}

@@ -18,7 +18,9 @@ import { useI18n } from "@/i18n/I18nContext.js";
  * listeners and internal component state (like open dropdowns) without
  * triggering unmount/remount cycles.
  */
-export function ToolbarOverflowManager(props: { children: JSX.Element }): JSX.Element {
+export function ToolbarOverflowManager(props: {
+  children: JSX.Element;
+}): JSX.Element {
   const t = useI18n();
   const [overflowCount, setOverflowCount] = createSignal(0);
   const [menuOpen, setMenuOpen] = createSignal(false);
@@ -68,7 +70,9 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }): JSX.El
         w.style.visibility = "visible";
       });
 
-      const itemWidths = wrappers.map((el): number => el.getBoundingClientRect().width);
+      const itemWidths = wrappers.map(
+        (el): number => el.getBoundingClientRect().width,
+      );
       const EDGE_PADDING = 8;
       const GAP = 8;
 
@@ -204,14 +208,16 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }): JSX.El
   createEffect((): void => {
     if (menuOpen() && overflowCount() > 0) {
       // Run after layout settles
-      requestAnimationFrame((): number => requestAnimationFrame(remeasurePanel));
+      requestAnimationFrame((): number =>
+        requestAnimationFrame(remeasurePanel),
+      );
     }
   });
 
   // Position the overflow popover below the "..." button.
   // We anchor to the right edge of the "..." button and apply the explicitly
   // measured panel width so the panel only wraps when content cannot fit.
-  const menuStyle = (): {} => {
+  const menuStyle = (): JSX.CSSProperties => {
     if (!moreButtonRef) return {};
     const r = moreButtonRef.getBoundingClientRect();
     const vw = window.innerWidth;

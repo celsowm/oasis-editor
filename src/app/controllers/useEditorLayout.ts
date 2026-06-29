@@ -1,5 +1,9 @@
 import { createEffect, createMemo, createSignal, onCleanup } from "solid-js";
-import type { EditorLayoutParagraph, EditorState, EditorLayoutDocument } from "@/core/model.js";
+import type {
+  EditorLayoutParagraph,
+  EditorState,
+  EditorLayoutDocument,
+} from "@/core/model.js";
 import { computeCanvasSelectionGeometry } from "@/ui/canvas/CanvasSelectionGeometry.js";
 import { computeCommentHighlights } from "@/ui/canvas/CanvasCommentGeometry.js";
 import {
@@ -73,7 +77,14 @@ function normalizeParagraphLayouts(
   return next ?? current;
 }
 
-export function useEditorLayout(props: UseEditorLayoutProps) {
+export function useEditorLayout(
+  props: UseEditorLayoutProps,
+): ReturnType<typeof useEditorLayoutImpl> {
+  return useEditorLayoutImpl(props);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function useEditorLayoutImpl(props: UseEditorLayoutProps) {
   const [measuredBlockHeights, setMeasuredBlockHeights] = createSignal<
     Record<string, number>
   >({});
@@ -128,7 +139,14 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       setCommentHighlights([]);
       setSelectedImageBox(null);
       setSelectedTextBoxBox(null);
-      setCaretBox((current): { visible: false; left: number; top: number; height: number; } => ({ ...current, visible: false }));
+      setCaretBox(
+        (
+          current,
+        ): { visible: false; left: number; top: number; height: number } => ({
+          ...current,
+          visible: false,
+        }),
+      );
       return;
     }
 
@@ -143,7 +161,14 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       setCommentHighlights([]);
       setSelectedImageBox(null);
       setSelectedTextBoxBox(null);
-      setCaretBox((current): { visible: false; left: number; top: number; height: number; } => ({ ...current, visible: false }));
+      setCaretBox(
+        (
+          current,
+        ): { visible: false; left: number; top: number; height: number } => ({
+          ...current,
+          visible: false,
+        }),
+      );
       return;
     }
 
@@ -156,7 +181,9 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     setCaretBox(geometry.caretBox);
   };
 
-  const requestInputBoxSync = (reason: LayoutSyncReason = "selection"): void => {
+  const requestInputBoxSync = (
+    reason: LayoutSyncReason = "selection",
+  ): void => {
     const requestId = ++syncRequestId;
     queueMicrotask((): void => {
       if (requestId !== syncRequestId) {
@@ -182,8 +209,9 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     } = {},
   ): Promise<void> | null => {
     if (options.paragraphIds && options.paragraphIds.length > 0) {
-      setMeasuredParagraphLayouts((current): Record<string, EditorLayoutParagraph> =>
-        normalizeParagraphLayouts(current, options.paragraphIds ?? []),
+      setMeasuredParagraphLayouts(
+        (current): Record<string, EditorLayoutParagraph> =>
+          normalizeParagraphLayouts(current, options.paragraphIds ?? []),
       );
       bumpLayoutMetricsEpoch();
     }
@@ -202,8 +230,9 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       bumpLayoutMetricsEpoch();
     } else if ((invalidation.dirtyParagraphIds?.length ?? 0) > 0) {
       const dirtyIds = invalidation.dirtyParagraphIds ?? [];
-      setMeasuredParagraphLayouts((current): Record<string, EditorLayoutParagraph> =>
-        normalizeParagraphLayouts(current, dirtyIds),
+      setMeasuredParagraphLayouts(
+        (current): Record<string, EditorLayoutParagraph> =>
+          normalizeParagraphLayouts(current, dirtyIds),
       );
       bumpLayoutMetricsEpoch();
     }

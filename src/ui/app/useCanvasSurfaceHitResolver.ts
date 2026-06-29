@@ -17,6 +17,24 @@ export function createCanvasSurfaceHitResolver(deps: {
   documentLayout: Accessor<EditorLayoutDocument>;
   canvasSnapshotProvider: CanvasLayoutSnapshotProvider;
   zoomFactor: Accessor<number>;
+}): {
+  resolveSurfaceHitAtPoint: (
+    clientX: number,
+    clientY: number,
+    context?: { forDrag?: boolean; pierce?: boolean },
+  ) => SurfaceHit | null;
+} {
+  return createCanvasSurfaceHitResolverImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createCanvasSurfaceHitResolverImpl(deps: {
+  state: Accessor<EditorState>;
+  surfaceRef: Accessor<HTMLDivElement | null>;
+  viewportRef: Accessor<HTMLElement | null>;
+  documentLayout: Accessor<EditorLayoutDocument>;
+  canvasSnapshotProvider: CanvasLayoutSnapshotProvider;
+  zoomFactor: Accessor<number>;
 }) {
   const resolveSurfaceHitAtPoint = (
     clientX: number,

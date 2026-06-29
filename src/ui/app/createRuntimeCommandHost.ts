@@ -42,7 +42,9 @@ export function createRuntimeCommandHost(
   );
   let disposed = false;
 
-  const commandStateOf = (commandRef: CommandRef): { isEnabled: boolean; isActive: boolean; value: unknown; } => {
+  const commandStateOf = (
+    commandRef: CommandRef,
+  ): { isEnabled: boolean; isActive: boolean; value: unknown } => {
     const commandName = commandRefName(commandRef);
     const cmd = runtimeEditor().commands.get(commandName);
     if (!cmd) {

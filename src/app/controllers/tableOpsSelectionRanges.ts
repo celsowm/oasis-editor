@@ -59,6 +59,14 @@ function compareCellLocations(
 function getSelectionTableContext(
   current: EditorState,
   deps: TableSelectionResolversDeps,
+): ReturnType<typeof getSelectionTableContextImpl> {
+  return getSelectionTableContextImpl(current, deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function getSelectionTableContextImpl(
+  current: EditorState,
+  deps: TableSelectionResolversDeps,
 ) {
   const selection = current.selection;
   const activeSectionIndex = getActiveSectionIndex(current);
@@ -115,7 +123,12 @@ function getSelectionTableContext(
 
 export function createTableSelectionResolvers(
   deps: TableSelectionResolversDeps,
-) {
+): ReturnType<typeof createTableSelectionResolversImpl> {
+  return createTableSelectionResolversImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createTableSelectionResolversImpl(deps: TableSelectionResolversDeps) {
   const resolveTableCellRangeSelection = (
     current: EditorState,
   ): EditorState["selection"] | null => {

@@ -135,7 +135,9 @@ function RenderSplit(props: RendererProps<SplitItem>): JSX.Element {
 
 function RenderSelect(props: RendererProps<SelectItem>): JSX.Element {
   const b = bindItem(props.item, props.api);
-  const onChange: JSX.EventHandler<HTMLSelectElement, Event> = (event): void => {
+  const onChange: JSX.EventHandler<HTMLSelectElement, Event> = (
+    event,
+  ): void => {
     const value = event.currentTarget.value;
     props.api.commands.execute(props.item.command, value);
   };
@@ -152,7 +154,9 @@ function RenderSelect(props: RendererProps<SelectItem>): JSX.Element {
         <option value="">{props.item.placeholder}</option>
       </Show>
       <For each={props.item.options(props.api)}>
-        {(option): JSX.Element => <option value={option.value}>{option.label}</option>}
+        {(option): JSX.Element => (
+          <option value={option.value}>{option.label}</option>
+        )}
       </For>
     </Select>
   );
@@ -225,7 +229,9 @@ function RenderSeparator(_props: RendererProps<SeparatorItem>): JSX.Element {
 function RenderGroup(props: RendererProps<GroupItem>): JSX.Element {
   return (
     <For each={props.item.items}>
-      {(child): JSX.Element => <ToolbarItemRenderer item={child} api={props.api} />}
+      {(child): JSX.Element => (
+        <ToolbarItemRenderer item={child} api={props.api} />
+      )}
     </For>
   );
 }

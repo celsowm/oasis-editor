@@ -20,6 +20,7 @@ import {
   paragraphOffsetToPosition,
   resolveNamedTextStyle,
   type EditorBorderStyle,
+  type EditorNamedStyle,
   type EditorPageMargins,
   type EditorState,
 } from "@/core/model.js";
@@ -30,7 +31,10 @@ import {
   type TocPageNumberResolver,
 } from "@/core/commands/tableOfContents.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
-import { createEssentialsPlugin } from "@/plugins/internal/createEssentialsPlugin.js";
+import {
+  createEssentialsPlugin,
+  type EssentialsTableCapability,
+} from "@/plugins/internal/createEssentialsPlugin.js";
 import { togglePreciseFontMode } from "./localFontAccess.js";
 import {
   fontSizePtToPx,
@@ -143,7 +147,8 @@ export function createEditorEssentialsRuntimePlugin(
         }
       }
     }
-    return (headingId: string): number | undefined => pageByParagraph.get(headingId);
+    return (headingId: string): number | undefined =>
+      pageByParagraph.get(headingId);
   };
 
   const essentialsFormatting = {
@@ -170,15 +175,17 @@ export function createEditorEssentialsRuntimePlugin(
       true
     ),
     insertTableOfContents: (): boolean => {
-      options.applyTransactionalState((current): EditorState =>
-        insertTableOfContents(current, buildTocPageResolver(current)),
+      options.applyTransactionalState(
+        (current): EditorState =>
+          insertTableOfContents(current, buildTocPageResolver(current)),
       );
       options.focusInput();
       return true;
     },
     updateTableOfContents: (): boolean => {
-      options.applyTransactionalState((current): EditorState =>
-        updateTableOfContents(current, buildTocPageResolver(current)),
+      options.applyTransactionalState(
+        (current): EditorState =>
+          updateTableOfContents(current, buildTocPageResolver(current)),
       );
       options.focusInput();
       return true;
@@ -262,29 +269,35 @@ export function createEditorEssentialsRuntimePlugin(
     ),
     togglePreciseFonts: (): true => (void togglePreciseFontMode(), true),
     pageBreak: (): boolean => {
-      options.applyTransactionalState((current): EditorState =>
-        options.tableOps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-          insertPageBreakAtSelection(temp),
-        ),
+      options.applyTransactionalState(
+        (current): EditorState =>
+          options.tableOps.applyTableAwareParagraphEdit(
+            current,
+            (temp): EditorState => insertPageBreakAtSelection(temp),
+          ),
       );
       options.focusInput();
       return true;
     },
     lineBreak: (): boolean => {
-      options.applyTransactionalState((current): EditorState =>
-        options.tableOps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-          insertTextAtSelection(temp, "\n"),
-        ),
+      options.applyTransactionalState(
+        (current): EditorState =>
+          options.tableOps.applyTableAwareParagraphEdit(
+            current,
+            (temp): EditorState => insertTextAtSelection(temp, "\n"),
+          ),
       );
       options.focusInput();
       return true;
     },
     splitBlock: (): boolean => {
       if (options.commandsController.handleListEnter()) return true;
-      options.applyTransactionalState((current): EditorState =>
-        options.tableOps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-          splitBlockAtSelection(temp),
-        ),
+      options.applyTransactionalState(
+        (current): EditorState =>
+          options.tableOps.applyTableAwareParagraphEdit(
+            current,
+            (temp): EditorState => splitBlockAtSelection(temp),
+          ),
       );
       options.focusInput();
       return true;
@@ -348,7 +361,21 @@ export function createEditorEssentialsRuntimePlugin(
   };
 
   const essentialsDocument = {
-    documentStyles: () => {
+    documentStyles: (): Array<{
+      id: string;
+      name: string;
+      type: EditorNamedStyle["type"];
+      qFormat: EditorNamedStyle["qFormat"];
+      uiPriority: EditorNamedStyle["uiPriority"];
+      semiHidden: EditorNamedStyle["semiHidden"];
+      unhideWhenUsed: EditorNamedStyle["unhideWhenUsed"];
+      isUsed: boolean;
+      fontFamily: string | undefined;
+      fontSize: number | undefined;
+      color: string | undefined;
+      bold: boolean | undefined;
+      italic: boolean | undefined;
+    }> => {
       const document = options.state().document;
       const styles = document?.styles ?? {};
       const usedStyleIds = new Set<string>();
@@ -383,8 +410,8 @@ export function createEditorEssentialsRuntimePlugin(
     importDocument: (): void | undefined => options.importInputRef()?.click(),
     insertImage: (): void | undefined => options.imageInputRef()?.click(),
     insertShape: (preset: string): void =>
-      options.applyTransactionalState((current): EditorState =>
-        insertShapeAtSelection(current, preset),
+      options.applyTransactionalState(
+        (current): EditorState => insertShapeAtSelection(current, preset),
       ),
   };
 
@@ -398,7 +425,8 @@ export function createEditorEssentialsRuntimePlugin(
 
   const essentialsImage = {
     promptAlt: (): void => options.commandsController.promptForImageAlt(),
-    promptCaption: (): void => options.commandsController.promptForImageCaption(),
+    promptCaption: (): void =>
+      options.commandsController.promptForImageCaption(),
     isSelected: (): boolean => Boolean(options.selectedImageRun()),
   };
 
@@ -497,8 +525,10 @@ export function createEditorEssentialsRuntimePlugin(
       ),
     setListStartAt: (value: number | null): void =>
       options.commandsController.handleListStartAtChange(value),
-    outdent: (): undefined => void options.commandsController.handleListTab("outdent"),
-    indent: (): undefined => void options.commandsController.handleListTab("indent"),
+    outdent: (): undefined =>
+      void options.commandsController.handleListTab("outdent"),
+    indent: (): undefined =>
+      void options.commandsController.handleListTab("indent"),
   };
 
   const essentialsSection = {
@@ -557,7 +587,7 @@ export function createEditorEssentialsRuntimePlugin(
     },
   };
 
-  const essentialsTable = (() => {
+  const buildEssentialsTable = (): EssentialsTableCapability => {
     const insideTable = (): boolean =>
       Boolean(
         findParagraphTableLocation(
@@ -603,50 +633,60 @@ export function createEditorEssentialsRuntimePlugin(
     return {
       insideTable,
       selectionLabel,
-      canMerge: (): boolean => options.tableOps.canMergeSelectedTable(options.state()),
-      canSplit: (): boolean => options.tableOps.canSplitSelectedTable(options.state()),
+      canMerge: (): boolean =>
+        options.tableOps.canMergeSelectedTable(options.state()),
+      canSplit: (): boolean =>
+        options.tableOps.canSplitSelectedTable(options.state()),
       canEditColumn: (): boolean =>
         options.tableOps.canEditSelectedTableColumn(options.state()),
       canEditRow: (): boolean =>
         options.tableOps.canEditSelectedTableRow(options.state()),
       merge: (): void =>
         apply(
-          (current): EditorState => options.tableOps.mergeSelectedTable(current),
+          (current): EditorState =>
+            options.tableOps.mergeSelectedTable(current),
           MERGE_KEYS.mergeTable,
         ),
       split: (): void =>
         apply(
-          (current): EditorState => options.tableOps.splitSelectedTable(current),
+          (current): EditorState =>
+            options.tableOps.splitSelectedTable(current),
           MERGE_KEYS.splitTable,
         ),
       insertColumnBefore: (): void =>
         apply(
-          (current): EditorState => options.tableOps.insertSelectedTableColumn(current, -1),
+          (current): EditorState =>
+            options.tableOps.insertSelectedTableColumn(current, -1),
           MERGE_KEYS.insertTableColumn,
         ),
       insertColumnAfter: (): void =>
         apply(
-          (current): EditorState => options.tableOps.insertSelectedTableColumn(current, 1),
+          (current): EditorState =>
+            options.tableOps.insertSelectedTableColumn(current, 1),
           MERGE_KEYS.insertTableColumn,
         ),
       deleteColumn: (): void =>
         apply(
-          (current): EditorState => options.tableOps.deleteSelectedTableColumn(current),
+          (current): EditorState =>
+            options.tableOps.deleteSelectedTableColumn(current),
           MERGE_KEYS.deleteTableColumn,
         ),
       insertRowBefore: (): void =>
         apply(
-          (current): EditorState => options.tableOps.insertSelectedTableRow(current, -1),
+          (current): EditorState =>
+            options.tableOps.insertSelectedTableRow(current, -1),
           MERGE_KEYS.insertTableRow,
         ),
       insertRowAfter: (): void =>
         apply(
-          (current): EditorState => options.tableOps.insertSelectedTableRow(current, 1),
+          (current): EditorState =>
+            options.tableOps.insertSelectedTableRow(current, 1),
           MERGE_KEYS.insertTableRow,
         ),
       deleteRow: (): void =>
         apply(
-          (current): EditorState => options.tableOps.deleteSelectedTableRow(current),
+          (current): EditorState =>
+            options.tableOps.deleteSelectedTableRow(current),
           MERGE_KEYS.deleteTableRow,
         ),
       cellShading: (color: string | null): void =>
@@ -677,7 +717,8 @@ export function createEditorEssentialsRuntimePlugin(
         ),
       width100: (): void =>
         apply(
-          (current): EditorState => setTableStyleValue(current, "width", "100%"),
+          (current): EditorState =>
+            setTableStyleValue(current, "width", "100%"),
           MERGE_KEYS.tableWidth,
         ),
       alignLeft: (): void =>
@@ -706,7 +747,8 @@ export function createEditorEssentialsRuntimePlugin(
       insert: (rows: number, cols: number): void =>
         options.tableOps.insertTableCommand(rows, cols),
     };
-  })();
+  };
+  const essentialsTable = buildEssentialsTable();
 
   return createEssentialsPlugin({
     gate: essentialsGate,

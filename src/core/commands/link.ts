@@ -52,7 +52,9 @@ export function getLinkAtSelection(state: EditorState): string | null {
     return null;
   }
 
-  return touchedRuns.every((run): boolean => run.styles?.link === href) ? href : null;
+  return touchedRuns.every((run): boolean => run.styles?.link === href)
+    ? href
+    : null;
 }
 
 export function setLinkAtSelection(

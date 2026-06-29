@@ -99,6 +99,7 @@ export const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> =
     indentRight: 0,
     indentFirstLine: 0,
     indentHanging: 0,
+    mirrorIndents: false,
     shading: null as unknown as string | null,
     borderTop: null as unknown as EditorBorderStyle | null,
     borderRight: null as unknown as EditorBorderStyle | null,

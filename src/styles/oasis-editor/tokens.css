@@ -2,11 +2,13 @@
 .oasis-editor {
   --oasis-bg: #f6f8fb;
   --oasis-paper: #ffffff;
-  --oasis-paper-shadow: 0 1px 3px rgba(60, 64, 67, 0.15), 0 4px 8px rgba(60, 64, 67, 0.07);
+  --oasis-paper-shadow:
+    0 1px 3px rgba(60, 64, 67, 0.15), 0 4px 8px rgba(60, 64, 67, 0.07);
 
   --oasis-toolbar-bg: rgba(255, 255, 255, 0.85);
   --oasis-toolbar-border: rgba(148, 163, 184, 0.22);
-  --oasis-toolbar-shadow: 0 4px 12px rgba(15, 23, 42, 0.04), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  --oasis-toolbar-shadow:
+    0 4px 12px rgba(15, 23, 42, 0.04), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
 
   --oasis-text: #202124;
   --oasis-text-muted: #5f6368;

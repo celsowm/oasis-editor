@@ -1,6 +1,10 @@
 import type { MergeKey } from "@/core/transactionMergeKeys.js";
 import { createSignal } from "solid-js";
-import type { EditorState, EditorPosition, EditorDocument } from "@/core/model.js";
+import type {
+  EditorState,
+  EditorPosition,
+  EditorDocument,
+} from "@/core/model.js";
 import type { EditorLogger } from "@/utils/logger.js";
 import { createDocumentExporter } from "./documentIO/DocumentExporter.js";
 import { createDocumentImporter } from "./documentIO/DocumentImporter.js";
@@ -41,7 +45,14 @@ export interface UseEditorDocumentIOProps {
   logger: EditorLogger;
 }
 
-export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
+export function createEditorDocumentIO(
+  deps: UseEditorDocumentIOProps,
+): ReturnType<typeof createEditorDocumentIOImpl> {
+  return createEditorDocumentIOImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorDocumentIOImpl(deps: UseEditorDocumentIOProps) {
   const [importProgress, setImportProgress] =
     createSignal<ImportProgressState | null>(null);
 
@@ -60,7 +71,10 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
     return max;
   };
 
-  const setImportPhase = (phase: ImportProgressPhase, subProgress?: number): void => {
+  const setImportPhase = (
+    phase: ImportProgressPhase,
+    subProgress?: number,
+  ): void => {
     setImportProgress({
       phase,
       progress: computeProgress(phase, subProgress),

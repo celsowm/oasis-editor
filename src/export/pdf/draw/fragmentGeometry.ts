@@ -1,4 +1,8 @@
-import type { EditorLayoutFragment, EditorLayoutLine, EditorCaretSlot } from "@/core/model.js";
+import type {
+  EditorLayoutFragment,
+  EditorLayoutLine,
+  EditorCaretSlot,
+} from "@/core/model.js";
 
 export interface FragmentSlot {
   char: string;
@@ -11,7 +15,10 @@ export function resolveFragmentSlots(
   fragment: EditorLayoutFragment,
 ): FragmentSlot[] {
   const slotByOffset = new Map(
-    line.slots.map((slot): readonly [number, EditorCaretSlot] => [slot.offset, slot] as const),
+    line.slots.map(
+      (slot): readonly [number, EditorCaretSlot] =>
+        [slot.offset, slot] as const,
+    ),
   );
   const result: FragmentSlot[] = [];
   for (const char of fragment.chars) {
@@ -42,7 +49,10 @@ export function resolveFragmentBounds(
   }
 
   const slotByOffset = new Map(
-    line.slots.map((slot): readonly [number, EditorCaretSlot] => [slot.offset, slot] as const),
+    line.slots.map(
+      (slot): readonly [number, EditorCaretSlot] =>
+        [slot.offset, slot] as const,
+    ),
   );
   const first = slots[0]!;
   const last = slots[slots.length - 1]!;

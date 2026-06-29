@@ -3,6 +3,7 @@ import type {
   EditorParagraphStyle,
   EditorPosition,
   EditorState,
+  EditorTabStop,
   EditorTextStyle,
 } from "@/core/model.js";
 import {
@@ -61,6 +62,8 @@ export type ParagraphStyleKey =
   | "indentRight"
   | "indentFirstLine"
   | "indentHanging"
+  | "lineRule"
+  | "outlineLevel"
   | "shading"
   | "tabs"
   | "borderTop"
@@ -68,7 +71,9 @@ export type ParagraphStyleKey =
   | "borderBottom"
   | "borderLeft"
   | "pageBreakBefore"
-  | "keepWithNext";
+  | "keepWithNext"
+  | "keepLinesTogether"
+  | "widowControl";
 
 export interface ToolbarStyleState {
   bold: boolean;
@@ -121,8 +126,15 @@ export interface ToolbarStyleState {
   borderSideBottom: boolean;
   borderSideLeft: boolean;
   listKind: string;
+  tabs: EditorTabStop[];
+  lineRule: string;
+  contextualSpacing: boolean;
+  outlineLevel: string;
+  mirrorIndents: boolean;
   pageBreakBefore: boolean;
   keepWithNext: boolean;
+  keepLinesTogether: boolean;
+  widowControl: boolean;
 }
 
 function selectionOverlapsRun(
@@ -234,7 +246,9 @@ function areAllBooleanStylesEnabled(
   styles: EditorTextStyle[],
   key: BooleanStyleKey,
 ): boolean {
-  return styles.length > 0 && styles.every((style): boolean => Boolean(style[key]));
+  return (
+    styles.length > 0 && styles.every((style): boolean => Boolean(style[key]))
+  );
 }
 
 function resolveUniformStyleValue<K extends ValueStyleKey>(
@@ -251,7 +265,9 @@ function resolveUniformStyleValue<K extends ValueStyleKey>(
   }
 
   const serialized = String(first);
-  return styles.every((style): boolean => String(style[key] ?? "") === serialized)
+  return styles.every(
+    (style): boolean => String(style[key] ?? "") === serialized,
+  )
     ? serialized
     : "";
 }
@@ -264,8 +280,9 @@ function getSelectedParagraphStyles(
   const { styles: docStyles } = state.document;
   return paragraphs
     .slice(normalized.startIndex, normalized.endIndex + 1)
-    .map((paragraph): Required<EditorParagraphStyle> =>
-      resolveEffectiveParagraphStyle(paragraph.style, docStyles),
+    .map(
+      (paragraph): Required<EditorParagraphStyle> =>
+        resolveEffectiveParagraphStyle(paragraph.style, docStyles),
     );
 }
 
@@ -283,16 +300,26 @@ function resolveUniformParagraphStyleValue<K extends ParagraphStyleKey>(
   }
 
   const serialized = String(first);
-  return styles.every((style): boolean => String(style[key] ?? "") === serialized)
+  return styles.every(
+    (style): boolean => String(style[key] ?? "") === serialized,
+  )
     ? serialized
     : "";
 }
 
 function resolveUniformParagraphFlag(
   styles: EditorParagraphStyle[],
-  key: "pageBreakBefore" | "keepWithNext",
+  key:
+    | "pageBreakBefore"
+    | "keepWithNext"
+    | "keepLinesTogether"
+    | "widowControl"
+    | "contextualSpacing"
+    | "mirrorIndents",
 ): boolean {
-  return styles.length > 0 && styles.every((style): boolean => style[key] === true);
+  return (
+    styles.length > 0 && styles.every((style): boolean => style[key] === true)
+  );
 }
 
 const BORDER_EDGE_KEYS = [
@@ -367,7 +394,9 @@ function resolveUniformListKind(
     return "";
   }
 
-  return paragraphs.every((paragraph): boolean => paragraph.list?.kind === firstKind)
+  return paragraphs.every(
+    (paragraph): boolean => paragraph.list?.kind === firstKind,
+  )
     ? firstKind
     : "";
 }
@@ -462,10 +491,29 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     borderSideBottom: boxBorder.sides.borderBottom,
     borderSideLeft: boxBorder.sides.borderLeft,
     listKind: resolveUniformListKind(selectedParagraphs),
+    tabs: paragraphStyles[0]?.tabs ?? [],
+    lineRule: resolveUniformParagraphStyleValue(paragraphStyles, "lineRule"),
+    contextualSpacing: resolveUniformParagraphFlag(
+      paragraphStyles,
+      "contextualSpacing",
+    ),
+    outlineLevel: resolveUniformParagraphStyleValue(
+      paragraphStyles,
+      "outlineLevel",
+    ),
+    mirrorIndents: resolveUniformParagraphFlag(
+      paragraphStyles,
+      "mirrorIndents",
+    ),
     pageBreakBefore: resolveUniformParagraphFlag(
       paragraphStyles,
       "pageBreakBefore",
     ),
     keepWithNext: resolveUniformParagraphFlag(paragraphStyles, "keepWithNext"),
+    keepLinesTogether: resolveUniformParagraphFlag(
+      paragraphStyles,
+      "keepLinesTogether",
+    ),
+    widowControl: resolveUniformParagraphFlag(paragraphStyles, "widowControl"),
   };
 }

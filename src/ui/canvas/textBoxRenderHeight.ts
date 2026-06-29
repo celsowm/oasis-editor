@@ -4,7 +4,12 @@ import { projectBlocksLayout } from "@/layoutProjection/blocksPagination.js";
 const TEXT_BOX_AUTOFIT_MEASURE_HEIGHT = 100_000;
 const TEXT_BOX_AUTOFIT_SAFETY_PX = 2;
 
-export function getTextBoxPadding(textBox: EditorTextBoxData): { left: number; top: number; right: number; bottom: number; } {
+export function getTextBoxPadding(textBox: EditorTextBoxData): {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+} {
   return {
     left: textBox.body?.paddingLeft ?? 0,
     top: textBox.body?.paddingTop ?? 0,
@@ -50,7 +55,8 @@ function measureTextBoxNaturalHeight(
     return (
       sum +
       page.blocks.reduce(
-        (blockSum, block): number => blockSum + Math.max(0, block.estimatedHeight),
+        (blockSum, block): number =>
+          blockSum + Math.max(0, block.estimatedHeight),
         0,
       )
     );

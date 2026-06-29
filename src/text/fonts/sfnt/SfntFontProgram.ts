@@ -22,7 +22,9 @@ function readSignedFixed16_16(reader: BinaryReader, offset: number): number {
 }
 
 function readAscii(bytes: Uint8Array): string {
-  return Array.from(bytes, (byte): string => String.fromCharCode(byte)).join("");
+  return Array.from(bytes, (byte): string => String.fromCharCode(byte)).join(
+    "",
+  );
 }
 
 function readUtf16Be(bytes: Uint8Array): string {

@@ -18,7 +18,14 @@ export interface EditorTransactionsContext {
   applyLayoutInvalidation: (invalidation: LayoutInvalidation) => void;
 }
 
-export function useEditorTransactions(ctx: EditorTransactionsContext) {
+export function useEditorTransactions(
+  ctx: EditorTransactionsContext,
+): ReturnType<typeof useEditorTransactionsImpl> {
+  return useEditorTransactionsImpl(ctx);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function useEditorTransactionsImpl(ctx: EditorTransactionsContext) {
   const [undoStack, setUndoStack] = createSignal<EditorState[]>([]);
   const [redoStack, setRedoStack] = createSignal<EditorState[]>([]);
   let historyState = createEmptyEditorHistoryState();
@@ -68,7 +75,8 @@ export function useEditorTransactions(ctx: EditorTransactionsContext) {
 
     const invalidation = perfTimer(
       "txn:invalidate",
-      (): LayoutInvalidation => computeLayoutInvalidationFromTransaction(prev, next),
+      (): LayoutInvalidation =>
+        computeLayoutInvalidationFromTransaction(prev, next),
       0,
     );
     ctx.applyLayoutInvalidation(invalidation);

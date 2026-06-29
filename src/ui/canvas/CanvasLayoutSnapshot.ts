@@ -221,7 +221,10 @@ export function buildCanvasLayoutSnapshot(
 
   const paragraphs = getDocumentParagraphs(state.document);
   const paragraphIndexById = new Map(
-    paragraphs.map((paragraph, index): readonly [string, number] => [paragraph.id, index] as const),
+    paragraphs.map(
+      (paragraph, index): readonly [string, number] =>
+        [paragraph.id, index] as const,
+    ),
   );
   const surfaceRect = surface.getBoundingClientRect();
   const snapshotPages: CanvasSnapshotPage[] = [];
@@ -350,12 +353,21 @@ export function buildCanvasLayoutSnapshot(
               endOffset: line.endOffset,
               top: lineTopOffset + line.top,
               height: line.height,
-              slots: line.slots.map((slot): { offset: number; left: number; top: number; height: number; } => ({
-                offset: slot.offset,
-                left: blockContentLeft + slot.left,
-                top: lineTopOffset + slot.top,
-                height: slot.height,
-              })),
+              slots: line.slots.map(
+                (
+                  slot,
+                ): {
+                  offset: number;
+                  left: number;
+                  top: number;
+                  height: number;
+                } => ({
+                  offset: slot.offset,
+                  left: blockContentLeft + slot.left,
+                  top: lineTopOffset + slot.top,
+                  height: slot.height,
+                }),
+              ),
             })),
           });
           inlineImages.push(
@@ -526,12 +538,21 @@ export function buildCanvasLayoutSnapshot(
                     endOffset: line.endOffset,
                     top: paragraphLayout.originY + line.top,
                     height: line.height,
-                    slots: line.slots.map((slot): { offset: number; left: number; top: number; height: number; } => ({
-                      offset: slot.offset,
-                      left: paragraphLayout.originX + slot.left,
-                      top: paragraphLayout.originY + slot.top,
-                      height: slot.height,
-                    })),
+                    slots: line.slots.map(
+                      (
+                        slot,
+                      ): {
+                        offset: number;
+                        left: number;
+                        top: number;
+                        height: number;
+                      } => ({
+                        offset: slot.offset,
+                        left: paragraphLayout.originX + slot.left,
+                        top: paragraphLayout.originY + slot.top,
+                        height: slot.height,
+                      }),
+                    ),
                   }));
               snapshotParagraphs.push({
                 paragraph: paragraphLayout.paragraph,

@@ -71,8 +71,9 @@ export const applyTableAwareParagraphEdit = (
   if (!clonedTable || clonedTable.type !== "table") {
     return edit(current);
   }
-  const nextBlocks = currentBlocks.map((block, i): EditorBlockNode =>
-    i === location.blockIndex ? clonedTable : block,
+  const nextBlocks = currentBlocks.map(
+    (block, i): EditorBlockNode =>
+      i === location.blockIndex ? clonedTable : block,
   );
   const tableBlock = clonedTable;
 

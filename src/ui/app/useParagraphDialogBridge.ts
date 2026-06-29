@@ -1,11 +1,51 @@
 import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import { setParagraphStyle } from "@/core/commands/block.js";
-import type { EditorBorderStyle, EditorState } from "@/core/model.js";
+import { resolveDefaultParagraphStyleId } from "@/core/model.js";
+import type {
+  EditorBorderStyle,
+  EditorParagraphStyle,
+  EditorState,
+} from "@/core/model.js";
 import type {
   ParagraphDialogApplyValues,
   ParagraphDialogInitialValues,
 } from "@/ui/components/Dialogs/ParagraphDialog.js";
 import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
+
+/** Materialize the dialog values onto a base paragraph style (set-as-default). */
+function applyValuesToParagraphStyle(
+  base: EditorParagraphStyle,
+  values: ParagraphDialogApplyValues,
+): EditorParagraphStyle {
+  const next = { ...base } as Record<string, unknown>;
+  const setOrDelete = (key: string, value: unknown): void => {
+    if (value === null || value === undefined) delete next[key];
+    else next[key] = value;
+  };
+  setOrDelete("align", values.align);
+  setOrDelete("indentLeft", values.indentLeft);
+  setOrDelete("indentRight", values.indentRight);
+  setOrDelete("indentFirstLine", values.indentFirstLine);
+  setOrDelete("indentHanging", values.indentHanging);
+  next.mirrorIndents = values.mirrorIndents;
+  setOrDelete("spacingBefore", values.spacingBefore);
+  setOrDelete("spacingAfter", values.spacingAfter);
+  setOrDelete("lineHeight", values.lineHeight);
+  setOrDelete("lineRule", values.lineRule);
+  next.contextualSpacing = values.contextualSpacing;
+  setOrDelete("outlineLevel", values.outlineLevel);
+  setOrDelete("shading", values.shading);
+  setOrDelete("borderTop", values.borders.top);
+  setOrDelete("borderRight", values.borders.right);
+  setOrDelete("borderBottom", values.borders.bottom);
+  setOrDelete("borderLeft", values.borders.left);
+  next.pageBreakBefore = values.pageBreakBefore;
+  next.keepWithNext = values.keepWithNext;
+  next.keepLinesTogether = values.keepLinesTogether;
+  next.widowControl = values.widowControl;
+  setOrDelete("tabs", values.tabs.length > 0 ? values.tabs : null);
+  return next as EditorParagraphStyle;
+}
 
 interface ParagraphDialogState {
   isOpen: boolean;
@@ -35,9 +75,13 @@ function createInitialValues(
     indentRight: styleState.indentRight ?? "",
     indentFirstLine: styleState.indentFirstLine ?? "",
     indentHanging: styleState.indentHanging ?? "",
+    mirrorIndents: styleState.mirrorIndents ?? false,
     spacingBefore: styleState.spacingBefore ?? "",
     spacingAfter: styleState.spacingAfter ?? "",
     lineHeight: styleState.lineHeight ?? "",
+    lineRule: styleState.lineRule ?? "",
+    contextualSpacing: styleState.contextualSpacing ?? false,
+    outlineLevel: styleState.outlineLevel ?? "",
     shading: styleState.shading ?? "",
     borderStyle: styleState.borderStyle ?? "",
     borderWidth: styleState.borderWidth ?? "",
@@ -46,6 +90,11 @@ function createInitialValues(
     borderSideRight: styleState.borderSideRight ?? false,
     borderSideBottom: styleState.borderSideBottom ?? false,
     borderSideLeft: styleState.borderSideLeft ?? false,
+    pageBreakBefore: styleState.pageBreakBefore ?? false,
+    keepWithNext: styleState.keepWithNext ?? false,
+    keepLinesTogether: styleState.keepLinesTogether ?? false,
+    widowControl: styleState.widowControl ?? true,
+    tabs: styleState.tabs ?? [],
   };
 }
 
@@ -106,8 +155,63 @@ export function createParagraphDialogBridge(deps: ParagraphDialogBridgeDeps) {
         if (values.lineHeight !== originalNumber(original.lineHeight)) {
           next = setParagraphStyle(next, "lineHeight", values.lineHeight);
         }
+        const originalRule = (original.lineRule ||
+          null) as ParagraphDialogApplyValues["lineRule"];
+        if (values.lineRule !== originalRule) {
+          next = setParagraphStyle(next, "lineRule", values.lineRule);
+        }
         if (values.shading !== (original.shading || null)) {
           next = setParagraphStyle(next, "shading", values.shading);
+        }
+        if (values.mirrorIndents !== (original.mirrorIndents ?? false)) {
+          next = setParagraphStyle(next, "mirrorIndents", values.mirrorIndents);
+        }
+        if (
+          values.contextualSpacing !== (original.contextualSpacing ?? false)
+        ) {
+          next = setParagraphStyle(
+            next,
+            "contextualSpacing",
+            values.contextualSpacing,
+          );
+        }
+        const originalOutline =
+          original.outlineLevel.trim() === ""
+            ? null
+            : Number(original.outlineLevel);
+        if (values.outlineLevel !== originalOutline) {
+          next = setParagraphStyle(next, "outlineLevel", values.outlineLevel);
+        }
+        if (values.pageBreakBefore !== (original.pageBreakBefore ?? false)) {
+          next = setParagraphStyle(
+            next,
+            "pageBreakBefore",
+            values.pageBreakBefore,
+          );
+        }
+        if (values.keepWithNext !== (original.keepWithNext ?? false)) {
+          next = setParagraphStyle(next, "keepWithNext", values.keepWithNext);
+        }
+        if (
+          values.keepLinesTogether !== (original.keepLinesTogether ?? false)
+        ) {
+          next = setParagraphStyle(
+            next,
+            "keepLinesTogether",
+            values.keepLinesTogether,
+          );
+        }
+        if (values.widowControl !== (original.widowControl ?? true)) {
+          next = setParagraphStyle(next, "widowControl", values.widowControl);
+        }
+        if (
+          JSON.stringify(values.tabs) !== JSON.stringify(original.tabs ?? [])
+        ) {
+          next = setParagraphStyle(
+            next,
+            "tabs",
+            values.tabs.length > 0 ? values.tabs : null,
+          );
         }
 
         const originalShared: EditorBorderStyle | null =
@@ -153,8 +257,39 @@ export function createParagraphDialogBridge(deps: ParagraphDialogBridgeDeps) {
     deps.focusInput();
   };
 
+  const setParagraphDialogDefault = (
+    values: ParagraphDialogApplyValues,
+  ): void => {
+    if (deps.isReadOnly()) return;
+    deps.resetTransactionGrouping();
+    deps.applyTransactionalState((current): EditorState => {
+      const styles = current.document.styles;
+      const defaultId = resolveDefaultParagraphStyleId(styles);
+      if (!defaultId || !styles?.[defaultId]) return current;
+      const target = styles[defaultId];
+      return {
+        ...current,
+        document: {
+          ...current.document,
+          styles: {
+            ...styles,
+            [defaultId]: {
+              ...target,
+              paragraphStyle: applyValuesToParagraphStyle(
+                target.paragraphStyle ?? {},
+                values,
+              ),
+            },
+          },
+        },
+      };
+    });
+    deps.focusInput();
+  };
+
   return {
     openParagraphDialog,
     applyParagraphDialogValues,
+    setParagraphDialogDefault,
   };
 }

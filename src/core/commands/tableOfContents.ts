@@ -154,8 +154,9 @@ function buildTocBlocks(
   resolvePage: TocPageNumberResolver,
   rightTabPositionPt: number,
 ): EditorParagraphNode[] {
-  const entries = headings.map((heading): EditorParagraphNode =>
-    buildEntryParagraph(heading, resolvePage(heading.id), rightTabPositionPt),
+  const entries = headings.map(
+    (heading): EditorParagraphNode =>
+      buildEntryParagraph(heading, resolvePage(heading.id), rightTabPositionPt),
   );
   return [buildStartMarkerParagraph(), ...entries, buildEndMarkerParagraph()];
 }
@@ -207,7 +208,9 @@ export function insertTableOfContents(
   const blockIndex = section.blocks.findIndex((block): boolean => {
     if (block.id === focus.paragraphId) return true;
     if (block.type === "paragraph") return false;
-    return getBlockParagraphs(block).some((p): boolean => p.id === focus.paragraphId);
+    return getBlockParagraphs(block).some(
+      (p): boolean => p.id === focus.paragraphId,
+    );
   });
   const insertAt = blockIndex === -1 ? section.blocks.length : blockIndex + 1;
 
@@ -289,12 +292,13 @@ export function updateTableOfContents(
   if (!region) return state;
 
   const headings = collectTocHeadings(state, maxLevel);
-  const entries = headings.map((heading): EditorParagraphNode =>
-    buildEntryParagraph(
-      heading,
-      resolvePage(heading.id),
-      rightTabPositionForSection(section),
-    ),
+  const entries = headings.map(
+    (heading): EditorParagraphNode =>
+      buildEntryParagraph(
+        heading,
+        resolvePage(heading.id),
+        rightTabPositionForSection(section),
+      ),
   );
 
   const nextBlocks = [

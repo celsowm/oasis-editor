@@ -1,3 +1,4 @@
+import type { JSX } from "solid-js";
 import { Button } from "@/ui/components/Toolbar/primitives/Button.js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Menu } from "@/ui/components/Toolbar/primitives/Menu.js";
@@ -12,12 +13,9 @@ const numValue = (api: ToolbarActionApi, command: string): string => {
 };
 
 /** Paragraph metrics panel (spacing, indents, shading, borders) — command-driven. */
-export function MetricGroup(props: { api: ToolbarActionApi }) {
+export function MetricGroup(props: { api: ToolbarActionApi }): JSX.Element {
   const t = useI18n();
   const api = props.api;
-  const onNumber =
-    (command: string) => (event: { currentTarget: HTMLInputElement }) =>
-      api.commands.execute(command, event.currentTarget.value);
 
   return (
     <Menu
@@ -57,7 +55,10 @@ export function MetricGroup(props: { api: ToolbarActionApi }) {
           step="1"
           value={numValue(api, "setSpacingAfter")}
           onChange={(value) =>
-            api.commands.execute("setSpacingAfter", value == null ? "" : String(value))
+            api.commands.execute(
+              "setSpacingAfter",
+              value == null ? "" : String(value),
+            )
           }
         />
 
@@ -72,7 +73,10 @@ export function MetricGroup(props: { api: ToolbarActionApi }) {
           step="1"
           value={numValue(api, "setIndentLeft")}
           onChange={(value) =>
-            api.commands.execute("setIndentLeft", value == null ? "" : String(value))
+            api.commands.execute(
+              "setIndentLeft",
+              value == null ? "" : String(value),
+            )
           }
         />
 
@@ -86,7 +90,10 @@ export function MetricGroup(props: { api: ToolbarActionApi }) {
           step="1"
           value={numValue(api, "setIndentFirstLine")}
           onChange={(value) =>
-            api.commands.execute("setIndentFirstLine", value == null ? "" : String(value))
+            api.commands.execute(
+              "setIndentFirstLine",
+              value == null ? "" : String(value),
+            )
           }
         />
 
@@ -101,7 +108,10 @@ export function MetricGroup(props: { api: ToolbarActionApi }) {
           step="1"
           value={numValue(api, "setIndentHanging")}
           onChange={(value) =>
-            api.commands.execute("setIndentHanging", value == null ? "" : String(value))
+            api.commands.execute(
+              "setIndentHanging",
+              value == null ? "" : String(value),
+            )
           }
         />
 
@@ -114,7 +124,9 @@ export function MetricGroup(props: { api: ToolbarActionApi }) {
           controlClass="oasis-editor-tool-color-input"
           data-testid="editor-toolbar-paragraph-shading"
           value={numValue(api, "setParagraphShading") || "#ffffff"}
-          onChange={(value) => api.commands.execute("setParagraphShading", value)}
+          onChange={(value) =>
+            api.commands.execute("setParagraphShading", value)
+          }
         />
 
         <Button

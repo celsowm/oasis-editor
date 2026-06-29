@@ -144,13 +144,17 @@ export interface CanvasDebugSelectionSnapshot {
   activeSectionIndex: number;
 }
 
-function cloneSlots(slots: CanvasSnapshotSlot[]): { offset: number; left: number; top: number; height: number; }[] {
-  return slots.map((slot): { offset: number; left: number; top: number; height: number; } => ({
-    offset: slot.offset,
-    left: slot.left,
-    top: slot.top,
-    height: slot.height,
-  }));
+function cloneSlots(
+  slots: CanvasSnapshotSlot[],
+): { offset: number; left: number; top: number; height: number }[] {
+  return slots.map(
+    (slot): { offset: number; left: number; top: number; height: number } => ({
+      offset: slot.offset,
+      left: slot.left,
+      top: slot.top,
+      height: slot.height,
+    }),
+  );
 }
 
 function cloneLines(lines: CanvasSnapshotLine[]) {
@@ -273,7 +277,16 @@ function buildApi(): OasisCanvasDebugApi {
               ...paragraph,
               lines: paragraph.lines.map((line) => ({
                 ...line,
-                slots: line.slots.map((slot): { offset: number; left: number; top: number; height: number; } => ({ ...slot })),
+                slots: line.slots.map(
+                  (
+                    slot,
+                  ): {
+                    offset: number;
+                    left: number;
+                    top: number;
+                    height: number;
+                  } => ({ ...slot }),
+                ),
               })),
               tableCell: paragraph.tableCell
                 ? { ...paragraph.tableCell }
@@ -301,7 +314,22 @@ function buildApi(): OasisCanvasDebugApi {
             activeSectionIndex: lastSelectionSnapshot.activeSectionIndex,
           }
         : null,
-    getMissEvents: (): { timestamp: number; reason: string; clientX: number; clientY: number; }[] => missEvents.map((entry): { timestamp: number; reason: string; clientX: number; clientY: number; } => ({ ...entry })),
+    getMissEvents: (): {
+      timestamp: number;
+      reason: string;
+      clientX: number;
+      clientY: number;
+    }[] =>
+      missEvents.map(
+        (
+          entry,
+        ): {
+          timestamp: number;
+          reason: string;
+          clientX: number;
+          clientY: number;
+        } => ({ ...entry }),
+      ),
     clearMissEvents: (): void => {
       missEvents = [];
     },

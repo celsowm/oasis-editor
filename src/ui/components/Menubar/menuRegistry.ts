@@ -25,7 +25,9 @@ export class MenuRegistry {
   private items: MenuItem[] = [];
 
   register(item: MenuItem): void {
-    const existingIndex = this.items.findIndex((entry): boolean => entry.id === item.id);
+    const existingIndex = this.items.findIndex(
+      (entry): boolean => entry.id === item.id,
+    );
     if (existingIndex >= 0) {
       this.items[existingIndex] = item;
     } else {

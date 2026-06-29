@@ -45,5 +45,6 @@ export const decompressBrotliSync: BrotliDecompressSync = (bytes) => {
   return decompressBrotliJsSync(bytes);
 };
 
-export const decompressBrotli: BrotliDecompress = async (bytes): Promise<Uint8Array> =>
-  decompressBrotliSync(bytes);
+export const decompressBrotli: BrotliDecompress = async (
+  bytes,
+): Promise<Uint8Array> => decompressBrotliSync(bytes);

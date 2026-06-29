@@ -18,7 +18,10 @@ import {
   resolveVerticalMode,
   type VerticalRenderMode,
 } from "../verticalText.js";
-import type { buildTableCellLayout, TableCellLayoutEntry } from "@/core/tableLayout.js";
+import type {
+  buildTableCellLayout,
+  TableCellLayoutEntry,
+} from "@/core/tableLayout.js";
 import type {
   CanvasTableBorderSpec,
   CanvasUnsupportedReason,
@@ -108,7 +111,8 @@ export function prepareCells(options: {
   const unsupported: CanvasUnsupportedReason[] = [];
   const cellEntriesByKey = new Map(
     tableEntries.map(
-      (entry): readonly [`${number}:${number}`, TableCellLayoutEntry] => [`${entry.rowIndex}:${entry.cellIndex}`, entry] as const,
+      (entry): readonly [`${number}:${number}`, TableCellLayoutEntry] =>
+        [`${entry.rowIndex}:${entry.cellIndex}`, entry] as const,
     ),
   );
   const prepared: PreparedCell[] = [];
@@ -136,12 +140,13 @@ export function prepareCells(options: {
       const cell: EditorTableCellNode = {
         ...sourceCell,
         style: formatting.cellStyle,
-        blocks: sourceCell.blocks.map((paragraph): EditorParagraphNode =>
-          resolveCachedTableCellParagraph(
-            paragraph,
-            formatting,
-            state.document.styles,
-          ),
+        blocks: sourceCell.blocks.map(
+          (paragraph): EditorParagraphNode =>
+            resolveCachedTableCellParagraph(
+              paragraph,
+              formatting,
+              state.document.styles,
+            ),
         ),
       };
       const effectiveRow = formatting.rowStyle;
@@ -285,7 +290,11 @@ export function prepareCells(options: {
         );
         const linesBottom =
           projected.lines.length > 0
-            ? Math.max(...projected.lines.map((line): number => line.top + line.height))
+            ? Math.max(
+                ...projected.lines.map(
+                  (line): number => line.top + line.height,
+                ),
+              )
             : 1;
         let effectiveSpacingBefore = spacingBefore;
         if (!isRotated && projectedParagraphs.length > 0) {

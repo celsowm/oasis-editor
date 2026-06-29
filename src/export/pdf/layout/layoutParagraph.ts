@@ -241,7 +241,10 @@ export function layoutPdfParagraph(
     pushLine(lines, lineTokens, options.defaultLineHeight);
   }
 
-  const width = lines.reduce((max, line): number => Math.max(max, line.width), 0);
+  const width = lines.reduce(
+    (max, line): number => Math.max(max, line.width),
+    0,
+  );
   const height = lines.reduce((sum, line): number => sum + line.height, 0);
   return { lines, width, height };
 }

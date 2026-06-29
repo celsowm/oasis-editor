@@ -97,8 +97,9 @@ function insertFragmentsAtPosition(
       targetOffset,
       firstRuns,
     );
-    const nextParagraphs = paragraphs.map((candidate, index): EditorParagraphNode =>
-      index === targetIndex ? nextTarget : candidate,
+    const nextParagraphs = paragraphs.map(
+      (candidate, index): EditorParagraphNode =>
+        index === targetIndex ? nextTarget : candidate,
     );
     const insertedLength = getRunsLength(firstRuns);
     const anchor = paragraphOffsetToPosition(nextTarget, targetOffset);
@@ -126,11 +127,12 @@ function insertFragmentsAtPosition(
     [...beforeRuns, ...firstRuns],
     getStyleAtOffset(targetParagraph, targetOffset),
   );
-  const insertedMiddle = middleFragments.map((fragment): EditorParagraphNode =>
-    buildParagraphFromRuns(
-      cloneParagraph(fragment.paragraphTemplate),
-      cloneFragmentRuns(fragment.runs),
-    ),
+  const insertedMiddle = middleFragments.map(
+    (fragment): EditorParagraphNode =>
+      buildParagraphFromRuns(
+        cloneParagraph(fragment.paragraphTemplate),
+        cloneFragmentRuns(fragment.runs),
+      ),
   );
   const lastInserted = buildParagraphFromRuns(
     cloneParagraph(lastFragment.paragraphTemplate),
@@ -290,8 +292,9 @@ export function insertTextAtSelection(
 
   const nextParagraph = insertRunsAtOffset(paragraph, offset, [insertedRun]);
   const paragraphs = getParagraphs(collapsedState);
-  const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode =>
-    candidateIndex === index ? nextParagraph : candidate,
+  const nextParagraphs = paragraphs.map(
+    (candidate, candidateIndex): EditorParagraphNode =>
+      candidateIndex === index ? nextParagraph : candidate,
   );
 
   return cloneStateWithParagraphs(
@@ -334,12 +337,18 @@ export function insertPlainTextAtSelection(
   const tailRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
   const middleParagraphs = lines
     .slice(1, -1)
-    .map((line): EditorParagraphNode =>
-      createParagraphFromRuns([{ text: line, styles: insertionStyles }]),
+    .map(
+      (line): EditorParagraphNode =>
+        createParagraphFromRuns([{ text: line, styles: insertionStyles }]),
     );
   const lastParagraph = createParagraphFromRuns([
     { text: lines[lines.length - 1], styles: insertionStyles },
-    ...tailRuns.map((run): { text: string; styles: EditorTextStyle | undefined; } => ({ text: run.text, styles: run.styles })),
+    ...tailRuns.map(
+      (run): { text: string; styles: EditorTextStyle | undefined } => ({
+        text: run.text,
+        styles: run.styles,
+      }),
+    ),
   ]);
   const paragraphs = getParagraphs(collapsedState);
   const nextParagraphs = [

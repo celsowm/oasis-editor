@@ -203,77 +203,82 @@
   align-items: flex-start;
 }
 
-.oasis-editor-font-dialog-size-group {
-  width: 96px;
-  flex: 0 0 96px;
-}
-
-.oasis-editor-font-dialog-custom-size-group,
-.oasis-editor-font-dialog-style-list-group,
-.oasis-editor-font-dialog-color-mode-group {
-  width: 170px;
-  flex: 0 0 170px;
-}
-
-.oasis-editor-font-dialog-color-row {
-  align-items: flex-start;
-}
-
-.oasis-editor-font-dialog-fieldset {
+.oasis-editor-font-dialog-fieldset,
+.oasis-editor-dialog-fieldset {
   margin: 0 0 12px;
-  padding: 10px 8px 8px;
-  border: 1px solid #d9d9d9;
-  border-radius: 0;
+  padding: 12px 12px 10px;
+  border: 1px solid #e3e5e8;
+  border-radius: 6px;
 }
 
-.oasis-editor-font-dialog-fieldset legend {
+.oasis-editor-font-dialog-fieldset legend,
+.oasis-editor-dialog-fieldset legend {
   padding: 0 6px;
   font-size: 12px;
-  color: #202124;
+  font-weight: 600;
+  color: #444746;
 }
 
-.oasis-editor-font-dialog-word-row {
-  display: grid;
-  grid-template-columns: 156px minmax(160px, 172px) 36px 76px minmax(0, 1fr);
+.oasis-editor-paragraph-dialog-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.oasis-editor-paragraph-dialog-panel .oasis-editor-dialog-fieldset:last-child {
+  margin-bottom: 0;
+}
+
+/* Word-style split footer: secondary actions left, confirm/cancel right. */
+.oasis-editor-dialog-footer-split {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
+  flex-wrap: wrap;
 }
 
-.oasis-editor-font-dialog-word-row .oasis-editor-dialog-input {
-  min-width: 0;
-  width: 100%;
+.oasis-editor-dialog-footer-start,
+.oasis-editor-dialog-footer-end {
+  display: flex;
+  gap: 8px;
 }
 
-.oasis-editor-font-dialog-word-row .oasis-editor-dialog-label {
-  margin: 0;
+.oasis-editor-tab-stops {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.oasis-editor-tab-stops-actions {
+  display: flex;
+  justify-content: flex-start;
 }
 
 .oasis-editor-font-dialog-small-input {
-  width: 76px;
+  max-width: 88px;
 }
 
-.oasis-editor-font-dialog-by-label {
-  justify-self: end;
-}
-
-.oasis-editor-font-dialog-kerning-row {
-  grid-template-columns: max-content 64px max-content 1fr;
-  column-gap: 8px;
-}
-
-.oasis-editor-font-dialog-kerning-toggle,
 .oasis-editor-font-dialog-contextual-toggle {
   margin-top: 2px;
 }
 
+/* Word-style "[x] Kerning para fontes  [n] pontos e acima" single line. */
+.oasis-editor-font-dialog-kerning-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .oasis-editor-font-dialog-kerning-toggle {
-  min-width: 136px;
   white-space: nowrap;
 }
 
 .oasis-editor-font-dialog-kerning-input {
   width: 64px;
+  flex: 0 0 64px;
 }
 
 .oasis-editor-font-dialog-kerning-suffix {
@@ -334,23 +339,9 @@
     min-height: 0;
   }
 
-  .oasis-editor-dialog-row,
-  .oasis-editor-font-dialog-word-row,
-  .oasis-editor-font-dialog-kerning-row {
+  .oasis-editor-dialog-row {
     display: flex;
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .oasis-editor-font-dialog-size-group,
-  .oasis-editor-font-dialog-custom-size-group,
-  .oasis-editor-font-dialog-style-list-group,
-  .oasis-editor-font-dialog-color-mode-group {
-    width: auto;
-    flex: 1 1 auto;
-  }
-
-  .oasis-editor-font-dialog-by-label {
-    justify-self: start;
   }
 }

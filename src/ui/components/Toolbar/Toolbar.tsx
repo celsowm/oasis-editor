@@ -47,7 +47,9 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
   const [activeTab, setActiveTab] = createSignal<RibbonTabId>("home");
 
   onMount((): void => {
-    const unsubscribe = props.registry.onChange((): number => setVersion((v): number => v + 1));
+    const unsubscribe = props.registry.onChange((): number =>
+      setVersion((v): number => v + 1),
+    );
     onCleanup(unsubscribe);
   });
 

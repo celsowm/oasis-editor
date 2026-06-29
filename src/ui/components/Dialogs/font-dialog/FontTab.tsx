@@ -142,7 +142,9 @@ export function FontTab(props: FontTabProps): JSX.Element {
           <TextField
             label={t("dialog.font.familyFilter")}
             value={ctrl.fontTabValues().familyFilter}
-            onChange={(value): void => ctrl.updateFontTab("familyFilter", value)}
+            onChange={(value): void =>
+              ctrl.updateFontTab("familyFilter", value)
+            }
             data-testid="editor-font-dialog-family-filter"
           />
         </Grid>
@@ -154,32 +156,34 @@ export function FontTab(props: FontTabProps): JSX.Element {
             data-testid="editor-font-dialog-family"
             options={[
               { value: "", label: "—" },
-              ...ctrl.visibleFamilyOptions().map((family): { value: string; label: string; } => ({
-                value: family,
-                label: family,
-              })),
+              ...ctrl
+                .visibleFamilyOptions()
+                .map((family): { value: string; label: string } => ({
+                  value: family,
+                  label: family,
+                })),
             ]}
           />
         </Grid>
         <Grid size={{ xs: 12, md: 4 }}>
           <SelectField
-            class="oasis-editor-font-dialog-size-group"
             label={t("dialog.font.size")}
             value={ctrl.fontTabValues().fontSize}
             onChange={(value): void => ctrl.updateFontTab("fontSize", value)}
             data-testid="editor-font-dialog-size"
             options={[
               { value: "", label: "—" },
-              ...ctrl.effectiveSizeOptions().map((size): { value: string; label: string; } => ({
-                value: String(size),
-                label: String(size),
-              })),
+              ...ctrl
+                .effectiveSizeOptions()
+                .map((size): { value: string; label: string } => ({
+                  value: String(size),
+                  label: String(size),
+                })),
             ]}
           />
         </Grid>
         <Grid size={{ xs: 12, md: 4 }}>
           <TextField
-            class="oasis-editor-font-dialog-custom-size-group"
             label={t("dialog.font.customSize")}
             value={ctrl.fontTabValues().fontSize}
             onChange={(value): void => ctrl.updateFontTab("fontSize", value)}
@@ -191,7 +195,6 @@ export function FontTab(props: FontTabProps): JSX.Element {
         </Grid>
         <Grid size={{ xs: 12, md: 8 }}>
           <SelectField
-            class="oasis-editor-font-dialog-style-list-group"
             label={t("dialog.font.styleList")}
             value={ctrl.selectedFontStyle()}
             onChange={(value): void =>
@@ -211,7 +214,6 @@ export function FontTab(props: FontTabProps): JSX.Element {
       <Grid container spacing={1.5} class="oasis-editor-font-dialog-color-row">
         <Grid size={{ xs: 12, md: 4 }}>
           <SelectField
-            class="oasis-editor-font-dialog-color-mode-group"
             label={t("dialog.font.color")}
             value={ctrl.fontTabValues().colorMode}
             onChange={(value): void =>
@@ -272,10 +274,12 @@ export function FontTab(props: FontTabProps): JSX.Element {
             data-testid="editor-font-dialog-underline-style"
             options={[
               { value: "none", label: t("toolbar.underlineRemove") },
-              ...UNDERLINE_STYLE_OPTIONS.map((option): { value: EditorUnderlineStyle; label: string; } => ({
-                value: option.value,
-                label: t(option.labelKey),
-              })),
+              ...UNDERLINE_STYLE_OPTIONS.map(
+                (option): { value: EditorUnderlineStyle; label: string } => ({
+                  value: option.value,
+                  label: t(option.labelKey),
+                }),
+              ),
             ]}
           />
         </Grid>

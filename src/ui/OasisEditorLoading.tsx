@@ -27,7 +27,9 @@ export interface OasisEditorLoadingProps {
  * visual consistency. When `progress` is provided, renders a deterministic fill
  * bar; otherwise animates indeterminate.
  */
-export function OasisEditorLoading(props: OasisEditorLoadingProps): JSX.Element {
+export function OasisEditorLoading(
+  props: OasisEditorLoadingProps,
+): JSX.Element {
   const t = useI18n();
   const variant = (): "overlay" | "fill" => props.variant ?? "overlay";
   const pct = (): number | null => {

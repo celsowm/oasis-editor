@@ -155,6 +155,7 @@ export function drawTable(
     (import.meta as { env?: Record<string, string | boolean | undefined> })
       .env ?? {};
   if (tableLayout.unsupported.length > 0 && viteEnv.DEV) {
+    // eslint-disable-next-line no-console
     console.warn("[oasis-editor] canvas table unsupported features", {
       tableId: table.id,
       reasons: tableLayout.unsupported,

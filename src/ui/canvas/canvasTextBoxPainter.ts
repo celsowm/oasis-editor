@@ -2,7 +2,9 @@ import type {
   EditorLayoutLine,
   EditorPageSettings,
   EditorState,
-  EditorTextBoxData, EditorCaretSlot } from "@/core/model.js";
+  EditorTextBoxData,
+  EditorCaretSlot,
+} from "@/core/model.js";
 import { projectBlocksLayout } from "@/layoutProjection/blocksPagination.js";
 import { PX_PER_POINT } from "@/core/units.js";
 import {
@@ -264,7 +266,10 @@ export function drawFloatingTextBoxesForParagraph(options: {
 
   for (const line of paragraphLines) {
     const slotByOffset = new Map(
-      line.slots.map((slot): readonly [number, EditorCaretSlot] => [slot.offset, slot] as const),
+      line.slots.map(
+        (slot): readonly [number, EditorCaretSlot] =>
+          [slot.offset, slot] as const,
+      ),
     );
 
     for (const fragment of line.fragments) {

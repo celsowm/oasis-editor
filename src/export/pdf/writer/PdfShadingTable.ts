@@ -81,7 +81,7 @@ function normalizeStops(
   stops: Array<{ offset: number; color: string }>,
 ): ResolvedStop[] {
   const resolved: ResolvedStop[] = stops
-    .map((stop): { offset: number; rgb: [number, number, number]; } => ({
+    .map((stop): { offset: number; rgb: [number, number, number] } => ({
       offset: Math.min(1, Math.max(0, stop.offset)),
       rgb: colorToRgb(stop.color, [0, 0, 0]),
     }))
@@ -142,7 +142,9 @@ function buildFunctionObject(stops: ResolvedStop[]): string {
   for (let i = 0; i < stops.length - 1; i += 1) {
     subFunctions.push(exponentialFunction(stops[i]!.rgb, stops[i + 1]!.rgb));
   }
-  const bounds = stops.slice(1, -1).map((stop): string => formatNumber(stop.offset));
+  const bounds = stops
+    .slice(1, -1)
+    .map((stop): string => formatNumber(stop.offset));
   const encode = stops
     .slice(0, -1)
     .map((): "0 1" => "0 1")

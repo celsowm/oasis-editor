@@ -58,6 +58,13 @@ export interface EditorInteractionRuntimeDeps {
  */
 export function createEditorInteractionRuntime(
   deps: EditorInteractionRuntimeDeps,
+): ReturnType<typeof createEditorInteractionRuntimeImpl> {
+  return createEditorInteractionRuntimeImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorInteractionRuntimeImpl(
+  deps: EditorInteractionRuntimeDeps,
 ) {
   const {
     state,
@@ -85,8 +92,10 @@ export function createEditorInteractionRuntime(
     canvasSnapshotProvider,
   } = deps;
 
-  const selectedImageRun = (): SelectedObjectRun | null => getSelectedImageRun(state);
-  const selectedTextBoxRun = (): SelectedObjectRun | null => getSelectedTextBoxRun(state);
+  const selectedImageRun = (): SelectedObjectRun | null =>
+    getSelectedImageRun(state);
+  const selectedTextBoxRun = (): SelectedObjectRun | null =>
+    getSelectedTextBoxRun(state);
 
   const layoutOptionsOverlay = createEditorLayoutOptionsController({
     state: (): EditorState => state,

@@ -10,10 +10,16 @@ import {
 } from "@/core/model.js";
 
 export const getRowVisualWidth = (row: EditorTableRowNode): number =>
-  row.cells.reduce((sum, cell): number => sum + Math.max(1, cell.colSpan ?? 1), 0);
+  row.cells.reduce(
+    (sum, cell): number => sum + Math.max(1, cell.colSpan ?? 1),
+    0,
+  );
 
 export const getTableVisualWidth = (table: EditorTableNode): number =>
-  table.rows.reduce((max, row): number => Math.max(max, getRowVisualWidth(row)), 0);
+  table.rows.reduce(
+    (max, row): number => Math.max(max, getRowVisualWidth(row)),
+    0,
+  );
 
 export const findCellAtVisualColumn = (
   row: EditorTableRowNode,
@@ -59,7 +65,8 @@ export const resolveAdjacentTableCellPosition = (
       if (block.type !== "table") continue;
       const cells = block.rows.flatMap((row): EditorTableCellNode[] =>
         row.cells.filter(
-          (cell): boolean => cell.vMerge !== "continue" && cell.blocks.length > 0,
+          (cell): boolean =>
+            cell.vMerge !== "continue" && cell.blocks.length > 0,
         ),
       );
       const currentCellIndex = cells.findIndex((cell): boolean =>

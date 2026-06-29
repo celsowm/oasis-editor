@@ -13,7 +13,10 @@ import type {
   EditorParagraphNode,
   EditorTableCellNode,
   EditorTableRowNode,
-  EditorTextRun, EditorTextStyle, EditorImageRunData } from "@/core/model.js";
+  EditorTextRun,
+  EditorTextStyle,
+  EditorImageRunData,
+} from "@/core/model.js";
 import { getRunImage } from "@/core/model.js";
 import {
   collectInlineRuns,
@@ -34,11 +37,19 @@ const HEADING_STYLE_IDS: Record<string, string> = {
 function runsToParagraphSpecs(
   runs: EditorTextRun[],
 ): Array<Parameters<typeof createEditorParagraphFromRuns>[0][number]> {
-  return runs.map((run): { text: string; styles: EditorTextStyle | undefined; image: EditorImageRunData | undefined; } => ({
-    text: run.text,
-    styles: run.styles,
-    image: getRunImage(run),
-  }));
+  return runs.map(
+    (
+      run,
+    ): {
+      text: string;
+      styles: EditorTextStyle | undefined;
+      image: EditorImageRunData | undefined;
+    } => ({
+      text: run.text,
+      styles: run.styles,
+      image: getRunImage(run),
+    }),
+  );
 }
 
 function buildParagraph(

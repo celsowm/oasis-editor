@@ -112,6 +112,7 @@ export function serializeParagraphStyleXml(
   if (style.keepLinesTogether) parts.push("<w:keepLines/>");
   if (style.widowControl === false) parts.push('<w:widowControl w:val="0"/>');
   if (style.contextualSpacing) parts.push("<w:contextualSpacing/>");
+  if (style.mirrorIndents) parts.push("<w:mirrorIndents/>");
 
   const paragraphBorders = serializeParagraphBorders(style);
   if (paragraphBorders) {
@@ -208,6 +209,7 @@ export function serializeParagraphProperties(
   if (style.keepLinesTogether) parts.push("<w:keepLines/>");
   if (style.widowControl === false) parts.push('<w:widowControl w:val="0"/>');
   if (style.contextualSpacing) parts.push("<w:contextualSpacing/>");
+  if (style.mirrorIndents) parts.push("<w:mirrorIndents/>");
 
   const paragraphBorders = serializeParagraphBorders(style);
   if (paragraphBorders) {

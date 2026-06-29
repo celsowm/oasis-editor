@@ -1,3 +1,4 @@
+import type { JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { TextInputDialog } from "./TextInputDialog.js";
 
@@ -8,7 +9,9 @@ interface ImageCaptionDialogProps {
   onConfirm: (caption: string) => void;
 }
 
-export function ImageCaptionDialog(props: ImageCaptionDialogProps) {
+export function ImageCaptionDialog(
+  props: ImageCaptionDialogProps,
+): JSX.Element {
   const t = useI18n();
   return (
     <TextInputDialog

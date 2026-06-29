@@ -4,7 +4,10 @@ import type {
   EditorPosition,
   EditorState,
   EditorSection,
-  EditorTabStop, EditorParagraphNode, EditorTextStyle } from "@/core/model.js";
+  EditorTabStop,
+  EditorParagraphNode,
+  EditorTextStyle,
+} from "@/core/model.js";
 import {
   getBlockParagraphs,
   getDocumentSections,
@@ -157,7 +160,12 @@ export function splitBlockAtSelection(state: EditorState): EditorState {
     secondRuns.length > 0
       ? createParagraphFromRunsLike(
           paragraph,
-          secondRuns.map((run): { text: string; styles: EditorTextStyle | undefined; } => ({ text: run.text, styles: run.styles })),
+          secondRuns.map(
+            (run): { text: string; styles: EditorTextStyle | undefined } => ({
+              text: run.text,
+              styles: run.styles,
+            }),
+          ),
         )
       : ((): EditorParagraphNode => {
           const emptyParagraph = createEditorParagraph("");
@@ -203,7 +211,12 @@ export function insertPageBreakAtSelection(state: EditorState): EditorState {
     secondRuns.length > 0
       ? createParagraphFromRunsLike(
           paragraph,
-          secondRuns.map((run): { text: string; styles: EditorTextStyle | undefined; } => ({ text: run.text, styles: run.styles })),
+          secondRuns.map(
+            (run): { text: string; styles: EditorTextStyle | undefined } => ({
+              text: run.text,
+              styles: run.styles,
+            }),
+          ),
         )
       : ((): EditorParagraphNode => {
           const emptyParagraph = createEditorParagraph("");
@@ -287,7 +300,12 @@ export function insertSectionBreakAtSelection(
     secondRuns.length > 0
       ? createParagraphFromRunsLike(
           paragraph,
-          secondRuns.map((run): { text: string; styles: EditorTextStyle | undefined; } => ({ text: run.text, styles: run.styles })),
+          secondRuns.map(
+            (run): { text: string; styles: EditorTextStyle | undefined } => ({
+              text: run.text,
+              styles: run.styles,
+            }),
+          ),
         )
       : ((): EditorParagraphNode => {
           const emptyParagraph = createEditorParagraph("");
@@ -383,16 +401,18 @@ export function setParagraphStyle<K extends ValueParagraphStyleKey>(
   const startIndex = normalized.startIndex;
   const endIndex = normalized.endIndex;
 
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
-    if (paragraphIndex < startIndex || paragraphIndex > endIndex) {
-      return cloneParagraph(paragraph);
-    }
+  const nextParagraphs = paragraphs.map(
+    (paragraph, paragraphIndex): EditorParagraphNode => {
+      if (paragraphIndex < startIndex || paragraphIndex > endIndex) {
+        return cloneParagraph(paragraph);
+      }
 
-    return {
-      ...cloneParagraph(paragraph),
-      style: setParagraphStyleValue(paragraph.style, key, value),
-    };
-  });
+      return {
+        ...cloneParagraph(paragraph),
+        style: setParagraphStyleValue(paragraph.style, key, value),
+      };
+    },
+  );
 
   return cloneStateWithParagraphs(
     state,

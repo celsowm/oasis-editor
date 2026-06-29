@@ -274,7 +274,9 @@ export async function importDocxToEditorDocument(
       docSettings,
     );
 
-    const loadHeaderFooterBlocks = async (rId: string | undefined): Promise<EditorBlockNode[]> => {
+    const loadHeaderFooterBlocks = async (
+      rId: string | undefined,
+    ): Promise<EditorBlockNode[]> => {
       if (!rId) {
         return [];
       }

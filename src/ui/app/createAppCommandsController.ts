@@ -45,7 +45,14 @@ export interface AppCommandsControllerDeps {
  * `OasisEditorApp` so the composition root no longer maps these payload/dialog
  * callbacks by hand (S1).
  */
-export function createAppCommandsController(deps: AppCommandsControllerDeps) {
+export function createAppCommandsController(
+  deps: AppCommandsControllerDeps,
+): ReturnType<typeof createAppCommandsControllerImpl> {
+  return createAppCommandsControllerImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createAppCommandsControllerImpl(deps: AppCommandsControllerDeps) {
   const commandsController = createEditorCommandsController({
     state: deps.state,
     logger: deps.logger,
@@ -60,7 +67,8 @@ export function createAppCommandsController(deps: AppCommandsControllerDeps) {
     clearPreferredColumn: deps.clearPreferredColumn,
     resetTransactionGrouping: deps.resetTransactionGrouping,
     toolbarStyleState: deps.toolbarStyleState,
-    selectionCollapsed: (): boolean => isSelectionCollapsed(deps.state.selection),
+    selectionCollapsed: (): boolean =>
+      isSelectionCollapsed(deps.state.selection),
     selectedImageRun: deps.selectedImageRun,
     openLinkDialog: (initialHref): void =>
       deps.setLinkDialog({ isOpen: true, initialHref }),

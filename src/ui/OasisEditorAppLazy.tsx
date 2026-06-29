@@ -20,12 +20,16 @@ import { JSX } from "solid-js";
  *
  * Must not statically import anything that pulls the editor/font graph.
  */
-export function OasisEditorAppLazy(props: OasisEditorAppProps = {}): JSX.Element {
+export function OasisEditorAppLazy(
+  props: OasisEditorAppProps = {},
+): JSX.Element {
   // Localize the download-phase loading card via a provider bound to this
   // instance's locale. OasisEditorApp nests its own provider once mounted. The
   // i18n module only imports the two locale string maps — no editor/font graph —
   // so it is safe in this lightweight chunk.
-  const translator = createTranslator((): "pt-BR" | "en" => props.ui?.locale ?? "pt-BR");
+  const translator = createTranslator(
+    (): "pt-BR" | "en" => props.ui?.locale ?? "pt-BR",
+  );
 
   const [progress, setProgress] = createSignal(0);
   const [App, setApp] = createSignal<Component<OasisEditorAppProps> | null>(

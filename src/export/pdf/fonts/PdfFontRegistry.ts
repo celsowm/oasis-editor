@@ -131,7 +131,8 @@ export class PdfFontRegistry {
       !requestedFamilies ||
       requestedFamilies.has("roboto") ||
       Array.from(requestedFamilies).some(
-        (family): boolean => family !== "helvetica" && !matchedFamilies.has(family),
+        (family): boolean =>
+          family !== "helvetica" && !matchedFamilies.has(family),
       );
     if (!shouldLoadRoboto) {
       return;

@@ -1,4 +1,8 @@
-import type { EditorState, EditorTextRun, EditorParagraphNode } from "@/core/model.js";
+import type {
+  EditorState,
+  EditorTextRun,
+  EditorParagraphNode,
+} from "@/core/model.js";
 import {
   getParagraphLength,
   getParagraphs,
@@ -51,8 +55,9 @@ export function deleteBackward(state: EditorState): EditorState {
             ...sliceRuns(paragraph, offset, getParagraphLength(paragraph)),
           ];
           const nextParagraph = buildParagraphFromRuns(paragraph, nextRuns);
-          const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode =>
-            candidateIndex === index ? nextParagraph : candidate,
+          const nextParagraphs = paragraphs.map(
+            (candidate, candidateIndex): EditorParagraphNode =>
+              candidateIndex === index ? nextParagraph : candidate,
           );
           return cloneStateWithParagraphs(
             state,
@@ -82,8 +87,9 @@ export function deleteBackward(state: EditorState): EditorState {
           ...sliceRuns(paragraph, offset, getParagraphLength(paragraph)),
         ];
         const nextParagraph = buildParagraphFromRuns(paragraph, nextRuns);
-        const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode =>
-          candidateIndex === index ? nextParagraph : candidate,
+        const nextParagraphs = paragraphs.map(
+          (candidate, candidateIndex): EditorParagraphNode =>
+            candidateIndex === index ? nextParagraph : candidate,
         );
         return cloneStateWithParagraphs(
           state,
@@ -101,8 +107,9 @@ export function deleteBackward(state: EditorState): EditorState {
       ],
       getStyleAtOffset(paragraph, offset - 1),
     );
-    const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode =>
-      candidateIndex === index ? nextParagraph : candidate,
+    const nextParagraphs = paragraphs.map(
+      (candidate, candidateIndex): EditorParagraphNode =>
+        candidateIndex === index ? nextParagraph : candidate,
     );
 
     return cloneStateWithParagraphs(
@@ -172,8 +179,9 @@ export function deleteForward(state: EditorState): EditorState {
             ...sliceRuns(paragraph, offset + 1, getParagraphLength(paragraph)),
           ];
           const nextParagraph = buildParagraphFromRuns(paragraph, nextRuns);
-          const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode =>
-            candidateIndex === index ? nextParagraph : candidate,
+          const nextParagraphs = paragraphs.map(
+            (candidate, candidateIndex): EditorParagraphNode =>
+              candidateIndex === index ? nextParagraph : candidate,
           );
           return cloneStateWithParagraphs(
             state,
@@ -203,8 +211,9 @@ export function deleteForward(state: EditorState): EditorState {
           ...sliceRuns(paragraph, offset + 1, getParagraphLength(paragraph)),
         ];
         const nextParagraph = buildParagraphFromRuns(paragraph, nextRuns);
-        const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode =>
-          candidateIndex === index ? nextParagraph : candidate,
+        const nextParagraphs = paragraphs.map(
+          (candidate, candidateIndex): EditorParagraphNode =>
+            candidateIndex === index ? nextParagraph : candidate,
         );
         return cloneStateWithParagraphs(
           state,
@@ -222,8 +231,9 @@ export function deleteForward(state: EditorState): EditorState {
       ],
       getStyleAtOffset(paragraph, offset),
     );
-    const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode =>
-      candidateIndex === index ? nextParagraph : candidate,
+    const nextParagraphs = paragraphs.map(
+      (candidate, candidateIndex): EditorParagraphNode =>
+        candidateIndex === index ? nextParagraph : candidate,
     );
 
     return cloneStateWithParagraphs(

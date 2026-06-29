@@ -37,7 +37,9 @@ export interface ResizeHandlesOverlayProps {
  * object. Shared by image and text-box selection so the handle geometry,
  * positioning and pointer plumbing live in one place.
  */
-export function ResizeHandlesOverlay(props: ResizeHandlesOverlayProps): JSX.Element {
+export function ResizeHandlesOverlay(
+  props: ResizeHandlesOverlayProps,
+): JSX.Element {
   return (
     <div
       aria-hidden="true"

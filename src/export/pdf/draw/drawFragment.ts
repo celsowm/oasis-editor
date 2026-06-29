@@ -4,7 +4,9 @@ import type {
   EditorLayoutLine,
   EditorParagraphNode,
   EditorTextStyle,
-  EditorPageSettings, EditorCaretSlot } from "@/core/model.js";
+  EditorPageSettings,
+  EditorCaretSlot,
+} from "@/core/model.js";
 import {
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
@@ -70,7 +72,9 @@ export async function drawFloatingImagesForParagraph(options: {
   layer: "behind" | "front";
 }): Promise<void> {
   for (const line of options.lines) {
-    const slots = new Map(line.slots.map((slot): [number, EditorCaretSlot] => [slot.offset, slot]));
+    const slots = new Map(
+      line.slots.map((slot): [number, EditorCaretSlot] => [slot.offset, slot]),
+    );
     for (const fragment of line.fragments) {
       const image = fragment.image;
       if (!image?.floating) continue;
@@ -301,7 +305,9 @@ export async function drawFragmentText(
     originY + line.top + line.height * TEXT_BASELINE_RATIO - baselineShiftPx;
   const chars = resolveFragmentSlots(line, fragment);
   const text = chars
-    .map((char): string => (styles.allCaps ? char.char.toUpperCase() : char.char))
+    .map((char): string =>
+      styles.allCaps ? char.char.toUpperCase() : char.char,
+    )
     .join("");
   const firstChar = chars[0];
   if (!firstChar || text.length === 0) return;

@@ -25,7 +25,7 @@ export function mount(
     ),
     target,
   );
-  const unmountDom = () => {
+  const unmountDom = (): void => {
     dispose();
     target.innerHTML = "";
   };

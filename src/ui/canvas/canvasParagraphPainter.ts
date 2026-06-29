@@ -464,7 +464,8 @@ export function drawParagraph(
     if (state.showParagraphMarks && isLastLine) {
       const lastSlot = line.slots[line.slots.length - 1];
       const markSlot =
-        line.slots.find((slot): boolean => slot.offset === line.endOffset) ?? lastSlot;
+        line.slots.find((slot): boolean => slot.offset === line.endOffset) ??
+        lastSlot;
       if (markSlot) {
         ctx.save();
         ctx.font = "400 13px Calibri";

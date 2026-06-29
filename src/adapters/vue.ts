@@ -1,4 +1,13 @@
-import { defineComponent, onBeforeUnmount, onMounted, ref, h, VNode, RendererNode, RendererElement } from "vue";
+import {
+  defineComponent,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  h,
+  VNode,
+  RendererNode,
+  RendererElement,
+} from "vue";
 import { mount } from "oasis-editor";
 import type { OasisEditorAppProps, OasisEditorClient } from "oasis-editor";
 
@@ -7,7 +16,7 @@ export const OasisEditor = defineComponent({
   props: {
     config: {
       type: Object as () => OasisEditorAppProps,
-      default: (): {} => ({}),
+      default: (): Record<string, never> => ({}),
     },
     class: String,
     style: [String, Object] as unknown as () =>
@@ -31,7 +40,10 @@ export const OasisEditor = defineComponent({
       instance = null;
     });
 
-    return (): VNode<RendererNode, RendererElement, { [key: string]: any; }> =>
-      h("div", { ref: root, class: props.class, style: props.style });
+    return (): VNode<
+      RendererNode,
+      RendererElement,
+      { [key: string]: unknown }
+    > => h("div", { ref: root, class: props.class, style: props.style });
   },
 });

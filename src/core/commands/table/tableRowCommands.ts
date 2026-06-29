@@ -1,7 +1,10 @@
 import type {
   EditorState,
   EditorTableNode,
-  EditorTableRowStyle, EditorTableRowNode, EditorBlockNode } from "@/core/model.js";
+  EditorTableRowStyle,
+  EditorTableRowNode,
+  EditorBlockNode,
+} from "@/core/model.js";
 import {
   patchStyleValue,
   createTableRevisionMetadata,
@@ -22,28 +25,29 @@ export function setSelectedTableRowStyleValue<
   if (!target) return state;
 
   const updateTable = (table: EditorTableNode): EditorTableNode => {
-    const nextRows = table.rows.map((row, rowIndex): EditorTableRowNode =>
-      rowIndex === target.loc.rowIndex
-        ? (() => {
-            let style = row.style;
-            if (
-              state.trackChangesEnabled &&
-              key !== "revision" &&
-              key !== "propertyRevision" &&
-              !style?.propertyRevision
-            ) {
-              style = {
-                ...(style ?? {}),
-                propertyRevision: {
-                  ...createTableRevisionMetadata(),
-                  type: "property",
-                  previous: { ...(style ?? {}) },
-                },
-              };
-            }
-            return { ...row, style: patchStyleValue(style, key, value) };
-          })()
-        : row,
+    const nextRows = table.rows.map(
+      (row, rowIndex): EditorTableRowNode =>
+        rowIndex === target.loc.rowIndex
+          ? ((): EditorTableRowNode => {
+              let style = row.style;
+              if (
+                state.trackChangesEnabled &&
+                key !== "revision" &&
+                key !== "propertyRevision" &&
+                !style?.propertyRevision
+              ) {
+                style = {
+                  ...(style ?? {}),
+                  propertyRevision: {
+                    ...createTableRevisionMetadata(),
+                    type: "property",
+                    previous: { ...(style ?? {}) },
+                  },
+                };
+              }
+              return { ...row, style: patchStyleValue(style, key, value) };
+            })()
+          : row,
     );
     return { ...table, rows: nextRows };
   };

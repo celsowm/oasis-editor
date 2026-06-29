@@ -205,7 +205,10 @@ export function createCanvasPageRenderer(options: {
 
     ctx.save();
     ctx.globalAlpha = bodyAlpha;
-    if (columnRects && page.blocks.some((b): boolean => b.columnIndex !== undefined)) {
+    if (
+      columnRects &&
+      page.blocks.some((b): boolean => b.columnIndex !== undefined)
+    ) {
       // Newspaper columns: paint each column's blocks from the body top at its
       // own X/width. renderBlockList accumulates its cursor from originY per
       // call, so per-column invocation restarts each column at the top.

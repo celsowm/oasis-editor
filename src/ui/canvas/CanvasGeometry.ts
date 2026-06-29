@@ -101,7 +101,9 @@ export function getCaretRectFromSnapshot(
     return rectFromBox(entry.left, entry.top, 1, Math.max(entry.height, 16));
   }
   const slot =
-    line.slots.find((candidate): boolean => candidate.offset === paragraphOffset) ??
+    line.slots.find(
+      (candidate): boolean => candidate.offset === paragraphOffset,
+    ) ??
     line.slots.reduce(
       (best, candidate): CanvasSnapshotSlot =>
         Math.abs(candidate.offset - paragraphOffset) <

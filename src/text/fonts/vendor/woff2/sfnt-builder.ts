@@ -15,7 +15,9 @@ export function buildSfnt(
   flavor: number,
   tableData: Map<number, Uint8Array>,
 ): { ttf: Uint8Array; tables: Record<string, Uint8Array> } {
-  const entries = Array.from(tableData.entries()).sort((a, b): number => a[0] - b[0]);
+  const entries = Array.from(tableData.entries()).sort(
+    (a, b): number => a[0] - b[0],
+  );
   const numTables = entries.length;
   let offset = SFNT_HEADER_SIZE + SFNT_ENTRY_SIZE * numTables;
 

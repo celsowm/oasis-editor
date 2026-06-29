@@ -9,7 +9,10 @@ export interface DocumentExporterDeps {
   download?: (blob: Blob, filename: string) => void;
 }
 
-export function createDocumentExporter(deps: DocumentExporterDeps): { handleExportDocx: () => Promise<void>; handleExportPdf: () => Promise<void>; } {
+export function createDocumentExporter(deps: DocumentExporterDeps): {
+  handleExportDocx: () => Promise<void>;
+  handleExportPdf: () => Promise<void>;
+} {
   const download = deps.download ?? downloadBlob;
 
   const handleExportDocx = async (): Promise<void> => {

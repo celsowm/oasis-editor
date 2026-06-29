@@ -27,6 +27,21 @@ export function createEditorTableDrag(deps: {
     clientY: number,
   ) => EditorPosition | null;
   focusInput: () => void;
+}): ReturnType<typeof createEditorTableDragImpl> {
+  return createEditorTableDragImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorTableDragImpl(deps: {
+  state: () => EditorState;
+  applyTransactionalState: (
+    producer: (current: EditorState) => EditorState,
+  ) => void;
+  resolvePositionAtSurfacePoint: (
+    clientX: number,
+    clientY: number,
+  ) => EditorPosition | null;
+  focusInput: () => void;
 }) {
   const [dragging, setDragging] = createSignal(false);
   const [draggedTableInfo, setDraggedTableInfo] = createSignal<{
@@ -113,7 +128,8 @@ export function createEditorTableDrag(deps: {
             for (const zone of ["main", "header", "footer"] as const) {
               const blocks = getEditableBlocksForZone(current, zone);
               const table = blocks.find(
-                (block): boolean => block.type === "table" && block.id === tableId,
+                (block): boolean =>
+                  block.type === "table" && block.id === tableId,
               );
               if (table) return table;
             }

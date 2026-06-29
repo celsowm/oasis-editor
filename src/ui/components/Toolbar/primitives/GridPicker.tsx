@@ -75,8 +75,10 @@ export function GridPicker(props: GridPickerProps): JSX.Element {
     onCleanup((): void => window.removeEventListener("keydown", handleKeyDown));
   });
 
-  const rows = (): number[] => Array.from({ length: maxRows() }, (_, i): number => i + 1);
-  const cols = (): number[] => Array.from({ length: maxCols() }, (_, i): number => i + 1);
+  const rows = (): number[] =>
+    Array.from({ length: maxRows() }, (_, i): number => i + 1);
+  const cols = (): number[] =>
+    Array.from({ length: maxCols() }, (_, i): number => i + 1);
   const statusLabel = (): string => {
     const h = hover();
     return h.row === 0 || h.col === 0
@@ -90,7 +92,9 @@ export function GridPicker(props: GridPickerProps): JSX.Element {
         open={isOpen()}
         onOpenChange={(open): true | void => (open ? setIsOpen(true) : close())}
         panelClass="oasis-editor-table-grid-picker"
-        onPanelMouseLeave={(): { row: number; col: number; } => setHover({ row: 0, col: 0 })}
+        onPanelMouseLeave={(): { row: number; col: number } =>
+          setHover({ row: 0, col: 0 })
+        }
         trigger={(api): JSX.Element => (
           <button
             ref={(el): void => api.ref(el)}
@@ -126,7 +130,9 @@ export function GridPicker(props: GridPickerProps): JSX.Element {
                         r <= hover().row && c <= hover().col,
                     }}
                     data-testid={`editor-toolbar-table-grid-${r}x${c}`}
-                    onMouseEnter={(): { row: number; col: number; } => setHover({ row: r, col: c })}
+                    onMouseEnter={(): { row: number; col: number } =>
+                      setHover({ row: r, col: c })
+                    }
                     onMouseDown={(event): void => event.preventDefault()}
                     onClick={(): void => selectGridSize(r, c)}
                     aria-label={`${r} × ${c}`}

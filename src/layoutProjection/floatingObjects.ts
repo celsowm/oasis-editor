@@ -315,7 +315,7 @@ export function collectParagraphFloatingExclusions(options: {
       image.wrapPolygon.length >= 3 &&
       (wrap === "tight" || wrap === "through") &&
       !image.rotation
-        ? image.wrapPolygon.map((point): { x: number; y: number; } => ({
+        ? image.wrapPolygon.map((point): { x: number; y: number } => ({
             x: rawRect.x + point.x * rawRect.width,
             y: rawRect.y + point.y * rawRect.height,
           }))

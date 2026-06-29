@@ -21,10 +21,15 @@ export function getQuickStyles(
       style.type !== "table" &&
       (!style.semiHidden || (style.unhideWhenUsed && style.isUsed)),
   );
-  const hasQuickStyles = applicable.some((style): boolean => style.qFormat === true);
+  const hasQuickStyles = applicable.some(
+    (style): boolean => style.qFormat === true,
+  );
   return applicable
     .filter((style): boolean => !hasQuickStyles || style.qFormat === true)
-    .map((style, index): { style: ToolbarDocumentStyle; index: number; } => ({ style, index }))
+    .map((style, index): { style: ToolbarDocumentStyle; index: number } => ({
+      style,
+      index,
+    }))
     .sort(
       (a, b): number =>
         (a.style.uiPriority ?? Number.MAX_SAFE_INTEGER) -
@@ -53,7 +58,9 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
   const [open, setOpen] = createSignal(false);
   const panelTestId = `${props.item.testId ?? props.item.id}-panel`;
   const expandTestId = `${props.item.testId ?? props.item.id}-expand`;
-  const styles = createMemo((): ToolbarDocumentStyle[] => getQuickStyles(props.item.styles(props.api)));
+  const styles = createMemo((): ToolbarDocumentStyle[] =>
+    getQuickStyles(props.item.styles(props.api)),
+  );
   const paragraphStyleId = (): string =>
     String(props.api.commands.state(props.item.paragraphCommand).value ?? "");
   const characterStyleId = (): string =>
@@ -173,13 +180,16 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
             tooltip={props.api.t("toolbar.style")}
             onChange={(event): void => {
               const style = styles().find(
-                (candidate): boolean => candidate.id === event.currentTarget.value,
+                (candidate): boolean =>
+                  candidate.id === event.currentTarget.value,
               );
               if (style) apply(style);
             }}
           >
             <For each={styles()}>
-              {(style): JSX.Element => <option value={style.id}>{style.name}</option>}
+              {(style): JSX.Element => (
+                <option value={style.id}>{style.name}</option>
+              )}
             </For>
           </Select>
           <div class="oasis-editor-style-gallery-ribbon">

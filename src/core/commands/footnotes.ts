@@ -3,7 +3,9 @@ import type {
   EditorFootnote,
   EditorFootnotes,
   EditorState,
-  EditorTextRun, EditorParagraphNode } from "@/core/model.js";
+  EditorTextRun,
+  EditorParagraphNode,
+} from "@/core/model.js";
 import {
   findParagraphLocation,
   getBlockParagraphs,
@@ -84,8 +86,9 @@ export function insertFootnote(state: EditorState): EditorState {
     referenceRun,
   ]);
   const paragraphs = getParagraphs(baseState);
-  const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode =>
-    candidateIndex === index ? updatedParagraph : candidate,
+  const nextParagraphs = paragraphs.map(
+    (candidate, candidateIndex): EditorParagraphNode =>
+      candidateIndex === index ? updatedParagraph : candidate,
   );
 
   const caretAfterMarker = paragraphOffsetToPosition(
@@ -189,8 +192,9 @@ export function deleteFootnote(
   };
 
   const zoneParagraphs = getParagraphs(navState);
-  const nextZoneParagraphs = zoneParagraphs.map((p): EditorParagraphNode =>
-    p.id === targetParagraphId ? updatedParagraph : p,
+  const nextZoneParagraphs = zoneParagraphs.map(
+    (p): EditorParagraphNode =>
+      p.id === targetParagraphId ? updatedParagraph : p,
   );
 
   const intermediate = cloneStateWithParagraphs(

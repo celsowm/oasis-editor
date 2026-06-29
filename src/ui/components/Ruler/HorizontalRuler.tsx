@@ -86,7 +86,9 @@ export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
   const [pageLeft, setPageLeft] = createSignal(EDITOR_SCROLL_PADDING_PX);
   const [drag, setDrag] = createSignal<DragState | null>(null);
 
-  const pageSettings = createMemo((): EditorPageSettings => getActivePageSettings(props.state()));
+  const pageSettings = createMemo(
+    (): EditorPageSettings => getActivePageSettings(props.state()),
+  );
 
   // Keep the ruler horizontally in sync with the document viewport, and track
   // where the page actually sits so the ruler origin lines up with the caret.
@@ -114,18 +116,25 @@ export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
     });
   });
 
-  const indents = createMemo<RulerIndents>((): { indentLeft: number; indentRight: number; indentFirstLine: number; indentHanging: number; } => {
-    const style = getToolbarStyleState(props.state());
-    return {
-      indentLeft: numFromStyle(style.indentLeft),
-      indentRight: numFromStyle(style.indentRight),
-      indentFirstLine: numFromStyle(style.indentFirstLine),
-      indentHanging: numFromStyle(style.indentHanging),
-    };
-  });
+  const indents = createMemo<RulerIndents>(
+    (): {
+      indentLeft: number;
+      indentRight: number;
+      indentFirstLine: number;
+      indentHanging: number;
+    } => {
+      const style = getToolbarStyleState(props.state());
+      return {
+        indentLeft: numFromStyle(style.indentLeft),
+        indentRight: numFromStyle(style.indentRight),
+        indentFirstLine: numFromStyle(style.indentFirstLine),
+        indentHanging: numFromStyle(style.indentHanging),
+      };
+    },
+  );
 
-  const baseGeometry = createMemo((): RulerGeometry =>
-    computeRulerGeometry(pageSettings(), indents()),
+  const baseGeometry = createMemo(
+    (): RulerGeometry => computeRulerGeometry(pageSettings(), indents()),
   );
 
   // Geometry actually drawn, applying the live drag preview without committing.
@@ -200,7 +209,7 @@ export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
     setDrag({ type, previewX: pageXFromClient(event.clientX) });
 
     const onMove = (moveEvent: PointerEvent): void => {
-      setDrag((current): { previewX: number; type: DragType; } | null =>
+      setDrag((current): { previewX: number; type: DragType } | null =>
         current
           ? { ...current, previewX: pageXFromClient(moveEvent.clientX) }
           : current,

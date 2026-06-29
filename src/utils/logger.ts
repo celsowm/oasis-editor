@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const DEBUG_STORAGE_KEY = "oasis-editor:debug";
 
 type LogLevel = "debug" | "info" | "warn" | "error";
@@ -170,7 +171,12 @@ function formatTimestamp(): string {
 
 export type EditorLogger = ReturnType<typeof createEditorLogger>;
 
-export function createEditorLogger(scope: string) {
+export function createEditorLogger(scope: string): {
+  debug: (message: string, payload?: unknown) => void;
+  info: (message: string, payload?: unknown) => void;
+  warn: (message: string, payload?: unknown) => void;
+  error: (message: string, payload?: unknown) => void;
+} {
   const write = (level: LogLevel, message: string, payload?: unknown): void => {
     if (!isEditorDebugEnabled() && level === "debug") {
       return;

@@ -31,7 +31,8 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
   let customColorInputRef: HTMLInputElement | undefined;
 
   const activeColor = (): string => normalizeColor(props.value);
-  const displayColor = (): string | null => previewColor() || props.value || null;
+  const displayColor = (): string | null =>
+    previewColor() || props.value || null;
   const directApplyColor = (): string =>
     props.lastValue || props.value || props.defaultValue;
   const clearLabel = (): string | undefined =>

@@ -49,7 +49,14 @@ export interface EditorDocumentRuntimeDeps {
  * creation order, so every signal/effect stays bound exactly as before.
  * Extracted from `OasisEditorApp` (S1).
  */
-export function createEditorDocumentRuntime(deps: EditorDocumentRuntimeDeps) {
+export function createEditorDocumentRuntime(
+  deps: EditorDocumentRuntimeDeps,
+): ReturnType<typeof createEditorDocumentRuntimeImpl> {
+  return createEditorDocumentRuntimeImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorDocumentRuntimeImpl(deps: EditorDocumentRuntimeDeps) {
   const {
     documentOptions,
     logger,

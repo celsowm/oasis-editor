@@ -21,5 +21,7 @@ export function resolveImporterForFile(
 
 /** Comma-separated extension list for an `<input type="file" accept>`. */
 export function importFileAccept(): string {
-  return IMPORTERS.flatMap((importer): readonly string[] => importer.accept).join(",");
+  return IMPORTERS.flatMap(
+    (importer): readonly string[] => importer.accept,
+  ).join(",");
 }

@@ -15,7 +15,9 @@ export function RibbonRow(props: RibbonRowProps): JSX.Element {
   return (
     <div class="oasis-editor-ribbon-row">
       <For each={props.items}>
-        {(item): JSX.Element => <ToolbarItemRenderer item={item} api={props.api} />}
+        {(item): JSX.Element => (
+          <ToolbarItemRenderer item={item} api={props.api} />
+        )}
       </For>
     </div>
   );

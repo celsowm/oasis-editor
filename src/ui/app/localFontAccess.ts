@@ -64,7 +64,10 @@ export function probeLocalFontFamilies(): Promise<string[]> {
       const families = Array.from(
         new Set(
           fonts
-            .map((font): string => font.family?.trim() || font.fullName?.trim() || "")
+            .map(
+              (font): string =>
+                font.family?.trim() || font.fullName?.trim() || "",
+            )
             .filter(Boolean),
         ),
       ).sort((a, b): number => a.localeCompare(b));
@@ -110,7 +113,8 @@ function selectFaceProgram(
   const targetPs = (font.postscriptName ?? "").trim().toLowerCase();
   if (targetPs) {
     const byName = programs.find(
-      (program): boolean => program.metadata.postscriptName.toLowerCase() === targetPs,
+      (program): boolean =>
+        program.metadata.postscriptName.toLowerCase() === targetPs,
     );
     if (byName) return byName;
   }
@@ -138,7 +142,9 @@ export async function loadPreciseFontProgramsForFamilies(
   if (!queryLocalFonts) return false;
 
   const wanted = new Set(
-    Array.from(families, (family): string => normalizeFamily(family).toLowerCase()),
+    Array.from(families, (family): string =>
+      normalizeFamily(family).toLowerCase(),
+    ),
   );
   wanted.delete("helvetica"); // normalizeFamily's empty-input fallback
   if (wanted.size === 0) return false;
@@ -165,7 +171,9 @@ export async function loadPreciseFontProgramsForFamilies(
     const { bold, italic } = classifyFaceStyle(font);
     if (hasPreciseFontFace(family, bold, italic)) continue;
     try {
-      const buffer = await font.blob().then((blob): Promise<ArrayBuffer> => blob.arrayBuffer());
+      const buffer = await font
+        .blob()
+        .then((blob): Promise<ArrayBuffer> => blob.arrayBuffer());
       const program = selectFaceProgram(new Uint8Array(buffer), font);
       registerPreciseFont(family, bold, italic, program);
       registered.push(
@@ -181,14 +189,19 @@ export async function loadPreciseFontProgramsForFamilies(
   // (e.g. "Aptos Display" instead of "Aptos", or an Office cloud font that the
   // browser cannot enumerate at all) is visible instead of failing silently.
   const localFamilies = Array.from(
-    new Set(fonts.map((font): string => (font.family ?? "").trim()).filter(Boolean)),
+    new Set(
+      fonts.map((font): string => (font.family ?? "").trim()).filter(Boolean),
+    ),
   );
   const unmatched = Array.from(wanted).filter(
-    (token): boolean => !localFamilies.some((name): boolean => name.toLowerCase() === token),
+    (token): boolean =>
+      !localFamilies.some((name): boolean => name.toLowerCase() === token),
   );
   const nearMatches = unmatched.flatMap((token): string[] => {
     const stem = token.split(" ")[0]!;
-    return localFamilies.filter((name): boolean => name.toLowerCase().includes(stem));
+    return localFamilies.filter((name): boolean =>
+      name.toLowerCase().includes(stem),
+    );
   });
   fontLogger.info("precise:load", {
     wanted: Array.from(wanted),

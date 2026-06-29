@@ -2,7 +2,9 @@ import {
   resolveEffectiveTableCellFormatting,
   resolveEffectiveTableStyle,
   type EditorState,
-  type EditorTableNode, EditorTableRowStyle } from "@/core/model.js";
+  type EditorTableNode,
+  EditorTableRowStyle,
+} from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { estimateStackedColumnWidth } from "./verticalText.js";
 import {
@@ -125,21 +127,23 @@ export function buildCanvasTableLayout(options: {
   }
 
   // Effective row styles used in all three passes.
-  const effectiveRowStyles = table.rows.map((row, rowIndex): EditorTableRowStyle | undefined => {
-    const entry = tableEntries.find(
-      (candidate): boolean => candidate.rowIndex === rowIndex,
-    );
-    return entry
-      ? resolveEffectiveTableCellFormatting({
-          table: sourceTable,
-          rowIndex,
-          cellIndex: entry.cellIndex,
-          visualColumnIndex: entry.visualColumnIndex,
-          columnCount: visualColumnCount,
-          styles: state.document.styles,
-        }).rowStyle
-      : row.style;
-  });
+  const effectiveRowStyles = table.rows.map(
+    (row, rowIndex): EditorTableRowStyle | undefined => {
+      const entry = tableEntries.find(
+        (candidate): boolean => candidate.rowIndex === rowIndex,
+      );
+      return entry
+        ? resolveEffectiveTableCellFormatting({
+            table: sourceTable,
+            rowIndex,
+            cellIndex: entry.cellIndex,
+            visualColumnIndex: entry.visualColumnIndex,
+            columnCount: visualColumnCount,
+            styles: state.document.styles,
+          }).rowStyle
+        : row.style;
+    },
+  );
 
   // Pass 1: resolve cell geometry and project paragraph layouts.
   const { prepared, unsupported } = prepareCells({

@@ -7,7 +7,9 @@ import { insertTextAtSelection } from "@/core/commands/text.js";
 import {
   getParagraphs,
   getParagraphText,
-  paragraphOffsetToPosition, EditorState } from "@/core/model.js";
+  paragraphOffsetToPosition,
+  EditorState,
+} from "@/core/model.js";
 import type { EditorKeyboardDeps } from "./EditorKeyboardDeps.js";
 
 export interface EditorCommandExecutor {
@@ -263,10 +265,12 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     execute: (deps): true => {
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState((current): EditorState =>
-        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-          insertPageBreakAtSelection(temp),
-        ),
+      deps.applyTransactionalState(
+        (current): EditorState =>
+          deps.applyTableAwareParagraphEdit(
+            current,
+            (temp): EditorState => insertPageBreakAtSelection(temp),
+          ),
       );
       deps.focusInput();
       return true;
@@ -280,10 +284,12 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     execute: (deps): true => {
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState((current): EditorState =>
-        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-          insertTextAtSelection(temp, "\n"),
-        ),
+      deps.applyTransactionalState(
+        (current): EditorState =>
+          deps.applyTableAwareParagraphEdit(
+            current,
+            (temp): EditorState => insertTextAtSelection(temp, "\n"),
+          ),
       );
       deps.focusInput();
       return true;
@@ -299,10 +305,12 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
       }
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState((current): EditorState =>
-        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-          splitBlockAtSelection(temp),
-        ),
+      deps.applyTransactionalState(
+        (current): EditorState =>
+          deps.applyTableAwareParagraphEdit(
+            current,
+            (temp): EditorState => splitBlockAtSelection(temp),
+          ),
       );
       deps.focusInput();
       return true;

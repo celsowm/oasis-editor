@@ -238,7 +238,9 @@ export async function parseTableNode(
     );
     const previous = previousGrid
       ? getChildrenByTagNameNS(previousGrid, WORD_NS, "gridCol")
-          .map((gridCol): number | undefined => twipsToPoints(getAttributeValue(gridCol, "w")))
+          .map((gridCol): number | undefined =>
+            twipsToPoints(getAttributeValue(gridCol, "w")),
+          )
           .filter((width): width is number => width !== undefined)
       : [];
     const rawDate = getAttributeValue(tblGridChangeXml, "date");

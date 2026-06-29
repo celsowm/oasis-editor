@@ -45,7 +45,7 @@ function parseColumns(sectPr: XmlElement): EditorColumnsSettings | undefined {
   const sepAttr = getAttributeValue(cols, "sep");
   const equalWidthAttr = getAttributeValue(cols, "equalWidth");
   const colChildren = getChildrenByTagNameNS(cols, WORD_NS, "col");
-  const explicit = colChildren.map((col): { width: number; space: number; } => ({
+  const explicit = colChildren.map((col): { width: number; space: number } => ({
     width: twipsToPx(getAttributeValue(col, "w"), 0),
     space: twipsToPx(getAttributeValue(col, "space"), space),
   }));

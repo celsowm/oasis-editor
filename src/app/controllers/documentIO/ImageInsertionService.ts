@@ -25,7 +25,12 @@ function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
   );
 }
 
-export function createImageInsertionService(deps: ImageInsertionServiceDeps) {
+export function createImageInsertionService(deps: ImageInsertionServiceDeps): {
+  insertImageFromFile: (
+    file: File,
+    position?: EditorPosition | null,
+  ) => Promise<void>;
+} {
   const insertImageFromFile = async (
     file: File,
     position?: EditorPosition | null,

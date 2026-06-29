@@ -1,3 +1,4 @@
+import type { JSX } from "solid-js";
 import { Dialog } from "./Dialog.js";
 import { DialogFooter } from "./DialogFooter.js";
 import { useI18n } from "@/i18n/I18nContext.js";
@@ -14,7 +15,7 @@ export type {
   FontDialogProps,
 } from "./font-dialog/FontDialogTypes.js";
 
-export function FontDialog(props: FontDialogProps) {
+export function FontDialog(props: FontDialogProps): JSX.Element {
   const t = useI18n();
   const ctrl = useFontDialogController(props);
 

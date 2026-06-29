@@ -77,7 +77,9 @@ export function buildTableCellLayout(
 
   if (table.style?.bidiVisual && entries.length > 0) {
     const visualColumnCount = Math.max(
-      ...entries.map((entry): number => entry.visualColumnIndex + entry.colSpan),
+      ...entries.map(
+        (entry): number => entry.visualColumnIndex + entry.colSpan,
+      ),
     );
     for (const entry of entries) {
       entry.visualColumnIndex =

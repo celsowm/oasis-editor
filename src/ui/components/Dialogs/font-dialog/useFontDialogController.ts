@@ -8,7 +8,9 @@ import {
   createFontTabValuesFromInitial,
   createAdvancedTabValuesFromInitial,
   buildFontDialogPreviewStyle,
-  buildFontDialogApplyValues, FontFaceStyle } from "@/ui/components/Dialogs/FontDialogModel.js";
+  buildFontDialogApplyValues,
+  FontFaceStyle,
+} from "@/ui/components/Dialogs/FontDialogModel.js";
 import { WORD_FONT_SIZES } from "./FontDialogTypes.js";
 import type {
   FontDialogProps,
@@ -40,8 +42,9 @@ export function useFontDialogController(
     }
   });
 
-  const selectedFontStyle = createMemo<FontStylePreset>((): FontFaceStyle =>
-    resolveFontFaceStyle(fontTabValues().bold, fontTabValues().italic),
+  const selectedFontStyle = createMemo<FontStylePreset>(
+    (): FontFaceStyle =>
+      resolveFontFaceStyle(fontTabValues().bold, fontTabValues().italic),
   );
   const visibleFamilyOptions = createMemo((): string[] => {
     const needle = fontTabValues().familyFilter.trim().toLowerCase();
@@ -99,8 +102,9 @@ export function useFontDialogController(
     }
     return "";
   });
-  const previewStyle = createMemo((): Record<string, string | number | undefined> =>
-    buildFontDialogPreviewStyle(fontTabValues(), advancedTabValues()),
+  const previewStyle = createMemo(
+    (): Record<string, string | number | undefined> =>
+      buildFontDialogPreviewStyle(fontTabValues(), advancedTabValues()),
   );
 
   const applyFontStylePreset = (value: FontStylePreset): void => {

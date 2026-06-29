@@ -4,7 +4,10 @@ import type {
   EditorSection,
   EditorSelection,
   EditorState,
-  EditorTableCellNode, EditorTableNode, EditorTableRowNode } from "@/core/model.js";
+  EditorTableCellNode,
+  EditorTableNode,
+  EditorTableRowNode,
+} from "@/core/model.js";
 import {
   getActiveSectionIndex,
   getActiveZone,

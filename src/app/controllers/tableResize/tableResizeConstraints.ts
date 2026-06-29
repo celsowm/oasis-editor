@@ -53,7 +53,8 @@ export function resolveRowHeightsPx(
 
   const geometryByKey = new Map(
     geometry.cells.map(
-      (cell): readonly [`${number}:${number}`, SnapshotCellRect] => [`${cell.rowIndex}:${cell.cellIndex}`, cell] as const,
+      (cell): readonly [`${number}:${number}`, SnapshotCellRect] =>
+        [`${cell.rowIndex}:${cell.cellIndex}`, cell] as const,
     ),
   );
 
@@ -98,7 +99,8 @@ export function resolveColumnWidthsPt(
   );
   const geometryByKey = new Map(
     geometry.cells.map(
-      (cell): readonly [`${number}:${number}`, SnapshotCellRect] => [`${cell.rowIndex}:${cell.cellIndex}`, cell] as const,
+      (cell): readonly [`${number}:${number}`, SnapshotCellRect] =>
+        [`${cell.rowIndex}:${cell.cellIndex}`, cell] as const,
     ),
   );
 
@@ -178,7 +180,8 @@ export function resolveMinColumnWidthsPx(
   const result: Record<number, number> = {};
   const geometryByKey = new Map(
     geometry.cells.map(
-      (cell): readonly [`${number}:${number}`, SnapshotCellRect] => [`${cell.rowIndex}:${cell.cellIndex}`, cell] as const,
+      (cell): readonly [`${number}:${number}`, SnapshotCellRect] =>
+        [`${cell.rowIndex}:${cell.cellIndex}`, cell] as const,
     ),
   );
   for (const entry of tableLayout) {

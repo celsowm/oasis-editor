@@ -283,10 +283,18 @@ describe("plugin UI primitives", () => {
       "row",
     );
     expect(itemA.style.getPropertyValue("--oasis-grid-size-basis-xs")).toBe(
-      "calc(4 / var(--oasis-grid-columns-current) * 100%)",
+      "calc(4 / var(--oasis-grid-columns-current) * 100% - " +
+        "var(--oasis-grid-column-spacing-xs, 0px) * " +
+        "(var(--oasis-grid-columns-current) - 4) / " +
+        "var(--oasis-grid-columns-current))",
     );
     expect(itemA.style.getPropertyValue("--oasis-grid-size-max-md")).toBe(
-      "calc(6 / var(--oasis-grid-columns-current) * 100%)",
+      "calc(6 / var(--oasis-grid-columns-current) * 100% - " +
+        "var(--oasis-grid-column-spacing-md, " +
+        "var(--oasis-grid-column-spacing-sm, " +
+        "var(--oasis-grid-column-spacing-xs, 0px))) * " +
+        "(var(--oasis-grid-columns-current) - 6) / " +
+        "var(--oasis-grid-columns-current))",
     );
     expect(itemB.style.getPropertyValue("--oasis-grid-size-grow-xs")).toBe("1");
     expect(itemB.style.getPropertyValue("--oasis-grid-offset-md")).toBe("auto");

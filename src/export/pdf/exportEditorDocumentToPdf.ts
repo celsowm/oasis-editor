@@ -30,7 +30,14 @@ const PDF_PRODUCER = "Oasis Editor";
  * from `metadata.title`; author/subject/keywords are read from the open-ended
  * metadata map when present as strings. Producer and creation date are always set.
  */
-function resolveDocumentInfo(document: EditorDocument) {
+function resolveDocumentInfo(document: EditorDocument): {
+  title: string | undefined;
+  author: string | undefined;
+  subject: string | undefined;
+  keywords: string | undefined;
+  producer: string;
+  creationDate: Date;
+} {
   const metadata = document.metadata ?? {};
   const asString = (value: unknown): string | undefined =>
     typeof value === "string" && value.trim() !== "" ? value : undefined;
@@ -124,10 +131,12 @@ export async function exportEditorDocumentToPdf(
   const listOrdinals = getListOrdinals(document);
   const bookmarkNamesByParagraph = collectBookmarkNamesByParagraph(document);
   const headingByParagraph = new Map(
-    outlineFrom(document).map((item): [string, { level: number; title: string; }] => [
-      item.id,
-      { level: item.level, title: item.text },
-    ]),
+    outlineFrom(document).map(
+      (item): [string, { level: number; title: string }] => [
+        item.id,
+        { level: item.level, title: item.text },
+      ],
+    ),
   );
 
   for (const page of layout.pages) {

@@ -2,7 +2,9 @@ import type {
   EditorBlockNode,
   EditorState,
   EditorTableNode,
-  EditorTableStyle, EditorTableCellNode } from "@/core/model.js";
+  EditorTableStyle,
+  EditorTableCellNode,
+} from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { PT_PER_PX } from "@/core/units.js";
 import {
@@ -82,37 +84,40 @@ export function setTableColumnWidths(
     }
 
     const nextRows = table.rows.map((row, rowIndex) => {
-      const nextCells = row.cells.map((cell, cellIndex): EditorTableCellNode => {
-        const entry = tableLayout.find(
-          (item): boolean => item.rowIndex === rowIndex && item.cellIndex === cellIndex,
-        );
-        if (!entry) return cell;
+      const nextCells = row.cells.map(
+        (cell, cellIndex): EditorTableCellNode => {
+          const entry = tableLayout.find(
+            (item): boolean =>
+              item.rowIndex === rowIndex && item.cellIndex === cellIndex,
+          );
+          if (!entry) return cell;
 
-        const rightVisualColumnIndex =
-          entry.visualColumnIndex + entry.colSpan - 1;
-        const newWidth = columnWidths[rightVisualColumnIndex];
+          const rightVisualColumnIndex =
+            entry.visualColumnIndex + entry.colSpan - 1;
+          const newWidth = columnWidths[rightVisualColumnIndex];
 
-        if (newWidth !== undefined && entry.colSpan === 1) {
-          const propertyRevision =
-            state.trackChangesEnabled && !cell.style?.propertyRevision
-              ? {
-                  ...createTableRevisionMetadata(),
-                  type: "property" as const,
-                  previous: { ...(cell.style ?? {}) },
-                }
-              : cell.style?.propertyRevision;
-          return {
-            ...cell,
-            style: {
-              ...(cell.style ?? {}),
-              width: typeof newWidth === "number" ? newWidth : newWidth,
-              ...(propertyRevision ? { propertyRevision } : {}),
-            },
-          };
-        }
+          if (newWidth !== undefined && entry.colSpan === 1) {
+            const propertyRevision =
+              state.trackChangesEnabled && !cell.style?.propertyRevision
+                ? {
+                    ...createTableRevisionMetadata(),
+                    type: "property" as const,
+                    previous: { ...(cell.style ?? {}) },
+                  }
+                : cell.style?.propertyRevision;
+            return {
+              ...cell,
+              style: {
+                ...(cell.style ?? {}),
+                width: typeof newWidth === "number" ? newWidth : newWidth,
+                ...(propertyRevision ? { propertyRevision } : {}),
+              },
+            };
+          }
 
-        return cell;
-      });
+          return cell;
+        },
+      );
       return { ...row, cells: nextCells };
     });
 
@@ -158,7 +163,9 @@ export function setTableColumnWidths(
     };
   };
 
-  return updateStateSections(state, (blocks: EditorBlockNode[]): EditorBlockNode[] =>
-    updateTablesInBlocks(blocks, updateTable),
+  return updateStateSections(
+    state,
+    (blocks: EditorBlockNode[]): EditorBlockNode[] =>
+      updateTablesInBlocks(blocks, updateTable),
   );
 }

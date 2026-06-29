@@ -1,3 +1,4 @@
+import type { JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { TextInputDialog } from "./TextInputDialog.js";
 
@@ -8,7 +9,7 @@ interface LinkDialogProps {
   onConfirm: (href: string) => void;
 }
 
-export function LinkDialog(props: LinkDialogProps) {
+export function LinkDialog(props: LinkDialogProps): JSX.Element {
   const t = useI18n();
   return (
     <TextInputDialog

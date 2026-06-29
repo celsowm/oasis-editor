@@ -45,7 +45,8 @@ export function serializeRun(
     styles,
   );
   const runProps = (): string => serializeRunProperties(materializedRunStyle);
-  const asText = (): string => `<w:r>${runProps()}${serializeRunText(run.text)}</w:r>`;
+  const asText = (): string =>
+    `<w:r>${runProps()}${serializeRunText(run.text)}</w:r>`;
 
   // Dispatch by run kind, exhaustively: adding a `RunKind` variant forces a
   // branch here (compile error otherwise), so DOCX export can never silently

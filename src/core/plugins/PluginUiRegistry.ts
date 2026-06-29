@@ -88,7 +88,9 @@ export class PluginUiRegistry implements OasisPluginUiRegistry {
   }
 
   private unregisterFloatingAction(id: string): void {
-    const next = this.floatingActions.filter((action): boolean => action.id !== id);
+    const next = this.floatingActions.filter(
+      (action): boolean => action.id !== id,
+    );
     if (next.length === this.floatingActions.length) {
       return;
     }
@@ -133,7 +135,7 @@ function replaceById<T extends { id: string }>(items: T[], item: T): T[] {
 
 function sortByOrder<T extends { order?: number }>(items: T[]): T[] {
   return items
-    .map((item, index): { item: T; index: number; } => ({ item, index }))
+    .map((item, index): { item: T; index: number } => ({ item, index }))
     .sort((a, b): number => {
       const orderA = a.item.order ?? MAX_ORDER;
       const orderB = b.item.order ?? MAX_ORDER;

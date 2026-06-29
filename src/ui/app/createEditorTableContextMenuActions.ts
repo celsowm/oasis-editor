@@ -46,12 +46,14 @@ export function createEditorTableContextMenuActions(
       ),
     insertColumnBefore: (): void =>
       applyTableContextCommand(
-        (current): EditorState => tableOps.insertSelectedTableColumn(current, -1),
+        (current): EditorState =>
+          tableOps.insertSelectedTableColumn(current, -1),
         MERGE_KEYS.insertTableColumn,
       ),
     insertColumnAfter: (): void =>
       applyTableContextCommand(
-        (current): EditorState => tableOps.insertSelectedTableColumn(current, 1),
+        (current): EditorState =>
+          tableOps.insertSelectedTableColumn(current, 1),
         MERGE_KEYS.insertTableColumn,
       ),
     deleteColumn: (): void =>

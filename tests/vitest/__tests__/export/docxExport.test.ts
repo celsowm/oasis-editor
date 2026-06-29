@@ -303,6 +303,17 @@ describe("DOCX export", () => {
     expect(xml).toContain("<w:contextualSpacing/>");
   });
 
+  it("serializes mirrored paragraph indents", async () => {
+    const paragraph = createEditorParagraph("Mirror indents");
+    paragraph.style = { mirrorIndents: true };
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+
+    expect(xml).toContain("<w:mirrorIndents/>");
+  });
+
   it("serializes paragraph tab stops", async () => {
     const paragraph = createEditorParagraph("One\ttwo");
     paragraph.style = {

@@ -15,7 +15,9 @@ import {
   getParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
-  positionToParagraphOffset, EditorState } from "@/core/model.js";
+  positionToParagraphOffset,
+  EditorState,
+} from "@/core/model.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
 import { resolveWordSelection } from "@/core/wordBoundaries.js";
 import {
@@ -26,9 +28,18 @@ import type { EditorKeyboardDeps } from "./EditorKeyboardDeps.js";
 
 export type { EditorKeyboardDeps } from "./EditorKeyboardDeps.js";
 
-export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
+export function createEditorKeyboardController(
+  deps: EditorKeyboardDeps,
+): ReturnType<typeof createEditorKeyboardControllerImpl> {
+  return createEditorKeyboardControllerImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorKeyboardControllerImpl(deps: EditorKeyboardDeps) {
   const registry = new EditorCommandRegistry();
-  defaultEditorKeyBindings.forEach((binding): void => registry.register(binding));
+  defaultEditorKeyBindings.forEach((binding): void =>
+    registry.register(binding),
+  );
 
   const handleKeyDown = (
     event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
@@ -62,7 +73,10 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
       ? {
           executeCommand: (commandName: string, payload?: unknown): unknown =>
             deps.executeCommand?.(commandName, payload),
-          canExecuteCommand: (commandName: string, payload?: unknown): boolean | undefined =>
+          canExecuteCommand: (
+            commandName: string,
+            payload?: unknown,
+          ): boolean | undefined =>
             deps.canExecuteCommand?.(commandName, payload),
         }
       : undefined;
@@ -92,10 +106,12 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
         deps.resetTransactionGrouping();
 
         if (!isSelectionCollapsed(currentState.selection)) {
-          deps.applyTransactionalState((current): EditorState =>
-            deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-              deleteBackward(temp),
-            ),
+          deps.applyTransactionalState(
+            (current): EditorState =>
+              deps.applyTableAwareParagraphEdit(
+                current,
+                (temp): EditorState => deleteBackward(temp),
+              ),
           );
           event.currentTarget.value = "";
           deps.focusInput();
@@ -120,8 +136,8 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
             currentState.selection.focus,
           );
           if (focusParagraphOffset === 0) {
-            deps.applySelectionAwareParagraphCommand((current): EditorState =>
-              outdentParagraphList(current),
+            deps.applySelectionAwareParagraphCommand(
+              (current): EditorState => outdentParagraphList(current),
             );
             event.currentTarget.value = "";
             deps.focusInput();
@@ -135,43 +151,60 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
 
         if (event.key === "Backspace") {
           if (focusOffset === 0 || word.start === focusOffset) {
-            deps.applyTransactionalState((current): EditorState =>
-              deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-                deleteBackward(temp),
-              ),
+            deps.applyTransactionalState(
+              (current): EditorState =>
+                deps.applyTableAwareParagraphEdit(
+                  current,
+                  (temp): EditorState => deleteBackward(temp),
+                ),
             );
           } else {
-            deps.applyTransactionalState((current): EditorState =>
-              deps.applyTableAwareParagraphEdit(
-                setSelection(current, {
-                  anchor: paragraphOffsetToPosition(focusParagraph, word.start),
-                  focus: paragraphOffsetToPosition(focusParagraph, focusOffset),
-                }),
-                (temp): EditorState => deleteBackward(temp),
-              ),
+            deps.applyTransactionalState(
+              (current): EditorState =>
+                deps.applyTableAwareParagraphEdit(
+                  setSelection(current, {
+                    anchor: paragraphOffsetToPosition(
+                      focusParagraph,
+                      word.start,
+                    ),
+                    focus: paragraphOffsetToPosition(
+                      focusParagraph,
+                      focusOffset,
+                    ),
+                  }),
+                  (temp): EditorState => deleteBackward(temp),
+                ),
             );
           }
         } else if (focusOffset >= paragraphText.length) {
-          deps.applyTransactionalState((current): EditorState =>
-            deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-              deleteForward(temp),
-            ),
+          deps.applyTransactionalState(
+            (current): EditorState =>
+              deps.applyTableAwareParagraphEdit(
+                current,
+                (temp): EditorState => deleteForward(temp),
+              ),
           );
         } else if (word.end > focusOffset) {
-          deps.applyTransactionalState((current): EditorState =>
-            deps.applyTableAwareParagraphEdit(
-              setSelection(current, {
-                anchor: paragraphOffsetToPosition(focusParagraph, focusOffset),
-                focus: paragraphOffsetToPosition(focusParagraph, word.end),
-              }),
-              (temp): EditorState => deleteBackward(temp),
-            ),
+          deps.applyTransactionalState(
+            (current): EditorState =>
+              deps.applyTableAwareParagraphEdit(
+                setSelection(current, {
+                  anchor: paragraphOffsetToPosition(
+                    focusParagraph,
+                    focusOffset,
+                  ),
+                  focus: paragraphOffsetToPosition(focusParagraph, word.end),
+                }),
+                (temp): EditorState => deleteBackward(temp),
+              ),
           );
         } else {
-          deps.applyTransactionalState((current): EditorState =>
-            deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-              deleteForward(temp),
-            ),
+          deps.applyTransactionalState(
+            (current): EditorState =>
+              deps.applyTableAwareParagraphEdit(
+                current,
+                (temp): EditorState => deleteForward(temp),
+              ),
           );
         }
 
@@ -216,10 +249,12 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
         event.preventDefault();
         deps.clearPreferredColumn();
         deps.resetTransactionGrouping();
-        deps.applyTransactionalState((current): EditorState =>
-          deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-            deleteBackward(temp),
-          ),
+        deps.applyTransactionalState(
+          (current): EditorState =>
+            deps.applyTableAwareParagraphEdit(
+              current,
+              (temp): EditorState => deleteBackward(temp),
+            ),
         );
         event.currentTarget.value = "";
         deps.focusInput();
@@ -228,10 +263,12 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
         event.preventDefault();
         deps.clearPreferredColumn();
         deps.resetTransactionGrouping();
-        deps.applyTransactionalState((current): EditorState =>
-          deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-            deleteForward(temp),
-          ),
+        deps.applyTransactionalState(
+          (current): EditorState =>
+            deps.applyTableAwareParagraphEdit(
+              current,
+              (temp): EditorState => deleteForward(temp),
+            ),
         );
         event.currentTarget.value = "";
         deps.focusInput();

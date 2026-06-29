@@ -44,7 +44,9 @@ export function ShapeGallery(props: { api: ToolbarActionApi }): JSX.Element {
           {t("toolbar.shapes.recentlyUsed")}
         </div>
         <div class="oasis-editor-shape-gallery-grid">
-          <For each={recent()}>{(preset): JSX.Element => <Tile preset={preset} />}</For>
+          <For each={recent()}>
+            {(preset): JSX.Element => <Tile preset={preset} />}
+          </For>
         </div>
       </Show>
       <For each={SHAPE_CATEGORIES}>

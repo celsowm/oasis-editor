@@ -35,7 +35,14 @@ export interface UseEditorHistoryActionsProps {
   getHistoryState: () => EditorHistoryState;
 }
 
-export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
+export function createEditorHistoryActions(
+  deps: UseEditorHistoryActionsProps,
+): ReturnType<typeof createEditorHistoryActionsImpl> {
+  return createEditorHistoryActionsImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorHistoryActionsImpl(deps: UseEditorHistoryActionsProps) {
   const insertParagraphAtZoneBoundary = (
     currentState: EditorState,
     direction: -1 | 1,
@@ -152,7 +159,8 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
         direction < 0 ? getParagraphLength(insertedParagraph) : 0,
       );
       deps.applyTransactionalState(
-        (): EditorState => moveSelectedImageToPosition(nextState, targetPosition),
+        (): EditorState =>
+          moveSelectedImageToPosition(nextState, targetPosition),
         {
           mergeKey: MERGE_KEYS.moveImage,
         },

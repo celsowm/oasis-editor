@@ -3,7 +3,9 @@ import type {
   EditorLayoutFragment,
   EditorLayoutLine,
   EditorParagraphNode,
-  EditorTextStyle, EditorCaretSlot } from "@/core/model.js";
+  EditorTextStyle,
+  EditorCaretSlot,
+} from "@/core/model.js";
 import { resolveEffectiveParagraphStyle } from "@/core/model.js";
 import { EMPHASIS_GLYPH } from "@/core/textStyleMappings.js";
 import { PX_PER_POINT } from "@/layoutProjection/constants.js";
@@ -60,7 +62,10 @@ export function drawTabLeaders(
   color: string,
 ): void {
   const slotByOffset = new Map(
-    line.slots.map((slot): readonly [number, EditorCaretSlot] => [slot.offset, slot] as const),
+    line.slots.map(
+      (slot): readonly [number, EditorCaretSlot] =>
+        [slot.offset, slot] as const,
+    ),
   );
   const paragraphStyle = resolveEffectiveParagraphStyle(
     paragraph.style,

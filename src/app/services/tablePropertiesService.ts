@@ -14,7 +14,9 @@ import {
   type EditorDocxWidthValue,
   type EditorState,
   type EditorTableCellStyle,
-  type EditorTableNode, EditorBlockNode } from "@/core/model.js";
+  type EditorTableNode,
+  EditorBlockNode,
+} from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import type {
   TablePropertiesDialogApplyValues,

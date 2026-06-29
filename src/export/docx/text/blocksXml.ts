@@ -204,16 +204,24 @@ export function serializeParagraphXml(
   const bookmarkEvents = context.bookmarkEventsByParagraph?.get(paragraph.id);
   const commentEvents = context.commentEventsByParagraph?.get(paragraph.id);
   const boundaryTokens: BoundaryToken[] = [
-    ...(bookmarkEvents ?? []).map((e: BookmarkBoundaryEvent): { offset: number; seq: number; xml: string; } => ({
-      offset: e.offset,
-      seq: e.seq,
-      xml: serializeBookmarkEvent(e),
-    })),
-    ...(commentEvents ?? []).map((e: CommentBoundaryEvent): { offset: number; seq: number; xml: string; } => ({
-      offset: e.offset,
-      seq: e.seq,
-      xml: serializeCommentRangeEvent(e),
-    })),
+    ...(bookmarkEvents ?? []).map(
+      (
+        e: BookmarkBoundaryEvent,
+      ): { offset: number; seq: number; xml: string } => ({
+        offset: e.offset,
+        seq: e.seq,
+        xml: serializeBookmarkEvent(e),
+      }),
+    ),
+    ...(commentEvents ?? []).map(
+      (
+        e: CommentBoundaryEvent,
+      ): { offset: number; seq: number; xml: string } => ({
+        offset: e.offset,
+        seq: e.seq,
+        xml: serializeCommentRangeEvent(e),
+      }),
+    ),
   ];
   const runsXml =
     boundaryTokens.length > 0

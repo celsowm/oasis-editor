@@ -37,6 +37,15 @@ function mountDialog(
     borderSideRight: false,
     borderSideBottom: false,
     borderSideLeft: false,
+    mirrorIndents: false,
+    lineRule: "",
+    contextualSpacing: false,
+    outlineLevel: "",
+    pageBreakBefore: false,
+    keepWithNext: false,
+    keepLinesTogether: false,
+    widowControl: true,
+    tabs: [],
   };
   const onClose = overrides.onClose ?? vi.fn();
   const onApply = overrides.onApply ?? vi.fn();
@@ -155,6 +164,15 @@ describe("ParagraphDialog", () => {
         borderSideRight: false,
         borderSideBottom: false,
         borderSideLeft: false,
+        mirrorIndents: false,
+        lineRule: "",
+        contextualSpacing: false,
+        outlineLevel: "",
+        pageBreakBefore: false,
+        keepWithNext: false,
+        keepLinesTogether: false,
+        widowControl: true,
+        tabs: [],
       },
     });
 

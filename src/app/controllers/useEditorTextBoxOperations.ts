@@ -28,7 +28,12 @@ export interface EditorTextBoxOperationsDeps {
 
 export function createEditorTextBoxOperations(
   deps: EditorTextBoxOperationsDeps,
-) {
+): ReturnType<typeof createEditorTextBoxOperationsImpl> {
+  return createEditorTextBoxOperationsImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorTextBoxOperationsImpl(deps: EditorTextBoxOperationsDeps) {
   const getSelectedTextBoxSize = (
     current: EditorState,
   ): { width: number; height: number } | null => {

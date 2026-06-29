@@ -1,3 +1,4 @@
+import type { JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 
 import { WORD_CHARACTER_SCALES } from "./FontDialogTypes.js";
@@ -20,7 +21,7 @@ export interface AdvancedFontTabProps {
   ctrl: FontDialogController;
 }
 
-export function AdvancedFontTab(props: AdvancedFontTabProps) {
+export function AdvancedFontTab(props: AdvancedFontTabProps): JSX.Element {
   const t = useI18n();
   const { ctrl } = props;
 
@@ -115,38 +116,36 @@ export function AdvancedFontTab(props: AdvancedFontTabProps) {
               data-testid="editor-font-dialog-advanced-position-amount"
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Checkbox
-              class="oasis-editor-font-dialog-kerning-toggle"
-              label={t("dialog.font.advancedKerning")}
-              checked={ctrl.advancedTabValues().kerningEnabled}
-              onChange={(checked) =>
-                ctrl.setAdvancedTabValues((current) => ({
-                  ...current,
-                  kerningEnabled: checked,
-                  kerningThreshold: checked
-                    ? current.kerningThreshold || "1"
-                    : current.kerningThreshold,
-                }))
-              }
-              data-testid="editor-font-dialog-advanced-kerning-enabled"
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <TextField
-              class="oasis-editor-font-dialog-kerning-input"
-              value={ctrl.advancedTabValues().kerningThreshold}
-              disabled={!ctrl.advancedTabValues().kerningEnabled}
-              onChange={(value) =>
-                ctrl.updateAdvancedTab("kerningThreshold", value)
-              }
-              data-testid="editor-font-dialog-advanced-kerning"
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <StatusText class="oasis-editor-dialog-help-text oasis-editor-font-dialog-kerning-suffix">
-              {t("dialog.font.advancedKerningAbove")}
-            </StatusText>
+          <Grid size={12}>
+            <div class="oasis-editor-font-dialog-kerning-line">
+              <Checkbox
+                class="oasis-editor-font-dialog-kerning-toggle"
+                label={t("dialog.font.advancedKerning")}
+                checked={ctrl.advancedTabValues().kerningEnabled}
+                onChange={(checked) =>
+                  ctrl.setAdvancedTabValues((current) => ({
+                    ...current,
+                    kerningEnabled: checked,
+                    kerningThreshold: checked
+                      ? current.kerningThreshold || "1"
+                      : current.kerningThreshold,
+                  }))
+                }
+                data-testid="editor-font-dialog-advanced-kerning-enabled"
+              />
+              <TextField
+                class="oasis-editor-font-dialog-kerning-input"
+                value={ctrl.advancedTabValues().kerningThreshold}
+                disabled={!ctrl.advancedTabValues().kerningEnabled}
+                onChange={(value) =>
+                  ctrl.updateAdvancedTab("kerningThreshold", value)
+                }
+                data-testid="editor-font-dialog-advanced-kerning"
+              />
+              <StatusText class="oasis-editor-dialog-help-text oasis-editor-font-dialog-kerning-suffix">
+                {t("dialog.font.advancedKerningAbove")}
+              </StatusText>
+            </div>
           </Grid>
         </Grid>
       </FieldGroup>

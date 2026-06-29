@@ -7,11 +7,16 @@ export function resolveFragmentPaintBounds(
   fragment: EditorLayoutLine["fragments"][number],
 ): { left: number; right: number } | null {
   const slotByOffset = new Map(
-    line.slots.map((slot): readonly [number, EditorCaretSlot] => [slot.offset, slot] as const),
+    line.slots.map(
+      (slot): readonly [number, EditorCaretSlot] =>
+        [slot.offset, slot] as const,
+    ),
   );
   const slots = fragment.chars
     .filter((char): boolean => char.char !== "\n")
-    .map((char): any => slotByOffset.get(char.paragraphOffset))
+    .map((char): EditorCaretSlot | undefined =>
+      slotByOffset.get(char.paragraphOffset),
+    )
     .filter((slot): slot is NonNullable<typeof slot> => Boolean(slot));
   if (slots.length === 0) return null;
 

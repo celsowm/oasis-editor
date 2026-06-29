@@ -6,8 +6,10 @@ import {
   paragraphOffsetToPosition,
   resolveImageSrc,
   type EditorPosition,
+  type EditorParagraphNode,
   type EditorState,
 } from "@/core/model.js";
+import type { RunOfKind } from "@/core/model/runKind.js";
 import { normalizeSelection } from "@/core/selection.js";
 import {
   moveSelectedImageToPosition,
@@ -74,7 +76,14 @@ export interface EditorImageOperationsDeps {
   zoomFactor?: () => number;
 }
 
-export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
+export function createEditorImageOperations(
+  deps: EditorImageOperationsDeps,
+): ReturnType<typeof createEditorImageOperationsImpl> {
+  return createEditorImageOperationsImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
   const [dragging, setDragging] = createSignal(false);
   const [draggedImageInfo, setDraggedImageInfo] =
     createSignal<ActiveImageDrag | null>(null);
@@ -87,7 +96,16 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
   let pendingImagePointer: PendingImagePointer | null = null;
   let imageDragCursorStyle: HTMLStyleElement | null = null;
 
-  const getSelectedImageInfo = (current: EditorState) => {
+  const getSelectedImageInfo = (
+    current: EditorState,
+  ): {
+    paragraph: EditorParagraphNode;
+    run: RunOfKind<"image">;
+    startOffset: number;
+    width: number;
+    height: number;
+    src: string;
+  } | null => {
     const normalized = normalizeSelection(current);
     if (
       normalized.isCollapsed ||
@@ -264,7 +282,8 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
           `image drag:done ${dragState.paragraphId} -> ${position.paragraphId}:${position.runId}[${position.offset}]`,
         );
         deps.applyTransactionalState(
-          (current): EditorState => moveSelectedImageToPosition(current, position),
+          (current): EditorState =>
+            moveSelectedImageToPosition(current, position),
           { mergeKey: MERGE_KEYS.moveImage },
         );
       } else {

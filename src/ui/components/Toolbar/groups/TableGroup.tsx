@@ -10,7 +10,8 @@ import { JSX } from "solid-js";
 export function TableGroup(props: { api: ToolbarActionApi }): JSX.Element {
   const t = useI18n();
   const api = props.api;
-  const disabled = (command: string): boolean => !api.commands.state(command).isEnabled;
+  const disabled = (command: string): boolean =>
+    !api.commands.state(command).isEnabled;
   const selectionLabel = (): string | null =>
     api.commands.state("tableContext").value as string | null;
 
@@ -45,14 +46,18 @@ export function TableGroup(props: { api: ToolbarActionApi }): JSX.Element {
           icon="columns"
           data-testid="editor-toolbar-insert-table-column-before"
           disabled={disabled("tableInsertColumnBefore")}
-          onClick={(): unknown => api.commands.execute("tableInsertColumnBefore")}
+          onClick={(): unknown =>
+            api.commands.execute("tableInsertColumnBefore")
+          }
           tooltip={t("table.insertColumnLeft")}
         />
         <Button
           icon="columns"
           data-testid="editor-toolbar-insert-table-column-after"
           disabled={disabled("tableInsertColumnAfter")}
-          onClick={(): unknown => api.commands.execute("tableInsertColumnAfter")}
+          onClick={(): unknown =>
+            api.commands.execute("tableInsertColumnAfter")
+          }
           tooltip={t("table.insertColumnRight")}
         />
         <Button

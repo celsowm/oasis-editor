@@ -121,10 +121,11 @@ export function injectEndnotesIntoDocument(
     return document;
   }
   const lastIndex = sections.length - 1;
-  const nextSections: EditorSection[] = sections.map((section, index): EditorSection =>
-    index === lastIndex
-      ? { ...section, blocks: [...section.blocks, ...flowBlocks] }
-      : section,
+  const nextSections: EditorSection[] = sections.map(
+    (section, index): EditorSection =>
+      index === lastIndex
+        ? { ...section, blocks: [...section.blocks, ...flowBlocks] }
+        : section,
   );
   return { ...document, sections: nextSections };
 }

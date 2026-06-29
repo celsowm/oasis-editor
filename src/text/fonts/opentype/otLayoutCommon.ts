@@ -122,13 +122,15 @@ function parseFeatureList(
     const offset = featureListOffset + reader.u16();
     records.push({ tag, offset });
   }
-  return records.map(({ tag, offset }): { tag: string; lookupIndices: number[]; } => {
-    reader.seek(offset);
-    reader.skip(2); // featureParamsOffset
-    const lookupIndexCount = reader.u16();
-    const lookupIndices = readU16Array(reader, lookupIndexCount);
-    return { tag, lookupIndices };
-  });
+  return records.map(
+    ({ tag, offset }): { tag: string; lookupIndices: number[] } => {
+      reader.seek(offset);
+      reader.skip(2); // featureParamsOffset
+      const lookupIndexCount = reader.u16();
+      const lookupIndices = readU16Array(reader, lookupIndexCount);
+      return { tag, lookupIndices };
+    },
+  );
 }
 
 /**
@@ -235,26 +237,28 @@ export function parseLookupList<TSubtable>(
     lookupCount,
     lookupListOffset,
   );
-  return lookupOffsets.map((lookupOffset): { lookupType: number; subtables: TSubtable[]; } => {
-    reader.seek(lookupOffset);
-    const lookupType = reader.u16();
-    reader.skip(2); // lookupFlag (glyph skipping ignored — no marks in scope)
-    const subtableOffsets = readU16OffsetArray(
-      reader,
-      reader.u16(),
-      lookupOffset,
-    );
-    const subtables: TSubtable[] = [];
-    for (const subtableOffset of subtableOffsets) {
-      try {
-        const subtable = parseSubtable(reader, subtableOffset, lookupType);
-        if (subtable) subtables.push(subtable);
-      } catch {
-        // Skip malformed subtable; the feature degrades gracefully.
+  return lookupOffsets.map(
+    (lookupOffset): { lookupType: number; subtables: TSubtable[] } => {
+      reader.seek(lookupOffset);
+      const lookupType = reader.u16();
+      reader.skip(2); // lookupFlag (glyph skipping ignored — no marks in scope)
+      const subtableOffsets = readU16OffsetArray(
+        reader,
+        reader.u16(),
+        lookupOffset,
+      );
+      const subtables: TSubtable[] = [];
+      for (const subtableOffset of subtableOffsets) {
+        try {
+          const subtable = parseSubtable(reader, subtableOffset, lookupType);
+          if (subtable) subtables.push(subtable);
+        } catch {
+          // Skip malformed subtable; the feature degrades gracefully.
+        }
       }
-    }
-    return { lookupType, subtables };
-  });
+      return { lookupType, subtables };
+    },
+  );
 }
 
 /** Ordered (ascending) unique lookup indices referenced by the given tags. */

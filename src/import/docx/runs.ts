@@ -270,9 +270,11 @@ export async function parseRunsContainer(
     const resultRuns = span.filter(
       (run): boolean => !run.fieldChar && run.fieldInstruction === undefined,
     );
-    const displayText = resultRuns.map((run): string => run.text).join("") || "1";
+    const displayText =
+      resultRuns.map((run): string => run.text).join("") || "1";
     const styles =
-      resultRuns.find((run): EditorTextStyle | undefined => run.styles)?.styles ?? entry.beginStyles;
+      resultRuns.find((run): EditorTextStyle | undefined => run.styles)
+        ?.styles ?? entry.beginStyles;
     runs.length = entry.beginIndex;
     runs.push({
       text: displayText,
@@ -469,14 +471,18 @@ export async function parseRunsContainer(
       // pathological here and fall through to emit their markers around the
       // whole run.)
       const innerMarkers: Array<{ offset: number; run: ImportedRun }> = [
-        ...(innerBookmarks ?? []).map((m): { offset: number; run: ImportedRun; } => ({
-          offset: m.offset,
-          run: { text: "", bookmark: m.marker } as ImportedRun,
-        })),
-        ...(innerComments ?? []).map((m): { offset: number; run: ImportedRun; } => ({
-          offset: m.offset,
-          run: { text: "", comment: m.marker } as ImportedRun,
-        })),
+        ...(innerBookmarks ?? []).map(
+          (m): { offset: number; run: ImportedRun } => ({
+            offset: m.offset,
+            run: { text: "", bookmark: m.marker } as ImportedRun,
+          }),
+        ),
+        ...(innerComments ?? []).map(
+          (m): { offset: number; run: ImportedRun } => ({
+            offset: m.offset,
+            run: { text: "", comment: m.marker } as ImportedRun,
+          }),
+        ),
       ];
       if (innerMarkers.length > 0 && !image && !textBox) {
         // Stable sort by offset preserves document order for markers sharing one
@@ -538,8 +544,11 @@ export async function parseRunsContainer(
         parseNestedBlocks,
       );
       if (fieldType) {
-        const displayText = fieldRuns.map((run): string => run.text).join("") || "1";
-        const styles = fieldRuns.find((run): EditorTextStyle | undefined => run.styles)?.styles;
+        const displayText =
+          fieldRuns.map((run): string => run.text).join("") || "1";
+        const styles = fieldRuns.find(
+          (run): EditorTextStyle | undefined => run.styles,
+        )?.styles;
         runs.push({
           text: displayText,
           styles,

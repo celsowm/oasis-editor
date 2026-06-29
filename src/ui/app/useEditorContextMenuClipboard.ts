@@ -69,6 +69,13 @@ export interface EditorTableContextMenuActions {
 
 export function createEditorContextMenuClipboard(
   deps: EditorContextMenuClipboardDeps,
+): ReturnType<typeof createEditorContextMenuClipboardImpl> {
+  return createEditorContextMenuClipboardImpl(deps);
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function createEditorContextMenuClipboardImpl(
+  deps: EditorContextMenuClipboardDeps,
 ) {
   const t = deps.t;
   const programmaticCopy = async (): Promise<void> => {
@@ -104,10 +111,12 @@ export function createEditorContextMenuClipboard(
     await programmaticCopy();
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
-    deps.applyTransactionalState((current): EditorState =>
-      deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-        deleteBackward(temp),
-      ),
+    deps.applyTransactionalState(
+      (current): EditorState =>
+        deps.applyTableAwareParagraphEdit(
+          current,
+          (temp): EditorState => deleteBackward(temp),
+        ),
     );
     deps.focusInput();
   };
@@ -145,10 +154,13 @@ export function createEditorContextMenuClipboard(
     if (paragraphs.length > 0) {
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState((current): EditorState =>
-        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-          insertClipboardParagraphsAtSelection(temp, paragraphs),
-        ),
+      deps.applyTransactionalState(
+        (current): EditorState =>
+          deps.applyTableAwareParagraphEdit(
+            current,
+            (temp): EditorState =>
+              insertClipboardParagraphsAtSelection(temp, paragraphs),
+          ),
       );
       deps.focusInput();
       return;
@@ -157,10 +169,12 @@ export function createEditorContextMenuClipboard(
     if (text) {
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState((current): EditorState =>
-        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-          insertPlainTextAtSelection(temp, text),
-        ),
+      deps.applyTransactionalState(
+        (current): EditorState =>
+          deps.applyTableAwareParagraphEdit(
+            current,
+            (temp): EditorState => insertPlainTextAtSelection(temp, text),
+          ),
       );
       deps.focusInput();
     }

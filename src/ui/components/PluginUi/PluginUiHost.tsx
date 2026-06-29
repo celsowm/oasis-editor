@@ -15,7 +15,9 @@ import type {
   FloatingActionContribution,
   OasisEditor,
   OasisPluginUiSnapshot,
-  SidePanelContribution, SidePanelMode } from "@/core/plugin.js";
+  SidePanelContribution,
+  SidePanelMode,
+} from "@/core/plugin.js";
 import { resolveCommandRef } from "@/core/commands/CommandRef.js";
 import { FloatingActionButton } from "@/ui/public/FloatingActionButton.js";
 import {
@@ -27,7 +29,11 @@ import { IconButton } from "@/ui/public/IconButton.js";
 import { Text } from "@/ui/public/Text.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
 import { type TranslationKey, type TranslateFn } from "@/i18n/index.js";
-import type { EditorState, EditorDocument, EditorSelection } from "@/core/model.js";
+import type {
+  EditorState,
+  EditorDocument,
+  EditorSelection,
+} from "@/core/model.js";
 
 export interface PluginUiHostProps {
   editor: Accessor<OasisEditor>;
@@ -61,7 +67,8 @@ export function PluginUiHost(props: PluginUiHostProps): JSX.Element {
     ),
   );
   const activeMode = (): SidePanelMode => activePanel()?.mode ?? "dock";
-  const dockPanel = (): SidePanelContribution | undefined => (activeMode() === "dock" ? activePanel() : undefined);
+  const dockPanel = (): SidePanelContribution | undefined =>
+    activeMode() === "dock" ? activePanel() : undefined;
   const overlayPanel = (): SidePanelContribution | undefined =>
     activeMode() === "overlay" ? activePanel() : undefined;
   const containerActions = (): FloatingActionContribution[] =>
@@ -69,7 +76,9 @@ export function PluginUiHost(props: PluginUiHostProps): JSX.Element {
       (action): boolean => (action.scope ?? "container") === "container",
     );
   const viewportActions = (): FloatingActionContribution[] =>
-    snapshot().floatingActions.filter((action): boolean => action.scope === "viewport");
+    snapshot().floatingActions.filter(
+      (action): boolean => action.scope === "viewport",
+    );
 
   const actionGroup = (
     actions: Accessor<FloatingActionContribution[]>,
@@ -192,7 +201,10 @@ function renderPanel(
   );
 }
 
-function groupActionsByPlacement(actions: FloatingActionContribution[]) {
+function groupActionsByPlacement(actions: FloatingActionContribution[]): Array<{
+  placement: NonNullable<FloatingActionContribution["placement"]>;
+  actions: FloatingActionContribution[];
+}> {
   const groups = new Map<
     NonNullable<FloatingActionContribution["placement"]>,
     FloatingActionContribution[]

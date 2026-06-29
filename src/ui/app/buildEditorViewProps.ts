@@ -195,7 +195,8 @@ export function buildEditorViewProps(
     onTableDragHandleMouseDown: surface.tableDrag.handleMouseDown,
     onRevisionMouseEnter: surface.revisionController.handleRevisionMouseEnter,
     onRevisionMouseLeave: surface.revisionController.handleRevisionMouseLeave,
-    onEditorContextMenu: (event): void => surface.handleEditorContextMenu(event),
+    onEditorContextMenu: (event): void =>
+      surface.handleEditorContextMenu(event),
   };
 
   const inputHandlers: OasisEditorEditorInputHandlers = {
