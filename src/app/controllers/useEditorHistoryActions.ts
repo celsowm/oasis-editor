@@ -183,10 +183,6 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
     const snapshot = deps.stateSnapshot();
     deps.applyHistoryState({
       ...snapshot,
-      document: {
-        ...snapshot.document,
-        sections: snapshot.document.sections?.map(cloneSection),
-      },
       selection: {
         anchor: { ...nextSelection.anchor },
         focus: { ...nextSelection.focus },
