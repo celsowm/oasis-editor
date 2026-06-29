@@ -560,7 +560,7 @@ The clipboard HTML parser does `template.innerHTML = html` and then `parseInline
 
 ### 36. `drawFragmentText` still handles too many concerns
 
-**Severity:** med — **Status: open**
+**Severity:** med — **Status: ✅ resolved.** Two inline concerns extracted from `drawFragmentText`: `drawLinkAnnotation()` (hyperlink annotation block) and `emitFragmentGlyphs()` (glyph chunking + trailing-hyphen emission). All heavy concerns are now delegated to named functions; `drawFragmentText` is the sequencing coordinator.
 
 After the previous refactor (#10), `drawFragmentText` still decides: inline image, inline textbox, effective styles, link annotation, shading/highlight/border, tab leaders, text chunks, hyphenation, underline/strike/emphasis. Each new visual effect increases regression risk across all other concerns.
 

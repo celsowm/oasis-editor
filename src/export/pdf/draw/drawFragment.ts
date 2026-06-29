@@ -173,6 +173,63 @@ export function drawFragmentDecoration(
   );
 }
 
+function drawLinkAnnotation(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutFragment,
+  originX: number,
+  originY: number,
+  styles: EditorTextStyle,
+): void {
+  if (!styles.link) return;
+  const linkBounds = resolveFragmentBounds(
+    line,
+    fragment,
+    styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
+  );
+  if (!linkBounds || linkBounds.right <= linkBounds.left) return;
+  const isInternal = styles.link.startsWith("#");
+  writer.addLinkAnnotation(pageIndex, {
+    x: pxToPt(originX + linkBounds.left),
+    y: pxToPt(originY + line.top),
+    width: pxToPt(linkBounds.right - linkBounds.left),
+    height: pxToPt(line.height),
+    ...(isInternal
+      ? { destName: styles.link.slice(1) }
+      : { uri: styles.link }),
+  });
+}
+
+function emitFragmentGlyphs(
+  chunkCtx: TextChunkCtx,
+  chars: ReturnType<typeof resolveFragmentSlots>,
+  originX: number,
+  styles: EditorTextStyle,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutFragment,
+  paragraphAlign: string,
+): void {
+  const chunks =
+    paragraphAlign === "justify"
+      ? groupSlotChunksByWhitespace(chars)
+      : groupSlotChunksByOffsetGaps(chars);
+  for (const chunk of chunks) {
+    const chunkText = chunk
+      .map((c) => (styles.allCaps ? c.char.toUpperCase() : c.char))
+      .join("");
+    if (chunkText.length === 0) continue;
+    emitTextChunk(chunkCtx, originX + chunk[0]!.left, chunkText);
+  }
+  // Trailing hyphen on last fragment of an auto-hyphenated line.
+  if (line.trailingHyphen && fragment.endOffset >= line.endOffset) {
+    const endSlot =
+      line.slots.find((slot) => slot.offset === line.endOffset) ??
+      line.slots[line.slots.length - 1];
+    if (endSlot) emitTextChunk(chunkCtx, originX + endSlot.left, "-");
+  }
+}
+
 export async function drawFragmentText(
   writer: OasisPdfWriter,
   pageIndex: number,
@@ -252,26 +309,7 @@ export async function drawFragmentText(
   const firstChar = chars[0];
   if (!firstChar || text.length === 0) return;
 
-  // Hyperlink annotation.
-  if (styles.link) {
-    const linkBounds = resolveFragmentBounds(
-      line,
-      fragment,
-      styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
-    );
-    if (linkBounds && linkBounds.right > linkBounds.left) {
-      const isInternal = styles.link.startsWith("#");
-      writer.addLinkAnnotation(pageIndex, {
-        x: pxToPt(originX + linkBounds.left),
-        y: pxToPt(originY + line.top),
-        width: pxToPt(linkBounds.right - linkBounds.left),
-        height: pxToPt(line.height),
-        ...(isInternal
-          ? { destName: styles.link.slice(1) }
-          : { uri: styles.link }),
-      });
-    }
-  }
+  drawLinkAnnotation(writer, pageIndex, line, fragment, originX, originY, styles);
 
   drawFragmentShading(
     writer,
@@ -354,25 +392,7 @@ export async function drawFragmentText(
     baseTextOptions,
   };
 
-  const chunks =
-    paragraphAlign === "justify"
-      ? groupSlotChunksByWhitespace(chars)
-      : groupSlotChunksByOffsetGaps(chars);
-  for (const chunk of chunks) {
-    const chunkText = chunk
-      .map((c) => (styles.allCaps ? c.char.toUpperCase() : c.char))
-      .join("");
-    if (chunkText.length === 0) continue;
-    emitTextChunk(chunkCtx, originX + chunk[0]!.left, chunkText);
-  }
-
-  // Automatic hyphenation: trailing hyphen on last fragment of a hyphenated line.
-  if (line.trailingHyphen && fragment.endOffset >= line.endOffset) {
-    const endSlot =
-      line.slots.find((slot) => slot.offset === line.endOffset) ??
-      line.slots[line.slots.length - 1];
-    if (endSlot) emitTextChunk(chunkCtx, originX + endSlot.left, "-");
-  }
+  emitFragmentGlyphs(chunkCtx, chars, originX, styles, line, fragment, paragraphAlign);
 
   if (styles.underline) {
     drawFragmentDecoration(
