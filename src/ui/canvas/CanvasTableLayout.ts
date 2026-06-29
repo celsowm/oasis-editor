@@ -20,6 +20,7 @@ import {
   assembleCellEntries,
   buildRowOffsets,
 } from "./table/assembleCellEntries.js";
+import type { CanvasTableLayoutResult } from "./table/types.js";
 
 // Re-export public types so existing importers keep working without path changes.
 export type {
@@ -39,7 +40,7 @@ export function buildCanvasTableLayout(options: {
   originY: number;
   contentWidth: number;
   estimatedHeight: number;
-}) {
+}): CanvasTableLayoutResult {
   const {
     table: sourceTable,
     state,

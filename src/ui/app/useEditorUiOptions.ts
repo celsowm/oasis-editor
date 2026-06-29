@@ -14,11 +14,31 @@ export interface EditorUiOptionsContext {
   documentOptions: () => OasisEditorAppDocumentProps;
 }
 
+export interface EditorUiOptions {
+  showChrome: () => boolean;
+  showTitleBar: () => boolean;
+  showMenubar: () => boolean;
+  showToolbar: () => boolean;
+  showOutline: () => boolean;
+  toolbarView: () => ToolbarViewMode;
+  toolbarLayout: () => ToolbarLayoutMode;
+  isReadOnly: () => boolean;
+  useComposedShell: () => boolean;
+  loadingOptions: () => OasisEditorLoadingOptions | undefined;
+  loadingLabel: () => string;
+  shellComponent: () =>
+    | typeof DocumentShell
+    | typeof InlineShell
+    | typeof BalloonShell;
+}
+
 /**
  * Resolves the editor's UI/document option accessors, applying defaults in one
  * place so the composition root doesn't carry a dozen `?? default` getters.
  */
-export function createEditorUiOptions(ctx: EditorUiOptionsContext) {
+export function createEditorUiOptions(
+  ctx: EditorUiOptionsContext,
+): EditorUiOptions {
   const { ui, documentOptions } = ctx;
 
   const loadingOptions = (): OasisEditorLoadingOptions | undefined => {
@@ -42,7 +62,10 @@ export function createEditorUiOptions(ctx: EditorUiOptionsContext) {
     loadingOptions,
     loadingLabel: (): string =>
       loadingOptions()?.label ?? "Loading oasis-editor...",
-    shellComponent: () => {
+    shellComponent: ():
+      | typeof DocumentShell
+      | typeof InlineShell
+      | typeof BalloonShell => {
       const s = ui().shell ?? "document";
       if (s === "inline") return InlineShell;
       if (s === "balloon") return BalloonShell;

@@ -28,11 +28,19 @@ type CanvasGetter = () => HTMLCanvasElement | undefined;
 type PageGetter = () => EditorLayoutPage;
 type StateGetter = () => EditorState;
 
+export interface CanvasPageRenderer {
+  schedulePaint: () => void;
+  invalidatePage: () => void;
+  invalidateDecorations: () => void;
+  invalidateActiveZone: () => void;
+  dispose: () => void;
+}
+
 export function createCanvasPageRenderer(options: {
   getCanvas: CanvasGetter;
   getPage: PageGetter;
   getState: StateGetter;
-}) {
+}): CanvasPageRenderer {
   let lastPaintedPage: EditorLayoutPage | undefined;
   let lastStyles: unknown;
   let lastShowMargins: boolean | undefined;

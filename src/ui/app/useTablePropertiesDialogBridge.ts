@@ -21,6 +21,16 @@ interface ContextMenuState {
   y: number;
 }
 
+export interface TablePropertiesDialogBridge {
+  isInsideTable: () => boolean;
+  openTablePropertiesDialog: (
+    activeTab?: TablePropertiesDialogInitialValues["activeTab"],
+  ) => void;
+  applyTablePropertiesDialogValues: (
+    values: TablePropertiesDialogApplyValues,
+  ) => void;
+}
+
 export interface TablePropertiesDialogBridgeDeps {
   state: () => EditorState;
   isReadOnly: () => boolean;
@@ -42,7 +52,7 @@ export interface TablePropertiesDialogBridgeDeps {
  */
 export function createTablePropertiesDialogBridge(
   deps: TablePropertiesDialogBridgeDeps,
-) {
+): TablePropertiesDialogBridge {
   const isInsideTable = (): boolean => hasActiveTable(deps.state());
 
   const openTablePropertiesDialog = (

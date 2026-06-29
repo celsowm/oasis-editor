@@ -144,6 +144,10 @@ export interface CanvasDebugSelectionSnapshot {
   activeSectionIndex: number;
 }
 
+type CanvasDebugSnapshotLine =
+  CanvasDebugLayoutSnapshot["paragraphs"][number]["lines"][number];
+type CanvasDebugSnapshotPage = CanvasDebugLayoutSnapshot["pages"][number];
+
 function cloneSlots(
   slots: CanvasSnapshotSlot[],
 ): { offset: number; left: number; top: number; height: number }[] {
@@ -157,7 +161,7 @@ function cloneSlots(
   );
 }
 
-function cloneLines(lines: CanvasSnapshotLine[]) {
+function cloneLines(lines: CanvasSnapshotLine[]): CanvasDebugSnapshotLine[] {
   return lines.map((line) => ({
     startOffset: line.startOffset,
     endOffset: line.endOffset,
@@ -167,7 +171,7 @@ function cloneLines(lines: CanvasSnapshotLine[]) {
   }));
 }
 
-function clonePages(pages: CanvasSnapshotPage[]) {
+function clonePages(pages: CanvasSnapshotPage[]): CanvasDebugSnapshotPage[] {
   return pages.map((page) => ({
     index: page.index,
     left: page.left,

@@ -14,6 +14,14 @@ interface FontDialogState {
   initial: FontDialogInitialValues;
 }
 
+export interface FontDialogBridge {
+  openFontDialog: () => void;
+  applyFontDialogValues: (
+    values: FontDialogApplyValues,
+    original: FontDialogInitialValues,
+  ) => void;
+}
+
 export interface FontDialogBridgeDeps {
   toolbarStyleState: () => ToolbarStyleState;
   selection: () => EditorSelection;
@@ -69,7 +77,9 @@ function createInitialValues(
   };
 }
 
-export function createFontDialogBridge(deps: FontDialogBridgeDeps) {
+export function createFontDialogBridge(
+  deps: FontDialogBridgeDeps,
+): FontDialogBridge {
   const openFontDialog = (): void => {
     void deps.loadLocalFontFamilyOptions();
     deps.setFontDialog({

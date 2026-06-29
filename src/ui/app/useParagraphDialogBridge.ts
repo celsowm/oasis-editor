@@ -52,6 +52,15 @@ interface ParagraphDialogState {
   initial: ParagraphDialogInitialValues;
 }
 
+export interface ParagraphDialogBridge {
+  openParagraphDialog: () => void;
+  applyParagraphDialogValues: (
+    values: ParagraphDialogApplyValues,
+    original: ParagraphDialogInitialValues,
+  ) => void;
+  setParagraphDialogDefault: (values: ParagraphDialogApplyValues) => void;
+}
+
 export interface ParagraphDialogBridgeDeps {
   toolbarStyleState: () => ToolbarStyleState;
   isReadOnly: () => boolean;
@@ -98,7 +107,9 @@ function createInitialValues(
   };
 }
 
-export function createParagraphDialogBridge(deps: ParagraphDialogBridgeDeps) {
+export function createParagraphDialogBridge(
+  deps: ParagraphDialogBridgeDeps,
+): ParagraphDialogBridge {
   const openParagraphDialog = (): void => {
     deps.setParagraphDialog({
       isOpen: true,

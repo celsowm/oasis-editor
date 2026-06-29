@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -16,9 +16,14 @@ import {
 } from "@/core/model.js";
 import { getFontMetricsProvider } from "@/text/fonts/FontMetricsProvider.js";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
+import { collectPdfFontFamilies } from "@/export/pdf/fonts/collectPdfFontFamilies.js";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
 import { DEFAULT_FONT_SIZE_PX, PT_PER_PX } from "@/core/units.js";
+import { normalizeFamily } from "@/export/pdf/fonts/officeFontAssets.js";
+import { registerPreciseFont } from "@/text/fonts/preciseFontMetrics.js";
+import { setPreciseFontModeEnabled } from "@/text/fonts/preciseFontMode.js";
+import { SfntFontProgram } from "@/text/fonts/sfnt/SfntFontProgram.js";
 
 const WORD_CANDIDATE_PATHS = [
   "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
@@ -34,6 +39,50 @@ const PDF_EXTRACT_SCRIPT_PATH = fileURLToPath(
 );
 const GEOMETRY_TOLERANCE_POINTS = 1.5;
 const STRICT_GEOMETRY_TOLERANCE_POINTS = 0.5;
+const WINDOWS_FONTS_DIR = "C:\\Windows\\Fonts";
+type FontFaceDescriptor = "regular" | "bold" | "italic" | "bolditalic";
+const NODE_PRECISE_FONT_SOURCE_BY_FAMILY: Record<string, string> = {
+  aptos: "calibri",
+  "aptos display": "calibri",
+  "aptos heading": "calibri",
+  "aptos narrow": "calibri",
+  arial: "arial",
+  calibri: "calibri",
+  "calibri light": "calibri",
+  cambria: "cambria",
+  times: "times new roman",
+  "times new roman": "times new roman",
+};
+const WINDOWS_FONT_FILES: Record<
+  string,
+  Partial<Record<FontFaceDescriptor, string>>
+> = {
+  arial: {
+    regular: "arial.ttf",
+    bold: "arialbd.ttf",
+    italic: "ariali.ttf",
+    bolditalic: "arialbi.ttf",
+  },
+  calibri: {
+    regular: "calibri.ttf",
+    bold: "calibrib.ttf",
+    italic: "calibrii.ttf",
+    bolditalic: "calibriz.ttf",
+  },
+  cambria: {
+    regular: "cambria.ttc",
+    bold: "cambriab.ttf",
+    italic: "cambriai.ttf",
+    bolditalic: "cambriaz.ttf",
+  },
+  "times new roman": {
+    regular: "times.ttf",
+    bold: "timesbd.ttf",
+    italic: "timesi.ttf",
+    bolditalic: "timesbi.ttf",
+  },
+};
+const parsedWindowsFontCache = new Map<string, SfntFontProgram | null>();
 
 export interface WordLayoutSupportStatus {
   supported: boolean;
@@ -187,6 +236,65 @@ function findWordPath(): string | null {
     }
   }
   return null;
+}
+
+function parseWindowsFont(filePath: string): SfntFontProgram | null {
+  const cached = parsedWindowsFontCache.get(filePath);
+  if (cached !== undefined) {
+    return cached;
+  }
+  try {
+    const bytes = new Uint8Array(readFileSync(filePath));
+    const programs = SfntFontProgram.parseCollection(bytes);
+    const program = programs[0] ?? null;
+    parsedWindowsFontCache.set(filePath, program);
+    return program;
+  } catch {
+    parsedWindowsFontCache.set(filePath, null);
+    return null;
+  }
+}
+
+function primeNodeWordParityFonts(document: EditorDocument): void {
+  if (process.platform !== "win32") {
+    return;
+  }
+
+  setPreciseFontModeEnabled(true);
+  const families = Array.from(collectPdfFontFamilies(document));
+  for (const family of families) {
+    const requestedFamily = normalizeFamily(family);
+    const sourceKey =
+      NODE_PRECISE_FONT_SOURCE_BY_FAMILY[requestedFamily.toLowerCase()];
+    if (!sourceKey) {
+      continue;
+    }
+    const faceFiles = WINDOWS_FONT_FILES[sourceKey];
+    if (!faceFiles) {
+      continue;
+    }
+    for (const [face, fileName] of Object.entries(faceFiles) as Array<
+      [FontFaceDescriptor, string | undefined]
+    >) {
+      if (!fileName) {
+        continue;
+      }
+      const filePath = join(WINDOWS_FONTS_DIR, fileName);
+      if (!existsSync(filePath)) {
+        continue;
+      }
+      const program = parseWindowsFont(filePath);
+      if (!program) {
+        continue;
+      }
+      registerPreciseFont(
+        requestedFamily,
+        face === "bold" || face === "bolditalic",
+        face === "italic" || face === "bolditalic",
+        program,
+      );
+    }
+  }
 }
 
 export function detectWordLayoutParitySupport(): WordLayoutSupportStatus {
@@ -528,6 +636,7 @@ async function verifyWordLayoutParityFromDocx(
     await writeFile(docxPath, docxBuffer);
     const conversionPromise = convertDocxToPdfWithWord(docxPath, pdfPath);
     await conversionPromise;
+    primeNodeWordParityFonts(document);
     const editorPages = collectEditorPageSnapshots(document);
     const wordLayout = extractPdfLayout(pdfPath);
     const mismatches = compareWordAndEditorLayout(
