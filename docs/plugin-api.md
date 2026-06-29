@@ -49,7 +49,15 @@ Native Oasis plugin UI uses Solid primitives from `oasis-editor/ui`.
 
 ```tsx
 import type { OasisPlugin } from "oasis-editor";
-import { Button, Dialog, DialogFooter, Tabs, TextField } from "oasis-editor/ui";
+import {
+  Button,
+  Dialog,
+  DialogFooter,
+  FieldGroup,
+  Tabs,
+  TextField,
+  TextAreaField,
+} from "oasis-editor/ui";
 
 export const SettingsPlugin: OasisPlugin = {
   name: "Settings",
@@ -87,7 +95,12 @@ export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
           {
             id: "main",
             label: "Main",
-            panel: <TextField label="Name" onChange={() => {}} />,
+            panel: (
+              <FieldGroup legend="General">
+                <TextField label="Name" onChange={() => {}} />
+                <TextAreaField label="Notes" onChange={() => {}} />
+              </FieldGroup>
+            ),
           },
         ]}
       />
@@ -96,11 +109,15 @@ export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
 }
 ```
 
-The UI subpath exports `Dialog`, `Tabs`, `Button`, `IconButton`, `TextField`,
-`Checkbox`, `SelectField`, `DialogFooter`, `FloatingActionButton`, `SidePanel`,
-`SidePanelHeader`, `SidePanelBody`, `SidePanelFooter`, and the lower-level
-toolbar primitives. React and Vue wrappers for these primitives are not part of
-this SDK layer.
+The UI subpath exports semantic/composition primitives such as `Text`,
+`Heading`, `StatusText`, `ActionRow`, `FormField`, `FieldGroup`,
+`SurfaceButton`, and `TextAreaField`, along with `Dialog`, `Tabs`, `Button`,
+`IconButton`, `TextField`, `Checkbox`, `SelectField`, `DialogFooter`,
+`FloatingActionButton`, `SidePanel`, `SidePanelHeader`, `SidePanelBody`,
+`SidePanelFooter`, and the lower-level toolbar primitives. Plugin and feature
+UI should import these from `oasis-editor/ui` instead of composing ad hoc
+native `button`/`input`/`label`/`span` markup in Solid components unless the
+code is a low-level primitive or renderer surface.
 
 ## Floating Actions And Side Panels
 

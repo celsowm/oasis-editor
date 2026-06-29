@@ -7,6 +7,8 @@ export interface TextFieldProps extends Omit<
   label?: string;
   description?: string;
   error?: string;
+  labelClass?: string;
+  controlClass?: string;
   onChange?: (value: string) => void;
 }
 
@@ -16,6 +18,8 @@ export function TextField(props: TextFieldProps): JSX.Element {
     "label",
     "description",
     "error",
+    "labelClass",
+    "controlClass",
     "onChange",
     "class",
     "id",
@@ -27,11 +31,13 @@ export function TextField(props: TextFieldProps): JSX.Element {
   return (
     <label class={`oasis-editor-ui-field ${local.class ?? ""}`} for={id()}>
       <Show when={local.label}>
-        <span class="oasis-editor-ui-field-label">{local.label}</span>
+        <span class={`oasis-editor-ui-field-label ${local.labelClass ?? ""}`}>
+          {local.label}
+        </span>
       </Show>
       <input
         id={id()}
-        class="oasis-editor-ui-input"
+        class={`oasis-editor-ui-input ${local.controlClass ?? ""}`}
         aria-invalid={local.error ? "true" : undefined}
         aria-describedby={[
           local.description ? descriptionId() : null,

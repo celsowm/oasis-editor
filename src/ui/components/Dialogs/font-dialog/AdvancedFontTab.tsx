@@ -2,7 +2,10 @@ import { useI18n } from "@/i18n/I18nContext.js";
 
 import { WORD_CHARACTER_SCALES } from "./FontDialogTypes.js";
 import { Checkbox } from "@/ui/public/Checkbox.js";
+import { FieldGroup } from "@/ui/public/FieldGroup.js";
 import { SelectField } from "@/ui/public/SelectField.js";
+import { StatusText } from "@/ui/public/StatusText.js";
+import { Text } from "@/ui/public/Text.js";
 import { TextField } from "@/ui/public/TextField.js";
 import type { FontDialogController } from "./FontDialogController.js";
 import type { AdvancedTabValues } from "./FontDialogTypes.js";
@@ -23,12 +26,12 @@ export function AdvancedFontTab(props: AdvancedFontTabProps) {
 
   return (
     <div class="oasis-editor-font-dialog-panel oasis-editor-font-dialog-advanced-panel">
-      <fieldset class="oasis-editor-font-dialog-fieldset">
-        <legend>{t("dialog.font.advancedCharacterSpacingGroup")}</legend>
+      <FieldGroup
+        class="oasis-editor-font-dialog-fieldset"
+        legend={t("dialog.font.advancedCharacterSpacingGroup")}
+      >
         <div class="oasis-editor-font-dialog-word-row">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.advancedScale")}
-          </label>
+          <Text class="oasis-editor-dialog-label">{t("dialog.font.advancedScale")}</Text>
           <SelectField
             value={ctrl.advancedTabValues().characterScale || "100"}
             onChange={(value) =>
@@ -42,9 +45,7 @@ export function AdvancedFontTab(props: AdvancedFontTabProps) {
           />
         </div>
         <div class="oasis-editor-font-dialog-word-row">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.advancedSpacing")}
-          </label>
+          <Text class="oasis-editor-dialog-label">{t("dialog.font.advancedSpacing")}</Text>
           <SelectField
             value={ctrl.advancedTabValues().spacingMode}
             onChange={(value) =>
@@ -60,9 +61,9 @@ export function AdvancedFontTab(props: AdvancedFontTabProps) {
               { value: "condensed", label: t("dialog.font.advancedCondensed") },
             ]}
           />
-          <label class="oasis-editor-dialog-label oasis-editor-font-dialog-by-label">
+          <Text class="oasis-editor-dialog-label oasis-editor-font-dialog-by-label">
             {t("dialog.font.advancedBy")}
-          </label>
+          </Text>
           <TextField
             class="oasis-editor-font-dialog-small-input"
             value={ctrl.advancedTabValues().spacingAmount}
@@ -72,9 +73,7 @@ export function AdvancedFontTab(props: AdvancedFontTabProps) {
           />
         </div>
         <div class="oasis-editor-font-dialog-word-row">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.advancedPosition")}
-          </label>
+          <Text class="oasis-editor-dialog-label">{t("dialog.font.advancedPosition")}</Text>
           <SelectField
             value={ctrl.advancedTabValues().positionMode}
             onChange={(value) =>
@@ -90,9 +89,9 @@ export function AdvancedFontTab(props: AdvancedFontTabProps) {
               { value: "lowered", label: t("dialog.font.advancedLowered") },
             ]}
           />
-          <label class="oasis-editor-dialog-label oasis-editor-font-dialog-by-label">
+          <Text class="oasis-editor-dialog-label oasis-editor-font-dialog-by-label">
             {t("dialog.font.advancedBy")}
-          </label>
+          </Text>
           <TextField
             class="oasis-editor-font-dialog-small-input"
             value={ctrl.advancedTabValues().positionAmount}
@@ -128,18 +127,18 @@ export function AdvancedFontTab(props: AdvancedFontTabProps) {
             }
             data-testid="editor-font-dialog-advanced-kerning"
           />
-          <span class="oasis-editor-dialog-help-text oasis-editor-font-dialog-kerning-suffix">
+          <StatusText class="oasis-editor-dialog-help-text oasis-editor-font-dialog-kerning-suffix">
             {t("dialog.font.advancedKerningAbove")}
-          </span>
+          </StatusText>
         </div>
-      </fieldset>
+      </FieldGroup>
 
-      <fieldset class="oasis-editor-font-dialog-fieldset">
-        <legend>{t("dialog.font.advancedOpenTypeGroup")}</legend>
+      <FieldGroup
+        class="oasis-editor-font-dialog-fieldset"
+        legend={t("dialog.font.advancedOpenTypeGroup")}
+      >
         <div class="oasis-editor-font-dialog-word-row">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.advancedLigatures")}
-          </label>
+          <Text class="oasis-editor-dialog-label">{t("dialog.font.advancedLigatures")}</Text>
           <SelectField
             value={ctrl.advancedTabValues().ligatures}
             onChange={(value) =>
@@ -169,9 +168,9 @@ export function AdvancedFontTab(props: AdvancedFontTabProps) {
           />
         </div>
         <div class="oasis-editor-font-dialog-word-row">
-          <label class="oasis-editor-dialog-label">
+          <Text class="oasis-editor-dialog-label">
             {t("dialog.font.advancedNumberSpacing")}
-          </label>
+          </Text>
           <SelectField
             value={ctrl.advancedTabValues().numberSpacing}
             onChange={(value) =>
@@ -195,9 +194,7 @@ export function AdvancedFontTab(props: AdvancedFontTabProps) {
           />
         </div>
         <div class="oasis-editor-font-dialog-word-row">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.advancedNumberForm")}
-          </label>
+          <Text class="oasis-editor-dialog-label">{t("dialog.font.advancedNumberForm")}</Text>
           <SelectField
             value={ctrl.advancedTabValues().numberForm}
             onChange={(value) =>
@@ -221,9 +218,7 @@ export function AdvancedFontTab(props: AdvancedFontTabProps) {
           />
         </div>
         <div class="oasis-editor-font-dialog-word-row">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.advancedStylisticSet")}
-          </label>
+          <Text class="oasis-editor-dialog-label">{t("dialog.font.advancedStylisticSet")}</Text>
           <SelectField
             value={ctrl.advancedTabValues().stylisticSet}
             onChange={(value) => ctrl.updateAdvancedTab("stylisticSet", value)}
@@ -245,23 +240,26 @@ export function AdvancedFontTab(props: AdvancedFontTabProps) {
           }
           data-testid="editor-font-dialog-advanced-contextual-alternates"
         />
-      </fieldset>
+      </FieldGroup>
 
-      <fieldset class="oasis-editor-font-dialog-fieldset">
-        <legend>{t("dialog.font.advancedPreviewGroup")}</legend>
+      <FieldGroup
+        class="oasis-editor-font-dialog-fieldset"
+        legend={t("dialog.font.advancedPreviewGroup")}
+      >
         <FontPreview
           class="oasis-editor-dialog-preview oasis-editor-font-dialog-advanced-preview"
           testId="editor-font-dialog-advanced-preview"
           style={ctrl.previewStyle()}
         />
-      </fieldset>
+      </FieldGroup>
 
-      <p
+      <StatusText
+        as="p"
         class="oasis-editor-dialog-help-text"
         data-testid="editor-font-dialog-advanced-placeholder"
       >
         {ctrl.advancedValidationError() || t("dialog.font.advancedPlaceholder")}
-      </p>
+      </StatusText>
     </div>
   );
 }

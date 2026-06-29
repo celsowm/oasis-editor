@@ -230,7 +230,14 @@ Plugin UI should import Solid primitives from `oasis-editor/ui` rather than
 internal component paths.
 
 ```tsx
-import { Button, Dialog, DialogFooter, TextField } from "oasis-editor/ui";
+import {
+  Button,
+  Dialog,
+  DialogFooter,
+  FieldGroup,
+  TextAreaField,
+  TextField,
+} from "oasis-editor/ui";
 
 export function PluginDialog(props: { open: boolean; onClose: () => void }) {
   return (
@@ -244,7 +251,13 @@ export function PluginDialog(props: { open: boolean; onClose: () => void }) {
         </DialogFooter>
       }
     >
-      <TextField label="Name" onChange={(value) => console.log(value)} />
+      <FieldGroup legend="General">
+        <TextField label="Name" onChange={(value) => console.log(value)} />
+        <TextAreaField
+          label="Notes"
+          onChange={(value) => console.log(value)}
+        />
+      </FieldGroup>
     </Dialog>
   );
 }

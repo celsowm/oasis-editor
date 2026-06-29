@@ -1,6 +1,8 @@
 import { Button } from "@/ui/components/Toolbar/primitives/Button.js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Menu } from "@/ui/components/Toolbar/primitives/Menu.js";
+import { NumberField } from "@/ui/public/NumberField.js";
+import { TextField } from "@/ui/public/TextField.js";
 
 import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 
@@ -44,84 +46,76 @@ export function MetricGroup(props: { api: ToolbarActionApi }) {
       </div>
 
       <div class="oasis-editor-toolbar-panel-grid">
-        <label
+        <NumberField
           class="oasis-editor-tool-metric"
+          labelClass="oasis-editor-tool-metric-label"
           title={t("metric.spacingAfter")}
-        >
-          <span>{t("metric.after")}</span>
-          <input
-            type="number"
-            class="oasis-editor-tool-number"
-            data-testid="editor-toolbar-spacing-after"
-            min="0"
-            step="1"
-            value={numValue(api, "setSpacingAfter")}
-            onChange={onNumber("setSpacingAfter")}
-          />
-        </label>
+          label={t("metric.after")}
+          controlClass="oasis-editor-tool-number"
+          data-testid="editor-toolbar-spacing-after"
+          min="0"
+          step="1"
+          value={numValue(api, "setSpacingAfter")}
+          onChange={(value) =>
+            api.commands.execute("setSpacingAfter", value == null ? "" : String(value))
+          }
+        />
 
-        <label class="oasis-editor-tool-metric" title={t("metric.leftIndent")}>
-          <span>{t("metric.indent")}</span>
-          <input
-            type="number"
-            class="oasis-editor-tool-number"
-            data-testid="editor-toolbar-indent-left"
-            min="0"
-            step="1"
-            value={numValue(api, "setIndentLeft")}
-            onChange={onNumber("setIndentLeft")}
-          />
-        </label>
-
-        <label
+        <NumberField
           class="oasis-editor-tool-metric"
+          labelClass="oasis-editor-tool-metric-label"
+          title={t("metric.leftIndent")}
+          label={t("metric.indent")}
+          controlClass="oasis-editor-tool-number"
+          data-testid="editor-toolbar-indent-left"
+          min="0"
+          step="1"
+          value={numValue(api, "setIndentLeft")}
+          onChange={(value) =>
+            api.commands.execute("setIndentLeft", value == null ? "" : String(value))
+          }
+        />
+
+        <NumberField
+          class="oasis-editor-tool-metric"
+          labelClass="oasis-editor-tool-metric-label"
           title={t("metric.firstLineIndent")}
-        >
-          <span>{t("metric.first")}</span>
-          <input
-            type="number"
-            class="oasis-editor-tool-number"
-            data-testid="editor-toolbar-indent-first-line"
-            step="1"
-            value={numValue(api, "setIndentFirstLine")}
-            onChange={onNumber("setIndentFirstLine")}
-          />
-        </label>
+          label={t("metric.first")}
+          controlClass="oasis-editor-tool-number"
+          data-testid="editor-toolbar-indent-first-line"
+          step="1"
+          value={numValue(api, "setIndentFirstLine")}
+          onChange={(value) =>
+            api.commands.execute("setIndentFirstLine", value == null ? "" : String(value))
+          }
+        />
 
-        <label
+        <NumberField
           class="oasis-editor-tool-metric"
+          labelClass="oasis-editor-tool-metric-label"
           title={t("metric.hangingIndent")}
-        >
-          <span>{t("metric.hang")}</span>
-          <input
-            type="number"
-            class="oasis-editor-tool-number"
-            data-testid="editor-toolbar-indent-hanging"
-            min="0"
-            step="1"
-            value={numValue(api, "setIndentHanging")}
-            onChange={onNumber("setIndentHanging")}
-          />
-        </label>
+          label={t("metric.hang")}
+          controlClass="oasis-editor-tool-number"
+          data-testid="editor-toolbar-indent-hanging"
+          min="0"
+          step="1"
+          value={numValue(api, "setIndentHanging")}
+          onChange={(value) =>
+            api.commands.execute("setIndentHanging", value == null ? "" : String(value))
+          }
+        />
 
-        <label
+        <TextField
           class="oasis-editor-tool-color"
+          labelClass="oasis-editor-tool-metric-label"
           title={t("metric.paragraphBgColor")}
-        >
-          <span>{t("metric.paraBg")}</span>
-          <input
-            type="color"
-            class="oasis-editor-tool-color-input"
-            data-testid="editor-toolbar-paragraph-shading"
-            value={numValue(api, "setParagraphShading") || "#ffffff"}
-            onInput={(event) =>
-              api.commands.execute(
-                "setParagraphShading",
-                event.currentTarget.value,
-              )
-            }
-          />
-        </label>
+          label={t("metric.paraBg")}
+          type="color"
+          controlClass="oasis-editor-tool-color-input"
+          data-testid="editor-toolbar-paragraph-shading"
+          value={numValue(api, "setParagraphShading") || "#ffffff"}
+          onChange={(value) => api.commands.execute("setParagraphShading", value)}
+        />
 
         <Button
           icon="frame"

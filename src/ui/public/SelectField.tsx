@@ -13,6 +13,8 @@ export interface SelectFieldProps extends Omit<
   label?: string;
   description?: string;
   error?: string;
+  labelClass?: string;
+  controlClass?: string;
   options: SelectFieldOption[];
   onChange?: (value: string) => void;
 }
@@ -23,6 +25,8 @@ export function SelectField(props: SelectFieldProps): JSX.Element {
     "label",
     "description",
     "error",
+    "labelClass",
+    "controlClass",
     "options",
     "onChange",
     "class",
@@ -35,11 +39,13 @@ export function SelectField(props: SelectFieldProps): JSX.Element {
   return (
     <label class={`oasis-editor-ui-field ${local.class ?? ""}`} for={id()}>
       <Show when={local.label}>
-        <span class="oasis-editor-ui-field-label">{local.label}</span>
+        <span class={`oasis-editor-ui-field-label ${local.labelClass ?? ""}`}>
+          {local.label}
+        </span>
       </Show>
       <select
         id={id()}
-        class="oasis-editor-ui-select"
+        class={`oasis-editor-ui-select ${local.controlClass ?? ""}`}
         aria-invalid={local.error ? "true" : undefined}
         aria-describedby={[
           local.description ? descriptionId() : null,

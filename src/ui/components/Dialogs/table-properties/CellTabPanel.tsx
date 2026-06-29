@@ -1,7 +1,10 @@
 import { createMemo } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Checkbox } from "@/ui/public/Checkbox.js";
+import { FieldGroup } from "@/ui/public/FieldGroup.js";
+import { FormField } from "@/ui/public/FormField.js";
 import { SelectField } from "@/ui/public/SelectField.js";
+import { TextField } from "@/ui/public/TextField.js";
 import type { TablePanelProps } from "./TableTabPanel.js";
 import {
   DEFAULT_BORDER_COLOR,
@@ -84,8 +87,10 @@ export function CellTabPanel(props: TablePanelProps) {
           ]}
         />
       </div>
-      <fieldset class="oasis-editor-font-dialog-fieldset">
-        <legend>{t("table.options")}</legend>
+      <FieldGroup
+        class="oasis-editor-font-dialog-fieldset"
+        legend={t("table.options")}
+      >
         <div class="oasis-editor-dialog-style-row">
           <Checkbox
             label={t("table.noWrap")}
@@ -106,9 +111,11 @@ export function CellTabPanel(props: TablePanelProps) {
             data-testid="editor-table-properties-cell-hide-mark"
           />
         </div>
-      </fieldset>
-      <fieldset class="oasis-editor-font-dialog-fieldset">
-        <legend>{t("table.cellMargins")}</legend>
+      </FieldGroup>
+      <FieldGroup
+        class="oasis-editor-font-dialog-fieldset"
+        legend={t("table.cellMargins")}
+      >
         <div class="oasis-editor-dialog-row">
           {NumField(
             t("paragraph.borderSideTop"),
@@ -135,9 +142,11 @@ export function CellTabPanel(props: TablePanelProps) {
             "editor-table-properties-margin-left",
           )}
         </div>
-      </fieldset>
-      <fieldset class="oasis-editor-font-dialog-fieldset">
-        <legend>{t("paragraph.bordersSection")}</legend>
+      </FieldGroup>
+      <FieldGroup
+        class="oasis-editor-font-dialog-fieldset"
+        legend={t("paragraph.bordersSection")}
+      >
         <div class="oasis-editor-dialog-row">
           <SelectField
             class="oasis-editor-dialog-input-group-grow"
@@ -182,31 +191,25 @@ export function CellTabPanel(props: TablePanelProps) {
             "editor-table-properties-border-width",
             borderDisabled(),
           )}
-          <div class="oasis-editor-dialog-input-group">
-            <label class="oasis-editor-dialog-label">
-              {t("paragraph.borderColorLabel")}
-            </label>
-            <input
-              type="color"
-              class="oasis-editor-dialog-input"
-              value={form().borderColor || DEFAULT_BORDER_COLOR}
-              disabled={borderDisabled()}
-              onInput={(e) => set("borderColor", e.currentTarget.value)}
-              data-testid="editor-table-properties-border-color"
-            />
-          </div>
-          <div class="oasis-editor-dialog-input-group">
-            <label class="oasis-editor-dialog-label">
-              {t("paragraph.shadingLabel")}
-            </label>
-            <input
-              type="color"
-              class="oasis-editor-dialog-input"
-              value={form().shading || "#ffffff"}
-              onInput={(e) => set("shading", e.currentTarget.value)}
-              data-testid="editor-table-properties-shading"
-            />
-          </div>
+          <TextField
+            type="color"
+            class="oasis-editor-dialog-input-group"
+            controlClass="oasis-editor-dialog-input"
+            label={t("paragraph.borderColorLabel")}
+            value={form().borderColor || DEFAULT_BORDER_COLOR}
+            disabled={borderDisabled()}
+            onChange={(value) => set("borderColor", value)}
+            data-testid="editor-table-properties-border-color"
+          />
+          <TextField
+            type="color"
+            class="oasis-editor-dialog-input-group"
+            controlClass="oasis-editor-dialog-input"
+            label={t("paragraph.shadingLabel")}
+            value={form().shading || "#ffffff"}
+            onChange={(value) => set("shading", value)}
+            data-testid="editor-table-properties-shading"
+          />
         </div>
         <div class="oasis-editor-dialog-style-row">
           <Checkbox
@@ -271,7 +274,7 @@ export function CellTabPanel(props: TablePanelProps) {
           style={borderPreview()}
           data-testid="editor-table-properties-cell-preview"
         />
-      </fieldset>
+      </FieldGroup>
     </div>
   );
 }

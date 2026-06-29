@@ -59,6 +59,7 @@
     "test": "vitest run",
     "test:word-parity": "vitest run --config vitest.word-parity.config.js",
     "check:imports": "node ./scripts/check-import-graph.mjs",
+    "check:native-ui": "node ./scripts/check-native-ui-elements.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""

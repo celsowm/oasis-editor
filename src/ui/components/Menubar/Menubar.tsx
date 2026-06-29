@@ -6,6 +6,8 @@ import {
   type MenuItem,
   type MenubarHost,
 } from "./menuRegistry.js";
+import { SurfaceButton } from "@/ui/public/SurfaceButton.js";
+import { Text } from "@/ui/public/Text.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
 
 export interface MenubarProps {
@@ -109,7 +111,7 @@ export function Menubar(props: MenubarProps) {
               }
             }}
           >
-            <div
+            <SurfaceButton
               class="oasis-menubar-button"
               classList={{
                 "oasis-menubar-button-active": activeMenu() === topLevel.id,
@@ -128,7 +130,7 @@ export function Menubar(props: MenubarProps) {
             >
               {t(("menu." + topLevel.label.toLowerCase()) as TranslationKey) ||
                 topLevel.label}
-            </div>
+            </SurfaceButton>
 
             <Show when={activeMenu() === topLevel.id}>
               <div class="oasis-menubar-dropdown" role="menu">
@@ -187,8 +189,9 @@ function MenuNode(props: {
   };
 
   return (
-    <div
+    <SurfaceButton
       class="oasis-menubar-item"
+      label={label}
       onMouseEnter={() => {
         if (hasChildren) setShowSub(true);
       }}
@@ -200,16 +203,16 @@ function MenuNode(props: {
       aria-haspopup={hasChildren}
       aria-expanded={showSub()}
     >
-      <span class="oasis-menubar-item-main">
+      <Text class="oasis-menubar-item-main">
         <Show when={icon()}>
-          <span class="oasis-menubar-item-icon" aria-hidden="true">
+          <Text class="oasis-menubar-item-icon" aria-hidden="true">
             <ToolIcon name={icon()!} />
-          </span>
+          </Text>
         </Show>
-        <span>{label}</span>
-      </span>
+        <Text>{label}</Text>
+      </Text>
       <Show when={node.item?.shortcut}>
-        <span class="oasis-menubar-shortcut">{node.item!.shortcut}</span>
+        <Text class="oasis-menubar-shortcut">{node.item!.shortcut}</Text>
       </Show>
       <Show when={hasChildren}>
         <i class="oasis-menubar-submenu-icon" data-lucide="chevron-right" />
@@ -224,6 +227,6 @@ function MenuNode(props: {
           </For>
         </div>
       </Show>
-    </div>
+    </SurfaceButton>
   );
 }

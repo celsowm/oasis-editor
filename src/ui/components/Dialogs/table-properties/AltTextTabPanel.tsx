@@ -1,4 +1,5 @@
 import { useI18n } from "@/i18n/I18nContext.js";
+import { TextAreaField } from "@/ui/public/TextAreaField.js";
 import { TextField } from "@/ui/public/TextField.js";
 import type { TablePanelProps } from "./TableTabPanel.js";
 
@@ -15,17 +16,14 @@ export function AltTextTabPanel(props: TablePanelProps) {
         onChange={(v) => set("altTitle", v)}
         data-testid="editor-table-properties-alt-title"
       />
-      <div class="oasis-editor-dialog-input-group">
-        <label class="oasis-editor-dialog-label">
-          {t("table.altDescription")}
-        </label>
-        <textarea
-          class="oasis-editor-ui-input oasis-editor-table-properties-textarea"
-          value={form().altDescription}
-          onInput={(e) => set("altDescription", e.currentTarget.value)}
-          data-testid="editor-table-properties-alt-description"
-        />
-      </div>
+      <TextAreaField
+        class="oasis-editor-dialog-input-group"
+        label={t("table.altDescription")}
+        controlClass="oasis-editor-table-properties-textarea"
+        value={form().altDescription}
+        onChange={(value) => set("altDescription", value)}
+        data-testid="editor-table-properties-alt-description"
+      />
     </div>
   );
 }

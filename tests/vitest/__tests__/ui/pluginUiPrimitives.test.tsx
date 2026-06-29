@@ -1,18 +1,26 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
 import {
+  ActionRow,
   Button,
   Checkbox,
   Dialog,
   DialogFooter,
+  FieldGroup,
   FloatingActionButton,
+  FormField,
+  Heading,
   IconButton,
   SelectField,
   SidePanel,
   SidePanelBody,
   SidePanelFooter,
   SidePanelHeader,
+  StatusText,
+  SurfaceButton,
   Tabs,
+  Text,
+  TextAreaField,
   TextField,
 } from "@/ui/public/index.js";
 
@@ -100,6 +108,53 @@ describe("plugin UI primitives", () => {
     expect(onTextChange).toHaveBeenCalledWith("Plugin");
     expect(onCheckboxChange).toHaveBeenCalledWith(true);
     expect(onSelectChange).toHaveBeenCalledWith("safe");
+    dispose();
+  });
+
+  it("renders semantic composition primitives", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const onTextAreaChange = vi.fn();
+    const onSurfaceClick = vi.fn();
+    const dispose = render(
+      () => (
+        <>
+          <Heading level={3}>Section title</Heading>
+          <FieldGroup legend="Details">
+            <FormField label="Summary">
+              <Text>Inline summary</Text>
+            </FormField>
+            <TextAreaField
+              label="Notes"
+              value=""
+              onChange={onTextAreaChange}
+              data-testid="plugin-notes"
+            />
+          </FieldGroup>
+          <ActionRow align="between">
+            <StatusText tone="muted">Ready</StatusText>
+            <SurfaceButton icon="x" label="Dismiss" onClick={onSurfaceClick} />
+          </ActionRow>
+        </>
+      ),
+      host,
+    );
+
+    const textarea = host.querySelector(
+      "[data-testid='plugin-notes']",
+    ) as HTMLTextAreaElement;
+    textarea.value = "Updated";
+    textarea.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    const surfaceButton = host.querySelector(
+      ".oasis-editor-ui-surface-button",
+    ) as HTMLButtonElement;
+    surfaceButton.click();
+
+    expect(host.textContent).toContain("Section title");
+    expect(host.textContent).toContain("Inline summary");
+    expect(host.textContent).toContain("Ready");
+    expect(onTextAreaChange).toHaveBeenCalledWith("Updated");
+    expect(onSurfaceClick).toHaveBeenCalledOnce();
     dispose();
   });
 

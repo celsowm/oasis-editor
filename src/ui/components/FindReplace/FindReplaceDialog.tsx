@@ -1,6 +1,12 @@
 import { Show } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import type { UseEditorFindReplaceResult } from "@/app/controllers/useEditorFindReplace.js";
+import { ActionRow } from "@/ui/public/ActionRow.js";
+import { Checkbox } from "@/ui/public/Checkbox.js";
+import { StatusText } from "@/ui/public/StatusText.js";
+import { SurfaceButton } from "@/ui/public/SurfaceButton.js";
+import { Text } from "@/ui/public/Text.js";
+import { TextField } from "@/ui/public/TextField.js";
 
 export interface FindReplaceDialogProps {
   fr: UseEditorFindReplaceResult;
@@ -27,106 +33,99 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
     <Show when={fr.isOpen()}>
       <div class="oasis-editor-find-replace-dialog" onKeyDown={handleKeyDown}>
         <div class="oasis-editor-fr-header">
-          <span>{t("find.title")}</span>
-          <button
+          <Text>{t("find.title")}</Text>
+          <SurfaceButton
             class="oasis-editor-fr-close"
+            icon="x"
             onClick={() => fr.setIsOpen(false)}
-            aria-label={t("generic.close")}
-          >
-            <i data-lucide="x" />
-          </button>
+            label={t("generic.close")}
+          />
         </div>
 
         <div class="oasis-editor-fr-body">
           <div class="oasis-editor-fr-input-group">
             <div class="oasis-editor-fr-input-wrapper">
-              <input
+              <TextField
                 type="text"
                 placeholder={t("find.placeholder")}
                 value={fr.searchTerm()}
-                onInput={(e) => fr.setSearchTerm(e.currentTarget.value)}
+                onChange={(value) => fr.setSearchTerm(value)}
                 autofocus
-                class="oasis-editor-fr-input"
+                controlClass="oasis-editor-fr-input"
               />
-              <span class="oasis-editor-fr-counter">
+              <StatusText class="oasis-editor-fr-counter">
                 {fr.matches().length > 0
                   ? `${fr.currentIndex() + 1} / ${fr.matches().length}`
                   : t("find.noMatches")}
-              </span>
+              </StatusText>
             </div>
 
-            <div class="oasis-editor-fr-actions">
-              <button
+            <ActionRow class="oasis-editor-fr-actions" wrap={false}>
+              <SurfaceButton
                 onClick={fr.findPrevious}
                 disabled={fr.matches().length === 0}
-                title={t("find.prevTooltip")}
-              >
-                <i data-lucide="chevron-up" />
-              </button>
-              <button
+                icon="chevron-up"
+                label={t("find.prevTooltip")}
+              />
+              <SurfaceButton
                 onClick={fr.findNext}
                 disabled={fr.matches().length === 0}
-                title={t("find.nextTooltip")}
-              >
-                <i data-lucide="chevron-down" />
-              </button>
-            </div>
+                icon="chevron-down"
+                label={t("find.nextTooltip")}
+              />
+            </ActionRow>
           </div>
 
           <div class="oasis-editor-fr-input-group">
-            <input
+            <TextField
               type="text"
               placeholder={t("replace.placeholder")}
               value={fr.replaceTerm()}
-              onInput={(e) => fr.setReplaceTerm(e.currentTarget.value)}
-              class="oasis-editor-fr-input"
+              onChange={(value) => fr.setReplaceTerm(value)}
+              controlClass="oasis-editor-fr-input"
             />
-            <div class="oasis-editor-fr-actions">
-              <button
+            <ActionRow class="oasis-editor-fr-actions" wrap={false}>
+              <SurfaceButton
                 class="oasis-editor-fr-btn-text"
                 onClick={fr.replace}
                 disabled={fr.matches().length === 0}
               >
                 {t("replace.one")}
-              </button>
-              <button
+              </SurfaceButton>
+              <SurfaceButton
                 class="oasis-editor-fr-btn-text"
                 onClick={fr.replaceAll}
                 disabled={fr.matches().length === 0}
               >
                 {t("replace.allBtn")}
-              </button>
-            </div>
+              </SurfaceButton>
+            </ActionRow>
           </div>
 
-          <div class="oasis-editor-fr-options">
-            <label class="oasis-editor-fr-checkbox">
-              <input
-                type="checkbox"
-                checked={fr.findOptions().matchCase}
-                onChange={(e) =>
-                  fr.setFindOptions({
-                    ...fr.findOptions(),
-                    matchCase: e.currentTarget.checked,
-                  })
-                }
-              />
-              <span>{t("find.matchCase")}</span>
-            </label>
-            <label class="oasis-editor-fr-checkbox">
-              <input
-                type="checkbox"
-                checked={fr.findOptions().wholeWord}
-                onChange={(e) =>
-                  fr.setFindOptions({
-                    ...fr.findOptions(),
-                    wholeWord: e.currentTarget.checked,
-                  })
-                }
-              />
-              <span>{t("find.wholeWord")}</span>
-            </label>
-          </div>
+          <ActionRow class="oasis-editor-fr-options">
+            <Checkbox
+              class="oasis-editor-fr-checkbox"
+              label={t("find.matchCase")}
+              checked={fr.findOptions().matchCase}
+              onChange={(checked) =>
+                fr.setFindOptions({
+                  ...fr.findOptions(),
+                  matchCase: checked,
+                })
+              }
+            />
+            <Checkbox
+              class="oasis-editor-fr-checkbox"
+              label={t("find.wholeWord")}
+              checked={fr.findOptions().wholeWord}
+              onChange={(checked) =>
+                fr.setFindOptions({
+                  ...fr.findOptions(),
+                  wholeWord: checked,
+                })
+              }
+            />
+          </ActionRow>
         </div>
       </div>
     </Show>

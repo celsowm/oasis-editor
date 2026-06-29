@@ -25,6 +25,7 @@ import {
   SidePanelHeader,
 } from "@/ui/public/SidePanel.js";
 import { IconButton } from "@/ui/public/IconButton.js";
+import { Text } from "@/ui/public/Text.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
 import { type TranslationKey, type TranslateFn } from "@/i18n/index.js";
 
@@ -165,13 +166,13 @@ function renderPanel(
       <SidePanelHeader>
         <div class="oasis-editor-plugin-side-panel-title">
           <Show when={panel.icon}>
-            <span class="oasis-editor-plugin-side-panel-icon">
+            <Text class="oasis-editor-plugin-side-panel-icon">
               <ToolIcon name={panel.icon!} />
-            </span>
+            </Text>
           </Show>
-          <span>
+          <Text>
             {panel.titleKey ? t(panel.titleKey as TranslationKey) : panel.title}
-          </span>
+          </Text>
         </div>
         <IconButton icon="x" label="Close panel" size="sm" onClick={close} />
       </SidePanelHeader>
