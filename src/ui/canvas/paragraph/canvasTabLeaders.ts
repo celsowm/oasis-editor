@@ -1,4 +1,8 @@
-import type { EditorLayoutLine, EditorParagraphNode, EditorState } from "@/core/model.js";
+import type {
+  EditorLayoutLine,
+  EditorParagraphNode,
+  EditorState,
+} from "@/core/model.js";
 import { resolveEffectiveParagraphStyle } from "@/core/model.js";
 import { PX_PER_POINT } from "@/layoutProjection/constants.js";
 import { CANVAS_DASH_DASHED, CANVAS_DASH_DOTTED } from "../canvasBorders.js";

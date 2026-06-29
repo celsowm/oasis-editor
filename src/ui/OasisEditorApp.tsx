@@ -1,5 +1,4 @@
 import { createSignal, onCleanup, onMount, Show } from "solid-js";
-import { createEditorStateFromDocument } from "@/core/editorState.js";
 import { type EditorState } from "@/core/model.js";
 
 import { createEditorLogger } from "@/utils/logger.js";
@@ -192,11 +191,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     canvasSnapshotProvider,
   });
   const {
-    selectedImageRun,
     layoutOptionsOverlay,
     fr,
-    resolveSurfaceHitAtPoint,
-    resolvePositionAtSurfacePoint,
     tableOps,
     imageOps,
     textBoxOps,
@@ -208,7 +204,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     textDrag,
     surfaceEventsWithTextDrag,
     textInput,
-    navigation,
     handleCopy,
     handleCut,
     handlePaste,

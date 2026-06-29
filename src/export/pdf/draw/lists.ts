@@ -12,6 +12,7 @@ import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
 import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import { pxToPt, textStyleToFontSizePt } from "@/export/pdf/units.js";
 import { PX_PER_POINT } from "@/core/units.js";
+import { TEXT_BASELINE_RATIO } from "@/core/layoutConstants.js";
 import {
   getAlignedListLabelInset,
   getListLabelInset,
@@ -67,7 +68,7 @@ export function drawListPrefix(
   );
   writer.drawText(pageIndex, {
     x: pxToPt(originX + Math.max(0, alignedInset || labelInset)),
-    y: pxToPt(originY + line.top + line.height * 0.8),
+    y: pxToPt(originY + line.top + line.height * TEXT_BASELINE_RATIO),
     text: prefix,
     fontSize: fontSizePt,
     color: styles.color ?? "#000000",

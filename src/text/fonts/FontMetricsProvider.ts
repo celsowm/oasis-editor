@@ -11,6 +11,7 @@ import {
 import { createEditorLogger } from "@/utils/logger.js";
 import { SfntFontProgram } from "./sfnt/SfntFontProgram.js";
 import { getPreciseFontProgram } from "./preciseFontMetrics.js";
+import { roundTo } from "@/utils/round.js";
 
 /**
  * Synchronous source of glyph advance widths for the layout engine, backed by
@@ -306,7 +307,7 @@ export async function preloadLayoutFonts(
   const finishedAt =
     typeof performance !== "undefined" ? performance.now() : Date.now();
   fontLogger.info("preload:done", {
-    durationMs: Math.round((finishedAt - startedAt) * 100) / 100,
+    durationMs: roundTo(finishedAt - startedAt, 2),
     results,
     documentFontsStatus:
       typeof document !== "undefined" && document.fonts

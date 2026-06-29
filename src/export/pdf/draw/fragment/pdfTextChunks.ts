@@ -58,8 +58,14 @@ export function emitTextChunk(
     const r = pxToPt(gl.radiusPt * PX_PER_POINT) * 0.5;
     const glowColor = blendColorWithWhite(gl.color, (gl.alpha ?? 0.5) * 0.4);
     const dirs: [number, number][] = [
-      [r, 0], [-r, 0], [0, r], [0, -r],
-      [r * 0.7, r * 0.7], [-r * 0.7, r * 0.7], [r * 0.7, -r * 0.7], [-r * 0.7, -r * 0.7],
+      [r, 0],
+      [-r, 0],
+      [0, r],
+      [0, -r],
+      [r * 0.7, r * 0.7],
+      [-r * 0.7, r * 0.7],
+      [r * 0.7, -r * 0.7],
+      [-r * 0.7, -r * 0.7],
     ];
     for (const [dx, dy] of dirs) {
       writer.drawText(pageIndex, {
@@ -116,17 +122,26 @@ export function emitTextChunk(
     ...(gradientShadingName
       ? { gradientShadingName }
       : textOutline
-        ? { renderMode: 2, strokeColor: textOutline.color ?? mainColor, strokeWidth: textOutline.widthPt }
+        ? {
+            renderMode: 2,
+            strokeColor: textOutline.color ?? mainColor,
+            strokeWidth: textOutline.widthPt,
+          }
         : { renderMode: styles.outline ? 1 : 0 }),
   });
 }
 
-export function groupSlotChunksByWhitespace(chars: FragmentSlot[]): FragmentSlot[][] {
+export function groupSlotChunksByWhitespace(
+  chars: FragmentSlot[],
+): FragmentSlot[][] {
   const chunks: FragmentSlot[][] = [];
   let current: FragmentSlot[] = [];
   for (const char of chars) {
     if (char.char === " ") {
-      if (current.length > 0) { chunks.push(current); current = []; }
+      if (current.length > 0) {
+        chunks.push(current);
+        current = [];
+      }
       continue;
     }
     current.push(char);
@@ -135,7 +150,9 @@ export function groupSlotChunksByWhitespace(chars: FragmentSlot[]): FragmentSlot
   return chunks;
 }
 
-export function groupSlotChunksByOffsetGaps(chars: FragmentSlot[]): FragmentSlot[][] {
+export function groupSlotChunksByOffsetGaps(
+  chars: FragmentSlot[],
+): FragmentSlot[][] {
   const chunks: FragmentSlot[][] = [];
   let current: FragmentSlot[] = [];
   for (const char of chars) {

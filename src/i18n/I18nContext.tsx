@@ -1,8 +1,4 @@
-import {
-  createContext,
-  useContext,
-  type JSX,
-} from "solid-js";
+import { createContext, useContext, type JSX } from "solid-js";
 import { createTranslator, type TranslateFn } from "./index.js";
 
 /**

@@ -3,10 +3,7 @@ import { useI18n } from "@/i18n/I18nContext.js";
 import { Dialog } from "./Dialog.js";
 import { DialogFooter } from "./DialogFooter.js";
 
-import type {
-  EditorBorderStyle,
-  EditorParagraphStyle,
-} from "@/core/model.js";
+import type { EditorBorderStyle, EditorParagraphStyle } from "@/core/model.js";
 
 type SpecialIndent = "none" | "firstLine" | "hanging";
 type BorderStyleValue = "none" | "solid" | "dashed" | "dotted";

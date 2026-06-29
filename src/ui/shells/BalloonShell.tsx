@@ -1,4 +1,3 @@
-import { Show } from "solid-js";
 import { OasisEditorEditor } from "@/ui/OasisEditorEditor.js";
 import type { ShellProps } from "./DocumentShell.js";
 import { PluginUiHost } from "@/ui/components/PluginUi/PluginUiHost.js";

@@ -251,9 +251,21 @@ function parseChainContextSubst(
   reader.seek(offset);
   const format = reader.u16();
   if (format === 3) {
-    const backtrackCoverageOffsets = readU16OffsetArray(reader, reader.u16(), offset);
-    const inputCoverageOffsets = readU16OffsetArray(reader, reader.u16(), offset);
-    const lookaheadCoverageOffsets = readU16OffsetArray(reader, reader.u16(), offset);
+    const backtrackCoverageOffsets = readU16OffsetArray(
+      reader,
+      reader.u16(),
+      offset,
+    );
+    const inputCoverageOffsets = readU16OffsetArray(
+      reader,
+      reader.u16(),
+      offset,
+    );
+    const lookaheadCoverageOffsets = readU16OffsetArray(
+      reader,
+      reader.u16(),
+      offset,
+    );
     const substCount = reader.u16();
     const records = readSubstLookupRecords(reader, substCount);
     const backtrack = backtrackCoverageOffsets.map((o) =>
@@ -508,4 +520,3 @@ export class GsubTable {
     }
   }
 }
-

@@ -8,7 +8,6 @@ import {
   type EditorEditingZone,
   type EditorState,
   type EditorTableCellNode,
-  type EditorTableNode,
   type EditorTableRowNode,
 } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
@@ -127,7 +126,12 @@ export function createTableRowColumnOperations(
           (cell) => cell.vMerge !== "continue" && cell.blocks[0],
         )?.blocks[0] ??
         findFirstNavigableParagraphInTable(tableBlock);
-      return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
+      return commitTableMutation(
+        current,
+        targetBlocks,
+        location.zone,
+        nextParagraph,
+      );
     }
 
     blankRow = createEditorTableRow(
@@ -157,7 +161,12 @@ export function createTableRowColumnOperations(
         (cell) => cell.vMerge !== "continue" && cell.blocks[0],
       )?.blocks[0] ??
       findFirstNavigableParagraphInTable(tableBlock);
-    return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
+    return commitTableMutation(
+      current,
+      targetBlocks,
+      location.zone,
+      nextParagraph,
+    );
   };
 
   const deleteSelectedTableRow = (current: EditorState): EditorState => {
@@ -240,7 +249,12 @@ export function createTableRowColumnOperations(
       : null;
     const nextParagraph =
       targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-    return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
+    return commitTableMutation(
+      current,
+      targetBlocks,
+      location.zone,
+      nextParagraph,
+    );
   };
 
   const insertSelectedTableColumn = (
@@ -342,7 +356,12 @@ export function createTableRowColumnOperations(
         : null;
       const nextParagraph =
         targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-      return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
+      return commitTableMutation(
+        current,
+        targetBlocks,
+        location.zone,
+        nextParagraph,
+      );
     }
 
     const insertIndex = Math.max(
@@ -370,7 +389,12 @@ export function createTableRowColumnOperations(
     const targetCell = targetRow?.cells[insertIndex];
     const nextParagraph =
       targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-    return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
+    return commitTableMutation(
+      current,
+      targetBlocks,
+      location.zone,
+      nextParagraph,
+    );
   };
 
   const deleteSelectedTableColumn = (current: EditorState): EditorState => {
@@ -457,7 +481,12 @@ export function createTableRowColumnOperations(
         );
       const nextParagraph =
         targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-      return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
+      return commitTableMutation(
+        current,
+        targetBlocks,
+        location.zone,
+        nextParagraph,
+      );
     }
 
     if (tableBlock.rows[0]?.cells.length <= 1) {
@@ -475,7 +504,12 @@ export function createTableRowColumnOperations(
       ];
     const nextParagraph =
       targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-    return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
+    return commitTableMutation(
+      current,
+      targetBlocks,
+      location.zone,
+      nextParagraph,
+    );
   };
 
   return {

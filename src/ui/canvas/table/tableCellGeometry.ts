@@ -15,7 +15,9 @@ export function toPx(value: number): number {
   return value * POINT_TO_PX;
 }
 
-export function parseDimensionToPx(value: number | string | undefined): number | null {
+export function parseDimensionToPx(
+  value: number | string | undefined,
+): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
     return toPx(value);
   }

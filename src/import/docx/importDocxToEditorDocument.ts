@@ -447,12 +447,16 @@ export async function importDocxToEditorDocument(
 
   const finalize = (doc: EditorDocument): EditorDocument => {
     const settingsPatch: NonNullable<EditorDocument["settings"]> = {};
-    if (docSettings.defaultTabStop !== undefined) settingsPatch.defaultTabStop = docSettings.defaultTabStop;
-    if (docSettings.allowSpaceOfSameStyleInTable) settingsPatch.allowSpaceOfSameStyleInTable = true;
+    if (docSettings.defaultTabStop !== undefined)
+      settingsPatch.defaultTabStop = docSettings.defaultTabStop;
+    if (docSettings.allowSpaceOfSameStyleInTable)
+      settingsPatch.allowSpaceOfSameStyleInTable = true;
     if (docSettings.autoHyphenation) settingsPatch.autoHyphenation = true;
     if (docSettings.doNotHyphenateCaps) settingsPatch.doNotHyphenateCaps = true;
-    if (docSettings.consecutiveHyphenLimit !== undefined) settingsPatch.consecutiveHyphenLimit = docSettings.consecutiveHyphenLimit;
-    if (docSettings.hyphenationZone !== undefined) settingsPatch.hyphenationZone = docSettings.hyphenationZone;
+    if (docSettings.consecutiveHyphenLimit !== undefined)
+      settingsPatch.consecutiveHyphenLimit = docSettings.consecutiveHyphenLimit;
+    if (docSettings.hyphenationZone !== undefined)
+      settingsPatch.hyphenationZone = docSettings.hyphenationZone;
     if (Object.keys(settingsPatch).length > 0) {
       doc.settings = { ...(doc.settings ?? {}), ...settingsPatch };
     }

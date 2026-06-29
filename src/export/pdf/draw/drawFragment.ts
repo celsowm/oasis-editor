@@ -11,6 +11,7 @@ import {
   resolveEffectiveTextStyleForParagraph,
 } from "@/core/model.js";
 import { resolveOpenTypeFeatureTags } from "@/core/textStyleMappings.js";
+import { TEXT_BASELINE_RATIO } from "@/core/layoutConstants.js";
 import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
 import { paintTextBox } from "./drawTextBoxShape.js";
 import type { BlockDrawers } from "./blockDrawers.js";
@@ -21,7 +22,10 @@ import {
   pxToPt,
   textStyleToFontSizePt,
 } from "@/export/pdf/units.js";
-import { resolveFragmentBounds, resolveFragmentSlots } from "./fragmentGeometry.js";
+import {
+  resolveFragmentBounds,
+  resolveFragmentSlots,
+} from "./fragmentGeometry.js";
 import { PX_PER_POINT } from "@/layoutProjection/constants.js";
 import {
   getImageFloatingGeometry,
@@ -33,11 +37,23 @@ import {
 } from "@/core/decorationGeometry.js";
 
 // Fragment-level sub-modules — each owns one rendering concern.
-import { drawFragmentHighlight, drawFragmentShading, drawFragmentBorder } from "./fragment/pdfRunBackground.js";
+import {
+  drawFragmentHighlight,
+  drawFragmentShading,
+  drawFragmentBorder,
+} from "./fragment/pdfRunBackground.js";
 import { resolveGradientShadingName } from "./fragment/pdfGradient.js";
 import { drawUnderlineWithStyle } from "./fragment/pdfTextDecoration.js";
-import { drawFragmentEmphasis, drawTabLeaders } from "./fragment/pdfEmphasisAndTabLeaders.js";
-import { emitTextChunk, groupSlotChunksByWhitespace, groupSlotChunksByOffsetGaps, type TextChunkCtx } from "./fragment/pdfTextChunks.js";
+import {
+  drawFragmentEmphasis,
+  drawTabLeaders,
+} from "./fragment/pdfEmphasisAndTabLeaders.js";
+import {
+  emitTextChunk,
+  groupSlotChunksByWhitespace,
+  groupSlotChunksByOffsetGaps,
+  type TextChunkCtx,
+} from "./fragment/pdfTextChunks.js";
 
 export { drawFragmentHighlight, drawFragmentShading, drawFragmentBorder };
 export { drawFragmentEmphasis };
@@ -117,24 +133,44 @@ export function drawFragmentDecoration(
 
   if (kind === "strike") {
     writer.drawLine(pageIndex, {
-      x1: pxToPt(x1), y1: pxToPt(y), x2: pxToPt(x2), y2: pxToPt(y),
-      stroke, lineWidth: pxToPt(1),
+      x1: pxToPt(x1),
+      y1: pxToPt(y),
+      x2: pxToPt(x2),
+      y2: pxToPt(y),
+      stroke,
+      lineWidth: pxToPt(1),
     });
     return;
   }
   if (kind === "doubleStrike") {
     writer.drawLine(pageIndex, {
-      x1: pxToPt(x1), y1: pxToPt(y - DOUBLE_STRIKE_OFFSET_PX), x2: pxToPt(x2), y2: pxToPt(y - DOUBLE_STRIKE_OFFSET_PX),
-      stroke, lineWidth: pxToPt(1),
+      x1: pxToPt(x1),
+      y1: pxToPt(y - DOUBLE_STRIKE_OFFSET_PX),
+      x2: pxToPt(x2),
+      y2: pxToPt(y - DOUBLE_STRIKE_OFFSET_PX),
+      stroke,
+      lineWidth: pxToPt(1),
     });
     writer.drawLine(pageIndex, {
-      x1: pxToPt(x1), y1: pxToPt(y + DOUBLE_STRIKE_OFFSET_PX), x2: pxToPt(x2), y2: pxToPt(y + DOUBLE_STRIKE_OFFSET_PX),
-      stroke, lineWidth: pxToPt(1),
+      x1: pxToPt(x1),
+      y1: pxToPt(y + DOUBLE_STRIKE_OFFSET_PX),
+      x2: pxToPt(x2),
+      y2: pxToPt(y + DOUBLE_STRIKE_OFFSET_PX),
+      stroke,
+      lineWidth: pxToPt(1),
     });
     return;
   }
 
-  drawUnderlineWithStyle(writer, pageIndex, x1, x2, y, stroke, styles.underlineStyle);
+  drawUnderlineWithStyle(
+    writer,
+    pageIndex,
+    x1,
+    x2,
+    y,
+    stroke,
+    styles.underlineStyle,
+  );
 }
 
 export async function drawFragmentText(
@@ -155,7 +191,11 @@ export async function drawFragmentText(
       line.slots.find((c) => c.offset === fragment.startOffset) ??
       line.slots.find((c) => c.offset >= fragment.startOffset);
     if (!slot) return;
-    const resourceName = await registerPdfImageRun(writer, document, fragment.image);
+    const resourceName = await registerPdfImageRun(
+      writer,
+      document,
+      fragment.image,
+    );
     if (!resourceName) return;
     writer.drawImage(pageIndex, {
       resourceName,
@@ -203,7 +243,8 @@ export async function drawFragmentText(
     ? textStyleToFontSizePt(styles) * 0.8
     : textStyleToFontSizePt(styles);
   const baselineShiftPx = (styles.baselineShift ?? 0) * PX_PER_POINT;
-  const baselineY = originY + line.top + line.height * 0.8 - baselineShiftPx;
+  const baselineY =
+    originY + line.top + line.height * TEXT_BASELINE_RATIO - baselineShiftPx;
   const chars = resolveFragmentSlots(line, fragment);
   const text = chars
     .map((char) => (styles.allCaps ? char.char.toUpperCase() : char.char))
@@ -214,7 +255,9 @@ export async function drawFragmentText(
   // Hyperlink annotation.
   if (styles.link) {
     const linkBounds = resolveFragmentBounds(
-      line, fragment, styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
+      line,
+      fragment,
+      styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
     );
     if (linkBounds && linkBounds.right > linkBounds.left) {
       const isInternal = styles.link.startsWith("#");
@@ -223,19 +266,59 @@ export async function drawFragmentText(
         y: pxToPt(originY + line.top),
         width: pxToPt(linkBounds.right - linkBounds.left),
         height: pxToPt(line.height),
-        ...(isInternal ? { destName: styles.link.slice(1) } : { uri: styles.link }),
+        ...(isInternal
+          ? { destName: styles.link.slice(1) }
+          : { uri: styles.link }),
       });
     }
   }
 
-  drawFragmentShading(writer, pageIndex, line, fragment, originX, originY, styles);
-  drawFragmentHighlight(writer, pageIndex, line, fragment, originX, originY, styles);
-  drawFragmentBorder(writer, pageIndex, line, fragment, originX, originY, styles);
-  drawTabLeaders(writer, pageIndex, paragraph, line, fragment, document, originX, baselineY, styles.color ?? "#000000");
+  drawFragmentShading(
+    writer,
+    pageIndex,
+    line,
+    fragment,
+    originX,
+    originY,
+    styles,
+  );
+  drawFragmentHighlight(
+    writer,
+    pageIndex,
+    line,
+    fragment,
+    originX,
+    originY,
+    styles,
+  );
+  drawFragmentBorder(
+    writer,
+    pageIndex,
+    line,
+    fragment,
+    originX,
+    originY,
+    styles,
+  );
+  drawTabLeaders(
+    writer,
+    pageIndex,
+    paragraph,
+    line,
+    fragment,
+    document,
+    originX,
+    baselineY,
+    styles.color ?? "#000000",
+  );
 
   const paragraphAlign =
-    resolveEffectiveParagraphStyle(paragraph.style, document.styles).align ?? "left";
-  const fontFeatures = resolveOpenTypeFeatureTags(styles, textStyleToFontSizePt(styles));
+    resolveEffectiveParagraphStyle(paragraph.style, document.styles).align ??
+    "left";
+  const fontFeatures = resolveOpenTypeFeatureTags(
+    styles,
+    textStyleToFontSizePt(styles),
+  );
   const baseTextOptions = {
     fontSize: fontSizePt,
     bold: styles.bold,
@@ -252,11 +335,23 @@ export async function drawFragmentText(
         ? styles.textFill.stops[0].color
         : (styles.color ?? "#000000");
   const gradientShadingName = resolveGradientShadingName(
-    writer, pageIndex, line, fragment, originX, originY, styles,
+    writer,
+    pageIndex,
+    line,
+    fragment,
+    originX,
+    originY,
+    styles,
   );
   const chunkCtx: TextChunkCtx = {
-    writer, pageIndex, baselineY, fontSizePt,
-    mainColor, gradientShadingName, styles, baseTextOptions,
+    writer,
+    pageIndex,
+    baselineY,
+    fontSizePt,
+    mainColor,
+    gradientShadingName,
+    styles,
+    baseTextOptions,
   };
 
   const chunks =
@@ -280,15 +375,50 @@ export async function drawFragmentText(
   }
 
   if (styles.underline) {
-    drawFragmentDecoration(writer, pageIndex, line, fragment, originX, originY, styles, "underline");
+    drawFragmentDecoration(
+      writer,
+      pageIndex,
+      line,
+      fragment,
+      originX,
+      originY,
+      styles,
+      "underline",
+    );
   }
   if (styles.strike) {
-    drawFragmentDecoration(writer, pageIndex, line, fragment, originX, originY, styles, "strike");
+    drawFragmentDecoration(
+      writer,
+      pageIndex,
+      line,
+      fragment,
+      originX,
+      originY,
+      styles,
+      "strike",
+    );
   }
   if (styles.doubleStrike) {
-    drawFragmentDecoration(writer, pageIndex, line, fragment, originX, originY, styles, "doubleStrike");
+    drawFragmentDecoration(
+      writer,
+      pageIndex,
+      line,
+      fragment,
+      originX,
+      originY,
+      styles,
+      "doubleStrike",
+    );
   }
   if (styles.emphasisMark) {
-    drawFragmentEmphasis(writer, pageIndex, line, fragment, originX, originY, styles);
+    drawFragmentEmphasis(
+      writer,
+      pageIndex,
+      line,
+      fragment,
+      originX,
+      originY,
+      styles,
+    );
   }
 }

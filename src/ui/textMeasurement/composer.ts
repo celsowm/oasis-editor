@@ -9,6 +9,7 @@ import {
   getRunTextBox,
   resolveEffectiveTextStyleForParagraph,
 } from "@/core/model.js";
+import { PX_PER_POINT } from "@/core/units.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
 import type {
   MeasuredChar,
@@ -34,8 +35,6 @@ import {
 
 const DEFAULT_CONTENT_WIDTH = 624;
 const MIN_CONTENT_WIDTH = 120;
-/** Word measures the hyphenation zone in points; the composer works in px. */
-const PT_TO_PX = 96 / 72;
 
 function intersectsVertically(
   aTop: number,
@@ -647,7 +646,7 @@ export function composeMeasuredParagraphLines(
     // otherwise wrap the whole word to a fresh line.
     if (!isEmptyLine) {
       const remaining = lineAvailableWidth - lineWidth;
-      const zonePx = (hyphenation?.zone ?? 0) * PT_TO_PX;
+      const zonePx = (hyphenation?.zone ?? 0) * PX_PER_POINT;
       if (remaining > zonePx) {
         const hy = tryHyphenate(token.chars, remaining);
         if (hy) {

@@ -1,3 +1,7 @@
+import { VERTICAL_HIT_WEIGHT } from "@/core/layoutConstants.js";
+
+const DEFAULT_CARET_HEIGHT_PX = 28;
+
 export interface CaretSlotRect {
   left: number;
   top: number;
@@ -29,7 +33,7 @@ export interface MeasuredLine {
 }
 
 function normalizeHeight(height: number): number {
-  return height > 0 ? height : 28;
+  return height > 0 ? height : DEFAULT_CARET_HEIGHT_PX;
 }
 
 function isWrappedBoundary(
@@ -46,7 +50,9 @@ function getCaretSlotCandidates(
   startOffset = 0,
 ): CaretSlotCandidate[] {
   if (charRects.length === 0) {
-    return [{ offset: startOffset, left: 0, top: 0, height: 28 }];
+    return [
+      { offset: startOffset, left: 0, top: 0, height: DEFAULT_CARET_HEIGHT_PX },
+    ];
   }
 
   const candidates: CaretSlotCandidate[] = [];
@@ -97,9 +103,11 @@ export function measureLinesFromRects(charRects: CharRect[]): MeasuredLine[] {
         startOffset: 0,
         endOffset: 0,
         top: 0,
-        height: 28,
+        height: DEFAULT_CARET_HEIGHT_PX,
         charRects: [],
-        slots: [{ offset: 0, left: 0, top: 0, height: 28 }],
+        slots: [
+          { offset: 0, left: 0, top: 0, height: DEFAULT_CARET_HEIGHT_PX },
+        ],
       },
     ];
   }
@@ -200,7 +208,7 @@ export function resolveClosestOffsetFromRects(
           ? clientY - (slot.top + slot.height)
           : 0;
     const horizontalDelta = Math.abs(clientX - slot.left);
-    const score = verticalDelta * 1000 + horizontalDelta;
+    const score = verticalDelta * VERTICAL_HIT_WEIGHT + horizontalDelta;
 
     if (score < bestScore) {
       bestScore = score;

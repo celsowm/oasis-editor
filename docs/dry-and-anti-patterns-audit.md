@@ -392,3 +392,183 @@ future tweaks tend to diverge between click handling and rendering.
 
 The quick wins (#1, #2, #3, #11) are mechanical and covered by the
 `test:word-parity` suite, making them safe to land first.
+
+---
+
+## New findings — June 2026 audit
+
+### 23. Inline unit conversions `96/72` and `72/96` repeated 5+ times
+
+**Severity:** med — **Status: ✅ resolved.** All inline `96/72` and `72/96` expressions replaced with `PX_PER_POINT` / `PT_PER_PX` from `src/core/units.ts` across 4 files.
+
+Constants `PX_PER_POINT` and `PT_PER_PX` already exist in `src/core/units.ts` but are not universally imported. Redefined locally in:
+
+- `src/core/html/styleCss.ts` lines 92, 98, 99, 102, 114 (`96 / 72` × 5)
+- `src/app/controllers/useEditorTableDrag.ts` line 124 (`72 / 96`)
+- `src/ui/textMeasurement/composer.ts` line 38 (`PT_TO_PX = 96 / 72` local const)
+- `src/testing/wordLayoutParity.ts` line 35 (`PX_TO_POINTS = 72 / 96` local const)
+
+**Fix:** Replace all inline `96 / 72` / `72 / 96` expressions with imports of `PX_PER_POINT` / `PT_PER_PX` from `src/core/units.ts`.
+
+---
+
+### 24. Hit-test scoring formula `* 1000` duplicated 4×
+
+**Severity:** med — **Status: ✅ resolved.** `VERTICAL_HIT_WEIGHT = 1000` extracted to `src/core/layoutConstants.ts` and imported at all 3 hit-test sites.
+
+Identical code:
+```ts
+const score = verticalDelta * 1000 + horizontalDelta;
+```
+appears in:
+
+- `src/layoutProjection/paragraphPagination.ts` line 499
+- `src/ui/caretGeometry.ts` line 203
+- `src/ui/canvas/CanvasHitTestService.ts` lines 85, 157
+
+**Fix:** Define `VERTICAL_DISTANCE_WEIGHT = 1000` in `src/core/hittestConstants.ts` (or `units.ts`) and import at all 4 sites.
+
+---
+
+### 25. Text baseline ratio `0.8` repeated across canvas and PDF
+
+**Severity:** med — **Status: ✅ resolved.** `TEXT_BASELINE_RATIO = 0.8` extracted to `src/core/layoutConstants.ts` and applied across canvas and PDF draw sites. The small-caps `0.8` in `drawFragment.ts` was intentionally left as an inline literal (different semantic).
+
+The same ratio for computing text baseline Y position appears without a named constant in:
+
+- `src/ui/canvas/canvasParagraphPainter.ts` lines 206, 384
+- `src/export/pdf/draw/drawFragment.ts` line 206
+- `src/export/pdf/draw/lists.ts` line 70
+
+**Fix:** Define `TEXT_BASELINE_RATIO = 0.8` in a shared constants module; same pass should name `SMALL_CAPS_SCALE = 0.8` (different semantic) and `SUPERSCRIPT_SUBSCRIPT_SCALE = 0.75` — all currently inline in `src/ui/textMeasurement/fontMetrics.ts` line 38, `src/ui/canvas/canvasFontResolution.ts` lines 68, 74, 80, `src/export/pdf/draw/drawFragment.ts` line 203.
+
+---
+
+### 26. `NO_WRAP_MEASURE_WIDTH_PX = 100000` defined three times
+
+**Severity:** low — **Status: ✅ resolved.** Single `NO_WRAP_MEASURE_WIDTH_PX = 100000` in `src/core/layoutConstants.ts`; all 3 local definitions removed and unified to the same name.
+
+Note: `src/layoutProjection/tablePagination.ts` already has a named constant, but it is redefined independently in:
+
+- `src/layoutProjection/tableBlockPagination.ts` line 15
+- `src/ui/tableGeometry.ts` line 17
+- `src/ui/canvas/table/prepareCells.ts` line 31
+
+**Fix:** Export the single constant from `src/core/units.ts` (or the existing `tablePagination.ts`) and import at the other three sites.
+
+---
+
+### 27. Rounding precision multipliers `100` / `10000` repeated inline
+
+**Severity:** low — **Status: ✅ resolved.** `roundTo(value, decimals)` helper added in `src/utils/round.ts`; replaces all `Math.round(x * N) / N` patterns across 12 files.
+
+`Math.round(x * 10000) / 10000` (4-decimal precision) and `Math.round(x * 100) / 100` (2-decimal) scattered without named constants:
+
+- `src/utils/performanceMetrics.ts` lines 61, 88, 97, 201 (`* 100`)
+- `src/import/docx/borders.ts` line 33 (`* 10000`)
+- `src/import/docx/tableProperties.ts` lines 66, 594 (`* 10000`)
+- `src/import/docx/units.ts` lines 38, 49 (`* 10000`)
+- `src/ui/fontSizeUnits.ts` line 42 (`* 10000`)
+
+**Fix:** A small `round2(x)` / `round4(x)` utility, or named constants `PRECISION_2 = 100` / `PRECISION_4 = 10000`.
+
+---
+
+### 28. `DEFAULT_CARET_HEIGHT = 28` hard-coded 4× in caretGeometry
+
+**Severity:** low — **Status: ✅ resolved.** `const DEFAULT_CARET_HEIGHT_PX = 28` added at top of `src/ui/caretGeometry.ts`; all 4 literal occurrences replaced.
+
+Literal `28` appears as caret height fallback in `src/ui/caretGeometry.ts` lines 32, 49, 100, 102 without a named constant.
+
+**Fix:** `const DEFAULT_CARET_HEIGHT_PX = 28;` at the top of the file.
+
+---
+
+### 29. Imported document content logged at `info` level
+
+**Severity:** high (privacy/security) — **Status: ✅ resolved.** Downgraded to `logger.debug`; removed raw paragraph text from the payload (replaced with `textLength` counter).
+
+`DocumentImporter.ts` collects `firstParagraphs` (raw text, up to 160 chars × 30 paragraphs, plus styles and metadata) and sends it via `deps.logger.info("import:document-diagnostics", ...)`. The logger only suppresses `debug`; `info` always reaches `console.info` — including in production builds or telemetry-collecting environments.
+
+**Fix:** Downgrade to `logger.debug`, strip paragraph text content from the payload, or gate behind an explicit env flag (`OASIS_DEBUG_IMPORT_CONTENT=1`).
+
+---
+
+### 30. Hyphenation state is implicit global in `paragraphPagination.ts`
+
+**Severity:** med — **Status: open**
+
+`activeHyphenation` and `activeHyphenationSignature` are module-level variables set once by `setActiveHyphenation()` and read inside `projectParagraphLayout` without passing through the call chain. This creates invisible, non-reentrant coupling that will cause phantom bugs if layout ever runs in parallel, inside a shared worker, or for multiple simultaneous documents.
+
+**Fix:** Create a `LayoutProjectionContext` struct and thread `hyphenation` explicitly through `projectParagraphLayout` / `projectParagraphLayoutWithExclusions`.
+
+---
+
+### 31. Lint and format scripts exclude `.tsx` files
+
+**Severity:** med — **Status: ✅ resolved.** Lint now covers `--ext .ts,.tsx`; format covers `src/**/*.{ts,tsx}`; `typecheck` script (`tsc --noEmit`) added to `package.json`.
+
+`package.json` lint runs `eslint src --ext .ts`; format runs `prettier --write "src/**/*.ts"`. `.tsx` components — which include large interactive dialogs — are never checked for `no-console`, `no-explicit-any`, unused vars, etc.
+
+**Fix:**
+```json
+"lint": "eslint src site tests --ext .ts,.tsx",
+"format": "prettier --write \"{src,site,tests}/**/*.{ts,tsx}\""
+```
+
+---
+
+### 32. `src/packages/vue` is live code excluded from `tsconfig.json`
+
+**Severity:** med — **Status: ✅ resolved.** `src/packages/` deleted; typed adapter sources now live in `src/adapters/` (covered by typecheck). Exclude removed from `tsconfig.json`.
+
+`tsconfig.json` includes `src`, `site`, `tests` but excludes `src/packages`. The Vue adapter in `src/packages/vue/index.ts` contains real-looking adapter code with `Function as unknown as …` casts and "in a real impl…" comments, but it is never type-checked.
+
+**Fix:** Either delete `src/packages/vue` (if superseded by the generated adapter), or add it to `tsconfig.json` includes and fix the types, or make it the source of truth that `scripts/build-adapters.mjs` compiles instead of generating strings.
+
+---
+
+### 33. `scripts/build-adapters.mjs` generates adapter code as template strings
+
+**Severity:** med — **Status: ✅ resolved.** `scripts/build-adapters.mjs` deleted; adapters live as typed source in `src/adapters/{ui,react,vue}.ts`; `vite.adapters.config.js` compiles them with `oasis-editor`/`react`/`vue` externalized and generates `.d.ts` via `vite-plugin-dts`.
+
+`build-adapters.mjs` writes `ui.js`, `react.js`, `vue.js` and their `.d.ts` files by string concatenation. The generated JS and its type declarations are never type-checked before publish, making refactors silently break consumers at runtime.
+
+**Fix:** Keep adapters in `src/adapters/react.tsx`, `src/adapters/vue.ts`, etc. and let Vite/Rollup emit the subpath exports. If string generation is kept, run `tsc --noEmit` on a temp copy of the output before publish.
+
+---
+
+### 34. IndexedDB `putItem`/`deleteItem` resolve on `request.onsuccess`, not `transaction.oncomplete`
+
+**Severity:** med — **Status: ✅ resolved.** Both `putItem` and `deleteItem` now resolve in `transaction.oncomplete` and reject in `transaction.onerror`/`transaction.onabort`. Covered by new vitest tests using `fake-indexeddb`.
+
+In `src/…/indexeddb.ts`, both `putItem` and `deleteItem` resolve the returned `Promise` inside `request.onsuccess`. A request can succeed while its enclosing transaction still aborts, causing a resolved promise that maps to uncommitted data.
+
+**Fix:** Move the resolve to `transaction.oncomplete` and reject on `transaction.onerror` / `transaction.onabort`.
+
+---
+
+### 35. HTML/clipboard `<img src>` accepted without URL policy
+
+**Severity:** high (security) — **Status: ✅ resolved.** `isAllowedImageSrc()` helper added to `src/core/html/inlineImageParser.ts`; only `data:image/` and `blob:` schemes accepted. Covered by 5 new vitest tests.
+
+The clipboard HTML parser does `template.innerHTML = html` and then `parseInlineImage` accepts any non-empty `src` attribute, forwarding it into the document model without validation.
+
+**Fix:** Allowlist only `data:image/…;base64,…` and `blob:` URLs controlled by the app; block `http(s)` by default; validate MIME type and payload size before converting to an image run.
+
+---
+
+### 36. `drawFragmentText` still handles too many concerns
+
+**Severity:** med — **Status: open**
+
+After the previous refactor (#10), `drawFragmentText` still decides: inline image, inline textbox, effective styles, link annotation, shading/highlight/border, tab leaders, text chunks, hyphenation, underline/strike/emphasis. Each new visual effect increases regression risk across all other concerns.
+
+**Fix:** Decompose into a small explicit pipeline:
+```ts
+drawInlineObjectIfAny(...)
+drawTextBackground(...)    // shading / highlight / border
+drawTextGlyphs(...)        // chunks + hyphenation
+drawTextDecorations(...)   // underline / strike / emphasis
+drawAnnotations(...)       // links
+```

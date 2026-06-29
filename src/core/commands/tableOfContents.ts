@@ -23,6 +23,7 @@ import {
   TWIPS_PER_INCH,
   PX_PER_INCH,
 } from "@/core/units.js";
+import { roundTo } from "@/utils/round.js";
 import { getHeadingLevel } from "@/core/headings.js";
 import { createEditorParagraph, createEditorRun } from "@/core/editorState.js";
 import { clampPosition } from "@/core/selection.js";
@@ -130,7 +131,7 @@ function buildEntryParagraph(
 function rightTabPositionForSection(section: EditorSection): number {
   const { width, margins } = section.pageSettings;
   const contentWidthPx = Math.max(0, width - margins.left - margins.right);
-  return Math.round(contentWidthPx * PX_TO_PT * 100) / 100;
+  return roundTo(contentWidthPx * PX_TO_PT, 2);
 }
 
 /** The field-start marker paragraph: begin + instruction + separate. */

@@ -33,6 +33,7 @@ import {
 } from "./floatingObjects.js";
 import { resolveDropCapExclusion } from "./dropCapExclusion.js";
 import { DEFAULT_FONT_SIZE_PX as DEFAULT_FONT_SIZE } from "@/core/units.js";
+import { VERTICAL_HIT_WEIGHT } from "@/core/layoutConstants.js";
 
 /**
  * Document-scoped automatic-hyphenation context. Set once at the start of a
@@ -496,7 +497,7 @@ export function resolveClosestOffsetInMeasuredLayout(
           ? clientY - (slot.top + slot.height)
           : 0;
     const horizontalDelta = Math.abs(clientX - slot.left);
-    const score = verticalDelta * 1000 + horizontalDelta;
+    const score = verticalDelta * VERTICAL_HIT_WEIGHT + horizontalDelta;
 
     if (score < bestScore) {
       bestScore = score;

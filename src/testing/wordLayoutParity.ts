@@ -18,7 +18,7 @@ import { getFontMetricsProvider } from "@/text/fonts/FontMetricsProvider.js";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
-import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
+import { DEFAULT_FONT_SIZE_PX, PT_PER_PX } from "@/core/units.js";
 
 const WORD_CANDIDATE_PATHS = [
   "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
@@ -32,7 +32,6 @@ const CONVERT_SCRIPT_PATH = fileURLToPath(
 const PDF_EXTRACT_SCRIPT_PATH = fileURLToPath(
   new URL("../../scripts/extract-pdf-lines.mjs", import.meta.url),
 );
-const PX_TO_POINTS = 72 / 96;
 const GEOMETRY_TOLERANCE_POINTS = 1.5;
 const STRICT_GEOMETRY_TOLERANCE_POINTS = 0.5;
 
@@ -165,10 +164,10 @@ function collectRenderedLineGeometry(
         lines.push({
           text,
           geometry: {
-            x: xPx * PX_TO_POINTS,
-            y: yPx * PX_TO_POINTS,
-            width: widthPx * PX_TO_POINTS,
-            height: line.height * PX_TO_POINTS,
+            x: xPx * PT_PER_PX,
+            y: yPx * PT_PER_PX,
+            width: widthPx * PT_PER_PX,
+            height: line.height * PT_PER_PX,
           },
           bottomPx: yPx + line.height,
         });
@@ -341,8 +340,8 @@ function compareWordAndEditorLayout(
   for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
     const editorPage = editorPages[pageIndex]!;
     const wordPage = wordLayout.pages[pageIndex]!;
-    const editorWidth = editorPage.width * PX_TO_POINTS;
-    const editorHeight = editorPage.height * PX_TO_POINTS;
+    const editorWidth = editorPage.width * PT_PER_PX;
+    const editorHeight = editorPage.height * PT_PER_PX;
     if (Math.abs(editorWidth - wordPage.width) > geometryTolerance) {
       mismatches.push(
         `Page ${pageIndex + 1} width mismatch: editor=${editorWidth.toFixed(2)}pt, word=${wordPage.width.toFixed(2)}pt.`,
@@ -354,21 +353,20 @@ function compareWordAndEditorLayout(
       );
     }
 
-    const headerLimit = editorPage.bodyTop * PX_TO_POINTS - 1;
-    const footerStart = editorPage.footerTop * PX_TO_POINTS - 1;
-    const footerEnd = editorPage.pageHeight * PX_TO_POINTS + 1;
+    const headerLimit = editorPage.bodyTop * PT_PER_PX - 1;
+    const footerStart = editorPage.footerTop * PT_PER_PX - 1;
+    const footerEnd = editorPage.pageHeight * PT_PER_PX + 1;
     const wordHeaderLinesWithGeometry = wordPage.lines
       .filter(
         (line) =>
-          line.y >= editorPage.headerTop * PX_TO_POINTS - 1 &&
+          line.y >= editorPage.headerTop * PT_PER_PX - 1 &&
           line.y < headerLimit,
       )
       .filter((line) => normalizeLineText(line.text).length > 0);
     const wordBodyLinesWithGeometry = wordPage.lines
       .filter(
         (line) =>
-          line.y >= editorPage.bodyTop * PX_TO_POINTS - 1 &&
-          line.y < footerStart,
+          line.y >= editorPage.bodyTop * PT_PER_PX - 1 && line.y < footerStart,
       )
       .filter((line) => normalizeLineText(line.text).length > 0);
     const wordFooterLinesWithGeometry = wordPage.lines
@@ -478,21 +476,19 @@ function compareWordAndEditorLayout(
           name: "bodyTop",
           editor:
             editorPage.firstBodyLineGeometry?.y ??
-            editorPage.bodyTop * PX_TO_POINTS,
+            editorPage.bodyTop * PT_PER_PX,
           word: wordBodyTop,
         },
         {
           name: "bodyBottom",
           editor:
-            (editorPage.lastBodyLineBottom ?? editorPage.footerTop) *
-            PX_TO_POINTS,
+            (editorPage.lastBodyLineBottom ?? editorPage.footerTop) * PT_PER_PX,
           word: wordBodyBottom,
         },
         {
           name: "footerTop",
           editor:
-            editorPage.firstFooterLineTop ??
-            editorPage.footerTop * PX_TO_POINTS,
+            editorPage.firstFooterLineTop ?? editorPage.footerTop * PT_PER_PX,
           word: wordFooterTop,
         },
       ];

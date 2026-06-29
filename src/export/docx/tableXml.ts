@@ -466,10 +466,10 @@ function serializeFloatingTableProperties(
 function serializeTableBorders(style: EditorTableNode["style"]): string {
   const borders = style?.borders;
   if (!borders) return "";
-  const xml = TABLE_BORDER_EDGE_KEYS.map(([name, key]) => [
-    name,
-    borders[key],
-  ] as [string, EditorBorderStyle | undefined])
+  const xml = TABLE_BORDER_EDGE_KEYS.map(
+    ([name, key]) =>
+      [name, borders[key]] as [string, EditorBorderStyle | undefined],
+  )
     .filter((entry): entry is [string, EditorBorderStyle] => !!entry[1])
     .map(([name, border]) => `<w:${name} ${serializeDocxBorderAttrs(border)}`)
     .join("");

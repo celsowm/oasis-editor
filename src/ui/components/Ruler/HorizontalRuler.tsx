@@ -178,7 +178,9 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
   const z = () => props.zoomFactor();
   const sx = (value: number): number => value * z();
 
-  const trackWidth = createMemo(() => pageLeft() * 2 + sx(pageSettings().width));
+  const trackWidth = createMemo(
+    () => pageLeft() * 2 + sx(pageSettings().width),
+  );
 
   const pageXFromClient = (clientX: number): number => {
     const rect = pageRef?.getBoundingClientRect();

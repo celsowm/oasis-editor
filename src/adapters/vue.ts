@@ -1,23 +1,23 @@
-import { defineComponent, onMounted, onBeforeUnmount, ref, h } from "vue";
-import { mount, type OasisMountInstance } from "@/ui/mount.js";
-import type { OasisEditorAppProps } from "@/ui/OasisEditorApp.js";
-import type { OasisEditorClient } from "@/app/client/OasisEditorClient.js";
+import { defineComponent, onBeforeUnmount, onMounted, ref, h } from "vue";
+import { mount } from "oasis-editor";
+import type { OasisEditorAppProps, OasisEditorClient } from "oasis-editor";
 
 export const OasisEditor = defineComponent({
   name: "OasisEditor",
   props: {
-    // Basic props - in a real impl we'd define all props or use a catch-all
     config: {
       type: Object as () => OasisEditorAppProps,
       default: () => ({}),
     },
     class: String,
-    style: [String, Object],
+    style: [String, Object] as unknown as () =>
+      | string
+      | Record<string, unknown>,
     onClient: Function as unknown as () => (client: OasisEditorClient) => void,
   },
   setup(props) {
     const root = ref<HTMLElement | null>(null);
-    let instance: OasisMountInstance | null = null;
+    let instance: ReturnType<typeof mount> | null = null;
 
     onMounted(() => {
       if (root.value) {
@@ -27,9 +27,8 @@ export const OasisEditor = defineComponent({
     });
 
     onBeforeUnmount(() => {
-      if (instance) {
-        instance.unmount();
-      }
+      instance?.unmount();
+      instance = null;
     });
 
     return () =>

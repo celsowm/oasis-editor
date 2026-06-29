@@ -12,6 +12,7 @@ import { resolveImporterForFile } from "@/import/documentImporterRegistry.js";
 import type { ImportStage } from "@/import/DocumentFormatImporter.js";
 import { readFileBuffer } from "@/ui/clipboardImage.js";
 import type { EditorLogger } from "@/utils/logger.js";
+import { roundTo } from "@/utils/round.js";
 import type { ImportProgressPhase } from "./importProgress.js";
 
 function buildImportedDocumentDiagnostics(
@@ -67,7 +68,7 @@ function buildImportedDocumentDiagnostics(
       );
       return {
         index,
-        text: getParagraphText(paragraph).slice(0, 160),
+        textLength: getParagraphText(paragraph).length,
         runCount: paragraph.runs.length,
         rawParagraphStyle: paragraph.style,
         align: paragraphStyle.align,
@@ -123,7 +124,7 @@ export function createDocumentImporter(deps: DocumentImporterDeps) {
       const arrayBuffer = await readFileBuffer(file);
       deps.logger.info("import:phase", {
         phase: "reading-file",
-        durationMs: Math.round((deps.now() - readingStartedAt) * 100) / 100,
+        durationMs: roundTo(deps.now() - readingStartedAt, 2),
       });
 
       let lastProgressStage: ImportStage | null = null;
@@ -158,7 +159,7 @@ export function createDocumentImporter(deps: DocumentImporterDeps) {
           }
         },
       );
-      deps.logger.info(
+      deps.logger.debug(
         "import:document-diagnostics",
         buildImportedDocumentDiagnostics(document),
       );
@@ -172,8 +173,7 @@ export function createDocumentImporter(deps: DocumentImporterDeps) {
       await deps.stabilizeLayoutAfterImport();
       deps.logger.info("import:phase", {
         phase: "stabilizing-layout",
-        durationMs:
-          Math.round((deps.now() - stabilizationStartedAt) * 100) / 100,
+        durationMs: roundTo(deps.now() - stabilizationStartedAt, 2),
       });
 
       const sections = getDocumentSectionsCanonical(document);
@@ -192,7 +192,7 @@ export function createDocumentImporter(deps: DocumentImporterDeps) {
         format: importer.id,
         blocks: canonicalBlocks,
         paragraphs: canonicalParagraphs,
-        durationMs: Math.round((deps.now() - startedAt) * 100) / 100,
+        durationMs: roundTo(deps.now() - startedAt, 2),
       });
       deps.focusInput();
     } catch (error) {

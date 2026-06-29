@@ -1,4 +1,5 @@
 import { ptToPx, pxToPt } from "@/export/pdf/units.js";
+import { roundTo } from "@/utils/round.js";
 
 /**
  * Font sizes are stored in the model — and rendered on the canvas — in pixels,
@@ -34,12 +35,12 @@ export function previousFontSizePt(currentPt: number): number {
 
 /** Convert a model pixel size to a point value, rounded to 2 decimals. */
 export function fontSizePxToPt(px: number): number {
-  return Math.round(pxToPt(px) * 100) / 100;
+  return roundTo(pxToPt(px), 2);
 }
 
 /** Convert a user-facing point size to a model pixel size, rounded to 4 decimals. */
 export function fontSizePtToPx(pt: number): number {
-  return Math.round(ptToPx(pt) * 10000) / 10000;
+  return roundTo(ptToPx(pt), 4);
 }
 
 /** Format a model pixel size as a point display string ("" when invalid/≤0). */

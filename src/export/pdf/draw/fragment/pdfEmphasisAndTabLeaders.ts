@@ -63,7 +63,10 @@ export function drawTabLeaders(
   const slotByOffset = new Map(
     line.slots.map((slot) => [slot.offset, slot] as const),
   );
-  const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, document.styles);
+  const paragraphStyle = resolveEffectiveParagraphStyle(
+    paragraph.style,
+    document.styles,
+  );
   const tabs = paragraphStyle.tabs ?? [];
 
   for (const char of fragment.chars) {
@@ -79,7 +82,8 @@ export function drawTabLeaders(
       .map((tab) => ({ ...tab, positionPx: tab.position * PX_PER_POINT }))
       .filter((tab) => tab.positionPx > relativeLeft + 0.01)
       .sort((a, b) => a.positionPx - b.positionPx)[0];
-    const leader = stop?.leader && stop.leader !== "none" ? stop.leader : undefined;
+    const leader =
+      stop?.leader && stop.leader !== "none" ? stop.leader : undefined;
     if (!leader) continue;
 
     const y = leader === "underscore" ? baselineY + 2 : baselineY;

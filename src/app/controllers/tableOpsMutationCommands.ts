@@ -122,7 +122,10 @@ export interface TableLocationMutation {
 
 export function resolveLocationTableMutation(
   current: EditorState,
-  getTargetBlocks: (state: EditorState, zone: EditorEditingZone) => EditorBlockNode[],
+  getTargetBlocks: (
+    state: EditorState,
+    zone: EditorEditingZone,
+  ) => EditorBlockNode[],
 ): TableLocationMutation | null {
   const location = findParagraphTableLocation(
     current.document,

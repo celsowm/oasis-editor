@@ -1,4 +1,8 @@
-import type { EditorLayoutFragment, EditorLayoutLine, EditorTextStyle } from "@/core/model.js";
+import type {
+  EditorLayoutFragment,
+  EditorLayoutLine,
+  EditorTextStyle,
+} from "@/core/model.js";
 import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import { DEFAULT_FONT_SIZE_PX, pxToPt } from "@/export/pdf/units.js";
 import { PX_PER_POINT } from "@/layoutProjection/constants.js";
@@ -13,7 +17,11 @@ export function fragmentRectPt(
   yOffset: number,
   heightShrink: number,
 ): { x: number; y: number; width: number; height: number } | null {
-  const bounds = resolveFragmentBounds(line, fragment, styles.fontSize ?? DEFAULT_FONT_SIZE_PX);
+  const bounds = resolveFragmentBounds(
+    line,
+    fragment,
+    styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
+  );
   if (!bounds) return null;
   return {
     x: pxToPt(originX + bounds.left),

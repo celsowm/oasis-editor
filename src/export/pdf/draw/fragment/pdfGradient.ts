@@ -1,4 +1,8 @@
-import type { EditorLayoutFragment, EditorLayoutLine, EditorTextStyle } from "@/core/model.js";
+import type {
+  EditorLayoutFragment,
+  EditorLayoutLine,
+  EditorTextStyle,
+} from "@/core/model.js";
 import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import { DEFAULT_FONT_SIZE_PX, pxToPt } from "@/export/pdf/units.js";
 import { resolveFragmentBounds } from "../fragmentGeometry.js";
@@ -16,7 +20,8 @@ export function resolveGradientShadingName(
   styles: Required<EditorTextStyle>,
 ): string | undefined {
   const fill = styles.textFill;
-  if (!fill || fill.type !== "gradient" || fill.stops.length < 2) return undefined;
+  if (!fill || fill.type !== "gradient" || fill.stops.length < 2)
+    return undefined;
 
   const bounds = resolveFragmentBounds(
     line,

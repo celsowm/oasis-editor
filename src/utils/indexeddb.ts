@@ -51,8 +51,15 @@ export function putItem<T>(
         );
       };
 
-      request.onsuccess = () => {
+      transaction.oncomplete = () => {
         resolve();
+      };
+      transaction.onabort = transaction.onerror = () => {
+        reject(
+          new Error(
+            `Transaction failed putting item in ${storeName}: ${transaction.error?.message}`,
+          ),
+        );
       };
     } catch (err) {
       reject(err);
@@ -107,8 +114,15 @@ export function deleteItem(
         );
       };
 
-      request.onsuccess = () => {
+      transaction.oncomplete = () => {
         resolve();
+      };
+      transaction.onabort = transaction.onerror = () => {
+        reject(
+          new Error(
+            `Transaction failed deleting item from ${storeName}: ${transaction.error?.message}`,
+          ),
+        );
       };
     } catch (err) {
       reject(err);

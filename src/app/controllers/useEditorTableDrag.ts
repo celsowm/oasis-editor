@@ -2,6 +2,7 @@ import { createSignal } from "solid-js";
 import type { EditorState } from "@/core/model.js";
 import { moveBlockToPosition } from "@/core/commands/block.js";
 import { setActiveTableStyleValue } from "@/core/commands/table.js";
+import { PT_PER_PX } from "@/core/units.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
@@ -121,15 +122,14 @@ export function createEditorTableDrag(deps: {
           const table = findTable();
           if (table?.type === "table" && table.style?.floating) {
             const floating = table.style.floating;
-            const pointsPerPixel = 72 / 96;
             return setActiveTableStyleValue(current, tableId, "floating", {
               ...floating,
               x:
                 (floating.x ?? 0) +
-                (event.clientX - startClientX()) * pointsPerPixel,
+                (event.clientX - startClientX()) * PT_PER_PX,
               y:
                 (floating.y ?? 0) +
-                (event.clientY - startClientY()) * pointsPerPixel,
+                (event.clientY - startClientY()) * PT_PER_PX,
               xAlign: undefined,
               yAlign: undefined,
             });

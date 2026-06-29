@@ -4,6 +4,7 @@ import {
   type EditorPosition,
   type EditorState,
 } from "@/core/model.js";
+import { VERTICAL_HIT_WEIGHT } from "@/core/layoutConstants.js";
 import type {
   CanvasLayoutSnapshot,
   CanvasSnapshotInlineImage,
@@ -82,7 +83,7 @@ function scoreRectDistance(
     clientY < top ? top - clientY : clientY > bottom ? clientY - bottom : 0;
   const horizontalDelta =
     clientX < left ? left - clientX : clientX > right ? clientX - right : 0;
-  return verticalDelta * 1000 + horizontalDelta;
+  return verticalDelta * VERTICAL_HIT_WEIGHT + horizontalDelta;
 }
 
 function resolveZoneFromPage(
@@ -154,7 +155,7 @@ function resolveClosestOffsetInLine(
           ? clientY - (slot.top + slot.height)
           : 0;
     const horizontalDelta = Math.abs(clientX - slot.left);
-    const score = verticalDelta * 1000 + horizontalDelta;
+    const score = verticalDelta * VERTICAL_HIT_WEIGHT + horizontalDelta;
     if (score < bestScore) {
       bestScore = score;
       bestOffset = slot.offset;

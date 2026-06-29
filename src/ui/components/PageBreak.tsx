@@ -1,11 +1,10 @@
-import { Show } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 
 export interface PageBreakProps {
   pageIndex: number;
 }
 
-export function PageBreak(props: PageBreakProps) {
+export function PageBreak(_props: PageBreakProps) {
   const t = useI18n();
   return (
     <div

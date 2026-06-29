@@ -4,6 +4,7 @@
  * Captures longtasks, marks input-to-layout latency, and exposes
  * a global report via `window.__OASIS_PERF_REPORT()`.
  */
+import { roundTo } from "./round.js";
 
 function formatTimestamp(): string {
   const now = new Date();
@@ -58,7 +59,7 @@ export function markEnd(label: string): void {
 
   try {
     const measure = performance.measure(label, startName, endName);
-    const duration = Math.round(measure.duration * 100) / 100;
+    const duration = roundTo(measure.duration, 2);
     marks.push({
       name: label,
       duration,
@@ -85,7 +86,7 @@ export function markEnd(label: string): void {
 export function recordDuration(label: string, durationMs: number): void {
   marks.push({
     name: label,
-    duration: Math.round(durationMs * 100) / 100,
+    duration: roundTo(durationMs, 2),
     timestamp: Date.now(),
   });
 
@@ -94,7 +95,7 @@ export function recordDuration(label: string, durationMs: number): void {
     console.info(
       `%c[perf] ${label}`,
       "color: #f59e0b;",
-      `${formatTimestamp()} ${Math.round(durationMs * 100) / 100}ms`,
+      `${formatTimestamp()} ${roundTo(durationMs, 2)}ms`,
     );
   }
 }
@@ -198,7 +199,7 @@ export function startLongTaskObserver(): void {
     observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         longTasks.push({
-          duration: Math.round(entry.duration * 100) / 100,
+          duration: roundTo(entry.duration, 2),
           startTime: Math.round(entry.startTime),
         });
       }

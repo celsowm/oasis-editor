@@ -393,7 +393,12 @@ export function paginateTableBlock(
         splitEndPositions,
         startCellPositions,
       );
-      advanceCursor(groupEndIndex, isLastRowSplit, splitEnds, splitEndPositions);
+      advanceCursor(
+        groupEndIndex,
+        isLastRowSplit,
+        splitEnds,
+        splitEndPositions,
+      );
       return block;
     },
 
@@ -444,7 +449,11 @@ export function paginateTableBlock(
         splitEnds = positionsToBlockIndexes(ends);
         splitEndPositions = ends;
         isLastRowSplit = true;
-        const slicedLastRow = buildRowSliceFromPositions(targetRow, starts, ends);
+        const slicedLastRow = buildRowSliceFromPositions(
+          targetRow,
+          starts,
+          ends,
+        );
         segmentHeight = getTableSegmentHeight(
           { ...sourceBlock, rows: [slicedLastRow] },
           0,
@@ -480,7 +489,12 @@ export function paginateTableBlock(
         splitEndPositions,
         startCellPositions,
       );
-      advanceCursor(groupEndIndex, isLastRowSplit, splitEnds, splitEndPositions);
+      advanceCursor(
+        groupEndIndex,
+        isLastRowSplit,
+        splitEnds,
+        splitEndPositions,
+      );
       return block;
     },
   });

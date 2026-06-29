@@ -1,4 +1,8 @@
-import type { EditorParagraphNode, EditorPosition, EditorRevisionMetadata } from "@/core/model.js";
+import type {
+  EditorParagraphNode,
+  EditorPosition,
+  EditorRevisionMetadata,
+} from "@/core/model.js";
 import type { projectParagraphLayout } from "@/layoutProjection/index.js";
 import type { VerticalRenderMode } from "../verticalText.js";
 

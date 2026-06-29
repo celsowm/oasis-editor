@@ -9,17 +9,20 @@ import {
   resolveEffectiveTableCellFormatting,
 } from "@/core/model.js";
 import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
+import { NO_WRAP_MEASURE_WIDTH_PX } from "@/core/layoutConstants.js";
 import { projectParagraphLayout } from "@/layoutProjection/index.js";
 import { resolveCachedTableCellParagraph } from "@/layoutProjection/tableCellParagraphCache.js";
 import { shouldCollapseContextualSpacing } from "@/layoutProjection/paragraphPagination.js";
 import {
-  estimateStackedColumnWidth,
   estimateStackedParagraphHeight,
   resolveVerticalMode,
   type VerticalRenderMode,
 } from "../verticalText.js";
 import type { buildTableCellLayout } from "@/core/tableLayout.js";
-import type { CanvasTableBorderSpec, CanvasUnsupportedReason } from "./types.js";
+import type {
+  CanvasTableBorderSpec,
+  CanvasUnsupportedReason,
+} from "./types.js";
 import {
   resolveBorder,
   resolveCellPadding,
@@ -28,10 +31,11 @@ import {
   applyFitTextScale,
 } from "./tableCellGeometry.js";
 
-const NO_WRAP_WIDTH_PX = 100000;
 const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
 
-function resolveCellVerticalMode(cell: EditorTableCellNode): VerticalRenderMode {
+function resolveCellVerticalMode(
+  cell: EditorTableCellNode,
+): VerticalRenderMode {
   const direction =
     cell.style?.textDirection ?? cell.blocks[0]?.style?.textDirection ?? null;
   return resolveVerticalMode(direction);
@@ -85,7 +89,7 @@ export function prepareCells(options: {
   columnOffsets: number[];
   cellSpacingPx: number;
   visualColumnCount: number;
-  effectiveRowStyles: (EditorTableNode["rows"][number]["style"])[];
+  effectiveRowStyles: EditorTableNode["rows"][number]["style"][];
   state: EditorState;
   pageIndex: number;
 }): { prepared: PreparedCell[]; unsupported: CanvasUnsupportedReason[] } {
@@ -169,25 +173,39 @@ export function prepareCells(options: {
         bottom: resolveBorder(cell.style?.borderBottom),
         left: resolveBorder(cell.style?.borderLeft ?? logicalLeft),
         ...(cell.style?.borderTopLeftToBottomRight
-          ? { topLeftToBottomRight: resolveBorder(cell.style.borderTopLeftToBottomRight) }
+          ? {
+              topLeftToBottomRight: resolveBorder(
+                cell.style.borderTopLeftToBottomRight,
+              ),
+            }
           : {}),
         ...(cell.style?.borderTopRightToBottomLeft
-          ? { topRightToBottomLeft: resolveBorder(cell.style.borderTopRightToBottomLeft) }
+          ? {
+              topRightToBottomLeft: resolveBorder(
+                cell.style.borderTopRightToBottomLeft,
+              ),
+            }
           : {}),
       };
 
       const contentWidthPx = Math.max(
         MIN_TABLE_CELL_CONTENT_WIDTH_PX,
-        width - borders.left.width - borders.right.width - padding.left - padding.right,
+        width -
+          borders.left.width -
+          borders.right.width -
+          padding.left -
+          padding.right,
       );
 
       const verticalMode = resolveCellVerticalMode(cell);
-      const isRotated = verticalMode === "rotate-cw" || verticalMode === "rotate-ccw";
+      const isRotated =
+        verticalMode === "rotate-cw" || verticalMode === "rotate-ccw";
       const isStacked = verticalMode === "stack";
       const isFitText = !!cell.style?.fitText && !isRotated && !isStacked;
 
       const explicitRowHeightPx = parseDimensionToPx(effectiveRow.height);
-      const hasExplicitRowHeight = explicitRowHeightPx !== null && explicitRowHeightPx > 0;
+      const hasExplicitRowHeight =
+        explicitRowHeightPx !== null && explicitRowHeightPx > 0;
       const wrapWidth =
         isRotated || cell.style?.noWrap
           ? isRotated && hasExplicitRowHeight
@@ -199,7 +217,7 @@ export function prepareCells(options: {
                   padding.top -
                   padding.bottom,
               )
-            : NO_WRAP_WIDTH_PX
+            : NO_WRAP_MEASURE_WIDTH_PX
           : contentWidthPx;
 
       const projectedParagraphs: PreparedCell["projectedParagraphs"] = [];
@@ -214,7 +232,7 @@ export function prepareCells(options: {
             pageIndex,
             undefined,
             state.document.styles,
-            NO_WRAP_WIDTH_PX,
+            NO_WRAP_MEASURE_WIDTH_PX,
             undefined,
             state.document.settings?.defaultTabStop,
           );
@@ -283,7 +301,10 @@ export function prepareCells(options: {
             const removedAfter = previous.spacingAfter;
             previous.height = Math.max(1, previous.height - removedAfter);
             previous.spacingAfter = 0;
-            contentNaturalHeightPx = Math.max(0, contentNaturalHeightPx - removedAfter);
+            contentNaturalHeightPx = Math.max(
+              0,
+              contentNaturalHeightPx - removedAfter,
+            );
             effectiveSpacingBefore = 0;
           } else {
             const collapsed = Math.min(previous.spacingAfter, spacingBefore);

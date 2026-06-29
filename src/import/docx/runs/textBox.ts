@@ -17,6 +17,7 @@ import {
   parseOptionalInt,
   normalizeHexColor,
 } from "./units.js";
+import { roundTo } from "@/utils/round.js";
 
 const EMU_DEFAULT_TEXTBOX_SIZE_PX = 300;
 
@@ -144,7 +145,7 @@ function parseTextBoxShape(wsp: XmlElement): EditorTextBoxShape | undefined {
     } else if (el.localName === "ln") {
       const width = parseOptionalInt(el.getAttribute("w"));
       if (width !== undefined) {
-        shape.borderWidthPt = Math.round((width / EMU_PER_PT) * 100) / 100;
+        shape.borderWidthPt = roundTo(width / EMU_PER_PT, 2);
       }
       const color = normalizeHexColor(
         findElementDeep(el, "srgbClr")?.getAttribute("val"),

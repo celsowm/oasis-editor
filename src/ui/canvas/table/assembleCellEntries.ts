@@ -1,6 +1,9 @@
 import { paragraphOffsetToPosition } from "@/core/model.js";
 import type { EditorTableNode } from "@/core/model.js";
-import type { CanvasTableCellLayoutEntry, CanvasTableParagraphLayoutEntry } from "./types.js";
+import type {
+  CanvasTableCellLayoutEntry,
+  CanvasTableParagraphLayoutEntry,
+} from "./types.js";
 import type { PreparedCell } from "./prepareCells.js";
 import { resolveVerticalContentOffset } from "./tableCellGeometry.js";
 
@@ -57,7 +60,11 @@ export function assembleCellEntries(options: {
     const contentTop = top + borders.top.width + padding.top;
     const contentHeightPx = Math.max(
       MIN_TABLE_CELL_CONTENT_HEIGHT_PX,
-      height - borders.top.width - borders.bottom.width - padding.top - padding.bottom,
+      height -
+        borders.top.width -
+        borders.bottom.width -
+        padding.top -
+        padding.bottom,
     );
 
     const firstParagraph = cell.blocks[0];
@@ -75,7 +82,11 @@ export function assembleCellEntries(options: {
     let paragraphCursorY = 0;
     const verticalContentOffset =
       cellEntry.verticalMode === "horizontal"
-        ? resolveVerticalContentOffset(cell, contentHeightPx, cellEntry.contentNaturalHeightPx)
+        ? resolveVerticalContentOffset(
+            cell,
+            contentHeightPx,
+            cellEntry.contentNaturalHeightPx,
+          )
         : 0;
 
     const paragraphs: CanvasTableParagraphLayoutEntry[] = [];
@@ -132,7 +143,8 @@ export function buildRowOffsets(
   let cumulativeY = cellSpacingPx;
   for (let rowIndex = 0; rowIndex < rowHeights.length; rowIndex += 1) {
     rowOffsets[rowIndex] = cumulativeY;
-    cumulativeY += (rowHeights[rowIndex] ?? DEFAULT_TABLE_ROW_HEIGHT) + cellSpacingPx;
+    cumulativeY +=
+      (rowHeights[rowIndex] ?? DEFAULT_TABLE_ROW_HEIGHT) + cellSpacingPx;
   }
   return rowOffsets;
 }

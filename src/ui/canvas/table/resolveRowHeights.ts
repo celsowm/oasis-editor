@@ -7,7 +7,7 @@ const DEFAULT_TABLE_ROW_HEIGHT = 14;
 export function resolveRowHeights(options: {
   prepared: PreparedCell[];
   table: EditorTableNode;
-  effectiveRowStyles: (EditorTableNode["rows"][number]["style"])[];
+  effectiveRowStyles: EditorTableNode["rows"][number]["style"][];
   estimatedHeight: number;
 }): number[] {
   const { prepared, table, effectiveRowStyles, estimatedHeight } = options;

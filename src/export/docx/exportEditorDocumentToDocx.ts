@@ -147,10 +147,16 @@ function writeNotePart(
 ): void {
   if (!part) return;
   zip.file(`word/${partName}.xml`, part.xml);
-  if (part.partContext.images.length > 0 || part.partContext.hyperlinks.length > 0) {
+  if (
+    part.partContext.images.length > 0 ||
+    part.partContext.hyperlinks.length > 0
+  ) {
     zip.file(
       `word/_rels/${partName}.xml.rels`,
-      buildPartRelationshipsXml(part.partContext.images, part.partContext.hyperlinks),
+      buildPartRelationshipsXml(
+        part.partContext.images,
+        part.partContext.hyperlinks,
+      ),
     );
   }
 }

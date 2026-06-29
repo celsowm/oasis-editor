@@ -44,7 +44,6 @@ const WRAP_OPTIONS: ReadonlyArray<{
 
 /** Lines-around-a-box pictograms approximating Word's layout-option glyphs. */
 function WrapIcon(props: { preset: WrapPreset }): JSX.Element {
-  const t = useI18n();
   const line = (x: number, y: number, w: number) => (
     <rect x={x} y={y} width={w} height="2" rx="1" fill="#9aa0a6" />
   );

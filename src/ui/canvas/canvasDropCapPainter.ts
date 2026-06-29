@@ -25,7 +25,8 @@ export function drawDropCapForParagraph(options: {
 
   const style = dropCap.style;
   const { font, fillStyle, renderMetrics } = resolveCanvasRunPaintStyle(style);
-  const bodyLineHeight = lines[0]?.height ?? (style?.fontSize ?? DEFAULT_FONT_SIZE_PX);
+  const bodyLineHeight =
+    lines[0]?.height ?? style?.fontSize ?? DEFAULT_FONT_SIZE_PX;
 
   const glyphWidth = measureDropCapWidth(dropCap);
   const x = dropCap.type === "margin" ? originX - glyphWidth : originX;

@@ -172,7 +172,10 @@ function patchSelectedImage(
   return cloneStateWithParagraphs(
     state,
     nextParagraphs,
-    preserveSelectionByParagraphOffsets(nextParagraphs, normalizeSelection(state)),
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
   );
 }
 

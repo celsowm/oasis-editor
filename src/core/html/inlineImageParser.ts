@@ -1,5 +1,16 @@
 import type { EditorImageRunData } from "@/core/model.js";
 
+/**
+ * Conservative allowlist for image sources pulled in from pasted/imported HTML.
+ * Only inline `data:image/...` and app-controlled `blob:` URLs are accepted;
+ * remote schemes (`http(s):`, `javascript:`, …) are rejected so untrusted
+ * markup cannot smuggle external requests or unexpected payloads into a document.
+ */
+export function isAllowedImageSrc(src: string): boolean {
+  const normalized = src.trim().toLowerCase();
+  return normalized.startsWith("data:image/") || normalized.startsWith("blob:");
+}
+
 export function parseInlineImage(
   element: Element,
 ): EditorImageRunData | undefined {
@@ -9,7 +20,7 @@ export function parseInlineImage(
 
   const img = element as HTMLImageElement;
   const src = img.getAttribute("src")?.trim() ?? "";
-  if (!src) {
+  if (!src || !isAllowedImageSrc(src)) {
     return undefined;
   }
 

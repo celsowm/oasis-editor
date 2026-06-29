@@ -39,8 +39,7 @@ export function SidePanel(props: SidePanelProps): JSX.Element {
   );
 }
 
-export interface SidePanelSectionProps
-  extends JSX.HTMLAttributes<HTMLDivElement> {}
+export interface SidePanelSectionProps extends JSX.HTMLAttributes<HTMLDivElement> {}
 
 export function SidePanelHeader(props: SidePanelSectionProps): JSX.Element {
   const [local, others] = splitProps(props, ["class", "children"]);

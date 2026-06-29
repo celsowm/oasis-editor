@@ -1,5 +1,6 @@
 import type { TranslationKey } from "@/i18n/index.js";
 import { PX_PER_CM as CM_TO_PX } from "@/core/units.js";
+import { roundTo } from "@/utils/round.js";
 
 /** Convert a centimetre measurement to a rounded pixel value. */
 export function cmToPx(cm: number): number {
@@ -8,7 +9,7 @@ export function cmToPx(cm: number): number {
 
 /** Convert pixels back to centimetres (for display in the custom form). */
 export function pxToCm(px: number): number {
-  return Math.round((px / CM_TO_PX) * 100) / 100;
+  return roundTo(px / CM_TO_PX, 2);
 }
 
 export interface MarginPreset {

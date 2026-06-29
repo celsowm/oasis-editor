@@ -33,7 +33,10 @@ export function resolveCanvasTextFill(
   const axis = resolveGradientAxis(x0, y0, x1, y1, fill.angle ?? 0);
   const gradient = ctx.createLinearGradient(axis.x0, axis.y0, axis.x1, axis.y1);
   for (const stop of fill.stops) {
-    gradient.addColorStop(stop.position, hexToRgba(stop.color, stop.alpha ?? 1));
+    gradient.addColorStop(
+      stop.position,
+      hexToRgba(stop.color, stop.alpha ?? 1),
+    );
   }
   return gradient;
 }
@@ -234,6 +237,9 @@ export function drawFragmentReflection(
   ctx.restore();
 }
 
-export function getRenderedChar(char: string, styles: { allCaps?: boolean }): string {
+export function getRenderedChar(
+  char: string,
+  styles: { allCaps?: boolean },
+): string {
   return styles.allCaps ? char.toUpperCase() : char;
 }

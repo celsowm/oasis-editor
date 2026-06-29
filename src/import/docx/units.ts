@@ -5,6 +5,7 @@ import {
   OOXML_PERCENT_DENOMINATOR,
   OOXML_ROTATION_UNITS,
 } from "@/core/units.js";
+import { roundTo } from "@/utils/round.js";
 export {
   TWIPS_PER_INCH,
   PX_PER_INCH,
@@ -35,7 +36,7 @@ export function twipsToPoints(
     return undefined;
   }
 
-  return Math.round((parsed / 20) * 10000) / 10000;
+  return roundTo(parsed / 20, 4);
 }
 
 export function halfPointsToPx(
@@ -46,7 +47,7 @@ export function halfPointsToPx(
     return null;
   }
 
-  return Math.round((parsed / 2 / 72) * PX_PER_INCH * 10000) / 10000;
+  return roundTo((parsed / 2 / 72) * PX_PER_INCH, 4);
 }
 
 export function normalizeImportedFontFamily(

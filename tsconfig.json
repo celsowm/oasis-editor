@@ -12,11 +12,11 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "oasis-editor": ["./src/index.ts"]
     },
     "jsx": "preserve",
     "jsxImportSource": "solid-js"
   },
-  "include": ["src", "site", "tests"],
-  "exclude": ["src/packages"]
+  "include": ["src", "site", "tests"]
 }

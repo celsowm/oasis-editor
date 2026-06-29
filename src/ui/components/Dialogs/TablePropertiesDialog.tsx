@@ -297,7 +297,9 @@ function TableTabPanel(p: TabPanelProps) {
                 data-testid={`editor-table-properties-align-${align}`}
               />
               {t(
-                `table.align${align[0]!.toUpperCase()}${align.slice(1)}` as any,
+                `table.align${align[0]!.toUpperCase()}${align.slice(1)}` as Parameters<
+                  typeof t
+                >[0],
               )}
             </label>
           ))}

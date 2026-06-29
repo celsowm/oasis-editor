@@ -1,4 +1,4 @@
-import { Show, type JSX } from "solid-js";
+import { Show } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import type { UseEditorFindReplaceResult } from "@/app/controllers/useEditorFindReplace.js";
 

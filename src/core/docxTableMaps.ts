@@ -1,7 +1,4 @@
-import type {
-  EditorTableConditionalType,
-  EditorTableStyle,
-} from "./model.js";
+import type { EditorTableConditionalType, EditorTableStyle } from "./model.js";
 
 /**
  * Maps OOXML `w:cnfStyle` attribute names to EditorTableConditionalType keys.

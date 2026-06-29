@@ -15,7 +15,10 @@ import {
 } from "./table/tableCellGeometry.js";
 import { prepareCells } from "./table/prepareCells.js";
 import { resolveRowHeights } from "./table/resolveRowHeights.js";
-import { assembleCellEntries, buildRowOffsets } from "./table/assembleCellEntries.js";
+import {
+  assembleCellEntries,
+  buildRowOffsets,
+} from "./table/assembleCellEntries.js";
 
 // Re-export public types so existing importers keep working without path changes.
 export type {
@@ -51,7 +54,8 @@ export function buildCanvasTableLayout(options: {
     style: resolveEffectiveTableStyle(sourceTable, state.document.styles),
   };
   const tableWidth = resolveCanvasTableWidth(table, contentWidth);
-  const tableLeft = originX + resolveTableLeftOffset(table, tableWidth, contentWidth);
+  const tableLeft =
+    originX + resolveTableLeftOffset(table, tableWidth, contentWidth);
   const cellSpacingPx = resolveTableCellSpacingPx(table);
   const tableEntries = buildTableCellLayout(table);
 
@@ -82,7 +86,9 @@ export function buildCanvasTableLayout(options: {
       const cell = table.rows[entry.rowIndex]?.cells[entry.cellIndex];
       if (!cell) continue;
       const direction =
-        cell.style?.textDirection ?? cell.blocks[0]?.style?.textDirection ?? null;
+        cell.style?.textDirection ??
+        cell.blocks[0]?.style?.textDirection ??
+        null;
       if (
         direction !== "tbRl" &&
         direction !== "btLr" &&
@@ -93,7 +99,10 @@ export function buildCanvasTableLayout(options: {
       let glyphWidth = 0;
       for (const block of cell.blocks) {
         if (block.type !== "paragraph") continue;
-        glyphWidth = Math.max(glyphWidth, estimateStackedColumnWidth(block, state));
+        glyphWidth = Math.max(
+          glyphWidth,
+          estimateStackedColumnWidth(block, state),
+        );
       }
       if (glyphWidth <= 0) continue;
       const padding = resolveCellPadding(cell);
@@ -118,7 +127,9 @@ export function buildCanvasTableLayout(options: {
 
   // Effective row styles used in all three passes.
   const effectiveRowStyles = table.rows.map((row, rowIndex) => {
-    const entry = tableEntries.find((candidate) => candidate.rowIndex === rowIndex);
+    const entry = tableEntries.find(
+      (candidate) => candidate.rowIndex === rowIndex,
+    );
     return entry
       ? resolveEffectiveTableCellFormatting({
           table: sourceTable,

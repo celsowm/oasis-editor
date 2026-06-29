@@ -321,7 +321,10 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
         hit.zone,
         {
           ...state,
-          selection: { anchor: { ...hit.position }, focus: { ...hit.position } },
+          selection: {
+            anchor: { ...hit.position },
+            focus: { ...hit.position },
+          },
         },
         hit.position,
       );
@@ -342,9 +345,20 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
       return;
     }
     dragAnchor = null;
-    const start = paragraphOffsetToPosition(textBoxParagraph, hit.textBox!.startOffset);
-    const end = paragraphOffsetToPosition(textBoxParagraph, hit.textBox!.endOffset);
-    applyWithZone(state, hit.zone, setSelection(state, { anchor: start, focus: end }), start);
+    const start = paragraphOffsetToPosition(
+      textBoxParagraph,
+      hit.textBox!.startOffset,
+    );
+    const end = paragraphOffsetToPosition(
+      textBoxParagraph,
+      hit.textBox!.endOffset,
+    );
+    applyWithZone(
+      state,
+      hit.zone,
+      setSelection(state, { anchor: start, focus: end }),
+      start,
+    );
     stopDragging();
     deps.focusInputAfterPointerSelection();
   };
@@ -363,9 +377,17 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
       return;
     }
     dragAnchor = null;
-    const start = paragraphOffsetToPosition(imageParagraph, hit.image!.startOffset);
+    const start = paragraphOffsetToPosition(
+      imageParagraph,
+      hit.image!.startOffset,
+    );
     const end = paragraphOffsetToPosition(imageParagraph, hit.image!.endOffset);
-    applyWithZone(state, hit.zone, setSelection(state, { anchor: start, focus: end }), start);
+    applyWithZone(
+      state,
+      hit.zone,
+      setSelection(state, { anchor: start, focus: end }),
+      start,
+    );
     stopDragging();
     deps.imageOps.startImageDrag(
       hit.image!.paragraphId,
@@ -386,7 +408,10 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     applyWithZone(
       state,
       hit.zone,
-      setSelection(state, { anchor: state.selection.anchor, focus: hit.position }),
+      setSelection(state, {
+        anchor: state.selection.anchor,
+        focus: hit.position,
+      }),
       hit.position,
     );
     window.addEventListener("mousemove", handleWindowMouseMove);
@@ -417,7 +442,10 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     paragraph: EditorParagraphNode,
   ): void => {
     dragAnchor = null;
-    const word = resolveWordSelection(getParagraphText(paragraph), hit.paragraphOffset);
+    const word = resolveWordSelection(
+      getParagraphText(paragraph),
+      hit.paragraphOffset,
+    );
     const startPos = paragraphOffsetToPosition(paragraph, word.start);
     const endPos = paragraphOffsetToPosition(paragraph, word.end);
     applyWithZone(
@@ -483,12 +511,30 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     const paragraph = deps.getParagraphById(state.document, hit.paragraphId);
     const isZoneTransition = hit.zone !== (state.activeZone ?? "main");
 
-    if (isZoneTransition) { handleZoneTransitionDown(state, hit, clickDetail); return; }
-    if (hit.textBox) { handleTextBoxDown(state, hit); return; }
-    if (hit.image) { handleImageDown(state, hit, event); return; }
-    if (event.shiftKey && hit.resolvedFromParagraph) { handleShiftClickDown(state, hit); return; }
-    if (clickDetail >= 3 && paragraph) { handleTripleClickDown(state, hit, paragraph); return; }
-    if (clickDetail === 2 && paragraph) { handleDoubleClickDown(state, hit, paragraph); return; }
+    if (isZoneTransition) {
+      handleZoneTransitionDown(state, hit, clickDetail);
+      return;
+    }
+    if (hit.textBox) {
+      handleTextBoxDown(state, hit);
+      return;
+    }
+    if (hit.image) {
+      handleImageDown(state, hit, event);
+      return;
+    }
+    if (event.shiftKey && hit.resolvedFromParagraph) {
+      handleShiftClickDown(state, hit);
+      return;
+    }
+    if (clickDetail >= 3 && paragraph) {
+      handleTripleClickDown(state, hit, paragraph);
+      return;
+    }
+    if (clickDetail === 2 && paragraph) {
+      handleDoubleClickDown(state, hit, paragraph);
+      return;
+    }
 
     if (!hit.resolvedFromParagraph) {
       deps.focusInputAfterPointerSelection();

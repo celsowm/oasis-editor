@@ -1,14 +1,11 @@
 import type {
   EditorLayoutLine,
-  EditorPageSettings,
   EditorParagraphNode,
   EditorState,
 } from "@/core/model.js";
-import {
-  resolveEffectiveTextStyleForParagraph,
-  resolveEffectiveParagraphStyle,
-} from "@/core/model.js";
+import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
 import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
+import { TEXT_BASELINE_RATIO } from "@/core/layoutConstants.js";
 import { createEditorLogger } from "@/utils/logger.js";
 import { resolveListPrefix } from "./listNumbering.js";
 import { paintTextBox } from "./canvasTextBoxPainter.js";
@@ -137,7 +134,14 @@ function drawTextFragment(
       segmentLeft = null;
       return;
     }
-    drawStyledText(ctx, segmentText, originX + segmentLeft, baselineY, scale, styles);
+    drawStyledText(
+      ctx,
+      segmentText,
+      originX + segmentLeft,
+      baselineY,
+      scale,
+      styles,
+    );
     segmentText = "";
     segmentLeft = null;
   };
@@ -157,7 +161,13 @@ function drawTextFragment(
       const nextSlot = slotByOffset.get(char.paragraphOffset + 1);
       const leader = resolveTabLeader(paragraph, line, slot.left, state);
       if (nextSlot && leader) {
-        drawTabLeader(ctx, leader, originX + slot.left, originX + nextSlot.left, baselineY);
+        drawTabLeader(
+          ctx,
+          leader,
+          originX + slot.left,
+          originX + nextSlot.left,
+          baselineY,
+        );
       }
       continue;
     }
@@ -165,7 +175,14 @@ function drawTextFragment(
     const renderedChar = getRenderedChar(char.char, styles);
     if (hasManualCharacterSpacing) {
       flushSegment();
-      drawStyledText(ctx, renderedChar, originX + slot.left, baselineY, scale, styles);
+      drawStyledText(
+        ctx,
+        renderedChar,
+        originX + slot.left,
+        baselineY,
+        scale,
+        styles,
+      );
       continue;
     }
 
@@ -203,7 +220,7 @@ export function drawParagraph(
     for (const slot of line.slots) {
       slotByOffset.set(slot.offset, slot);
     }
-    const baselineY = originY + line.top + line.height * 0.8;
+    const baselineY = originY + line.top + line.height * TEXT_BASELINE_RATIO;
 
     const listPrefix =
       line.index === 0 ? resolveListPrefix(paragraph, state.document) : "";
@@ -261,16 +278,44 @@ export function drawParagraph(
         italic: Boolean(styles.italic),
         sample: fragment.text.slice(0, 80),
       });
-      ctx.fillStyle = resolveCanvasTextFill(ctx, styles, line, fragment, originX, originY);
+      ctx.fillStyle = resolveCanvasTextFill(
+        ctx,
+        styles,
+        line,
+        fragment,
+        originX,
+        originY,
+      );
 
       if (styles.shading) {
-        drawFragmentShading(ctx, line, fragment, originX, originY, styles.shading);
+        drawFragmentShading(
+          ctx,
+          line,
+          fragment,
+          originX,
+          originY,
+          styles.shading,
+        );
       }
       if (styles.highlight) {
-        drawFragmentHighlight(ctx, line, fragment, originX, originY, styles.highlight);
+        drawFragmentHighlight(
+          ctx,
+          line,
+          fragment,
+          originX,
+          originY,
+          styles.highlight,
+        );
       }
       if (styles.textBorder) {
-        drawFragmentBorder(ctx, line, fragment, originX, originY, styles.textBorder);
+        drawFragmentBorder(
+          ctx,
+          line,
+          fragment,
+          originX,
+          originY,
+          styles.textBorder,
+        );
       }
 
       if (fragment.image && !fragment.image.floating) {
@@ -306,39 +351,78 @@ export function drawParagraph(
             objectHeight: height,
           });
           paintTextBox(
-            ctx, textBox, state, rect.left, rect.top,
-            rect.width, rect.height, pageIndex, onUpdate, painters,
+            ctx,
+            textBox,
+            state,
+            rect.left,
+            rect.top,
+            rect.width,
+            rect.height,
+            pageIndex,
+            onUpdate,
+            painters,
           );
         }
       } else {
         drawTextFragment(
-          ctx, paragraph, line, fragment, slotByOffset, state, styles,
-          originX, baselineY + renderMetrics.baselineOffset,
+          ctx,
+          paragraph,
+          line,
+          fragment,
+          slotByOffset,
+          state,
+          styles,
+          originX,
+          baselineY + renderMetrics.baselineOffset,
         );
         if (styles.reflection) {
           drawFragmentReflection(
-            ctx, fragment, slotByOffset, styles,
-            originX, baselineY + renderMetrics.baselineOffset, styles.reflection,
+            ctx,
+            fragment,
+            slotByOffset,
+            styles,
+            originX,
+            baselineY + renderMetrics.baselineOffset,
+            styles.reflection,
           );
         }
       }
 
       if (styles.underline) {
         drawTextDecoration(
-          ctx, line, fragment, originX, originY, "underline",
-          styles.underlineStyle ?? undefined, styles.underlineColor ?? undefined,
+          ctx,
+          line,
+          fragment,
+          originX,
+          originY,
+          "underline",
+          styles.underlineStyle ?? undefined,
+          styles.underlineColor ?? undefined,
         );
       }
       if (styles.strike) {
         drawTextDecoration(ctx, line, fragment, originX, originY, "strike");
       }
       if (styles.doubleStrike) {
-        drawTextDecoration(ctx, line, fragment, originX, originY, "doubleStrike");
+        drawTextDecoration(
+          ctx,
+          line,
+          fragment,
+          originX,
+          originY,
+          "doubleStrike",
+        );
       }
       if (styles.emphasisMark) {
         drawFragmentEmphasis(
-          ctx, line, fragment, slotByOffset, originX, originY,
-          styles.emphasisMark, styles.color ?? "#000000",
+          ctx,
+          line,
+          fragment,
+          slotByOffset,
+          originX,
+          originY,
+          styles.emphasisMark,
+          styles.color ?? "#000000",
         );
       }
       ctx.restore();
@@ -364,8 +448,12 @@ export function drawParagraph(
           ctx.font = font;
           ctx.fillStyle = fillStyle;
           drawStyledText(
-            ctx, "-", originX + endSlot.left,
-            baselineY + renderMetrics.baselineOffset, scale, styles,
+            ctx,
+            "-",
+            originX + endSlot.left,
+            baselineY + renderMetrics.baselineOffset,
+            scale,
+            styles,
           );
           ctx.restore();
         }
@@ -381,7 +469,7 @@ export function drawParagraph(
         ctx.save();
         ctx.font = "400 13px Calibri";
         ctx.fillStyle = "#9ca3af";
-        const y = originY + line.top + line.height * 0.8;
+        const y = originY + line.top + line.height * TEXT_BASELINE_RATIO;
         ctx.fillText("¶", originX + markSlot.left + 2, y);
         ctx.restore();
       }

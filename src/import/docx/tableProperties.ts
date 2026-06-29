@@ -1,4 +1,5 @@
 import { type Element as XmlElement } from "@xmldom/xmldom";
+import { roundTo } from "@/utils/round.js";
 import type {
   EditorBorderStyle,
   EditorDocxWidthValue,
@@ -62,9 +63,7 @@ function parseDocxWidthValue(
     const pct = raw.trim().endsWith("%")
       ? Number.parseFloat(raw)
       : Number(raw) / 50;
-    return Number.isFinite(pct)
-      ? `${Math.round(pct * 10000) / 10000}%`
-      : undefined;
+    return Number.isFinite(pct) ? `${roundTo(pct, 4)}%` : undefined;
   }
 
   // Missing or "dxa" type is treated as twips.
@@ -591,7 +590,7 @@ export function parseTableCellStyle(
   } else if (cellWidthType === "pct" && cellWidthValue) {
     const pct = Number(cellWidthValue);
     if (Number.isFinite(pct)) {
-      style.width = `${Math.round((pct / 50) * 10000) / 10000}%`;
+      style.width = `${roundTo(pct / 50, 4)}%`;
     }
   }
 
@@ -738,7 +737,11 @@ export function collapseCellAutospacing(
   }
 }
 
-type CellBorderKey = "borderTop" | "borderBottom" | "borderLeft" | "borderRight";
+type CellBorderKey =
+  | "borderTop"
+  | "borderBottom"
+  | "borderLeft"
+  | "borderRight";
 
 function applyBorderIfMissing(
   style: EditorTableCellStyle,
@@ -767,12 +770,42 @@ export function applyTableBordersToRows(
       const cell = row.cells[colIndex]!;
       const style: EditorTableCellStyle = cell.style ?? {};
 
-      applyBorderIfMissing(style, "borderTop", tblBorders.borderTop, rowIndex === 0);
-      applyBorderIfMissing(style, "borderBottom", tblBorders.borderBottom, rowIndex === lastRowIndex);
-      applyBorderIfMissing(style, "borderLeft", tblBorders.borderLeft, colIndex === 0);
-      applyBorderIfMissing(style, "borderRight", tblBorders.borderRight, colIndex === lastColIndex);
-      applyBorderIfMissing(style, "borderBottom", tblBorders.borderInsideH, rowIndex < lastRowIndex);
-      applyBorderIfMissing(style, "borderRight", tblBorders.borderInsideV, colIndex < lastColIndex);
+      applyBorderIfMissing(
+        style,
+        "borderTop",
+        tblBorders.borderTop,
+        rowIndex === 0,
+      );
+      applyBorderIfMissing(
+        style,
+        "borderBottom",
+        tblBorders.borderBottom,
+        rowIndex === lastRowIndex,
+      );
+      applyBorderIfMissing(
+        style,
+        "borderLeft",
+        tblBorders.borderLeft,
+        colIndex === 0,
+      );
+      applyBorderIfMissing(
+        style,
+        "borderRight",
+        tblBorders.borderRight,
+        colIndex === lastColIndex,
+      );
+      applyBorderIfMissing(
+        style,
+        "borderBottom",
+        tblBorders.borderInsideH,
+        rowIndex < lastRowIndex,
+      );
+      applyBorderIfMissing(
+        style,
+        "borderRight",
+        tblBorders.borderInsideV,
+        colIndex < lastColIndex,
+      );
 
       if (Object.keys(style).length > 0 && cell.style !== style) {
         cell.style = style;

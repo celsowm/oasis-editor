@@ -11,10 +11,9 @@ import {
 } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { PX_PER_POINT as POINT_TO_PX } from "@/core/units.js";
+import { NO_WRAP_MEASURE_WIDTH_PX } from "@/core/layoutConstants.js";
 const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
 const DEFAULT_CELL_PADDING_LEFT_RIGHT_PX = 7.2;
-/** Effectively-unbounded measuring width for `noWrap` cells (single line). */
-const NO_WRAP_MEASURE_WIDTH_PX = 100000;
 
 function toPx(valuePt: number): number {
   return valuePt * POINT_TO_PX;

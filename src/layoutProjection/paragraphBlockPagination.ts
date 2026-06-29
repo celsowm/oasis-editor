@@ -364,16 +364,14 @@ export function paginateParagraphBlock(
           styles,
         );
         if (
-          candidateFitHeight >
-            remaining + PARAGRAPH_FIT_HEIGHT_TOLERANCE_PX &&
+          candidateFitHeight > remaining + PARAGRAPH_FIT_HEIGHT_TOLERANCE_PX &&
           lineEndIndex === originalStart &&
           track.blocks.length > 0
         ) {
           break;
         }
         if (
-          candidateFitHeight >
-            remaining + PARAGRAPH_FIT_HEIGHT_TOLERANCE_PX &&
+          candidateFitHeight > remaining + PARAGRAPH_FIT_HEIGHT_TOLERANCE_PX &&
           lineEndIndex > originalStart
         ) {
           break;

@@ -230,12 +230,20 @@ export function parseLookupList<TSubtable>(
 ): Array<{ lookupType: number; subtables: TSubtable[] }> {
   reader.seek(lookupListOffset);
   const lookupCount = reader.u16();
-  const lookupOffsets = readU16OffsetArray(reader, lookupCount, lookupListOffset);
+  const lookupOffsets = readU16OffsetArray(
+    reader,
+    lookupCount,
+    lookupListOffset,
+  );
   return lookupOffsets.map((lookupOffset) => {
     reader.seek(lookupOffset);
     const lookupType = reader.u16();
     reader.skip(2); // lookupFlag (glyph skipping ignored — no marks in scope)
-    const subtableOffsets = readU16OffsetArray(reader, reader.u16(), lookupOffset);
+    const subtableOffsets = readU16OffsetArray(
+      reader,
+      reader.u16(),
+      lookupOffset,
+    );
     const subtables: TSubtable[] = [];
     for (const subtableOffset of subtableOffsets) {
       try {

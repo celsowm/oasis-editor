@@ -35,10 +35,7 @@ import {
 } from "@/ui/canvas/CanvasTableLayout.js";
 import { createEditorLogger } from "@/utils/logger.js";
 import { PageBreak } from "@/ui/components/PageBreak.js";
-import {
-  createCanvasPageRenderer,
-  resolveCanvasFooterZoneTop,
-} from "@/ui/canvas/canvasPageRenderer.js";
+import { createCanvasPageRenderer } from "@/ui/canvas/canvasPageRenderer.js";
 export { resolveCanvasTextRenderMetrics } from "@/ui/canvas/canvasParagraphPainter.js";
 export { resolveCanvasFooterZoneTop } from "@/ui/canvas/canvasPageRenderer.js";
 

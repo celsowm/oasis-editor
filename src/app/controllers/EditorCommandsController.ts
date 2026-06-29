@@ -64,9 +64,7 @@ import type {
 } from "./controllerPorts.js";
 
 export interface EditorCommandsControllerDeps
-  extends EditorTransactionPort,
-    FocusInputPort,
-    SelectedImageQueryPort {
+  extends EditorTransactionPort, FocusInputPort, SelectedImageQueryPort {
   state: EditorState;
   logger: EditorLogger;
   applySelectionAwareTextCommand: (
@@ -109,9 +107,7 @@ export function createEditorCommandsController(
     focusInput();
   };
 
-  const execText = (
-    producer: (current: EditorState) => EditorState,
-  ): void => {
+  const execText = (producer: (current: EditorState) => EditorState): void => {
     clearPreferredColumn();
     resetTransactionGrouping();
     applySelectionAwareTextCommand(producer);

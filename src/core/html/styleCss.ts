@@ -1,5 +1,6 @@
 import type { EditorParagraphStyle, EditorTextStyle } from "@/core/model.js";
 import { underlineStyleToCssDecorationStyle } from "@/core/textStyleMappings.js";
+import { PX_PER_POINT } from "@/core/units.js";
 
 export function textRunStylesToCss(style?: EditorTextStyle): string {
   if (!style) {
@@ -89,19 +90,23 @@ export function textRunStylesToCss(style?: EditorTextStyle): string {
     }
   }
   if (style.textOutline) {
-    const widthPx = style.textOutline.widthPt * (96 / 72);
+    const widthPx = style.textOutline.widthPt * PX_PER_POINT;
     const color = style.textOutline.color ?? "#000000";
     parts.push(`-webkit-text-stroke:${widthPx.toFixed(2)}px ${color}`);
   }
   if (style.textShadow) {
     const dirRad = (style.textShadow.dirDeg * Math.PI) / 180;
-    const px = (pt: number) => (pt * (96 / 72)).toFixed(2);
-    const ox = (Math.cos(dirRad) * style.textShadow.distPt * (96 / 72)).toFixed(
-      2,
-    );
-    const oy = (Math.sin(dirRad) * style.textShadow.distPt * (96 / 72)).toFixed(
-      2,
-    );
+    const px = (pt: number) => (pt * PX_PER_POINT).toFixed(2);
+    const ox = (
+      Math.cos(dirRad) *
+      style.textShadow.distPt *
+      PX_PER_POINT
+    ).toFixed(2);
+    const oy = (
+      Math.sin(dirRad) *
+      style.textShadow.distPt *
+      PX_PER_POINT
+    ).toFixed(2);
     const blur = px(style.textShadow.blurPt);
     const alpha = style.textShadow.alpha ?? 1;
     const r = parseInt(style.textShadow.color.slice(1, 3), 16);
@@ -111,7 +116,7 @@ export function textRunStylesToCss(style?: EditorTextStyle): string {
       `text-shadow:${ox}px ${oy}px ${blur}px rgba(${r},${g},${b},${alpha})`,
     );
   } else if (style.glow) {
-    const blur = (style.glow.radiusPt * (96 / 72)).toFixed(2);
+    const blur = (style.glow.radiusPt * PX_PER_POINT).toFixed(2);
     const alpha = style.glow.alpha ?? 0.7;
     const r = parseInt(style.glow.color.slice(1, 3), 16);
     const g = parseInt(style.glow.color.slice(3, 5), 16);

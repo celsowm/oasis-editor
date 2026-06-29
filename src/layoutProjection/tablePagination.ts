@@ -10,9 +10,8 @@ import {
   PX_PER_POINT as POINT_TO_PX,
   DEFAULT_FONT_SIZE_PX as DEFAULT_FONT_SIZE,
 } from "@/core/units.js";
+import { NO_WRAP_MEASURE_WIDTH_PX } from "@/core/layoutConstants.js";
 const DEFAULT_LINE_HEIGHT = 1.15;
-/** Effectively-unbounded measuring width for `noWrap` cells (single line). */
-const NO_WRAP_MEASURE_WIDTH_PX = 100000;
 const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 14.4;
 const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
 const DEFAULT_TABLE_SEGMENT_VERTICAL_SPACING = 0;

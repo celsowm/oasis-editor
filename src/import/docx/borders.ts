@@ -1,5 +1,6 @@
 import { type Element as XmlElement } from "@xmldom/xmldom";
 import type { EditorBorderStyle } from "@/core/model.js";
+import { roundTo } from "@/utils/round.js";
 import {
   WORD_NS,
   getAttributeValue,
@@ -28,10 +29,7 @@ export function parseDocxBorder(
   }
 
   const size = Number(getAttributeValue(borderNode, "sz"));
-  const width =
-    Number.isFinite(size) && size > 0
-      ? Math.round((size / 8) * 10000) / 10000
-      : 0.75;
+  const width = Number.isFinite(size) && size > 0 ? roundTo(size / 8, 4) : 0.75;
   const color =
     normalizeImportedHexColor(getAttributeValue(borderNode, "color")) ??
     "#000000";

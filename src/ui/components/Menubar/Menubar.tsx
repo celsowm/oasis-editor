@@ -1,11 +1,4 @@
-import {
-  createSignal,
-  For,
-  onCleanup,
-  onMount,
-  Show,
-  type JSX,
-} from "solid-js";
+import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { type TranslationKey } from "@/i18n/index.js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import {

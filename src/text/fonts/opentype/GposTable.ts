@@ -260,7 +260,6 @@ function parseSubtable(
   }
 }
 
-
 export class GposTable {
   private constructor(
     private readonly lookups: GposLookup[],

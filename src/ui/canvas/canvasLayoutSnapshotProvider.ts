@@ -1,5 +1,6 @@
 import type { EditorLayoutDocument, EditorState } from "@/core/model.js";
 import { buildCanvasLayoutSnapshot } from "./CanvasLayoutSnapshot.js";
+import { roundTo } from "@/utils/round.js";
 import type { CanvasLayoutSnapshot } from "./canvasSnapshotTypes.js";
 
 export interface CanvasLayoutSnapshotProvider {
@@ -21,7 +22,7 @@ type SnapshotCacheEntry = {
 };
 
 function rounded(value: number): number {
-  return Math.round(value * 100) / 100;
+  return roundTo(value, 2);
 }
 
 export function getCanvasPageRectSignature(surface: HTMLElement): string {

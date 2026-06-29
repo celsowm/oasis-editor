@@ -2,6 +2,7 @@ import { type Element as XmlElement } from "@xmldom/xmldom";
 import type { EditorParagraphStyle, EditorTabStop } from "@/core/model.js";
 import { DEFAULT_EDITOR_STYLES } from "@/core/editorState.js";
 import { resolveEffectiveParagraphStyle } from "@/core/model.js";
+import { roundTo } from "@/utils/round.js";
 import {
   WORD_NS,
   getChildrenByTagNameNS,
@@ -274,7 +275,7 @@ export function parseParagraphStyle(
       // For exact/atLeast, w:line is an absolute height in twips; store it as
       // px (keeping sub-px precision) and remember the rule so layout treats it
       // as an absolute height instead of a multiplier.
-      style.lineHeight = Math.round((Number(line) / 1440) * 96 * 10000) / 10000;
+      style.lineHeight = roundTo((Number(line) / 1440) * 96, 4);
       style.lineRule = lineRule;
     } else {
       // auto (default): w:line is in 240ths of a line, i.e. a multiplier.

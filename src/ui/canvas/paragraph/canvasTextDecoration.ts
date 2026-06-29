@@ -13,7 +13,6 @@ import {
   resolveDecorationLineY,
 } from "@/core/decorationGeometry.js";
 import type { EditorLayoutLine } from "@/core/model.js";
-import { CANVAS_DASH_DASHED, CANVAS_DASH_DOTTED } from "../canvasBorders.js";
 import { resolveFragmentPaintBounds } from "./canvasRunBackground.js";
 
 export function drawTextDecoration(

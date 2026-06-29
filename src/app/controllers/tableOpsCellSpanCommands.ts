@@ -124,7 +124,12 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    return commitTableMutation(current, targetBlocks, range.zone, nextParagraph);
+    return commitTableMutation(
+      current,
+      targetBlocks,
+      range.zone,
+      nextParagraph,
+    );
   };
 
   const mergeSelectedTableRows = (current: EditorState): EditorState => {
@@ -229,7 +234,12 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    return commitTableMutation(current, targetBlocks, range.zone, nextParagraph);
+    return commitTableMutation(
+      current,
+      targetBlocks,
+      range.zone,
+      nextParagraph,
+    );
   };
 
   const mergeSelectedTable = (current: EditorState): EditorState => {
@@ -313,7 +323,12 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
+    return commitTableMutation(
+      current,
+      targetBlocks,
+      location.zone,
+      nextParagraph,
+    );
   };
 
   const splitSelectedTableCell = (current: EditorState): EditorState => {
@@ -374,7 +389,12 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
+    return commitTableMutation(
+      current,
+      targetBlocks,
+      location.zone,
+      nextParagraph,
+    );
   };
 
   const splitSelectedTable = (current: EditorState): EditorState => {
