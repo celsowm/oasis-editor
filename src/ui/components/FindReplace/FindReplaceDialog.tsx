@@ -1,8 +1,8 @@
 import { Show } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import type { UseEditorFindReplaceResult } from "@/app/controllers/useEditorFindReplace.js";
-import { ActionRow } from "@/ui/public/ActionRow.js";
 import { Checkbox } from "@/ui/public/Checkbox.js";
+import { Stack } from "@/ui/public/Stack.js";
 import { StatusText } from "@/ui/public/StatusText.js";
 import { SurfaceButton } from "@/ui/public/SurfaceButton.js";
 import { Text } from "@/ui/public/Text.js";
@@ -60,7 +60,7 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
               </StatusText>
             </div>
 
-            <ActionRow class="oasis-editor-fr-actions" wrap={false}>
+            <Stack class="oasis-editor-fr-actions" direction="row" spacing={1}>
               <SurfaceButton
                 onClick={fr.findPrevious}
                 disabled={fr.matches().length === 0}
@@ -73,7 +73,7 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
                 icon="chevron-down"
                 label={t("find.nextTooltip")}
               />
-            </ActionRow>
+            </Stack>
           </div>
 
           <div class="oasis-editor-fr-input-group">
@@ -84,7 +84,7 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
               onChange={(value) => fr.setReplaceTerm(value)}
               controlClass="oasis-editor-fr-input"
             />
-            <ActionRow class="oasis-editor-fr-actions" wrap={false}>
+            <Stack class="oasis-editor-fr-actions" direction="row" spacing={1}>
               <SurfaceButton
                 class="oasis-editor-fr-btn-text"
                 onClick={fr.replace}
@@ -99,10 +99,10 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
               >
                 {t("replace.allBtn")}
               </SurfaceButton>
-            </ActionRow>
+            </Stack>
           </div>
 
-          <ActionRow class="oasis-editor-fr-options">
+          <Stack class="oasis-editor-fr-options" direction="row" spacing={1}>
             <Checkbox
               class="oasis-editor-fr-checkbox"
               label={t("find.matchCase")}
@@ -125,7 +125,7 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
                 })
               }
             />
-          </ActionRow>
+          </Stack>
         </div>
       </div>
     </Show>

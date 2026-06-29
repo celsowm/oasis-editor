@@ -51,9 +51,12 @@ Native Oasis plugin UI uses Solid primitives from `oasis-editor/ui`.
 import type { OasisPlugin } from "oasis-editor";
 import {
   Button,
+  ColorField,
   Dialog,
   DialogFooter,
   FieldGroup,
+  Grid,
+  Stack,
   Tabs,
   TextField,
   TextAreaField,
@@ -96,10 +99,20 @@ export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
             id: "main",
             label: "Main",
             panel: (
-              <FieldGroup legend="General">
-                <TextField label="Name" onChange={() => {}} />
-                <TextAreaField label="Notes" onChange={() => {}} />
-              </FieldGroup>
+              <Stack spacing={2}>
+                <FieldGroup legend="General">
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField label="Name" onChange={() => {}} />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField label="Slug" onChange={() => {}} />
+                    </Grid>
+                  </Grid>
+                  <TextAreaField label="Notes" onChange={() => {}} />
+                  <ColorField label="Accent" onChange={() => {}} />
+                </FieldGroup>
+              </Stack>
             ),
           },
         ]}
@@ -110,14 +123,19 @@ export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
 ```
 
 The UI subpath exports semantic/composition primitives such as `Text`,
-`Heading`, `StatusText`, `ActionRow`, `FormField`, `FieldGroup`,
-`SurfaceButton`, and `TextAreaField`, along with `Dialog`, `Tabs`, `Button`,
-`IconButton`, `TextField`, `Checkbox`, `SelectField`, `DialogFooter`,
+`Heading`, `StatusText`, `ActionRow`, `Stack`, `Grid`, `FormField`, `FieldGroup`,
+`SurfaceButton`, `TextAreaField`, and `ColorField`, along with `Dialog`, `Tabs`,
+`Button`, `IconButton`, `TextField`, `Checkbox`, `SelectField`, `DialogFooter`,
 `FloatingActionButton`, `SidePanel`, `SidePanelHeader`, `SidePanelBody`,
 `SidePanelFooter`, and the lower-level toolbar primitives. Plugin and feature
 UI should import these from `oasis-editor/ui` instead of composing ad hoc
 native `button`/`input`/`label`/`span` markup in Solid components unless the
 code is a low-level primitive or renderer surface.
+
+`Stack` and `Grid` intentionally follow a MUI-like layout API for plugin
+authors: `Stack spacing={2}`, `Stack direction={{ xs: "column", sm: "row" }}`,
+`Grid container spacing={2}`, and `Grid size={{ xs: 12, md: 6 }}` are supported
+without requiring a MUI theme or `sx` runtime.
 
 ## Floating Actions And Side Panels
 

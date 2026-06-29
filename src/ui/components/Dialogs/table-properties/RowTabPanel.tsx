@@ -1,6 +1,8 @@
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Checkbox } from "@/ui/public/Checkbox.js";
+import { Grid } from "@/ui/public/Grid.js";
 import { SelectField } from "@/ui/public/SelectField.js";
+import { Stack } from "@/ui/public/Stack.js";
 import type { TablePanelProps } from "./TableTabPanel.js";
 import type { TablePropertiesDialogInitialValues } from "./TablePropertiesTypes.js";
 import { NumField } from "./fields.js";
@@ -12,32 +14,35 @@ export function RowTabPanel(props: TablePanelProps) {
 
   return (
     <div class="oasis-editor-table-properties-panel">
-      <div class="oasis-editor-dialog-row">
-        {NumField(
-          t("table.rowHeight"),
-          () => form().rowHeight,
-          (v) => set("rowHeight", v),
-          "editor-table-properties-row-height",
-        )}
-        <SelectField
-          class="oasis-editor-dialog-input-group-grow"
-          label={t("table.rowHeightRule")}
-          value={form().rowHeightRule}
-          onChange={(value) =>
-            set(
-              "rowHeightRule",
-              value as TablePropertiesDialogInitialValues["rowHeightRule"],
-            )
-          }
-          data-testid="editor-table-properties-row-height-rule"
-          options={[
-            { value: "", label: t("table.rowAuto") },
-            { value: "atLeast", label: t("table.rowAtLeast") },
-            { value: "exact", label: t("table.rowExactly") },
-          ]}
-        />
-      </div>
-      <div class="oasis-editor-dialog-style-row">
+      <Grid container spacing={1.5}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          {NumField(
+            t("table.rowHeight"),
+            () => form().rowHeight,
+            (v) => set("rowHeight", v),
+            "editor-table-properties-row-height",
+          )}
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <SelectField
+            label={t("table.rowHeightRule")}
+            value={form().rowHeightRule}
+            onChange={(value) =>
+              set(
+                "rowHeightRule",
+                value as TablePropertiesDialogInitialValues["rowHeightRule"],
+              )
+            }
+            data-testid="editor-table-properties-row-height-rule"
+            options={[
+              { value: "", label: t("table.rowAuto") },
+              { value: "atLeast", label: t("table.rowAtLeast") },
+              { value: "exact", label: t("table.rowExactly") },
+            ]}
+          />
+        </Grid>
+      </Grid>
+      <Stack class="oasis-editor-dialog-style-row" direction="row" spacing={1}>
         <Checkbox
           label={t("table.repeatHeader")}
           checked={form().repeatHeader}
@@ -56,7 +61,7 @@ export function RowTabPanel(props: TablePanelProps) {
           onChange={(v) => set("hiddenRow", v)}
           data-testid="editor-table-properties-hidden-row"
         />
-      </div>
+      </Stack>
     </div>
   );
 }

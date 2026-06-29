@@ -1,9 +1,12 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Checkbox } from "@/ui/public/Checkbox.js";
-import { FieldRow } from "@/ui/public/FieldRow.js";
+import { ColorField } from "@/ui/public/ColorField.js";
+import { FormField } from "@/ui/public/FormField.js";
+import { Grid } from "@/ui/public/Grid.js";
 import { NumberField } from "@/ui/public/NumberField.js";
 import { SelectField } from "@/ui/public/SelectField.js";
+import { Stack } from "@/ui/public/Stack.js";
 import { Dialog } from "./Dialog.js";
 import { DialogFooter } from "./DialogFooter.js";
 
@@ -215,204 +218,213 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
         />
       }
     >
-      <FieldRow>
-        <SelectField
-          label={t("paragraph.alignLabel")}
-          value={align()}
-          onChange={setAlign}
-          data-testid="editor-paragraph-dialog-align"
-          options={[
-            { value: "left", label: t("paragraph.alignLeft") },
-            { value: "center", label: t("paragraph.alignCenter") },
-            { value: "right", label: t("paragraph.alignRight") },
-            { value: "justify", label: t("paragraph.alignJustify") },
-          ]}
-        />
-      </FieldRow>
+      <Grid container spacing={1.5}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <SelectField
+            label={t("paragraph.alignLabel")}
+            value={align()}
+            onChange={setAlign}
+            data-testid="editor-paragraph-dialog-align"
+            options={[
+              { value: "left", label: t("paragraph.alignLeft") },
+              { value: "center", label: t("paragraph.alignCenter") },
+              { value: "right", label: t("paragraph.alignRight") },
+              { value: "justify", label: t("paragraph.alignJustify") },
+            ]}
+          />
+        </Grid>
+      </Grid>
 
-      <FieldRow>
-        <NumberField
-          label={t("paragraph.indentLeftLabel")}
-          step="1"
-          value={indentLeft() ?? ""}
-          onChange={setIndentLeft}
-          data-testid="editor-paragraph-dialog-indent-left"
-        />
-        <NumberField
-          label={t("paragraph.indentRightLabel")}
-          step="1"
-          value={indentRight() ?? ""}
-          onChange={setIndentRight}
-          data-testid="editor-paragraph-dialog-indent-right"
-        />
-      </FieldRow>
+      <Grid container spacing={1.5}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <NumberField
+            label={t("paragraph.indentLeftLabel")}
+            step="1"
+            value={indentLeft() ?? ""}
+            onChange={setIndentLeft}
+            data-testid="editor-paragraph-dialog-indent-left"
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <NumberField
+            label={t("paragraph.indentRightLabel")}
+            step="1"
+            value={indentRight() ?? ""}
+            onChange={setIndentRight}
+            data-testid="editor-paragraph-dialog-indent-right"
+          />
+        </Grid>
+      </Grid>
 
-      <FieldRow>
-        <SelectField
-          label={t("paragraph.specialLabel")}
-          value={special()}
-          onChange={(value) => {
-            const next = value as SpecialIndent;
-            setSpecial(next);
-            if (next === "none") setSpecialBy(null);
-          }}
-          data-testid="editor-paragraph-dialog-special"
-          options={[
-            { value: "none", label: t("paragraph.specialNone") },
-            { value: "firstLine", label: t("paragraph.specialFirstLine") },
-            { value: "hanging", label: t("paragraph.specialHanging") },
-          ]}
-        />
-        <NumberField
-          label={t("paragraph.specialByLabel")}
-          min="0"
-          step="1"
-          disabled={special() === "none"}
-          value={specialBy() ?? ""}
-          onChange={setSpecialBy}
-          data-testid="editor-paragraph-dialog-special-by"
-        />
-      </FieldRow>
+      <Grid container spacing={1.5}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <SelectField
+            label={t("paragraph.specialLabel")}
+            value={special()}
+            onChange={(value) => {
+              const next = value as SpecialIndent;
+              setSpecial(next);
+              if (next === "none") setSpecialBy(null);
+            }}
+            data-testid="editor-paragraph-dialog-special"
+            options={[
+              { value: "none", label: t("paragraph.specialNone") },
+              { value: "firstLine", label: t("paragraph.specialFirstLine") },
+              { value: "hanging", label: t("paragraph.specialHanging") },
+            ]}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <NumberField
+            label={t("paragraph.specialByLabel")}
+            min="0"
+            step="1"
+            disabled={special() === "none"}
+            value={specialBy() ?? ""}
+            onChange={setSpecialBy}
+            data-testid="editor-paragraph-dialog-special-by"
+          />
+        </Grid>
+      </Grid>
 
-      <FieldRow>
-        <NumberField
-          label={t("paragraph.spacingBeforeLabel")}
-          min="0"
-          step="1"
-          value={spacingBefore() ?? ""}
-          onChange={setSpacingBefore}
-          data-testid="editor-paragraph-dialog-spacing-before"
-        />
-        <NumberField
-          label={t("paragraph.spacingAfterLabel")}
-          min="0"
-          step="1"
-          value={spacingAfter() ?? ""}
-          onChange={setSpacingAfter}
-          data-testid="editor-paragraph-dialog-spacing-after"
-        />
-        <NumberField
-          label={t("paragraph.lineSpacingLabel")}
-          min="0.5"
-          step="0.05"
-          value={lineHeight() ?? ""}
-          onChange={setLineHeight}
-          data-testid="editor-paragraph-dialog-line-height"
-        />
-      </FieldRow>
+      <Grid container spacing={1.5}>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <NumberField
+            label={t("paragraph.spacingBeforeLabel")}
+            min="0"
+            step="1"
+            value={spacingBefore() ?? ""}
+            onChange={setSpacingBefore}
+            data-testid="editor-paragraph-dialog-spacing-before"
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <NumberField
+            label={t("paragraph.spacingAfterLabel")}
+            min="0"
+            step="1"
+            value={spacingAfter() ?? ""}
+            onChange={setSpacingAfter}
+            data-testid="editor-paragraph-dialog-spacing-after"
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <NumberField
+            label={t("paragraph.lineSpacingLabel")}
+            min="0.5"
+            step="0.05"
+            value={lineHeight() ?? ""}
+            onChange={setLineHeight}
+            data-testid="editor-paragraph-dialog-line-height"
+          />
+        </Grid>
+      </Grid>
 
-      <div class="oasis-editor-dialog-row">
-        <SelectField
-          class="oasis-editor-dialog-input-group-grow"
-          label={t("paragraph.borderStyleLabel")}
-          value={borderStyle()}
-          onChange={(value) => {
-            const next = value as BorderStyleValue;
-            setBorderStyle(next);
-            if (next === "none") {
-              setSideTop(false);
-              setSideRight(false);
-              setSideBottom(false);
-              setSideLeft(false);
-            } else if (
-              !sideTop() &&
-              !sideRight() &&
-              !sideBottom() &&
-              !sideLeft()
-            ) {
-              setSideTop(true);
-              setSideRight(true);
-              setSideBottom(true);
-              setSideLeft(true);
-            }
-          }}
-          data-testid="editor-paragraph-dialog-border-style"
-          options={[
-            { value: "none", label: t("paragraph.borderNone") },
-            { value: "solid", label: t("paragraph.borderSolid") },
-            { value: "dashed", label: t("paragraph.borderDashed") },
-            { value: "dotted", label: t("paragraph.borderDotted") },
-          ]}
-        />
-        <NumberField
-          class="oasis-editor-dialog-input-group-grow"
-          label={t("paragraph.borderWidthLabel")}
-          min="0"
-          step="0.25"
-          disabled={borderStyle() === "none"}
-          value={borderWidth() ?? ""}
-          onChange={setBorderWidth}
-          data-testid="editor-paragraph-dialog-border-width"
-        />
-        <div class="oasis-editor-dialog-input-group">
-          <label class="oasis-editor-dialog-label">
-            {t("paragraph.borderColorLabel")}
-          </label>
-          <input
-            type="color"
-            class="oasis-editor-dialog-input"
+      <Grid container spacing={1.5}>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <SelectField
+            label={t("paragraph.borderStyleLabel")}
+            value={borderStyle()}
+            onChange={(value) => {
+              const next = value as BorderStyleValue;
+              setBorderStyle(next);
+              if (next === "none") {
+                setSideTop(false);
+                setSideRight(false);
+                setSideBottom(false);
+                setSideLeft(false);
+              } else if (
+                !sideTop() &&
+                !sideRight() &&
+                !sideBottom() &&
+                !sideLeft()
+              ) {
+                setSideTop(true);
+                setSideRight(true);
+                setSideBottom(true);
+                setSideLeft(true);
+              }
+            }}
+            data-testid="editor-paragraph-dialog-border-style"
+            options={[
+              { value: "none", label: t("paragraph.borderNone") },
+              { value: "solid", label: t("paragraph.borderSolid") },
+              { value: "dashed", label: t("paragraph.borderDashed") },
+              { value: "dotted", label: t("paragraph.borderDotted") },
+            ]}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <NumberField
+            label={t("paragraph.borderWidthLabel")}
+            min="0"
+            step="0.25"
+            disabled={borderStyle() === "none"}
+            value={borderWidth() ?? ""}
+            onChange={setBorderWidth}
+            data-testid="editor-paragraph-dialog-border-width"
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <ColorField
+            label={t("paragraph.borderColorLabel")}
             disabled={borderStyle() === "none"}
             value={borderColor() || DEFAULT_BORDER_COLOR}
-            onInput={(e) => setBorderColor(e.currentTarget.value)}
+            onChange={setBorderColor}
             data-testid="editor-paragraph-dialog-border-color"
           />
-        </div>
-        <div class="oasis-editor-dialog-input-group">
-          <label class="oasis-editor-dialog-label">
-            {t("paragraph.shadingLabel")}
-          </label>
-          <input
-            type="color"
-            class="oasis-editor-dialog-input"
+        </Grid>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <ColorField
+            label={t("paragraph.shadingLabel")}
             value={shading() || "#ffffff"}
-            onInput={(e) => setShading(e.currentTarget.value)}
+            onChange={setShading}
             data-testid="editor-paragraph-dialog-shading"
           />
-        </div>
-      </div>
+        </Grid>
+      </Grid>
 
-      <div class="oasis-editor-dialog-row">
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("paragraph.borderSidesLabel")}
-          </label>
-          <div class="oasis-editor-dialog-style-row">
-            <Checkbox
-              label={t("paragraph.borderSideTop")}
-              disabled={borderStyle() === "none"}
-              checked={sideTop()}
-              onChange={setSideTop}
-              data-testid="editor-paragraph-dialog-border-side-top"
-            />
-            <Checkbox
-              label={t("paragraph.borderSideRight")}
-              disabled={borderStyle() === "none"}
-              checked={sideRight()}
-              onChange={setSideRight}
-              data-testid="editor-paragraph-dialog-border-side-right"
-            />
-            <Checkbox
-              label={t("paragraph.borderSideBottom")}
-              disabled={borderStyle() === "none"}
-              checked={sideBottom()}
-              onChange={setSideBottom}
-              data-testid="editor-paragraph-dialog-border-side-bottom"
-            />
-            <Checkbox
-              label={t("paragraph.borderSideLeft")}
-              disabled={borderStyle() === "none"}
-              checked={sideLeft()}
-              onChange={setSideLeft}
-              data-testid="editor-paragraph-dialog-border-side-left"
-            />
-          </div>
-        </div>
-      </div>
+      <FormField
+        class="oasis-editor-dialog-input-group-grow"
+        label={t("paragraph.borderSidesLabel")}
+      >
+        <Stack
+          class="oasis-editor-dialog-style-row"
+          direction="row"
+          spacing={1}
+        >
+          <Checkbox
+            label={t("paragraph.borderSideTop")}
+            disabled={borderStyle() === "none"}
+            checked={sideTop()}
+            onChange={setSideTop}
+            data-testid="editor-paragraph-dialog-border-side-top"
+          />
+          <Checkbox
+            label={t("paragraph.borderSideRight")}
+            disabled={borderStyle() === "none"}
+            checked={sideRight()}
+            onChange={setSideRight}
+            data-testid="editor-paragraph-dialog-border-side-right"
+          />
+          <Checkbox
+            label={t("paragraph.borderSideBottom")}
+            disabled={borderStyle() === "none"}
+            checked={sideBottom()}
+            onChange={setSideBottom}
+            data-testid="editor-paragraph-dialog-border-side-bottom"
+          />
+          <Checkbox
+            label={t("paragraph.borderSideLeft")}
+            disabled={borderStyle() === "none"}
+            checked={sideLeft()}
+            onChange={setSideLeft}
+            data-testid="editor-paragraph-dialog-border-side-left"
+          />
+        </Stack>
+      </FormField>
 
-      <div class="oasis-editor-dialog-input-group">
-        <label class="oasis-editor-dialog-label">
-          {t("paragraph.preview")}
-        </label>
+      <FormField label={t("paragraph.preview")}>
         <div
           class="oasis-editor-dialog-preview"
           data-testid="editor-paragraph-dialog-preview"
@@ -420,7 +432,7 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
         >
           {t("paragraph.previewText")}
         </div>
-      </div>
+      </FormField>
     </Dialog>
   );
 }

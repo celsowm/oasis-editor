@@ -1,4 +1,5 @@
 import { useI18n } from "@/i18n/I18nContext.js";
+import { Grid } from "@/ui/public/Grid.js";
 import type { TablePanelProps } from "./TableTabPanel.js";
 import { NumField } from "./fields.js";
 
@@ -9,14 +10,16 @@ export function ColumnTabPanel(props: TablePanelProps) {
 
   return (
     <div class="oasis-editor-table-properties-panel">
-      <div class="oasis-editor-dialog-row">
-        {NumField(
-          t("table.columnWidth"),
-          () => form().columnWidth,
-          (v) => set("columnWidth", v),
-          "editor-table-properties-column-width",
-        )}
-      </div>
+      <Grid container spacing={1.5}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          {NumField(
+            t("table.columnWidth"),
+            () => form().columnWidth,
+            (v) => set("columnWidth", v),
+            "editor-table-properties-column-width",
+          )}
+        </Grid>
+      </Grid>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Button } from "@/ui/public/Button.js";
-import { FieldRow } from "@/ui/public/FieldRow.js";
+import { FormField } from "@/ui/public/FormField.js";
+import { Grid } from "@/ui/public/Grid.js";
 import { NumberField } from "@/ui/public/NumberField.js";
 import { Dialog } from "./Dialog.js";
 
@@ -90,40 +91,43 @@ export function LineSpacingDialog(props: LineSpacingDialogProps) {
         </>
       }
     >
-      <FieldRow>
-        <NumberField
-          label={t("lineSpacing.lineSpacingLabel")}
-          min="0.5"
-          step="0.05"
-          value={lineHeight() ?? ""}
-          onChange={setLineHeight}
-          data-testid="editor-line-spacing-dialog-line-height"
-        />
-      </FieldRow>
+      <Grid container spacing={1.5}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <NumberField
+            label={t("lineSpacing.lineSpacingLabel")}
+            min="0.5"
+            step="0.05"
+            value={lineHeight() ?? ""}
+            onChange={setLineHeight}
+            data-testid="editor-line-spacing-dialog-line-height"
+          />
+        </Grid>
+      </Grid>
 
-      <FieldRow>
-        <NumberField
-          label={t("lineSpacing.spacingBeforeLabel")}
-          min="0"
-          step="1"
-          value={spacingBefore() ?? ""}
-          onChange={setSpacingBefore}
-          data-testid="editor-line-spacing-dialog-spacing-before"
-        />
-        <NumberField
-          label={t("lineSpacing.spacingAfterLabel")}
-          min="0"
-          step="1"
-          value={spacingAfter() ?? ""}
-          onChange={setSpacingAfter}
-          data-testid="editor-line-spacing-dialog-spacing-after"
-        />
-      </FieldRow>
+      <Grid container spacing={1.5}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <NumberField
+            label={t("lineSpacing.spacingBeforeLabel")}
+            min="0"
+            step="1"
+            value={spacingBefore() ?? ""}
+            onChange={setSpacingBefore}
+            data-testid="editor-line-spacing-dialog-spacing-before"
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <NumberField
+            label={t("lineSpacing.spacingAfterLabel")}
+            min="0"
+            step="1"
+            value={spacingAfter() ?? ""}
+            onChange={setSpacingAfter}
+            data-testid="editor-line-spacing-dialog-spacing-after"
+          />
+        </Grid>
+      </Grid>
 
-      <div class="oasis-editor-dialog-input-group">
-        <label class="oasis-editor-dialog-label">
-          {t("lineSpacing.preview")}
-        </label>
+      <FormField label={t("lineSpacing.preview")}>
         <div
           class="oasis-editor-dialog-preview"
           data-testid="editor-line-spacing-dialog-preview"
@@ -133,7 +137,7 @@ export function LineSpacingDialog(props: LineSpacingDialogProps) {
           <br />
           {t("lineSpacing.previewText")}
         </div>
-      </div>
+      </FormField>
     </Dialog>
   );
 }

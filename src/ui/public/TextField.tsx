@@ -22,6 +22,7 @@ export function TextField(props: TextFieldProps): JSX.Element {
     "controlClass",
     "onChange",
     "class",
+    "classList",
     "id",
   ]);
   const id = () => local.id ?? fallbackId;
@@ -29,7 +30,11 @@ export function TextField(props: TextFieldProps): JSX.Element {
   const errorId = () => `${id()}-error`;
 
   return (
-    <label class={`oasis-editor-ui-field ${local.class ?? ""}`} for={id()}>
+    <label
+      class={`oasis-editor-ui-field ${local.class ?? ""}`}
+      classList={local.classList}
+      for={id()}
+    >
       <Show when={local.label}>
         <span class={`oasis-editor-ui-field-label ${local.labelClass ?? ""}`}>
           {local.label}

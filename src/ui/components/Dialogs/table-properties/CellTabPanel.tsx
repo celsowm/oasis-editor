@@ -1,10 +1,11 @@
 import { createMemo } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Checkbox } from "@/ui/public/Checkbox.js";
+import { ColorField } from "@/ui/public/ColorField.js";
 import { FieldGroup } from "@/ui/public/FieldGroup.js";
-import { FormField } from "@/ui/public/FormField.js";
+import { Grid } from "@/ui/public/Grid.js";
 import { SelectField } from "@/ui/public/SelectField.js";
-import { TextField } from "@/ui/public/TextField.js";
+import { Stack } from "@/ui/public/Stack.js";
 import type { TablePanelProps } from "./TableTabPanel.js";
 import {
   DEFAULT_BORDER_COLOR,
@@ -41,57 +42,65 @@ export function CellTabPanel(props: TablePanelProps) {
 
   return (
     <div class="oasis-editor-table-properties-panel">
-      <div class="oasis-editor-dialog-row">
-        {NumField(
-          t("table.cellWidth"),
-          () => form().cellWidth,
-          (v) => set("cellWidth", v),
-          "editor-table-properties-cell-width",
-        )}
-        <SelectField
-          class="oasis-editor-dialog-input-group-grow"
-          label={t("table.verticalAlignment")}
-          value={form().cellVerticalAlign}
-          onChange={(value) =>
-            set(
-              "cellVerticalAlign",
-              value as TablePropertiesDialogInitialValues["cellVerticalAlign"],
-            )
-          }
-          data-testid="editor-table-properties-cell-valign"
-          options={[
-            { value: "", label: t("table.inherit") },
-            { value: "top", label: t("table.valignTop") },
-            { value: "middle", label: t("table.valignMiddle") },
-            { value: "bottom", label: t("table.valignBottom") },
-          ]}
-        />
-        <SelectField
-          class="oasis-editor-dialog-input-group-grow"
-          label={t("table.textDirection")}
-          value={form().cellTextDirection}
-          onChange={(value) =>
-            set(
-              "cellTextDirection",
-              value as TablePropertiesDialogInitialValues["cellTextDirection"],
-            )
-          }
-          data-testid="editor-table-properties-cell-direction"
-          options={[
-            { value: "", label: t("table.inherit") },
-            { value: "lrTb", label: "lrTb" },
-            { value: "tbRl", label: "tbRl" },
-            { value: "btLr", label: "btLr" },
-            { value: "lrTbV", label: "lrTbV" },
-            { value: "tbRlV", label: "tbRlV" },
-          ]}
-        />
-      </div>
+      <Grid container spacing={1.5}>
+        <Grid size={{ xs: 12, md: 4 }}>
+          {NumField(
+            t("table.cellWidth"),
+            () => form().cellWidth,
+            (v) => set("cellWidth", v),
+            "editor-table-properties-cell-width",
+          )}
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <SelectField
+            label={t("table.verticalAlignment")}
+            value={form().cellVerticalAlign}
+            onChange={(value) =>
+              set(
+                "cellVerticalAlign",
+                value as TablePropertiesDialogInitialValues["cellVerticalAlign"],
+              )
+            }
+            data-testid="editor-table-properties-cell-valign"
+            options={[
+              { value: "", label: t("table.inherit") },
+              { value: "top", label: t("table.valignTop") },
+              { value: "middle", label: t("table.valignMiddle") },
+              { value: "bottom", label: t("table.valignBottom") },
+            ]}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <SelectField
+            label={t("table.textDirection")}
+            value={form().cellTextDirection}
+            onChange={(value) =>
+              set(
+                "cellTextDirection",
+                value as TablePropertiesDialogInitialValues["cellTextDirection"],
+              )
+            }
+            data-testid="editor-table-properties-cell-direction"
+            options={[
+              { value: "", label: t("table.inherit") },
+              { value: "lrTb", label: "lrTb" },
+              { value: "tbRl", label: "tbRl" },
+              { value: "btLr", label: "btLr" },
+              { value: "lrTbV", label: "lrTbV" },
+              { value: "tbRlV", label: "tbRlV" },
+            ]}
+          />
+        </Grid>
+      </Grid>
       <FieldGroup
         class="oasis-editor-font-dialog-fieldset"
         legend={t("table.options")}
       >
-        <div class="oasis-editor-dialog-style-row">
+        <Stack
+          class="oasis-editor-dialog-style-row"
+          direction="row"
+          spacing={1}
+        >
           <Checkbox
             label={t("table.noWrap")}
             checked={form().cellNoWrap}
@@ -110,108 +119,121 @@ export function CellTabPanel(props: TablePanelProps) {
             onChange={(v) => set("cellHideMark", v)}
             data-testid="editor-table-properties-cell-hide-mark"
           />
-        </div>
+        </Stack>
       </FieldGroup>
       <FieldGroup
         class="oasis-editor-font-dialog-fieldset"
         legend={t("table.cellMargins")}
       >
-        <div class="oasis-editor-dialog-row">
-          {NumField(
-            t("paragraph.borderSideTop"),
-            () => form().marginTop,
-            (v) => set("marginTop", v),
-            "editor-table-properties-margin-top",
-          )}
-          {NumField(
-            t("paragraph.borderSideRight"),
-            () => form().marginRight,
-            (v) => set("marginRight", v),
-            "editor-table-properties-margin-right",
-          )}
-          {NumField(
-            t("paragraph.borderSideBottom"),
-            () => form().marginBottom,
-            (v) => set("marginBottom", v),
-            "editor-table-properties-margin-bottom",
-          )}
-          {NumField(
-            t("paragraph.borderSideLeft"),
-            () => form().marginLeft,
-            (v) => set("marginLeft", v),
-            "editor-table-properties-margin-left",
-          )}
-        </div>
+        <Grid container spacing={1.5}>
+          <Grid size={{ xs: 12, md: 3 }}>
+            {NumField(
+              t("paragraph.borderSideTop"),
+              () => form().marginTop,
+              (v) => set("marginTop", v),
+              "editor-table-properties-margin-top",
+            )}
+          </Grid>
+          <Grid size={{ xs: 12, md: 3 }}>
+            {NumField(
+              t("paragraph.borderSideRight"),
+              () => form().marginRight,
+              (v) => set("marginRight", v),
+              "editor-table-properties-margin-right",
+            )}
+          </Grid>
+          <Grid size={{ xs: 12, md: 3 }}>
+            {NumField(
+              t("paragraph.borderSideBottom"),
+              () => form().marginBottom,
+              (v) => set("marginBottom", v),
+              "editor-table-properties-margin-bottom",
+            )}
+          </Grid>
+          <Grid size={{ xs: 12, md: 3 }}>
+            {NumField(
+              t("paragraph.borderSideLeft"),
+              () => form().marginLeft,
+              (v) => set("marginLeft", v),
+              "editor-table-properties-margin-left",
+            )}
+          </Grid>
+        </Grid>
       </FieldGroup>
       <FieldGroup
         class="oasis-editor-font-dialog-fieldset"
         legend={t("paragraph.bordersSection")}
       >
-        <div class="oasis-editor-dialog-row">
-          <SelectField
-            class="oasis-editor-dialog-input-group-grow"
-            label={t("paragraph.borderStyleLabel")}
-            value={form().borderStyle}
-            onChange={(value) => {
-              const next = value as BorderStyleValue;
-              set("borderStyle", next);
-              if (next === "none") {
-                set("borderTop", false);
-                set("borderRight", false);
-                set("borderBottom", false);
-                set("borderLeft", false);
-                set("borderStart", false);
-                set("borderEnd", false);
-                set("borderTlBr", false);
-                set("borderTrBl", false);
-              } else if (
-                !form().borderTop &&
-                !form().borderRight &&
-                !form().borderBottom &&
-                !form().borderLeft
-              ) {
-                set("borderTop", true);
-                set("borderRight", true);
-                set("borderBottom", true);
-                set("borderLeft", true);
-              }
-            }}
-            data-testid="editor-table-properties-border-style"
-            options={[
-              { value: "none", label: t("paragraph.borderNone") },
-              { value: "solid", label: t("paragraph.borderSolid") },
-              { value: "dashed", label: t("paragraph.borderDashed") },
-              { value: "dotted", label: t("paragraph.borderDotted") },
-            ]}
-          />
-          {NumField(
-            t("paragraph.borderWidthLabel"),
-            () => form().borderWidth,
-            (v) => set("borderWidth", v),
-            "editor-table-properties-border-width",
-            borderDisabled(),
-          )}
-          <TextField
-            type="color"
-            class="oasis-editor-dialog-input-group"
-            controlClass="oasis-editor-dialog-input"
-            label={t("paragraph.borderColorLabel")}
-            value={form().borderColor || DEFAULT_BORDER_COLOR}
-            disabled={borderDisabled()}
-            onChange={(value) => set("borderColor", value)}
-            data-testid="editor-table-properties-border-color"
-          />
-          <TextField
-            type="color"
-            class="oasis-editor-dialog-input-group"
-            controlClass="oasis-editor-dialog-input"
-            label={t("paragraph.shadingLabel")}
-            value={form().shading || "#ffffff"}
-            onChange={(value) => set("shading", value)}
-            data-testid="editor-table-properties-shading"
-          />
-        </div>
-        <div class="oasis-editor-dialog-style-row">
+        <Grid container spacing={1.5}>
+          <Grid size={{ xs: 12, md: 3 }}>
+            <SelectField
+              label={t("paragraph.borderStyleLabel")}
+              value={form().borderStyle}
+              onChange={(value) => {
+                const next = value as BorderStyleValue;
+                set("borderStyle", next);
+                if (next === "none") {
+                  set("borderTop", false);
+                  set("borderRight", false);
+                  set("borderBottom", false);
+                  set("borderLeft", false);
+                  set("borderStart", false);
+                  set("borderEnd", false);
+                  set("borderTlBr", false);
+                  set("borderTrBl", false);
+                } else if (
+                  !form().borderTop &&
+                  !form().borderRight &&
+                  !form().borderBottom &&
+                  !form().borderLeft
+                ) {
+                  set("borderTop", true);
+                  set("borderRight", true);
+                  set("borderBottom", true);
+                  set("borderLeft", true);
+                }
+              }}
+              data-testid="editor-table-properties-border-style"
+              options={[
+                { value: "none", label: t("paragraph.borderNone") },
+                { value: "solid", label: t("paragraph.borderSolid") },
+                { value: "dashed", label: t("paragraph.borderDashed") },
+                { value: "dotted", label: t("paragraph.borderDotted") },
+              ]}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 3 }}>
+            {NumField(
+              t("paragraph.borderWidthLabel"),
+              () => form().borderWidth,
+              (v) => set("borderWidth", v),
+              "editor-table-properties-border-width",
+              borderDisabled(),
+            )}
+          </Grid>
+          <Grid size={{ xs: 12, md: 3 }}>
+            <ColorField
+              label={t("paragraph.borderColorLabel")}
+              value={form().borderColor || DEFAULT_BORDER_COLOR}
+              disabled={borderDisabled()}
+              onChange={(value) => set("borderColor", value)}
+              data-testid="editor-table-properties-border-color"
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 3 }}>
+            <ColorField
+              label={t("paragraph.shadingLabel")}
+              value={form().shading || "#ffffff"}
+              onChange={(value) => set("shading", value)}
+              data-testid="editor-table-properties-shading"
+            />
+          </Grid>
+        </Grid>
+        <Stack
+          class="oasis-editor-dialog-style-row"
+          direction="row"
+          spacing={1}
+        >
           <Checkbox
             label={t("paragraph.borderSideTop")}
             checked={form().borderTop}
@@ -268,7 +290,7 @@ export function CellTabPanel(props: TablePanelProps) {
             onChange={(v) => set("borderTrBl", v)}
             data-testid="editor-table-properties-border-trbl"
           />
-        </div>
+        </Stack>
         <div
           class="oasis-editor-table-properties-cell-preview"
           style={borderPreview()}

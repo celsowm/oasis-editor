@@ -232,9 +232,12 @@ internal component paths.
 ```tsx
 import {
   Button,
+  ColorField,
   Dialog,
   DialogFooter,
   FieldGroup,
+  Grid,
+  Stack,
   TextAreaField,
   TextField,
 } from "oasis-editor/ui";
@@ -251,14 +254,35 @@ export function PluginDialog(props: { open: boolean; onClose: () => void }) {
         </DialogFooter>
       }
     >
-      <FieldGroup legend="General">
-        <TextField label="Name" onChange={(value) => console.log(value)} />
-        <TextAreaField
-          label="Notes"
-          onChange={(value) => console.log(value)}
-        />
-      </FieldGroup>
+      <Stack spacing={2}>
+        <FieldGroup legend="General">
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                label="Name"
+                onChange={(value) => console.log(value)}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                label="Slug"
+                onChange={(value) => console.log(value)}
+              />
+            </Grid>
+          </Grid>
+          <TextAreaField
+            label="Notes"
+            onChange={(value) => console.log(value)}
+          />
+          <ColorField label="Accent" onChange={(value) => console.log(value)} />
+        </FieldGroup>
+      </Stack>
     </Dialog>
   );
 }
 ```
+
+`Stack` and `Grid` use a MUI-like API for layout without bringing in MUI:
+`Stack spacing={2}`, `Stack direction={{ xs: "column", sm: "row" }}`,
+`Grid container spacing={2}`, and `Grid size={{ xs: 12, md: 6 }}` are valid
+plugin UI patterns.

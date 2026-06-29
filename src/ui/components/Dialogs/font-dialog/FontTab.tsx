@@ -2,7 +2,12 @@ import { For, type JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 
 import { UNDERLINE_STYLE_OPTIONS } from "@/ui/components/Toolbar/underlineStyles.js";
+import { ColorField } from "@/ui/public/ColorField.js";
+import { FormField } from "@/ui/public/FormField.js";
+import { Grid } from "@/ui/public/Grid.js";
 import { SelectField } from "@/ui/public/SelectField.js";
+import { Stack } from "@/ui/public/Stack.js";
+import { StatusText } from "@/ui/public/StatusText.js";
 import { TextField } from "@/ui/public/TextField.js";
 import { ToggleChip } from "@/ui/public/ToggleChip.js";
 import {
@@ -131,210 +136,194 @@ export function FontTab(props: FontTabProps) {
 
   return (
     <div class="oasis-editor-font-dialog-panel oasis-editor-font-dialog-font-panel">
-      <div class="oasis-editor-dialog-row">
-        <TextField
-          class="oasis-editor-dialog-input-group-grow"
-          label={t("dialog.font.familyFilter")}
-          value={ctrl.fontTabValues().familyFilter}
-          onChange={(value) => ctrl.updateFontTab("familyFilter", value)}
-          data-testid="editor-font-dialog-family-filter"
-        />
-      </div>
-      <div class="oasis-editor-dialog-row">
-        <SelectField
-          class="oasis-editor-dialog-input-group-grow"
-          label={t("dialog.font.family")}
-          value={ctrl.fontTabValues().fontFamily}
-          onChange={(value) => ctrl.updateFontTab("fontFamily", value)}
-          data-testid="editor-font-dialog-family"
-          options={[
-            { value: "", label: "—" },
-            ...ctrl.visibleFamilyOptions().map((family) => ({
-              value: family,
-              label: family,
-            })),
-          ]}
-        />
-        <SelectField
-          class="oasis-editor-font-dialog-size-group"
-          label={t("dialog.font.size")}
-          value={ctrl.fontTabValues().fontSize}
-          onChange={(value) => ctrl.updateFontTab("fontSize", value)}
-          data-testid="editor-font-dialog-size"
-          options={[
-            { value: "", label: "—" },
-            ...ctrl.effectiveSizeOptions().map((size) => ({
-              value: String(size),
-              label: String(size),
-            })),
-          ]}
-        />
-      </div>
-      <div class="oasis-editor-dialog-row">
-        <div class="oasis-editor-dialog-input-group oasis-editor-font-dialog-custom-size-group">
+      <Grid container spacing={1.5}>
+        <Grid size={12}>
           <TextField
+            label={t("dialog.font.familyFilter")}
+            value={ctrl.fontTabValues().familyFilter}
+            onChange={(value) => ctrl.updateFontTab("familyFilter", value)}
+            data-testid="editor-font-dialog-family-filter"
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 8 }}>
+          <SelectField
+            label={t("dialog.font.family")}
+            value={ctrl.fontTabValues().fontFamily}
+            onChange={(value) => ctrl.updateFontTab("fontFamily", value)}
+            data-testid="editor-font-dialog-family"
+            options={[
+              { value: "", label: "—" },
+              ...ctrl.visibleFamilyOptions().map((family) => ({
+                value: family,
+                label: family,
+              })),
+            ]}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <SelectField
+            class="oasis-editor-font-dialog-size-group"
+            label={t("dialog.font.size")}
+            value={ctrl.fontTabValues().fontSize}
+            onChange={(value) => ctrl.updateFontTab("fontSize", value)}
+            data-testid="editor-font-dialog-size"
+            options={[
+              { value: "", label: "—" },
+              ...ctrl.effectiveSizeOptions().map((size) => ({
+                value: String(size),
+                label: String(size),
+              })),
+            ]}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <TextField
+            class="oasis-editor-font-dialog-custom-size-group"
             label={t("dialog.font.customSize")}
             value={ctrl.fontTabValues().fontSize}
             onChange={(value) => ctrl.updateFontTab("fontSize", value)}
             data-testid="editor-font-dialog-custom-size"
           />
-          <span class="oasis-editor-dialog-help-text">
+          <StatusText class="oasis-editor-dialog-help-text">
             {ctrl.customSizeError()}
-          </span>
-        </div>
-        <SelectField
-          class="oasis-editor-font-dialog-style-list-group"
-          label={t("dialog.font.styleList")}
-          value={ctrl.selectedFontStyle()}
-          onChange={(value) =>
-            ctrl.applyFontStylePreset(value as FontStylePreset)
-          }
-          data-testid="editor-font-dialog-style-list"
-          options={[
-            { value: "regular", label: t("dialog.font.styleRegular") },
-            { value: "italic", label: t("dialog.font.styleItalic") },
-            { value: "bold", label: t("dialog.font.styleBold") },
-            { value: "boldItalic", label: t("dialog.font.styleBoldItalic") },
-          ]}
-        />
-      </div>
+          </StatusText>
+        </Grid>
+        <Grid size={{ xs: 12, md: 8 }}>
+          <SelectField
+            class="oasis-editor-font-dialog-style-list-group"
+            label={t("dialog.font.styleList")}
+            value={ctrl.selectedFontStyle()}
+            onChange={(value) =>
+              ctrl.applyFontStylePreset(value as FontStylePreset)
+            }
+            data-testid="editor-font-dialog-style-list"
+            options={[
+              { value: "regular", label: t("dialog.font.styleRegular") },
+              { value: "italic", label: t("dialog.font.styleItalic") },
+              { value: "bold", label: t("dialog.font.styleBold") },
+              { value: "boldItalic", label: t("dialog.font.styleBoldItalic") },
+            ]}
+          />
+        </Grid>
+      </Grid>
 
-      <div class="oasis-editor-dialog-row oasis-editor-font-dialog-color-row">
-        <div class="oasis-editor-dialog-input-group oasis-editor-font-dialog-color-mode-group">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.color")}
-          </label>
-          <select
-            class="oasis-editor-dialog-input"
+      <Grid container spacing={1.5} class="oasis-editor-font-dialog-color-row">
+        <Grid size={{ xs: 12, md: 4 }}>
+          <SelectField
+            class="oasis-editor-font-dialog-color-mode-group"
+            label={t("dialog.font.color")}
             value={ctrl.fontTabValues().colorMode}
-            onChange={(e) =>
-              ctrl.updateFontTab(
-                "colorMode",
-                e.currentTarget.value as "automatic" | "custom",
-              )
+            onChange={(value) =>
+              ctrl.updateFontTab("colorMode", value as "automatic" | "custom")
             }
             data-testid="editor-font-dialog-color-mode"
-          >
-            <option value="automatic">{t("toolbar.colorAutomatic")}</option>
-            <option value="custom">{t("dialog.font.customColor")}</option>
-          </select>
-          <input
-            type="color"
-            class="oasis-editor-dialog-color"
+            options={[
+              { value: "automatic", label: t("toolbar.colorAutomatic") },
+              { value: "custom", label: t("dialog.font.customColor") },
+            ]}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <ColorField
+            label={t("dialog.font.color")}
             value={ctrl.fontTabValues().color}
             disabled={ctrl.fontTabValues().colorMode === "automatic"}
-            onInput={(e) =>
+            onChange={(value) =>
               ctrl.setFontTabValues((current) => ({
                 ...current,
-                color: e.currentTarget.value,
+                color: value,
                 colorMode: "custom",
               }))
             }
             data-testid="editor-font-dialog-color"
           />
-        </div>
-        <div class="oasis-editor-dialog-input-group">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.highlight")}
-          </label>
-          <input
-            type="color"
-            class="oasis-editor-dialog-color"
+        </Grid>
+        <Grid size={{ xs: 12, md: 2 }}>
+          <ColorField
+            label={t("dialog.font.highlight")}
             value={ctrl.fontTabValues().highlight || DEFAULT_HIGHLIGHT}
-            onInput={(e) =>
-              ctrl.updateFontTab("highlight", e.currentTarget.value)
-            }
+            onChange={(value) => ctrl.updateFontTab("highlight", value)}
             data-testid="editor-font-dialog-highlight"
           />
-        </div>
-        <div class="oasis-editor-dialog-input-group">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.shading")}
-          </label>
-          <input
-            type="color"
-            class="oasis-editor-dialog-color"
+        </Grid>
+        <Grid size={{ xs: 12, md: 2 }}>
+          <ColorField
+            label={t("dialog.font.shading")}
             value={ctrl.fontTabValues().shading || DEFAULT_SHADING}
-            onInput={(e) =>
-              ctrl.updateFontTab("shading", e.currentTarget.value)
-            }
+            onChange={(value) => ctrl.updateFontTab("shading", value)}
             data-testid="editor-font-dialog-shading"
           />
-        </div>
-      </div>
+        </Grid>
+      </Grid>
 
-      <div class="oasis-editor-dialog-row">
-        <SelectField
-          class="oasis-editor-dialog-input-group-grow"
-          label={t("dialog.font.underlineStyle")}
-          value={ctrl.fontTabValues().underlineStyle}
-          onChange={(value) =>
-            ctrl.setFontTabValues((current) => ({
-              ...current,
-              underlineStyle: value as UnderlineStyleValue,
-              underline: value !== "none",
-            }))
-          }
-          data-testid="editor-font-dialog-underline-style"
-          options={[
-            { value: "none", label: t("toolbar.underlineRemove") },
-            ...UNDERLINE_STYLE_OPTIONS.map((option) => ({
-              value: option.value,
-              label: t(option.labelKey),
-            })),
-          ]}
-        />
-        <div class="oasis-editor-dialog-input-group">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.underlineColor")}
-          </label>
-          <input
-            type="color"
-            class="oasis-editor-dialog-color"
-            value={ctrl.fontTabValues().underlineColor || DEFAULT_COLOR}
-            disabled={ctrl.fontTabValues().underlineStyle === "none"}
-            onInput={(e) =>
+      <Grid container spacing={1.5}>
+        <Grid size={{ xs: 12, md: 8 }}>
+          <SelectField
+            label={t("dialog.font.underlineStyle")}
+            value={ctrl.fontTabValues().underlineStyle}
+            onChange={(value) =>
               ctrl.setFontTabValues((current) => ({
                 ...current,
-                underlineColor: e.currentTarget.value,
+                underlineStyle: value as UnderlineStyleValue,
+                underline: value !== "none",
+              }))
+            }
+            data-testid="editor-font-dialog-underline-style"
+            options={[
+              { value: "none", label: t("toolbar.underlineRemove") },
+              ...UNDERLINE_STYLE_OPTIONS.map((option) => ({
+                value: option.value,
+                label: t(option.labelKey),
+              })),
+            ]}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <ColorField
+            label={t("dialog.font.underlineColor")}
+            value={ctrl.fontTabValues().underlineColor || DEFAULT_COLOR}
+            disabled={ctrl.fontTabValues().underlineStyle === "none"}
+            onChange={(value) =>
+              ctrl.setFontTabValues((current) => ({
+                ...current,
+                underlineColor: value,
                 underline: current.underlineStyle !== "none",
               }))
             }
             data-testid="editor-font-dialog-underline-color"
           />
-        </div>
-      </div>
+        </Grid>
+      </Grid>
 
-      <div class="oasis-editor-dialog-row">
-        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">
-            {t("dialog.font.style")}
-          </label>
-          <div class="oasis-editor-dialog-style-row">
-            <For each={effectToggles()}>
-              {(toggle) => (
-                <ToggleChip
-                  label={toggle.label}
-                  labelStyle={toggle.labelStyle}
-                  checked={toggle.checked()}
-                  onChange={toggle.onChange}
-                  data-testid={toggle.testId}
-                />
-              )}
-            </For>
-          </div>
-        </div>
-      </div>
+      <FormField
+        class="oasis-editor-dialog-input-group-grow"
+        label={t("dialog.font.style")}
+      >
+        <Stack
+          class="oasis-editor-dialog-style-row"
+          direction="row"
+          spacing={1}
+        >
+          <For each={effectToggles()}>
+            {(toggle) => (
+              <ToggleChip
+                label={toggle.label}
+                labelStyle={toggle.labelStyle}
+                checked={toggle.checked()}
+                onChange={toggle.onChange}
+                data-testid={toggle.testId}
+              />
+            )}
+          </For>
+        </Stack>
+      </FormField>
 
-      <div class="oasis-editor-dialog-input-group">
-        <label class="oasis-editor-dialog-label">
-          {t("dialog.font.preview")}
-        </label>
+      <FormField label={t("dialog.font.preview")}>
         <FontPreview
           testId="editor-font-dialog-preview"
           style={ctrl.previewStyle()}
         />
-      </div>
+      </FormField>
     </div>
   );
 }
