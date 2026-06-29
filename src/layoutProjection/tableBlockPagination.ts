@@ -53,8 +53,14 @@ export function paginateTableBlock(
   sourceBlock: EditorTableNode,
   index: number,
 ): void {
-  const { contentWidth, measurer, styles, defaultTabStop, measuredHeights } =
-    params;
+  const {
+    contentWidth,
+    measurer,
+    styles,
+    defaultTabStop,
+    measuredHeights,
+    projectionContext,
+  } = params;
 
   const tableHeight =
     measuredHeights?.[sourceBlock.id] ??
@@ -343,6 +349,7 @@ export function paginateTableBlock(
                 contentWidth,
                 sourceBlock,
                 rowGroups[groupEndIndex]!.startRowIndex,
+                projectionContext,
               ),
             );
 
@@ -436,6 +443,7 @@ export function paginateTableBlock(
             contentWidth,
             sourceBlock,
             startRowIndex,
+            projectionContext,
           ),
         );
         if (!positionsProgressed(starts, ends)) {

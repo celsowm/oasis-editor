@@ -15,6 +15,7 @@ import {
 } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
 import type { HeaderFooterBlockProjector } from "./headerFooterLayoutContext.js";
+import type { LayoutProjectionContext } from "./paragraphPagination.js";
 
 export type BlocksLayoutProjector = (context: {
   blocks: EditorBlockNode[];
@@ -30,6 +31,7 @@ export type BlocksLayoutProjector = (context: {
   measurer?: ITextMeasurer;
   reservedHeightByPageIndex?: Map<number, number>;
   defaultTabStop?: number;
+  projectionContext?: LayoutProjectionContext;
 }) => EditorLayoutPage[];
 
 export interface SectionPaginationContext {
@@ -43,6 +45,7 @@ export interface SectionPaginationContext {
   needsTotalPages: boolean;
   projectBlocks: BlocksLayoutProjector;
   projectHeaderFooterBlocks: HeaderFooterBlockProjector;
+  projectionContext?: LayoutProjectionContext;
 }
 
 export interface SectionPaginationResult {
@@ -148,6 +151,7 @@ function createHeaderFooterVariantProjector(context: SectionPaginationContext) {
           contentWidth,
           measurer: context.measurer,
           defaultTabStop: context.defaultTabStop,
+          projectionContext: context.projectionContext,
         })
       : undefined;
 }
@@ -229,6 +233,7 @@ function calculateTotalPages(
       existingPages: isContinuous ? [activePages[activePages.length - 1]] : [],
       measurer: context.measurer,
       defaultTabStop: context.defaultTabStop,
+      projectionContext: context.projectionContext,
     });
 
     if (isContinuous) {
@@ -291,6 +296,7 @@ function projectAllPages(
       measurer: context.measurer,
       reservedHeightByPageIndex,
       defaultTabStop: context.defaultTabStop,
+      projectionContext: context.projectionContext,
     });
 
     if (isContinuous) {

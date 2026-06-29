@@ -496,7 +496,7 @@ Literal `28` appears as caret height fallback in `src/ui/caretGeometry.ts` lines
 
 ### 30. Hyphenation state is implicit global in `paragraphPagination.ts`
 
-**Severity:** med — **Status: open**
+**Severity:** med — **Status: ✅ resolved.** `LayoutProjectionContext` struct introduced in `paragraphPagination.ts`; threaded explicitly through the entire layout pipeline (`sectionPagination` → `blocksPagination` → `paragraphBlockPagination`/`tableBlockPagination`/`tableRowSlicing`/`headerFooterFootnotes`). Module-level globals and `setActiveHyphenation` removed.
 
 `activeHyphenation` and `activeHyphenationSignature` are module-level variables set once by `setActiveHyphenation()` and read inside `projectParagraphLayout` without passing through the call chain. This creates invisible, non-reentrant coupling that will cause phantom bugs if layout ever runs in parallel, inside a shared worker, or for multiple simultaneous documents.
 

@@ -6,6 +6,7 @@ import type {
   EditorPageSettings,
 } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
+import type { LayoutProjectionContext } from "./paragraphPagination.js";
 
 export interface ProjectBlocksLayoutContext {
   blocks: EditorBlockNode[];
@@ -25,4 +26,5 @@ export interface ProjectBlocksLayoutContext {
    * by the multi-column flow to wrap at a single column's width.
    */
   contentWidthOverride?: number;
+  projectionContext?: LayoutProjectionContext;
 }

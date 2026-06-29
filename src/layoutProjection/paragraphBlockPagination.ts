@@ -10,6 +10,7 @@ import {
   applyMeasuredLineGeometry,
   applyWidowOrphanControl,
   createParagraphSegmentLayout,
+  EMPTY_PROJECTION_CONTEXT,
   estimateParagraphBlockHeight,
   getEffectiveParagraphStyle,
   getParagraphMeasuredHeight,
@@ -159,6 +160,7 @@ export function paginateParagraphBlock(
       ...exclusion,
       y: exclusion.y - track.height,
     })),
+    params.projectionContext ?? EMPTY_PROJECTION_CONTEXT,
   );
   const measuredParagraphLayout = measuredParagraphLayouts?.[sourceBlock.id];
   const paragraphLayout =

@@ -57,6 +57,7 @@ function projectColumnTrackLayout(
     reservedHeightByPageIndex,
     defaultTabStop,
     contentWidthOverride,
+    projectionContext,
   } = context;
   const contentWidth =
     contentWidthOverride ?? getPageContentWidth(pageSettings);
@@ -78,6 +79,7 @@ function projectColumnTrackLayout(
     defaultTabStop,
     measuredHeights,
     measuredParagraphLayouts,
+    projectionContext,
   };
 
   for (let index = 0; index < blocks.length; index += 1) {

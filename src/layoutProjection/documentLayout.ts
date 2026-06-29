@@ -14,7 +14,7 @@ import {
   reservationSignature,
 } from "./footnotePagination.js";
 import { projectBlocksLayout } from "./blocksPagination.js";
-import { setActiveHyphenation } from "./paragraphPagination.js";
+import { createProjectionContext } from "./paragraphPagination.js";
 import { projectHeaderFooterBlocks } from "./headerFooterFootnotes.js";
 import { projectDocumentSections } from "./sectionPagination.js";
 import { injectEndnotesIntoDocument } from "./endnotePagination.js";
@@ -52,9 +52,7 @@ export function projectDocumentLayout(
   } = {},
 ): EditorLayoutDocument {
   const measurer = options.measurer ?? domTextMeasurer;
-  // Resolve document-level automatic hyphenation once for the whole synchronous
-  // projection pass (body, tables, headers/footers, footnotes all read it).
-  setActiveHyphenation(
+  const projectionContext = createProjectionContext(
     document.settings?.autoHyphenation
       ? {
           enabled: true,
@@ -82,6 +80,7 @@ export function projectDocumentLayout(
     needsTotalPages,
     projectBlocks: projectBlocksLayout,
     projectHeaderFooterBlocks,
+    projectionContext,
   };
 
   const projectedSections = projectDocumentSections(sectionContext);
@@ -91,7 +90,6 @@ export function projectDocumentLayout(
     !document.footnotes ||
     Object.keys(document.footnotes.items).length === 0
   ) {
-    setActiveHyphenation(undefined);
     return { pages };
   }
 
@@ -119,9 +117,7 @@ export function projectDocumentLayout(
     reservations = buildFootnoteReservations(pages, footnoteContext);
   }
 
-  const result = {
+  return {
     pages: applyFootnotesToPages(pages, footnoteContext),
   };
-  setActiveHyphenation(undefined);
-  return result;
 }

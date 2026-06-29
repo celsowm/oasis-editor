@@ -7,6 +7,7 @@ import type {
 } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
 import type { FloatingExclusionRect } from "./floatingObjects.js";
+import type { LayoutProjectionContext } from "./paragraphPagination.js";
 
 /**
  * Resolved per-run inputs shared by the paragraph and table block handlers.
@@ -22,6 +23,7 @@ export interface TrackLayoutParams {
   defaultTabStop?: number;
   measuredHeights?: Record<string, number>;
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>;
+  projectionContext?: LayoutProjectionContext;
 }
 
 /**

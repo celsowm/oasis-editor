@@ -6,7 +6,11 @@ import type {
   TableCellBlockPosition,
 } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
-import { projectParagraphLayout } from "./paragraphPagination.js";
+import {
+  EMPTY_PROJECTION_CONTEXT,
+  projectParagraphLayout,
+  type LayoutProjectionContext,
+} from "./paragraphPagination.js";
 import { estimateTableRowHeight } from "./tablePagination.js";
 
 // Table-row slicing for pagination: splitting a table row's cell content at a
@@ -156,6 +160,7 @@ export function findCellSplitEndPosition(
   contentWidth: number | undefined,
   table: EditorTableNode,
   rowIndex: number,
+  projectionContext: LayoutProjectionContext = EMPTY_PROJECTION_CONTEXT,
 ): TableCellBlockPosition {
   const cell = row.cells[cellIndex];
   if (!cell) return start;
@@ -203,6 +208,7 @@ export function findCellSplitEndPosition(
     contentWidth,
     measurer,
     defaultTabStop,
+    projectionContext,
   );
   for (const line of layout.lines) {
     if (line.endOffset <= startOffset || line.endOffset >= paragraphLength) {

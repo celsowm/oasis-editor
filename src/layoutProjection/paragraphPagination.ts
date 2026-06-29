@@ -35,26 +35,24 @@ import { resolveDropCapExclusion } from "./dropCapExclusion.js";
 import { DEFAULT_FONT_SIZE_PX as DEFAULT_FONT_SIZE } from "@/core/units.js";
 import { VERTICAL_HIT_WEIGHT } from "@/core/layoutConstants.js";
 
-/**
- * Document-scoped automatic-hyphenation context. Set once at the start of a
- * `projectDocumentLayout` pass (which is fully synchronous) and read by
- * `projectParagraphLayout` for every paragraph — body, table cell, header/footer
- * and footnote alike — without threading the option through the whole pagination
- * call chain. Its signature is folded into the paragraph layout cache key so
- * toggling the setting invalidates cached layouts.
- */
-let activeHyphenation: HyphenationLayoutOptions | undefined;
-let activeHyphenationSignature = "";
+export interface LayoutProjectionContext {
+  hyphenation?: HyphenationLayoutOptions;
+  hyphenationSignature: string;
+}
 
-export function setActiveHyphenation(
+export const EMPTY_PROJECTION_CONTEXT: LayoutProjectionContext = {
+  hyphenation: undefined,
+  hyphenationSignature: "",
+};
+
+export function createProjectionContext(
   options: HyphenationLayoutOptions | undefined,
-): void {
-  activeHyphenation = options?.enabled ? options : undefined;
-  activeHyphenationSignature = activeHyphenation
-    ? `h:${activeHyphenation.zone ?? ""}:${
-        activeHyphenation.consecutiveLimit ?? ""
-      }:${activeHyphenation.doNotHyphenateCaps ? 1 : 0}`
+): LayoutProjectionContext {
+  const hyphenation = options?.enabled ? options : undefined;
+  const hyphenationSignature = hyphenation
+    ? `h:${hyphenation.zone ?? ""}:${hyphenation.consecutiveLimit ?? ""}:${hyphenation.doNotHyphenateCaps ? 1 : 0}`
     : "";
+  return { hyphenation, hyphenationSignature };
 }
 
 function paragraphStyleComparableKey(
@@ -166,12 +164,13 @@ export function projectParagraphLayout(
   contentWidth?: number,
   measurer: ITextMeasurer = domTextMeasurer,
   defaultTabStop?: number,
+  context: LayoutProjectionContext = EMPTY_PROJECTION_CONTEXT,
 ): EditorLayoutParagraph {
   const { dependsOnPageIndex, dependsOnTotalPages } =
     getParagraphFieldDependence(paragraph);
   const cacheKey = `${dependsOnPageIndex ? (pageIndex ?? "") : ""}:${
     dependsOnTotalPages ? (totalPages ?? "") : ""
-  }:${contentWidth ?? ""}:${defaultTabStop ?? ""}:${activeHyphenationSignature}`;
+  }:${contentWidth ?? ""}:${defaultTabStop ?? ""}:${context.hyphenationSignature}`;
   let cacheForParagraph = paragraphLayoutCache.get(paragraph);
   if (cacheForParagraph) {
     const cached = cacheForParagraph.get(cacheKey);
@@ -237,7 +236,7 @@ export function projectParagraphLayout(
           styles,
           contentWidth,
           defaultTabStop,
-          hyphenation: activeHyphenation,
+          hyphenation: context.hyphenation,
         })
         .map((line) => ({
           ...line,
@@ -284,6 +283,7 @@ export function projectParagraphLayoutWithExclusions(
   defaultTabStop?: number,
   resolveTextBoxHeight?: ResolveTextBoxHeight,
   externalExclusions: FloatingExclusionRect[] = [],
+  context: LayoutProjectionContext = EMPTY_PROJECTION_CONTEXT,
 ): EditorLayoutParagraph {
   const preliminary = projectParagraphLayout(
     paragraph,
@@ -293,6 +293,7 @@ export function projectParagraphLayoutWithExclusions(
     contentWidth,
     measurer,
     defaultTabStop,
+    context,
   );
 
   if (!pageSettings || !contentWidth) {
