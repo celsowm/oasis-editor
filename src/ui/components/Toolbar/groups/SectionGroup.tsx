@@ -24,7 +24,7 @@ export function SectionGroup(props: { api: ToolbarActionApi }): JSX.Element {
           icon="rectangle-vertical"
           active={!api.commands.state("toggleOrientation").isActive}
           data-testid="editor-toolbar-orientation-portrait"
-          onClick={() =>
+          onClick={(): unknown =>
             api.commands.execute({
               name: "setOrientation",
               payload: "portrait",
@@ -36,7 +36,7 @@ export function SectionGroup(props: { api: ToolbarActionApi }): JSX.Element {
           icon="rectangle-horizontal"
           active={api.commands.state("toggleOrientation").isActive}
           data-testid="editor-toolbar-orientation-landscape"
-          onClick={() =>
+          onClick={(): unknown =>
             api.commands.execute({
               name: "setOrientation",
               payload: "landscape",
@@ -50,13 +50,13 @@ export function SectionGroup(props: { api: ToolbarActionApi }): JSX.Element {
         <Button
           icon="scissors"
           data-testid="editor-toolbar-section-break-next"
-          onClick={() => api.commands.execute("sectionBreakNextPage")}
+          onClick={(): unknown => api.commands.execute("sectionBreakNextPage")}
           tooltip={t("section.secNextTooltip")}
         />
         <Button
           icon="scissors"
           data-testid="editor-toolbar-section-break-continuous"
-          onClick={() => api.commands.execute("sectionBreakContinuous")}
+          onClick={(): unknown => api.commands.execute("sectionBreakContinuous")}
           tooltip={t("section.secContTooltip")}
         />
       </div>

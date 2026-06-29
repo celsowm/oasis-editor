@@ -154,7 +154,7 @@ export function buildListLabels(document: EditorDocument): Map<string, string> {
     while (state.counters.length <= level) state.counters.push(0);
     state.counters.length = level + 1;
     if (list.levelFormats) {
-      list.levelFormats.forEach((format, index) => {
+      list.levelFormats.forEach((format, index): void => {
         state.formats[index] = format;
       });
     }
@@ -171,7 +171,7 @@ export function buildListLabels(document: EditorDocument): Map<string, string> {
     const pattern = list.levelText ?? `%${level + 1}.`;
     labels.set(
       paragraph.id,
-      pattern.replace(/%([1-9])/g, (token, rawLevel: string) => {
+      pattern.replace(/%([1-9])/g, (token, rawLevel: string): string => {
         const referencedLevel = Number(rawLevel) - 1;
         const value = state.counters[referencedLevel];
         if (value === undefined) return token;

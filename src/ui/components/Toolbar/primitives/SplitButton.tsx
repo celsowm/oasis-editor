@@ -37,9 +37,9 @@ export function SplitButton(props: SplitButtonProps): JSX.Element {
       panelClass={props.panelClass}
       panelRole={props.panelRole}
       onPanelMouseLeave={props.onPanelMouseLeave}
-      trigger={(api) => (
+      trigger={(api): JSX.Element => (
         <div
-          ref={(el) => api.ref(el)}
+          ref={(el): void => api.ref(el)}
           class={props.rootClass ?? "oasis-editor-color-split"}
           classList={{
             "oasis-editor-color-split-active": props.rootActive ?? api.open,
@@ -52,7 +52,7 @@ export function SplitButton(props: SplitButtonProps): JSX.Element {
             data-testid={props.mainTestId}
             aria-label={props.mainAriaLabel ?? props.tooltip}
             aria-pressed={props.mainPressed}
-            onClick={() => props.onMain()}
+            onClick={(): void => props.onMain()}
           >
             {props.mainContent}
           </button>
@@ -64,7 +64,7 @@ export function SplitButton(props: SplitButtonProps): JSX.Element {
             aria-label={props.menuAriaLabel ?? `${props.tooltip ?? ""} menu`}
             aria-haspopup="menu"
             aria-expanded={api.open}
-            onClick={() => api.toggle()}
+            onClick={(): void => api.toggle()}
           >
             <i data-lucide="chevron-down" />
           </button>

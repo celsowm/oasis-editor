@@ -154,32 +154,32 @@ export function buildEditorViewProps(
   };
 
   const refs: OasisEditorEditorRefProps = {
-    onViewportRef: (element) => {
+    onViewportRef: (element): void => {
       refsInput.focusController.viewportRef = element;
     },
-    onSurfaceRef: (element) => {
+    onSurfaceRef: (element): void => {
       refsInput.focusController.surfaceRef = element;
     },
-    onTextareaRef: (element) => {
+    onTextareaRef: (element): void => {
       refsInput.focusController.textareaRef = element;
     },
-    onImportInputRef: (element) => {
+    onImportInputRef: (element): void => {
       refsInput.focusController.importInputRef = element;
     },
-    onImageInputRef: (element) => {
+    onImageInputRef: (element): void => {
       refsInput.focusController.imageInputRef = element;
     },
   };
 
   const fileHandlers: OasisEditorEditorFileHandlers = {
-    onImportInputChange: (e) =>
+    onImportInputChange: (e): void =>
       files.handleImportFile(e.currentTarget.files?.[0] ?? null),
-    onImageInputChange: (e) =>
+    onImageInputChange: (e): void =>
       files.handleInsertImage(e.currentTarget.files?.[0] ?? null),
   };
 
   const surfaceHandlers: OasisEditorEditorSurfaceHandlers = {
-    onDragOver: (event) => event.preventDefault(),
+    onDragOver: (event): void => event.preventDefault(),
     onDrop: surface.handleDrop,
     onEditorMouseDown: surface.onEditorMouseDown,
     onSurfaceMouseDown: surface.surfaceEvents.handleSurfaceMouseDown,
@@ -195,12 +195,12 @@ export function buildEditorViewProps(
     onTableDragHandleMouseDown: surface.tableDrag.handleMouseDown,
     onRevisionMouseEnter: surface.revisionController.handleRevisionMouseEnter,
     onRevisionMouseLeave: surface.revisionController.handleRevisionMouseLeave,
-    onEditorContextMenu: (event) => surface.handleEditorContextMenu(event),
+    onEditorContextMenu: (event): void => surface.handleEditorContextMenu(event),
   };
 
   const inputHandlers: OasisEditorEditorInputHandlers = {
-    onInputBlur: () => input.setFocused(false),
-    onInputFocus: () => input.setFocused(true),
+    onInputBlur: (): void => input.setFocused(false),
+    onInputFocus: (): void => input.setFocused(true),
     onCompositionEnd: input.textInput.handleCompositionEnd,
     onCompositionStart: input.textInput.handleCompositionStart,
     onCopy: input.handleCopy,

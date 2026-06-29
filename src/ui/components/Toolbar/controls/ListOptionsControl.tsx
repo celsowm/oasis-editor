@@ -23,7 +23,7 @@ export function ListOptionsControl(props: {
           <span>{t("toolbar.listFormat")}</span>
           <Select
             data-testid="editor-toolbar-list-format"
-            onChange={(e) =>
+            onChange={(e): unknown =>
               api.commands.execute("setListFormat", e.currentTarget.value)
             }
             tooltip={t("toolbar.listFormat")}
@@ -50,7 +50,7 @@ export function ListOptionsControl(props: {
             min="1"
             step="1"
             placeholder="1"
-            onChange={(e) =>
+            onChange={(e): unknown =>
               api.commands.execute("setListStartAt", e.currentTarget.value)
             }
             title={t("toolbar.listStartAt")}

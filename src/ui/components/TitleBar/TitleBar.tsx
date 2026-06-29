@@ -4,7 +4,7 @@ export interface TitleBarProps {
   children?: JSX.Element;
 }
 
-export function TitleBar(props: TitleBarProps) {
+export function TitleBar(props: TitleBarProps): JSX.Element {
   return (
     <div class="oasis-titlebar">
       <div class="oasis-titlebar-left">

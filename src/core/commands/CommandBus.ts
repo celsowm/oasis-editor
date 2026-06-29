@@ -10,15 +10,15 @@ export interface CommandBus<TState = CommandState> {
 
 export function createEditorCommandBus(editor: OasisEditor): CommandBus {
   return {
-    execute(command, payloadOverride) {
+    execute(command, payloadOverride): unknown {
       const resolved = resolveCommandRef(command, payloadOverride);
       return editor.commands.execute(resolved.name, resolved.payload);
     },
-    canExecute(command, payloadOverride) {
+    canExecute(command, payloadOverride): boolean {
       const resolved = resolveCommandRef(command, payloadOverride);
       return editor.commands.canExecute(resolved.name, resolved.payload);
     },
-    state(command) {
+    state(command): CommandState {
       const resolved = resolveCommandRef(command);
       // Delegate to the registry so `refresh` receives the command context the
       // same way `execute`/`canExecute` do — calling `refresh` here directly

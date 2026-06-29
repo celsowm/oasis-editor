@@ -1,4 +1,4 @@
-import type { EditorDocument, EditorState } from "@/core/model.js";
+import type { EditorDocument, EditorState, EditorSelection } from "@/core/model.js";
 import {
   createEditorStateFromDocument,
   createInitialEditorState,
@@ -6,6 +6,7 @@ import {
 import type { OasisEditorClientController } from "@/app/client/OasisEditorClient.js";
 import type { createEditorDocumentIO } from "@/app/controllers/useEditorDocumentIO.js";
 import type { useEditorRuntimeBootstrap } from "./useEditorRuntimeBootstrap.js";
+import type { Editor } from "@/core/Editor.js";
 
 type RuntimeEditorAccessor = ReturnType<
   typeof useEditorRuntimeBootstrap
@@ -43,43 +44,43 @@ export function connectEditorClientHost(
   controller: OasisEditorClientController,
   deps: ConnectEditorClientHostDeps,
 ): void {
-  const snapshot = () => deps.cloneState(deps.getStateSnapshot());
+  const snapshot = (): EditorState => deps.cloneState(deps.getStateSnapshot());
 
   controller.connectHost({
-    getRuntimeEditor: () => (deps.runtimeReady() ? deps.runtimeEditor() : null),
-    getState: () => snapshot(),
-    getDocument: () => snapshot().document,
-    setDocument: (document) => {
+    getRuntimeEditor: (): Editor | null => (deps.runtimeReady() ? deps.runtimeEditor() : null),
+    getState: (): EditorState => snapshot(),
+    getDocument: (): EditorDocument => snapshot().document,
+    setDocument: (document): void => {
       deps.applyState(createEditorStateFromDocument(document));
       deps.resetEditorChromeState();
       deps.focusInput();
     },
-    resetDocument: () => {
+    resetDocument: (): void => {
       deps.applyState(createInitialEditorState());
       deps.resetEditorChromeState();
       deps.focusInput();
     },
-    saveDocument: async () => {
+    saveDocument: async (): Promise<void> => {
       await deps.getPersistence().saveDocument(snapshot().document);
     },
-    getSelection: () => snapshot().selection,
-    setSelection: (selection) => {
+    getSelection: (): EditorSelection => snapshot().selection,
+    setSelection: (selection): void => {
       deps.applyState({
         ...snapshot(),
         selection,
       });
       deps.focusInput();
     },
-    focus: () => deps.focusInput(),
-    blur: () => {
+    focus: (): void => deps.focusInput(),
+    blur: (): void => {
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
       deps.setFocused(false);
     },
-    clearHistory: () => deps.clearHistory(),
-    importDocx: (file) => deps.docIO.handleImportFile(file),
-    exportDocx: () => deps.docIO.handleExportDocx(),
-    exportPdf: () => deps.docIO.handleExportPdf(),
+    clearHistory: (): void => deps.clearHistory(),
+    importDocx: (file): Promise<void> => deps.docIO.handleImportFile(file),
+    exportDocx: (): Promise<unknown> => Promise.resolve(deps.docIO.handleExportDocx()),
+    exportPdf: (): Promise<unknown> => Promise.resolve(deps.docIO.handleExportPdf()),
   });
 }

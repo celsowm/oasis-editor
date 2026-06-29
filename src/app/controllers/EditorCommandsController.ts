@@ -47,8 +47,7 @@ import {
   type EditorParagraphStyle,
   type EditorSection,
   type EditorState,
-  type EditorTextStyle,
-} from "@/core/model.js";
+  type EditorTextStyle, EditorParagraphNode } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
 import type {
@@ -133,7 +132,7 @@ export function createEditorCommandsController(
     focusInput();
   };
 
-  const getSelectedParagraphRange = () => {
+  const getSelectedParagraphRange = (): EditorParagraphNode[] => {
     const normalized = normalizeSelection(state);
     return getParagraphs(state).slice(
       normalized.startIndex,
@@ -141,19 +140,19 @@ export function createEditorCommandsController(
     );
   };
 
-  const selectionTouchesList = () =>
-    getSelectedParagraphRange().some((paragraph) => Boolean(paragraph.list));
+  const selectionTouchesList = (): boolean =>
+    getSelectedParagraphRange().some((paragraph): boolean => Boolean(paragraph.list));
 
-  const focusedParagraph = () => {
+  const focusedParagraph = (): EditorParagraphNode | null => {
     const focusParagraphId = state.selection.focus.paragraphId;
     return (
       getParagraphs(state).find(
-        (paragraph) => paragraph.id === focusParagraphId,
+        (paragraph): boolean => paragraph.id === focusParagraphId,
       ) ?? null
     );
   };
 
-  const handleListTab = (direction: "indent" | "outdent") => {
+  const handleListTab = (direction: "indent" | "outdent"): boolean => {
     if (
       findParagraphTableLocation(
         state.document,
@@ -168,7 +167,7 @@ export function createEditorCommandsController(
       return false;
     }
 
-    execParagraph((current) =>
+    execParagraph((current): EditorState =>
       direction === "indent"
         ? indentParagraphList(current)
         : outdentParagraphList(current),
@@ -176,7 +175,7 @@ export function createEditorCommandsController(
     return true;
   };
 
-  const handleListEnter = () => {
+  const handleListEnter = (): boolean => {
     const paragraph = focusedParagraph();
     if (!paragraph?.list) {
       return false;
@@ -186,13 +185,13 @@ export function createEditorCommandsController(
     clearPreferredColumn();
     resetTransactionGrouping();
     if (selectionCollapsed() && getParagraphText(paragraph).length === 0) {
-      applySelectionAwareParagraphCommand((current) =>
+      applySelectionAwareParagraphCommand((current): EditorState =>
         clearParagraphListAtSelection(current),
       );
     } else {
       applyTransactionalState(
-        (current) =>
-          applyTableAwareParagraphEdit(current, (temp) =>
+        (current): EditorState =>
+          applyTableAwareParagraphEdit(current, (temp): EditorState =>
             splitListItemAtSelection(temp),
           ),
         { mergeKey: MERGE_KEYS.splitListItem },
@@ -204,7 +203,7 @@ export function createEditorCommandsController(
 
   const handleListBoundaryBackspace = (
     event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
-  ) => {
+  ): boolean => {
     const paragraph = focusedParagraph();
     if (!paragraph?.list || !selectionCollapsed()) {
       return false;
@@ -221,7 +220,7 @@ export function createEditorCommandsController(
     // Extra step between apply and focusInput: ceremony is manual here.
     clearPreferredColumn();
     resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) =>
+    applySelectionAwareParagraphCommand((current): EditorState =>
       outdentParagraphList(current),
     );
     event.currentTarget.value = "";
@@ -229,7 +228,7 @@ export function createEditorCommandsController(
     return true;
   };
 
-  const selectionTableLocation = () => {
+  const selectionTableLocation = (): string => {
     const sel = state.selection;
     const secIdx = getActiveSectionIndex(state);
     const anchorLoc = findParagraphTableLocation(
@@ -248,7 +247,7 @@ export function createEditorCommandsController(
     return "";
   };
 
-  const applyBooleanStyleCommand = (key: BooleanStyleKey) => {
+  const applyBooleanStyleCommand = (key: BooleanStyleKey): void => {
     if (selectionCollapsed()) {
       return;
     }
@@ -256,7 +255,7 @@ export function createEditorCommandsController(
     logger.info(
       `toggleStyle:${key} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}..${sel.focus.offset}]${selectionTableLocation()}`,
     );
-    execText((current) => toggleTextStyle(current, key));
+    execText((current): EditorState => toggleTextStyle(current, key));
   };
 
   const applyValueStyleCommand = <
@@ -274,7 +273,7 @@ export function createEditorCommandsController(
   >(
     key: K,
     value: EditorTextStyle[K] | null,
-  ) => {
+  ): void => {
     if (selectionCollapsed()) {
       return;
     }
@@ -282,79 +281,79 @@ export function createEditorCommandsController(
     logger.info(
       `setStyle:${key}=${JSON.stringify(value)} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}..${sel.focus.offset}]${selectionTableLocation()}`,
     );
-    execText((current) => setTextStyleValue(current, key, value));
+    execText((current): EditorState => setTextStyleValue(current, key, value));
   };
 
-  const applyChangeTextCaseCommand = (mode: TextCaseMode) => {
+  const applyChangeTextCaseCommand = (mode: TextCaseMode): void => {
     if (selectionCollapsed()) {
       return;
     }
-    execText((current) => changeSelectedTextCase(current, mode));
+    execText((current): EditorState => changeSelectedTextCase(current, mode));
   };
 
-  const applyClearFormattingCommand = () => {
+  const applyClearFormattingCommand = (): void => {
     if (selectionCollapsed()) {
       return;
     }
-    execText((current) => clearSelectedTextFormatting(current));
+    execText((current): EditorState => clearSelectedTextFormatting(current));
   };
 
   const applyParagraphStyleCommand = <K extends ParagraphStyleKey>(
     key: K,
     value: EditorParagraphStyle[K] | null,
-  ) => {
-    execParagraph((current) => setParagraphStyle(current, key, value));
+  ): void => {
+    execParagraph((current): EditorState => setParagraphStyle(current, key, value));
   };
 
   const toggleParagraphFlagCommand = (
     key: "pageBreakBefore" | "keepWithNext",
-  ) => {
+  ): void => {
     const nextValue = !toolbarStyleState()[key];
     applyParagraphStyleCommand(key, nextValue ? true : null);
   };
 
   const applyParagraphListCommand = (
     kind: NonNullable<EditorParagraphListStyle["kind"]>,
-  ) => {
-    execParagraph((current) => toggleParagraphList(current, kind));
+  ): void => {
+    execParagraph((current): EditorState => toggleParagraphList(current, kind));
   };
 
   const handleListFormatChange = (
     format: EditorParagraphListStyle["format"],
-  ) => {
-    execParagraph((current) => setParagraphListFormat(current, format));
+  ): void => {
+    execParagraph((current): EditorState => setParagraphListFormat(current, format));
   };
 
-  const handleListStartAtChange = (startAt: number | null) => {
-    execParagraph((current) => setParagraphListStartAt(current, startAt));
+  const handleListStartAtChange = (startAt: number | null): void => {
+    execParagraph((current): EditorState => setParagraphListStartAt(current, startAt));
   };
 
   const applyInsertSectionBreakCommand = (
     breakType: "nextPage" | "continuous",
-  ) => {
+  ): void => {
     execState(insertSectionBreakAtSelection(state, breakType));
   };
 
-  const applyInsertPageBreakCommand = () => {
-    execTransactional((current) =>
-      applyTableAwareParagraphEdit(current, (temp) =>
+  const applyInsertPageBreakCommand = (): void => {
+    execTransactional((current): EditorState =>
+      applyTableAwareParagraphEdit(current, (temp): EditorState =>
         insertPageBreakAtSelection(temp),
       ),
     );
   };
 
-  const canInsertFootnoteCommand = () =>
+  const canInsertFootnoteCommand = (): boolean =>
     (state.activeZone ?? "main") === "main";
 
-  const applyInsertFootnoteCommand = () => {
+  const applyInsertFootnoteCommand = (): void => {
     if (!canInsertFootnoteCommand()) {
       return;
     }
-    execTransactional((current) => insertFootnote(current));
+    execTransactional((current): EditorState => insertFootnote(current));
   };
 
-  const handleStyleChange = (styleId: string) => {
-    execParagraph((current) =>
+  const handleStyleChange = (styleId: string): void => {
+    execParagraph((current): EditorState =>
       setParagraphNamedStyle(current, styleId || null),
     );
   };
@@ -362,43 +361,43 @@ export function createEditorCommandsController(
   const applyUpdateSectionSettingsCommand = (
     sectionIndex: number,
     settings: Partial<EditorSection>,
-  ) => {
+  ): void => {
     execState(updateSectionSettings(state, sectionIndex, settings));
   };
 
-  const applyToggleTrackChangesCommand = () => {
+  const applyToggleTrackChangesCommand = (): void => {
     execState(toggleTrackChanges(state));
   };
 
-  const applyToggleShowMarginsCommand = () => {
+  const applyToggleShowMarginsCommand = (): void => {
     applyState({ ...state, showMargins: !state.showMargins });
     focusInput();
   };
 
-  const applyToggleShowParagraphMarksCommand = () => {
+  const applyToggleShowParagraphMarksCommand = (): void => {
     applyState({ ...state, showParagraphMarks: !state.showParagraphMarks });
     focusInput();
   };
 
-  const applyAcceptRevisionsCommand = () => {
+  const applyAcceptRevisionsCommand = (): void => {
     execState(acceptRevisionsInSelection(state));
   };
 
-  const applyRejectRevisionsCommand = () => {
+  const applyRejectRevisionsCommand = (): void => {
     execState(rejectRevisionsInSelection(state));
   };
 
-  const applyLinkCommand = (href: string | null) => {
+  const applyLinkCommand = (href: string | null): void => {
     const activeLink = getLinkAtSelection(state);
     if (selectionCollapsed() && !activeLink) {
       return;
     }
-    execTransactional((current) => setLinkAtSelection(current, href), {
+    execTransactional((current): EditorState => setLinkAtSelection(current, href), {
       mergeKey: MERGE_KEYS.link,
     });
   };
 
-  const promptForLink = () => {
+  const promptForLink = (): void => {
     const activeLink = getLinkAtSelection(state) ?? "";
     if (selectionCollapsed() && !activeLink) {
       return;
@@ -406,21 +405,21 @@ export function createEditorCommandsController(
     deps.openLinkDialog(activeLink);
   };
 
-  const removeLinkCommand = () => {
+  const removeLinkCommand = (): void => {
     applyLinkCommand(null);
   };
 
-  const applyImageAltCommand = (alt: string) => {
+  const applyImageAltCommand = (alt: string): void => {
     const run = selectedImageRun();
     if (!run) {
       return;
     }
-    execTransactional((current) => setSelectedImageAlt(current, alt), {
+    execTransactional((current): EditorState => setSelectedImageAlt(current, alt), {
       mergeKey: MERGE_KEYS.imageAlt,
     });
   };
 
-  const promptForImageAlt = () => {
+  const promptForImageAlt = (): void => {
     const run = selectedImageRun();
     if (!run) {
       return;
@@ -429,19 +428,19 @@ export function createEditorCommandsController(
     deps.openImageAltDialog(currentAlt);
   };
 
-  const applyImageCaptionCommand = (caption: string) => {
+  const applyImageCaptionCommand = (caption: string): void => {
     const run = selectedImageRun();
     if (!run) {
       return;
     }
     execTransactional(
-      (current) =>
+      (current): EditorState =>
         setSelectedImageCaption(current, caption, deps.imageCaptionLabel()),
       { mergeKey: MERGE_KEYS.imageCaption },
     );
   };
 
-  const promptForImageCaption = () => {
+  const promptForImageCaption = (): void => {
     const run = selectedImageRun();
     if (!run) {
       return;

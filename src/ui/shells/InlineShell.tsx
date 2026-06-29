@@ -3,8 +3,10 @@ import { Toolbar } from "@/ui/components/Toolbar/Toolbar.js";
 import { OasisEditorEditor } from "@/ui/OasisEditorEditor.js";
 import type { ShellProps } from "./DocumentShell.js";
 import { PluginUiHost } from "@/ui/components/PluginUi/PluginUiHost.js";
+import type { EditorState, EditorLayoutParagraph } from "@/core/model.js";
+import { JSX } from "solid-js";
 
-export function InlineShell(props: ShellProps) {
+export function InlineShell(props: ShellProps): JSX.Element {
   return (
     <div
       class="oasis-inline-shell"
@@ -28,12 +30,12 @@ export function InlineShell(props: ShellProps) {
         <div class="oasis-editor-main-container">
           <section class="oasis-editor-stage" style={{ padding: "0" }}>
             <OasisEditorEditor
-              state={() => props.state}
+              state={(): EditorState => props.state}
               layout={{
                 ...props.layout,
                 documentLayout: props.documentLayout,
-                measuredBlockHeights: () => props.measuredBlockHeights(),
-                measuredParagraphLayouts: () =>
+                measuredBlockHeights: (): Record<string, number> => props.measuredBlockHeights(),
+                measuredParagraphLayouts: (): Record<string, EditorLayoutParagraph> =>
                   props.measuredParagraphLayouts(),
                 viewportHeight: props.viewportHeight(),
                 readOnly: props.isReadOnly,
@@ -41,8 +43,8 @@ export function InlineShell(props: ShellProps) {
               overlays={{
                 ...props.overlays,
                 toolbarHost: props.toolbarHost,
-                persistenceStatus: () => props.persistenceStatus(),
-                showFloatingTableToolbar: () =>
+                persistenceStatus: (): string => props.persistenceStatus(),
+                showFloatingTableToolbar: (): boolean =>
                   props.showFloatingTableToolbar(),
               }}
               refs={props.refs}

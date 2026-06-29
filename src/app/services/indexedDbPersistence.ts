@@ -40,7 +40,7 @@ export function createIndexedDbPersistence(
     db = await openDB({
       name: dbName,
       version: DB_VERSION,
-      onUpgrade: (database) => {
+      onUpgrade: (database): void => {
         if (!database.objectStoreNames.contains(storeName)) {
           database.createObjectStore(storeName);
         }

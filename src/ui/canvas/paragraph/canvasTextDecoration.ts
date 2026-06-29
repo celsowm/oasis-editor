@@ -24,7 +24,7 @@ export function drawTextDecoration(
   kind: "underline" | "strike" | "doubleStrike",
   underlineStyle?: UnderlineStyle,
   underlineColor?: string,
-) {
+): void {
   const bounds = resolveFragmentPaintBounds(line, fragment);
   if (!bounds) return;
   const y = originY + resolveDecorationLineY(kind, line.top, line.height);
@@ -61,7 +61,7 @@ function drawUnderlineWithStyle(
   x2: number,
   y: number,
   underlineStyle: UnderlineStyle,
-) {
+): void {
   ctx.setLineDash([]);
   ctx.lineWidth = underlineStyleLineWidthPx(underlineStyle);
 
@@ -97,7 +97,7 @@ function drawWavyLine(
   x1: number,
   x2: number,
   y: number,
-) {
+): void {
   ctx.beginPath();
   ctx.moveTo(x1, y);
   for (let x = x1; x <= x2; x += 1) {

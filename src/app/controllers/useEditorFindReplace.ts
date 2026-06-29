@@ -5,7 +5,7 @@ import {
   type FindOptions,
   type FindReplaceMatch,
 } from "@/app/services/FindReplaceService.js";
-import type { EditorState } from "@/core/model.js";
+import type { EditorState, EditorDocument } from "@/core/model.js";
 import { setSelection } from "@/core/commands/selection.js";
 import { insertTextAtSelection } from "@/core/commands/text.js";
 
@@ -52,8 +52,8 @@ export function useEditorFindReplace(
   // Update matches when search term, options or document changes
   createEffect(
     on(
-      [() => deps.state.document, searchTerm, findOptions],
-      ([doc, term, options]) => {
+      [(): EditorDocument => deps.state.document, searchTerm, findOptions],
+      ([doc, term, options]): void => {
         const newMatches = findMatchesInDocument(doc, term, options);
         setMatches(newMatches);
 
@@ -70,7 +70,7 @@ export function useEditorFindReplace(
     ),
   );
 
-  const selectMatch = (index: number) => {
+  const selectMatch = (index: number): void => {
     const match = matches()[index];
     if (!match) return;
 
@@ -83,7 +83,7 @@ export function useEditorFindReplace(
     // We don't focus the main input here because we want to stay in the Find dialog
   };
 
-  const findNext = () => {
+  const findNext = (): void => {
     const total = matches().length;
     if (total === 0) return;
     const nextIndex = (currentIndex() + 1) % total;
@@ -91,7 +91,7 @@ export function useEditorFindReplace(
     selectMatch(nextIndex);
   };
 
-  const findPrevious = () => {
+  const findPrevious = (): void => {
     const total = matches().length;
     if (total === 0) return;
     const prevIndex = (currentIndex() - 1 + total) % total;
@@ -99,7 +99,7 @@ export function useEditorFindReplace(
     selectMatch(prevIndex);
   };
 
-  const replace = () => {
+  const replace = (): void => {
     const total = matches().length;
     if (total === 0 || currentIndex() === -1) return;
 
@@ -110,7 +110,7 @@ export function useEditorFindReplace(
     // Standard behavior: replace selected match and move to next.
 
     deps.applyTransactionalState(
-      (current) => {
+      (current): EditorState => {
         const stateWithSelection = setSelection(current, {
           anchor: match.anchor,
           focus: match.focus,
@@ -125,12 +125,12 @@ export function useEditorFindReplace(
     // If we were at the last match, we might go to 0 or stay at same index (which is now a NEW match)
   };
 
-  const replaceAll = () => {
+  const replaceAll = (): void => {
     const currentMatches = matches();
     if (currentMatches.length === 0) return;
 
     deps.applyTransactionalState(
-      (current) => {
+      (current): EditorState => {
         let workingState = current;
         // Replace backwards to avoid shifting offsets of subsequent matches
         for (let i = currentMatches.length - 1; i >= 0; i--) {

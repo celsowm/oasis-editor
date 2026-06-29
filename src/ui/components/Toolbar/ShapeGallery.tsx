@@ -31,7 +31,7 @@ export function ShapeGallery(props: { api: ToolbarActionApi }): JSX.Element {
       title={shapeLabel(tileProps.preset, locale())}
       aria-label={shapeLabel(tileProps.preset, locale())}
       data-testid={`editor-toolbar-shape-${tileProps.preset}`}
-      onClick={() => insert(tileProps.preset)}
+      onClick={(): void => insert(tileProps.preset)}
     >
       <ShapeThumbnail preset={tileProps.preset} />
     </button>
@@ -44,18 +44,18 @@ export function ShapeGallery(props: { api: ToolbarActionApi }): JSX.Element {
           {t("toolbar.shapes.recentlyUsed")}
         </div>
         <div class="oasis-editor-shape-gallery-grid">
-          <For each={recent()}>{(preset) => <Tile preset={preset} />}</For>
+          <For each={recent()}>{(preset): JSX.Element => <Tile preset={preset} />}</For>
         </div>
       </Show>
       <For each={SHAPE_CATEGORIES}>
-        {(category) => (
+        {(category): JSX.Element => (
           <>
             <div class="oasis-editor-shape-gallery-section-header">
               {t(category.headerKey)}
             </div>
             <div class="oasis-editor-shape-gallery-grid">
               <For each={category.presets}>
-                {(preset) => <Tile preset={preset} />}
+                {(preset): JSX.Element => <Tile preset={preset} />}
               </For>
             </div>
           </>

@@ -46,11 +46,11 @@ export function Radio(props: RadioProps): JSX.Element {
     "name",
     "disabled",
   ]);
-  const id = () => local.id ?? fallbackId;
-  const descriptionId = () => `${id()}-description`;
-  const checked = () =>
+  const id = (): string => local.id ?? fallbackId;
+  const descriptionId = (): string => `${id()}-description`;
+  const checked = (): boolean =>
     group ? group.value() === local.value : Boolean(local.checked);
-  const disabled = () =>
+  const disabled = (): boolean =>
     Boolean(local.disabled) || (group ? group.disabled() : false);
 
   return (
@@ -64,7 +64,7 @@ export function Radio(props: RadioProps): JSX.Element {
         checked={checked()}
         disabled={disabled()}
         aria-describedby={local.description ? descriptionId() : undefined}
-        onChange={(event) => {
+        onChange={(event): void => {
           if (group) group.onSelect(local.value);
           local.onChange?.(event.currentTarget.checked);
         }}
@@ -111,9 +111,9 @@ export function RadioGroup(props: RadioGroupProps): JSX.Element {
   const fallbackName = createUniqueId();
   const ctx: RadioGroupContext = {
     name: props.name ?? fallbackName,
-    value: () => props.value,
-    onSelect: (value) => props.onChange?.(value),
-    disabled: () => Boolean(props.disabled),
+    value: (): string | undefined => props.value,
+    onSelect: (value): void | undefined => props.onChange?.(value),
+    disabled: (): boolean => Boolean(props.disabled),
   };
 
   return (
@@ -128,7 +128,7 @@ export function RadioGroup(props: RadioGroupProps): JSX.Element {
         </Show>
         <Show when={props.options} fallback={props.children}>
           <For each={props.options}>
-            {(option) => (
+            {(option): JSX.Element => (
               <Radio
                 value={option.value}
                 label={option.label}

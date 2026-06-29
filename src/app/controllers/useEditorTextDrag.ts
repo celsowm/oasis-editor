@@ -46,7 +46,7 @@ function isPositionInsideSelection(
   }
   const paragraphs = getParagraphs(state);
   const targetIndex = paragraphs.findIndex(
-    (paragraph) => paragraph.id === position.paragraphId,
+    (paragraph): boolean => paragraph.id === position.paragraphId,
   );
   if (
     targetIndex < normalized.startIndex ||
@@ -94,14 +94,14 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
   let cursorStyleEl: HTMLStyleElement | null = null;
   let lastDropTargetKey: string | null = null;
 
-  const hideCursor = () => {
+  const hideCursor = (): void => {
     if (cursorStyleEl) {
       cursorStyleEl.remove();
       cursorStyleEl = null;
     }
   };
 
-  const showCursor = () => {
+  const showCursor = (): void => {
     if (cursorStyleEl) return;
     cursorStyleEl = document.createElement("style");
     cursorStyleEl.setAttribute("data-oasis-text-drag-cursor", "");
@@ -109,7 +109,7 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
     document.head.appendChild(cursorStyleEl);
   };
 
-  const stopDrag = () => {
+  const stopDrag = (): void => {
     deps.logger?.info("text-drag:stop", {
       dragging: dragging(),
       dropTarget: dropTargetPos()
@@ -129,7 +129,7 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
     window.removeEventListener("mouseup", handleWindowMouseUp);
   };
 
-  const handleWindowMouseMove = (event: MouseEvent) => {
+  const handleWindowMouseMove = (event: MouseEvent): void => {
     if (!pendingStart) {
       return;
     }
@@ -185,7 +185,7 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
     setCaretViewport(hit.caretViewport ?? null);
   };
 
-  const handleWindowMouseUp = (event: MouseEvent) => {
+  const handleWindowMouseUp = (event: MouseEvent): void => {
     deps.logger?.info("text-drag:mouseup", {
       x: event.clientX,
       y: event.clientY,
@@ -201,8 +201,8 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
       deps.applyTransactionalState(
-        (current) =>
-          deps.applyTableAwareParagraphEdit(current, (temp) =>
+        (current): EditorState =>
+          deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
             moveOrCopySelectionToPosition(temp, destination, { copy }),
           ),
         {
@@ -218,7 +218,7 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
     } else if (pendingStart) {
       const startPosition = pendingStart.position;
       deps.applyTransactionalState(
-        (current) => {
+        (current): EditorState => {
           if (!isPositionInsideSelection(current, startPosition)) {
             return current;
           }

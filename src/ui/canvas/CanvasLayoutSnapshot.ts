@@ -69,7 +69,7 @@ function getCanvasPageElements(surface: HTMLElement): HTMLElement[] {
       '[data-renderer="canvas"][data-page-index]',
     ),
   );
-  return pages.sort((a, b) => {
+  return pages.sort((a, b): number => {
     const left = Number(a.dataset.pageIndex ?? "0");
     const right = Number(b.dataset.pageIndex ?? "0");
     return left - right;
@@ -221,7 +221,7 @@ export function buildCanvasLayoutSnapshot(
 
   const paragraphs = getDocumentParagraphs(state.document);
   const paragraphIndexById = new Map(
-    paragraphs.map((paragraph, index) => [paragraph.id, index] as const),
+    paragraphs.map((paragraph, index): readonly [string, number] => [paragraph.id, index] as const),
   );
   const surfaceRect = surface.getBoundingClientRect();
   const snapshotPages: CanvasSnapshotPage[] = [];
@@ -236,7 +236,7 @@ export function buildCanvasLayoutSnapshot(
   for (const page of documentLayout.pages) {
     const pageElement =
       canvasPages.find(
-        (candidate) =>
+        (candidate): boolean =>
           Number(candidate.dataset.pageIndex ?? "-1") === page.index,
       ) ?? null;
     if (!pageElement) {
@@ -293,7 +293,7 @@ export function buildCanvasLayoutSnapshot(
         contentWidth?: number;
         blockGap?: number;
       } = {},
-    ) => {
+    ): void => {
       let cursorY = startTop;
       let blockContentLeft = options.contentLeft ?? contentLeft;
       let blockContentWidth = options.contentWidth ?? contentWidth;
@@ -350,7 +350,7 @@ export function buildCanvasLayoutSnapshot(
               endOffset: line.endOffset,
               top: lineTopOffset + line.top,
               height: line.height,
-              slots: line.slots.map((slot) => ({
+              slots: line.slots.map((slot): { offset: number; left: number; top: number; height: number; } => ({
                 offset: slot.offset,
                 left: blockContentLeft + slot.left,
                 top: lineTopOffset + slot.top,
@@ -397,7 +397,7 @@ export function buildCanvasLayoutSnapshot(
               pageIndex: page.index,
               lineTopOffset,
               lineLeftOffset: blockContentLeft,
-              resolveHeight: (textBox) =>
+              resolveHeight: (textBox): number =>
                 resolveTextBoxRenderHeight(textBox, state, page.index),
             }),
           );
@@ -417,7 +417,7 @@ export function buildCanvasLayoutSnapshot(
               paragraphTop: lineTopOffset,
               lineTopOffset,
               lineLeftOffset: blockContentLeft,
-              resolveHeight: (textBox) =>
+              resolveHeight: (textBox): number =>
                 resolveTextBoxRenderHeight(textBox, state, page.index),
             }),
           );
@@ -526,7 +526,7 @@ export function buildCanvasLayoutSnapshot(
                     endOffset: line.endOffset,
                     top: paragraphLayout.originY + line.top,
                     height: line.height,
-                    slots: line.slots.map((slot) => ({
+                    slots: line.slots.map((slot): { offset: number; left: number; top: number; height: number; } => ({
                       offset: slot.offset,
                       left: paragraphLayout.originX + slot.left,
                       top: paragraphLayout.originY + slot.top,
@@ -600,7 +600,7 @@ export function buildCanvasLayoutSnapshot(
                   pageIndex: page.index,
                   lineTopOffset: paragraphLayout.originY,
                   lineLeftOffset: paragraphLayout.originX,
-                  resolveHeight: (textBox) =>
+                  resolveHeight: (textBox): number =>
                     resolveTextBoxRenderHeight(textBox, state, page.index),
                 }),
               );
@@ -620,7 +620,7 @@ export function buildCanvasLayoutSnapshot(
                   paragraphTop: paragraphLayout.originY,
                   lineTopOffset: paragraphLayout.originY,
                   lineLeftOffset: paragraphLayout.originX,
-                  resolveHeight: (textBox) =>
+                  resolveHeight: (textBox): number =>
                     resolveTextBoxRenderHeight(textBox, state, page.index),
                 }),
               );
@@ -644,8 +644,8 @@ export function buildCanvasLayoutSnapshot(
         page.footnoteBlocks,
         pageRect.top + page.footnoteTop,
         {
-          footnoteIdForBlock: (block) =>
-            footnoteReferenceIds.find((footnoteId) =>
+          footnoteIdForBlock: (block): string | undefined =>
+            footnoteReferenceIds.find((footnoteId): boolean =>
               block.blockId.startsWith(`${footnoteId}:`),
             ),
           contentLeft: contentLeft + FOOTNOTE_MARKER_GUTTER_PX,
@@ -668,7 +668,7 @@ export function buildCanvasLayoutSnapshot(
     paragraphsById.set(paragraph.paragraphId, current);
   }
   for (const [paragraphId, entries] of paragraphsById.entries()) {
-    entries.sort((left, right) => {
+    entries.sort((left, right): number => {
       if (left.pageIndex !== right.pageIndex)
         return left.pageIndex - right.pageIndex;
       if (left.startOffset !== right.startOffset)

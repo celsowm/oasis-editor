@@ -59,11 +59,11 @@ export function insertTableAtSelection(
   const insertIntoBlocks = (
     blocks: EditorBlockNode[],
   ): { nextBlocks: EditorBlockNode[]; found: boolean } => {
-    const blockIndex = blocks.findIndex((block) => {
+    const blockIndex = blocks.findIndex((block): boolean => {
       if (block.id === focus.paragraphId) return true;
       if (block.type === "paragraph") return false;
       return getBlockParagraphs(block).some(
-        (paragraph) => paragraph.id === focus.paragraphId,
+        (paragraph): boolean => paragraph.id === focus.paragraphId,
       );
     });
 

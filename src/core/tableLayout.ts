@@ -5,6 +5,7 @@ import type {
   EditorTableNode,
   TableCellBlockPosition,
 } from "./model.js";
+import type { EditorTableRowNode } from "@/core/model.js";
 
 export interface TableCellLayoutEntry {
   rowIndex: number;
@@ -76,7 +77,7 @@ export function buildTableCellLayout(
 
   if (table.style?.bidiVisual && entries.length > 0) {
     const visualColumnCount = Math.max(
-      ...entries.map((entry) => entry.visualColumnIndex + entry.colSpan),
+      ...entries.map((entry): number => entry.visualColumnIndex + entry.colSpan),
     );
     for (const entry of entries) {
       entry.visualColumnIndex =
@@ -108,7 +109,7 @@ export function buildSegmentTable(
 
   const bodyRows = table.rows
     .slice(startRowIndex, endRowIndex)
-    .map((row, idx, arr) => {
+    .map((row, idx, arr): EditorTableRowNode => {
       const isFirstRow = idx === 0;
       const isLastRow = idx === arr.length - 1;
 
@@ -175,7 +176,7 @@ function sliceCellBlocks(
 }
 
 function getParagraphTextLength(paragraph: EditorParagraphNode): number {
-  return paragraph.runs.reduce((sum, run) => sum + run.text.length, 0);
+  return paragraph.runs.reduce((sum, run): number => sum + run.text.length, 0);
 }
 
 function sliceParagraph(

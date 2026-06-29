@@ -96,8 +96,8 @@ export interface DocumentImporterDeps {
   logger: EditorLogger;
 }
 
-export function createDocumentImporter(deps: DocumentImporterDeps) {
-  const handleImportFile = async (file: File | null) => {
+export function createDocumentImporter(deps: DocumentImporterDeps): { handleImportFile: (file: File | null) => Promise<void>; } {
+  const handleImportFile = async (file: File | null): Promise<void> => {
     if (!file) return;
 
     const importer = resolveImporterForFile(file);
@@ -132,7 +132,7 @@ export function createDocumentImporter(deps: DocumentImporterDeps) {
       let lastProgressAt = 0;
       const document = await importer.import(
         arrayBuffer,
-        (stage, subProgress) => {
+        (stage, subProgress): void => {
           const now = deps.now();
           const roundedProgress =
             subProgress === undefined || !Number.isFinite(subProgress)
@@ -178,7 +178,7 @@ export function createDocumentImporter(deps: DocumentImporterDeps) {
 
       const sections = getDocumentSectionsCanonical(document);
       const canonicalBlocks = sections.reduce(
-        (total, section) =>
+        (total, section): number =>
           total +
           (section.header?.length ?? 0) +
           section.blocks.length +

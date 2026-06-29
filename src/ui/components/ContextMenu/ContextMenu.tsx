@@ -1,5 +1,6 @@
 import { For, Show, createEffect, onCleanup, onMount } from "solid-js";
 import "./ContextMenu.css";
+import { JSX } from "solid-js";
 
 export interface ContextMenuItem {
   id: string;
@@ -20,10 +21,10 @@ export interface ContextMenuProps {
   onClose: () => void;
 }
 
-export function ContextMenu(props: ContextMenuProps) {
+export function ContextMenu(props: ContextMenuProps): JSX.Element {
   let menuRef: HTMLDivElement | undefined;
 
-  const handleKeyDown = (event: KeyboardEvent) => {
+  const handleKeyDown = (event: KeyboardEvent): void => {
     if (!props.isOpen) return;
     if (event.key === "Escape") {
       event.preventDefault();
@@ -31,7 +32,7 @@ export function ContextMenu(props: ContextMenuProps) {
     }
   };
 
-  const handleWindowMouseDown = (event: MouseEvent) => {
+  const handleWindowMouseDown = (event: MouseEvent): void => {
     if (!props.isOpen) return;
     if (
       menuRef &&
@@ -43,7 +44,7 @@ export function ContextMenu(props: ContextMenuProps) {
     props.onClose();
   };
 
-  const handleWindowContextMenu = (event: MouseEvent) => {
+  const handleWindowContextMenu = (event: MouseEvent): void => {
     if (!props.isOpen) return;
     if (
       menuRef &&
@@ -55,11 +56,11 @@ export function ContextMenu(props: ContextMenuProps) {
     props.onClose();
   };
 
-  const handleScroll = () => {
+  const handleScroll = (): void => {
     if (props.isOpen) props.onClose();
   };
 
-  onMount(() => {
+  onMount((): void => {
     window.addEventListener("keydown", handleKeyDown, true);
     window.addEventListener("mousedown", handleWindowMouseDown, true);
     window.addEventListener("contextmenu", handleWindowContextMenu, true);
@@ -67,7 +68,7 @@ export function ContextMenu(props: ContextMenuProps) {
     window.addEventListener("resize", handleScroll, true);
   });
 
-  onCleanup(() => {
+  onCleanup((): void => {
     window.removeEventListener("keydown", handleKeyDown, true);
     window.removeEventListener("mousedown", handleWindowMouseDown, true);
     window.removeEventListener("contextmenu", handleWindowContextMenu, true);
@@ -76,7 +77,7 @@ export function ContextMenu(props: ContextMenuProps) {
   });
 
   // Clamp position within viewport once the menu has rendered.
-  createEffect(() => {
+  createEffect((): void => {
     if (!props.isOpen || !menuRef) return;
     const rect = menuRef.getBoundingClientRect();
     const maxLeft = Math.max(4, window.innerWidth - rect.width - 4);
@@ -95,10 +96,10 @@ export function ContextMenu(props: ContextMenuProps) {
         role="menu"
         data-testid="editor-context-menu"
         style={{ left: `${props.x}px`, top: `${props.y}px` }}
-        onContextMenu={(event) => event.preventDefault()}
+        onContextMenu={(event): void => event.preventDefault()}
       >
         <For each={props.items}>
-          {(item) => (
+          {(item): JSX.Element => (
             <Show
               when={item.type !== "separator"}
               fallback={<div class="oasis-editor-context-menu-separator" />}
@@ -109,7 +110,7 @@ export function ContextMenu(props: ContextMenuProps) {
                 role="menuitem"
                 disabled={item.disabled}
                 data-testid={item.testId}
-                onClick={() => {
+                onClick={(): void => {
                   if (item.disabled) return;
                   item.onSelect?.();
                   props.onClose();

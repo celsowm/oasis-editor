@@ -23,11 +23,11 @@ export function UnderlineControl(props: {
     createSignal<EditorUnderlineStyle>("single");
   const [open, setOpen] = createSignal(false);
 
-  const active = () => api.commands.state("underline").isActive;
-  const currentStyle = () =>
+  const active = (): boolean => api.commands.state("underline").isActive;
+  const currentStyle = (): string =>
     String(api.commands.state("setUnderlineStyle").value ?? "");
 
-  const toggleUnderline = () => {
+  const toggleUnderline = (): void => {
     if (!active()) {
       const style = lastUnderlineStyle();
       if (style !== "single" && !currentStyle()) {
@@ -37,7 +37,7 @@ export function UnderlineControl(props: {
     api.commands.execute("underline");
   };
 
-  const applyUnderlineStyle = (style: EditorUnderlineStyle) => {
+  const applyUnderlineStyle = (style: EditorUnderlineStyle): void => {
     setLastUnderlineStyle(style);
     const wasActive = active();
     api.commands.execute(
@@ -47,14 +47,14 @@ export function UnderlineControl(props: {
     if (!wasActive) api.commands.execute("underline");
   };
 
-  const removeUnderline = () => {
+  const removeUnderline = (): void => {
     if (active()) api.commands.execute("underline");
     api.commands.execute("setUnderlineStyle", null);
   };
 
-  const indicatorStyle = () =>
+  const indicatorStyle = (): string =>
     (currentStyle() || lastUnderlineStyle() || "single").toLowerCase();
-  const activeStyleValue = () =>
+  const activeStyleValue = (): string =>
     (currentStyle() || (active() ? "single" : "")).toLowerCase();
 
   return (
@@ -86,7 +86,7 @@ export function UnderlineControl(props: {
         class="oasis-editor-color-menu-action"
         data-testid={`${TEST_ID}-remove`}
         role="menuitem"
-        onClick={() => {
+        onClick={(): void => {
           removeUnderline();
           setOpen(false);
         }}
@@ -98,8 +98,8 @@ export function UnderlineControl(props: {
       </button>
       <div class="oasis-editor-underline-menu-list">
         <For each={UNDERLINE_STYLE_OPTIONS}>
-          {(option) => {
-            const isActive = () =>
+          {(option): JSX.Element => {
+            const isActive = (): boolean =>
               active() && activeStyleValue() === option.value.toLowerCase();
             return (
               <button
@@ -111,7 +111,7 @@ export function UnderlineControl(props: {
                 role="menuitemradio"
                 aria-checked={isActive()}
                 data-testid={`${TEST_ID}-style-${option.value}`}
-                onClick={() => {
+                onClick={(): void => {
                   applyUnderlineStyle(option.value);
                   setOpen(false);
                 }}

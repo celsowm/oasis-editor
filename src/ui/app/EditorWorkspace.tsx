@@ -23,6 +23,7 @@ import type {
 } from "@/ui/OasisEditorAppProps.js";
 import type { OasisEditor } from "@/core/plugin.js";
 import { PluginUiHost } from "@/ui/components/PluginUi/PluginUiHost.js";
+import { JSX } from "solid-js";
 
 /** Runtime facade the workspace forwards to the editor surface and shell. */
 export interface EditorWorkspaceRuntime {
@@ -76,8 +77,8 @@ export interface EditorWorkspaceProps {
  * balloon chrome) and the bare canvas editor. Pure binding: it forwards the
  * already-assembled view-prop bundles and runtime facade to the right surface.
  */
-export function EditorWorkspace(props: EditorWorkspaceProps) {
-  const renderComposedShell = () => {
+export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
+  const renderComposedShell = (): JSX.Element => {
     const Shell = props.shellComponent();
     const { runtime, chrome, view } = props;
     return (

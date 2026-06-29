@@ -73,8 +73,8 @@ export function computeFontFamilyOptions(
   }
 
   return [
-    ...documentFonts.sort((a, b) => a.localeCompare(b)),
-    ...fallbackFonts.sort((a, b) => a.localeCompare(b)),
+    ...documentFonts.sort((a, b): number => a.localeCompare(b)),
+    ...fallbackFonts.sort((a, b): number => a.localeCompare(b)),
   ];
 }
 
@@ -92,5 +92,5 @@ export function computeFontSizeOptions(
   }
   const current = fontSizePxToPt(Number(toolbarStyleState.fontSize));
   if (Number.isFinite(current) && current > 0) values.add(current);
-  return Array.from(values).sort((a, b) => a - b);
+  return Array.from(values).sort((a, b): number => a - b);
 }

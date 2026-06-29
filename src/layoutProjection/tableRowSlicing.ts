@@ -22,7 +22,7 @@ export function normalizeCellStartPositions(
   starts: TableCellBlockPosition[] | undefined,
   legacyStarts: number[] | undefined,
 ): TableCellBlockPosition[] {
-  return row.cells.map((_, cellIdx) => ({
+  return row.cells.map((_, cellIdx): { blockIndex: number; offset: number | undefined; } => ({
     blockIndex: starts?.[cellIdx]?.blockIndex ?? legacyStarts?.[cellIdx] ?? 0,
     offset: starts?.[cellIdx]?.offset,
   }));
@@ -31,17 +31,17 @@ export function normalizeCellStartPositions(
 export function positionsToBlockIndexes(
   positions: TableCellBlockPosition[] | undefined,
 ): number[] | undefined {
-  return positions?.map((position) => position.blockIndex);
+  return positions?.map((position): number => position.blockIndex);
 }
 
 export function hasPartialPositions(
   positions: TableCellBlockPosition[] | undefined,
 ): boolean {
-  return positions?.some((position) => (position.offset ?? 0) > 0) ?? false;
+  return positions?.some((position): boolean => (position.offset ?? 0) > 0) ?? false;
 }
 
 function getParagraphTextLength(paragraph: EditorParagraphNode): number {
-  return paragraph.runs.reduce((sum, run) => sum + run.text.length, 0);
+  return paragraph.runs.reduce((sum, run): number => sum + run.text.length, 0);
 }
 
 function sliceParagraphForTableSegment(
@@ -132,10 +132,10 @@ function estimateSingleCellRowSliceHeight(
   table: EditorTableNode,
   rowIndex: number,
 ): number {
-  const starts = row.cells.map((_, idx) =>
+  const starts = row.cells.map((_, idx): TableCellBlockPosition =>
     idx === cellIndex ? start : { blockIndex: 0 },
   );
-  const ends = row.cells.map((cell, idx) =>
+  const ends = row.cells.map((cell, idx): TableCellBlockPosition =>
     idx === cellIndex ? end : { blockIndex: 0 },
   );
   return estimateTableRowHeight(
@@ -240,10 +240,10 @@ export function canSplitTableRow(row: EditorTableRowNode | undefined): boolean {
   if (!row || row.isHeader || row.style?.cantSplit === true) {
     return false;
   }
-  return row.cells.some((cell) => {
+  return row.cells.some((cell): boolean => {
     if (cell.vMerge || (cell.rowSpan ?? 1) > 1) return false;
     if (cell.style?.textDirection) return false;
-    return cell.blocks.some((paragraph) => {
+    return cell.blocks.some((paragraph): boolean => {
       if (paragraph.style?.textDirection) return false;
       return getParagraphTextLength(paragraph) > 0;
     });
@@ -254,7 +254,7 @@ export function positionsProgressed(
   starts: TableCellBlockPosition[],
   ends: TableCellBlockPosition[],
 ): boolean {
-  return ends.some((end, index) => {
+  return ends.some((end, index): boolean => {
     const start = starts[index] ?? { blockIndex: 0 };
     return (
       end.blockIndex > start.blockIndex ||
@@ -269,6 +269,6 @@ export function positionsFinishedRow(
   ends: TableCellBlockPosition[],
 ): boolean {
   return row.cells.every(
-    (cell, cellIdx) => (ends[cellIdx]?.blockIndex ?? 0) >= cell.blocks.length,
+    (cell, cellIdx): boolean => (ends[cellIdx]?.blockIndex ?? 0) >= cell.blocks.length,
   );
 }

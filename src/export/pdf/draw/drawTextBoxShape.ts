@@ -2,8 +2,7 @@ import type {
   EditorDocument,
   EditorLayoutLine,
   EditorPageSettings,
-  EditorTextBoxData,
-} from "@/core/model.js";
+  EditorTextBoxData, EditorCaretSlot } from "@/core/model.js";
 import { buildListLabels } from "@/core/model.js";
 import { assertNever } from "@/core/assertNever.js";
 import { projectBlocksLayout } from "@/layoutProjection/blocksPagination.js";
@@ -254,7 +253,7 @@ export async function drawFloatingTextBoxesForParagraph(options: {
 
   for (const line of lines) {
     const slotByOffset = new Map(
-      line.slots.map((slot) => [slot.offset, slot] as const),
+      line.slots.map((slot): readonly [number, EditorCaretSlot] => [slot.offset, slot] as const),
     );
     for (const fragment of line.fragments) {
       const textBox = fragment.textBox;

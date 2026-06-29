@@ -73,7 +73,7 @@ export function isImageCaptionParagraph(
   if (styleId !== "caption") {
     return false;
   }
-  return paragraph.runs.some((run) => {
+  return paragraph.runs.some((run): boolean => {
     const instruction = getRunFieldInstruction(run);
     return (
       instruction !== undefined &&
@@ -110,7 +110,7 @@ export function updateImageCaptionParagraph(
   label: string,
 ): EditorParagraphNode {
   const currentNumber =
-    paragraph.runs.find((run) => /^\d+$/.test(run.text))?.text ?? "1";
+    paragraph.runs.find((run): boolean => /^\d+$/.test(run.text))?.text ?? "1";
   const next = createImageCaptionParagraph(
     captionText,
     label,
@@ -163,7 +163,7 @@ export function renumberImageCaptionParagraphs(
   paragraphs: EditorParagraphNode[],
 ): EditorParagraphNode[] {
   let nextSequence = 1;
-  return paragraphs.map((paragraph) => {
+  return paragraphs.map((paragraph): EditorParagraphNode => {
     if (!isImageCaptionParagraph(paragraph)) {
       return cloneParagraph(paragraph);
     }

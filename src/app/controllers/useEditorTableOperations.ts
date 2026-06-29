@@ -126,10 +126,10 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
     logger: deps.logger,
   });
 
-  const insertTableCommand = (rows: number, cols: number) => {
+  const insertTableCommand = (rows: number, cols: number): void => {
     deps.logger?.info(`insertTableCommand: ${rows}x${cols}`);
     deps.applyTransactionalState(
-      (current) => insertTableAtSelection(current, rows, cols),
+      (current): EditorState => insertTableAtSelection(current, rows, cols),
       {
         mergeKey: MERGE_KEYS.insertTable,
       },

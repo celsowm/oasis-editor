@@ -23,6 +23,6 @@ export function createToolbarApi(
   return {
     commands: host().commands,
     t,
-    focusEditor: () => host().focusEditor(),
+    focusEditor: (): void => host().focusEditor(),
   };
 }

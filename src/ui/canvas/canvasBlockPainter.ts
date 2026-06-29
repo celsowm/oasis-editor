@@ -59,7 +59,7 @@ function drawParagraphDecorations(
   originX: number,
   contentTop: number,
   contentWidth: number,
-) {
+): void {
   const hasBorder =
     !!paragraphStyle.borderTop ||
     !!paragraphStyle.borderRight ||
@@ -110,7 +110,7 @@ export function renderBlockList(
   pageIndex: number,
   onUpdate: () => void,
   pageSettings?: EditorPageSettings,
-) {
+): void {
   let cursorY = originY;
   for (const block of blocks) {
     if (block.sourceBlock.type === "paragraph" && block.layout) {
@@ -272,17 +272,17 @@ export function renderFootnoteBlockList(
   contentWidth: number,
   pageIndex: number,
   onUpdate: () => void,
-) {
+): void {
   let cursorY = originY;
   const markerDrawn = new Set<string>();
   const markerByFootnoteId = new Map(
-    footnoteReferenceIds.map((footnoteId) => [
+    footnoteReferenceIds.map((footnoteId): [string, string] => [
       footnoteId,
       findFootnoteReference(state.document, footnoteId)?.run.text ?? "",
     ]),
   );
   for (const block of blocks) {
-    const owningFootnoteId = footnoteReferenceIds.find((footnoteId) =>
+    const owningFootnoteId = footnoteReferenceIds.find((footnoteId): boolean =>
       block.blockId.startsWith(`${footnoteId}:`),
     );
     if (owningFootnoteId && !markerDrawn.has(owningFootnoteId)) {

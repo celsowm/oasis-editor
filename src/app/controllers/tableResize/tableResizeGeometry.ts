@@ -2,13 +2,12 @@ import {
   getDocumentSectionsCanonical,
   type EditorLayoutDocument,
   type EditorState,
-  type EditorTableNode,
-} from "@/core/model.js";
+  type EditorTableNode, EditorBlockNode } from "@/core/model.js";
 import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 import type { SnapshotCellRect, TableGeometry } from "./tableResizeTypes.js";
 
-function getAllBlocks(state: EditorState) {
-  return getDocumentSectionsCanonical(state.document).flatMap((section) => [
+function getAllBlocks(state: EditorState): EditorBlockNode[] {
+  return getDocumentSectionsCanonical(state.document).flatMap((section): EditorBlockNode[] => [
     ...(section.header ?? []),
     ...section.blocks,
     ...(section.footer ?? []),
@@ -76,11 +75,11 @@ export function buildTableGeometries(
       byTable.set(cell.tableId, tableMap);
     }
 
-    const lineRightEdges = paragraph.lines.flatMap((line) =>
-      line.slots.map((slot) => slot.left),
+    const lineRightEdges = paragraph.lines.flatMap((line): number[] =>
+      line.slots.map((slot): number => slot.left),
     );
     const lineBottomEdges = paragraph.lines.map(
-      (line) => line.top + line.height,
+      (line): number => line.top + line.height,
     );
     const contentLeft =
       lineRightEdges.length > 0 ? Math.min(...lineRightEdges) : paragraph.left;
@@ -126,10 +125,10 @@ export function buildTableGeometries(
     if (cells.length === 0) {
       continue;
     }
-    const left = Math.min(...cells.map((cell) => cell.left));
-    const top = Math.min(...cells.map((cell) => cell.top));
-    const right = Math.max(...cells.map((cell) => cell.right));
-    const bottom = Math.max(...cells.map((cell) => cell.bottom));
+    const left = Math.min(...cells.map((cell): number => cell.left));
+    const top = Math.min(...cells.map((cell): number => cell.top));
+    const right = Math.max(...cells.map((cell): number => cell.right));
+    const bottom = Math.max(...cells.map((cell): number => cell.bottom));
     result.push({
       tableId,
       cells,

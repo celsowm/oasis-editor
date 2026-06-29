@@ -116,7 +116,7 @@ export function createEditorChrome(deps: EditorChromeDeps) {
   const applyTableContextCommand = (
     producer: (current: EditorState) => EditorState,
     mergeKey: MergeKey,
-  ) => {
+  ): void => {
     deps.applyTransactionalState(producer, { mergeKey });
     deps.focusInput();
   };

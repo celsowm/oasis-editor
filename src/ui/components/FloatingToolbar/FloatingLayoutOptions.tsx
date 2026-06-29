@@ -43,7 +43,7 @@ const WRAP_OPTIONS: ReadonlyArray<{
 
 /** Lines-around-a-box pictograms approximating Word's layout-option glyphs. */
 function WrapIcon(props: { preset: WrapPreset }): JSX.Element {
-  const line = (x: number, y: number, w: number) => (
+  const line = (x: number, y: number, w: number): JSX.Element => (
     <rect x={x} y={y} width={w} height="2" rx="1" fill="#9aa0a6" />
   );
   const box = (
@@ -52,7 +52,7 @@ function WrapIcon(props: { preset: WrapPreset }): JSX.Element {
     w: number,
     h: number,
     fill = "#1a73e8",
-  ) => <rect x={x} y={y} width={w} height={h} rx="1.5" fill={fill} />;
+  ): JSX.Element => <rect x={x} y={y} width={w} height={h} rx="1.5" fill={fill} />;
 
   return (
     <svg viewBox="0 0 40 32" fill="none" aria-hidden="true">
@@ -110,19 +110,19 @@ export function FloatingLayoutOptions(
   } = useSurfaceRect(props.surfaceRef);
 
   // Close the popup whenever the selection target changes or disappears.
-  createMemo(() => {
+  createMemo((): void => {
     props.layoutOptions.target();
     props.box();
     setOpen(false);
     scheduleRefresh();
   });
 
-  const visible = () =>
+  const visible = (): boolean =>
     !props.readOnly &&
     props.box() !== null &&
     props.layoutOptions.target() !== null;
 
-  const anchorPos = createMemo(() => {
+  const anchorPos = createMemo((): { left: number; top: number; } | null => {
     tick();
     const box = props.box();
     const rect = surfaceRect();
@@ -136,13 +136,13 @@ export function FloatingLayoutOptions(
     };
   });
 
-  const select = (preset: WrapPreset) => {
+  const select = (preset: WrapPreset): void => {
     props.layoutOptions.setPreset(preset);
   };
 
   return (
     <Show when={visible() && anchorPos()}>
-      {(pos) => (
+      {(pos): JSX.Element => (
         <Portal mount={document.body}>
           <button
             type="button"
@@ -151,8 +151,8 @@ export function FloatingLayoutOptions(
             style={{ left: `${pos().left}px`, top: `${pos().top}px` }}
             title={t("layoutOptions.title")}
             aria-label={t("layoutOptions.title")}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => setOpen((value) => !value)}
+            onMouseDown={(event): void => event.preventDefault()}
+            onClick={(): boolean => setOpen((value): boolean => !value)}
           >
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <rect
@@ -177,7 +177,7 @@ export function FloatingLayoutOptions(
                 left: `${pos().left}px`,
                 top: `${pos().top + 32}px`,
               }}
-              onMouseDown={(event) => event.preventDefault()}
+              onMouseDown={(event): void => event.preventDefault()}
             >
               <div class="oasis-editor-layout-options-popup-header">
                 <span class="oasis-editor-layout-options-title">
@@ -187,7 +187,7 @@ export function FloatingLayoutOptions(
                   type="button"
                   class="oasis-editor-layout-options-close"
                   aria-label={t("generic.close")}
-                  onClick={() => setOpen(false)}
+                  onClick={(): false => setOpen(false)}
                 >
                   ×
                 </button>
@@ -207,7 +207,7 @@ export function FloatingLayoutOptions(
                   data-testid="editor-layout-options-inline"
                   title={t("layoutOptions.inline")}
                   aria-label={t("layoutOptions.inline")}
-                  onClick={() => select("inline")}
+                  onClick={(): void => select("inline")}
                 >
                   <svg viewBox="0 0 40 32" fill="none" aria-hidden="true">
                     <rect
@@ -259,7 +259,7 @@ export function FloatingLayoutOptions(
               </div>
               <div class="oasis-editor-layout-options-grid">
                 <For each={WRAP_OPTIONS}>
-                  {(option) => (
+                  {(option): JSX.Element => (
                     <button
                       type="button"
                       class="oasis-editor-layout-options-cell"
@@ -274,7 +274,7 @@ export function FloatingLayoutOptions(
                           : t(option.labelKey)
                       }
                       aria-label={t(option.labelKey)}
-                      onClick={() => select(option.preset)}
+                      onClick={(): void => select(option.preset)}
                     >
                       <WrapIcon preset={option.preset} />
                     </button>
@@ -292,7 +292,7 @@ export function FloatingLayoutOptions(
                     name="oasis-layout-position"
                     checked={!props.layoutOptions.fixedPosition()}
                     disabled={props.layoutOptions.preset() === "inline"}
-                    onChange={() => props.layoutOptions.setFixedPosition(false)}
+                    onChange={(): void => props.layoutOptions.setFixedPosition(false)}
                   />
                   {t("layoutOptions.moveWithText")}
                 </label>
@@ -305,7 +305,7 @@ export function FloatingLayoutOptions(
                     name="oasis-layout-position"
                     checked={props.layoutOptions.fixedPosition()}
                     disabled={props.layoutOptions.preset() === "inline"}
-                    onChange={() => props.layoutOptions.setFixedPosition(true)}
+                    onChange={(): void => props.layoutOptions.setFixedPosition(true)}
                   />
                   {t("layoutOptions.fixPosition")}
                 </label>

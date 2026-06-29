@@ -25,8 +25,8 @@ export function TextAreaField(props: TextAreaFieldProps): JSX.Element {
     "class",
     "id",
   ]);
-  const id = () => local.id ?? fallbackId;
-  const describedBy = () =>
+  const id = (): string => local.id ?? fallbackId;
+  const describedBy = (): string =>
     [
       local.description ? `${id()}-description` : null,
       local.error ? `${id()}-error` : null,
@@ -48,7 +48,7 @@ export function TextAreaField(props: TextAreaFieldProps): JSX.Element {
         class={`oasis-editor-ui-input oasis-editor-ui-textarea ${local.controlClass ?? ""}`}
         aria-invalid={local.error ? "true" : undefined}
         aria-describedby={describedBy() || undefined}
-        onInput={(event) => local.onChange?.(event.currentTarget.value)}
+        onInput={(event): void | undefined => local.onChange?.(event.currentTarget.value)}
         {...others}
       />
     </FormField>

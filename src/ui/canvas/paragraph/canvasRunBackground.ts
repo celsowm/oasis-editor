@@ -1,4 +1,4 @@
-import type { EditorLayoutLine } from "@/core/model.js";
+import type { EditorLayoutLine, EditorCaretSlot } from "@/core/model.js";
 import { PX_PER_POINT } from "@/layoutProjection/constants.js";
 import { drawBorderBox } from "../canvasBorders.js";
 
@@ -7,11 +7,11 @@ export function resolveFragmentPaintBounds(
   fragment: EditorLayoutLine["fragments"][number],
 ): { left: number; right: number } | null {
   const slotByOffset = new Map(
-    line.slots.map((slot) => [slot.offset, slot] as const),
+    line.slots.map((slot): readonly [number, EditorCaretSlot] => [slot.offset, slot] as const),
   );
   const slots = fragment.chars
-    .filter((char) => char.char !== "\n")
-    .map((char) => slotByOffset.get(char.paragraphOffset))
+    .filter((char): boolean => char.char !== "\n")
+    .map((char): any => slotByOffset.get(char.paragraphOffset))
     .filter((slot): slot is NonNullable<typeof slot> => Boolean(slot));
   if (slots.length === 0) return null;
 
@@ -23,7 +23,7 @@ export function resolveFragmentPaintBounds(
   }
 
   const lastSlotIndex = line.slots.findIndex(
-    (slot) => slot.offset === last.offset,
+    (slot): boolean => slot.offset === last.offset,
   );
   const followingSlot =
     lastSlotIndex >= 0 ? line.slots[lastSlotIndex + 1] : undefined;
@@ -41,7 +41,7 @@ function drawFragmentColorRect(
   originY: number,
   color: string,
   alpha?: number,
-) {
+): void {
   const bounds = resolveFragmentPaintBounds(line, fragment);
   if (!bounds) return;
   ctx.save();
@@ -63,7 +63,7 @@ export function drawFragmentHighlight(
   originX: number,
   originY: number,
   color: string,
-) {
+): void {
   drawFragmentColorRect(ctx, line, fragment, originX, originY, color, 0.35);
 }
 
@@ -75,7 +75,7 @@ export function drawFragmentShading(
   originX: number,
   originY: number,
   color: string,
-) {
+): void {
   drawFragmentColorRect(ctx, line, fragment, originX, originY, color);
 }
 
@@ -91,7 +91,7 @@ export function drawFragmentBorder(
     type: "solid" | "dashed" | "dotted" | "none";
     color: string;
   },
-) {
+): void {
   if (border.type === "none" || border.width <= 0) return;
   const bounds = resolveFragmentPaintBounds(line, fragment);
   if (!bounds) return;

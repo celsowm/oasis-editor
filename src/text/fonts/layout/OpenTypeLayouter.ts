@@ -67,20 +67,20 @@ export class OpenTypeLayouter implements TextLayouter {
     }
 
     const gsubTags =
-      features?.filter((tag) => !GPOS_FEATURE_TAGS.has(tag)) ?? [];
+      features?.filter((tag): boolean => !GPOS_FEATURE_TAGS.has(tag)) ?? [];
     const gposTags =
-      features?.filter((tag) => GPOS_FEATURE_TAGS.has(tag)) ?? [];
+      features?.filter((tag): boolean => GPOS_FEATURE_TAGS.has(tag)) ?? [];
 
     if (this.gsub && gsubTags.length > 0) {
       this.gsub.shape(buffer, gsubTags);
     }
 
-    const advances = buffer.map((glyph) =>
+    const advances = buffer.map((glyph): number =>
       this.font.advanceWidthForGlyph(glyph.id),
     );
     if (this.gpos && gposTags.length > 0) {
       this.gpos.position(
-        buffer.map((glyph) => glyph.id),
+        buffer.map((glyph): number => glyph.id),
         advances,
         gposTags,
       );

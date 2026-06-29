@@ -43,7 +43,7 @@ export function importDocxInWorker(
   const requestId = nextRequestId;
   nextRequestId += 1;
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, reject): void => {
     const worker = new Worker(
       new URL("./importDocxWorker.ts", import.meta.url),
       {
@@ -51,20 +51,20 @@ export function importDocxInWorker(
       },
     );
 
-    const cleanup = () => {
+    const cleanup = (): void => {
       worker.removeEventListener("message", handleMessage);
       worker.removeEventListener("error", handleError);
       worker.terminate();
     };
 
-    const handleError = (event: ErrorEvent) => {
+    const handleError = (event: ErrorEvent): void => {
       cleanup();
       reject(
         event.error instanceof Error ? event.error : new Error(event.message),
       );
     };
 
-    const handleMessage = (event: MessageEvent<WorkerResponse>) => {
+    const handleMessage = (event: MessageEvent<WorkerResponse>): void => {
       const message = event.data;
       if (!message || message.id !== requestId) {
         return;

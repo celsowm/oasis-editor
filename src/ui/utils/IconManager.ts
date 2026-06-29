@@ -7,7 +7,7 @@ export function startIconObserver(root: HTMLElement = document.body): void {
 
   createIcons({ icons, nameAttr: "data-lucide", root });
 
-  observer = new MutationObserver((mutations) => {
+  observer = new MutationObserver((mutations): void => {
     let needsScan = false;
     for (const mutation of mutations) {
       if (mutation.addedNodes.length > 0 || mutation.type === "attributes") {

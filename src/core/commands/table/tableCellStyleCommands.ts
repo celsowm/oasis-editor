@@ -54,12 +54,12 @@ function collectTableSelectedParagraphIds(state: EditorState): Set<string> {
 
   const tableLayout = buildTableCellLayout(tableBlock);
   const anchorCell = tableLayout.find(
-    (entry) =>
+    (entry): boolean =>
       entry.rowIndex === anchorLoc.rowIndex &&
       entry.cellIndex === anchorLoc.cellIndex,
   );
   const focusCell = tableLayout.find(
-    (entry) =>
+    (entry): boolean =>
       entry.rowIndex === focusLoc.rowIndex &&
       entry.cellIndex === focusLoc.cellIndex,
   );
@@ -85,7 +85,7 @@ function collectTableSelectedParagraphIds(state: EditorState): Set<string> {
   );
 
   const cells = tableLayout.filter(
-    (entry) =>
+    (entry): boolean =>
       entry.visualRowIndex <= endRow &&
       entry.visualRowIndex + entry.rowSpan - 1 >= startRow &&
       entry.visualColumnIndex <= endCol &&

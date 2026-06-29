@@ -19,7 +19,7 @@ export function NumberField(props: NumberFieldProps): JSX.Element {
   return (
     <TextField
       type="number"
-      onChange={(raw) => {
+      onChange={(raw): void => {
         if (raw.trim() === "") {
           local.onChange?.(null);
           return;

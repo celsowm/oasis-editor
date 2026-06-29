@@ -43,7 +43,7 @@ export function createEditorTableDrag(deps: {
   const [startClientX, setStartClientX] = createSignal(0);
   const [mousePos, setMousePos] = createSignal({ x: 0, y: 0 });
 
-  const stopDrag = () => {
+  const stopDrag = (): void => {
     setDragging(false);
     setDraggedTableInfo(null);
     setDropTargetPos(null);
@@ -52,7 +52,7 @@ export function createEditorTableDrag(deps: {
     document.body.style.cursor = "";
   };
 
-  const handleMouseMove = (event: MouseEvent) => {
+  const handleMouseMove = (event: MouseEvent): void => {
     setMousePos({ x: event.clientX, y: event.clientY });
     if (!dragging()) {
       const delta = Math.abs(event.clientY - startClientY());
@@ -96,7 +96,7 @@ export function createEditorTableDrag(deps: {
     setDropTargetPos(pos);
   };
 
-  const handleMouseUp = (event: MouseEvent) => {
+  const handleMouseUp = (event: MouseEvent): void => {
     const info = draggedTableInfo();
     if (dragging()) {
       const pos = deps.resolvePositionAtSurfacePoint(
@@ -106,14 +106,14 @@ export function createEditorTableDrag(deps: {
       const tableId = info?.tableId;
 
       if (tableId) {
-        deps.applyTransactionalState((current) => {
+        deps.applyTransactionalState((current): EditorState => {
           const findTable = ():
             | ReturnType<typeof getEditableBlocksForZone>[number]
             | undefined => {
             for (const zone of ["main", "header", "footer"] as const) {
               const blocks = getEditableBlocksForZone(current, zone);
               const table = blocks.find(
-                (block) => block.type === "table" && block.id === tableId,
+                (block): boolean => block.type === "table" && block.id === tableId,
               );
               if (table) return table;
             }
@@ -142,7 +142,7 @@ export function createEditorTableDrag(deps: {
     deps.focusInput();
   };
 
-  const handleMouseDown = (tableId: string, event: MouseEvent) => {
+  const handleMouseDown = (tableId: string, event: MouseEvent): void => {
     event.preventDefault();
     event.stopPropagation();
 

@@ -19,10 +19,10 @@ export function FloatingTableToolbar(
   props: FloatingTableToolbarProps,
 ): JSX.Element {
   const t = useI18n();
-  const host = () => props.host();
-  const run = (command: string, payload?: unknown) =>
+  const host = (): ToolbarHost => props.host();
+  const run = (command: string, payload?: unknown): unknown =>
     host().commands.execute(command, payload);
-  const blocked = (command: string) =>
+  const blocked = (command: string): boolean =>
     !host().commands.state(command).isEnabled;
 
   const {
@@ -31,7 +31,7 @@ export function FloatingTableToolbar(
     refresh: scheduleRefresh,
   } = useSurfaceRect(props.surfaceRef);
 
-  const position = createMemo(() => {
+  const position = createMemo((): { centerX: number; top: number; } | null => {
     tick();
     if (!props.visible()) {
       return null;
@@ -65,7 +65,7 @@ export function FloatingTableToolbar(
   });
 
   // Re-read surface rect any time visible/selection changes
-  createMemo(() => {
+  createMemo((): void => {
     props.visible();
     props.selectionBoxes();
     if (typeof window !== "undefined") {
@@ -75,7 +75,7 @@ export function FloatingTableToolbar(
 
   return (
     <Show when={position()}>
-      {(pos) => (
+      {(pos): JSX.Element => (
         <Portal mount={document.body}>
           <div
             class="oasis-editor-floating-toolbar"
@@ -84,21 +84,21 @@ export function FloatingTableToolbar(
               left: `${pos().centerX}px`,
               top: `${pos().top}px`,
             }}
-            onMouseDown={(event) => event.preventDefault()}
+            onMouseDown={(event): void => event.preventDefault()}
           >
             <div class="oasis-editor-toolbar-group">
               <Button
                 icon="combine"
                 data-testid="editor-floating-toolbar-merge"
                 disabled={blocked("tableMerge")}
-                onClick={() => run("tableMerge")}
+                onClick={(): unknown => run("tableMerge")}
                 tooltip={t("table.mergeTooltip")}
               />
               <Button
                 icon="split"
                 data-testid="editor-floating-toolbar-split"
                 disabled={blocked("tableSplit")}
-                onClick={() => run("tableSplit")}
+                onClick={(): unknown => run("tableSplit")}
                 tooltip={t("table.splitTooltip")}
               />
             </div>
@@ -109,19 +109,19 @@ export function FloatingTableToolbar(
               <Button
                 icon="align-left"
                 data-testid="editor-floating-toolbar-align-left"
-                onClick={() => run("tableAlignLeft")}
+                onClick={(): unknown => run("tableAlignLeft")}
                 tooltip={t("table.alignLeft")}
               />
               <Button
                 icon="align-center"
                 data-testid="editor-floating-toolbar-align-center"
-                onClick={() => run("tableAlignCenter")}
+                onClick={(): unknown => run("tableAlignCenter")}
                 tooltip={t("table.alignCenter")}
               />
               <Button
                 icon="align-right"
                 data-testid="editor-floating-toolbar-align-right"
-                onClick={() => run("tableAlignRight")}
+                onClick={(): unknown => run("tableAlignRight")}
                 tooltip={t("table.alignRight")}
               />
             </div>
@@ -132,7 +132,7 @@ export function FloatingTableToolbar(
               <Button
                 icon="palette"
                 data-testid="editor-floating-toolbar-shading"
-                onClick={() => {
+                onClick={(): void => {
                   const color = prompt(t("table.cellBgColorPrompt"), "#f1f5f9");
                   if (color !== null) run("tableCellShading", color);
                 }}
@@ -141,13 +141,13 @@ export function FloatingTableToolbar(
               <Button
                 icon="frame"
                 data-testid="editor-floating-toolbar-borders"
-                onClick={() => run("tableCellBorders")}
+                onClick={(): unknown => run("tableCellBorders")}
                 tooltip={t("table.applyBorders")}
               />
               <Button
                 icon="square"
                 data-testid="editor-floating-toolbar-no-borders"
-                onClick={() => run("tableCellNoBorders")}
+                onClick={(): unknown => run("tableCellNoBorders")}
                 tooltip={t("table.removeBorders")}
               />
             </div>
@@ -159,28 +159,28 @@ export function FloatingTableToolbar(
                 icon="arrow-up-to-line"
                 data-testid="editor-floating-toolbar-insert-row-above"
                 disabled={blocked("tableInsertRowBefore")}
-                onClick={() => run("tableInsertRowBefore")}
+                onClick={(): unknown => run("tableInsertRowBefore")}
                 tooltip={t("table.insertRowAbove")}
               />
               <Button
                 icon="arrow-down-to-line"
                 data-testid="editor-floating-toolbar-insert-row-below"
                 disabled={blocked("tableInsertRowAfter")}
-                onClick={() => run("tableInsertRowAfter")}
+                onClick={(): unknown => run("tableInsertRowAfter")}
                 tooltip={t("table.insertRowBelow")}
               />
               <Button
                 icon="arrow-left-to-line"
                 data-testid="editor-floating-toolbar-insert-column-left"
                 disabled={blocked("tableInsertColumnBefore")}
-                onClick={() => run("tableInsertColumnBefore")}
+                onClick={(): unknown => run("tableInsertColumnBefore")}
                 tooltip={t("table.insertColumnLeft")}
               />
               <Button
                 icon="arrow-right-to-line"
                 data-testid="editor-floating-toolbar-insert-column-right"
                 disabled={blocked("tableInsertColumnAfter")}
-                onClick={() => run("tableInsertColumnAfter")}
+                onClick={(): unknown => run("tableInsertColumnAfter")}
                 tooltip={t("table.insertColumnRight")}
               />
             </div>
@@ -192,14 +192,14 @@ export function FloatingTableToolbar(
                 icon="rows-3"
                 data-testid="editor-floating-toolbar-delete-row"
                 disabled={blocked("tableDeleteRow")}
-                onClick={() => run("tableDeleteRow")}
+                onClick={(): unknown => run("tableDeleteRow")}
                 tooltip={t("table.deleteRow")}
               />
               <Button
                 icon="columns-3"
                 data-testid="editor-floating-toolbar-delete-column"
                 disabled={blocked("tableDeleteColumn")}
-                onClick={() => run("tableDeleteColumn")}
+                onClick={(): unknown => run("tableDeleteColumn")}
                 tooltip={t("table.deleteColumn")}
               />
             </div>

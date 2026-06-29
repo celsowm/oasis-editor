@@ -14,26 +14,26 @@ export interface DismissOptions {
  * while `open` is true. Replaces the per-component `handleClickOutside` copies.
  */
 export function useDismiss(options: DismissOptions): void {
-  const handlePointer = (event: MouseEvent) => {
+  const handlePointer = (event: MouseEvent): void => {
     const target = event.target as Node | null;
     if (!target) {
       return;
     }
     const inside = options
       .refs()
-      .some((el) => el != null && el.contains(target));
+      .some((el): boolean => el != null && el.contains(target));
     if (!inside) {
       options.onDismiss();
     }
   };
 
-  const handleKey = (event: KeyboardEvent) => {
+  const handleKey = (event: KeyboardEvent): void => {
     if (event.key === "Escape") {
       options.onDismiss();
     }
   };
 
-  createEffect(() => {
+  createEffect((): void => {
     if (!options.open()) {
       return;
     }
@@ -41,7 +41,7 @@ export function useDismiss(options: DismissOptions): void {
     if (options.closeOnEscape ?? true) {
       window.addEventListener("keydown", handleKey);
     }
-    onCleanup(() => {
+    onCleanup((): void => {
       window.removeEventListener("mousedown", handlePointer);
       window.removeEventListener("keydown", handleKey);
     });

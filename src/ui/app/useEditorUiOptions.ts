@@ -4,8 +4,7 @@ import { BalloonShell } from "@/ui/shells/BalloonShell.js";
 import type {
   OasisEditorAppDocumentProps,
   OasisEditorAppUiProps,
-  OasisEditorLoadingOptions,
-} from "@/ui/OasisEditorAppProps.js";
+  OasisEditorLoadingOptions, ToolbarViewMode, ToolbarLayoutMode } from "@/ui/OasisEditorAppProps.js";
 
 export interface EditorUiOptionsContext {
   ui: () => OasisEditorAppUiProps;
@@ -27,18 +26,18 @@ export function createEditorUiOptions(ctx: EditorUiOptionsContext) {
   };
 
   return {
-    showChrome: () => ui().showChrome ?? true,
-    showTitleBar: () => ui().showTitleBar ?? true,
-    showMenubar: () => ui().showMenubar ?? true,
-    showToolbar: () => ui().showToolbar ?? true,
-    showOutline: () => ui().showOutline ?? true,
-    toolbarView: () => ui().toolbar?.view ?? "ribbon",
-    toolbarLayout: () => ui().toolbar?.layout ?? "overflow",
-    isReadOnly: () => documentOptions().readOnly ?? false,
-    useComposedShell: () =>
+    showChrome: (): boolean => ui().showChrome ?? true,
+    showTitleBar: (): boolean => ui().showTitleBar ?? true,
+    showMenubar: (): boolean => ui().showMenubar ?? true,
+    showToolbar: (): boolean => ui().showToolbar ?? true,
+    showOutline: (): boolean => ui().showOutline ?? true,
+    toolbarView: (): ToolbarViewMode => ui().toolbar?.view ?? "ribbon",
+    toolbarLayout: (): ToolbarLayoutMode => ui().toolbar?.layout ?? "overflow",
+    isReadOnly: (): boolean => documentOptions().readOnly ?? false,
+    useComposedShell: (): boolean =>
       ui().uiVariant === "docs" || (ui().shell ?? "document") !== "document",
     loadingOptions,
-    loadingLabel: () => loadingOptions()?.label ?? "Loading oasis-editor...",
+    loadingLabel: (): string => loadingOptions()?.label ?? "Loading oasis-editor...",
     shellComponent: () => {
       const s = ui().shell ?? "document";
       if (s === "inline") return InlineShell;

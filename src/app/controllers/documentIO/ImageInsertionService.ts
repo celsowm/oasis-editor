@@ -19,7 +19,7 @@ export interface ImageInsertionServiceDeps {
 function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
   return btoa(
     new Uint8Array(arrayBuffer).reduce(
-      (data, byte) => data + String.fromCharCode(byte),
+      (data, byte): string => data + String.fromCharCode(byte),
       "",
     ),
   );
@@ -29,7 +29,7 @@ export function createImageInsertionService(deps: ImageInsertionServiceDeps) {
   const insertImageFromFile = async (
     file: File,
     position?: EditorPosition | null,
-  ) => {
+  ): Promise<void> => {
     deps.logger.info(
       `image insert:start name="${file.name}" type=${file.type} size=${file.size}`,
     );
@@ -38,7 +38,7 @@ export function createImageInsertionService(deps: ImageInsertionServiceDeps) {
 
     const img = new Image();
     img.src = src;
-    await new Promise((resolve) => {
+    await new Promise((resolve): void => {
       img.onload = resolve;
       img.onerror = resolve;
     });
@@ -62,7 +62,7 @@ export function createImageInsertionService(deps: ImageInsertionServiceDeps) {
     );
 
     deps.applyTransactionalState(
-      (current) => {
+      (current): EditorState => {
         const targetState = position
           ? setSelection(current, { anchor: position, focus: position })
           : current;

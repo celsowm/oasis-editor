@@ -31,7 +31,7 @@ export function getCanvasPageRectSignature(surface: HTMLElement): string {
     surface.querySelectorAll<HTMLElement>(
       '[data-renderer="canvas"][data-page-index]',
     ),
-  ).sort((left, right) => {
+  ).sort((left, right): number => {
     return (
       Number(left.dataset.pageIndex ?? "0") -
       Number(right.dataset.pageIndex ?? "0")
@@ -61,7 +61,7 @@ export function createCanvasLayoutSnapshotProvider(): CanvasLayoutSnapshotProvid
   let cache: SnapshotCacheEntry | null = null;
 
   const getCanvasLayoutSnapshot: CanvasLayoutSnapshotProvider["getCanvasLayoutSnapshot"] =
-    (options) => {
+    (options): CanvasLayoutSnapshot | null => {
       const zoomFactor =
         options.zoomFactor && options.zoomFactor > 0 ? options.zoomFactor : 1;
       const domRectSignature = getCanvasPageRectSignature(options.surface);
@@ -93,7 +93,7 @@ export function createCanvasLayoutSnapshotProvider(): CanvasLayoutSnapshotProvid
 
   return {
     getCanvasLayoutSnapshot,
-    clear: () => {
+    clear: (): void => {
       cache = null;
     },
   };

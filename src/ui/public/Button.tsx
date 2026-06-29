@@ -21,7 +21,7 @@ export function Button(props: ButtonProps): JSX.Element {
     "classList",
     "children",
   ]);
-  const iconPosition = () => local.iconPosition ?? "start";
+  const iconPosition = (): "start" | "end" => local.iconPosition ?? "start";
 
   return (
     <button

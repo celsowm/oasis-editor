@@ -43,11 +43,11 @@ export interface TablePropertiesDialogBridgeDeps {
 export function createTablePropertiesDialogBridge(
   deps: TablePropertiesDialogBridgeDeps,
 ) {
-  const isInsideTable = () => hasActiveTable(deps.state());
+  const isInsideTable = (): boolean => hasActiveTable(deps.state());
 
   const openTablePropertiesDialog = (
     activeTab: TablePropertiesDialogInitialValues["activeTab"] = "table",
-  ) => {
+  ): void => {
     const initial = readTableProperties(deps.state(), activeTab);
     if (!initial) return;
     deps.setContextMenu({ isOpen: false, x: 0, y: 0 });
@@ -56,13 +56,13 @@ export function createTablePropertiesDialogBridge(
 
   const applyTablePropertiesDialogValues = (
     values: TablePropertiesDialogApplyValues,
-  ) => {
+  ): void => {
     if (deps.isReadOnly()) return;
     if (!isInsideTable()) return;
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
     deps.applyTransactionalState(
-      (current) => applyTableProperties(current, values),
+      (current): EditorState => applyTableProperties(current, values),
       { mergeKey: MERGE_KEYS.tableProperties },
     );
     deps.focusInput();

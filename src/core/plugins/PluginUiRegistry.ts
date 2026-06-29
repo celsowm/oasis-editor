@@ -20,18 +20,18 @@ export class PluginUiRegistry implements OasisPluginUiRegistry {
     this.floatingActions = replaceById(this.floatingActions, contribution);
     this.sort();
     this.emit();
-    return () => this.unregisterFloatingAction(contribution.id);
+    return (): void => this.unregisterFloatingAction(contribution.id);
   }
 
   registerSidePanel(contribution: SidePanelContribution): Unsubscribe {
     this.sidePanels = replaceById(this.sidePanels, contribution);
     this.sort();
     this.emit();
-    return () => this.unregisterSidePanel(contribution.id);
+    return (): void => this.unregisterSidePanel(contribution.id);
   }
 
   openSidePanel(id: string): void {
-    if (!this.sidePanels.some((panel) => panel.id === id)) {
+    if (!this.sidePanels.some((panel): boolean => panel.id === id)) {
       return;
     }
     if (this.activeSidePanelId === id) {
@@ -70,7 +70,7 @@ export class PluginUiRegistry implements OasisPluginUiRegistry {
 
   onChange(callback: () => void): Unsubscribe {
     this.listeners.add(callback);
-    return () => this.listeners.delete(callback);
+    return (): boolean => this.listeners.delete(callback);
   }
 
   clear(): void {
@@ -88,7 +88,7 @@ export class PluginUiRegistry implements OasisPluginUiRegistry {
   }
 
   private unregisterFloatingAction(id: string): void {
-    const next = this.floatingActions.filter((action) => action.id !== id);
+    const next = this.floatingActions.filter((action): boolean => action.id !== id);
     if (next.length === this.floatingActions.length) {
       return;
     }
@@ -97,7 +97,7 @@ export class PluginUiRegistry implements OasisPluginUiRegistry {
   }
 
   private unregisterSidePanel(id: string): void {
-    const next = this.sidePanels.filter((panel) => panel.id !== id);
+    const next = this.sidePanels.filter((panel): boolean => panel.id !== id);
     const activeChanged = this.activeSidePanelId === id;
     if (next.length === this.sidePanels.length && !activeChanged) {
       return;
@@ -122,7 +122,7 @@ export class PluginUiRegistry implements OasisPluginUiRegistry {
 }
 
 function replaceById<T extends { id: string }>(items: T[], item: T): T[] {
-  const index = items.findIndex((entry) => entry.id === item.id);
+  const index = items.findIndex((entry): boolean => entry.id === item.id);
   if (index < 0) {
     return [...items, item];
   }
@@ -133,11 +133,11 @@ function replaceById<T extends { id: string }>(items: T[], item: T): T[] {
 
 function sortByOrder<T extends { order?: number }>(items: T[]): T[] {
   return items
-    .map((item, index) => ({ item, index }))
-    .sort((a, b) => {
+    .map((item, index): { item: T; index: number; } => ({ item, index }))
+    .sort((a, b): number => {
       const orderA = a.item.order ?? MAX_ORDER;
       const orderB = b.item.order ?? MAX_ORDER;
       return orderA - orderB || a.index - b.index;
     })
-    .map((entry) => entry.item);
+    .map((entry): T => entry.item);
 }

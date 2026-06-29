@@ -6,8 +6,7 @@ import type {
   EditorState,
   EditorTableNode,
   TableLocation,
-  EditorRevisionMetadata,
-} from "@/core/model.js";
+  EditorRevisionMetadata, EditorSection } from "@/core/model.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
@@ -68,7 +67,7 @@ export function updateTablesInBlocks(
   blocks: EditorBlockNode[],
   updateTable: (table: EditorTableNode) => EditorTableNode,
 ): EditorBlockNode[] {
-  return blocks.map((block) => {
+  return blocks.map((block): EditorParagraphNode | EditorTableNode => {
     if (block.type === "table") {
       return updateTable(block);
     }
@@ -135,7 +134,7 @@ export function updateActiveTableBlocks(
     blocks: EditorBlockNode[],
     zone: EditorEditingZone,
   ): EditorBlockNode[] =>
-    blocks.map((block, blockIndex) => {
+    blocks.map((block, blockIndex): EditorBlockNode => {
       if (
         block.type === "table" &&
         blockIndex === loc.blockIndex &&
@@ -147,7 +146,7 @@ export function updateActiveTableBlocks(
     });
 
   const nextSections = getDocumentSections(state.document).map(
-    (section, sectionIndex) => {
+    (section, sectionIndex): EditorSection => {
       if (sectionIndex !== activeSectionIndex) return section;
       return {
         ...section,

@@ -2,6 +2,7 @@ import { For, Show, createMemo, createSignal } from "solid-js";
 import type { Accessor } from "solid-js";
 import type { EditorComment } from "@/core/model.js";
 import type { CommentHighlightBox } from "@/ui/editorUiTypes.js";
+import { JSX } from "solid-js";
 
 export interface CommentHighlightOverlayProps {
   boxes: Accessor<CommentHighlightBox[]>;
@@ -15,19 +16,19 @@ export interface CommentHighlightOverlayProps {
  * track-changes `RevisionOverlay`). Hit-testing happens on the overlay divs
  * themselves (`pointer-events: auto`), so no canvas hit-test plumbing is needed.
  */
-export function CommentHighlightOverlay(props: CommentHighlightOverlayProps) {
+export function CommentHighlightOverlay(props: CommentHighlightOverlayProps): JSX.Element {
   const [activeCommentId, setActiveCommentId] = createSignal<string | null>(
     null,
   );
 
-  const activeComment = createMemo<EditorComment | null>(() => {
+  const activeComment = createMemo<EditorComment | null>((): EditorComment | null => {
     const id = activeCommentId();
     if (!id) return null;
     return props.commentsById()[id] ?? null;
   });
 
   // Anchor the popup to the first (top-most) highlight box of the active comment.
-  const popupAnchor = createMemo<CommentHighlightBox | null>(() => {
+  const popupAnchor = createMemo<CommentHighlightBox | null>((): CommentHighlightBox | null => {
     const id = activeCommentId();
     if (!id) return null;
     let best: CommentHighlightBox | null = null;
@@ -50,7 +51,7 @@ export function CommentHighlightOverlay(props: CommentHighlightOverlayProps) {
   return (
     <div aria-hidden="true" class="oasis-editor-comment-overlay-root">
       <For each={props.boxes()}>
-        {(box) => (
+        {(box): JSX.Element => (
           <span
             class="oasis-editor-comment-highlight"
             classList={{
@@ -65,14 +66,14 @@ export function CommentHighlightOverlay(props: CommentHighlightOverlayProps) {
               width: `${box.width}px`,
               height: `${box.height}px`,
             }}
-            onMouseEnter={() => setActiveCommentId(box.commentId)}
-            onClick={() => setActiveCommentId(box.commentId)}
+            onMouseEnter={(): string => setActiveCommentId(box.commentId)}
+            onClick={(): string => setActiveCommentId(box.commentId)}
           />
         )}
       </For>
 
       <Show when={activeComment() && popupAnchor()}>
-        {(() => {
+        {((): JSX.Element => {
           const comment = activeComment()!;
           const anchor = popupAnchor()!;
           return (
@@ -83,7 +84,7 @@ export function CommentHighlightOverlay(props: CommentHighlightOverlayProps) {
                 left: `${anchor.left}px`,
                 top: `${anchor.top + anchor.height + 6}px`,
               }}
-              onMouseLeave={() => setActiveCommentId(null)}
+              onMouseLeave={(): null => setActiveCommentId(null)}
             >
               <div class="oasis-editor-comment-popup-header">
                 <span class="oasis-editor-comment-popup-author">

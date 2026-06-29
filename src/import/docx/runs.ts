@@ -264,15 +264,15 @@ export async function parseRunsContainer(
       return; // REF/PAGEREF/TOC/unknown: keep the preserved marker structure.
     }
     const span = runs.slice(entry.beginIndex); // begin..end inclusive
-    if (span.some((run) => run.bookmark)) {
+    if (span.some((run): ImportedBookmarkMarker | undefined => run.bookmark)) {
       return; // never swallow a bookmark marker into a collapsed field.
     }
     const resultRuns = span.filter(
-      (run) => !run.fieldChar && run.fieldInstruction === undefined,
+      (run): boolean => !run.fieldChar && run.fieldInstruction === undefined,
     );
-    const displayText = resultRuns.map((run) => run.text).join("") || "1";
+    const displayText = resultRuns.map((run): string => run.text).join("") || "1";
     const styles =
-      resultRuns.find((run) => run.styles)?.styles ?? entry.beginStyles;
+      resultRuns.find((run): EditorTextStyle | undefined => run.styles)?.styles ?? entry.beginStyles;
     runs.length = entry.beginIndex;
     runs.push({
       text: displayText,
@@ -469,11 +469,11 @@ export async function parseRunsContainer(
       // pathological here and fall through to emit their markers around the
       // whole run.)
       const innerMarkers: Array<{ offset: number; run: ImportedRun }> = [
-        ...(innerBookmarks ?? []).map((m) => ({
+        ...(innerBookmarks ?? []).map((m): { offset: number; run: ImportedRun; } => ({
           offset: m.offset,
           run: { text: "", bookmark: m.marker } as ImportedRun,
         })),
-        ...(innerComments ?? []).map((m) => ({
+        ...(innerComments ?? []).map((m): { offset: number; run: ImportedRun; } => ({
           offset: m.offset,
           run: { text: "", comment: m.marker } as ImportedRun,
         })),
@@ -481,7 +481,7 @@ export async function parseRunsContainer(
       if (innerMarkers.length > 0 && !image && !textBox) {
         // Stable sort by offset preserves document order for markers sharing one
         // offset (Array.prototype.sort is stable in modern engines).
-        innerMarkers.sort((a, b) => a.offset - b.offset);
+        innerMarkers.sort((a, b): number => a.offset - b.offset);
         let cursor = 0;
         for (const inner of innerMarkers) {
           const segment = text.slice(cursor, inner.offset);
@@ -538,8 +538,8 @@ export async function parseRunsContainer(
         parseNestedBlocks,
       );
       if (fieldType) {
-        const displayText = fieldRuns.map((run) => run.text).join("") || "1";
-        const styles = fieldRuns.find((run) => run.styles)?.styles;
+        const displayText = fieldRuns.map((run): string => run.text).join("") || "1";
+        const styles = fieldRuns.find((run): EditorTextStyle | undefined => run.styles)?.styles;
         runs.push({
           text: displayText,
           styles,

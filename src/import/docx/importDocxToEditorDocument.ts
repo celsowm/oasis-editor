@@ -110,7 +110,7 @@ export async function importDocxToEditorDocument(
   let pendingPageBreakBefore = false;
   let pendingDropCap: EditorDropCap | null = null;
 
-  const appendBodyBlock = (block: EditorBlockNode) => {
+  const appendBodyBlock = (block: EditorBlockNode): void => {
     if (pendingPageBreakBefore) {
       block.style = { ...(block.style ?? {}), pageBreakBefore: true };
       pendingPageBreakBefore = false;
@@ -135,7 +135,7 @@ export async function importDocxToEditorDocument(
   }
   let completedBodyWorkItems = 0;
 
-  const reportBodyProgress = () => {
+  const reportBodyProgress = (): void => {
     completedBodyWorkItems += 1;
     if (totalBodyWorkItems > 0) {
       options.onProgress?.(
@@ -245,7 +245,7 @@ export async function importDocxToEditorDocument(
   // Build sections with headers/footers
   options.onProgress?.("parsing-headers-footers");
   const sections: EditorSection[] = [];
-  const hasHeaderFooterReferences = (props: SectionProperties) =>
+  const hasHeaderFooterReferences = (props: SectionProperties): boolean =>
     Object.keys(props.headerRIds).length > 0 ||
     Object.keys(props.footerRIds).length > 0;
   const totalSectionsWithHeaders = sectionProps.filter(
@@ -253,7 +253,7 @@ export async function importDocxToEditorDocument(
   ).length;
   let processedSections = 0;
 
-  const reportHeaderFooterProgress = () => {
+  const reportHeaderFooterProgress = (): void => {
     processedSections += 1;
     if (totalSectionsWithHeaders > 0) {
       options.onProgress?.(
@@ -274,7 +274,7 @@ export async function importDocxToEditorDocument(
       docSettings,
     );
 
-    const loadHeaderFooterBlocks = async (rId: string | undefined) => {
+    const loadHeaderFooterBlocks = async (rId: string | undefined): Promise<EditorBlockNode[]> => {
       if (!rId) {
         return [];
       }
@@ -434,7 +434,7 @@ export async function importDocxToEditorDocument(
   const shouldPreserveSections =
     sections.length > 1 ||
     sections.some(
-      (section) =>
+      (section): boolean =>
         (section.header?.length ?? 0) > 0 ||
         (section.firstPageHeader?.length ?? 0) > 0 ||
         (section.evenPageHeader?.length ?? 0) > 0 ||
@@ -530,7 +530,7 @@ function buildEditorComments(
   if (docxIds.size === 0) {
     return undefined;
   }
-  const sorted = [...docxIds].sort((a, b) => {
+  const sorted = [...docxIds].sort((a, b): number => {
     const na = Number.parseInt(a, 10);
     const nb = Number.parseInt(b, 10);
     if (Number.isNaN(na) || Number.isNaN(nb)) {
@@ -599,7 +599,7 @@ function remapImportedFootnoteRefsInSections(
 ): void {
   const remapBlock = (block: EditorBlockNode): void => {
     if (block.type === "paragraph") {
-      block.runs.forEach((run, index) => {
+      block.runs.forEach((run, index): void => {
         const runWithRef = run as EditorTextRun & {
           __importedFootnoteRef?: { docxId: string; customMark?: string };
         };
@@ -651,7 +651,7 @@ function remapImportedEndnoteRefsInSections(
 ): void {
   const remapBlock = (block: EditorBlockNode): void => {
     if (block.type === "paragraph") {
-      block.runs.forEach((run, index) => {
+      block.runs.forEach((run, index): void => {
         const runWithRef = run as EditorTextRun & {
           __importedEndnoteRef?: { docxId: string; customMark?: string };
         };

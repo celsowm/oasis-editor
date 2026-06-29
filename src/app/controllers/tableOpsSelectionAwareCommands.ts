@@ -57,8 +57,8 @@ export function createTableSelectionAwareCommands(
   const applySelectionAwareCommand = (
     command: (current: EditorState) => EditorState,
     logPrefix: string,
-  ) => {
-    deps.applyTransactionalState((current) => {
+  ): void => {
+    deps.applyTransactionalState((current): EditorState => {
       const selection = deps.resolveSelectedTableCells(current);
       if (!selection || selection.cells.length <= 1) {
         const expanded = withExpandedTableCellSelection(current);
@@ -115,7 +115,7 @@ export function createTableSelectionAwareCommands(
       if (!clonedTable) {
         return current;
       }
-      const targetBlocks = currentBlocks.map((block, i) =>
+      const targetBlocks = currentBlocks.map((block, i): EditorBlockNode =>
         i === blockIndex ? clonedTable : block,
       );
       const tableBlock = clonedTable;
@@ -143,13 +143,13 @@ export function createTableSelectionAwareCommands(
 
   const applySelectionAwareTextCommand = (
     command: (current: EditorState) => EditorState,
-  ) => {
+  ): void => {
     applySelectionAwareCommand(command, "applySelectionAwareTextCommand");
   };
 
   const applySelectionAwareParagraphCommand = (
     command: (current: EditorState) => EditorState,
-  ) => {
+  ): void => {
     applySelectionAwareCommand(command, "applySelectionAwareParagraphCommand");
   };
 

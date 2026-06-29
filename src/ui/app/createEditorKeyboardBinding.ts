@@ -56,7 +56,7 @@ export interface EditorKeyboardBindingDeps {
  * and the input-to-layout perf mark. Extracted from `OasisEditorApp` so the
  * composition root no longer hand-wires 26 keyboard callbacks inline (S1).
  */
-export function createEditorKeyboardBinding(deps: EditorKeyboardBindingDeps) {
+export function createEditorKeyboardBinding(deps: EditorKeyboardBindingDeps): { handleKeyDown: (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement; }) => void; } {
   const {
     state,
     isReadOnly,
@@ -103,21 +103,21 @@ export function createEditorKeyboardBinding(deps: EditorKeyboardBindingDeps) {
     resolveAdjacentTableCellPosition: tableOps.resolveAdjacentTableCellPosition,
     applySelectionPreservingStructure:
       historyActions.applySelectionPreservingStructure,
-    toggleFindReplace: (open) => {
+    toggleFindReplace: (open): void => {
       findReplace.setIsOpen(open ?? !findReplace.isOpen());
     },
-    toggleReplace: (open) => {
+    toggleReplace: (open): void => {
       findReplace.setIsOpen(open ?? !findReplace.isOpen());
     },
-    executeCommand: (commandName, payload) =>
+    executeCommand: (commandName, payload): unknown =>
       runtimeEditor().commands.execute(commandName, payload),
-    canExecuteCommand: (commandName) =>
+    canExecuteCommand: (commandName): boolean =>
       runtimeEditor().commands.canExecute(commandName),
   });
 
   const handleKeyDown = (
     event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
-  ) => {
+  ): void => {
     if (NAVIGATION_KEYS.includes(event.key)) {
       styleController.clearPendingCaretTextStyle();
     }

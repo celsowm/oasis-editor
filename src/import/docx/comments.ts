@@ -86,7 +86,7 @@ export function extractCommentRangesFromSections(
   const boundaries: CollectedBoundary[] = [];
   const seqRef = { value: 0 };
   const visit = (blocks: EditorBlockNode[] | undefined): void => {
-    blocks?.forEach((block) => collectFromBlock(block, boundaries, seqRef));
+    blocks?.forEach((block): void => collectFromBlock(block, boundaries, seqRef));
   };
 
   for (const section of sections) {

@@ -19,7 +19,7 @@ export const OasisEditor: React.FC<ReactOasisEditorProps> = (props) => {
       instanceRef.current = mount(containerRef.current, props);
       props.onClient?.(instanceRef.current);
     }
-    return () => {
+    return (): void => {
       instanceRef.current?.unmount();
       instanceRef.current = null;
     };

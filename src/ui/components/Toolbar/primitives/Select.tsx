@@ -21,9 +21,9 @@ export function Select(props: ToolbarSelectProps): JSX.Element {
     "value",
   ]);
 
-  const ariaLabel = () => local["aria-label"] || local.tooltip || "";
+  const ariaLabel = (): string => local["aria-label"] || local.tooltip || "";
 
-  createEffect(() => {
+  createEffect((): void => {
     const nextValue = local.value;
     if (!selectRef || nextValue === undefined || nextValue === null) {
       return;

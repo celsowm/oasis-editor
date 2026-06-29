@@ -1,8 +1,7 @@
 import type {
   EditorState,
   EditorTableNode,
-  EditorTableRowStyle,
-} from "@/core/model.js";
+  EditorTableRowStyle, EditorTableRowNode, EditorBlockNode } from "@/core/model.js";
 import {
   patchStyleValue,
   createTableRevisionMetadata,
@@ -23,7 +22,7 @@ export function setSelectedTableRowStyleValue<
   if (!target) return state;
 
   const updateTable = (table: EditorTableNode): EditorTableNode => {
-    const nextRows = table.rows.map((row, rowIndex) =>
+    const nextRows = table.rows.map((row, rowIndex): EditorTableRowNode =>
       rowIndex === target.loc.rowIndex
         ? (() => {
             let style = row.style;
@@ -61,7 +60,7 @@ export function setSelectedTableRowHeader(
 
   const updateTable = (table: EditorTableNode): EditorTableNode => ({
     ...table,
-    rows: table.rows.map((row, rowIndex) => {
+    rows: table.rows.map((row, rowIndex): EditorTableRowNode => {
       if (rowIndex !== target.loc.rowIndex) return row;
       let style = row.style;
       if (state.trackChangesEnabled && !style?.propertyRevision) {
@@ -116,7 +115,7 @@ export function setTableRowHeight(
     return { ...table, rows: nextRows };
   };
 
-  return updateStateSections(state, (blocks) =>
+  return updateStateSections(state, (blocks): EditorBlockNode[] =>
     updateTablesInBlocks(blocks, updateTable),
   );
 }

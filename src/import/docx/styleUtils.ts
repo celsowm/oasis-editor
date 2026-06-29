@@ -6,7 +6,7 @@ import { type ThemeColorMap, resolveThemeColor } from "./themeColors.js";
 export function stripUndefined<T extends object>(
   value: T,
 ): Partial<T> | undefined {
-  const entries = Object.entries(value).filter(([, v]) => v !== undefined);
+  const entries = Object.entries(value).filter(([, v]): boolean => v !== undefined);
   return entries.length > 0
     ? (Object.fromEntries(entries) as Partial<T>)
     : undefined;

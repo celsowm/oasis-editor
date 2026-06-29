@@ -58,7 +58,7 @@ export function createRotateSession(
     paragraphId: string,
     paragraphOffset: number,
   ): EditorState["selection"] | null => {
-    const paragraph = getParagraphs(state).find((p) => p.id === paragraphId);
+    const paragraph = getParagraphs(state).find((p): boolean => p.id === paragraphId);
     if (!paragraph) {
       return null;
     }
@@ -79,7 +79,7 @@ export function createRotateSession(
     },
   });
 
-  const handleMouseMove = (event: MouseEvent) => {
+  const handleMouseMove = (event: MouseEvent): void => {
     const rotate = active;
     if (!rotate) {
       return;
@@ -116,7 +116,7 @@ export function createRotateSession(
     );
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (): void => {
     const rotate = active;
     if (rotate) {
       deps.updateHistoryState((current) => ({
@@ -130,7 +130,7 @@ export function createRotateSession(
     deps.focusInput();
   };
 
-  const stop = () => {
+  const stop = (): void => {
     active = null;
     window.removeEventListener("mousemove", handleMouseMove);
     window.removeEventListener("mouseup", handleMouseUp);
@@ -141,7 +141,7 @@ export function createRotateSession(
     paragraphOffset: number,
     event: MouseEvent & { currentTarget: HTMLElement },
     initialState: EditorState,
-  ) => {
+  ): void => {
     const overlay = event.currentTarget.closest(
       ".oasis-editor-selection-overlay",
     );

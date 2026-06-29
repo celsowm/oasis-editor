@@ -21,7 +21,7 @@ export interface ColorPickerProps {
   onApply: (value: string | null) => void;
 }
 
-const normalizeColor = (value: string | null | undefined) =>
+const normalizeColor = (value: string | null | undefined): string =>
   value?.trim().toLowerCase() ?? "";
 
 /** Configurable color/highlight picker. Palette comes from props. */
@@ -30,19 +30,19 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
   const [previewColor, setPreviewColor] = createSignal<string | null>(null);
   let customColorInputRef: HTMLInputElement | undefined;
 
-  const activeColor = () => normalizeColor(props.value);
-  const displayColor = () => previewColor() || props.value || null;
-  const directApplyColor = () =>
+  const activeColor = (): string => normalizeColor(props.value);
+  const displayColor = (): string | null => previewColor() || props.value || null;
+  const directApplyColor = (): string =>
     props.lastValue || props.value || props.defaultValue;
-  const clearLabel = () =>
+  const clearLabel = (): string | undefined =>
     props.kind === "color" ? props.automaticLabel : props.noColorLabel;
 
-  const close = () => {
+  const close = (): void => {
     setIsOpen(false);
     setPreviewColor(null);
   };
 
-  const applyColor = (value: string | null) => {
+  const applyColor = (value: string | null): void => {
     props.onApply(value);
     close();
   };
@@ -50,14 +50,14 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
   return (
     <SplitButton
       open={isOpen()}
-      onOpenChange={(open) => (open ? setIsOpen(true) : close())}
+      onOpenChange={(open): true | void => (open ? setIsOpen(true) : close())}
       tooltip={props.tooltip}
       panelClass="oasis-editor-color-menu"
       panelRole="menu"
-      onPanelMouseLeave={() => setPreviewColor(null)}
+      onPanelMouseLeave={(): null => setPreviewColor(null)}
       mainTestId={props.testId}
       mainAriaLabel={props.tooltip}
-      onMain={() => applyColor(directApplyColor())}
+      onMain={(): void => applyColor(directApplyColor())}
       menuTestId={`${props.testId}-dropdown`}
       menuAriaLabel={`${props.tooltip} menu`}
       mainContent={
@@ -79,7 +79,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
           class="oasis-editor-color-menu-action"
           data-testid={`${props.testId}-clear`}
           role="menuitem"
-          onClick={() => applyColor(null)}
+          onClick={(): void => applyColor(null)}
         >
           <span class="oasis-editor-color-menu-action-swatch">
             <Show
@@ -99,10 +99,10 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
         </div>
         <div class="oasis-editor-color-theme-grid">
           <For each={props.palette.themeColors}>
-            {(theme) => (
+            {(theme): JSX.Element => (
               <div class="oasis-editor-color-theme-column">
                 <For each={theme.values}>
-                  {(color) => (
+                  {(color): JSX.Element => (
                     <button
                       type="button"
                       class="oasis-editor-color-swatch"
@@ -114,10 +114,10 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
                       title={`${theme.name} ${color}`}
                       aria-label={`${theme.name} ${color}`}
                       data-testid={`${props.testId}-theme-swatch-${color.replace("#", "")}`}
-                      onMouseEnter={() => setPreviewColor(color)}
-                      onFocus={() => setPreviewColor(color)}
-                      onBlur={() => setPreviewColor(null)}
-                      onClick={() => applyColor(color)}
+                      onMouseEnter={(): string => setPreviewColor(color)}
+                      onFocus={(): string => setPreviewColor(color)}
+                      onBlur={(): null => setPreviewColor(null)}
+                      onClick={(): void => applyColor(color)}
                     />
                   )}
                 </For>
@@ -133,7 +133,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
         </div>
         <div class="oasis-editor-color-standard-grid">
           <For each={props.palette.standardColors}>
-            {(swatch) => (
+            {(swatch): JSX.Element => (
               <button
                 type="button"
                 class="oasis-editor-color-swatch"
@@ -145,10 +145,10 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
                 title={swatch.name}
                 aria-label={swatch.name}
                 data-testid={`${props.testId}-standard-swatch-${swatch.value.replace("#", "")}`}
-                onMouseEnter={() => setPreviewColor(swatch.value)}
-                onFocus={() => setPreviewColor(swatch.value)}
-                onBlur={() => setPreviewColor(null)}
-                onClick={() => applyColor(swatch.value)}
+                onMouseEnter={(): string => setPreviewColor(swatch.value)}
+                onFocus={(): string => setPreviewColor(swatch.value)}
+                onBlur={(): null => setPreviewColor(null)}
+                onClick={(): void => applyColor(swatch.value)}
               />
             )}
           </For>
@@ -161,7 +161,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
           class="oasis-editor-color-menu-action"
           data-testid={`${props.testId}-more-colors`}
           role="menuitem"
-          onClick={() => customColorInputRef?.click()}
+          onClick={(): void | undefined => customColorInputRef?.click()}
         >
           <span class="oasis-editor-color-menu-action-swatch oasis-editor-color-menu-more-swatch" />
           <span>{props.moreColorsLabel}</span>
@@ -172,7 +172,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
           class="oasis-editor-color-custom-input"
           data-testid={`${props.testId}-custom-input`}
           value={displayColor() || directApplyColor()}
-          onInput={(event) => applyColor(event.currentTarget.value)}
+          onInput={(event): void => applyColor(event.currentTarget.value)}
           aria-label={props.moreColorsLabel}
         />
       </Show>

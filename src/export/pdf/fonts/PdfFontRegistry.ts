@@ -121,7 +121,7 @@ export class PdfFontRegistry {
       ? new Set(
           Array.from(options.families)
             .map(normalizeFamily)
-            .map((family) => family.toLowerCase()),
+            .map((family): string => family.toLowerCase()),
         )
       : null;
     const matchedFamilies =
@@ -131,7 +131,7 @@ export class PdfFontRegistry {
       !requestedFamilies ||
       requestedFamilies.has("roboto") ||
       Array.from(requestedFamilies).some(
-        (family) => family !== "helvetica" && !matchedFamilies.has(family),
+        (family): boolean => family !== "helvetica" && !matchedFamilies.has(family),
       );
     if (!shouldLoadRoboto) {
       return;
@@ -170,10 +170,10 @@ export class PdfFontRegistry {
       const familyNames = [
         familyDefinition.family,
         ...familyDefinition.aliases,
-      ].map((family) => family.toLowerCase());
+      ].map((family): string => family.toLowerCase());
       const shouldLoad =
         !requestedFamilies ||
-        familyNames.some((family) => requestedFamilies.has(family));
+        familyNames.some((family): boolean => requestedFamilies.has(family));
       if (!shouldLoad) {
         continue;
       }

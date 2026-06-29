@@ -114,7 +114,7 @@ export function createEditorParagraphFromRuns(
     type: "paragraph",
     runs:
       runs.length > 0
-        ? runs.map((run) =>
+        ? runs.map((run): EditorTextRun =>
             createEditorStyledRun(run.text, run.styles, run.image, run.textBox),
           )
         : [createEditorRun("")],
@@ -409,7 +409,7 @@ export function createEditorDocument(
 
 export function getDocumentCharacterCount(document: EditorDocument): number {
   return getDocumentParagraphsCanonical(document).reduce(
-    (sum, p) => sum + getParagraphLength(p),
+    (sum, p): number => sum + getParagraphLength(p),
     0,
   );
 }
@@ -419,12 +419,12 @@ export function getDocumentWordCount(document: EditorDocument): number {
   let totalWords = 0;
 
   for (const paragraph of paragraphs) {
-    const text = paragraph.runs.reduce((sum, run) => sum + run.text, "");
+    const text = paragraph.runs.reduce((sum, run): string => sum + run.text, "");
     if (!text.trim()) continue;
 
     // Split by whitespace and punctuation that typically separates words
     // This is a naive implementation but covers basic English/Portuguese needs
-    const words = text.split(/[\s\p{P}]+/u).filter((word) => word.length > 0);
+    const words = text.split(/[\s\p{P}]+/u).filter((word): boolean => word.length > 0);
     totalWords += words.length;
   }
 
@@ -590,7 +590,7 @@ export function createEditorStateFromTexts(
 ): EditorState {
   const paragraphs =
     texts.length > 0
-      ? texts.map((text) => createEditorParagraph(text))
+      ? texts.map((text): EditorParagraphNode => createEditorParagraph(text))
       : [createEditorParagraph("")];
   const { anchorIndex, focusIndex } = resolveSelectionIndexes(
     selection,
@@ -635,7 +635,7 @@ export function createEditorStateFromParagraphRuns(
 ): EditorState {
   const paragraphs =
     paragraphsSpec.length > 0
-      ? paragraphsSpec.map((runs) => createEditorParagraphFromRuns(runs))
+      ? paragraphsSpec.map((runs): EditorParagraphNode => createEditorParagraphFromRuns(runs))
       : [createEditorParagraph("")];
 
   const { anchorIndex, focusIndex } = resolveSelectionIndexes(
@@ -648,11 +648,11 @@ export function createEditorStateFromParagraphRuns(
   const focusOffset =
     selection?.focus?.offset ?? selection?.offset ?? anchorOffset;
   const anchorLength = anchorParagraph.runs.reduce(
-    (sum, run) => sum + run.text.length,
+    (sum, run): number => sum + run.text.length,
     0,
   );
   const focusLength = focusParagraph.runs.reduce(
-    (sum, run) => sum + run.text.length,
+    (sum, run): number => sum + run.text.length,
     0,
   );
   const anchorPosition = paragraphOffsetToPosition(

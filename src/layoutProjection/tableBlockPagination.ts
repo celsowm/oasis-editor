@@ -37,7 +37,7 @@ function resolveFloatingTableWidth(
     if (Number.isFinite(percent)) return contentWidth * (percent / 100);
   }
   if (table.gridCols?.length) {
-    return table.gridCols.reduce((sum, value) => sum + value, 0) * PX_PER_POINT;
+    return table.gridCols.reduce((sum, value): number => sum + value, 0) * PX_PER_POINT;
   }
   return contentWidth;
 }
@@ -228,7 +228,7 @@ export function paginateTableBlock(
       const lastRow = sourceBlock.rows[lastRowIndex]!;
       const ends =
         splitEndPositions ??
-        splitEnds?.map((blockIndex) => ({ blockIndex })) ??
+        splitEnds?.map((blockIndex): { blockIndex: number; } => ({ blockIndex })) ??
         [];
       if (positionsFinishedRow(lastRow, ends)) {
         currentCellBlockPositions = undefined;
@@ -244,7 +244,7 @@ export function paginateTableBlock(
   };
 
   paginateSegments(track, sourceBlock.id, {
-    hasMore: () => groupStartIndex < rowGroups.length,
+    hasMore: (): boolean => groupStartIndex < rowGroups.length,
 
     fit(segmentId, remaining): EditorLayoutBlock | null {
       const startRowIndex = rowGroups[groupStartIndex]!.startRowIndex;
@@ -269,7 +269,7 @@ export function paginateTableBlock(
             currentCellBlockPositions,
             undefined,
           );
-          const ends = firstRow.cells.map((cell) => ({
+          const ends = firstRow.cells.map((cell): { blockIndex: number; } => ({
             blockIndex: cell.blocks.length,
           }));
           const slicedFirstRow = buildRowSliceFromPositions(
@@ -337,7 +337,7 @@ export function paginateTableBlock(
                 : undefined,
               undefined,
             );
-            const ends = targetRow.cells.map((_, cellIdx) =>
+            const ends = targetRow.cells.map((_, cellIdx): TableCellBlockPosition =>
               findCellSplitEndPosition(
                 targetRow,
                 cellIdx,
@@ -431,7 +431,7 @@ export function paginateTableBlock(
           currentCellBlockPositions,
           undefined,
         );
-        let ends = starts.map((start, cellIdx) =>
+        let ends = starts.map((start, cellIdx): TableCellBlockPosition =>
           findCellSplitEndPosition(
             targetRow,
             cellIdx,
@@ -447,7 +447,7 @@ export function paginateTableBlock(
           ),
         );
         if (!positionsProgressed(starts, ends)) {
-          ends = starts.map((start, cellIdx) => ({
+          ends = starts.map((start, cellIdx): { blockIndex: number; } => ({
             blockIndex: Math.min(
               targetRow.cells[cellIdx]!.blocks.length,
               start.blockIndex + 1,

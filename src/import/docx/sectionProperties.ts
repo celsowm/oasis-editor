@@ -45,7 +45,7 @@ function parseColumns(sectPr: XmlElement): EditorColumnsSettings | undefined {
   const sepAttr = getAttributeValue(cols, "sep");
   const equalWidthAttr = getAttributeValue(cols, "equalWidth");
   const colChildren = getChildrenByTagNameNS(cols, WORD_NS, "col");
-  const explicit = colChildren.map((col) => ({
+  const explicit = colChildren.map((col): { width: number; space: number; } => ({
     width: twipsToPx(getAttributeValue(col, "w"), 0),
     space: twipsToPx(getAttributeValue(col, "space"), space),
   }));
@@ -99,7 +99,7 @@ export function parseSectionProperties(sectPr: XmlElement): SectionProperties {
 
   const parseSectionReferences = (
     localName: "headerReference" | "footerReference",
-  ) => {
+  ): Partial<Record<"default" | "first" | "even", string>> => {
     const refs: Partial<Record<"default" | "first" | "even", string>> = {};
     for (const ref of getChildrenByTagNameNS(sectPr, WORD_NS, localName)) {
       const type = getAttributeValue(ref, "type") ?? "default";
@@ -207,7 +207,7 @@ export function getParagraphMaxFontSize(
     styles,
   );
 
-  return paragraph.runs.reduce((maxFontSize, run) => {
+  return paragraph.runs.reduce((maxFontSize, run): number => {
     const runTextStyle = resolveEffectiveTextStyleForParagraph(
       run.styles,
       paragraph.style?.styleId,

@@ -14,7 +14,7 @@ export function SidePanel(props: SidePanelProps): JSX.Element {
     "children",
     "style",
   ]);
-  const width = () => {
+  const width = (): string => {
     if (typeof local.width === "number") {
       return `${local.width}px`;
     }

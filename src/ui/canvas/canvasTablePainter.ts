@@ -56,7 +56,7 @@ function drawVerticalCell(
     ctx,
     box,
     cell.verticalMode as "rotate-cw" | "rotate-ccw",
-    () => {
+    (): void => {
       let cursorY = 0;
       for (const paragraphLayout of cell.paragraphs) {
         drawParagraph(
@@ -88,7 +88,7 @@ export function drawTable(
   pageIndex: number,
   onUpdate: () => void,
   painters: CanvasBlockPainters,
-) {
+): void {
   const segmentTable = tableSegment
     ? buildSegmentTable(table, tableSegment)
     : table;

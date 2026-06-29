@@ -134,7 +134,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     return deps.resolvePositionAtSurfacePoint(clientX, clientY);
   };
 
-  const showImageDragCursor = () => {
+  const showImageDragCursor = (): void => {
     if (imageDragCursorStyle) return;
     imageDragCursorStyle = document.createElement("style");
     imageDragCursorStyle.setAttribute("data-oasis-image-drag-cursor", "");
@@ -143,7 +143,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     document.head.appendChild(imageDragCursorStyle);
   };
 
-  const hideImageDragCursor = () => {
+  const hideImageDragCursor = (): void => {
     if (imageDragCursorStyle) {
       imageDragCursorStyle.remove();
       imageDragCursorStyle = null;
@@ -151,7 +151,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     document.body.style.cursor = "";
   };
 
-  const clearImagePointerTracking = () => {
+  const clearImagePointerTracking = (): void => {
     hideImageDragCursor();
     pendingImagePointer = null;
     activeImageDrag = null;
@@ -162,7 +162,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     window.removeEventListener("mouseup", handleImageDragMouseUp);
   };
 
-  const stopImageDrag = () => {
+  const stopImageDrag = (): void => {
     clearImagePointerTracking();
   };
 
@@ -170,9 +170,9 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     {
       label: "image",
       getSelected: (current) => getSelectedImageInfo(current),
-      applyResize: (current, width, height) =>
+      applyResize: (current, width, height): EditorState =>
         resizeSelectedImage(current, width, height),
-      getMaxWidth: (current, paragraphId) =>
+      getMaxWidth: (current, paragraphId): number =>
         getMaxInlineImageWidth(
           deps.surfaceRef(),
           current.document,
@@ -194,7 +194,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
   const imageRotateSession = createRotateSession(
     {
       label: "image",
-      applyRotate: (current, rotation) =>
+      applyRotate: (current, rotation): EditorState =>
         rotateSelectedImage(current, rotation),
     },
     {
@@ -207,7 +207,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     },
   );
 
-  const handleImageDragMouseMove = (event: MouseEvent) => {
+  const handleImageDragMouseMove = (event: MouseEvent): void => {
     let dragState = activeImageDrag;
     if (!dragState) {
       const pendingState = pendingImagePointer;
@@ -246,7 +246,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     );
   };
 
-  const handleImageDragMouseUp = (event: MouseEvent) => {
+  const handleImageDragMouseUp = (event: MouseEvent): void => {
     const pendingState = pendingImagePointer;
     const dragState = activeImageDrag;
     if (!dragState && !pendingState) {
@@ -264,7 +264,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
           `image drag:done ${dragState.paragraphId} -> ${position.paragraphId}:${position.runId}[${position.offset}]`,
         );
         deps.applyTransactionalState(
-          (current) => moveSelectedImageToPosition(current, position),
+          (current): EditorState => moveSelectedImageToPosition(current, position),
           { mergeKey: MERGE_KEYS.moveImage },
         );
       } else {
@@ -283,7 +283,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     paragraphOffset: number,
     event: MouseEvent,
     pointerBounds?: ImagePointerBounds,
-  ) => {
+  ): void => {
     const currentTarget = event.currentTarget as HTMLElement | null;
     const rect = pointerBounds
       ? {
@@ -323,12 +323,12 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     paragraphId: string,
     paragraphOffset: number,
     event: MouseEvent & { currentTarget: HTMLElement },
-  ) => {
+  ): void => {
     event.preventDefault();
     event.stopPropagation();
 
     const paragraph = getDocumentParagraphs(deps.state.document).find(
-      (p) => p.id === paragraphId,
+      (p): boolean => p.id === paragraphId,
     );
     if (paragraph) {
       deps.applyState(
@@ -348,7 +348,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     paragraphOffset: number,
     direction: ResizeHandleDirection,
     event: MouseEvent & { currentTarget: HTMLElement },
-  ) => {
+  ): void => {
     event.preventDefault();
     event.stopPropagation();
     imageResizeSession.start(
@@ -364,7 +364,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     paragraphId: string,
     paragraphOffset: number,
     event: MouseEvent & { currentTarget: HTMLElement },
-  ) => {
+  ): void => {
     event.preventDefault();
     event.stopPropagation();
     imageRotateSession.start(paragraphId, paragraphOffset, event, deps.state);

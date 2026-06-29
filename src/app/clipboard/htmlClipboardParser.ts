@@ -30,7 +30,7 @@ export function parseEditorClipboardHtmlWithDom(
     element: Element | null,
     runs: EditorTextRun[],
     list?: EditorParagraphListStyle,
-  ) => {
+  ): void => {
     const fallbackRuns = runs.length > 0 ? runs : [createEditorStyledRun("")];
     paragraphs.push({
       runs: fallbackRuns.map((run) => {
@@ -49,7 +49,7 @@ export function parseEditorClipboardHtmlWithDom(
   const processList = (
     element: Element,
     kind: EditorParagraphListStyle["kind"],
-  ) => {
+  ): void => {
     for (const child of Array.from(element.children)) {
       if (child.tagName !== "LI") {
         continue;

@@ -70,7 +70,7 @@ function createInitialValues(
 }
 
 export function createFontDialogBridge(deps: FontDialogBridgeDeps) {
-  const openFontDialog = () => {
+  const openFontDialog = (): void => {
     void deps.loadLocalFontFamilyOptions();
     deps.setFontDialog({
       isOpen: true,
@@ -82,7 +82,7 @@ export function createFontDialogBridge(deps: FontDialogBridgeDeps) {
   const applyFontDialogValues = (
     values: FontDialogApplyValues,
     original: FontDialogInitialValues,
-  ) => {
+  ): void => {
     if (deps.isReadOnly()) return;
     if (isSelectionCollapsed(deps.selection())) {
       deps.focusInput();
@@ -93,7 +93,7 @@ export function createFontDialogBridge(deps: FontDialogBridgeDeps) {
     deps.resetTransactionGrouping();
 
     deps.applyTransactionalState(
-      (current) => {
+      (current): EditorState => {
         let next = current;
         if (values.fontFamily !== (original.fontFamily || null)) {
           next = setTextStyleValue(next, "fontFamily", values.fontFamily);

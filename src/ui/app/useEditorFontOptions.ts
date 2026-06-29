@@ -32,7 +32,7 @@ export function createEditorFontOptions(ctx: EditorFontOptionsContext) {
   const computeFontSizeOptions = (): number[] =>
     collectFontSizeOptions(ctx.state().document, ctx.toolbarStyleState());
 
-  const loadLocalFontFamilyOptions = async () => {
+  const loadLocalFontFamilyOptions = async (): Promise<void> => {
     if (localFontFamilyOptions().length > 0) {
       return;
     }

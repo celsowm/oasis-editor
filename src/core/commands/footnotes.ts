@@ -3,8 +3,7 @@ import type {
   EditorFootnote,
   EditorFootnotes,
   EditorState,
-  EditorTextRun,
-} from "@/core/model.js";
+  EditorTextRun, EditorParagraphNode } from "@/core/model.js";
 import {
   findParagraphLocation,
   getBlockParagraphs,
@@ -85,7 +84,7 @@ export function insertFootnote(state: EditorState): EditorState {
     referenceRun,
   ]);
   const paragraphs = getParagraphs(baseState);
-  const nextParagraphs = paragraphs.map((candidate, candidateIndex) =>
+  const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode =>
     candidateIndex === index ? updatedParagraph : candidate,
   );
 
@@ -163,7 +162,7 @@ export function deleteFootnote(
 
   const targetParagraphId = ref.paragraph.id;
   const filteredRuns: EditorTextRun[] = ref.paragraph.runs.filter(
-    (run) => getRunFootnoteReference(run)?.footnoteId !== footnoteId,
+    (run): boolean => getRunFootnoteReference(run)?.footnoteId !== footnoteId,
   );
   const fallbackRuns: EditorTextRun[] =
     filteredRuns.length > 0
@@ -190,7 +189,7 @@ export function deleteFootnote(
   };
 
   const zoneParagraphs = getParagraphs(navState);
-  const nextZoneParagraphs = zoneParagraphs.map((p) =>
+  const nextZoneParagraphs = zoneParagraphs.map((p): EditorParagraphNode =>
     p.id === targetParagraphId ? updatedParagraph : p,
   );
 

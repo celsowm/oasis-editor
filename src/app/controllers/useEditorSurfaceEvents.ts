@@ -74,13 +74,13 @@ function resolveTripleClickParagraphRange(
   targetZone: EditorEditingZone,
 ): { start: EditorPosition; end: EditorPosition } {
   const zoneParagraphs = getDocumentParagraphs(state.document).filter(
-    (candidate) => {
+    (candidate): boolean => {
       const location = findParagraphLocation(state.document, candidate.id);
       return location !== null && location.zone === targetZone;
     },
   );
   const index = zoneParagraphs.findIndex(
-    (candidate) => candidate.id === paragraph.id,
+    (candidate): boolean => candidate.id === paragraph.id,
   );
   const nextParagraph = index >= 0 ? zoneParagraphs[index + 1] : undefined;
   const start = paragraphOffsetToPosition(paragraph, 0);
@@ -109,12 +109,12 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
       typeof window !== "undefined" &&
       typeof window.requestAnimationFrame === "function"
     ) {
-      return window.requestAnimationFrame(() => callback());
+      return window.requestAnimationFrame((): void => callback());
     }
     return globalThis.setTimeout(callback, 16) as unknown as number;
   };
 
-  const cancelFrame = (handle: number) => {
+  const cancelFrame = (handle: number): void => {
     if (
       typeof window !== "undefined" &&
       typeof window.cancelAnimationFrame === "function"
@@ -130,7 +130,7 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     targetZone: EditorEditingZone,
     newState: EditorState,
     targetPosition?: EditorPosition,
-  ) => {
+  ): void => {
     const isZoneTransition = targetZone !== (state.activeZone ?? "main");
     const targetFootnoteId =
       targetZone === "footnote" && targetPosition
@@ -224,7 +224,7 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     });
   };
 
-  const logSelection = (label: string) => {
+  const logSelection = (label: string): void => {
     const state = deps.state();
     const sel = state.selection;
     const secIdx = getActiveSectionIndex(state);
@@ -249,7 +249,7 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     );
   };
 
-  const stopDragging = () => {
+  const stopDragging = (): void => {
     dragAnchor = null;
     dragPendingPoint = null;
     if (dragFrameHandle !== null) {
@@ -260,7 +260,7 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     window.removeEventListener("mouseup", handleWindowMouseUp);
   };
 
-  const processDragFrame = () => {
+  const processDragFrame = (): void => {
     dragFrameHandle = null;
     if (!dragAnchor) return;
     const pendingPoint = dragPendingPoint;
@@ -286,7 +286,7 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     logSelection("selection:drag");
   };
 
-  const handleWindowMouseMove = (event: MouseEvent) => {
+  const handleWindowMouseMove = (event: MouseEvent): void => {
     if (!dragAnchor) return;
     dragPendingPoint = { clientX: event.clientX, clientY: event.clientY };
     if (dragFrameHandle === null) {
@@ -294,7 +294,7 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     }
   };
 
-  const handleWindowMouseUp = () => {
+  const handleWindowMouseUp = (): void => {
     logSelection("selection:end");
     stopDragging();
     deps.focusInputAfterPointerSelection();
@@ -458,7 +458,7 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     deps.focusInputAfterPointerSelection();
   };
 
-  const handleSurfaceMouseDown = (event: MouseEvent) => {
+  const handleSurfaceMouseDown = (event: MouseEvent): void => {
     // Non-left mouse buttons (e.g. right-click for context menu) must not
     // alter the selection or steal focus mid-drag.
     if (event.button !== 0) {
@@ -563,13 +563,13 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     deps.focusInputAfterPointerSelection();
   };
 
-  const handleSurfaceDblClick = (event: MouseEvent) => {
+  const handleSurfaceDblClick = (event: MouseEvent): void => {
     event.preventDefault();
     // Keep default browser text selection disabled, but do not block bubbling:
     // some environments sequence triple-click as dblclick + click.
   };
 
-  const handleSurfaceClick = (event: MouseEvent) => {
+  const handleSurfaceClick = (event: MouseEvent): void => {
     if (event.detail < 3) {
       return;
     }
@@ -610,7 +610,7 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
   const handleParagraphMouseDown = (
     _paragraphId: string,
     event: MouseEvent & { currentTarget: HTMLParagraphElement },
-  ) => {
+  ): void => {
     if (event.button !== 0) {
       return;
     }

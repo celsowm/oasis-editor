@@ -3,6 +3,7 @@ import { useI18n } from "@/i18n/I18nContext.js";
 import { TextField } from "@/ui/public/TextField.js";
 import { Dialog } from "./Dialog.js";
 import { DialogFooter } from "./DialogFooter.js";
+import { JSX } from "solid-js";
 
 export interface TextInputDialogProps {
   isOpen: boolean;
@@ -20,19 +21,19 @@ export interface TextInputDialogProps {
   };
 }
 
-export function TextInputDialog(props: TextInputDialogProps) {
+export function TextInputDialog(props: TextInputDialogProps): JSX.Element {
   const t = useI18n();
   const [value, setValue] = createSignal(props.initialValue);
   let inputRef: HTMLInputElement | undefined;
 
-  createEffect(() => {
+  createEffect((): void => {
     if (props.isOpen) {
       setValue(props.initialValue);
-      setTimeout(() => inputRef?.focus(), 50);
+      setTimeout((): void | undefined => inputRef?.focus(), 50);
     }
   });
 
-  const handleConfirm = () => {
+  const handleConfirm = (): void => {
     props.onConfirm(value());
     props.onClose();
   };
@@ -58,7 +59,7 @@ export function TextInputDialog(props: TextInputDialogProps) {
         label={props.label}
         value={value()}
         onChange={setValue}
-        onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
+        onKeyDown={(e): false | void => e.key === "Enter" && handleConfirm()}
         placeholder={props.placeholder}
         data-testid={props.testIds?.input}
       />

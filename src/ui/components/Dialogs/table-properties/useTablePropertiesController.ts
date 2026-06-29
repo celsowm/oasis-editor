@@ -14,12 +14,12 @@ export function useTablePropertiesController(
 ): TablePropertiesController {
   const [form, setForm] = createStore<TableFormState>(createDefaultFormState());
 
-  createEffect(() => {
+  createEffect((): void => {
     if (!props.isOpen) return;
     setForm(reconcile(formStateFromInitial(props.initial)));
   });
 
-  const handleApply = () => {
+  const handleApply = (): void => {
     props.onApply(buildTableApplyValues(form), props.initial);
     props.onClose();
   };

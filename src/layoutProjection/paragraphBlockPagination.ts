@@ -74,7 +74,7 @@ function estimateTextBoxAutoFitHeight(
 
   const innerWidth = Math.max(1, textBox.width - padding.left - padding.right);
 
-  const contentHeight = textBox.blocks.reduce((sum, block) => {
+  const contentHeight = textBox.blocks.reduce((sum, block): number => {
     if (block.type === "paragraph") {
       const layout = projectParagraphLayout(
         block,
@@ -137,7 +137,7 @@ export function paginateParagraphBlock(
   } = params;
 
   const pageIndex = track.pageIndex;
-  const resolveTextBoxHeight = (textBox: EditorTextBoxData) =>
+  const resolveTextBoxHeight = (textBox: EditorTextBoxData): number =>
     estimateTextBoxAutoFitHeight(
       textBox,
       styles,
@@ -339,7 +339,7 @@ export function paginateParagraphBlock(
   };
 
   paginateSegments(track, sourceBlock.id, {
-    hasMore: () => startLineIndex < paragraphLayout.lines.length,
+    hasMore: (): boolean => startLineIndex < paragraphLayout.lines.length,
 
     fit(segmentId, remaining): EditorLayoutBlock | null {
       const originalStart = startLineIndex;
@@ -434,7 +434,7 @@ export function paginateParagraphBlock(
       return block;
     },
 
-    onBeforeFlush() {
+    onBeforeFlush(): void {
       if (contextualAdjustedPreviousBlock && contextualAdjustedAmount > 0) {
         contextualAdjustedPreviousBlock.estimatedHeight +=
           contextualAdjustedAmount;
@@ -445,7 +445,7 @@ export function paginateParagraphBlock(
       collapseWithPrevious = false;
     },
 
-    onAfterPush(block, si) {
+    onAfterPush(block, si): void {
       if (si === 0) {
         registerParagraphFloatingExclusions({
           track,

@@ -29,7 +29,7 @@ export function byteLength(value: string): number {
 
 export function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes)
-    .map((byte) => byte.toString(16).padStart(2, "0").toUpperCase())
+    .map((byte): string => byte.toString(16).padStart(2, "0").toUpperCase())
     .join("");
 }
 
@@ -146,7 +146,7 @@ function encodeWinAnsiByte(char: string): number {
 
 export function encodePdfHexString(value: string): string {
   return Array.from(value)
-    .map((char) =>
+    .map((char): string =>
       encodeWinAnsiByte(char).toString(16).padStart(2, "0").toUpperCase(),
     )
     .join("");
@@ -168,8 +168,8 @@ export function encodePdfUtf16Hex(codePoints: number[]): string {
 
 export function buildToUnicodeCMap(unicode: number[][]): string {
   const entries = unicode
-    .map((codePoints) => `<${encodePdfUtf16Hex(codePoints)}>`)
-    .filter((entry) => entry !== "<>");
+    .map((codePoints): string => `<${encodePdfUtf16Hex(codePoints)}>`)
+    .filter((entry): boolean => entry !== "<>");
   if (entries.length === 0) {
     entries.push("<0000>");
   }
@@ -248,7 +248,7 @@ export function encodeGlyphHex(glyphId: number): string {
 
 export function textMarkerComment(value: string): string {
   const codePoints = Array.from(value).map(
-    (char) => char.codePointAt(0) ?? 0xfffd,
+    (char): number => char.codePointAt(0) ?? 0xfffd,
   );
   return `% OasisText ${encodePdfUtf16Hex(codePoints)}`;
 }

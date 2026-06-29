@@ -7,5 +7,5 @@ export function layoutMetricsEpoch(): number {
 }
 
 export function bumpLayoutMetricsEpoch(): void {
-  setLayoutMetricsEpochValue((current) => current + 1);
+  setLayoutMetricsEpochValue((current): number => current + 1);
 }

@@ -14,8 +14,7 @@ import {
   type EditorDocxWidthValue,
   type EditorState,
   type EditorTableCellStyle,
-  type EditorTableNode,
-} from "@/core/model.js";
+  type EditorTableNode, EditorBlockNode } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import type {
   TablePropertiesDialogApplyValues,
@@ -91,7 +90,7 @@ const EMPTY_INITIAL: TablePropertiesDialogInitialValues = {
 function getZoneBlocks(
   state: EditorState,
   zone: ReturnType<typeof getActiveZone>,
-) {
+): EditorBlockNode[] {
   const section = getDocumentSections(state.document)[
     getActiveSectionIndex(state)
   ];
@@ -114,7 +113,7 @@ function resolveActiveTableContext(
   const table = getZoneBlocks(state, loc.zone)[loc.blockIndex];
   if (!table || table.type !== "table") return null;
   const entry = buildTableCellLayout(table).find(
-    (candidate) =>
+    (candidate): boolean =>
       candidate.rowIndex === loc.rowIndex &&
       candidate.cellIndex === loc.cellIndex,
   );
@@ -153,7 +152,7 @@ function buildFloatingSummary(table: EditorTableNode): string {
   const floating = table.style?.floating;
   if (!floating || Object.keys(floating).length === 0) return "";
   return Object.entries(floating)
-    .map(([key, value]) => `${key}=${value}`)
+    .map(([key, value]): string => `${key}=${value}`)
     .join(", ");
 }
 

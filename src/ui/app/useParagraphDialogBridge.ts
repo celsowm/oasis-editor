@@ -50,7 +50,7 @@ function createInitialValues(
 }
 
 export function createParagraphDialogBridge(deps: ParagraphDialogBridgeDeps) {
-  const openParagraphDialog = () => {
+  const openParagraphDialog = (): void => {
     deps.setParagraphDialog({
       isOpen: true,
       initial: createInitialValues(deps.toolbarStyleState()),
@@ -61,7 +61,7 @@ export function createParagraphDialogBridge(deps: ParagraphDialogBridgeDeps) {
   const applyParagraphDialogValues = (
     values: ParagraphDialogApplyValues,
     original: ParagraphDialogInitialValues,
-  ) => {
+  ): void => {
     if (deps.isReadOnly()) return;
 
     deps.clearPreferredColumn();
@@ -74,7 +74,7 @@ export function createParagraphDialogBridge(deps: ParagraphDialogBridgeDeps) {
     };
 
     deps.applyTransactionalState(
-      (current) => {
+      (current): EditorState => {
         let next = current;
         if (values.align !== (original.align || null)) {
           next = setParagraphStyle(next, "align", values.align);

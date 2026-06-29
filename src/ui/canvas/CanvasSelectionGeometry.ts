@@ -13,6 +13,7 @@ import type {
   CanvasLayoutSnapshot,
   CanvasSnapshotParagraph,
 } from "./CanvasLayoutSnapshot.js";
+import type { CanvasSnapshotSlot } from "@/ui/canvas/canvasSnapshotTypes.js";
 
 export interface SelectedImageSelectionBox {
   paragraphId: string;
@@ -55,7 +56,7 @@ function getParagraphTextAtOffset(
   paragraph: CanvasSnapshotParagraph,
   offset: number,
 ): string {
-  return paragraph.paragraph.runs.map((run) => run.text).join("")[offset] ?? "";
+  return paragraph.paragraph.runs.map((run): string => run.text).join("")[offset] ?? "";
 }
 
 function isSelectionEdgeWhitespace(char: string): boolean {
@@ -115,11 +116,11 @@ function resolveCaretSlot(
   if (paragraphs.length === 0) return null;
   const containingSegment =
     paragraphs.find(
-      (paragraph) =>
+      (paragraph): boolean =>
         focusOffset >= paragraph.startOffset &&
         focusOffset <= paragraph.endOffset,
     ) ?? paragraphs[paragraphs.length - 1]!;
-  const slots = containingSegment.lines.flatMap((line) => line.slots);
+  const slots = containingSegment.lines.flatMap((line): CanvasSnapshotSlot[] => line.slots);
   if (slots.length === 0) {
     return {
       left: containingSegment.left,
@@ -167,7 +168,7 @@ export function computeCanvasSelectionGeometry(
   const surfaceRect = snapshot.surfaceRect;
   const paragraphIndexById = new Map(
     getParagraphs(state).map(
-      (paragraph, index) => [paragraph.id, index] as const,
+      (paragraph, index): readonly [string, number] => [paragraph.id, index] as const,
     ),
   );
   let selectedImageBox: SelectedImageSelectionBox | null = null;
@@ -182,7 +183,7 @@ export function computeCanvasSelectionGeometry(
       paragraphId: string;
       startOffset: number;
       endOffset: number;
-    }) =>
+    }): boolean =>
       image.paragraphId === normalized.start.paragraphId &&
       image.startOffset === normalized.startParagraphOffset &&
       image.endOffset === normalized.endParagraphOffset;
@@ -207,7 +208,7 @@ export function computeCanvasSelectionGeometry(
         paragraphId: string;
         startOffset: number;
         endOffset: number;
-      }) =>
+      }): boolean =>
         box.paragraphId === normalized.start.paragraphId &&
         box.startOffset === normalized.startParagraphOffset &&
         box.endOffset === normalized.endParagraphOffset;
@@ -273,12 +274,12 @@ export function computeCanvasSelectionGeometry(
       isMultiCellSelection = true;
       const tableLayout = buildTableCellLayout(tableBlock);
       const anchorCell = tableLayout.find(
-        (entry) =>
+        (entry): boolean =>
           entry.rowIndex === anchorLoc.rowIndex &&
           entry.cellIndex === anchorLoc.cellIndex,
       );
       const focusCell = tableLayout.find(
-        (entry) =>
+        (entry): boolean =>
           entry.rowIndex === focusLoc.rowIndex &&
           entry.cellIndex === focusLoc.cellIndex,
       );
@@ -309,7 +310,7 @@ export function computeCanvasSelectionGeometry(
             paragraph.tableCell.tableId === tableBlock.id
           ) {
             const cell = tableLayout.find(
-              (c) =>
+              (c): boolean =>
                 c.rowIndex === paragraph.tableCell!.rowIndex &&
                 c.cellIndex === paragraph.tableCell!.cellIndex,
             );
@@ -383,9 +384,9 @@ export function computeCanvasSelectionGeometry(
         }
         if (lineStart >= lineEnd) continue;
 
-        const startSlot = line.slots.find((slot) => slot.offset === lineStart);
+        const startSlot = line.slots.find((slot): boolean => slot.offset === lineStart);
         const endSlot =
-          line.slots.find((slot) => slot.offset === lineEnd) ??
+          line.slots.find((slot): boolean => slot.offset === lineEnd) ??
           line.slots[line.slots.length - 1];
         if (!startSlot || !endSlot) continue;
         const shouldIncludeSpacingBefore =

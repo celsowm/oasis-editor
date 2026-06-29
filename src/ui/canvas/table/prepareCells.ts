@@ -18,7 +18,7 @@ import {
   resolveVerticalMode,
   type VerticalRenderMode,
 } from "../verticalText.js";
-import type { buildTableCellLayout } from "@/core/tableLayout.js";
+import type { buildTableCellLayout, TableCellLayoutEntry } from "@/core/tableLayout.js";
 import type {
   CanvasTableBorderSpec,
   CanvasUnsupportedReason,
@@ -108,7 +108,7 @@ export function prepareCells(options: {
   const unsupported: CanvasUnsupportedReason[] = [];
   const cellEntriesByKey = new Map(
     tableEntries.map(
-      (entry) => [`${entry.rowIndex}:${entry.cellIndex}`, entry] as const,
+      (entry): readonly [`${number}:${number}`, TableCellLayoutEntry] => [`${entry.rowIndex}:${entry.cellIndex}`, entry] as const,
     ),
   );
   const prepared: PreparedCell[] = [];
@@ -136,7 +136,7 @@ export function prepareCells(options: {
       const cell: EditorTableCellNode = {
         ...sourceCell,
         style: formatting.cellStyle,
-        blocks: sourceCell.blocks.map((paragraph) =>
+        blocks: sourceCell.blocks.map((paragraph): EditorParagraphNode =>
           resolveCachedTableCellParagraph(
             paragraph,
             formatting,
@@ -285,7 +285,7 @@ export function prepareCells(options: {
         );
         const linesBottom =
           projected.lines.length > 0
-            ? Math.max(...projected.lines.map((line) => line.top + line.height))
+            ? Math.max(...projected.lines.map((line): number => line.top + line.height))
             : 1;
         let effectiveSpacingBefore = spacingBefore;
         if (!isRotated && projectedParagraphs.length > 0) {
@@ -336,11 +336,11 @@ export function prepareCells(options: {
         if (isRotated) {
           const lineThickness =
             projected.lines.length > 0
-              ? Math.max(...projected.lines.map((line) => line.height))
+              ? Math.max(...projected.lines.map((line): number => line.height))
               : paragraphHeight;
           const flowLength = projected.lines.length
             ? Math.max(
-                ...projected.lines.map((line) => {
+                ...projected.lines.map((line): number => {
                   const last = line.slots[line.slots.length - 1];
                   return last ? last.left : 0;
                 }),
@@ -358,9 +358,9 @@ export function prepareCells(options: {
       }
 
       if (cell.style?.hideMark) {
-        const allEmpty = cell.blocks.every((para) =>
+        const allEmpty = cell.blocks.every((para): boolean =>
           para.runs.every(
-            (run) =>
+            (run): boolean =>
               (run.kind === "text" || run.kind === undefined) &&
               (!run.text || run.text.length === 0),
           ),

@@ -8,9 +8,9 @@ export function createEditorFocusController() {
   let importInputRef: HTMLInputElement | undefined;
   let imageInputRef: HTMLInputElement | undefined;
 
-  const focusInput = () => {
+  const focusInput = (): void => {
     setFocused(true);
-    queueMicrotask(() => {
+    queueMicrotask((): void => {
       textareaRef?.focus({ preventScroll: true });
       if (textareaRef) {
         textareaRef.selectionStart = textareaRef.value.length;
@@ -19,10 +19,10 @@ export function createEditorFocusController() {
     });
   };
 
-  const focusInputAfterPointerSelection = () => {
+  const focusInputAfterPointerSelection = (): void => {
     setFocused(true);
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
+    queueMicrotask((): void => {
+      requestAnimationFrame((): void => {
         textareaRef?.focus({ preventScroll: true });
         if (textareaRef) {
           textareaRef.selectionStart = textareaRef.value.length;

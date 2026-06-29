@@ -160,7 +160,7 @@ export function buildFootnotesXml(
 ): FootnotesPartResult {
   // Aggregate every block from every referenced footnote so we can build a
   // single DocContext (shared image/hyperlink registry for the part).
-  const allBlocks = referenced.flatMap((entry) =>
+  const allBlocks = referenced.flatMap((entry): EditorBlockNode[] =>
     withInjectedFootnoteRef(entry.footnote.blocks),
   );
   const partContext = buildContext(allBlocks);
@@ -171,16 +171,16 @@ export function buildFootnotesXml(
     `<w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>`;
 
   const footnoteEntries = referenced
-    .map((entry) => {
+    .map((entry): string => {
       const augmentedBlocks = withInjectedFootnoteRef(entry.footnote.blocks);
       const innerXml = augmentedBlocks
-        .map((block) => {
+        .map((block): string => {
           if (block.type === "paragraph") {
             // serializeParagraphXml passes each run through serializeRun,
             // which recognizes the synthetic `__isFootnoteRefMarker` flag.
             return serializeParagraphXml(block, partContext, styles);
           }
-          return serializeTableXml(block, (paragraph, cell) =>
+          return serializeTableXml(block, (paragraph, cell): string =>
             serializeParagraphXml(paragraph, partContext, styles, {
               align: cell.style?.horizontalAlign,
             }),

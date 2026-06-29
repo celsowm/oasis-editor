@@ -9,16 +9,16 @@ export interface DocumentExporterDeps {
   download?: (blob: Blob, filename: string) => void;
 }
 
-export function createDocumentExporter(deps: DocumentExporterDeps) {
+export function createDocumentExporter(deps: DocumentExporterDeps): { handleExportDocx: () => Promise<void>; handleExportPdf: () => Promise<void>; } {
   const download = deps.download ?? downloadBlob;
 
-  const handleExportDocx = async () => {
+  const handleExportDocx = async (): Promise<void> => {
     const blob = await exportEditorDocumentToDocxBlob(deps.document());
     download(blob, "oasis-editor.docx");
     deps.focusInput();
   };
 
-  const handleExportPdf = async () => {
+  const handleExportPdf = async (): Promise<void> => {
     const blob = await exportEditorDocumentToPdfBlob(deps.document());
     download(blob, "oasis-editor.pdf");
     deps.focusInput();

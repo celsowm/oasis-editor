@@ -123,7 +123,7 @@ export function parseCommentsXml(
     const dateUtc = parseDate(comment.getAttributeNS(WORD16DU_NS, "dateUtc"));
     const paragraphs = getChildrenByTagNameNS(comment, WORD_NS, "p");
     const text = paragraphs
-      .map((p) => flattenCommentText(p))
+      .map((p): string => flattenCommentText(p))
       .join("\n")
       .trim();
     const paraId =

@@ -3,11 +3,11 @@ export async function readFileBuffer(file: File): Promise<ArrayBuffer> {
     return file.arrayBuffer();
   }
 
-  return new Promise<ArrayBuffer>((resolve, reject) => {
+  return new Promise<ArrayBuffer>((resolve, reject): void => {
     const reader = new FileReader();
-    reader.onerror = () =>
+    reader.onerror = (): void =>
       reject(reader.error ?? new Error("Failed to read file."));
-    reader.onload = () => {
+    reader.onload = (): void => {
       const result = reader.result;
       if (result instanceof ArrayBuffer) {
         resolve(result);

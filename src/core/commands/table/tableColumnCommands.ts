@@ -2,8 +2,7 @@ import type {
   EditorBlockNode,
   EditorState,
   EditorTableNode,
-  EditorTableStyle,
-} from "@/core/model.js";
+  EditorTableStyle, EditorTableCellNode } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { PT_PER_PX } from "@/core/units.js";
 import {
@@ -52,7 +51,7 @@ export function setTableColumnWidths(
     const visualColumnCount = Math.max(
       1,
       ...tableLayout.map(
-        (entry) => entry.visualColumnIndex + Math.max(1, entry.colSpan),
+        (entry): number => entry.visualColumnIndex + Math.max(1, entry.colSpan),
       ),
     );
     const nextGridCols = Array<number>(visualColumnCount);
@@ -83,9 +82,9 @@ export function setTableColumnWidths(
     }
 
     const nextRows = table.rows.map((row, rowIndex) => {
-      const nextCells = row.cells.map((cell, cellIndex) => {
+      const nextCells = row.cells.map((cell, cellIndex): EditorTableCellNode => {
         const entry = tableLayout.find(
-          (item) => item.rowIndex === rowIndex && item.cellIndex === cellIndex,
+          (item): boolean => item.rowIndex === rowIndex && item.cellIndex === cellIndex,
         );
         if (!entry) return cell;
 
@@ -159,7 +158,7 @@ export function setTableColumnWidths(
     };
   };
 
-  return updateStateSections(state, (blocks: EditorBlockNode[]) =>
+  return updateStateSections(state, (blocks: EditorBlockNode[]): EditorBlockNode[] =>
     updateTablesInBlocks(blocks, updateTable),
   );
 }

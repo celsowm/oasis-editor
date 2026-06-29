@@ -35,7 +35,7 @@ function parseDataUrl(
       : Buffer.from(payload, "base64").toString("binary");
   return {
     mediaType,
-    data: Uint8Array.from(binary, (char) => char.charCodeAt(0)),
+    data: Uint8Array.from(binary, (char): number => char.charCodeAt(0)),
   };
 }
 
@@ -49,7 +49,7 @@ async function fetchAsDataUrl(src: string): Promise<string | null> {
   }
   const blob = await response.blob();
   const bytes = new Uint8Array(await blob.arrayBuffer());
-  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join(
+  const binary = Array.from(bytes, (byte): string => String.fromCharCode(byte)).join(
     "",
   );
   const base64 =
@@ -63,11 +63,11 @@ async function loadBrowserImage(src: string): Promise<HTMLImageElement | null> {
   if (typeof Image === "undefined") {
     return null;
   }
-  return await new Promise((resolve) => {
+  return await new Promise((resolve): void => {
     const image = new Image();
     image.crossOrigin = "anonymous";
-    image.onload = () => resolve(image);
-    image.onerror = () => resolve(null);
+    image.onload = (): void => resolve(image);
+    image.onerror = (): void => resolve(null);
     image.src = src;
   });
 }
@@ -160,7 +160,7 @@ export async function registerPdfImageRun(
     resolvedSrc,
     image.width,
     image.height,
-  ).then((prepared) => {
+  ).then((prepared): string | null => {
     if (!prepared) {
       return null;
     }

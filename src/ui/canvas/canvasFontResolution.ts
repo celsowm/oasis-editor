@@ -61,7 +61,7 @@ export function resolveCanvasTextRenderMetrics(
       }
     | undefined,
   fontSize: number,
-) {
+): { fontSize: number; baselineOffset: number; } {
   const explicitBaselineShift = (styles?.baselineShift ?? 0) * PX_PER_POINT;
   if (styles?.smallCaps) {
     return {

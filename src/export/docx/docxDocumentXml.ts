@@ -59,7 +59,7 @@ function serializeSectionPropertiesWithReferences(
     if (columns.equalWidth === false && columns.columns?.length) {
       const colsXml = columns.columns
         .map(
-          (col) =>
+          (col): string =>
             `<w:col w:w="${pxToTwips(col.width, 0)}" w:space="${pxToTwips(col.space, 0)}"/>`,
         )
         .join("");
@@ -80,7 +80,7 @@ export function buildDocumentXml(
   const sections = getDocumentSections(document);
 
   const sectionsXml = sections
-    .map((section, sectionIndex) => {
+    .map((section, sectionIndex): string => {
       const blocksXml = serializeBlocksXml(
         section.blocks,
         context,

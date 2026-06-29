@@ -52,7 +52,7 @@ export function assembleCellEntries(options: {
       1,
       rowHeights
         .slice(rowIndex, rowIndex + rowSpan)
-        .reduce((sum, current) => sum + current, 0) +
+        .reduce((sum, current): number => sum + current, 0) +
         (rowSpan - 1) * cellSpacingPx,
     );
 

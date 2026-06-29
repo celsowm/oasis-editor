@@ -37,7 +37,7 @@ export function findMatchesInDocument(
 
   const regex = new RegExp(searchPattern, flags);
 
-  paragraphs.forEach((paragraph, paragraphIndex) => {
+  paragraphs.forEach((paragraph, paragraphIndex): void => {
     const text = getParagraphText(paragraph);
     let match: RegExpExecArray | null;
 

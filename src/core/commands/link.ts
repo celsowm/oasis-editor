@@ -1,4 +1,4 @@
-import type { EditorState } from "@/core/model.js";
+import type { EditorState, EditorTextRun } from "@/core/model.js";
 import {
   getParagraphLength,
   getParagraphs,
@@ -29,7 +29,7 @@ export function getLinkAtSelection(state: EditorState): string | null {
 
   const touchedRuns = paragraphs
     .slice(normalized.startIndex, normalized.endIndex + 1)
-    .flatMap((paragraph, relativeIndex) => {
+    .flatMap((paragraph, relativeIndex): EditorTextRun[] => {
       const paragraphIndex = normalized.startIndex + relativeIndex;
       const startOffset =
         paragraphIndex === normalized.startIndex
@@ -41,7 +41,7 @@ export function getLinkAtSelection(state: EditorState): string | null {
           : getParagraphLength(paragraph);
       return sliceRuns(paragraph, startOffset, endOffset);
     })
-    .filter((run) => run.text.length > 0 && run.kind !== "image");
+    .filter((run): boolean => run.text.length > 0 && run.kind !== "image");
 
   if (touchedRuns.length === 0) {
     return null;
@@ -52,7 +52,7 @@ export function getLinkAtSelection(state: EditorState): string | null {
     return null;
   }
 
-  return touchedRuns.every((run) => run.styles?.link === href) ? href : null;
+  return touchedRuns.every((run): boolean => run.styles?.link === href) ? href : null;
 }
 
 export function setLinkAtSelection(

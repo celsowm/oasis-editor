@@ -91,7 +91,7 @@ function registerBookmarkDestinations(
   if (bookmarkNamesByParagraph.size === 0 && headingByParagraph.size === 0) {
     return undefined;
   }
-  return (paragraphId, topPx) => {
+  return (paragraphId, topPx): void => {
     const y = pxToPt(topPx);
     const x = pxToPt(originX);
     for (const name of bookmarkNamesByParagraph.get(paragraphId) ?? []) {
@@ -124,7 +124,7 @@ export async function exportEditorDocumentToPdf(
   const listOrdinals = getListOrdinals(document);
   const bookmarkNamesByParagraph = collectBookmarkNamesByParagraph(document);
   const headingByParagraph = new Map(
-    outlineFrom(document).map((item) => [
+    outlineFrom(document).map((item): [string, { level: number; title: string; }] => [
       item.id,
       { level: item.level, title: item.text },
     ]),
@@ -153,7 +153,7 @@ export async function exportEditorDocumentToPdf(
     );
     const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
     const hasColumns = page.blocks.some(
-      (block) => block.columnIndex !== undefined,
+      (block): boolean => block.columnIndex !== undefined,
     );
     if (hasColumns) {
       const columnRects = getPageColumnRects(page.pageSettings);
@@ -281,14 +281,14 @@ async function drawFootnoteBlockList(
   let cursorY = originY;
   const markerDrawn = new Set<string>();
   const markerByFootnoteId = new Map(
-    footnoteReferenceIds.map((footnoteId) => [
+    footnoteReferenceIds.map((footnoteId): [string, string] => [
       footnoteId,
       findFootnoteReference(document, footnoteId)?.run.text ?? "",
     ]),
   );
 
   for (const block of blocks) {
-    const owningFootnoteId = footnoteReferenceIds.find((footnoteId) =>
+    const owningFootnoteId = footnoteReferenceIds.find((footnoteId): boolean =>
       block.blockId.startsWith(`${footnoteId}:`),
     );
     if (owningFootnoteId && !markerDrawn.has(owningFootnoteId)) {

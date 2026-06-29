@@ -234,7 +234,7 @@ function areAllBooleanStylesEnabled(
   styles: EditorTextStyle[],
   key: BooleanStyleKey,
 ): boolean {
-  return styles.length > 0 && styles.every((style) => Boolean(style[key]));
+  return styles.length > 0 && styles.every((style): boolean => Boolean(style[key]));
 }
 
 function resolveUniformStyleValue<K extends ValueStyleKey>(
@@ -251,7 +251,7 @@ function resolveUniformStyleValue<K extends ValueStyleKey>(
   }
 
   const serialized = String(first);
-  return styles.every((style) => String(style[key] ?? "") === serialized)
+  return styles.every((style): boolean => String(style[key] ?? "") === serialized)
     ? serialized
     : "";
 }
@@ -264,7 +264,7 @@ function getSelectedParagraphStyles(
   const { styles: docStyles } = state.document;
   return paragraphs
     .slice(normalized.startIndex, normalized.endIndex + 1)
-    .map((paragraph) =>
+    .map((paragraph): Required<EditorParagraphStyle> =>
       resolveEffectiveParagraphStyle(paragraph.style, docStyles),
     );
 }
@@ -283,7 +283,7 @@ function resolveUniformParagraphStyleValue<K extends ParagraphStyleKey>(
   }
 
   const serialized = String(first);
-  return styles.every((style) => String(style[key] ?? "") === serialized)
+  return styles.every((style): boolean => String(style[key] ?? "") === serialized)
     ? serialized
     : "";
 }
@@ -292,7 +292,7 @@ function resolveUniformParagraphFlag(
   styles: EditorParagraphStyle[],
   key: "pageBreakBefore" | "keepWithNext",
 ): boolean {
-  return styles.length > 0 && styles.every((style) => style[key] === true);
+  return styles.length > 0 && styles.every((style): boolean => style[key] === true);
 }
 
 const BORDER_EDGE_KEYS = [
@@ -334,7 +334,7 @@ function resolveBoxBorder(styles: EditorParagraphStyle[]): ResolvedBoxBorder {
   }
 
   for (const key of BORDER_EDGE_KEYS) {
-    sides[key] = styles.every((style) => isVisibleBorder(style[key]));
+    sides[key] = styles.every((style): boolean => isVisibleBorder(style[key]));
   }
 
   const present: EditorParagraphStyle["borderTop"][] = [];
@@ -350,7 +350,7 @@ function resolveBoxBorder(styles: EditorParagraphStyle[]): ResolvedBoxBorder {
   }
   const reference = JSON.stringify(present[0]);
   const uniform = present.every(
-    (border) => JSON.stringify(border) === reference,
+    (border): boolean => JSON.stringify(border) === reference,
   );
   return { shared: uniform ? (present[0] ?? null) : null, sides };
 }
@@ -367,7 +367,7 @@ function resolveUniformListKind(
     return "";
   }
 
-  return paragraphs.every((paragraph) => paragraph.list?.kind === firstKind)
+  return paragraphs.every((paragraph): boolean => paragraph.list?.kind === firstKind)
     ? firstKind
     : "";
 }

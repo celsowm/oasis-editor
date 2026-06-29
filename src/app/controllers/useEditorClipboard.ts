@@ -41,7 +41,7 @@ export interface EditorClipboardDeps {
 export function createEditorClipboardController(deps: EditorClipboardDeps) {
   const handleCopy = (
     event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
-  ) => {
+  ): void => {
     const text = getSelectedText(deps.state());
     if (text.length === 0) {
       return;
@@ -57,7 +57,7 @@ export function createEditorClipboardController(deps: EditorClipboardDeps) {
 
   const handleCut = (
     event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
-  ) => {
+  ): void => {
     if (deps.isReadOnly()) {
       event.preventDefault();
       return;
@@ -75,8 +75,8 @@ export function createEditorClipboardController(deps: EditorClipboardDeps) {
     );
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
-    deps.applyTransactionalState((current) =>
-      deps.applyTableAwareParagraphEdit(current, (temp) =>
+    deps.applyTransactionalState((current): EditorState =>
+      deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
         deleteBackward(temp),
       ),
     );
@@ -85,7 +85,7 @@ export function createEditorClipboardController(deps: EditorClipboardDeps) {
 
   const handlePaste = (
     event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
-  ) => {
+  ): void => {
     if (deps.isReadOnly()) {
       event.preventDefault();
       return;
@@ -101,8 +101,8 @@ export function createEditorClipboardController(deps: EditorClipboardDeps) {
       event.preventDefault();
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState((current) =>
-        deps.applyTableAwareParagraphEdit(current, (temp) =>
+      deps.applyTransactionalState((current): EditorState =>
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
           insertPlainTextAtSelection(temp, text),
         ),
       );
@@ -128,8 +128,8 @@ export function createEditorClipboardController(deps: EditorClipboardDeps) {
       event.preventDefault();
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState((current) =>
-        deps.applyTableAwareParagraphEdit(current, (temp) =>
+      deps.applyTransactionalState((current): EditorState =>
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
           insertClipboardParagraphsAtSelection(temp, paragraphs),
         ),
       );
@@ -146,8 +146,8 @@ export function createEditorClipboardController(deps: EditorClipboardDeps) {
     event.preventDefault();
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
-    deps.applyTransactionalState((current) =>
-      deps.applyTableAwareParagraphEdit(current, (temp) =>
+    deps.applyTransactionalState((current): EditorState =>
+      deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
         insertPlainTextAtSelection(temp, text),
       ),
     );
@@ -155,7 +155,7 @@ export function createEditorClipboardController(deps: EditorClipboardDeps) {
     deps.focusInput();
   };
 
-  const handleDrop = (event: DragEvent) => {
+  const handleDrop = (event: DragEvent): void => {
     if (deps.isReadOnly()) {
       event.preventDefault();
       return;

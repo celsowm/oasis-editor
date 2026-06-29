@@ -12,7 +12,7 @@ import {
   TABLE_BORDER_EDGE_KEYS,
   TABLE_CONDITIONAL_FLAG_ATTRIBUTES,
 } from "@/core/docxTableMaps.js";
-import { buildTableCellLayout } from "@/core/tableLayout.js";
+import { buildTableCellLayout, TableCellLayoutEntry } from "@/core/tableLayout.js";
 import { escapeXml, normalizeDocxColor, pointsToTwips } from "./xmlUtils.js";
 import { serializeDocxBorderAttrs } from "./borders.js";
 
@@ -25,7 +25,7 @@ function serializeExtAttributes(
 ): string {
   if (!attrs) return "";
   return Object.entries(attrs)
-    .map(([name, value]) => ` ${name}="${escapeXml(value)}"`)
+    .map(([name, value]): string => ` ${name}="${escapeXml(value)}"`)
     .join("");
 }
 
@@ -38,7 +38,7 @@ function serializeRevisionAttrs(revision: {
     ? revision.id
     : String(
         Array.from(revision.id).reduce(
-          (hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0,
+          (hash, character): number => (hash * 31 + character.charCodeAt(0)) >>> 0,
           0,
         ),
       );
@@ -53,9 +53,9 @@ function serializeConditionalFlags(
 ): string {
   if (!flags || Object.keys(flags).length === 0) return "";
   const xml = TABLE_CONDITIONAL_FLAG_ATTRIBUTES.filter(
-    ([, key]) => flags[key] !== undefined,
+    ([, key]): boolean => flags[key] !== undefined,
   )
-    .map(([name, key]) => `w:${name}="${flags[key] ? "1" : "0"}"`)
+    .map(([name, key]): string => `w:${name}="${flags[key] ? "1" : "0"}"`)
     .join(" ");
   return xml ? `<w:cnfStyle ${xml}/>` : "";
 }
@@ -200,7 +200,7 @@ function serializeTableDefaultCellMargins(
   const edge = (
     name: "top" | "right" | "bottom" | "left" | "start" | "end",
     value: number | undefined,
-  ) => {
+  ): void => {
     if (value !== undefined && Number.isFinite(value)) {
       parts.push(
         `<w:${name} w:w="${pointsToTwips(value) ?? 0}" w:type="dxa"/>`,
@@ -458,7 +458,7 @@ function serializeFloatingTableProperties(
   };
   const attrs = Object.entries(values)
     .filter((entry): entry is [string, string] => entry[1] !== undefined)
-    .map(([key, value]) => `w:${key}="${escapeXml(value)}"`)
+    .map(([key, value]): string => `w:${key}="${escapeXml(value)}"`)
     .join(" ");
   return `<w:tblpPr ${attrs}/>`;
 }
@@ -467,11 +467,11 @@ function serializeTableBorders(style: EditorTableNode["style"]): string {
   const borders = style?.borders;
   if (!borders) return "";
   const xml = TABLE_BORDER_EDGE_KEYS.map(
-    ([name, key]) =>
+    ([name, key]): [string, EditorBorderStyle | undefined] =>
       [name, borders[key]] as [string, EditorBorderStyle | undefined],
   )
     .filter((entry): entry is [string, EditorBorderStyle] => !!entry[1])
-    .map(([name, border]) => `<w:${name} ${serializeDocxBorderAttrs(border)}`)
+    .map(([name, border]): string => `<w:${name} ${serializeDocxBorderAttrs(border)}`)
     .join("");
   return xml ? `<w:tblBorders>${xml}</w:tblBorders>` : "";
 }
@@ -501,7 +501,7 @@ function serializeTableProperties(table: EditorTableNode): string {
   }
   const gridWidth =
     table.gridCols && table.gridCols.length > 0
-      ? table.gridCols.reduce((sum, width) => sum + width, 0)
+      ? table.gridCols.reduce((sum, width): number => sum + width, 0)
       : undefined;
   parts.push(serializeTableWidth(table.style?.width ?? gridWidth));
   if (table.style?.align) {
@@ -609,13 +609,13 @@ export function serializeTableXml(
   const tableLayout = buildTableCellLayout(table);
   const tableEntriesByKey = new Map(
     tableLayout.map(
-      (entry) => [`${entry.rowIndex}:${entry.cellIndex}`, entry] as const,
+      (entry): readonly [`${number}:${number}`, TableCellLayoutEntry] => [`${entry.rowIndex}:${entry.cellIndex}`, entry] as const,
     ),
   );
   const rowsXml = table.rows
-    .map((row, rowIndex) => {
+    .map((row, rowIndex): string => {
       const cellsXml = row.cells
-        .map((cell, cellIndex) => {
+        .map((cell, cellIndex): string => {
           const entry = tableEntriesByKey.get(`${rowIndex}:${cellIndex}`);
           const fallbackWidthPt =
             entry && table.gridCols
@@ -624,7 +624,7 @@ export function serializeTableXml(
                     entry.visualColumnIndex,
                     entry.visualColumnIndex + Math.max(1, entry.colSpan),
                   )
-                  .reduce((sum, width) => sum + width, 0)
+                  .reduce((sum, width): number => sum + width, 0)
               : undefined;
           const paragraphs =
             cell.blocks.length > 0
@@ -637,7 +637,7 @@ export function serializeTableXml(
                   },
                 ];
           const paragraphsXml = paragraphs
-            .map((paragraph) => serializeParagraphXml(paragraph, cell))
+            .map((paragraph): string => serializeParagraphXml(paragraph, cell))
             .join("");
           const contentXml =
             cell.vMerge === "continue" ? "<w:p/>" : paragraphsXml;
@@ -649,11 +649,11 @@ export function serializeTableXml(
     .join("");
   const gridXml = table.gridCols
     ? `<w:tblGrid>${table.gridCols
-        .map((width) => `<w:gridCol w:w="${pointsToTwips(width) ?? 0}"/>`)
+        .map((width): string => `<w:gridCol w:w="${pointsToTwips(width) ?? 0}"/>`)
         .join("")}${
         table.gridRevision
           ? `<w:tblGridChange ${serializeRevisionAttrs(table.gridRevision)}><w:tblGrid>${table.gridRevision.previous
-              .map((width) => `<w:gridCol w:w="${pointsToTwips(width) ?? 0}"/>`)
+              .map((width): string => `<w:gridCol w:w="${pointsToTwips(width) ?? 0}"/>`)
               .join("")}</w:tblGrid></w:tblGridChange>`
           : ""
       }</w:tblGrid>`

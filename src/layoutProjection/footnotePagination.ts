@@ -27,7 +27,7 @@ function getProjectedBlocksHeight(
   if (!blocks || blocks.length === 0) {
     return 0;
   }
-  return blocks.reduce((sum, block) => sum + block.estimatedHeight, 0);
+  return blocks.reduce((sum, block): number => sum + block.estimatedHeight, 0);
 }
 
 function collectFootnoteReferencesFromBlock(
@@ -38,7 +38,7 @@ function collectFootnoteReferencesFromBlock(
     paragraph: EditorParagraphNode,
     startOffset: number,
     endOffset: number,
-  ) => {
+  ): void => {
     let runStart = 0;
     for (const run of paragraph.runs) {
       const runEnd = runStart + run.text.length;
@@ -162,8 +162,8 @@ export function reservationSignature(
   reservations: Map<number, number>,
 ): string {
   return [...reservations.entries()]
-    .sort(([left], [right]) => left - right)
-    .map(([pageIndex, height]) => `${pageIndex}:${Math.round(height)}`)
+    .sort(([left], [right]): number => left - right)
+    .map(([pageIndex, height]): string => `${pageIndex}:${Math.round(height)}`)
     .join("|");
 }
 

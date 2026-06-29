@@ -17,11 +17,11 @@ export type TranslateFn = (key: TranslationKey, params?: unknown[]) => string;
  * reactively. No module-level mutable locale is involved.
  */
 export function createTranslator(getLocale: () => Locale): TranslateFn {
-  return (key, params = []) => {
+  return (key, params = []): string => {
     const localeStrings = locales[getLocale()] || locales["en"];
     let template = localeStrings[key] || en[key] || key;
 
-    params.forEach((param, index) => {
+    params.forEach((param, index): void => {
       template = template.replace(`{${index}}`, String(param));
     });
 

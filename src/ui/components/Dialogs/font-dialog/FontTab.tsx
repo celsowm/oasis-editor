@@ -21,6 +21,7 @@ import type {
   FontStylePreset,
 } from "./FontDialogTypes.js";
 import { FontPreview } from "./FontPreview.js";
+import type { EditorUnderlineStyle } from "@/core/model.js";
 
 export interface FontTabProps {
   ctrl: FontDialogController;
@@ -34,7 +35,7 @@ interface EffectToggle {
   onChange: (checked: boolean) => void;
 }
 
-export function FontTab(props: FontTabProps) {
+export function FontTab(props: FontTabProps): JSX.Element {
   const t = useI18n();
   const { ctrl } = props;
 
@@ -43,21 +44,21 @@ export function FontTab(props: FontTabProps) {
       testId: "editor-font-dialog-bold",
       label: t("dialog.font.bold"),
       labelStyle: { "font-weight": 700 },
-      checked: () => ctrl.fontTabValues().bold,
-      onChange: (checked) => ctrl.updateFontTab("bold", checked),
+      checked: (): boolean => ctrl.fontTabValues().bold,
+      onChange: (checked): void => ctrl.updateFontTab("bold", checked),
     },
     {
       testId: "editor-font-dialog-italic",
       label: t("dialog.font.italic"),
       labelStyle: { "font-style": "italic" },
-      checked: () => ctrl.fontTabValues().italic,
-      onChange: (checked) => ctrl.updateFontTab("italic", checked),
+      checked: (): boolean => ctrl.fontTabValues().italic,
+      onChange: (checked): void => ctrl.updateFontTab("italic", checked),
     },
     {
       testId: "editor-font-dialog-underline",
       label: t("dialog.font.underline"),
       labelStyle: { "text-decoration": "underline" },
-      checked: () => ctrl.fontTabValues().underline,
+      checked: (): boolean => ctrl.fontTabValues().underline,
       onChange: (checked) =>
         ctrl.setFontTabValues((current) => ({
           ...current,
@@ -73,7 +74,7 @@ export function FontTab(props: FontTabProps) {
       testId: "editor-font-dialog-strike",
       label: t("dialog.font.strike"),
       labelStyle: { "text-decoration": "line-through" },
-      checked: () => ctrl.fontTabValues().strike,
+      checked: (): boolean => ctrl.fontTabValues().strike,
       onChange: (checked) =>
         ctrl.setFontTabValues((current) => ({
           ...current,
@@ -84,7 +85,7 @@ export function FontTab(props: FontTabProps) {
     {
       testId: "editor-font-dialog-double-strike",
       label: t("dialog.font.doubleStrike"),
-      checked: () => ctrl.fontTabValues().doubleStrike,
+      checked: (): boolean => ctrl.fontTabValues().doubleStrike,
       onChange: (checked) =>
         ctrl.setFontTabValues((current) => ({
           ...current,
@@ -95,7 +96,7 @@ export function FontTab(props: FontTabProps) {
     {
       testId: "editor-font-dialog-superscript",
       label: t("toolbar.superscript"),
-      checked: () => ctrl.fontTabValues().superscript,
+      checked: (): boolean => ctrl.fontTabValues().superscript,
       onChange: (checked) =>
         ctrl.setFontTabValues((current) => ({
           ...current,
@@ -106,7 +107,7 @@ export function FontTab(props: FontTabProps) {
     {
       testId: "editor-font-dialog-subscript",
       label: t("toolbar.subscript"),
-      checked: () => ctrl.fontTabValues().subscript,
+      checked: (): boolean => ctrl.fontTabValues().subscript,
       onChange: (checked) =>
         ctrl.setFontTabValues((current) => ({
           ...current,
@@ -117,20 +118,20 @@ export function FontTab(props: FontTabProps) {
     {
       testId: "editor-font-dialog-small-caps",
       label: t("dialog.font.smallCaps"),
-      checked: () => ctrl.fontTabValues().smallCaps,
-      onChange: (checked) => ctrl.updateFontTab("smallCaps", checked),
+      checked: (): boolean => ctrl.fontTabValues().smallCaps,
+      onChange: (checked): void => ctrl.updateFontTab("smallCaps", checked),
     },
     {
       testId: "editor-font-dialog-all-caps",
       label: t("dialog.font.allCaps"),
-      checked: () => ctrl.fontTabValues().allCaps,
-      onChange: (checked) => ctrl.updateFontTab("allCaps", checked),
+      checked: (): boolean => ctrl.fontTabValues().allCaps,
+      onChange: (checked): void => ctrl.updateFontTab("allCaps", checked),
     },
     {
       testId: "editor-font-dialog-hidden",
       label: t("dialog.font.hidden"),
-      checked: () => ctrl.fontTabValues().hidden,
-      onChange: (checked) => ctrl.updateFontTab("hidden", checked),
+      checked: (): boolean => ctrl.fontTabValues().hidden,
+      onChange: (checked): void => ctrl.updateFontTab("hidden", checked),
     },
   ];
 
@@ -141,7 +142,7 @@ export function FontTab(props: FontTabProps) {
           <TextField
             label={t("dialog.font.familyFilter")}
             value={ctrl.fontTabValues().familyFilter}
-            onChange={(value) => ctrl.updateFontTab("familyFilter", value)}
+            onChange={(value): void => ctrl.updateFontTab("familyFilter", value)}
             data-testid="editor-font-dialog-family-filter"
           />
         </Grid>
@@ -149,11 +150,11 @@ export function FontTab(props: FontTabProps) {
           <SelectField
             label={t("dialog.font.family")}
             value={ctrl.fontTabValues().fontFamily}
-            onChange={(value) => ctrl.updateFontTab("fontFamily", value)}
+            onChange={(value): void => ctrl.updateFontTab("fontFamily", value)}
             data-testid="editor-font-dialog-family"
             options={[
               { value: "", label: "—" },
-              ...ctrl.visibleFamilyOptions().map((family) => ({
+              ...ctrl.visibleFamilyOptions().map((family): { value: string; label: string; } => ({
                 value: family,
                 label: family,
               })),
@@ -165,11 +166,11 @@ export function FontTab(props: FontTabProps) {
             class="oasis-editor-font-dialog-size-group"
             label={t("dialog.font.size")}
             value={ctrl.fontTabValues().fontSize}
-            onChange={(value) => ctrl.updateFontTab("fontSize", value)}
+            onChange={(value): void => ctrl.updateFontTab("fontSize", value)}
             data-testid="editor-font-dialog-size"
             options={[
               { value: "", label: "—" },
-              ...ctrl.effectiveSizeOptions().map((size) => ({
+              ...ctrl.effectiveSizeOptions().map((size): { value: string; label: string; } => ({
                 value: String(size),
                 label: String(size),
               })),
@@ -181,7 +182,7 @@ export function FontTab(props: FontTabProps) {
             class="oasis-editor-font-dialog-custom-size-group"
             label={t("dialog.font.customSize")}
             value={ctrl.fontTabValues().fontSize}
-            onChange={(value) => ctrl.updateFontTab("fontSize", value)}
+            onChange={(value): void => ctrl.updateFontTab("fontSize", value)}
             data-testid="editor-font-dialog-custom-size"
           />
           <StatusText class="oasis-editor-dialog-help-text">
@@ -193,7 +194,7 @@ export function FontTab(props: FontTabProps) {
             class="oasis-editor-font-dialog-style-list-group"
             label={t("dialog.font.styleList")}
             value={ctrl.selectedFontStyle()}
-            onChange={(value) =>
+            onChange={(value): void =>
               ctrl.applyFontStylePreset(value as FontStylePreset)
             }
             data-testid="editor-font-dialog-style-list"
@@ -213,7 +214,7 @@ export function FontTab(props: FontTabProps) {
             class="oasis-editor-font-dialog-color-mode-group"
             label={t("dialog.font.color")}
             value={ctrl.fontTabValues().colorMode}
-            onChange={(value) =>
+            onChange={(value): void =>
               ctrl.updateFontTab("colorMode", value as "automatic" | "custom")
             }
             data-testid="editor-font-dialog-color-mode"
@@ -242,7 +243,7 @@ export function FontTab(props: FontTabProps) {
           <ColorField
             label={t("dialog.font.highlight")}
             value={ctrl.fontTabValues().highlight || DEFAULT_HIGHLIGHT}
-            onChange={(value) => ctrl.updateFontTab("highlight", value)}
+            onChange={(value): void => ctrl.updateFontTab("highlight", value)}
             data-testid="editor-font-dialog-highlight"
           />
         </Grid>
@@ -250,7 +251,7 @@ export function FontTab(props: FontTabProps) {
           <ColorField
             label={t("dialog.font.shading")}
             value={ctrl.fontTabValues().shading || DEFAULT_SHADING}
-            onChange={(value) => ctrl.updateFontTab("shading", value)}
+            onChange={(value): void => ctrl.updateFontTab("shading", value)}
             data-testid="editor-font-dialog-shading"
           />
         </Grid>
@@ -271,7 +272,7 @@ export function FontTab(props: FontTabProps) {
             data-testid="editor-font-dialog-underline-style"
             options={[
               { value: "none", label: t("toolbar.underlineRemove") },
-              ...UNDERLINE_STYLE_OPTIONS.map((option) => ({
+              ...UNDERLINE_STYLE_OPTIONS.map((option): { value: EditorUnderlineStyle; label: string; } => ({
                 value: option.value,
                 label: t(option.labelKey),
               })),
@@ -305,7 +306,7 @@ export function FontTab(props: FontTabProps) {
           spacing={1}
         >
           <For each={effectToggles()}>
-            {(toggle) => (
+            {(toggle): JSX.Element => (
               <ToggleChip
                 label={toggle.label}
                 labelStyle={toggle.labelStyle}

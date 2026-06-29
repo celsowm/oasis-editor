@@ -30,7 +30,7 @@ export function areLayoutParagraphsEquivalentForRender(
   ) {
     return false;
   }
-  return next.lines.every((line, index) => {
+  return next.lines.every((line, index): boolean => {
     const previousLine = previous.lines[index];
     return (
       previousLine !== undefined &&
@@ -80,7 +80,7 @@ function sameNumberArray(
   right: number[] | undefined,
 ): boolean {
   if ((left?.length ?? 0) !== (right?.length ?? 0)) return false;
-  return (right ?? []).every((value, index) => left?.[index] === value);
+  return (right ?? []).every((value, index): boolean => left?.[index] === value);
 }
 
 function sameTableCellBlockPositions(
@@ -88,7 +88,7 @@ function sameTableCellBlockPositions(
   right: TableCellBlockPosition[] | undefined,
 ): boolean {
   if ((left?.length ?? 0) !== (right?.length ?? 0)) return false;
-  return (right ?? []).every((value, index) => {
+  return (right ?? []).every((value, index): boolean => {
     const previous = left?.[index];
     return (
       previous?.blockIndex === value.blockIndex &&
@@ -134,19 +134,19 @@ export function canReuseLayoutPage(
   const sameBlocks = (
     left?: EditorLayoutBlock[],
     right?: EditorLayoutBlock[],
-  ) => {
+  ): boolean => {
     if ((left?.length ?? 0) !== (right?.length ?? 0)) {
       return false;
     }
-    return (right ?? []).every((block, index) => left?.[index] === block);
+    return (right ?? []).every((block, index): boolean => left?.[index] === block);
   };
 
-  const sameFootnoteReferences = (left?: string[], right?: string[]) => {
+  const sameFootnoteReferences = (left?: string[], right?: string[]): boolean => {
     if ((left?.length ?? 0) !== (right?.length ?? 0)) {
       return false;
     }
     return (right ?? []).every(
-      (footnoteId, index) => left?.[index] === footnoteId,
+      (footnoteId, index): boolean => left?.[index] === footnoteId,
     );
   };
 
@@ -181,15 +181,15 @@ export function createLayoutIdentityStabilizer() {
     layout: EditorLayoutDocument,
   ): EditorLayoutDocument {
     const nextBlockCache = new Map<string, EditorLayoutBlock>();
-    const stabilizeBlocks = (blocks: EditorLayoutBlock[] | undefined) =>
-      blocks?.map((block) => {
+    const stabilizeBlocks = (blocks: EditorLayoutBlock[] | undefined): EditorLayoutBlock[] | undefined =>
+      blocks?.map((block): EditorLayoutBlock => {
         const previous = reusableLayoutBlocks.get(block.blockId);
         const stable = canReuseLayoutBlock(previous, block) ? previous : block;
         nextBlockCache.set(stable.blockId, stable);
         return stable;
       });
 
-    const pages = layout.pages.map((page) => {
+    const pages = layout.pages.map((page): EditorLayoutPage => {
       const nextPage: EditorLayoutPage = {
         ...page,
         blocks: stabilizeBlocks(page.blocks) ?? [],
@@ -205,7 +205,7 @@ export function createLayoutIdentityStabilizer() {
     });
 
     reusableLayoutBlocks = nextBlockCache;
-    reusableLayoutPages = new Map(pages.map((page) => [page.id, page]));
+    reusableLayoutPages = new Map(pages.map((page): [string, EditorLayoutPage] => [page.id, page]));
     return { pages };
   };
 }

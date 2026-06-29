@@ -69,11 +69,11 @@ export function useEditorRuntimeBootstrap(
     onError: ctx.onError,
   });
 
-  onMount(() => {
+  onMount((): void => {
     void runtimeCommandHost.initialize();
   });
 
-  onCleanup(() => {
+  onCleanup((): void => {
     void runtimeCommandHost.dispose();
     disposeRuntimePlugins();
   });

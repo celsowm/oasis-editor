@@ -51,7 +51,7 @@ function serializeRunsWithBoundaries(
   styles: Record<string, EditorNamedStyle> | undefined,
 ): string {
   const sorted = [...tokens].sort(
-    (a, b) => a.offset - b.offset || a.seq - b.seq,
+    (a, b): number => a.offset - b.offset || a.seq - b.seq,
   );
   let ei = 0;
   let pos = 0;
@@ -130,7 +130,7 @@ function serializeSingleBlockXml(
         : "";
       return (
         pageBreakXml +
-        serializeTableXml(block, (paragraph, cell) =>
+        serializeTableXml(block, (paragraph, cell): string =>
           serializeParagraphXml(paragraph, context, styles, {
             align: cell.style?.horizontalAlign,
           }),
@@ -204,12 +204,12 @@ export function serializeParagraphXml(
   const bookmarkEvents = context.bookmarkEventsByParagraph?.get(paragraph.id);
   const commentEvents = context.commentEventsByParagraph?.get(paragraph.id);
   const boundaryTokens: BoundaryToken[] = [
-    ...(bookmarkEvents ?? []).map((e: BookmarkBoundaryEvent) => ({
+    ...(bookmarkEvents ?? []).map((e: BookmarkBoundaryEvent): { offset: number; seq: number; xml: string; } => ({
       offset: e.offset,
       seq: e.seq,
       xml: serializeBookmarkEvent(e),
     })),
-    ...(commentEvents ?? []).map((e: CommentBoundaryEvent) => ({
+    ...(commentEvents ?? []).map((e: CommentBoundaryEvent): { offset: number; seq: number; xml: string; } => ({
       offset: e.offset,
       seq: e.seq,
       xml: serializeCommentRangeEvent(e),
@@ -225,7 +225,7 @@ export function serializeParagraphXml(
           styles,
         )
       : runs
-          .map((run) =>
+          .map((run): string =>
             serializeRunWithRelationships(
               run,
               context,

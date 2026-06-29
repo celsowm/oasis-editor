@@ -11,6 +11,7 @@ import { Dialog } from "./Dialog.js";
 import { DialogFooter } from "./DialogFooter.js";
 
 import type { EditorBorderStyle, EditorParagraphStyle } from "@/core/model.js";
+import { JSX } from "solid-js";
 
 type SpecialIndent = "none" | "firstLine" | "hanging";
 type BorderStyleValue = "none" | "solid" | "dashed" | "dotted";
@@ -77,7 +78,7 @@ function parseNumber(value: string): number | null {
   return Number.isFinite(num) ? num : null;
 }
 
-export function ParagraphDialog(props: ParagraphDialogProps) {
+export function ParagraphDialog(props: ParagraphDialogProps): JSX.Element {
   const t = useI18n();
   const [align, setAlign] = createSignal("");
   const [indentLeft, setIndentLeft] = createSignal<number | null>(null);
@@ -96,7 +97,7 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
   const [sideBottom, setSideBottom] = createSignal(false);
   const [sideLeft, setSideLeft] = createSignal(false);
 
-  createEffect(() => {
+  createEffect((): void => {
     if (props.isOpen) {
       setAlign(props.initial.align ?? "");
       setIndentLeft(parseNumber(props.initial.indentLeft ?? ""));
@@ -135,7 +136,7 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
     }
   });
 
-  const previewStyle = createMemo(() => {
+  const previewStyle = createMemo((): Record<string, string | undefined> => {
     const lh = lineHeight();
     const left = indentLeft();
     const right = indentRight();
@@ -182,7 +183,7 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
     };
   };
 
-  const handleApply = () => {
+  const handleApply = (): void => {
     const by = specialBy();
     props.onApply(
       {
@@ -261,7 +262,7 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
           <SelectField
             label={t("paragraph.specialLabel")}
             value={special()}
-            onChange={(value) => {
+            onChange={(value): void => {
               const next = value as SpecialIndent;
               setSpecial(next);
               if (next === "none") setSpecialBy(null);
@@ -325,7 +326,7 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
           <SelectField
             label={t("paragraph.borderStyleLabel")}
             value={borderStyle()}
-            onChange={(value) => {
+            onChange={(value): void => {
               const next = value as BorderStyleValue;
               setBorderStyle(next);
               if (next === "none") {

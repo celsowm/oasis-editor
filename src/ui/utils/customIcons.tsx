@@ -12,7 +12,7 @@ import { Show, type JSX } from "solid-js";
 export type CustomIconRenderer = () => JSX.Element;
 
 /** Word-style footnote glyph: "ab" in the current color with a red superscript "1". */
-const FootnoteIcon: CustomIconRenderer = () => (
+const FootnoteIcon: CustomIconRenderer = (): JSX.Element => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -45,7 +45,7 @@ const FootnoteIcon: CustomIconRenderer = () => (
 );
 
 /** Word-like first-line indent glyph: a simple ">" on the first line. */
-const SpecialIndentFirstLineIcon: CustomIconRenderer = () => (
+const SpecialIndentFirstLineIcon: CustomIconRenderer = (): JSX.Element => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -81,7 +81,7 @@ export function ToolIcon(props: { name: string }): JSX.Element {
       when={getCustomIcon(props.name)}
       fallback={<i data-lucide={props.name} />}
     >
-      {(render) => render()()}
+      {(render): JSX.Element => render()()}
     </Show>
   );
 }

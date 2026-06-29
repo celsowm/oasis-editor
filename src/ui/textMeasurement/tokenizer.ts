@@ -1,8 +1,7 @@
 import type {
   EditorLayoutFragment,
   EditorNamedStyle,
-  EditorParagraphNode,
-} from "@/core/model.js";
+  EditorParagraphNode, EditorTextRun } from "@/core/model.js";
 import {
   getRunImage,
   getRunTextBox,
@@ -16,8 +15,8 @@ export function buildParagraphFragments(
   paragraph: EditorParagraphNode,
 ): EditorLayoutFragment[] {
   let paragraphOffset = 0;
-  return paragraph.runs.map((run) => {
-    const chars = Array.from(run.text).map((char, index) => ({
+  return paragraph.runs.map((run): EditorLayoutFragment => {
+    const chars = Array.from(run.text).map((char, index): { char: string; paragraphOffset: number; runOffset: number; } => ({
       char,
       paragraphOffset: paragraphOffset + index,
       runOffset: index,
@@ -47,11 +46,11 @@ export function buildMeasuredChars(
   styles: Record<string, EditorNamedStyle> | undefined,
 ): MeasuredChar[] {
   const measured: MeasuredChar[] = [];
-  const runsById = new Map(paragraph.runs.map((run) => [run.id, run] as const));
+  const runsById = new Map(paragraph.runs.map((run): readonly [string, EditorTextRun] => [run.id, run] as const));
   const fallbackFontSize = Math.max(
     DEFAULT_FONT_SIZE,
     ...paragraph.runs.map(
-      (run) =>
+      (run): number =>
         resolveEffectiveTextStyleForParagraph(
           run.styles,
           paragraph.style?.styleId,
@@ -108,7 +107,7 @@ export function tokenizeMeasuredChars(chars: MeasuredChar[]): MeasuredToken[] {
   let current: MeasuredChar[] = [];
   let currentKind: MeasuredToken["kind"] | null = null;
 
-  const flush = () => {
+  const flush = (): void => {
     if (current.length === 0 || !currentKind) {
       return;
     }
@@ -116,7 +115,7 @@ export function tokenizeMeasuredChars(chars: MeasuredChar[]): MeasuredToken[] {
     tokens.push({
       kind: currentKind,
       chars: current,
-      width: current.reduce((sum, char) => sum + char.width, 0),
+      width: current.reduce((sum, char): number => sum + char.width, 0),
     });
     current = [];
     currentKind = null;

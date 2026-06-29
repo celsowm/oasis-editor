@@ -9,14 +9,16 @@ import { Stack } from "@/ui/public/Stack.js";
 import type { TablePropertiesController } from "./TablePropertiesController.js";
 import type { TablePropertiesDialogInitialValues } from "./TablePropertiesTypes.js";
 import { NumField } from "./fields.js";
+import type { TableFormState } from "@/ui/components/Dialogs/table-properties/TablePropertiesTypes.js";
+import { JSX } from "solid-js";
 
 export interface TablePanelProps {
   ctrl: TablePropertiesController;
 }
 
-export function TableTabPanel(props: TablePanelProps) {
+export function TableTabPanel(props: TablePanelProps): JSX.Element {
   const t = useI18n();
-  const form = () => props.ctrl.form;
+  const form = (): TableFormState => props.ctrl.form;
   const set = props.ctrl.set;
 
   return (
@@ -29,8 +31,8 @@ export function TableTabPanel(props: TablePanelProps) {
           <Grid size={{ xs: 12, md: 6 }}>
             {NumField(
               t("table.preferredWidth"),
-              () => form().tableWidth,
-              (v) => set("tableWidth", v),
+              (): any => form().tableWidth,
+              (v): void => set("tableWidth", v),
               "editor-table-properties-table-width",
             )}
           </Grid>
@@ -38,7 +40,7 @@ export function TableTabPanel(props: TablePanelProps) {
             <SelectField
               label={t("table.measureIn")}
               value={form().tableWidthUnit}
-              onChange={(value) =>
+              onChange={(value): void =>
                 set(
                   "tableWidthUnit",
                   value as TablePropertiesDialogInitialValues["tableWidthUnit"],
@@ -61,14 +63,14 @@ export function TableTabPanel(props: TablePanelProps) {
           class="oasis-editor-dialog-style-row"
           name="table-align"
           value={form().tableAlign}
-          onChange={(value) =>
+          onChange={(value): void =>
             set(
               "tableAlign",
               value as TablePropertiesDialogInitialValues["tableAlign"],
             )
           }
         >
-          {(["left", "center", "right"] as const).map((align) => (
+          {(["left", "center", "right"] as const).map((align): JSX.Element => (
             <Radio
               value={align}
               label={t(
@@ -84,8 +86,8 @@ export function TableTabPanel(props: TablePanelProps) {
           <Grid size={{ xs: 12, md: 6 }}>
             {NumField(
               t("table.indentFromLeft"),
-              () => form().tableIndentLeft,
-              (v) => set("tableIndentLeft", v),
+              (): any => form().tableIndentLeft,
+              (v): void => set("tableIndentLeft", v),
               "editor-table-properties-indent-left",
             )}
           </Grid>
@@ -103,13 +105,13 @@ export function TableTabPanel(props: TablePanelProps) {
           <Checkbox
             label={t("table.wrapNone")}
             checked={form().tableWrapping === "none"}
-            onChange={() => set("tableWrapping", "none")}
+            onChange={(): void => set("tableWrapping", "none")}
             data-testid="editor-table-properties-wrap-none"
           />
           <Checkbox
             label={t("table.wrapAround")}
             checked={form().tableWrapping === "around"}
-            onChange={() => set("tableWrapping", "around")}
+            onChange={(): void => set("tableWrapping", "around")}
             data-testid="editor-table-properties-wrap-around"
           />
         </Stack>
@@ -119,7 +121,7 @@ export function TableTabPanel(props: TablePanelProps) {
               <SelectField
                 label={t("table.horizontalAnchor")}
                 value={form().floatingHorizontalAnchor}
-                onChange={(value) =>
+                onChange={(value): void =>
                   set(
                     "floatingHorizontalAnchor",
                     value as TablePropertiesDialogInitialValues["floatingHorizontalAnchor"],
@@ -137,7 +139,7 @@ export function TableTabPanel(props: TablePanelProps) {
               <SelectField
                 label={t("table.verticalAnchor")}
                 value={form().floatingVerticalAnchor}
-                onChange={(value) =>
+                onChange={(value): void =>
                   set(
                     "floatingVerticalAnchor",
                     value as TablePropertiesDialogInitialValues["floatingVerticalAnchor"],
@@ -154,8 +156,8 @@ export function TableTabPanel(props: TablePanelProps) {
             <Grid size={{ xs: 12, md: 3 }}>
               {NumField(
                 t("table.positionX"),
-                () => form().floatingX,
-                (v) => set("floatingX", v),
+                (): any => form().floatingX,
+                (v): void => set("floatingX", v),
                 "editor-table-properties-floating-x",
                 Boolean(form().floatingXAlign),
                 true,
@@ -164,8 +166,8 @@ export function TableTabPanel(props: TablePanelProps) {
             <Grid size={{ xs: 12, md: 3 }}>
               {NumField(
                 t("table.positionY"),
-                () => form().floatingY,
-                (v) => set("floatingY", v),
+                (): any => form().floatingY,
+                (v): void => set("floatingY", v),
                 "editor-table-properties-floating-y",
                 Boolean(form().floatingYAlign),
                 true,
@@ -175,7 +177,7 @@ export function TableTabPanel(props: TablePanelProps) {
               <SelectField
                 label={t("table.horizontalAlignment")}
                 value={form().floatingXAlign}
-                onChange={(value) =>
+                onChange={(value): void =>
                   set(
                     "floatingXAlign",
                     value as TablePropertiesDialogInitialValues["floatingXAlign"],
@@ -194,7 +196,7 @@ export function TableTabPanel(props: TablePanelProps) {
               <SelectField
                 label={t("table.verticalAlignment")}
                 value={form().floatingYAlign}
-                onChange={(value) =>
+                onChange={(value): void =>
                   set(
                     "floatingYAlign",
                     value as TablePropertiesDialogInitialValues["floatingYAlign"],
@@ -212,32 +214,32 @@ export function TableTabPanel(props: TablePanelProps) {
             <Grid size={{ xs: 12, md: 3 }}>
               {NumField(
                 t("table.distanceTop"),
-                () => form().floatingDistanceTop,
-                (v) => set("floatingDistanceTop", v),
+                (): any => form().floatingDistanceTop,
+                (v): void => set("floatingDistanceTop", v),
                 "editor-table-properties-floating-distance-top",
               )}
             </Grid>
             <Grid size={{ xs: 12, md: 3 }}>
               {NumField(
                 t("table.distanceRight"),
-                () => form().floatingDistanceRight,
-                (v) => set("floatingDistanceRight", v),
+                (): any => form().floatingDistanceRight,
+                (v): void => set("floatingDistanceRight", v),
                 "editor-table-properties-floating-distance-right",
               )}
             </Grid>
             <Grid size={{ xs: 12, md: 3 }}>
               {NumField(
                 t("table.distanceBottom"),
-                () => form().floatingDistanceBottom,
-                (v) => set("floatingDistanceBottom", v),
+                (): any => form().floatingDistanceBottom,
+                (v): void => set("floatingDistanceBottom", v),
                 "editor-table-properties-floating-distance-bottom",
               )}
             </Grid>
             <Grid size={{ xs: 12, md: 3 }}>
               {NumField(
                 t("table.distanceLeft"),
-                () => form().floatingDistanceLeft,
-                (v) => set("floatingDistanceLeft", v),
+                (): any => form().floatingDistanceLeft,
+                (v): void => set("floatingDistanceLeft", v),
                 "editor-table-properties-floating-distance-left",
               )}
             </Grid>
@@ -245,7 +247,7 @@ export function TableTabPanel(props: TablePanelProps) {
           <Checkbox
             label={t("table.allowOverlap")}
             checked={form().floatingOverlap === "overlap"}
-            onChange={(value) =>
+            onChange={(value): void =>
               set("floatingOverlap", value ? "overlap" : "never")
             }
             data-testid="editor-table-properties-floating-overlap"

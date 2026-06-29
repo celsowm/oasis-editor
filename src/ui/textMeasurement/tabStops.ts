@@ -48,13 +48,13 @@ export function resolveTabAdvancePx(
   // single right tab column, matching Word.
   const tabOrigin = 0;
   const explicitStops = (paragraphStyle.tabs ?? [])
-    .filter((tab) => tab.type !== "clear" && Number.isFinite(tab.position))
+    .filter((tab): boolean => tab.type !== "clear" && Number.isFinite(tab.position))
     .map((tab) => ({
       ...tab,
       positionPx: tabOrigin + tab.position * PX_PER_POINT,
     }))
-    .filter((tab) => tab.positionPx > currentLeft + 0.01)
-    .sort((a, b) => a.positionPx - b.positionPx);
+    .filter((tab): boolean => tab.positionPx > currentLeft + 0.01)
+    .sort((a, b): number => a.positionPx - b.positionPx);
   const explicitStop = explicitStops[0];
   const nextStop =
     explicitStop?.positionPx ??

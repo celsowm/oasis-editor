@@ -68,20 +68,20 @@ export function createEditorDocumentRuntime(deps: EditorDocumentRuntimeDeps) {
   } = deps;
 
   const docIO = createEditorDocumentIO({
-    state: () => state,
+    state: (): EditorState => state,
     applyState,
-    applyTransactionalState: (producer, options) =>
+    applyTransactionalState: (producer, options): void =>
       applyTransactionalState(producer, options),
     isReadOnly,
-    surfaceRef: () => surfaceRef() ?? null,
-    stabilizeLayoutAfterImport: async () => {
+    surfaceRef: (): HTMLDivElement | null => surfaceRef() ?? null,
+    stabilizeLayoutAfterImport: async (): Promise<void> => {
       await stabilizeLayoutAfterImport();
     },
-    resetEditorChromeState: () => resetEditorChromeState(),
+    resetEditorChromeState: (): void => resetEditorChromeState(),
     focusInput,
     logger,
   });
-  const isImportInProgress = () =>
+  const isImportInProgress = (): boolean =>
     docIO.importProgress()?.phase !== "done" &&
     docIO.importProgress()?.phase !== "error" &&
     docIO.importProgress() !== null;
@@ -122,7 +122,7 @@ export function createEditorDocumentRuntime(deps: EditorDocumentRuntimeDeps) {
 
   const { status: persistenceStatus } = useEditorPersistence(
     state,
-    (loadedDoc) => {
+    (loadedDoc): void => {
       logger.info("persistence:loaded", { docId: loadedDoc.id });
       const nextState = createEditorStateFromDocument(loadedDoc);
       commitState(nextState);
@@ -153,7 +153,7 @@ export function createEditorDocumentRuntime(deps: EditorDocumentRuntimeDeps) {
   } = transactions;
 
   const historyActions = createEditorHistoryActions({
-    state: () => state,
+    state: (): EditorState => state,
     stateSnapshot: getStateSnapshot,
     applyHistoryState,
     applyTransactionalState,
@@ -164,7 +164,7 @@ export function createEditorDocumentRuntime(deps: EditorDocumentRuntimeDeps) {
     getHistoryState,
   });
 
-  const resetEditorChromeState = () => {
+  const resetEditorChromeState = (): void => {
     clearPreferredColumn();
     setMeasuredBlockHeights({});
     setMeasuredParagraphLayouts({});

@@ -73,7 +73,7 @@ function logCanvasFontUse(options: {
   bold: boolean;
   italic: boolean;
   sample: string;
-}) {
+}): void {
   if (loggedCanvasFontKeys.size >= MAX_CANVAS_FONT_LOGS) return;
   const key = [
     options.requestedFamily ?? "",
@@ -115,7 +115,7 @@ function drawTextFragment(
   styles: ReturnType<typeof resolveEffectiveTextStyleForParagraph>,
   originX: number,
   baselineY: number,
-) {
+): void {
   const scale =
     styles.characterScale && styles.characterScale > 0
       ? styles.characterScale / 100
@@ -128,7 +128,7 @@ function drawTextFragment(
   let segmentText = "";
   let segmentLeft: number | null = null;
 
-  const flushSegment = () => {
+  const flushSegment = (): void => {
     if (!segmentText || segmentLeft === null) {
       segmentText = "";
       segmentLeft = null;
@@ -214,7 +214,7 @@ export function drawParagraph(
   onUpdate: () => void,
   painters: CanvasBlockPainters,
   pageIndex = 0,
-) {
+): void {
   for (const line of lines) {
     const slotByOffset = new Map<number, (typeof line.slots)[number]>();
     for (const slot of line.slots) {
@@ -432,7 +432,7 @@ export function drawParagraph(
     if (line.trailingHyphen) {
       const lastFragment = [...line.fragments]
         .reverse()
-        .find((f) => f.text && !f.image && !f.textBox);
+        .find((f): boolean | "" => f.text && !f.image && !f.textBox);
       const endSlot =
         slotByOffset.get(line.endOffset) ?? line.slots[line.slots.length - 1];
       if (lastFragment && endSlot) {
@@ -464,7 +464,7 @@ export function drawParagraph(
     if (state.showParagraphMarks && isLastLine) {
       const lastSlot = line.slots[line.slots.length - 1];
       const markSlot =
-        line.slots.find((slot) => slot.offset === line.endOffset) ?? lastSlot;
+        line.slots.find((slot): boolean => slot.offset === line.endOffset) ?? lastSlot;
       if (markSlot) {
         ctx.save();
         ctx.font = "400 13px Calibri";

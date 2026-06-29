@@ -14,10 +14,12 @@ import {
   type TablePropertiesDialogInitialValues,
 } from "./TablePropertiesTypes.js";
 import { NumField } from "./fields.js";
+import type { TableFormState } from "@/ui/components/Dialogs/table-properties/TablePropertiesTypes.js";
+import { JSX } from "solid-js";
 
-export function CellTabPanel(props: TablePanelProps) {
+export function CellTabPanel(props: TablePanelProps): JSX.Element {
   const t = useI18n();
-  const form = () => props.ctrl.form;
+  const form = (): TableFormState => props.ctrl.form;
   const set = props.ctrl.set;
 
   const borderPreview = createMemo(() => {
@@ -38,7 +40,7 @@ export function CellTabPanel(props: TablePanelProps) {
     };
   });
 
-  const borderDisabled = () => form().borderStyle === "none";
+  const borderDisabled = (): boolean => form().borderStyle === "none";
 
   return (
     <div class="oasis-editor-table-properties-panel">
@@ -46,8 +48,8 @@ export function CellTabPanel(props: TablePanelProps) {
         <Grid size={{ xs: 12, md: 4 }}>
           {NumField(
             t("table.cellWidth"),
-            () => form().cellWidth,
-            (v) => set("cellWidth", v),
+            (): any => form().cellWidth,
+            (v): void => set("cellWidth", v),
             "editor-table-properties-cell-width",
           )}
         </Grid>
@@ -55,7 +57,7 @@ export function CellTabPanel(props: TablePanelProps) {
           <SelectField
             label={t("table.verticalAlignment")}
             value={form().cellVerticalAlign}
-            onChange={(value) =>
+            onChange={(value): void =>
               set(
                 "cellVerticalAlign",
                 value as TablePropertiesDialogInitialValues["cellVerticalAlign"],
@@ -74,7 +76,7 @@ export function CellTabPanel(props: TablePanelProps) {
           <SelectField
             label={t("table.textDirection")}
             value={form().cellTextDirection}
-            onChange={(value) =>
+            onChange={(value): void =>
               set(
                 "cellTextDirection",
                 value as TablePropertiesDialogInitialValues["cellTextDirection"],
@@ -104,19 +106,19 @@ export function CellTabPanel(props: TablePanelProps) {
           <Checkbox
             label={t("table.noWrap")}
             checked={form().cellNoWrap}
-            onChange={(v) => set("cellNoWrap", v)}
+            onChange={(v): void => set("cellNoWrap", v)}
             data-testid="editor-table-properties-cell-nowrap"
           />
           <Checkbox
             label={t("table.fitText")}
             checked={form().cellFitText}
-            onChange={(v) => set("cellFitText", v)}
+            onChange={(v): void => set("cellFitText", v)}
             data-testid="editor-table-properties-cell-fit-text"
           />
           <Checkbox
             label={t("table.hideMark")}
             checked={form().cellHideMark}
-            onChange={(v) => set("cellHideMark", v)}
+            onChange={(v): void => set("cellHideMark", v)}
             data-testid="editor-table-properties-cell-hide-mark"
           />
         </Stack>
@@ -129,32 +131,32 @@ export function CellTabPanel(props: TablePanelProps) {
           <Grid size={{ xs: 12, md: 3 }}>
             {NumField(
               t("paragraph.borderSideTop"),
-              () => form().marginTop,
-              (v) => set("marginTop", v),
+              (): any => form().marginTop,
+              (v): void => set("marginTop", v),
               "editor-table-properties-margin-top",
             )}
           </Grid>
           <Grid size={{ xs: 12, md: 3 }}>
             {NumField(
               t("paragraph.borderSideRight"),
-              () => form().marginRight,
-              (v) => set("marginRight", v),
+              (): any => form().marginRight,
+              (v): void => set("marginRight", v),
               "editor-table-properties-margin-right",
             )}
           </Grid>
           <Grid size={{ xs: 12, md: 3 }}>
             {NumField(
               t("paragraph.borderSideBottom"),
-              () => form().marginBottom,
-              (v) => set("marginBottom", v),
+              (): any => form().marginBottom,
+              (v): void => set("marginBottom", v),
               "editor-table-properties-margin-bottom",
             )}
           </Grid>
           <Grid size={{ xs: 12, md: 3 }}>
             {NumField(
               t("paragraph.borderSideLeft"),
-              () => form().marginLeft,
-              (v) => set("marginLeft", v),
+              (): any => form().marginLeft,
+              (v): void => set("marginLeft", v),
               "editor-table-properties-margin-left",
             )}
           </Grid>
@@ -169,7 +171,7 @@ export function CellTabPanel(props: TablePanelProps) {
             <SelectField
               label={t("paragraph.borderStyleLabel")}
               value={form().borderStyle}
-              onChange={(value) => {
+              onChange={(value): void => {
                 const next = value as BorderStyleValue;
                 set("borderStyle", next);
                 if (next === "none") {
@@ -205,8 +207,8 @@ export function CellTabPanel(props: TablePanelProps) {
           <Grid size={{ xs: 12, md: 3 }}>
             {NumField(
               t("paragraph.borderWidthLabel"),
-              () => form().borderWidth,
-              (v) => set("borderWidth", v),
+              (): any => form().borderWidth,
+              (v): void => set("borderWidth", v),
               "editor-table-properties-border-width",
               borderDisabled(),
             )}
@@ -216,7 +218,7 @@ export function CellTabPanel(props: TablePanelProps) {
               label={t("paragraph.borderColorLabel")}
               value={form().borderColor || DEFAULT_BORDER_COLOR}
               disabled={borderDisabled()}
-              onChange={(value) => set("borderColor", value)}
+              onChange={(value): void => set("borderColor", value)}
               data-testid="editor-table-properties-border-color"
             />
           </Grid>
@@ -224,7 +226,7 @@ export function CellTabPanel(props: TablePanelProps) {
             <ColorField
               label={t("paragraph.shadingLabel")}
               value={form().shading || "#ffffff"}
-              onChange={(value) => set("shading", value)}
+              onChange={(value): void => set("shading", value)}
               data-testid="editor-table-properties-shading"
             />
           </Grid>
@@ -238,56 +240,56 @@ export function CellTabPanel(props: TablePanelProps) {
             label={t("paragraph.borderSideTop")}
             checked={form().borderTop}
             disabled={borderDisabled()}
-            onChange={(v) => set("borderTop", v)}
+            onChange={(v): void => set("borderTop", v)}
             data-testid="editor-table-properties-border-top"
           />
           <Checkbox
             label={t("paragraph.borderSideRight")}
             checked={form().borderRight}
             disabled={borderDisabled()}
-            onChange={(v) => set("borderRight", v)}
+            onChange={(v): void => set("borderRight", v)}
             data-testid="editor-table-properties-border-right"
           />
           <Checkbox
             label={t("paragraph.borderSideBottom")}
             checked={form().borderBottom}
             disabled={borderDisabled()}
-            onChange={(v) => set("borderBottom", v)}
+            onChange={(v): void => set("borderBottom", v)}
             data-testid="editor-table-properties-border-bottom"
           />
           <Checkbox
             label={t("paragraph.borderSideLeft")}
             checked={form().borderLeft}
             disabled={borderDisabled()}
-            onChange={(v) => set("borderLeft", v)}
+            onChange={(v): void => set("borderLeft", v)}
             data-testid="editor-table-properties-border-left"
           />
           <Checkbox
             label={t("table.borderStart")}
             checked={form().borderStart}
             disabled={borderDisabled()}
-            onChange={(v) => set("borderStart", v)}
+            onChange={(v): void => set("borderStart", v)}
             data-testid="editor-table-properties-border-start"
           />
           <Checkbox
             label={t("table.borderEnd")}
             checked={form().borderEnd}
             disabled={borderDisabled()}
-            onChange={(v) => set("borderEnd", v)}
+            onChange={(v): void => set("borderEnd", v)}
             data-testid="editor-table-properties-border-end"
           />
           <Checkbox
             label={t("table.borderTlBr")}
             checked={form().borderTlBr}
             disabled={borderDisabled()}
-            onChange={(v) => set("borderTlBr", v)}
+            onChange={(v): void => set("borderTlBr", v)}
             data-testid="editor-table-properties-border-tlbr"
           />
           <Checkbox
             label={t("table.borderTrBl")}
             checked={form().borderTrBl}
             disabled={borderDisabled()}
-            onChange={(v) => set("borderTrBl", v)}
+            onChange={(v): void => set("borderTrBl", v)}
             data-testid="editor-table-properties-border-trbl"
           />
         </Stack>

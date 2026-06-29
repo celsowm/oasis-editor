@@ -27,7 +27,7 @@ function drawEdge(
   y1: number,
   x2: number,
   y2: number,
-) {
+): void {
   if (!border || border.type === "none" || border.width <= 0) {
     return;
   }
@@ -60,7 +60,7 @@ export function drawBorderBox(
   width: number,
   height: number,
   borders: CanvasBorderBox,
-) {
+): void {
   const right = left + width;
   const bottom = top + height;
   drawEdge(ctx, borders.top, left, top, right, top);

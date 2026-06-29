@@ -23,27 +23,27 @@ export function useEditorTransactions(ctx: EditorTransactionsContext) {
   const [redoStack, setRedoStack] = createSignal<EditorState[]>([]);
   let historyState = createEmptyEditorHistoryState();
 
-  const syncHistorySignals = () => {
+  const syncHistorySignals = (): void => {
     setUndoStack(historyState.undoStack);
     setRedoStack(historyState.redoStack);
   };
 
   const updateHistoryState = (
     updater: (current: EditorHistoryState) => EditorHistoryState,
-  ) => {
+  ): void => {
     historyState = updater(historyState);
     syncHistorySignals();
   };
 
-  const applyHistoryState = (nextState: EditorState) => {
+  const applyHistoryState = (nextState: EditorState): void => {
     ctx.commitState(ctx.cloneState(nextState));
   };
 
-  const resetTransactionGrouping = () => {
+  const resetTransactionGrouping = (): void => {
     historyState = resetEditorHistoryGrouping(historyState);
   };
 
-  const clearHistory = () => {
+  const clearHistory = (): void => {
     historyState = createEmptyEditorHistoryState();
     syncHistorySignals();
   };
@@ -51,9 +51,9 @@ export function useEditorTransactions(ctx: EditorTransactionsContext) {
   const applyTransactionalState = (
     producer: (current: EditorState) => EditorState,
     options?: EditorTransactionOptions,
-  ) => {
+  ): void => {
     const prev = ctx.stateSnapshot();
-    const next = perfTimer("txn:produce", () => producer(prev), 0);
+    const next = perfTimer("txn:produce", (): EditorState => producer(prev), 0);
     if (next === prev) {
       return;
     }
@@ -68,12 +68,12 @@ export function useEditorTransactions(ctx: EditorTransactionsContext) {
 
     const invalidation = perfTimer(
       "txn:invalidate",
-      () => computeLayoutInvalidationFromTransaction(prev, next),
+      (): LayoutInvalidation => computeLayoutInvalidationFromTransaction(prev, next),
       0,
     );
     ctx.applyLayoutInvalidation(invalidation);
 
-    perfTimer("txn:setState", () => ctx.commitState(next), 0);
+    perfTimer("txn:setState", (): void => ctx.commitState(next), 0);
   };
 
   return {
@@ -83,7 +83,7 @@ export function useEditorTransactions(ctx: EditorTransactionsContext) {
     applyHistoryState,
     resetTransactionGrouping,
     updateHistoryState,
-    getHistoryState: () => historyState,
+    getHistoryState: (): EditorHistoryState => historyState,
     clearHistory,
   };
 }

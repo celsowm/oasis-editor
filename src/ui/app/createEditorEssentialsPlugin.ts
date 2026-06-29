@@ -44,6 +44,8 @@ import type { createEditorCommandsController } from "@/app/controllers/EditorCom
 import type { createEditorHistoryActions } from "@/app/controllers/useEditorHistoryActions.js";
 import type { createEditorStyleController } from "@/app/controllers/useEditorStyle.js";
 import type { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
+import type { OasisPlugin } from "@/core/plugin.js";
+import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
 
 interface CreateEditorEssentialsPluginOptions {
   state: () => EditorState;
@@ -86,23 +88,23 @@ interface CreateEditorEssentialsPluginOptions {
 
 export function createEditorEssentialsRuntimePlugin(
   options: CreateEditorEssentialsPluginOptions,
-) {
+): OasisPlugin {
   const essentialsGate = {
-    isCommandEnabled: (commandName: string) =>
+    isCommandEnabled: (commandName: string): boolean =>
       !options.isReadOnly() &&
       (commandName !== "insertFootnote" ||
         options.commandsController.canInsertFootnoteCommand()),
   };
 
   const essentialsStyle = {
-    state: () => options.styleController.toolbarStyleState(),
+    state: (): ToolbarStyleState => options.styleController.toolbarStyleState(),
   };
 
   const essentialsSelection = {
-    isCollapsed: () => isSelectionCollapsed(options.state().selection),
+    isCollapsed: (): boolean => isSelectionCollapsed(options.state().selection),
   };
 
-  const stepFontSize = (direction: "increase" | "decrease") => {
+  const stepFontSize = (direction: "increase" | "decrease"): boolean => {
     const currentPx = Number(
       options.styleController.toolbarStyleState().fontSize,
     );
@@ -122,10 +124,10 @@ export function createEditorEssentialsRuntimePlugin(
   };
 
   const essentialsHistory = {
-    canUndo: () => options.undoStack().length > 0,
-    canRedo: () => options.redoStack().length > 0,
-    undo: () => (options.historyActions.performUndo(), true),
-    redo: () => (options.historyActions.performRedo(), true),
+    canUndo: (): boolean => options.undoStack().length > 0,
+    canRedo: (): boolean => options.redoStack().length > 0,
+    undo: (): true => (options.historyActions.performUndo(), true),
+    redo: (): true => (options.historyActions.performRedo(), true),
   };
 
   // Resolve each heading paragraph's printed page number by paginating the
@@ -141,11 +143,11 @@ export function createEditorEssentialsRuntimePlugin(
         }
       }
     }
-    return (headingId: string) => pageByParagraph.get(headingId);
+    return (headingId: string): number | undefined => pageByParagraph.get(headingId);
   };
 
   const essentialsFormatting = {
-    selectAll: () => {
+    selectAll: (): boolean => {
       const paragraphs = getDocumentParagraphs(options.state().document);
       if (paragraphs.length === 0) return false;
       const firstParagraph = paragraphs[0]!;
@@ -163,148 +165,148 @@ export function createEditorEssentialsRuntimePlugin(
       options.focusInput();
       return true;
     },
-    insertFootnote: () => (
+    insertFootnote: (): true => (
       options.commandsController.applyInsertFootnoteCommand(),
       true
     ),
-    insertTableOfContents: () => {
-      options.applyTransactionalState((current) =>
+    insertTableOfContents: (): boolean => {
+      options.applyTransactionalState((current): EditorState =>
         insertTableOfContents(current, buildTocPageResolver(current)),
       );
       options.focusInput();
       return true;
     },
-    updateTableOfContents: () => {
-      options.applyTransactionalState((current) =>
+    updateTableOfContents: (): boolean => {
+      options.applyTransactionalState((current): EditorState =>
         updateTableOfContents(current, buildTocPageResolver(current)),
       );
       options.focusInput();
       return true;
     },
-    pastePlainText: () => {
+    pastePlainText: (): boolean => {
       options.forcePlainTextPaste.set(true);
       options.focusInput();
       return true;
     },
-    bold: () => (
+    bold: (): true => (
       options.keyboardCommandsController.applyBooleanStyleCommand("bold"),
       true
     ),
-    italic: () => (
+    italic: (): true => (
       options.keyboardCommandsController.applyBooleanStyleCommand("italic"),
       true
     ),
-    underline: () => (
+    underline: (): true => (
       options.keyboardCommandsController.applyBooleanStyleCommand("underline"),
       true
     ),
-    strike: () => (
+    strike: (): true => (
       options.keyboardCommandsController.applyBooleanStyleCommand("strike"),
       true
     ),
-    superscript: () => (
+    superscript: (): true => (
       options.keyboardCommandsController.applyBooleanStyleCommand(
         "superscript",
       ),
       true
     ),
-    subscript: () => (
+    subscript: (): true => (
       options.keyboardCommandsController.applyBooleanStyleCommand("subscript"),
       true
     ),
-    alignLeft: () => (
+    alignLeft: (): true => (
       options.commandsController.applyParagraphStyleCommand("align", "left"),
       true
     ),
-    alignCenter: () => (
+    alignCenter: (): true => (
       options.commandsController.applyParagraphStyleCommand("align", "center"),
       true
     ),
-    alignRight: () => (
+    alignRight: (): true => (
       options.commandsController.applyParagraphStyleCommand("align", "right"),
       true
     ),
-    alignJustify: () => (
+    alignJustify: (): true => (
       options.commandsController.applyParagraphStyleCommand("align", "justify"),
       true
     ),
-    orderedList: () => (
+    orderedList: (): true => (
       options.commandsController.applyParagraphListCommand("ordered"),
       true
     ),
-    bulletList: () => (
+    bulletList: (): true => (
       options.commandsController.applyParagraphListCommand("bullet"),
       true
     ),
-    find: () => (options.findReplace.setIsOpen(true), true),
-    replace: () => (options.findReplace.setIsOpen(true), true),
-    toggleTrackChanges: () => (
+    find: (): true => (options.findReplace.setIsOpen(true), true),
+    replace: (): true => (options.findReplace.setIsOpen(true), true),
+    toggleTrackChanges: (): true => (
       options.commandsController.applyToggleTrackChangesCommand(),
       true
     ),
-    acceptRevisions: () => (
+    acceptRevisions: (): true => (
       options.commandsController.applyAcceptRevisionsCommand(),
       true
     ),
-    rejectRevisions: () => (
+    rejectRevisions: (): true => (
       options.commandsController.applyRejectRevisionsCommand(),
       true
     ),
-    toggleShowMargins: () => (
+    toggleShowMargins: (): true => (
       options.commandsController.applyToggleShowMarginsCommand(),
       true
     ),
-    toggleShowParagraphMarks: () => (
+    toggleShowParagraphMarks: (): true => (
       options.commandsController.applyToggleShowParagraphMarksCommand(),
       true
     ),
-    togglePreciseFonts: () => (void togglePreciseFontMode(), true),
-    pageBreak: () => {
-      options.applyTransactionalState((current) =>
-        options.tableOps.applyTableAwareParagraphEdit(current, (temp) =>
+    togglePreciseFonts: (): true => (void togglePreciseFontMode(), true),
+    pageBreak: (): boolean => {
+      options.applyTransactionalState((current): EditorState =>
+        options.tableOps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
           insertPageBreakAtSelection(temp),
         ),
       );
       options.focusInput();
       return true;
     },
-    lineBreak: () => {
-      options.applyTransactionalState((current) =>
-        options.tableOps.applyTableAwareParagraphEdit(current, (temp) =>
+    lineBreak: (): boolean => {
+      options.applyTransactionalState((current): EditorState =>
+        options.tableOps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
           insertTextAtSelection(temp, "\n"),
         ),
       );
       options.focusInput();
       return true;
     },
-    splitBlock: () => {
+    splitBlock: (): boolean => {
       if (options.commandsController.handleListEnter()) return true;
-      options.applyTransactionalState((current) =>
-        options.tableOps.applyTableAwareParagraphEdit(current, (temp) =>
+      options.applyTransactionalState((current): EditorState =>
+        options.tableOps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
           splitBlockAtSelection(temp),
         ),
       );
       options.focusInput();
       return true;
     },
-    setFontFamily: (value: string | null) => (
+    setFontFamily: (value: string | null): true => (
       options.styleController.applyToolbarValueStyleCommand(
         "fontFamily",
         value,
       ),
       true
     ),
-    setFontSize: (value: number | null) => (
+    setFontSize: (value: number | null): true => (
       options.styleController.applyToolbarValueStyleCommand("fontSize", value),
       true
     ),
-    increaseFontSize: () => stepFontSize("increase"),
-    decreaseFontSize: () => stepFontSize("decrease"),
-    changeTextCase: (mode: TextCaseMode) => (
+    increaseFontSize: (): boolean => stepFontSize("increase"),
+    decreaseFontSize: (): boolean => stepFontSize("decrease"),
+    changeTextCase: (mode: TextCaseMode): true => (
       options.commandsController.applyChangeTextCaseCommand(mode),
       true
     ),
-    clearFormatting: () => {
+    clearFormatting: (): boolean => {
       if (isSelectionCollapsed(options.state().selection)) {
         options.styleController.clearPendingCaretTextStyle();
         options.focusInput();
@@ -313,30 +315,30 @@ export function createEditorEssentialsRuntimePlugin(
       options.commandsController.applyClearFormattingCommand();
       return true;
     },
-    setColor: (value: string | null) => (
+    setColor: (value: string | null): true => (
       options.styleController.applyToolbarValueStyleCommand("color", value),
       true
     ),
-    setHighlight: (value: string | null) => (
+    setHighlight: (value: string | null): true => (
       options.styleController.applyToolbarValueStyleCommand("highlight", value),
       true
     ),
-    setTextShading: (value: string | null) => (
+    setTextShading: (value: string | null): true => (
       options.styleController.applyToolbarValueStyleCommand("shading", value),
       true
     ),
-    setStyleId: (value: string) => (
+    setStyleId: (value: string): true => (
       options.commandsController.handleStyleChange(value),
       true
     ),
-    setCharacterStyleId: (value: string) => (
+    setCharacterStyleId: (value: string): true => (
       options.styleController.applyToolbarValueStyleCommand(
         "styleId",
         value || null,
       ),
       true
     ),
-    setUnderlineStyle: (value: string | null) =>
+    setUnderlineStyle: (value: string | null): void =>
       (
         options.styleController.applyToolbarValueStyleCommand as (
           key: "underlineStyle",
@@ -376,68 +378,68 @@ export function createEditorEssentialsRuntimePlugin(
         };
       });
     },
-    exportDocx: () => void options.docIO.handleExportDocx(),
-    exportPdf: () => void options.docIO.handleExportPdf(),
-    importDocument: () => options.importInputRef()?.click(),
-    insertImage: () => options.imageInputRef()?.click(),
-    insertShape: (preset: string) =>
-      options.applyTransactionalState((current) =>
+    exportDocx: (): undefined => void options.docIO.handleExportDocx(),
+    exportPdf: (): undefined => void options.docIO.handleExportPdf(),
+    importDocument: (): void | undefined => options.importInputRef()?.click(),
+    insertImage: (): void | undefined => options.imageInputRef()?.click(),
+    insertShape: (preset: string): void =>
+      options.applyTransactionalState((current): EditorState =>
         insertShapeAtSelection(current, preset),
       ),
   };
 
   const essentialsLink = {
-    prompt: () => options.commandsController.promptForLink(),
-    remove: () => options.commandsController.removeLinkCommand(),
-    canPrompt: () =>
+    prompt: (): void => options.commandsController.promptForLink(),
+    remove: (): void => options.commandsController.removeLinkCommand(),
+    canPrompt: (): boolean =>
       !isSelectionCollapsed(options.state().selection) ||
       Boolean(options.styleController.toolbarStyleState().link),
   };
 
   const essentialsImage = {
-    promptAlt: () => options.commandsController.promptForImageAlt(),
-    promptCaption: () => options.commandsController.promptForImageCaption(),
-    isSelected: () => Boolean(options.selectedImageRun()),
+    promptAlt: (): void => options.commandsController.promptForImageAlt(),
+    promptCaption: (): void => options.commandsController.promptForImageCaption(),
+    isSelected: (): boolean => Boolean(options.selectedImageRun()),
   };
 
   const essentialsBrowser = {
-    print: () => window.print(),
-    copy: () => {
+    print: (): void => window.print(),
+    copy: (): void => {
       document.execCommand("copy");
     },
   };
 
   const essentialsParagraph = {
-    togglePageBreakBefore: () =>
+    togglePageBreakBefore: (): void =>
       options.commandsController.toggleParagraphFlagCommand("pageBreakBefore"),
-    toggleKeepWithNext: () =>
+    toggleKeepWithNext: (): void =>
       options.commandsController.toggleParagraphFlagCommand("keepWithNext"),
-    setSpacingAfter: (value: number | null) =>
+    setSpacingAfter: (value: number | null): void =>
       options.commandsController.applyParagraphStyleCommand(
         "spacingAfter",
         value,
       ),
-    setSpacingBefore: (value: number | null) =>
+    setSpacingBefore: (value: number | null): void =>
       options.commandsController.applyParagraphStyleCommand(
         "spacingBefore",
         value,
       ),
-    setIndentLeft: (value: number | null) =>
+    setIndentLeft: (value: number | null): void =>
       options.commandsController.applyParagraphStyleCommand(
         "indentLeft",
         value,
       ),
-    setIndentRight: (value: number | null) =>
+    setIndentRight: (value: number | null): void =>
       options.commandsController.applyParagraphStyleCommand(
         "indentRight",
         value,
       ),
-    setIndentFirstLine: (value: number | null) =>
+    setIndentFirstLine: (value: number | null): void =>
       options.commandsController.applyParagraphStyleCommand(
         "indentFirstLine",
         value,
       ),
-    setIndentHanging: (value: number | null) =>
+    setIndentHanging: (value: number | null): void =>
       options.commandsController.applyParagraphStyleCommand(
         "indentHanging",
         value,
@@ -445,10 +447,10 @@ export function createEditorEssentialsRuntimePlugin(
     setSpecialIndent: (
       kind: "none" | "firstLine" | "hanging",
       value?: number | null,
-    ) => {
+    ): void => {
       const resolvedValue = value ?? 48;
       options.applyTransactionalState(
-        (current) => {
+        (current): EditorState => {
           let next = setParagraphStyle(current, "indentFirstLine", null);
           next = setParagraphStyle(next, "indentHanging", null);
           if (kind === "firstLine") {
@@ -462,16 +464,16 @@ export function createEditorEssentialsRuntimePlugin(
       );
       options.focusInput();
     },
-    setShading: (value: string | null) =>
+    setShading: (value: string | null): void =>
       options.commandsController.applyParagraphStyleCommand("shading", value),
-    applyBorders: () => {
+    applyBorders: (): void => {
       const border: EditorBorderStyle = {
         width: 1,
         type: "solid",
         color: "#000000",
       };
       options.applyTransactionalState(
-        (current) => {
+        (current): EditorState => {
           let next = setParagraphStyle(current, "borderTop", border);
           next = setParagraphStyle(next, "borderRight", border);
           next = setParagraphStyle(next, "borderBottom", border);
@@ -482,31 +484,31 @@ export function createEditorEssentialsRuntimePlugin(
       );
       options.focusInput();
     },
-    setLineHeight: (value: number | null) =>
+    setLineHeight: (value: number | null): void =>
       options.commandsController.applyParagraphStyleCommand(
         "lineHeight",
         value,
       ),
-    setListFormat: (format: string) =>
+    setListFormat: (format: string): void =>
       options.commandsController.handleListFormatChange(
         format as Parameters<
           typeof options.commandsController.handleListFormatChange
         >[0],
       ),
-    setListStartAt: (value: number | null) =>
+    setListStartAt: (value: number | null): void =>
       options.commandsController.handleListStartAtChange(value),
-    outdent: () => void options.commandsController.handleListTab("outdent"),
-    indent: () => void options.commandsController.handleListTab("indent"),
+    outdent: (): undefined => void options.commandsController.handleListTab("outdent"),
+    indent: (): undefined => void options.commandsController.handleListTab("indent"),
   };
 
   const essentialsSection = {
-    isLandscape: () => {
+    isLandscape: (): boolean => {
       const idx = getActiveSectionIndex(options.state());
       const section =
         options.state().document.sections?.[idx] ?? options.state().document;
       return section?.pageSettings?.orientation === "landscape";
     },
-    setOrientation: (orientation: "portrait" | "landscape") => {
+    setOrientation: (orientation: "portrait" | "landscape"): void => {
       const idx = getActiveSectionIndex(options.state());
       const section =
         options.state().document.sections?.[idx] ?? options.state().document;
@@ -518,7 +520,7 @@ export function createEditorEssentialsRuntimePlugin(
         },
       });
     },
-    toggleOrientation: () => {
+    toggleOrientation: (): void => {
       const idx = getActiveSectionIndex(options.state());
       const section =
         options.state().document.sections?.[idx] ?? options.state().document;
@@ -528,9 +530,9 @@ export function createEditorEssentialsRuntimePlugin(
         current === "portrait" ? "landscape" : "portrait",
       );
     },
-    breakNextPage: () =>
+    breakNextPage: (): void =>
       options.commandsController.applyInsertSectionBreakCommand("nextPage"),
-    breakContinuous: () =>
+    breakContinuous: (): void =>
       options.commandsController.applyInsertSectionBreakCommand("continuous"),
     getMargins: (): EditorPageMargins | undefined => {
       const idx = getActiveSectionIndex(options.state());
@@ -538,7 +540,7 @@ export function createEditorEssentialsRuntimePlugin(
         options.state().document.sections?.[idx] ?? options.state().document;
       return section?.pageSettings?.margins;
     },
-    setPageMargins: (margins: Partial<EditorPageMargins>) => {
+    setPageMargins: (margins: Partial<EditorPageMargins>): void => {
       const idx = getActiveSectionIndex(options.state());
       const section =
         options.state().document.sections?.[idx] ?? options.state().document;
@@ -556,7 +558,7 @@ export function createEditorEssentialsRuntimePlugin(
   };
 
   const essentialsTable = (() => {
-    const insideTable = () =>
+    const insideTable = (): boolean =>
       Boolean(
         findParagraphTableLocation(
           options.state().document,
@@ -567,7 +569,7 @@ export function createEditorEssentialsRuntimePlugin(
     const apply = (
       producer: (current: EditorState) => EditorState,
       mergeKey: MergeKey,
-    ) => {
+    ): void => {
       options.applyTransactionalState(producer, { mergeKey });
       options.focusInput();
     };
@@ -601,61 +603,61 @@ export function createEditorEssentialsRuntimePlugin(
     return {
       insideTable,
       selectionLabel,
-      canMerge: () => options.tableOps.canMergeSelectedTable(options.state()),
-      canSplit: () => options.tableOps.canSplitSelectedTable(options.state()),
-      canEditColumn: () =>
+      canMerge: (): boolean => options.tableOps.canMergeSelectedTable(options.state()),
+      canSplit: (): boolean => options.tableOps.canSplitSelectedTable(options.state()),
+      canEditColumn: (): boolean =>
         options.tableOps.canEditSelectedTableColumn(options.state()),
-      canEditRow: () =>
+      canEditRow: (): boolean =>
         options.tableOps.canEditSelectedTableRow(options.state()),
-      merge: () =>
+      merge: (): void =>
         apply(
-          (current) => options.tableOps.mergeSelectedTable(current),
+          (current): EditorState => options.tableOps.mergeSelectedTable(current),
           MERGE_KEYS.mergeTable,
         ),
-      split: () =>
+      split: (): void =>
         apply(
-          (current) => options.tableOps.splitSelectedTable(current),
+          (current): EditorState => options.tableOps.splitSelectedTable(current),
           MERGE_KEYS.splitTable,
         ),
-      insertColumnBefore: () =>
+      insertColumnBefore: (): void =>
         apply(
-          (current) => options.tableOps.insertSelectedTableColumn(current, -1),
+          (current): EditorState => options.tableOps.insertSelectedTableColumn(current, -1),
           MERGE_KEYS.insertTableColumn,
         ),
-      insertColumnAfter: () =>
+      insertColumnAfter: (): void =>
         apply(
-          (current) => options.tableOps.insertSelectedTableColumn(current, 1),
+          (current): EditorState => options.tableOps.insertSelectedTableColumn(current, 1),
           MERGE_KEYS.insertTableColumn,
         ),
-      deleteColumn: () =>
+      deleteColumn: (): void =>
         apply(
-          (current) => options.tableOps.deleteSelectedTableColumn(current),
+          (current): EditorState => options.tableOps.deleteSelectedTableColumn(current),
           MERGE_KEYS.deleteTableColumn,
         ),
-      insertRowBefore: () =>
+      insertRowBefore: (): void =>
         apply(
-          (current) => options.tableOps.insertSelectedTableRow(current, -1),
+          (current): EditorState => options.tableOps.insertSelectedTableRow(current, -1),
           MERGE_KEYS.insertTableRow,
         ),
-      insertRowAfter: () =>
+      insertRowAfter: (): void =>
         apply(
-          (current) => options.tableOps.insertSelectedTableRow(current, 1),
+          (current): EditorState => options.tableOps.insertSelectedTableRow(current, 1),
           MERGE_KEYS.insertTableRow,
         ),
-      deleteRow: () =>
+      deleteRow: (): void =>
         apply(
-          (current) => options.tableOps.deleteSelectedTableRow(current),
+          (current): EditorState => options.tableOps.deleteSelectedTableRow(current),
           MERGE_KEYS.deleteTableRow,
         ),
-      cellShading: (color: string | null) =>
+      cellShading: (color: string | null): void =>
         apply(
-          (current) =>
+          (current): EditorState =>
             setTableCellStyleValue(current, "shading", color || null),
           MERGE_KEYS.tableShading,
         ),
-      cellBorders: () =>
+      cellBorders: (): void =>
         apply(
-          (current) =>
+          (current): EditorState =>
             setTableCellBorders(current, {
               width: 1,
               type: "solid",
@@ -663,9 +665,9 @@ export function createEditorEssentialsRuntimePlugin(
             }),
           MERGE_KEYS.tableBorders,
         ),
-      cellNoBorders: () =>
+      cellNoBorders: (): void =>
         apply(
-          (current) =>
+          (current): EditorState =>
             setTableCellBorders(current, {
               width: 0,
               type: "none",
@@ -673,35 +675,35 @@ export function createEditorEssentialsRuntimePlugin(
             }),
           MERGE_KEYS.tableBorders,
         ),
-      width100: () =>
+      width100: (): void =>
         apply(
-          (current) => setTableStyleValue(current, "width", "100%"),
+          (current): EditorState => setTableStyleValue(current, "width", "100%"),
           MERGE_KEYS.tableWidth,
         ),
-      alignLeft: () =>
+      alignLeft: (): void =>
         apply(
-          (current) =>
+          (current): EditorState =>
             setTableCellStyleValue(current, "horizontalAlign", "left"),
           MERGE_KEYS.tableAlign,
         ),
-      alignCenter: () =>
+      alignCenter: (): void =>
         apply(
-          (current) =>
+          (current): EditorState =>
             setTableCellStyleValue(current, "horizontalAlign", "center"),
           MERGE_KEYS.tableAlign,
         ),
-      alignRight: () =>
+      alignRight: (): void =>
         apply(
-          (current) =>
+          (current): EditorState =>
             setTableCellStyleValue(current, "horizontalAlign", "right"),
           MERGE_KEYS.tableAlign,
         ),
-      setCellWidth: (width: string) =>
+      setCellWidth: (width: string): void =>
         apply(
-          (current) => setTableCellWidth(current, width),
+          (current): EditorState => setTableCellWidth(current, width),
           MERGE_KEYS.tableCellWidth,
         ),
-      insert: (rows: number, cols: number) =>
+      insert: (rows: number, cols: number): void =>
         options.tableOps.insertTableCommand(rows, cols),
     };
   })();

@@ -22,7 +22,7 @@ function readSignedFixed16_16(reader: BinaryReader, offset: number): number {
 }
 
 function readAscii(bytes: Uint8Array): string {
-  return Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
+  return Array.from(bytes, (byte): string => String.fromCharCode(byte)).join("");
 }
 
 function readUtf16Be(bytes: Uint8Array): string {
@@ -128,7 +128,7 @@ export class SfntFontProgram implements ParsedFontProgram {
       return [SfntFontProgram.parse(sfntBytes)];
     }
     return offsets.map(
-      (offset) =>
+      (offset): SfntFontProgram =>
         new SfntFontProgram(
           sfntBytes,
           SfntTableDirectory.parseAt(new BinaryReader(sfntBytes), offset),

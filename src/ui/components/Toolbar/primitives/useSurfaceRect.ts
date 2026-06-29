@@ -24,26 +24,26 @@ export function useSurfaceRect(
   const [rect, setRect] = createSignal<DOMRect | null>(null);
   const [tick, setTick] = createSignal(0);
 
-  const measure = () => {
+  const measure = (): void => {
     const surface = surfaceRef();
     setRect(surface ? surface.getBoundingClientRect() : null);
   };
 
   let frame: number | null = null;
-  const refresh = () => {
+  const refresh = (): void => {
     if (frame !== null) return;
-    frame = requestAnimationFrame(() => {
+    frame = requestAnimationFrame((): void => {
       frame = null;
       measure();
-      setTick((value) => value + 1);
+      setTick((value): number => value + 1);
     });
   };
 
-  onMount(() => {
+  onMount((): void => {
     measure();
     window.addEventListener("scroll", refresh, true);
     window.addEventListener("resize", refresh);
-    onCleanup(() => {
+    onCleanup((): void => {
       window.removeEventListener("scroll", refresh, true);
       window.removeEventListener("resize", refresh);
       if (frame !== null) cancelAnimationFrame(frame);

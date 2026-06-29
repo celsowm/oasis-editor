@@ -1,4 +1,4 @@
-export const TAG = (text: string) =>
+export const TAG = (text: string): number =>
   (text.charCodeAt(0) << 24) |
   (text.charCodeAt(1) << 16) |
   (text.charCodeAt(2) << 8) |
@@ -86,7 +86,7 @@ export function tagToString(tag: number): string {
   );
 }
 
-export const round4 = (v: number) => (v + 3) & ~3;
+export const round4 = (v: number): number => (v + 3) & ~3;
 
 export function computeULongSum(data: Uint8Array): number {
   let checksum = 0 >>> 0;

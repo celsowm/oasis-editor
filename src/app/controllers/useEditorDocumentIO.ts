@@ -1,6 +1,6 @@
 import type { MergeKey } from "@/core/transactionMergeKeys.js";
 import { createSignal } from "solid-js";
-import type { EditorState, EditorPosition } from "@/core/model.js";
+import type { EditorState, EditorPosition, EditorDocument } from "@/core/model.js";
 import type { EditorLogger } from "@/utils/logger.js";
 import { createDocumentExporter } from "./documentIO/DocumentExporter.js";
 import { createDocumentImporter } from "./documentIO/DocumentImporter.js";
@@ -60,7 +60,7 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
     return max;
   };
 
-  const setImportPhase = (phase: ImportProgressPhase, subProgress?: number) => {
+  const setImportPhase = (phase: ImportProgressPhase, subProgress?: number): void => {
     setImportProgress({
       phase,
       progress: computeProgress(phase, subProgress),
@@ -68,9 +68,9 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
     });
   };
 
-  const clearImportProgressSoon = () => {
-    globalThis.setTimeout(() => {
-      setImportProgress((current) =>
+  const clearImportProgressSoon = (): void => {
+    globalThis.setTimeout((): void => {
+      setImportProgress((current): ImportProgressState | null =>
         current?.phase === "done" || current?.phase === "error"
           ? null
           : current,
@@ -85,7 +85,7 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
     focusInput: deps.focusInput,
     setImportPhase,
     clearImportProgressSoon,
-    now: () => performance.now(),
+    now: (): number => performance.now(),
     logger: deps.logger,
   });
 
@@ -97,11 +97,11 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
   });
 
   const exporter = createDocumentExporter({
-    document: () => deps.state().document,
+    document: (): EditorDocument => deps.state().document,
     focusInput: deps.focusInput,
   });
 
-  const handleImportFile = async (file: File | null) => {
+  const handleImportFile = async (file: File | null): Promise<void> => {
     if (deps.isReadOnly()) return;
     await importer.handleImportFile(file);
   };
@@ -109,11 +109,11 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
   const insertImageFromFile = async (
     file: File,
     position?: EditorPosition | null,
-  ) => {
+  ): Promise<void> => {
     await imageInsertion.insertImageFromFile(file, position);
   };
 
-  const handleInsertImage = async (file: File | null) => {
+  const handleInsertImage = async (file: File | null): Promise<void> => {
     if (deps.isReadOnly()) return;
     if (!file) return;
 
@@ -121,11 +121,11 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
     deps.focusInput();
   };
 
-  const handleExportDocx = async () => {
+  const handleExportDocx = async (): Promise<void> => {
     await exporter.handleExportDocx();
   };
 
-  const handleExportPdf = async () => {
+  const handleExportPdf = async (): Promise<void> => {
     await exporter.handleExportPdf();
   };
 

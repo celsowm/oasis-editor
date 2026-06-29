@@ -2,17 +2,18 @@ import { For, type Accessor, type Setter } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import type { RibbonTabId } from "@/ui/components/Toolbar/schema/items.js";
 import { buildRibbonTabDefinitions } from "./ribbonModel.js";
+import { JSX } from "solid-js";
 
 export interface RibbonTabsProps {
   activeTab: Accessor<RibbonTabId>;
   setActiveTab: Setter<RibbonTabId>;
 }
 
-export function RibbonTabs(props: RibbonTabsProps) {
+export function RibbonTabs(props: RibbonTabsProps): JSX.Element {
   const tabs = buildRibbonTabDefinitions(useI18n());
 
-  const moveTab = (current: RibbonTabId, delta: number) => {
-    const index = tabs.findIndex((tab) => tab.id === current);
+  const moveTab = (current: RibbonTabId, delta: number): void => {
+    const index = tabs.findIndex((tab): boolean => tab.id === current);
     const next = tabs[(index + delta + tabs.length) % tabs.length];
     if (next) props.setActiveTab(next.id);
   };
@@ -20,7 +21,7 @@ export function RibbonTabs(props: RibbonTabsProps) {
   return (
     <div class="oasis-editor-ribbon-tabs" role="tablist">
       <For each={tabs}>
-        {(tab) => (
+        {(tab): JSX.Element => (
           <button
             type="button"
             class="oasis-editor-ribbon-tab"
@@ -34,7 +35,7 @@ export function RibbonTabs(props: RibbonTabsProps) {
             data-testid={`editor-ribbon-tab-${tab.id}`}
             tabIndex={props.activeTab() === tab.id ? 0 : -1}
             onClick={() => props.setActiveTab(tab.id)}
-            onKeyDown={(event) => {
+            onKeyDown={(event): void => {
               if (event.key === "ArrowRight") {
                 event.preventDefault();
                 moveTab(tab.id, 1);

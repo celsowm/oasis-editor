@@ -22,7 +22,7 @@ function serializeParagraphTabs(
   }
 
   const parts = tabs
-    .map((tab) => {
+    .map((tab): string => {
       const position = pointsToTwips(tab.position);
       if (position === null) {
         return "";

@@ -3,6 +3,7 @@ import {
   RESIZE_HANDLE_DIRECTIONS,
   type ResizeHandleDirection,
 } from "@/ui/resizeGeometry.js";
+import { JSX } from "solid-js";
 
 export interface ResizeHandlesOverlayBox {
   left: number;
@@ -36,7 +37,7 @@ export interface ResizeHandlesOverlayProps {
  * object. Shared by image and text-box selection so the handle geometry,
  * positioning and pointer plumbing live in one place.
  */
-export function ResizeHandlesOverlay(props: ResizeHandlesOverlayProps) {
+export function ResizeHandlesOverlay(props: ResizeHandlesOverlayProps): JSX.Element {
   return (
     <div
       aria-hidden="true"
@@ -53,7 +54,7 @@ export function ResizeHandlesOverlay(props: ResizeHandlesOverlayProps) {
         "transform-origin": "center",
         "pointer-events": !props.readOnly && props.box() ? "auto" : "none",
       }}
-      onMouseDown={(event) => {
+      onMouseDown={(event): void => {
         if (props.readOnly || !props.box() || !props.onBodyMouseDown) {
           return;
         }
@@ -65,14 +66,14 @@ export function ResizeHandlesOverlay(props: ResizeHandlesOverlayProps) {
     >
       <Show when={!props.readOnly}>
         <For each={RESIZE_HANDLE_DIRECTIONS}>
-          {(direction) => (
+          {(direction): JSX.Element => (
             <button
               aria-hidden="true"
               class="oasis-editor-resize-handle"
               data-direction={direction}
               tabIndex={-1}
               type="button"
-              onMouseDown={(event) => {
+              onMouseDown={(event): void => {
                 if (!props.box()) {
                   return;
                 }
@@ -90,7 +91,7 @@ export function ResizeHandlesOverlay(props: ResizeHandlesOverlayProps) {
             class="oasis-editor-rotate-handle"
             tabIndex={-1}
             type="button"
-            onMouseDown={(event) => {
+            onMouseDown={(event): void => {
               if (!props.box()) {
                 return;
               }

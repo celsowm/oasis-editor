@@ -6,6 +6,7 @@ import type { createEditorImageOperations } from "@/app/controllers/useEditorIma
 import type { createEditorTableResize } from "@/app/controllers/useEditorTableResize.js";
 import type { createEditorTableDrag } from "@/app/controllers/useEditorTableDrag.js";
 import type { createEditorTextDrag } from "@/app/controllers/useEditorTextDrag.js";
+import { JSX } from "solid-js";
 
 export interface EditorDragLayersProps {
   state: EditorState;
@@ -24,11 +25,11 @@ export interface EditorDragLayersProps {
  * the table resize guide, image/table drag ghosts and the various drop carets.
  * Holds no editor logic — it only binds gesture controller state to DOM.
  */
-export function EditorDragLayers(props: EditorDragLayersProps) {
+export function EditorDragLayers(props: EditorDragLayersProps): JSX.Element {
   return (
     <>
       <Show when={props.tableResize.resizing()}>
-        {(resizing) => (
+        {(resizing): JSX.Element => (
           <div
             class="oasis-editor-table-resize-guide"
             classList={{
@@ -58,7 +59,7 @@ export function EditorDragLayers(props: EditorDragLayersProps) {
       <Show
         when={props.imageOps.dragging() && props.imageOps.draggedImageInfo()}
       >
-        {(info) => (
+        {(info): JSX.Element => (
           <img
             src={info().src}
             class="oasis-editor-image-ghost"
@@ -75,7 +76,7 @@ export function EditorDragLayers(props: EditorDragLayersProps) {
       <Show
         when={props.tableDrag.dragging() && props.tableDrag.draggedTableInfo()}
       >
-        {(info) => (
+        {(info): JSX.Element => (
           <div
             class="oasis-editor-table-ghost"
             style={{
@@ -91,7 +92,7 @@ export function EditorDragLayers(props: EditorDragLayersProps) {
       <Show
         when={props.tableDrag.dragging() && props.tableDrag.dropTargetPos()}
       >
-        {(pos) => (
+        {(pos): JSX.Element => (
           <DropCaret
             surfaceRef={props.surfaceRef}
             state={props.state}
@@ -104,7 +105,7 @@ export function EditorDragLayers(props: EditorDragLayersProps) {
       </Show>
 
       <Show when={props.imageOps.dragging() && props.imageOps.dropTargetPos()}>
-        {(pos) => (
+        {(pos): JSX.Element => (
           <DropCaret
             surfaceRef={props.surfaceRef}
             state={props.state}
@@ -117,7 +118,7 @@ export function EditorDragLayers(props: EditorDragLayersProps) {
       </Show>
 
       <Show when={props.textDrag.dragging() && props.textDrag.dropTargetPos()}>
-        {(pos) => (
+        {(pos): JSX.Element => (
           <DropCaret
             surfaceRef={props.surfaceRef}
             state={props.state}

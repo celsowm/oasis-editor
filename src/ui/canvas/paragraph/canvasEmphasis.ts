@@ -12,7 +12,7 @@ export function drawFragmentEmphasis(
   originY: number,
   mark: string,
   color: string,
-) {
+): void {
   if (mark === "none") return;
   const glyph = EMPHASIS_GLYPH[mark];
   if (!glyph) return;

@@ -53,10 +53,10 @@ function getListTextFirstLineInset(
     return baseInset;
   }
   const nextTabStop = (paragraphStyle.tabs ?? [])
-    .filter((tab) => tab.type !== "clear" && Number.isFinite(tab.position))
-    .map((tab) => tab.position * PX_PER_POINT)
-    .filter((positionPx) => positionPx > numberStart + 0.01)
-    .sort((a, b) => a - b)[0];
+    .filter((tab): boolean => tab.type !== "clear" && Number.isFinite(tab.position))
+    .map((tab): number => tab.position * PX_PER_POINT)
+    .filter((positionPx): boolean => positionPx > numberStart + 0.01)
+    .sort((a, b): number => a - b)[0];
   return nextTabStop !== undefined
     ? Math.max(baseInset, nextTabStop)
     : baseInset;

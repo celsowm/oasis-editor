@@ -137,7 +137,7 @@ export function createNestedBlockParser(
   assets: AssetRegistry,
   theme: DocxImportTheme,
 ): ParseNestedBlocks {
-  return (container) =>
+  return (container): Promise<EditorBlockNode[]> =>
     parseTxbxContentBlocks(
       container,
       numberingMaps,

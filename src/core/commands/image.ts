@@ -2,8 +2,7 @@ import type {
   EditorParagraphNode,
   EditorPosition,
   EditorState,
-  EditorImageRunData,
-} from "@/core/model.js";
+  EditorImageRunData, EditorImageFloatingLayout, EditorTextRun } from "@/core/model.js";
 import {
   getSelectedObjectRun,
   type SelectedObjectRun,
@@ -60,7 +59,7 @@ export type SelectedImageRun = SelectedObjectRun;
 export function getSelectedImageRun(
   state: EditorState,
 ): SelectedImageRun | null {
-  return getSelectedObjectRun(state, (run) => run.kind === "image");
+  return getSelectedObjectRun(state, (run): boolean => run.kind === "image");
 }
 
 export function insertImageAtSelection(
@@ -79,7 +78,7 @@ export function insertImageAtSelection(
   );
   const nextParagraph = insertRunsAtOffset(paragraph, offset, [insertedRun]);
   const paragraphs = getParagraphs(collapsedState);
-  const nextParagraphs = paragraphs.map((candidate, candidateIndex) =>
+  const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode =>
     candidateIndex === index ? nextParagraph : cloneParagraph(candidate),
   );
 
@@ -155,13 +154,13 @@ function patchSelectedImage(
   const paragraphs = getParagraphs(state);
   const { paragraphIndex, run: targetRun } = selectedImage;
 
-  const nextParagraphs = paragraphs.map((candidate, candidateIndex) => {
+  const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode => {
     if (candidateIndex !== paragraphIndex) {
       return cloneParagraph(candidate);
     }
     return {
       ...cloneParagraph(candidate),
-      runs: candidate.runs.map((run) =>
+      runs: candidate.runs.map((run): EditorTextRun =>
         run.id === targetRun.id && run.kind === "image"
           ? { ...run, image: updater(run.image) }
           : cloneRun(run),
@@ -198,7 +197,7 @@ export function setSelectedImageWrapPreset(
   state: EditorState,
   preset: WrapPreset,
 ): EditorState {
-  return patchSelectedImageFloating(state, (floating) =>
+  return patchSelectedImageFloating(state, (floating): EditorImageFloatingLayout | undefined =>
     wrapPresetToFloating(floating, preset),
   );
 }
@@ -207,7 +206,7 @@ export function setSelectedImageFixedPosition(
   state: EditorState,
   fixed: boolean,
 ): EditorState {
-  return patchSelectedImageFloating(state, (floating) =>
+  return patchSelectedImageFloating(state, (floating): EditorImageFloatingLayout | undefined =>
     floating ? applyMoveWithText(floating, fixed) : floating,
   );
 }
@@ -226,16 +225,16 @@ export function setImageWrapPolygon(
   const paragraphs = getParagraphs(state);
   let matched = false;
 
-  const nextParagraphs = paragraphs.map((candidate) => {
+  const nextParagraphs = paragraphs.map((candidate): EditorParagraphNode => {
     if (
-      !candidate.runs.some((run) => run.id === runId && run.kind === "image")
+      !candidate.runs.some((run): boolean => run.id === runId && run.kind === "image")
     ) {
       return cloneParagraph(candidate);
     }
 
     return {
       ...cloneParagraph(candidate),
-      runs: candidate.runs.map((run) => {
+      runs: candidate.runs.map((run): EditorTextRun => {
         if (run.id !== runId || run.kind !== "image") {
           return cloneRun(run);
         }
@@ -407,7 +406,7 @@ export function moveSelectedImageToPosition(
       ],
     );
 
-  const nextParagraphs = paragraphs.map((paragraph, index) => {
+  const nextParagraphs = paragraphs.map((paragraph, index): EditorParagraphNode => {
     if (index === sourceIndex && index === targetIndex) {
       return insertImageIntoParagraph(
         removeImageFromParagraph(paragraph),

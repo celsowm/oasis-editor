@@ -101,7 +101,7 @@ function serializeTableStyleProperties(
   if (style.defaultCellMargins) {
     const margins = Object.entries(style.defaultCellMargins)
       .map(
-        ([name, value]) =>
+        ([name, value]): string =>
           `<w:${name} w:w="${pointsToTwips(value) ?? 0}" w:type="dxa"/>`,
       )
       .join("");
@@ -109,9 +109,9 @@ function serializeTableStyleProperties(
   }
   if (style.borders) {
     const { borders } = style;
-    const xml = TABLE_BORDER_EDGE_KEYS.filter(([, key]) => !!borders[key])
+    const xml = TABLE_BORDER_EDGE_KEYS.filter(([, key]): boolean => !!borders[key])
       .map(
-        ([name, key]) =>
+        ([name, key]): string =>
           `<w:${name} ${serializeDocxBorderAttrs(borders[key]!)}`,
       )
       .join("");
@@ -185,9 +185,9 @@ function serializeNamedStyle(style: EditorNamedStyle): string {
 
     if (ts.conditionalFormats) {
       const orderedKeys = [
-        ...CONDITIONAL_TYPE_ORDER.filter((k) => k in ts.conditionalFormats!),
+        ...CONDITIONAL_TYPE_ORDER.filter((k): boolean => k in ts.conditionalFormats!),
         ...Object.keys(ts.conditionalFormats).filter(
-          (k) => !CONDITIONAL_TYPE_ORDER.includes(k),
+          (k): boolean => !CONDITIONAL_TYPE_ORDER.includes(k),
         ),
       ];
       for (const key of orderedKeys) {

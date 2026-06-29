@@ -51,6 +51,6 @@ export function serializeParagraphBorders(style: EditorBoxBorders): string {
   ];
   const parts = edges
     .filter((entry): entry is [string, EditorBorderStyle] => entry[1] != null)
-    .map(([name, border]) => `<w:${name} ${serializeDocxBorderAttrs(border)}`);
+    .map(([name, border]): string => `<w:${name} ${serializeDocxBorderAttrs(border)}`);
   return parts.length > 0 ? `<w:pBdr>${parts.join("")}</w:pBdr>` : "";
 }

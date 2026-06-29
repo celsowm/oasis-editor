@@ -1,4 +1,4 @@
-import type { EditorParagraphListStyle, EditorState } from "@/core/model.js";
+import type { EditorParagraphListStyle, EditorState, EditorParagraphNode, EditorTextStyle } from "@/core/model.js";
 import {
   getParagraphLength,
   getParagraphs,
@@ -47,9 +47,9 @@ export function splitListItemAtSelection(state: EditorState): EditorState {
     secondRuns.length > 0
       ? createParagraphFromRunsLike(
           paragraph,
-          secondRuns.map((run) => ({ text: run.text, styles: run.styles })),
+          secondRuns.map((run): { text: string; styles: EditorTextStyle | undefined; } => ({ text: run.text, styles: run.styles })),
         )
-      : (() => {
+      : ((): EditorParagraphNode => {
           const emptyParagraph = createEditorParagraph("");
           emptyParagraph.style = paragraph.style
             ? { ...paragraph.style }
@@ -75,7 +75,7 @@ export function splitListItemAtSelection(state: EditorState): EditorState {
 export function clearParagraphListAtSelection(state: EditorState): EditorState {
   const normalized = normalizeSelection(state);
   const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
     if (
       paragraphIndex < normalized.startIndex ||
       paragraphIndex > normalized.endIndex
@@ -96,7 +96,7 @@ export function clearParagraphListAtSelection(state: EditorState): EditorState {
 export function indentParagraphList(state: EditorState): EditorState {
   const normalized = normalizeSelection(state);
   const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
     if (
       paragraphIndex < normalized.startIndex ||
       paragraphIndex > normalized.endIndex
@@ -124,7 +124,7 @@ export function indentParagraphList(state: EditorState): EditorState {
 export function outdentParagraphList(state: EditorState): EditorState {
   const normalized = normalizeSelection(state);
   const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
     if (
       paragraphIndex < normalized.startIndex ||
       paragraphIndex > normalized.endIndex
@@ -162,9 +162,9 @@ export function toggleParagraphList(
   const targetedParagraphs = paragraphs.slice(startIndex, endIndex + 1);
   const shouldClear =
     targetedParagraphs.length > 0 &&
-    targetedParagraphs.every((paragraph) => paragraph.list?.kind === kind);
+    targetedParagraphs.every((paragraph): boolean => paragraph.list?.kind === kind);
 
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
     if (paragraphIndex < startIndex || paragraphIndex > endIndex) {
       return cloneParagraph(paragraph);
     }
@@ -198,7 +198,7 @@ export function setParagraphListFormat(
   const normalized = normalizeSelection(state);
   const paragraphs = getParagraphs(state);
 
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
     if (
       paragraphIndex < normalized.startIndex ||
       paragraphIndex > normalized.endIndex
@@ -233,7 +233,7 @@ export function setParagraphListStartAt(
   const normalized = normalizeSelection(state);
   const paragraphs = getParagraphs(state);
 
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
     if (
       paragraphIndex < normalized.startIndex ||
       paragraphIndex > normalized.endIndex

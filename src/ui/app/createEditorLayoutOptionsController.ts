@@ -56,26 +56,26 @@ export function createEditorLayoutOptionsController(
   const applyLayoutOptionPatch = (
     mergeKey: MergeKey,
     apply: (current: EditorState, target: "image" | "textBox") => EditorState,
-  ) => {
+  ): void => {
     const target = layoutOptionsTarget();
     if (!target) return;
     resetTransactionGrouping();
-    applyTransactionalState((current) => apply(current, target), { mergeKey });
+    applyTransactionalState((current): EditorState => apply(current, target), { mergeKey });
     focusInput();
   };
 
   // After switching an image to tight/through, auto-trace its alpha contour (if
   // it has none yet) and store it. Mirrors the async-font → relayout pattern.
-  const ensureImageWrapContour = (runId: string, src: string) => {
+  const ensureImageWrapContour = (runId: string, src: string): void => {
     const resolved = resolveImageSrc(state().document, src);
-    const applyContour = (img: HTMLImageElement) => {
+    const applyContour = (img: HTMLImageElement): void => {
       const polygon = traceImageAlphaContour(img);
       applyTransactionalState(
-        (current) => setImageWrapPolygon(current, runId, polygon),
+        (current): EditorState => setImageWrapPolygon(current, runId, polygon),
         { mergeKey: MERGE_KEYS.layoutWrapPolygon },
       );
     };
-    const img = getCachedCanvasImage(resolved, () => {
+    const img = getCachedCanvasImage(resolved, (): void => {
       if (img.naturalWidth > 0) applyContour(img);
     });
     if (img.complete && img.naturalWidth > 0) {
@@ -85,20 +85,20 @@ export function createEditorLayoutOptionsController(
 
   return {
     target: layoutOptionsTarget,
-    preset: () => {
+    preset: (): WrapPreset | null => {
       const target = layoutOptionsTarget();
       if (target === "image") return getSelectedImageWrapPreset(state());
       if (target === "textBox") return getSelectedTextBoxWrapPreset(state());
       return null;
     },
-    fixedPosition: () => {
+    fixedPosition: (): boolean => {
       const target = layoutOptionsTarget();
       if (target === "image") return isSelectedImageFixedPosition(state());
       if (target === "textBox") return isSelectedTextBoxFixedPosition(state());
       return false;
     },
-    setPreset: (preset: WrapPreset) => {
-      applyLayoutOptionPatch(MERGE_KEYS.layoutWrapPreset, (current, target) =>
+    setPreset: (preset: WrapPreset): void => {
+      applyLayoutOptionPatch(MERGE_KEYS.layoutWrapPreset, (current, target): EditorState =>
         target === "image"
           ? setSelectedImageWrapPreset(current, preset)
           : setSelectedTextBoxWrapPreset(current, preset),
@@ -111,10 +111,10 @@ export function createEditorLayoutOptionsController(
         }
       }
     },
-    setFixedPosition: (fixed: boolean) =>
+    setFixedPosition: (fixed: boolean): void =>
       applyLayoutOptionPatch(
         MERGE_KEYS.layoutFixedPosition,
-        (current, target) =>
+        (current, target): EditorState =>
           target === "image"
             ? setSelectedImageFixedPosition(current, fixed)
             : setSelectedTextBoxFixedPosition(current, fixed),

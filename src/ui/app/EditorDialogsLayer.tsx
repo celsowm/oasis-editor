@@ -8,6 +8,7 @@ import { TablePropertiesDialog } from "@/ui/components/Dialogs/TablePropertiesDi
 import { FindReplaceDialog } from "@/ui/components/FindReplace/FindReplaceDialog.js";
 import { ContextMenu } from "@/ui/components/ContextMenu/ContextMenu.js";
 import type { createEditorDialogs } from "./useEditorDialogs.js";
+import { JSX } from "solid-js";
 
 type EditorDialogsState = ReturnType<typeof createEditorDialogs>;
 
@@ -34,7 +35,7 @@ export interface EditorDialogsLayerProps {
  * Holds no editor logic — it only binds dialog signals and command callbacks to
  * their respective UI components.
  */
-export function EditorDialogsLayer(props: EditorDialogsLayerProps) {
+export function EditorDialogsLayer(props: EditorDialogsLayerProps): JSX.Element {
   const {
     linkDialog,
     setLinkDialog,
@@ -56,31 +57,31 @@ export function EditorDialogsLayer(props: EditorDialogsLayerProps) {
       <LinkDialog
         isOpen={linkDialog().isOpen}
         initialHref={linkDialog().initialHref}
-        onClose={() => {
+        onClose={(): void => {
           setLinkDialog({ ...linkDialog(), isOpen: false });
           props.focusInput();
         }}
-        onConfirm={(href) => props.applyLinkCommand(href.trim() || null)}
+        onConfirm={(href): void => props.applyLinkCommand(href.trim() || null)}
       />
 
       <ImageAltDialog
         isOpen={imageAltDialog().isOpen}
         initialAlt={imageAltDialog().initialAlt}
-        onClose={() => {
+        onClose={(): void => {
           setImageAltDialog({ ...imageAltDialog(), isOpen: false });
           props.focusInput();
         }}
-        onConfirm={(alt) => props.applyImageAltCommand(alt.trim())}
+        onConfirm={(alt): void => props.applyImageAltCommand(alt.trim())}
       />
 
       <ImageCaptionDialog
         isOpen={imageCaptionDialog().isOpen}
         initialCaption={imageCaptionDialog().initialCaption}
-        onClose={() => {
+        onClose={(): void => {
           setImageCaptionDialog({ ...imageCaptionDialog(), isOpen: false });
           props.focusInput();
         }}
-        onConfirm={(caption) => props.applyImageCaptionCommand(caption.trim())}
+        onConfirm={(caption): void => props.applyImageCaptionCommand(caption.trim())}
       />
 
       <FindReplaceDialog fr={props.findReplace} />
@@ -90,7 +91,7 @@ export function EditorDialogsLayer(props: EditorDialogsLayerProps) {
         initial={fontDialog().initial}
         familyOptions={props.fontFamilyOptions()}
         sizeOptions={props.fontSizeOptions()}
-        onClose={() => {
+        onClose={(): void => {
           setFontDialog({ ...fontDialog(), isOpen: false });
           props.focusInput();
         }}
@@ -100,7 +101,7 @@ export function EditorDialogsLayer(props: EditorDialogsLayerProps) {
       <ParagraphDialog
         isOpen={paragraphDialog().isOpen}
         initial={paragraphDialog().initial}
-        onClose={() => {
+        onClose={(): void => {
           setParagraphDialog({ ...paragraphDialog(), isOpen: false });
           props.focusInput();
         }}
@@ -110,7 +111,7 @@ export function EditorDialogsLayer(props: EditorDialogsLayerProps) {
       <TablePropertiesDialog
         isOpen={tablePropertiesDialog().isOpen}
         initial={tablePropertiesDialog().initial}
-        onClose={() => {
+        onClose={(): void => {
           setTablePropertiesDialog({
             ...tablePropertiesDialog(),
             isOpen: false,

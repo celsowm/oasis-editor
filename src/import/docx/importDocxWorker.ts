@@ -39,7 +39,7 @@ function post(message: ImportWorkerResponse): void {
 
 globalThis.addEventListener(
   "message",
-  async (event: MessageEvent<ImportWorkerRequest>) => {
+  async (event: MessageEvent<ImportWorkerRequest>): Promise<void> => {
     const message = event.data;
     if (message?.type !== "import-docx") {
       return;
@@ -47,7 +47,7 @@ globalThis.addEventListener(
 
     try {
       const document = await importDocxToEditorDocument(message.buffer, {
-        onProgress: (stage, progress) => {
+        onProgress: (stage, progress): void => {
           post({ type: "progress", id: message.id, stage, progress });
         },
       });

@@ -103,7 +103,7 @@ function resolveNamedTableStyle(
   const effectiveId =
     styleId ??
     Object.values(styles).find(
-      (style) => style.type === "table" && style.isDefault,
+      (style): boolean | undefined => style.type === "table" && style.isDefault,
     )?.id;
   if (!effectiveId || seen.has(effectiveId)) return { tableStyle: {} };
   const named = styles[effectiveId];

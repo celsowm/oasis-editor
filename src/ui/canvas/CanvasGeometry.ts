@@ -8,6 +8,7 @@ import type {
   CanvasSnapshotLine,
   CanvasSnapshotParagraph,
 } from "./CanvasLayoutSnapshot.js";
+import type { CanvasSnapshotSlot } from "@/ui/canvas/canvasSnapshotTypes.js";
 
 export interface CanvasRectLike {
   left: number;
@@ -100,9 +101,9 @@ export function getCaretRectFromSnapshot(
     return rectFromBox(entry.left, entry.top, 1, Math.max(entry.height, 16));
   }
   const slot =
-    line.slots.find((candidate) => candidate.offset === paragraphOffset) ??
+    line.slots.find((candidate): boolean => candidate.offset === paragraphOffset) ??
     line.slots.reduce(
-      (best, candidate) =>
+      (best, candidate): CanvasSnapshotSlot =>
         Math.abs(candidate.offset - paragraphOffset) <
         Math.abs(best.offset - paragraphOffset)
           ? candidate

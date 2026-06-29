@@ -44,7 +44,7 @@ export function parseCoverage(reader: BinaryReader, offset: number): Coverage {
     for (let i = 0; i < count; i += 1) {
       map.set(reader.u16(), i);
     }
-    return (glyphId) => map.get(glyphId) ?? -1;
+    return (glyphId): number => map.get(glyphId) ?? -1;
   }
   if (format === 2) {
     const rangeCount = reader.u16();
@@ -56,7 +56,7 @@ export function parseCoverage(reader: BinaryReader, offset: number): Coverage {
       const startIndex = reader.u16();
       ranges.push({ start, end, startIndex });
     }
-    return (glyphId) => {
+    return (glyphId): number => {
       for (const range of ranges) {
         if (glyphId >= range.start && glyphId <= range.end) {
           return range.startIndex + (glyphId - range.start);
@@ -65,7 +65,7 @@ export function parseCoverage(reader: BinaryReader, offset: number): Coverage {
       return -1;
     };
   }
-  return () => -1;
+  return (): -1 => -1;
 }
 
 export function parseClassDef(
@@ -78,7 +78,7 @@ export function parseClassDef(
     const startGlyph = reader.u16();
     const glyphCount = reader.u16();
     const classes = readU16Array(reader, glyphCount);
-    return (glyphId) => {
+    return (glyphId): number => {
       const index = glyphId - startGlyph;
       return index >= 0 && index < glyphCount ? classes[index]! : 0;
     };
@@ -93,7 +93,7 @@ export function parseClassDef(
       const classValue = reader.u16();
       ranges.push({ start, end, classValue });
     }
-    return (glyphId) => {
+    return (glyphId): number => {
       for (const range of ranges) {
         if (glyphId >= range.start && glyphId <= range.end) {
           return range.classValue;
@@ -102,7 +102,7 @@ export function parseClassDef(
       return 0;
     };
   }
-  return () => 0;
+  return (): 0 => 0;
 }
 
 interface FeatureRecord {
@@ -122,7 +122,7 @@ function parseFeatureList(
     const offset = featureListOffset + reader.u16();
     records.push({ tag, offset });
   }
-  return records.map(({ tag, offset }) => {
+  return records.map(({ tag, offset }): { tag: string; lookupIndices: number[]; } => {
     reader.seek(offset);
     reader.skip(2); // featureParamsOffset
     const lookupIndexCount = reader.u16();
@@ -150,8 +150,8 @@ function parseScriptList(
   if (scripts.length === 0) return [];
 
   const chosen =
-    scripts.find((s) => s.tag === "latn") ??
-    scripts.find((s) => s.tag === "DFLT") ??
+    scripts.find((s): boolean => s.tag === "latn") ??
+    scripts.find((s): boolean => s.tag === "DFLT") ??
     scripts[0]!;
 
   reader.seek(chosen.offset);
@@ -235,7 +235,7 @@ export function parseLookupList<TSubtable>(
     lookupCount,
     lookupListOffset,
   );
-  return lookupOffsets.map((lookupOffset) => {
+  return lookupOffsets.map((lookupOffset): { lookupType: number; subtables: TSubtable[]; } => {
     reader.seek(lookupOffset);
     const lookupType = reader.u16();
     reader.skip(2); // lookupFlag (glyph skipping ignored — no marks in scope)
@@ -268,5 +268,5 @@ export function collectLookupIndices(
       indices.add(lookupIndex);
     }
   }
-  return Array.from(indices).sort((a, b) => a - b);
+  return Array.from(indices).sort((a, b): number => a - b);
 }

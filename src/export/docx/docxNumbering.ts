@@ -40,7 +40,7 @@ export function buildNumberingContext(
       definitionMap.set(key, definition);
       definitions.push(definition);
     }
-    if (!definition.levels.some((candidate) => candidate.level === level)) {
+    if (!definition.levels.some((candidate): boolean => candidate.level === level)) {
       definition.levels.push({
         kind: paragraph.list.kind,
         level,
@@ -84,9 +84,9 @@ export function buildNumberingContext(
 
 export function buildNumberingXml(definitions: NumberingDefinition[]): string {
   const abstractNums = definitions
-    .map(({ abstractNumId, levels }) => {
+    .map(({ abstractNumId, levels }): string => {
       const levelsXml = levels
-        .sort((a, b) => a.level - b.level)
+        .sort((a, b): number => a.level - b.level)
         .map(
           ({
             kind,
@@ -99,7 +99,7 @@ export function buildNumberingXml(definitions: NumberingDefinition[]): string {
             legal,
             bulletGlyph,
             bulletFont,
-          }) => {
+          }): string => {
             const numFmtVal =
               kind === "bullet" ? "bullet" : (format ?? "decimal");
             const effectiveLevelText =
@@ -125,7 +125,7 @@ export function buildNumberingXml(definitions: NumberingDefinition[]): string {
 
   const nums = definitions
     .map(
-      ({ abstractNumId, numId }) =>
+      ({ abstractNumId, numId }): string =>
         `<w:num w:numId="${numId}"><w:abstractNumId w:val="${abstractNumId}"/></w:num>`,
     )
     .join("");

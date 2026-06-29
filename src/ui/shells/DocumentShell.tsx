@@ -28,6 +28,7 @@ import { createCanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnap
 import { getParagraphEntries } from "@/ui/canvas/CanvasGeometry.js";
 import type { OasisEditor } from "@/core/plugin.js";
 import { PluginUiHost } from "@/ui/components/PluginUi/PluginUiHost.js";
+import { JSX } from "solid-js";
 
 export interface ShellProps {
   state: EditorState;
@@ -67,19 +68,19 @@ export interface ShellProps {
   fileHandlers: OasisEditorEditorFileHandlers;
 }
 
-export function DocumentShell(props: ShellProps) {
+export function DocumentShell(props: ShellProps): JSX.Element {
   let surfaceEl: HTMLDivElement | undefined;
   let viewportEl: HTMLDivElement | undefined;
   const outlineSnapshotProvider = createCanvasLayoutSnapshotProvider();
-  const captureSurfaceRef = (el: HTMLDivElement) => {
+  const captureSurfaceRef = (el: HTMLDivElement): void => {
     surfaceEl = el;
     props.refs.onSurfaceRef?.(el);
   };
-  const captureViewportRef = (el: HTMLDivElement) => {
+  const captureViewportRef = (el: HTMLDivElement): void => {
     viewportEl = el;
     props.refs.onViewportRef?.(el);
   };
-  const handleOutlineNavigate = (id: string) => {
+  const handleOutlineNavigate = (id: string): void => {
     if (!surfaceEl) return;
     const snapshot = outlineSnapshotProvider.getCanvasLayoutSnapshot({
       surface: surfaceEl,
@@ -150,8 +151,8 @@ export function DocumentShell(props: ShellProps) {
             <OutlinePanel
               state={props.state}
               onNavigate={handleOutlineNavigate}
-              surfaceRef={() => surfaceEl}
-              viewportRef={() => viewportEl}
+              surfaceRef={(): HTMLDivElement | undefined => surfaceEl}
+              viewportRef={(): HTMLDivElement | undefined => viewportEl}
               documentLayout={props.documentLayout}
               zoomFactor={props.layout.zoomFactor}
               snapshotProvider={outlineSnapshotProvider}
@@ -159,13 +160,13 @@ export function DocumentShell(props: ShellProps) {
           </Show>
           <section class="oasis-editor-stage">
             <OasisEditorEditor
-              state={() => props.state}
+              state={(): EditorState => props.state}
               layout={{
                 ...props.layout,
                 documentLayout: props.documentLayout,
                 showHorizontalRuler: props.showChrome,
-                measuredBlockHeights: () => props.measuredBlockHeights(),
-                measuredParagraphLayouts: () =>
+                measuredBlockHeights: (): Record<string, number> => props.measuredBlockHeights(),
+                measuredParagraphLayouts: (): Record<string, EditorLayoutParagraph> =>
                   props.measuredParagraphLayouts(),
                 viewportHeight: props.viewportHeight(),
                 readOnly: props.isReadOnly,
@@ -173,8 +174,8 @@ export function DocumentShell(props: ShellProps) {
               overlays={{
                 ...props.overlays,
                 toolbarHost: props.toolbarHost,
-                persistenceStatus: () => props.persistenceStatus(),
-                showFloatingTableToolbar: () =>
+                persistenceStatus: (): string => props.persistenceStatus(),
+                showFloatingTableToolbar: (): boolean =>
                   props.showFloatingTableToolbar(),
               }}
               refs={{

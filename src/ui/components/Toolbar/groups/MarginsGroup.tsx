@@ -32,25 +32,25 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
   const [draft, setDraft] = createSignal<Record<string, string>>({});
 
   const current = createMemo(
-    () =>
+    (): EditorPageMargins | undefined =>
       api.commands.state("setPageMargins").value as
         | EditorPageMargins
         | undefined,
   );
 
-  const activePresetId = createMemo(() => {
+  const activePresetId = createMemo((): string | undefined => {
     const margins = current();
     if (!margins) return undefined;
-    return MARGIN_PRESETS.find((preset) => marginsMatchPreset(margins, preset))
+    return MARGIN_PRESETS.find((preset): boolean => marginsMatchPreset(margins, preset))
       ?.id;
   });
 
-  const applyPreset = (preset: MarginPreset) => {
+  const applyPreset = (preset: MarginPreset): void => {
     api.commands.execute("setPageMargins", presetMarginsPx(preset));
     api.focusEditor();
   };
 
-  const openCustom = () => {
+  const openCustom = (): void => {
     const margins = current();
     setDraft({
       top: margins ? String(pxToCm(margins.top)) : "",
@@ -58,10 +58,10 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
       left: margins ? String(pxToCm(margins.left)) : "",
       right: margins ? String(pxToCm(margins.right)) : "",
     });
-    setShowCustom((v) => !v);
+    setShowCustom((v): boolean => !v);
   };
 
-  const applyCustom = () => {
+  const applyCustom = (): void => {
     const d = draft();
     const payload: Partial<EditorPageMargins> = {};
     for (const { key } of FIELDS) {
@@ -87,7 +87,7 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
     >
       <div class="oasis-editor-margins-list">
         <For each={MARGIN_PRESETS}>
-          {(preset) => (
+          {(preset): JSX.Element => (
             <button
               type="button"
               class="oasis-editor-margins-item"
@@ -96,7 +96,7 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
                   activePresetId() === preset.id,
               }}
               data-testid={`editor-toolbar-margins-${preset.id}`}
-              onClick={() => applyPreset(preset)}
+              onClick={(): void => applyPreset(preset)}
             >
               <span class="oasis-editor-margins-item-name">
                 {t(preset.labelKey)}
@@ -126,7 +126,7 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
         <Show when={showCustom()}>
           <div class="oasis-editor-margins-custom-form">
             <For each={FIELDS}>
-              {(field) => (
+              {(field): JSX.Element => (
                 <label class="oasis-editor-margins-custom-field">
                   <span>{t(field.labelKey)}</span>
                   <input
@@ -134,8 +134,8 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
                     min="0"
                     step="0.1"
                     value={draft()[field.key] ?? ""}
-                    onInput={(e) =>
-                      setDraft((d) => ({
+                    onInput={(e): { [x: string]: string; } =>
+                      setDraft((d): { [x: string]: string; } => ({
                         ...d,
                         [field.key]: e.currentTarget.value,
                       }))

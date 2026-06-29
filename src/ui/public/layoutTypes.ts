@@ -35,7 +35,7 @@ export function isResponsiveObject<T>(
     typeof value === "object" &&
     value !== null &&
     !Array.isArray(value) &&
-    BREAKPOINTS.some((breakpoint) => breakpoint in value)
+    BREAKPOINTS.some((breakpoint): boolean => breakpoint in value)
   );
 }
 
@@ -70,9 +70,9 @@ export function responsiveCssVars<T>(
 export function mergeStyles(
   ...styles: Array<JSX.CSSProperties | string | undefined>
 ): JSX.CSSProperties | string | undefined {
-  const serializeObjectStyle = (style: JSX.CSSProperties) =>
+  const serializeObjectStyle = (style: JSX.CSSProperties): string =>
     Object.entries(style)
-      .map(([key, value]) => `${key}: ${String(value)}`)
+      .map(([key, value]): string => `${key}: ${String(value)}`)
       .join("; ");
 
   const objectStyles = styles.filter(

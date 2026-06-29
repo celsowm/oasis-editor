@@ -13,7 +13,7 @@ export function resolveRowHeights(options: {
   const { prepared, table, effectiveRowStyles, estimatedHeight } = options;
   const rowCount = Math.max(1, table.rows.length);
 
-  const explicitRowHeights = table.rows.map((row, rowIndex) => {
+  const explicitRowHeights = table.rows.map((row, rowIndex): number | null => {
     const effective = effectiveRowStyles[rowIndex];
     if (effective?.hidden || effective?.revision?.type === "delete") return 0;
     const explicit = parseDimensionToPx(effective?.height);

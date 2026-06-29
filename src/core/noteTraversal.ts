@@ -26,6 +26,7 @@ import type {
 } from "./model.js";
 import { getBlockParagraphs, getDocumentSectionsCanonical } from "./model.js";
 import { assertNever } from "./assertNever.js";
+import type { EditorTableNode, EditorTableRowNode, EditorTableCellNode } from "@/core/model.js";
 
 /** Discriminant of a note reference run. */
 export type NoteReferenceRunKind = "footnoteReference" | "endnoteReference";
@@ -222,7 +223,7 @@ export function computeNoteRenumber<TNote extends NoteBody>(
     ): EditorBlockNode[] | undefined => {
       if (!blocks) return blocks;
       let blockChanged = false;
-      const nextBlocks = blocks.map((block) => {
+      const nextBlocks = blocks.map((block): EditorParagraphNode | EditorTableNode => {
         switch (block.type) {
           case "paragraph": {
             const updated = rewriteParagraphMarkers(
@@ -235,11 +236,11 @@ export function computeNoteRenumber<TNote extends NoteBody>(
           }
           case "table": {
             let tableChanged = false;
-            const nextRows = block.rows.map((row) => {
+            const nextRows = block.rows.map((row): EditorTableRowNode => {
               let rowChanged = false;
-              const nextCells = row.cells.map((cell) => {
+              const nextCells = row.cells.map((cell): EditorTableCellNode => {
                 let cellChanged = false;
-                const nextCellBlocks = cell.blocks.map((p) => {
+                const nextCellBlocks = cell.blocks.map((p): EditorParagraphNode => {
                   const updated = rewriteParagraphMarkers(
                     p,
                     traversal,
@@ -301,7 +302,7 @@ function rewriteParagraphMarkers(
   markerById: Map<string, string>,
 ): EditorParagraphNode {
   let runChanged = false;
-  const nextRuns = paragraph.runs.map((run) => {
+  const nextRuns = paragraph.runs.map((run): EditorTextRun => {
     const ref = traversal.getRef(run);
     if (!ref) return run;
     const desired = markerById.get(ref.id);

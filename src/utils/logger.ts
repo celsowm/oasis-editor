@@ -89,9 +89,9 @@ export function installEditorDebugControl(): void {
   }
 
   globalThis.window.__OASIS_EDITOR_DEBUG_CONTROL__ = {
-    enable: () => setEditorDebugEnabled(true),
-    disable: () => setEditorDebugEnabled(false),
-    isEnabled: () => isEditorDebugEnabled(),
+    enable: (): void => setEditorDebugEnabled(true),
+    disable: (): void => setEditorDebugEnabled(false),
+    isEnabled: (): boolean => isEditorDebugEnabled(),
   };
 }
 
@@ -114,7 +114,7 @@ function unwrapForLogging(
   seen.add(value as object);
 
   if (Array.isArray(value)) {
-    return value.map((entry) => unwrapForLogging(entry, seen));
+    return value.map((entry): unknown => unwrapForLogging(entry, seen));
   }
 
   if (value instanceof Date) {
@@ -124,13 +124,13 @@ function unwrapForLogging(
     return { name: value.name, message: value.message, stack: value.stack };
   }
   if (value instanceof Map) {
-    return Array.from(value.entries()).map(([k, v]) => [
+    return Array.from(value.entries()).map(([k, v]): unknown[] => [
       unwrapForLogging(k, seen),
       unwrapForLogging(v, seen),
     ]);
   }
   if (value instanceof Set) {
-    return Array.from(value.values()).map((entry) =>
+    return Array.from(value.values()).map((entry): unknown =>
       unwrapForLogging(entry, seen),
     );
   }
@@ -171,7 +171,7 @@ function formatTimestamp(): string {
 export type EditorLogger = ReturnType<typeof createEditorLogger>;
 
 export function createEditorLogger(scope: string) {
-  const write = (level: LogLevel, message: string, payload?: unknown) => {
+  const write = (level: LogLevel, message: string, payload?: unknown): void => {
     if (!isEditorDebugEnabled() && level === "debug") {
       return;
     }
@@ -203,13 +203,13 @@ export function createEditorLogger(scope: string) {
   };
 
   return {
-    debug: (message: string, payload?: unknown) =>
+    debug: (message: string, payload?: unknown): void =>
       write("debug", message, payload),
-    info: (message: string, payload?: unknown) =>
+    info: (message: string, payload?: unknown): void =>
       write("info", message, payload),
-    warn: (message: string, payload?: unknown) =>
+    warn: (message: string, payload?: unknown): void =>
       write("warn", message, payload),
-    error: (message: string, payload?: unknown) =>
+    error: (message: string, payload?: unknown): void =>
       write("error", message, payload),
   };
 }

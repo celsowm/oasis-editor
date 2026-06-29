@@ -18,7 +18,7 @@ export function createEditorRevisionController(deps: UseEditorRevisionProps) {
   const [hoveredRevision, setHoveredRevision] =
     createSignal<RevisionBox | null>(null);
 
-  const handleRevisionMouseEnter = (revisionId: string, event: MouseEvent) => {
+  const handleRevisionMouseEnter = (revisionId: string, event: MouseEvent): void => {
     const paragraphs = getParagraphs(deps.state());
     let foundRevision:
       | (EditorRevisionMetadata & { type: RevisionBox["type"] })
@@ -98,7 +98,7 @@ export function createEditorRevisionController(deps: UseEditorRevisionProps) {
     });
   };
 
-  const handleRevisionMouseLeave = () => {
+  const handleRevisionMouseLeave = (): void => {
     setHoveredRevision(null);
   };
 

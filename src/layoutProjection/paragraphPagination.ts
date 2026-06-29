@@ -104,7 +104,7 @@ function sliceFragmentToRange(
   }
 
   const chars = fragment.chars.filter(
-    (char) => char.paragraphOffset >= start && char.paragraphOffset < end,
+    (char): boolean => char.paragraphOffset >= start && char.paragraphOffset < end,
   );
 
   return {
@@ -112,7 +112,7 @@ function sliceFragmentToRange(
     runId: fragment.runId,
     startOffset: start,
     endOffset: end,
-    text: chars.map((char) => char.char).join(""),
+    text: chars.map((char): string => char.char).join(""),
     styles: fragment.styles ? { ...fragment.styles } : undefined,
     image: fragment.image ? { ...fragment.image } : undefined,
     textBox: fragment.textBox ? { ...fragment.textBox } : undefined,
@@ -183,7 +183,7 @@ export function projectParagraphLayout(
     "layout:projectParagraphLayout",
     () => {
       let paragraphOffset = 0;
-      const fragments: EditorLayoutFragment[] = paragraph.runs.map((run) => {
+      const fragments: EditorLayoutFragment[] = paragraph.runs.map((run): EditorLayoutFragment => {
         let resolvedText = run.text;
         const field = getRunField(run);
         if (field) {
@@ -197,7 +197,7 @@ export function projectParagraphLayout(
         }
 
         const chars: EditorLayoutFragmentChar[] = Array.from(resolvedText).map(
-          (char, index) => ({
+          (char, index): { char: string; paragraphOffset: number; runOffset: number; } => ({
             char,
             paragraphOffset: paragraphOffset + index,
             runOffset: index,
@@ -242,7 +242,7 @@ export function projectParagraphLayout(
           ...line,
           height: line.height || lineHeight,
           fragments: fragments
-            .map((fragment) =>
+            .map((fragment): EditorLayoutFragment | null =>
               sliceFragmentToRange(fragment, line.startOffset, line.endOffset),
             )
             .filter(
@@ -252,7 +252,7 @@ export function projectParagraphLayout(
 
       return {
         paragraphId: paragraph.id,
-        text: fragments.map((fragment) => fragment.text).join(""),
+        text: fragments.map((fragment): string => fragment.text).join(""),
         fragments,
         lines,
         startOffset: 0,
@@ -301,7 +301,7 @@ export function projectParagraphLayoutWithExclusions(
   }
 
   const hasFloatingObject = preliminary.fragments.some(
-    (f) => (f.textBox?.floating ?? f.image?.floating) !== undefined,
+    (f): boolean => (f.textBox?.floating ?? f.image?.floating) !== undefined,
   );
   if (
     !hasFloatingObject &&
@@ -351,7 +351,7 @@ export function projectParagraphLayoutWithExclusions(
       ...line,
       height: line.height || lineHeight,
       fragments: preliminary.fragments
-        .map((fragment) =>
+        .map((fragment): EditorLayoutFragment | null =>
           sliceFragmentToRange(fragment, line.startOffset, line.endOffset),
         )
         .filter(
@@ -387,7 +387,7 @@ export function measureParagraphLayoutFromRects(
   return {
     ...projected,
     lines: measuredLines.map((line) => {
-      const slots: EditorCaretSlot[] = line.slots.map((slot) => ({
+      const slots: EditorCaretSlot[] = line.slots.map((slot): { paragraphId: string; offset: number; left: number; top: number; height: number; } => ({
         paragraphId: paragraph.id,
         offset: slot.offset,
         left: slot.left,
@@ -404,7 +404,7 @@ export function measureParagraphLayoutFromRects(
         height: line.height,
         slots,
         fragments: projected.fragments
-          .map((fragment) =>
+          .map((fragment): EditorLayoutFragment | null =>
             sliceFragmentToRange(fragment, line.startOffset, line.endOffset),
           )
           .filter(
@@ -431,7 +431,7 @@ export function applyMeasuredLineGeometry(
       endOffset: line.endOffset,
       top: line.top,
       height: line.height,
-      slots: line.slots.map((slot) => ({
+      slots: line.slots.map((slot): { paragraphId: string; offset: number; left: number; top: number; height: number; } => ({
         paragraphId: projected.paragraphId,
         offset: slot.offset,
         left: slot.left,
@@ -439,7 +439,7 @@ export function applyMeasuredLineGeometry(
         height: slot.height,
       })),
       fragments: projected.fragments
-        .map((fragment) =>
+        .map((fragment): EditorLayoutFragment | null =>
           sliceFragmentToRange(fragment, line.startOffset, line.endOffset),
         )
         .filter(
@@ -482,7 +482,7 @@ export function resolveClosestOffsetInMeasuredLayout(
   clientX: number,
   clientY: number,
 ): number {
-  const slots = layout.lines.flatMap((line) => line.slots);
+  const slots = layout.lines.flatMap((line): EditorCaretSlot[] => line.slots);
   if (slots.length === 0) {
     return 0;
   }
@@ -512,7 +512,7 @@ export function resolveClosestOffsetInMeasuredLayout(
 export function getEffectiveParagraphStyle(
   paragraph: EditorParagraphNode,
   styles: Record<string, EditorNamedStyle> | undefined,
-) {
+): Required<EditorParagraphStyle> {
   return resolveEffectiveParagraphStyle(paragraph.style, styles);
 }
 
@@ -522,7 +522,7 @@ function estimateParagraphFontSize(
 ): number {
   const runFontSizes = paragraph.runs
     .map(
-      (run) =>
+      (run): number | null =>
         resolveEffectiveTextStyleForParagraph(
           run.styles,
           paragraph.style?.styleId,
@@ -580,7 +580,7 @@ export function getParagraphSegmentHeight(
   allowSpacingBefore = true,
   allowSpacingAfter = true,
 ): number {
-  const lineHeights = lines.reduce((sum, line) => sum + line.height, 0);
+  const lineHeights = lines.reduce((sum, line): number => sum + line.height, 0);
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
   const spacingBefore =
     isFirstSegment && allowSpacingBefore
@@ -658,7 +658,7 @@ export function createParagraphSegmentLayout(
     paragraphId: layout.paragraphId,
     text: layout.text.slice(startOffset, endOffset),
     fragments: layout.fragments
-      .map((fragment) => sliceFragmentToRange(fragment, startOffset, endOffset))
+      .map((fragment): EditorLayoutFragment | null => sliceFragmentToRange(fragment, startOffset, endOffset))
       .filter(
         (fragment): fragment is EditorLayoutFragment => fragment !== null,
       ),
@@ -666,7 +666,7 @@ export function createParagraphSegmentLayout(
       ...line,
       index,
       top: line.top - topOffset,
-      slots: line.slots.map((slot) => ({
+      slots: line.slots.map((slot): { top: number; paragraphId: string; offset: number; left: number; height: number; } => ({
         ...slot,
         top: slot.top - topOffset,
       })),
@@ -763,7 +763,7 @@ export function estimateParagraphBlockHeight(
     measurer,
     defaultTabStop,
   );
-  const lineHeightPx = layout.lines.reduce((sum, line) => sum + line.height, 0);
+  const lineHeightPx = layout.lines.reduce((sum, line): number => sum + line.height, 0);
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
   const spacingBefore =
     options.allowSpacingBefore === false

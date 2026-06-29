@@ -1,4 +1,4 @@
-import type { EditorState } from "@/core/model.js";
+import type { EditorState, EditorParagraphNode } from "@/core/model.js";
 import { getParagraphLength, getParagraphs } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import { sliceRuns } from "@/core/document/paragraphRuns.js";
@@ -98,7 +98,7 @@ export function transformSelectedText(
   }
 
   const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
     if (
       paragraphIndex < normalized.startIndex ||
       paragraphIndex > normalized.endIndex
@@ -116,7 +116,7 @@ export function transformSelectedText(
         : getParagraphLength(paragraph);
 
     const selectedText = sliceRuns(paragraph, startOffset, endOffset)
-      .map((run) => run.text)
+      .map((run): string => run.text)
       .join("");
     const transformed = transform(selectedText);
 
@@ -141,5 +141,5 @@ export function changeSelectedTextCase(
   state: EditorState,
   mode: TextCaseMode,
 ): EditorState {
-  return transformSelectedText(state, (text) => applyCaseTransform(text, mode));
+  return transformSelectedText(state, (text): string => applyCaseTransform(text, mode));
 }

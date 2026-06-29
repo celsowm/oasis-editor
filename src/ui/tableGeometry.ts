@@ -80,14 +80,14 @@ export function resolveTableColumnWidthsPx(
   const visualColumnCount = Math.max(
     1,
     ...cellEntries.map(
-      (entry) => entry.visualColumnIndex + Math.max(1, entry.colSpan),
+      (entry): number => entry.visualColumnIndex + Math.max(1, entry.colSpan),
     ),
   );
 
   if (table.gridCols && table.gridCols.length >= visualColumnCount) {
-    const gridTotal = table.gridCols.reduce((a, b) => a + b, 0);
+    const gridTotal = table.gridCols.reduce((a, b): number => a + b, 0);
     const scale = gridTotal > 0 ? tableWidth / gridTotal : 1;
-    return table.gridCols.map((w) => w * scale);
+    return table.gridCols.map((w): number => w * scale);
   }
   const baseCellWidth = tableWidth / visualColumnCount;
   return Array(visualColumnCount).fill(baseCellWidth);
@@ -141,7 +141,7 @@ export function getTableCellContentWidthForParagraph(
 
   const entries = buildTableCellLayout(table);
   const matched = entries.find(
-    (entry) =>
+    (entry): boolean =>
       entry.rowIndex === tableLocation.rowIndex &&
       entry.cellIndex === tableLocation.cellIndex,
   );

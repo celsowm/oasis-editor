@@ -16,10 +16,10 @@ const IMPORTERS: readonly DocumentFormatImporter[] = [
 export function resolveImporterForFile(
   file: File,
 ): DocumentFormatImporter | undefined {
-  return IMPORTERS.find((importer) => importer.matches(file));
+  return IMPORTERS.find((importer): boolean => importer.matches(file));
 }
 
 /** Comma-separated extension list for an `<input type="file" accept>`. */
 export function importFileAccept(): string {
-  return IMPORTERS.flatMap((importer) => importer.accept).join(",");
+  return IMPORTERS.flatMap((importer): readonly string[] => importer.accept).join(",");
 }

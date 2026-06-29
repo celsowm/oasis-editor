@@ -1,5 +1,5 @@
 import { createSignal, onCleanup, onMount, Show } from "solid-js";
-import { type EditorState } from "@/core/model.js";
+import { type EditorState, EditorSelection } from "@/core/model.js";
 
 import { createEditorLogger } from "@/utils/logger.js";
 import {
@@ -39,6 +39,9 @@ import { createEditorInteractionRuntime } from "./app/createEditorInteractionRun
 import { createEditorCommandRuntime } from "./app/createEditorCommandRuntime.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
+import type { OasisEditorAppUiProps, OasisEditorAppDocumentProps, OasisEditorAppRuntimeProps } from "@/ui/OasisEditorAppProps.js";
+import { JSX } from "solid-js";
+
 export type {
   OasisEditorLoadingOptions,
   OasisEditorAppUiProps,
@@ -49,21 +52,21 @@ export type {
   ToolbarViewMode,
 } from "./OasisEditorAppProps.js";
 
-export function OasisEditorApp(props: OasisEditorAppProps = {}) {
+export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   const runtimeClient = props.runtime?.client ?? createOasisEditorClient();
-  const ui = () => props.ui ?? {};
-  const documentOptions = () => props.document ?? {};
-  const runtimeOptions = () => props.runtime ?? {};
+  const ui = (): OasisEditorAppUiProps => props.ui ?? {};
+  const documentOptions = (): OasisEditorAppDocumentProps => props.document ?? {};
+  const runtimeOptions = (): OasisEditorAppRuntimeProps => props.runtime ?? {};
   syncCanvasDebugApiVisibility();
   // Per-instance translator: reads this editor's locale signal, so two editors
   // on the same page translate independently. Provided via I18nProvider below.
-  const translator = createTranslator(() => ui().locale ?? "pt-BR");
+  const translator = createTranslator((): any => ui().locale ?? "pt-BR");
   const logger = createEditorLogger("app");
   const { state, commitState, getStateSnapshot } = createEditorAppState({
     initialDocument: documentOptions().initialDocument,
     initialState: documentOptions().initialState,
   });
-  const applyState = (nextState: EditorState) => {
+  const applyState = (nextState: EditorState): void => {
     commitState(nextState);
   };
   const cloneState = cloneEditorState;
@@ -119,10 +122,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   // First-use precise-fonts welcome overlay (rendered inside the editor shell).
   const [welcomeOpen, setWelcomeOpen] = createSignal(false);
 
-  const viewportRef = () => focusController.viewportRef;
-  const surfaceRef = () => focusController.surfaceRef;
-  const importInputRef = () => focusController.importInputRef;
-  const imageInputRef = () => focusController.imageInputRef;
+  const viewportRef = (): HTMLDivElement | undefined => focusController.viewportRef;
+  const surfaceRef = (): HTMLDivElement | undefined => focusController.surfaceRef;
+  const importInputRef = (): HTMLInputElement | undefined => focusController.importInputRef;
+  const imageInputRef = (): HTMLInputElement | undefined => focusController.imageInputRef;
   const documentRuntime = createEditorDocumentRuntime({
     documentOptions,
     logger,
@@ -173,8 +176,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     viewportRef,
     zoomFactor: zoom.zoomFactor,
     insertImageFromFile: docIO.insertImageFromFile,
-    getForcePlainTextPaste: () => forcePlainTextPaste,
-    setForcePlainTextPaste: (value) => {
+    getForcePlainTextPaste: (): boolean => forcePlainTextPaste,
+    setForcePlainTextPaste: (value): void => {
       forcePlainTextPaste = value;
     },
     getCommandsController: () => commandRuntime.commandsController,
@@ -222,11 +225,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     cloneState,
     setFocused,
     setInitialLoading,
-    getForcePlainTextPaste: () => forcePlainTextPaste,
-    setForcePlainTextPaste: (value) => {
+    getForcePlainTextPaste: (): boolean => forcePlainTextPaste,
+    setForcePlainTextPaste: (value): void => {
       forcePlainTextPaste = value;
     },
-    locale: () => ui().locale ?? "pt-BR",
+    locale: (): any => ui().locale ?? "pt-BR",
     translator,
     runtimeClient,
     runtimeOptions,
@@ -248,7 +251,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     handleKeyDown,
   } = commandRuntime;
 
-  const shouldShowCaret = () =>
+  const shouldShowCaret = (): boolean =>
     computeShouldShowCaret(state as EditorState, caretBox());
 
   const {
@@ -261,8 +264,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     handleEditorContextMenu,
     closeContextMenu,
   } = createEditorChrome({
-    state: () => state,
-    selection: () => state.selection,
+    state: (): EditorState => state,
+    selection: (): EditorSelection => state.selection,
     toolbarStyleState: styleController.toolbarStyleState,
     isReadOnly,
     t: translator,
@@ -343,11 +346,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     },
   });
 
-  onMount(() => {
+  onMount((): void => {
     startIconObserver();
     startLongTaskObserver();
     installGlobalReport();
-    registerDomStatsSurface(() => surfaceRef() ?? null);
+    registerDomStatsSurface((): HTMLDivElement | null => surfaceRef() ?? null);
 
     // Re-apply a previously granted precise-font preference silently (no prompt),
     // otherwise offer it once via the welcome dialog when the browser supports
@@ -358,7 +361,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     }
   });
 
-  onCleanup(() => {
+  onCleanup((): void => {
     onCleanupHook();
     surfaceEventsWithTextDrag.stopDragging();
     textDrag.stopDrag();
@@ -429,13 +432,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           useComposedShell={useComposedShell}
           shellComponent={shellComponent}
           runtime={{
-            state: () => state,
+            state: (): EditorState => state,
             toolbarHost,
             runtimeEditor,
             persistenceStatus,
             toolbarRegistry,
             menuRegistry,
-            showFloatingTableToolbar: () =>
+            showFloatingTableToolbar: (): boolean =>
               !isReadOnly() && commandStateOf("tableContext").value !== null,
           }}
           chrome={{
@@ -449,7 +452,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           }}
           view={{
             isReadOnly,
-            viewportHeight: () => ui().viewportHeight,
+            viewportHeight: (): any => ui().viewportHeight,
             measuredBlockHeights,
             measuredParagraphLayouts,
             documentLayout,
@@ -484,7 +487,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
         <WelcomeOverlay
           isOpen={welcomeOpen() && !initialLoading() && runtimeReady()}
-          onClose={() => setWelcomeOpen(false)}
+          onClose={(): false => setWelcomeOpen(false)}
         />
       </div>
     </I18nProvider>

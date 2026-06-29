@@ -8,6 +8,7 @@ import {
   setPreciseFontPreference,
   setWelcomeSeen,
 } from "@/app/services/userPreferences.js";
+import { JSX } from "solid-js";
 
 interface WelcomeOverlayProps {
   isOpen: boolean;
@@ -21,15 +22,15 @@ interface WelcomeOverlayProps {
  * orchestration, persist the choice, and close. Shown once (gated by
  * `welcomeSeen` in user preferences).
  */
-export function WelcomeOverlay(props: WelcomeOverlayProps) {
+export function WelcomeOverlay(props: WelcomeOverlayProps): JSX.Element {
   const t = useI18n();
-  const handleEnable = () => {
+  const handleEnable = (): void => {
     void enablePreciseFontMode();
     setWelcomeSeen();
     props.onClose();
   };
 
-  const handleSkip = () => {
+  const handleSkip = (): void => {
     setPreciseFontPreference(false);
     setWelcomeSeen();
     props.onClose();

@@ -43,16 +43,16 @@ export function Popover(props: PopoverProps): JSX.Element {
   let panelRef: HTMLDivElement | undefined;
 
   const coords = usePopoverPosition({
-    anchor: () => anchorRef,
-    panel: () => panelRef,
-    open: () => props.open,
+    anchor: (): HTMLElement | undefined => anchorRef,
+    panel: (): HTMLDivElement | undefined => panelRef,
+    open: (): boolean => props.open,
     placement: props.placement,
   });
 
   useDismiss({
     refs: () => [anchorRef, panelRef],
-    open: () => props.open,
-    onDismiss: () => props.onOpenChange(false),
+    open: (): boolean => props.open,
+    onDismiss: (): void => props.onOpenChange(false),
     closeOnEscape: props.closeOnEscape,
   });
 
@@ -81,10 +81,10 @@ export function Popover(props: PopoverProps): JSX.Element {
   return (
     <>
       {props.trigger({
-        ref: (el) => (anchorRef = el),
+        ref: (el): HTMLElement => (anchorRef = el),
         open: props.open,
         setOpen: props.onOpenChange,
-        toggle: () => props.onOpenChange(!props.open),
+        toggle: (): void => props.onOpenChange(!props.open),
       })}
       <Show when={props.open}>
         <Portal>{panel(true)}</Portal>

@@ -89,7 +89,7 @@ function buildEndnoteFlowBlocks(document: EditorDocument): EditorBlockNode[] {
       out.push(emptyMarkerParagraph(ref.endnoteId, marker));
       continue;
     }
-    blocks.forEach((block, index) => {
+    blocks.forEach((block, index): void => {
       if (index === 0 && block.type === "paragraph") {
         out.push(prependMarker(block, ref.endnoteId, marker));
         return;
@@ -121,7 +121,7 @@ export function injectEndnotesIntoDocument(
     return document;
   }
   const lastIndex = sections.length - 1;
-  const nextSections: EditorSection[] = sections.map((section, index) =>
+  const nextSections: EditorSection[] = sections.map((section, index): EditorSection =>
     index === lastIndex
       ? { ...section, blocks: [...section.blocks, ...flowBlocks] }
       : section,

@@ -26,7 +26,7 @@ export const docxImporter: DocumentFormatImporter = {
   ): Promise<EditorDocument> {
     return importDocxInWorker(buffer, {
       onProgress: onProgress
-        ? (stage, progress) =>
+        ? (stage, progress): void =>
             onProgress(DOCX_STAGE_TO_IMPORT_STAGE[stage], progress)
         : undefined,
     });

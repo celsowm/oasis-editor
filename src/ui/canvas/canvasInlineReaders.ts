@@ -76,8 +76,8 @@ export function collectInlineImagesFromLines(options: {
           ? fragment.endOffset
           : imageStartOffset + 1;
       const slot =
-        line.slots.find((candidate) => candidate.offset === imageStartOffset) ??
-        line.slots.find((candidate) => candidate.offset >= imageStartOffset);
+        line.slots.find((candidate): boolean => candidate.offset === imageStartOffset) ??
+        line.slots.find((candidate): boolean => candidate.offset >= imageStartOffset);
       if (!slot) {
         continue;
       }
@@ -146,8 +146,8 @@ export function collectInlineTextBoxesFromLines(options: {
       const endOffset =
         fragment.endOffset > startOffset ? fragment.endOffset : startOffset + 1;
       const slot =
-        line.slots.find((candidate) => candidate.offset === startOffset) ??
-        line.slots.find((candidate) => candidate.offset >= startOffset);
+        line.slots.find((candidate): boolean => candidate.offset === startOffset) ??
+        line.slots.find((candidate): boolean => candidate.offset >= startOffset);
       if (!slot) {
         continue;
       }

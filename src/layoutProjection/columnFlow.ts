@@ -68,7 +68,7 @@ export function projectColumnedBlocksLayout(
       const startIndex = firstTrailingBlock.globalIndex;
       const sourceSubset = context.blocks.slice(startIndex);
       const sumHeight = trailingTracks.reduce(
-        (sum, track) => sum + track.height,
+        (sum, track): number => sum + track.height,
         0,
       );
       let target = Math.max(24, Math.ceil(sumHeight / count));
@@ -101,7 +101,7 @@ export function projectColumnedBlocksLayout(
     const pageTracks = tracks.slice(p * count, p * count + count);
     const blocks: EditorLayoutBlock[] = [];
     let height = 0;
-    pageTracks.forEach((track, columnIndex) => {
+    pageTracks.forEach((track, columnIndex): void => {
       for (const block of track.blocks) {
         block.columnIndex = columnIndex;
         blocks.push(block);

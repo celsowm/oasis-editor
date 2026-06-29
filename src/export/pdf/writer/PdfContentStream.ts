@@ -89,7 +89,7 @@ export class PdfContentStream {
     const page = this.page;
     const dashCommand =
       options.dashArray && options.dashArray.length > 0
-        ? `[${options.dashArray.map((value) => formatNumber(value)).join(" ")}] 0 d`
+        ? `[${options.dashArray.map((value): string => formatNumber(value)).join(" ")}] 0 d`
         : null;
 
     const commands: string[] = [

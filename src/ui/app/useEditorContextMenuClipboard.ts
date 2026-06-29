@@ -71,7 +71,7 @@ export function createEditorContextMenuClipboard(
   deps: EditorContextMenuClipboardDeps,
 ) {
   const t = deps.t;
-  const programmaticCopy = async () => {
+  const programmaticCopy = async (): Promise<void> => {
     const state = deps.state();
     const text = getEditorSelectedText(state);
     if (!text) return;
@@ -97,22 +97,22 @@ export function createEditorContextMenuClipboard(
     }
   };
 
-  const programmaticCut = async () => {
+  const programmaticCut = async (): Promise<void> => {
     if (deps.isReadOnly()) return;
     const text = getEditorSelectedText(deps.state());
     if (!text) return;
     await programmaticCopy();
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
-    deps.applyTransactionalState((current) =>
-      deps.applyTableAwareParagraphEdit(current, (temp) =>
+    deps.applyTransactionalState((current): EditorState =>
+      deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
         deleteBackward(temp),
       ),
     );
     deps.focusInput();
   };
 
-  const programmaticPaste = async () => {
+  const programmaticPaste = async (): Promise<void> => {
     if (deps.isReadOnly()) return;
     let html = "";
     let text = "";
@@ -145,8 +145,8 @@ export function createEditorContextMenuClipboard(
     if (paragraphs.length > 0) {
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState((current) =>
-        deps.applyTableAwareParagraphEdit(current, (temp) =>
+      deps.applyTransactionalState((current): EditorState =>
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
           insertClipboardParagraphsAtSelection(temp, paragraphs),
         ),
       );
@@ -157,8 +157,8 @@ export function createEditorContextMenuClipboard(
     if (text) {
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState((current) =>
-        deps.applyTableAwareParagraphEdit(current, (temp) =>
+      deps.applyTransactionalState((current): EditorState =>
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
           insertPlainTextAtSelection(temp, text),
         ),
       );
@@ -177,7 +177,7 @@ export function createEditorContextMenuClipboard(
         shortcut: "Ctrl+X",
         disabled: readOnly || !hasSelection,
         testId: "editor-context-menu-cut",
-        onSelect: () => {
+        onSelect: (): void => {
           void programmaticCut();
         },
       },
@@ -188,7 +188,7 @@ export function createEditorContextMenuClipboard(
         shortcut: "Ctrl+C",
         disabled: !hasSelection,
         testId: "editor-context-menu-copy",
-        onSelect: () => {
+        onSelect: (): void => {
           void programmaticCopy();
         },
       },
@@ -199,7 +199,7 @@ export function createEditorContextMenuClipboard(
         shortcut: "Ctrl+V",
         disabled: readOnly,
         testId: "editor-context-menu-paste",
-        onSelect: () => {
+        onSelect: (): void => {
           void programmaticPaste();
         },
       },
@@ -318,12 +318,12 @@ export function createEditorContextMenuClipboard(
     return items;
   };
 
-  const handleEditorContextMenu = (event: MouseEvent) => {
+  const handleEditorContextMenu = (event: MouseEvent): void => {
     event.preventDefault();
     deps.setContextMenu({ isOpen: true, x: event.clientX, y: event.clientY });
   };
 
-  const closeContextMenu = () => {
+  const closeContextMenu = (): void => {
     deps.setContextMenu({ isOpen: false, x: 0, y: 0 });
   };
 

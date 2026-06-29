@@ -6,7 +6,7 @@ import type { EditorParagraphNode } from "./types/nodes.js";
 import type { EditorPosition } from "./types/selection.js";
 
 export function getParagraphText(paragraph: EditorParagraphNode): string {
-  return paragraph.runs.map((run) => run.text).join("");
+  return paragraph.runs.map((run): string => run.text).join("");
 }
 
 export function getParagraphLength(paragraph: EditorParagraphNode): number {
@@ -17,7 +17,7 @@ export function getRunIndex(
   paragraph: EditorParagraphNode,
   runId: string,
 ): number {
-  const index = paragraph.runs.findIndex((run) => run.id === runId);
+  const index = paragraph.runs.findIndex((run): boolean => run.id === runId);
   return index === -1 ? 0 : index;
 }
 

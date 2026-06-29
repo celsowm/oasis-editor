@@ -13,6 +13,8 @@ import { createCanvasSurfaceHitResolver } from "./useCanvasSurfaceHitResolver.js
 import { createEditorLayoutOptionsController } from "./createEditorLayoutOptionsController.js";
 import { useEditorInteractionWiring } from "./useEditorInteractionWiring.js";
 import type { createEditorDocumentRuntime } from "./createEditorDocumentRuntime.js";
+import type { SelectedObjectRun } from "@/core/commands/selectedObjectRun.js";
+import type { CaretBox } from "@/ui/editorUiTypes.js";
 
 type DocRuntime = ReturnType<typeof createEditorDocumentRuntime>;
 type CommandsController = ReturnType<typeof createEditorCommandsController>;
@@ -83,20 +85,20 @@ export function createEditorInteractionRuntime(
     canvasSnapshotProvider,
   } = deps;
 
-  const selectedImageRun = () => getSelectedImageRun(state);
-  const selectedTextBoxRun = () => getSelectedTextBoxRun(state);
+  const selectedImageRun = (): SelectedObjectRun | null => getSelectedImageRun(state);
+  const selectedTextBoxRun = (): SelectedObjectRun | null => getSelectedTextBoxRun(state);
 
   const layoutOptionsOverlay = createEditorLayoutOptionsController({
-    state: () => state,
+    state: (): EditorState => state,
     resetTransactionGrouping,
     applyTransactionalState,
     focusInput,
   });
 
   const canvasHitResolver = createCanvasSurfaceHitResolver({
-    state: () => state,
-    surfaceRef: () => surfaceRef() ?? null,
-    viewportRef: () => viewportRef() ?? null,
+    state: (): EditorState => state,
+    surfaceRef: (): HTMLDivElement | null => surfaceRef() ?? null,
+    viewportRef: (): HTMLDivElement | null => viewportRef() ?? null,
     documentLayout,
     canvasSnapshotProvider,
     zoomFactor,
@@ -154,7 +156,7 @@ export function createEditorInteractionRuntime(
   });
 
   const styleController = createEditorStyleController({
-    state: () => state,
+    state: (): EditorState => state,
     commandsController: getCommandsController,
     clearPreferredColumn,
     resetTransactionGrouping,
@@ -174,8 +176,8 @@ export function createEditorInteractionRuntime(
     resetTransactionGrouping,
     surfaceRef,
     viewportRef,
-    caretBox: () => caretBox(),
-    preferredColumnX: () => preferredColumnX(),
+    caretBox: (): CaretBox => caretBox(),
+    preferredColumnX: (): number | null => preferredColumnX(),
     setPreferredColumnX,
     zoomFactor,
     documentLayout,
@@ -190,7 +192,7 @@ export function createEditorInteractionRuntime(
     insertImageFromFile,
   });
 
-  const onEditorMouseDown = (event: MouseEvent) => {
+  const onEditorMouseDown = (event: MouseEvent): void => {
     // Preserve the current selection on right-click so the user can copy/cut
     // from the selected text via the context menu.
     if (event.button !== 0) {

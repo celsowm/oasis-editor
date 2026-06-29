@@ -1,5 +1,5 @@
 import { createEffect, createMemo, createSignal, onCleanup } from "solid-js";
-import type { EditorLayoutParagraph, EditorState } from "@/core/model.js";
+import type { EditorLayoutParagraph, EditorState, EditorLayoutDocument } from "@/core/model.js";
 import { computeCanvasSelectionGeometry } from "@/ui/canvas/CanvasSelectionGeometry.js";
 import { computeCommentHighlights } from "@/ui/canvas/CanvasCommentGeometry.js";
 import {
@@ -48,7 +48,7 @@ function scheduleFrame(callback: () => void): number {
     typeof window !== "undefined" &&
     typeof window.requestAnimationFrame === "function"
   ) {
-    return window.requestAnimationFrame(() => callback());
+    return window.requestAnimationFrame((): void => callback());
   }
   return globalThis.setTimeout(callback, 16) as unknown as number;
 }
@@ -103,7 +103,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     null,
   );
   const stabilize = createLayoutIdentityStabilizer();
-  const documentLayout = createMemo(() => {
+  const documentLayout = createMemo((): EditorLayoutDocument => {
     layoutMetricsEpoch();
     return stabilize(
       projectDocumentLayout(
@@ -121,14 +121,14 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
 
   let syncRequestId = 0;
 
-  const syncInputBox = (_reason: LayoutSyncReason = "selection") => {
+  const syncInputBox = (_reason: LayoutSyncReason = "selection"): void => {
     const surface = props.surfaceRef();
     if (!surface) {
       setSelectionBoxes([]);
       setCommentHighlights([]);
       setSelectedImageBox(null);
       setSelectedTextBoxBox(null);
-      setCaretBox((current) => ({ ...current, visible: false }));
+      setCaretBox((current): { visible: false; left: number; top: number; height: number; } => ({ ...current, visible: false }));
       return;
     }
 
@@ -143,7 +143,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       setCommentHighlights([]);
       setSelectedImageBox(null);
       setSelectedTextBoxBox(null);
-      setCaretBox((current) => ({ ...current, visible: false }));
+      setCaretBox((current): { visible: false; left: number; top: number; height: number; } => ({ ...current, visible: false }));
       return;
     }
 
@@ -156,9 +156,9 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     setCaretBox(geometry.caretBox);
   };
 
-  const requestInputBoxSync = (reason: LayoutSyncReason = "selection") => {
+  const requestInputBoxSync = (reason: LayoutSyncReason = "selection"): void => {
     const requestId = ++syncRequestId;
-    queueMicrotask(() => {
+    queueMicrotask((): void => {
       if (requestId !== syncRequestId) {
         return;
       }
@@ -182,7 +182,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     } = {},
   ): Promise<void> | null => {
     if (options.paragraphIds && options.paragraphIds.length > 0) {
-      setMeasuredParagraphLayouts((current) =>
+      setMeasuredParagraphLayouts((current): Record<string, EditorLayoutParagraph> =>
         normalizeParagraphLayouts(current, options.paragraphIds ?? []),
       );
       bumpLayoutMetricsEpoch();
@@ -202,7 +202,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       bumpLayoutMetricsEpoch();
     } else if ((invalidation.dirtyParagraphIds?.length ?? 0) > 0) {
       const dirtyIds = invalidation.dirtyParagraphIds ?? [];
-      setMeasuredParagraphLayouts((current) =>
+      setMeasuredParagraphLayouts((current): Record<string, EditorLayoutParagraph> =>
         normalizeParagraphLayouts(current, dirtyIds),
       );
       bumpLayoutMetricsEpoch();
@@ -211,19 +211,19 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     requestInputBoxSync("content-change");
   };
 
-  const stabilizeLayoutAfterImport = async () => {
+  const stabilizeLayoutAfterImport = async (): Promise<void> => {
     setMeasuredBlockHeights({});
     setMeasuredParagraphLayouts({});
     bumpLayoutMetricsEpoch();
 
-    await new Promise<void>((resolve) => {
-      scheduleFrame(() => resolve());
+    await new Promise<void>((resolve): void => {
+      scheduleFrame((): void => resolve());
     });
 
     requestInputBoxSync("import");
   };
 
-  createEffect(() => {
+  createEffect((): void => {
     props.state.selection.anchor.paragraphId;
     props.state.selection.anchor.runId;
     props.state.selection.anchor.offset;
@@ -233,7 +233,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     requestInputBoxSync("selection");
   });
 
-  createEffect(() => {
+  createEffect((): void => {
     props.state.document;
     props.state.activeSectionIndex;
     props.state.activeZone;
@@ -243,16 +243,16 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     requestInputBoxSync("content-change");
   });
 
-  createEffect(() => {
+  createEffect((): void => {
     const viewport = props.viewportRef();
     if (!viewport) {
       return;
     }
 
-    const handleViewportScroll = () => {
+    const handleViewportScroll = (): void => {
       requestInputBoxSync("scroll");
     };
-    const handleWindowResize = () => {
+    const handleWindowResize = (): void => {
       requestInputBoxSync("resize");
     };
 
@@ -261,15 +261,15 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     });
     window.addEventListener("resize", handleWindowResize);
 
-    onCleanup(() => {
+    onCleanup((): void => {
       viewport.removeEventListener("scroll", handleViewportScroll);
       window.removeEventListener("resize", handleWindowResize);
     });
   });
 
-  const clearPreferredColumn = () => setPreferredColumnX(null);
+  const clearPreferredColumn = (): null => setPreferredColumnX(null);
 
-  const onCleanupHook = () => {
+  const onCleanupHook = (): void => {
     syncRequestId += 1;
     canvasSnapshotProvider.clear();
   };

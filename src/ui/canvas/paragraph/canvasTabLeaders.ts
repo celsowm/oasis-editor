@@ -22,10 +22,10 @@ export function resolveTabLeader(
   const lineStart = line.slots[0]?.left ?? 0;
   const relativeLeft = tabLeft - lineStart;
   const stop = tabs
-    .filter((tab) => tab.type !== "clear")
+    .filter((tab): boolean => tab.type !== "clear")
     .map((tab) => ({ ...tab, positionPx: tab.position * PX_PER_POINT }))
-    .filter((tab) => tab.positionPx > relativeLeft + 0.01)
-    .sort((a, b) => a.positionPx - b.positionPx)[0];
+    .filter((tab): boolean => tab.positionPx > relativeLeft + 0.01)
+    .sort((a, b): number => a.positionPx - b.positionPx)[0];
   return stop?.leader && stop.leader !== "none" ? stop.leader : undefined;
 }
 
@@ -35,7 +35,7 @@ export function drawTabLeader(
   x1: number,
   x2: number,
   y: number,
-) {
+): void {
   if (x2 <= x1 + 2) return;
   ctx.save();
   ctx.lineWidth = leader === "heavy" ? 1.5 : 1;

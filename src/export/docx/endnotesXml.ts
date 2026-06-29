@@ -139,7 +139,7 @@ export function buildEndnotesXml(
   styles: Record<string, EditorNamedStyle> | undefined,
   endnoteIdMap: Map<string, number>,
 ): EndnotesPartResult {
-  const allBlocks = referenced.flatMap((entry) =>
+  const allBlocks = referenced.flatMap((entry): EditorBlockNode[] =>
     withInjectedEndnoteRef(entry.endnote.blocks),
   );
   const partContext = buildContext(allBlocks);
@@ -150,14 +150,14 @@ export function buildEndnotesXml(
     `<w:endnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:endnote>`;
 
   const endnoteEntries = referenced
-    .map((entry) => {
+    .map((entry): string => {
       const augmentedBlocks = withInjectedEndnoteRef(entry.endnote.blocks);
       const innerXml = augmentedBlocks
-        .map((block) => {
+        .map((block): string => {
           if (block.type === "paragraph") {
             return serializeParagraphXml(block, partContext, styles);
           }
-          return serializeTableXml(block, (paragraph, cell) =>
+          return serializeTableXml(block, (paragraph, cell): string =>
             serializeParagraphXml(paragraph, partContext, styles, {
               align: cell.style?.horizontalAlign,
             }),

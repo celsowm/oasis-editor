@@ -6,10 +6,10 @@ function buildSlots(
   lefts: number[],
   top: number,
   height: number,
-) {
+): { paragraphId: string; offset: number; left: number; top: number; height: number; }[] {
   return Array.from(
     { length: endOffset - startOffset + 1 },
-    (_, slotIndex) => ({
+    (_, slotIndex): { paragraphId: string; offset: number; left: number; top: number; height: number; } => ({
       paragraphId: "",
       offset: startOffset + slotIndex,
       left: lefts[slotIndex] ?? lefts[lefts.length - 1] ?? 0,
@@ -28,7 +28,7 @@ export function commitLine(
   top: number,
   height: number,
   availableWidth?: number,
-) {
+): void {
   lines.push({
     paragraphId,
     index: lines.length,
@@ -38,7 +38,7 @@ export function commitLine(
     height,
     availableWidth,
     slots: buildSlots(startOffset, endOffset, slotLefts, top, height).map(
-      (slot) => ({
+      (slot): { paragraphId: string; offset: number; left: number; top: number; height: number; } => ({
         ...slot,
         paragraphId,
       }),
@@ -56,7 +56,7 @@ export function shiftLine(
   }
   return {
     ...line,
-    slots: line.slots.map((slot) => ({
+    slots: line.slots.map((slot): { left: number; paragraphId: string; offset: number; top: number; height: number; } => ({
       ...slot,
       left: slot.left + deltaX,
     })),

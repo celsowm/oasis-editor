@@ -28,7 +28,7 @@ export class PluginCollection {
     const byName = new Map<string, OasisPlugin>();
     const all = [...input];
 
-    const register = (plugin: OasisPlugin) => {
+    const register = (plugin: OasisPlugin): void => {
       if (!byName.has(plugin.name)) {
         byName.set(plugin.name, plugin);
         all.push(plugin);
@@ -49,7 +49,7 @@ export class PluginCollection {
     ): OasisPlugin => {
       if (typeof ref === "string") {
         const found =
-          byName.get(ref) ?? all.find((candidate) => candidate.name === ref);
+          byName.get(ref) ?? all.find((candidate): boolean => candidate.name === ref);
         if (!found) {
           throw new Error(
             `Plugin '${owner.name}' requires missing plugin '${ref}'.`,
@@ -62,7 +62,7 @@ export class PluginCollection {
       return ref;
     };
 
-    const visit = (plugin: OasisPlugin) => {
+    const visit = (plugin: OasisPlugin): void => {
       if (visited.has(plugin.name)) {
         return;
       }
@@ -89,7 +89,7 @@ export class PluginCollection {
     return ordered;
   }
 
-  async initializeAll() {
+  async initializeAll(): Promise<void> {
     if (this.isInitialized) {
       return;
     }
@@ -108,7 +108,7 @@ export class PluginCollection {
     }
   }
 
-  private async initializePlugin(plugin: OasisPlugin) {
+  private async initializePlugin(plugin: OasisPlugin): Promise<void> {
     const commandNames: string[] = [];
     const uiCleanups: Unsubscribe[] = [];
 
@@ -126,7 +126,7 @@ export class PluginCollection {
     }
   }
 
-  private registerPluginCommands(plugin: OasisPlugin, commandNames: string[]) {
+  private registerPluginCommands(plugin: OasisPlugin, commandNames: string[]): void {
     if (!plugin.commands) {
       return;
     }
@@ -137,7 +137,7 @@ export class PluginCollection {
     }
   }
 
-  private registerPluginUi(plugin: OasisPlugin, uiCleanups: Unsubscribe[]) {
+  private registerPluginUi(plugin: OasisPlugin, uiCleanups: Unsubscribe[]): void {
     for (const action of plugin.ui?.floatingActions ?? []) {
       uiCleanups.push(this.editorInstance.ui.registerFloatingAction(action));
     }
@@ -146,7 +146,7 @@ export class PluginCollection {
     }
   }
 
-  async destroy() {
+  async destroy(): Promise<void> {
     for (const cleanup of this.cleanups) {
       cleanup();
     }
@@ -167,7 +167,7 @@ export class PluginCollection {
     this.isInitialized = false;
   }
 
-  getPlugins() {
+  getPlugins(): OasisPlugin[] {
     return this.plugins;
   }
 }

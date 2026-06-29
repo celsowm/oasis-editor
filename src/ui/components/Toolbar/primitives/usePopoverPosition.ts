@@ -36,11 +36,11 @@ export function usePopoverPosition(
 ): Accessor<PopoverCoords> {
   const [coords, setCoords] = createSignal<PopoverCoords>({ top: 0, left: 0 });
 
-  const gap = () => options.gap ?? 4;
-  const viewportPadding = () => options.viewportPadding ?? 8;
-  const fallbackWidth = () => options.fallbackWidth ?? 240;
+  const gap = (): number => options.gap ?? 4;
+  const viewportPadding = (): number => options.viewportPadding ?? 8;
+  const fallbackWidth = (): number => options.fallbackWidth ?? 240;
 
-  const updateCoords = () => {
+  const updateCoords = (): void => {
     const anchor = options.anchor();
     if (!anchor || !options.open()) {
       return;
@@ -61,7 +61,7 @@ export function usePopoverPosition(
     });
   };
 
-  createEffect(() => {
+  createEffect((): void => {
     if (!options.open()) {
       return;
     }
@@ -70,7 +70,7 @@ export function usePopoverPosition(
     requestAnimationFrame(updateCoords);
     window.addEventListener("resize", updateCoords);
     window.addEventListener("scroll", updateCoords, true);
-    onCleanup(() => {
+    onCleanup((): void => {
       window.removeEventListener("resize", updateCoords);
       window.removeEventListener("scroll", updateCoords, true);
     });

@@ -44,7 +44,7 @@ export function createEditorTableResize(deps: {
 }): TableResizeOps {
   const [resizing, setResizing] = createSignal<TableResizeState | null>(null);
 
-  const handleMouseMove = (event: MouseEvent) => {
+  const handleMouseMove = (event: MouseEvent): void => {
     if (resizing()) {
       setActiveCursorClass(resizing()!.type === "column");
       return;
@@ -72,7 +72,7 @@ export function createEditorTableResize(deps: {
     setHoverCursorClass(info.side === "left" || info.side === "right");
   };
 
-  const handleMouseDown = (event: MouseEvent) => {
+  const handleMouseDown = (event: MouseEvent): boolean => {
     const surface = deps.surfaceRef();
     if (!surface) return false;
 
@@ -179,7 +179,7 @@ export function createEditorTableResize(deps: {
     return true;
   };
 
-  const handleWindowMouseMove = (event: MouseEvent) => {
+  const handleWindowMouseMove = (event: MouseEvent): void => {
     const currentResizing = resizing();
     if (!currentResizing) return;
 
@@ -193,7 +193,7 @@ export function createEditorTableResize(deps: {
     setActiveCursorClass(currentResizing.type === "column");
   };
 
-  const handleWindowMouseUp = (event: MouseEvent) => {
+  const handleWindowMouseUp = (event: MouseEvent): void => {
     const currentResizing = resizing();
     if (!currentResizing) return;
 
@@ -204,7 +204,7 @@ export function createEditorTableResize(deps: {
       z;
 
     if (Math.abs(delta) >= DRAG_THRESHOLD_PX) {
-      deps.applyTransactionalState((current) => {
+      deps.applyTransactionalState((current): EditorState => {
         if (currentResizing.type === "row") {
           return applyRowResize(current, currentResizing, delta);
         }

@@ -22,6 +22,7 @@ import type {
 import { RibbonTabs } from "./ribbon/RibbonTabs.js";
 import { RibbonPanel } from "./ribbon/RibbonPanel.js";
 import type { RibbonTabId } from "./schema/items.js";
+import type { ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
 
 const shouldAllowNativeMouseDown = (target: EventTarget | null): boolean =>
   target instanceof Element &&
@@ -45,25 +46,25 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
   const [version, setVersion] = createSignal(0);
   const [activeTab, setActiveTab] = createSignal<RibbonTabId>("home");
 
-  onMount(() => {
-    const unsubscribe = props.registry.onChange(() => setVersion((v) => v + 1));
+  onMount((): void => {
+    const unsubscribe = props.registry.onChange((): number => setVersion((v): number => v + 1));
     onCleanup(unsubscribe);
   });
 
-  const items = createMemo(() => {
+  const items = createMemo((): ToolbarItem[] => {
     version();
     const ordered = props.registry.getOrdered();
     if (props.showFileGroup === false) {
-      return ordered.filter((item) => item.group !== "file");
+      return ordered.filter((item): boolean => item.group !== "file");
     }
     return ordered;
   });
 
-  const view = () => props.view ?? "ribbon";
-  const layout = () => props.layout ?? "overflow";
-  const renderItems = () => (
+  const view = (): ToolbarViewMode => props.view ?? "ribbon";
+  const layout = (): ToolbarLayoutMode => props.layout ?? "overflow";
+  const renderItems = (): JSX.Element => (
     <For each={items()}>
-      {(item) => <ToolbarItemRenderer item={item} api={api} />}
+      {(item): JSX.Element => <ToolbarItemRenderer item={item} api={api} />}
     </For>
   );
 
@@ -76,7 +77,7 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
         "oasis-editor-toolbar-layout-overflow": layout() === "overflow",
         "oasis-editor-toolbar-layout-wrap": layout() === "wrap",
       }}
-      onMouseDown={(event) => {
+      onMouseDown={(event): void => {
         if (shouldAllowNativeMouseDown(event.target)) {
           return;
         }

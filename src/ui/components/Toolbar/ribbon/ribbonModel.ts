@@ -195,7 +195,7 @@ function normalizeResizeStates(
 ): RibbonGroupResizeState[] {
   const source = states?.length ? states : DEFAULT_RESIZE_STATES;
   const unique = source.filter(
-    (state, index) => source.indexOf(state) === index,
+    (state, index): boolean => source.indexOf(state) === index,
   );
   return unique.includes("full") ? unique : ["full", ...unique];
 }
@@ -238,7 +238,7 @@ export function buildRibbonGroups(
   const groups = new Map<string, RibbonGroupModel>();
   const tabGroupOrder = RIBBON_GROUP_ORDER[tab] ?? {};
 
-  items.forEach((item, index) => {
+  items.forEach((item, index): void => {
     if (normalizeRibbonTab(item.tab) !== tab) {
       return;
     }
@@ -266,7 +266,7 @@ export function buildRibbonGroups(
       ...group.resizePolicy,
       ...Object.fromEntries(
         Object.entries(item.ribbonGroupResize ?? {}).filter(
-          ([, value]) => value !== undefined,
+          ([, value]): boolean => value !== undefined,
         ),
       ),
       states: normalizeResizeStates(
@@ -280,7 +280,7 @@ export function buildRibbonGroups(
     }
   });
 
-  return Array.from(groups.values()).sort((a, b) => a.order - b.order);
+  return Array.from(groups.values()).sort((a, b): number => a.order - b.order);
 }
 
 function estimatedRibbonGroupWidths(group: RibbonGroupModel): RibbonGroupWidth {
@@ -377,7 +377,7 @@ export function resolveResponsiveRibbonGroups(
 
   if (availableWidth !== null && Number.isFinite(availableWidth)) {
     let currentWidth = groups.reduce(
-      (sum, group) => sum + widthForState("full", widths.get(group.id)!),
+      (sum, group): number => sum + widthForState("full", widths.get(group.id)!),
       0,
     );
     const targetWidth = Math.max(0, availableWidth);
@@ -407,7 +407,7 @@ export function resolveResponsiveRibbonGroups(
           Boolean(candidate),
         )
         .sort(
-          (a, b) =>
+          (a, b): number =>
             a.currentIndex - b.currentIndex ||
             b.group.order - a.group.order ||
             a.group.resizePolicy.priority - b.group.resizePolicy.priority ||
@@ -446,9 +446,9 @@ export function resolveResponsiveRibbonGroups(
     let slack = targetWidth - currentWidth;
     if (slack > 0) {
       for (const group of groups
-        .filter((candidate) => states.get(candidate.id) === "compact")
+        .filter((candidate): boolean => states.get(candidate.id) === "compact")
         .sort(
-          (a, b) =>
+          (a, b): number =>
             b.order - a.order ||
             a.resizePolicy.priority - b.resizePolicy.priority,
         )) {

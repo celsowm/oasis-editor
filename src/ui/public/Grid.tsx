@@ -97,7 +97,7 @@ export function Grid(props: GridProps): JSX.Element {
     "children",
   ]);
 
-  const style = () =>
+  const style = (): string | JSX.CSSProperties | undefined =>
     mergeStyles(
       gridSizeVars(local.size),
       gridOffsetVars(local.offset),

@@ -96,7 +96,7 @@ export function findTableResizeHoverInfo(
 
   const tableLayout = buildTableCellLayout(tableNode);
   const layoutEntry = tableLayout.find(
-    (entry) =>
+    (entry): boolean =>
       entry.rowIndex === best.cell.rowIndex &&
       entry.cellIndex === best.cell.cellIndex,
   );

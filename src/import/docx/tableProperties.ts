@@ -11,8 +11,7 @@ import type {
   EditorTableRowStyle,
   EditorTableStyle,
   EditorRevisionMetadata,
-  EditorTableConditionalFlags,
-} from "@/core/model.js";
+  EditorTableConditionalFlags, EditorParagraphStyle } from "@/core/model.js";
 import { TABLE_CONDITIONAL_FLAG_ATTRIBUTES } from "@/core/docxTableMaps.js";
 import {
   WORD_NS,
@@ -87,7 +86,7 @@ export function parseTableConditionalFlags(
   if (!element) return undefined;
   const rawBits = getAttributeValue(element, "val") ?? "";
   const flags: EditorTableConditionalFlags = {};
-  TABLE_CONDITIONAL_FLAG_ATTRIBUTES.forEach(([attribute, key], index) => {
+  TABLE_CONDITIONAL_FLAG_ATTRIBUTES.forEach(([attribute, key], index): void => {
     const explicit = getAttributeValue(element, attribute);
     if (explicit === "1" || explicit === "true" || explicit === "on") {
       flags[key] = true;
@@ -182,7 +181,7 @@ function parseCellMargins(
   if (!container) {
     return undefined;
   }
-  const edgePt = (edge: string) =>
+  const edgePt = (edge: string): number | undefined =>
     twipsToPoints(
       getAttributeValue(
         getFirstChildByTagNameNS(container, WORD_NS, edge),
@@ -326,7 +325,7 @@ export function parseTableStyle(
   if (tblLook) {
     const raw = getAttributeValue(tblLook, "val");
     const mask = raw ? Number.parseInt(raw, 16) : Number.NaN;
-    const flag = (name: string, bit: number, fallback: boolean) => {
+    const flag = (name: string, bit: number, fallback: boolean): boolean => {
       const value = getAttributeValue(tblLook, name);
       if (value !== null && value !== "") {
         return value === "1" || value === "true" || value === "on";
@@ -706,7 +705,7 @@ export function collapseCellAutospacing(
   paragraphs: EditorParagraphNode[],
   flags: ParagraphAutospacingFlags[],
 ): void {
-  const styleOf = (paragraph: EditorParagraphNode) => (paragraph.style ??= {});
+  const styleOf = (paragraph: EditorParagraphNode): EditorParagraphStyle => (paragraph.style ??= {});
 
   const lastIndex = paragraphs.length - 1;
   for (let index = 0; index < paragraphs.length; index += 1) {

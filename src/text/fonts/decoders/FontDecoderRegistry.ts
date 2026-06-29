@@ -19,7 +19,7 @@ export class FontDecoderRegistry {
   }
 
   private resolve(bytes: Uint8Array): FontDecoder {
-    const decoder = this.decoders.find((candidate) =>
+    const decoder = this.decoders.find((candidate): boolean =>
       candidate.canDecode(bytes),
     );
     if (!decoder) {

@@ -4,6 +4,8 @@ import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 import type { Component } from "solid-js";
 import { createTranslator } from "@/i18n/index.js";
 import { I18nProvider } from "@/i18n/I18nContext.js";
+import type { OasisEditorLoadingOptions } from "@/ui/OasisEditorAppProps.js";
+import { JSX } from "solid-js";
 
 /**
  * Code-splitting boundary for the editor. Loads `OasisEditorApp` (and the
@@ -18,31 +20,31 @@ import { I18nProvider } from "@/i18n/I18nContext.js";
  *
  * Must not statically import anything that pulls the editor/font graph.
  */
-export function OasisEditorAppLazy(props: OasisEditorAppProps = {}) {
+export function OasisEditorAppLazy(props: OasisEditorAppProps = {}): JSX.Element {
   // Localize the download-phase loading card via a provider bound to this
   // instance's locale. OasisEditorApp nests its own provider once mounted. The
   // i18n module only imports the two locale string maps — no editor/font graph —
   // so it is safe in this lightweight chunk.
-  const translator = createTranslator(() => props.ui?.locale ?? "pt-BR");
+  const translator = createTranslator((): "pt-BR" | "en" => props.ui?.locale ?? "pt-BR");
 
   const [progress, setProgress] = createSignal(0);
   const [App, setApp] = createSignal<Component<OasisEditorAppProps> | null>(
     null,
   );
 
-  const loadingOptions = () => {
+  const loadingOptions = (): OasisEditorLoadingOptions | undefined => {
     const value = props.ui?.loading;
     return typeof value === "object" && value !== null ? value : undefined;
   };
 
-  onMount(() => {
+  onMount((): void => {
     const start = performance.now();
     // τ = 5 s: reaches ~18% at 1s, ~33% at 2s, ~63% at 5s, ~86% at 10s.
     // Capped at 90% so there is always room to snap to 100% on completion.
     const tau = 5000;
     let cancelled = false;
 
-    const tick = () => {
+    const tick = (): void => {
       if (cancelled) return;
       const elapsed = performance.now() - start;
       setProgress((1 - Math.exp(-elapsed / tau)) * 0.9);
@@ -50,19 +52,19 @@ export function OasisEditorAppLazy(props: OasisEditorAppProps = {}) {
     };
     requestAnimationFrame(tick);
 
-    onCleanup(() => {
+    onCleanup((): void => {
       cancelled = true;
     });
 
     import("./OasisEditorApp.js")
-      .then((m) => {
+      .then((m): void => {
         cancelled = true;
         setProgress(1);
         // Brief pause at 100% so the user sees the bar complete before the
         // editor replaces the loading card.
         setTimeout(() => setApp(() => m.OasisEditorApp), 180);
       })
-      .catch(() => {
+      .catch((): void => {
         cancelled = true;
       });
   });
@@ -81,7 +83,7 @@ export function OasisEditorAppLazy(props: OasisEditorAppProps = {}) {
           />
         }
       >
-        {(getApp) => {
+        {(getApp): JSX.Element => {
           const C = getApp();
           return <C {...props} />;
         }}

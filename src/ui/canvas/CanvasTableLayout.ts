@@ -2,8 +2,7 @@ import {
   resolveEffectiveTableCellFormatting,
   resolveEffectiveTableStyle,
   type EditorState,
-  type EditorTableNode,
-} from "@/core/model.js";
+  type EditorTableNode, EditorTableRowStyle } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { estimateStackedColumnWidth } from "./verticalText.js";
 import {
@@ -62,7 +61,7 @@ export function buildCanvasTableLayout(options: {
   const visualColumnCount = Math.max(
     1,
     ...tableEntries.map(
-      (entry) => entry.visualColumnIndex + Math.max(1, entry.colSpan),
+      (entry): number => entry.visualColumnIndex + Math.max(1, entry.colSpan),
     ),
   );
 
@@ -75,9 +74,9 @@ export function buildCanvasTableLayout(options: {
   // columns to fit the widest upright-glyph column.
   let resolvedColumnWidths: number[] = [];
   if (table.gridCols && table.gridCols.length >= visualColumnCount) {
-    const gridTotalWidth = table.gridCols.reduce((a, b) => a + b, 0);
+    const gridTotalWidth = table.gridCols.reduce((a, b): number => a + b, 0);
     const scale = gridTotalWidth > 0 ? columnsWidthBudget / gridTotalWidth : 1;
-    resolvedColumnWidths = table.gridCols.map((w) => w * scale);
+    resolvedColumnWidths = table.gridCols.map((w): number => w * scale);
   } else {
     const baseCellWidth = columnsWidthBudget / visualColumnCount;
     resolvedColumnWidths = Array(visualColumnCount).fill(baseCellWidth);
@@ -126,9 +125,9 @@ export function buildCanvasTableLayout(options: {
   }
 
   // Effective row styles used in all three passes.
-  const effectiveRowStyles = table.rows.map((row, rowIndex) => {
+  const effectiveRowStyles = table.rows.map((row, rowIndex): EditorTableRowStyle | undefined => {
     const entry = tableEntries.find(
-      (candidate) => candidate.rowIndex === rowIndex,
+      (candidate): boolean => candidate.rowIndex === rowIndex,
     );
     return entry
       ? resolveEffectiveTableCellFormatting({
@@ -183,7 +182,7 @@ export function buildCanvasTableLayout(options: {
     top: originY,
     width: tableWidth,
     height:
-      rowHeights.reduce((sum, current) => sum + current, 0) +
+      rowHeights.reduce((sum, current): number => sum + current, 0) +
       (rowHeights.length + 1) * cellSpacingPx,
     rowHeights,
     cells,

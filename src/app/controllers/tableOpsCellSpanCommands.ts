@@ -8,8 +8,7 @@ import {
   type EditorEditingZone,
   type EditorParagraphNode,
   type EditorState,
-  type EditorTableNode,
-} from "@/core/model.js";
+  type EditorTableNode, EditorTableCellNode } from "@/core/model.js";
 import {
   commitTableMutation,
   resolveLocationTableMutation,
@@ -49,7 +48,7 @@ export function createTableCellSpanOperations(
       ? { ...cell.conditionalStyle }
       : undefined,
     mergeRevisionState: undefined,
-    blocks: cell.blocks.map((block) =>
+    blocks: cell.blocks.map((block): EditorBlockNode =>
       cloneBlock(block),
     ) as EditorParagraphNode[],
   });
@@ -87,11 +86,11 @@ export function createTableCellSpanOperations(
     const mergedCell = {
       ...selectedCells[0]!,
       colSpan: selectedCells.reduce(
-        (sum, cell) => sum + Math.max(1, cell.colSpan ?? 1),
+        (sum, cell): number => sum + Math.max(1, cell.colSpan ?? 1),
         0,
       ),
-      blocks: selectedCells.flatMap((cell) =>
-        cell.blocks.map((paragraph) => cloneBlock(paragraph)),
+      blocks: selectedCells.flatMap((cell): EditorBlockNode[] =>
+        cell.blocks.map((paragraph): EditorBlockNode => cloneBlock(paragraph)),
       ) as EditorParagraphNode[],
       ...(revision
         ? {
@@ -174,7 +173,7 @@ export function createTableCellSpanOperations(
     const mergedColSpan = Math.max(1, selectedCells[0]!.colSpan ?? 1);
     if (
       !selectedCells.every(
-        (cell) => Math.max(1, cell.colSpan ?? 1) === mergedColSpan,
+        (cell): boolean => Math.max(1, cell.colSpan ?? 1) === mergedColSpan,
       )
     ) {
       return current;
@@ -187,8 +186,8 @@ export function createTableCellSpanOperations(
       ...selectedCells[0]!,
       rowSpan: selectedCells.length,
       vMerge: "restart" as const,
-      blocks: selectedCells.flatMap((cell) =>
-        cell.blocks.map((paragraph) => cloneBlock(paragraph)),
+      blocks: selectedCells.flatMap((cell): EditorBlockNode[] =>
+        cell.blocks.map((paragraph): EditorBlockNode => cloneBlock(paragraph)),
       ) as EditorParagraphNode[],
       ...(revision
         ? {
@@ -293,7 +292,7 @@ export function createTableCellSpanOperations(
         currentCellCount: 1,
         previousCells: [
           previousCell,
-          ...Array.from({ length: span - 1 }, (_, offset) => {
+          ...Array.from({ length: span - 1 }, (_, offset): EditorTableCellNode => {
             const prior =
               tableBlock.rows[location.rowIndex + offset + 1]?.cells[
                 location.cellIndex
@@ -351,7 +350,7 @@ export function createTableCellSpanOperations(
       {
         ...cell,
         colSpan: 1,
-        blocks: cell.blocks.map((paragraph) =>
+        blocks: cell.blocks.map((paragraph): EditorBlockNode =>
           cloneBlock(paragraph),
         ) as EditorParagraphNode[],
         ...(revision
@@ -377,7 +376,7 @@ export function createTableCellSpanOperations(
             }
           : {}),
       },
-      ...Array.from({ length: span - 1 }, () =>
+      ...Array.from({ length: span - 1 }, (): EditorTableCellNode =>
         createEditorTableCell([createEditorParagraph("")]),
       ),
     ];

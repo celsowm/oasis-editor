@@ -15,8 +15,7 @@ import type {
   FloatingActionContribution,
   OasisEditor,
   OasisPluginUiSnapshot,
-  SidePanelContribution,
-} from "@/core/plugin.js";
+  SidePanelContribution, SidePanelMode } from "@/core/plugin.js";
 import { resolveCommandRef } from "@/core/commands/CommandRef.js";
 import { FloatingActionButton } from "@/ui/public/FloatingActionButton.js";
 import {
@@ -28,6 +27,7 @@ import { IconButton } from "@/ui/public/IconButton.js";
 import { Text } from "@/ui/public/Text.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
 import { type TranslationKey, type TranslateFn } from "@/i18n/index.js";
+import type { EditorState, EditorDocument, EditorSelection } from "@/core/model.js";
 
 export interface PluginUiHostProps {
   editor: Accessor<OasisEditor>;
@@ -42,41 +42,41 @@ const EMPTY_SNAPSHOT: OasisPluginUiSnapshot = {
 
 export function PluginUiHost(props: PluginUiHostProps): JSX.Element {
   const t = useI18n();
-  const resolvedChildren = children(() => props.children);
+  const resolvedChildren = children((): JSX.Element => props.children);
   const [snapshot, setSnapshot] =
     createSignal<OasisPluginUiSnapshot>(EMPTY_SNAPSHOT);
 
-  createEffect(() => {
+  createEffect((): void => {
     const editor = props.editor();
     setSnapshot(editor.ui.getSnapshot());
-    const unsubscribe = editor.ui.onChange(() => {
+    const unsubscribe = editor.ui.onChange((): void => {
       setSnapshot(editor.ui.getSnapshot());
     });
     onCleanup(unsubscribe);
   });
 
-  const activePanel = createMemo(() =>
+  const activePanel = createMemo((): SidePanelContribution | undefined =>
     snapshot().sidePanels.find(
-      (panel) => panel.id === snapshot().activeSidePanelId,
+      (panel): boolean => panel.id === snapshot().activeSidePanelId,
     ),
   );
-  const activeMode = () => activePanel()?.mode ?? "dock";
-  const dockPanel = () => (activeMode() === "dock" ? activePanel() : undefined);
-  const overlayPanel = () =>
+  const activeMode = (): SidePanelMode => activePanel()?.mode ?? "dock";
+  const dockPanel = (): SidePanelContribution | undefined => (activeMode() === "dock" ? activePanel() : undefined);
+  const overlayPanel = (): SidePanelContribution | undefined =>
     activeMode() === "overlay" ? activePanel() : undefined;
-  const containerActions = () =>
+  const containerActions = (): FloatingActionContribution[] =>
     snapshot().floatingActions.filter(
-      (action) => (action.scope ?? "container") === "container",
+      (action): boolean => (action.scope ?? "container") === "container",
     );
-  const viewportActions = () =>
-    snapshot().floatingActions.filter((action) => action.scope === "viewport");
+  const viewportActions = (): FloatingActionContribution[] =>
+    snapshot().floatingActions.filter((action): boolean => action.scope === "viewport");
 
   const actionGroup = (
     actions: Accessor<FloatingActionContribution[]>,
     viewport = false,
-  ) => (
+  ): JSX.Element => (
     <For each={groupActionsByPlacement(actions())}>
-      {(group) => (
+      {(group): JSX.Element => (
         <div
           class="oasis-editor-plugin-floating-actions"
           classList={{
@@ -85,13 +85,13 @@ export function PluginUiHost(props: PluginUiHostProps): JSX.Element {
           }}
         >
           <For each={group.actions}>
-            {(action) => (
+            {(action): JSX.Element => (
               <FloatingActionButton
                 icon={action.icon ?? "sparkles"}
                 label={actionLabel(action, t)}
                 disabled={!canExecuteAction(props.editor(), action)}
                 data-testid={`plugin-floating-action-${action.id}`}
-                onClick={() => executeAction(props.editor(), action)}
+                onClick={(): void => executeAction(props.editor(), action)}
               />
             )}
           </For>
@@ -109,10 +109,10 @@ export function PluginUiHost(props: PluginUiHostProps): JSX.Element {
     >
       <div class="oasis-editor-plugin-ui-main">{resolvedChildren()}</div>
       <Show when={dockPanel()}>
-        {(panel) => renderPanel(props.editor, panel(), t)}
+        {(panel): JSX.Element => renderPanel(props.editor, panel(), t)}
       </Show>
       <Show when={overlayPanel()}>
-        {(panel) => (
+        {(panel): JSX.Element => (
           <div class="oasis-editor-plugin-side-panel-overlay">
             {renderPanel(props.editor, panel(), t)}
           </div>
@@ -156,7 +156,7 @@ function renderPanel(
   panel: SidePanelContribution,
   t: TranslateFn,
 ): JSX.Element {
-  const close = () => editor().ui.closeSidePanel(panel.id);
+  const close = (): void => editor().ui.closeSidePanel(panel.id);
   return (
     <SidePanel
       mode={panel.mode ?? "dock"}
@@ -183,9 +183,9 @@ function renderPanel(
           ui: editor().ui,
           panelId: panel.id,
           closePanel: close,
-          getState: () => editor().state,
-          getDocument: () => editor().state.document,
-          getSelection: () => editor().state.selection,
+          getState: (): EditorState => editor().state,
+          getDocument: (): EditorDocument => editor().state.document,
+          getSelection: (): EditorSelection => editor().state.selection,
         })}
       </SidePanelBody>
     </SidePanel>

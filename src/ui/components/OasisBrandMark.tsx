@@ -18,8 +18,8 @@ export function OasisBrandMark(props: {
   height?: number;
   class?: string;
 }): JSX.Element {
-  const height = () => props.height ?? 64;
-  const width = () => Math.round(height() * MARK_ASPECT);
+  const height = (): number => props.height ?? 64;
+  const width = (): number => Math.round(height() * MARK_ASPECT);
   return (
     <img
       src={OASIS_MARK_DATA_URI}

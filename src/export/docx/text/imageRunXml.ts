@@ -11,7 +11,7 @@ export function serializeImageRun(
   context: DocContext,
   rPrXml: string,
 ): string | null {
-  const img = context.images.find((i) => i.rId === rId);
+  const img = context.images.find((i): boolean => i.rId === rId);
   if (!img) {
     return null;
   }

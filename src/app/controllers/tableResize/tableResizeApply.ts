@@ -67,7 +67,7 @@ export function applyColumnResize(
 
     baseWidths[resize.index] = newWidth;
     const tableWidthPt = Object.values(baseWidths).reduce(
-      (sum, value) => sum + value,
+      (sum, value): number => sum + value,
       0,
     );
     const nextIndentLeftPt = Math.max(0, initialIndentLeftPt + appliedDeltaPt);
@@ -105,7 +105,7 @@ export function applyColumnResize(
   }
 
   const tableWidthPt = Object.values(baseWidths).reduce(
-    (sum, value) => sum + value,
+    (sum, value): number => sum + value,
     0,
   );
   const tableNode = getTableById(state, resize.tableId);

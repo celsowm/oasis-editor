@@ -11,8 +11,7 @@ import type { EditorSurfaceProps } from "@/ui/editorUiTypes.js";
 import {
   getPageColumnRects,
   type EditorLayoutPage,
-  type EditorState,
-} from "@/core/model.js";
+  type EditorState, EditorLayoutDocument } from "@/core/model.js";
 import { buildSegmentTable } from "@/core/tableLayout.js";
 import {
   clearNormalLineHeightCache,
@@ -36,6 +35,8 @@ import {
 import { createEditorLogger } from "@/utils/logger.js";
 import { PageBreak } from "@/ui/components/PageBreak.js";
 import { createCanvasPageRenderer } from "@/ui/canvas/canvasPageRenderer.js";
+import { JSX } from "solid-js";
+
 export { resolveCanvasTextRenderMetrics } from "@/ui/canvas/canvasParagraphPainter.js";
 export { resolveCanvasFooterZoneTop } from "@/ui/canvas/canvasPageRenderer.js";
 
@@ -62,7 +63,7 @@ function checkBrowserFonts(families: Array<string | null | undefined>) {
   };
 }
 
-export function CanvasEditorSurface(props: EditorSurfaceProps) {
+export function CanvasEditorSurface(props: EditorSurfaceProps): JSX.Element {
   // In the browser, font advance-width metrics load asynchronously. Until they
   // resolve, measurement falls back to a heuristic; once they do, recompute the
   // layout with real metrics. This must react to the *current* document's font
@@ -76,19 +77,19 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
   const documentFontFamilies = createMemo(() =>
     Array.from(collectPdfFontFamilies(props.state().document)),
   );
-  const fontFamiliesKey = createMemo(() =>
+  const fontFamiliesKey = createMemo((): string =>
     documentFontFamilies()
-      .map((family) => family ?? "<default>")
+      .map((family): string => family ?? "<default>")
       .join("|"),
   );
   createEffect(
-    on([fontFamiliesKey, preciseFontModeVersion], () => {
+    on([fontFamiliesKey, preciseFontModeVersion], (): void => {
       const families = documentFontFamilies();
       surfaceLogger.info("fonts:collect", {
         families,
         checksBefore: checkBrowserFonts(families),
       });
-      void (async () => {
+      void (async (): Promise<void> => {
         await preloadLayoutFonts(families);
         // In precise font mode, also pull the real installed faces so the layout
         // engine measures with them (not just paints them) — this is what makes
@@ -106,7 +107,7 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
       })();
     }),
   );
-  const documentLayout = createMemo(() => {
+  const documentLayout = createMemo((): EditorLayoutDocument => {
     const layout = props.documentLayout();
     surfaceLogger.debug("layout:projected", {
       layoutMetricsEpoch: layoutMetricsEpoch(),
@@ -124,7 +125,7 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
       style={{ position: "relative" }}
     >
       <Index each={documentLayout().pages}>
-        {(page, index) => (
+        {(page, index): JSX.Element => (
           // Each Index slot must be a single, stable root element. Returning a
           // Fragment (with a conditional <Show> sibling) confuses Solid's
           // reconcileArrays when the page list grows/shrinks (e.g. after
@@ -167,14 +168,14 @@ function CanvasPage(props: {
   onSurfaceDblClick: (event: MouseEvent) => void;
   onRevisionMouseEnter: (revisionId: string, event: MouseEvent) => void;
   onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;
-}) {
+}): JSX.Element {
   let canvasRef: HTMLCanvasElement | undefined;
   const renderer = createCanvasPageRenderer({
-    getCanvas: () => canvasRef,
-    getPage: () => props.page,
-    getState: () => props.state,
+    getCanvas: (): HTMLCanvasElement | undefined => canvasRef,
+    getPage: (): EditorLayoutPage => props.page,
+    getState: (): EditorState => props.state,
   });
-  const revisionCells = createMemo(() => {
+  const revisionCells = createMemo((): { id: string; left: number; top: number; width: number; height: number; }[] => {
     const result: Array<{
       id: string;
       left: number;
@@ -234,7 +235,7 @@ function CanvasPage(props: {
     return result;
   });
 
-  createEffect(() => {
+  createEffect((): void => {
     props.page;
     props.state.document;
     props.paintGeneration;
@@ -247,26 +248,26 @@ function CanvasPage(props: {
     renderer.schedulePaint();
   });
 
-  createEffect(() => {
+  createEffect((): void => {
     props.state.showMargins;
     renderer.invalidateDecorations();
     renderer.schedulePaint();
   });
 
-  createEffect(() => {
+  createEffect((): void => {
     props.state.showParagraphMarks;
     renderer.invalidateDecorations();
     renderer.schedulePaint();
   });
 
-  createEffect(() => {
+  createEffect((): void => {
     props.state.activeZone;
     props.state.activeFootnoteId;
     renderer.invalidateActiveZone();
     renderer.schedulePaint();
   });
 
-  onCleanup(() => renderer.dispose());
+  onCleanup((): void => renderer.dispose());
 
   return (
     <div
@@ -287,7 +288,7 @@ function CanvasPage(props: {
     >
       <canvas ref={canvasRef} />
       <For each={revisionCells()}>
-        {(revision) => (
+        {(revision): JSX.Element => (
           <div
             class="oasis-editor-table-revision-hit"
             data-revision-id={revision.id}
@@ -300,10 +301,10 @@ function CanvasPage(props: {
               "pointer-events": "auto",
               background: "transparent",
             }}
-            onMouseEnter={(event) =>
+            onMouseEnter={(event): void =>
               props.onRevisionMouseEnter(revision.id, event)
             }
-            onMouseLeave={(event) =>
+            onMouseLeave={(event): void | undefined =>
               props.onRevisionMouseLeave?.(revision.id, event)
             }
             onMouseDown={props.onSurfaceMouseDown}

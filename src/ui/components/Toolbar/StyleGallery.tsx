@@ -17,20 +17,20 @@ export function getQuickStyles(
   styles: ToolbarDocumentStyle[],
 ): ToolbarDocumentStyle[] {
   const applicable = styles.filter(
-    (style) =>
+    (style): boolean | undefined =>
       style.type !== "table" &&
       (!style.semiHidden || (style.unhideWhenUsed && style.isUsed)),
   );
-  const hasQuickStyles = applicable.some((style) => style.qFormat === true);
+  const hasQuickStyles = applicable.some((style): boolean => style.qFormat === true);
   return applicable
-    .filter((style) => !hasQuickStyles || style.qFormat === true)
-    .map((style, index) => ({ style, index }))
+    .filter((style): boolean => !hasQuickStyles || style.qFormat === true)
+    .map((style, index): { style: ToolbarDocumentStyle; index: number; } => ({ style, index }))
     .sort(
-      (a, b) =>
+      (a, b): number =>
         (a.style.uiPriority ?? Number.MAX_SAFE_INTEGER) -
           (b.style.uiPriority ?? Number.MAX_SAFE_INTEGER) || a.index - b.index,
     )
-    .map(({ style }) => style);
+    .map(({ style }): ToolbarDocumentStyle => style);
 }
 
 function previewStyle(style: ToolbarDocumentStyle): JSX.CSSProperties {
@@ -53,15 +53,15 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
   const [open, setOpen] = createSignal(false);
   const panelTestId = `${props.item.testId ?? props.item.id}-panel`;
   const expandTestId = `${props.item.testId ?? props.item.id}-expand`;
-  const styles = createMemo(() => getQuickStyles(props.item.styles(props.api)));
+  const styles = createMemo((): ToolbarDocumentStyle[] => getQuickStyles(props.item.styles(props.api)));
   const paragraphStyleId = (): string =>
     String(props.api.commands.state(props.item.paragraphCommand).value ?? "");
   const characterStyleId = (): string =>
     String(props.api.commands.state(props.item.characterCommand).value ?? "");
 
-  createEffect(() => {
+  createEffect((): void => {
     if (!open()) return;
-    queueMicrotask(() => {
+    queueMicrotask((): void => {
       const panel = document.querySelector<HTMLElement>(
         `[data-testid="${panelTestId}"]`,
       );
@@ -93,13 +93,13 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
 
   const onPanelKeyDown: JSX.EventHandler<HTMLDivElement, KeyboardEvent> = (
     event,
-  ) => {
+  ): void => {
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
       setOpen(false);
       window.setTimeout(
-        () =>
+        (): void | undefined =>
           document
             .querySelector<HTMLButtonElement>(`[data-testid="${expandTestId}"]`)
             ?.focus(),
@@ -136,7 +136,7 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
 
   const cards = (): JSX.Element => (
     <For each={styles()}>
-      {(style) => (
+      {(style): JSX.Element => (
         <button
           type="button"
           class="oasis-editor-style-gallery-card"
@@ -148,7 +148,7 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
           role="option"
           aria-selected={isActive(style)}
           data-style-id={style.id}
-          onClick={() => apply(style)}
+          onClick={(): void => apply(style)}
         >
           <span>{style.name}</span>
         </button>
@@ -164,22 +164,22 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
       panelClass="oasis-editor-style-gallery-panel"
       panelRole="listbox"
       panelTestId={panelTestId}
-      trigger={(popover) => (
+      trigger={(popover): JSX.Element => (
         <div ref={popover.ref} class="oasis-editor-style-gallery">
           <Select
             class="oasis-editor-style-gallery-compact"
             value={characterStyleId() || paragraphStyleId()}
             data-testid={props.item.testId}
             tooltip={props.api.t("toolbar.style")}
-            onChange={(event) => {
+            onChange={(event): void => {
               const style = styles().find(
-                (candidate) => candidate.id === event.currentTarget.value,
+                (candidate): boolean => candidate.id === event.currentTarget.value,
               );
               if (style) apply(style);
             }}
           >
             <For each={styles()}>
-              {(style) => <option value={style.id}>{style.name}</option>}
+              {(style): JSX.Element => <option value={style.id}>{style.name}</option>}
             </For>
           </Select>
           <div class="oasis-editor-style-gallery-ribbon">
@@ -194,7 +194,7 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
               aria-haspopup="listbox"
               aria-expanded={popover.open}
               data-testid={expandTestId}
-              onClick={() => popover.toggle()}
+              onClick={(): void => popover.toggle()}
             >
               <i data-lucide="chevron-down" />
             </button>

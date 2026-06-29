@@ -18,7 +18,7 @@ import { useI18n } from "@/i18n/I18nContext.js";
  * listeners and internal component state (like open dropdowns) without
  * triggering unmount/remount cycles.
  */
-export function ToolbarOverflowManager(props: { children: JSX.Element }) {
+export function ToolbarOverflowManager(props: { children: JSX.Element }): JSX.Element {
   const t = useI18n();
   const [overflowCount, setOverflowCount] = createSignal(0);
   const [menuOpen, setMenuOpen] = createSignal(false);
@@ -30,13 +30,13 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
   let moreButtonRef: HTMLButtonElement | undefined;
   let moreMeasureRef: HTMLButtonElement | undefined;
 
-  const resolved = children(() => props.children);
+  const resolved = children((): JSX.Element => props.children);
   const items = createMemo(() =>
-    resolved.toArray().filter((i) => i !== null && i !== undefined),
+    resolved.toArray().filter((i): boolean => i !== null && i !== undefined),
   );
 
   /** Pull all item wrappers back into the strip for fresh measurement */
-  const collectAllToStrip = () => {
+  const collectAllToStrip = (): void => {
     if (!stripRef || !overflowMenuRef) return;
     const ofs = Array.from(overflowMenuRef.children) as HTMLElement[];
     for (const w of ofs) {
@@ -45,11 +45,11 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
     }
   };
 
-  const updateOverflow = () => {
+  const updateOverflow = (): void => {
     if (!stripRef || !containerRef || !moreMeasureRef) return;
 
     // Give browser a frame to stabilize before measurement
-    requestAnimationFrame(() => {
+    requestAnimationFrame((): void => {
       collectAllToStrip();
 
       const containerWidth = containerRef!.getBoundingClientRect().width;
@@ -63,18 +63,18 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
       }
 
       // Ensure all items are visible for measurement
-      wrappers.forEach((w) => {
+      wrappers.forEach((w): void => {
         w.style.display = "flex";
         w.style.visibility = "visible";
       });
 
-      const itemWidths = wrappers.map((el) => el.getBoundingClientRect().width);
+      const itemWidths = wrappers.map((el): number => el.getBoundingClientRect().width);
       const EDGE_PADDING = 8;
       const GAP = 8;
 
       // 1. Check if EVERYTHING fits WITHOUT the "..." button
       const totalAll = itemWidths.reduce(
-        (sum, w, i) => sum + w + (i > 0 ? GAP : 0),
+        (sum, w, i): number => sum + w + (i > 0 ? GAP : 0),
         0,
       );
 
@@ -112,7 +112,7 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
       setOverflowCount(itemWidths.length - visibleCount);
 
       // Imperatively move overflowing items
-      wrappers.forEach((w, index) => {
+      wrappers.forEach((w, index): void => {
         if (index < visibleCount) {
           stripRef!.appendChild(w);
         } else {
@@ -123,7 +123,7 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
   };
 
   // Measurement triggers
-  createEffect(() => {
+  createEffect((): void => {
     items();
     // Run multiple times during stabilization
     setTimeout(updateOverflow, 50);
@@ -136,7 +136,7 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
    * to the available horizontal space. The result is the actual width we apply
    * to the panel — items only wrap when content truly does not fit.
    */
-  const remeasurePanel = () => {
+  const remeasurePanel = (): void => {
     if (!overflowMenuRef || !moreButtonRef) return;
     const el = overflowMenuRef;
 
@@ -168,14 +168,14 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
     setPanelWidth(Math.min(natural, available));
   };
 
-  onMount(() => {
-    const observer = new ResizeObserver(() => {
+  onMount((): void => {
+    const observer = new ResizeObserver((): void => {
       updateOverflow();
       if (menuOpen()) requestAnimationFrame(remeasurePanel);
     });
     observer.observe(containerRef!);
 
-    const handleOutsideClick = (e: MouseEvent) => {
+    const handleOutsideClick = (e: MouseEvent): void => {
       if (
         menuOpen() &&
         moreButtonRef &&
@@ -187,13 +187,13 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
       }
     };
 
-    const handleWindowResize = () => {
+    const handleWindowResize = (): void => {
       if (menuOpen()) requestAnimationFrame(remeasurePanel);
     };
 
     window.addEventListener("mousedown", handleOutsideClick);
     window.addEventListener("resize", handleWindowResize);
-    onCleanup(() => {
+    onCleanup((): void => {
       observer.disconnect();
       window.removeEventListener("mousedown", handleOutsideClick);
       window.removeEventListener("resize", handleWindowResize);
@@ -201,17 +201,17 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
   });
 
   // Re-measure whenever the menu opens or the overflow set changes
-  createEffect(() => {
+  createEffect((): void => {
     if (menuOpen() && overflowCount() > 0) {
       // Run after layout settles
-      requestAnimationFrame(() => requestAnimationFrame(remeasurePanel));
+      requestAnimationFrame((): number => requestAnimationFrame(remeasurePanel));
     }
   });
 
   // Position the overflow popover below the "..." button.
   // We anchor to the right edge of the "..." button and apply the explicitly
   // measured panel width so the panel only wraps when content cannot fit.
-  const menuStyle = () => {
+  const menuStyle = (): {} => {
     if (!moreButtonRef) return {};
     const r = moreButtonRef.getBoundingClientRect();
     const vw = window.innerWidth;
@@ -269,7 +269,7 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
         }}
       >
         <For each={items()}>
-          {(item) => (
+          {(item): JSX.Element => (
             <div
               class="oasis-editor-toolbar-item-wrapper"
               style={{
@@ -299,7 +299,7 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
           type="button"
           class="oasis-editor-tool-button oasis-editor-tool-button-dropdown"
           classList={{ "oasis-editor-tool-button-active": menuOpen() }}
-          onClick={() => setMenuOpen((o) => !o)}
+          onClick={(): boolean => setMenuOpen((o): boolean => !o)}
           title={t("toolbar.moreTools")}
           aria-label={t("toolbar.moreTools")}
           data-testid="editor-toolbar-overflow-dropdown"
@@ -331,7 +331,7 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
           "overflow-x": "hidden",
           "overflow-y": "auto",
         }}
-        onClick={(e) => {
+        onClick={(e): void => {
           // Close when a tool button is clicked (but not nested dropdowns)
           if (
             (e.target as HTMLElement).closest("button") &&

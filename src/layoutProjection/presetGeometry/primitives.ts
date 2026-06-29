@@ -4,7 +4,7 @@ export const KAPPA = 0.5522847498307936;
 
 export function polygon(points: Array<[number, number]>): PresetPathSegment[] {
   const segments: PresetPathSegment[] = [];
-  points.forEach(([px, py], index) => {
+  points.forEach(([px, py], index): void => {
     segments.push(
       index === 0
         ? { type: "move", x: px, y: py }
@@ -99,10 +99,10 @@ export function arcSegments(
   end: number,
 ): PresetPathSegment[] {
   const steps = Math.max(4, Math.ceil(Math.abs(end - start) / 30));
-  const points = Array.from({ length: steps + 1 }, (_, index) =>
+  const points = Array.from({ length: steps + 1 }, (_, index): [number, number] =>
     pointOnEllipse(cx, cy, rx, ry, start + ((end - start) * index) / steps),
   );
-  return points.map(([px, py], index) =>
+  return points.map(([px, py], index): { type: "move"; x: number; y: number; } | { type: "line"; x: number; y: number; } =>
     index === 0
       ? { type: "move", x: px, y: py }
       : { type: "line", x: px, y: py },
@@ -132,7 +132,7 @@ export function regularPolygon(
   sides: number,
   startDegrees: number,
 ): PresetPathSegment[] {
-  const points = Array.from({ length: sides }, (_, index) =>
+  const points = Array.from({ length: sides }, (_, index): [number, number] =>
     pointOnEllipse(cx, cy, rx, ry, startDegrees + (360 * index) / sides),
   );
   return polygon(points);
@@ -150,7 +150,7 @@ export function starSegments(
   points: number,
   innerRatio = 0.45,
 ): PresetPathSegment[] {
-  const vertices = Array.from({ length: points * 2 }, (_, index) => {
+  const vertices = Array.from({ length: points * 2 }, (_, index): [number, number] => {
     const radius = index % 2 === 0 ? 1 : innerRatio;
     return pointOnEllipse(
       cx,

@@ -47,7 +47,7 @@ function drawScaledText(
   x: number,
   y: number,
   scale: number,
-) {
+): void {
   if (scale === 1) {
     ctx.fillText(text, x, y);
     return;
@@ -89,7 +89,7 @@ export function drawStyledText(
       distPt: number;
     } | null;
   },
-) {
+): void {
   const hasEffects =
     styles.outline ||
     styles.shadow ||
@@ -197,16 +197,16 @@ export function drawFragmentReflection(
     endAlpha: number;
     distPt: number;
   },
-) {
+): void {
   const firstChar = fragment.chars.find(
-    (c) => c.char !== "\n" && c.char !== "\t",
+    (c): boolean => c.char !== "\n" && c.char !== "\t",
   );
   if (!firstChar) return;
   const firstSlot = slotByOffset.get(firstChar.paragraphOffset);
   if (!firstSlot) return;
   const text = fragment.chars
-    .filter((c) => c.char !== "\n" && c.char !== "\t")
-    .map((c) => (styles.allCaps ? c.char.toUpperCase() : c.char))
+    .filter((c): boolean => c.char !== "\n" && c.char !== "\t")
+    .map((c): string => (styles.allCaps ? c.char.toUpperCase() : c.char))
     .join("");
   if (!text) return;
   const scale =

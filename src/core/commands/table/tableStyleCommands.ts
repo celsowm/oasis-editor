@@ -47,11 +47,11 @@ export function setTableStyleValue<K extends keyof EditorTableStyle>(
   };
 
   const updateBlocks = (blocks: EditorBlockNode[]): EditorBlockNode[] => {
-    return blocks.map((block) => {
+    return blocks.map((block): EditorParagraphNode | EditorTableNode => {
       if (block.type === "paragraph") return block;
 
       const paragraphsInTable = getBlockParagraphs(block);
-      const isSelected = paragraphsInTable.some((paragraph) =>
+      const isSelected = paragraphsInTable.some((paragraph): boolean =>
         selectedParagraphIds.has(paragraph.id),
       );
 
@@ -96,7 +96,7 @@ export function setActiveTableStyleValue<K extends keyof EditorTableStyle>(
     };
   };
 
-  return updateStateSections(state, (blocks) =>
+  return updateStateSections(state, (blocks): EditorBlockNode[] =>
     updateNestedTablesInBlocks(blocks, updateTable),
   );
 }

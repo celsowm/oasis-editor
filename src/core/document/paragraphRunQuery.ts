@@ -87,7 +87,7 @@ export function expandLinkRangeInParagraph(
   let endOffset = resolved.endOffset;
   let consumed = 0;
   const runs = paragraph.runs;
-  const runIndex = runs.findIndex((run) => run.id === resolved.run.id);
+  const runIndex = runs.findIndex((run): boolean => run.id === resolved.run.id);
   if (runIndex === -1) {
     return null;
   }

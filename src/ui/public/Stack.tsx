@@ -4,8 +4,7 @@ import {
   children,
   splitProps,
   type JSX,
-  type ParentProps,
-} from "solid-js";
+  type ParentProps } from "solid-js";
 import { Dynamic } from "solid-js/web";
 import {
   mergeStyles,
@@ -50,12 +49,12 @@ export function Stack(props: StackProps): JSX.Element {
     "style",
     "children",
   ]);
-  const resolvedChildren = children(() => local.children);
-  const items = () => childArray(resolvedChildren());
-  const renderDivider = (index: number) =>
+  const resolvedChildren = children((): JSX.Element => local.children);
+  const items = (): JSX.Element[] => childArray(resolvedChildren());
+  const renderDivider = (index: number): JSX.Element =>
     typeof local.divider === "function" ? local.divider(index) : local.divider;
 
-  const style = () =>
+  const style = (): string | JSX.CSSProperties | undefined =>
     mergeStyles(
       responsiveCssVars(
         "oasis-stack-direction",
@@ -85,7 +84,7 @@ export function Stack(props: StackProps): JSX.Element {
       {...others}
     >
       <For each={items()}>
-        {(item, index) => (
+        {(item, index): JSX.Element => (
           <>
             <Show when={index() > 0 && local.divider}>
               <span

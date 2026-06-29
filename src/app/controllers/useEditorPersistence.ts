@@ -27,10 +27,10 @@ export function useEditorPersistence(
   const [status, setStatus] = createSignal<PersistenceStatus>("Initial");
   const [isInitialized, setIsInitialized] = createSignal(false);
 
-  const isEnabled = () => options.enabled ?? false;
+  const isEnabled = (): boolean => options.enabled ?? false;
   const persistence = options.persistence;
 
-  const debouncedSave = debounce(async (doc: EditorDocument) => {
+  const debouncedSave = debounce(async (doc: EditorDocument): Promise<void> => {
     if (!isEnabled() || !isInitialized()) return;
 
     setStatus("Saving...");
@@ -51,8 +51,8 @@ export function useEditorPersistence(
   // The check for isInitialized() ensures we don't save during the initial load phase.
   createEffect(
     on(
-      () => state.document,
-      (doc) => {
+      (): EditorDocument => state.document,
+      (doc): void => {
         if (isEnabled() && isInitialized()) {
           debouncedSave(doc);
         }
@@ -61,7 +61,7 @@ export function useEditorPersistence(
     ),
   );
 
-  onMount(async () => {
+  onMount(async (): Promise<void> => {
     if (!isEnabled()) {
       setIsInitialized(true);
       setStatus("Saved");

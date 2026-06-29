@@ -284,7 +284,7 @@ function resolveUnsupportedReasonAtPoint(
   clientY: number,
 ): string | null {
   const region = snapshot.unsupportedRegions.find(
-    (candidate) =>
+    (candidate): boolean =>
       candidate.pageIndex === pageIndex &&
       candidate.zone === zone &&
       clientX >= candidate.left &&
@@ -411,7 +411,7 @@ export function resolveCanvasSurfaceHitAtPoint(
 
     const paragraphSegment =
       paragraphSegments.find(
-        (segment) =>
+        (segment): boolean =>
           segment.pageIndex === page.index &&
           segment.zone === zone &&
           textBoxHit.startOffset >= segment.startOffset &&
@@ -470,7 +470,7 @@ export function resolveCanvasSurfaceHitAtPoint(
       snapshot.paragraphsById.get(imageHit.paragraphId) ?? [];
     const paragraphSegment =
       paragraphSegments.find(
-        (segment) =>
+        (segment): boolean =>
           segment.pageIndex === page.index &&
           segment.zone === zone &&
           imageHit.startOffset >= segment.startOffset &&
@@ -514,7 +514,7 @@ export function resolveCanvasSurfaceHitAtPoint(
   }
 
   const zoneParagraphs = snapshot.paragraphs.filter(
-    (paragraph) =>
+    (paragraph): boolean =>
       paragraph.pageIndex === page.index && paragraph.zone === zone,
   );
   const paragraphHit = resolveParagraphHit(zoneParagraphs, clientX, clientY);

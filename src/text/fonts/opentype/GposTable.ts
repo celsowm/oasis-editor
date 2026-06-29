@@ -96,7 +96,7 @@ function parseSinglePos(
     const coverage = parseCoverage(reader, coverageOffset);
     if (xAdvance === 0) return null;
     return {
-      apply(glyphIds, advances, pos) {
+      apply(glyphIds, advances, pos): 1 | null {
         if (coverage(glyphIds[pos]!) < 0) return null;
         advances[pos]! += xAdvance;
         return 1;
@@ -115,7 +115,7 @@ function parseSinglePos(
     }
     const coverage = parseCoverage(reader, coverageOffset);
     return {
-      apply(glyphIds, advances, pos) {
+      apply(glyphIds, advances, pos): 1 | null {
         const index = coverage(glyphIds[pos]!);
         if (index < 0 || index >= valueCount) return null;
         const delta = xAdvances[index]!;
@@ -149,7 +149,7 @@ function parsePairPos(
     const pairSetCount = reader.u16();
     const pairSetOffsets = readU16OffsetArray(reader, pairSetCount, offset);
     const pairSets: Map<number, PairValue>[] = pairSetOffsets.map(
-      (setOffset) => {
+      (setOffset): Map<number, PairValue> => {
         reader.seek(setOffset);
         const pairValueCount = reader.u16();
         const pairs = new Map<number, PairValue>();
@@ -168,7 +168,7 @@ function parsePairPos(
     );
     const coverage = parseCoverage(reader, coverageOffset);
     return {
-      apply(glyphIds, advances, pos) {
+      apply(glyphIds, advances, pos): 2 | 1 | null {
         const second = glyphIds[pos + 1];
         if (second === undefined) return null;
         const setIndex = coverage(glyphIds[pos]!);
@@ -214,7 +214,7 @@ function parsePairPos(
     const classDef1: ClassLookup = parseClassDef(reader, classDef1Offset);
     const classDef2: ClassLookup = parseClassDef(reader, classDef2Offset);
     return {
-      apply(glyphIds, advances, pos) {
+      apply(glyphIds, advances, pos): 2 | 1 | null {
         const first = glyphIds[pos]!;
         const second = glyphIds[pos + 1];
         if (second === undefined) return null;
@@ -281,7 +281,7 @@ export class GposTable {
 
   /** True when at least one of the requested feature tags exists in this font. */
   hasAnyFeature(tags: readonly string[]): boolean {
-    return tags.some((tag) => this.featureToLookups.has(tag));
+    return tags.some((tag): boolean => this.featureToLookups.has(tag));
   }
 
   /**

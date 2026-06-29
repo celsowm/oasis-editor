@@ -38,7 +38,7 @@ export function drawParagraphDecorations(
     [paragraphStyle.borderLeft, "left"],
   ];
   const hasBorder = edges.some(
-    ([border]) => border && border.type !== "none" && border.width > 0,
+    ([border]): boolean | null | undefined => border && border.type !== "none" && border.width > 0,
   );
   if (!paragraphStyle.shading && !hasBorder) {
     return;

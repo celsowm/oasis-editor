@@ -1,8 +1,7 @@
 import { Show, splitProps, type JSX } from "solid-js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
 
-export interface SurfaceButtonProps
-  extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface SurfaceButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: string;
   label?: string;
   variant?: "ghost" | "secondary";

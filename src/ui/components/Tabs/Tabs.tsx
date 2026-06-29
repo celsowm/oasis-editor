@@ -38,44 +38,44 @@ function findEnabledItem(
   return undefined;
 }
 
-export function Tabs(props: TabsProps) {
+export function Tabs(props: TabsProps): JSX.Element {
   const baseId = createUniqueId();
-  const items = createMemo(() => props.items);
+  const items = createMemo((): TabsItem[] => props.items);
   const firstEnabledId = createMemo(
-    () => items().find((item) => !item.disabled)?.id ?? items()[0]?.id ?? "",
+    (): string => items().find((item): boolean => !item.disabled)?.id ?? items()[0]?.id ?? "",
   );
   const [internalValue, setInternalValue] = createSignal(
     props.defaultValue ?? firstEnabledId(),
   );
   const selectedId = createMemo(
-    () => props.value ?? internalValue() ?? firstEnabledId(),
+    (): string => props.value ?? internalValue() ?? firstEnabledId(),
   );
   const selectedItem = createMemo(
-    () =>
-      items().find((item) => item.id === selectedId() && !item.disabled) ??
-      items().find((item) => !item.disabled),
+    (): TabsItem | undefined =>
+      items().find((item): boolean => item.id === selectedId() && !item.disabled) ??
+      items().find((item): boolean => !item.disabled),
   );
-  const rootClass = createMemo(() =>
+  const rootClass = createMemo((): string =>
     ["oasis-editor-tabs", props.class].filter(Boolean).join(" "),
   );
   const tabRefs: HTMLButtonElement[] = [];
 
-  const selectItem = (item: TabsItem | undefined, focus = false) => {
+  const selectItem = (item: TabsItem | undefined, focus = false): void => {
     if (!item || item.disabled) return;
     if (props.value === undefined) {
       setInternalValue(item.id);
     }
     props.onChange?.(item.id);
     if (focus) {
-      queueMicrotask(() =>
+      queueMicrotask((): void =>
         tabRefs[
-          items().findIndex((candidate) => candidate.id === item.id)
+          items().findIndex((candidate): boolean => candidate.id === item.id)
         ]?.focus(),
       );
     }
   };
 
-  const handleKeyDown = (event: KeyboardEvent) => {
+  const handleKeyDown = (event: KeyboardEvent): void => {
     if (
       event.key !== "ArrowRight" &&
       event.key !== "ArrowLeft" &&
@@ -87,7 +87,7 @@ export function Tabs(props: TabsProps) {
     event.preventDefault();
     const currentIndex = Math.max(
       0,
-      items().findIndex((item) => item.id === selectedItem()?.id),
+      items().findIndex((item): boolean => item.id === selectedItem()?.id),
     );
     if (event.key === "Home")
       return selectItem(findEnabledItem(items(), 0, 1), true);
@@ -109,12 +109,12 @@ export function Tabs(props: TabsProps) {
         onKeyDown={handleKeyDown}
       >
         <For each={items()}>
-          {(item, index) => {
+          {(item, index): JSX.Element => {
             const tabId = `${baseId}-${item.id}-tab`;
             const panelId = `${baseId}-${item.id}-panel`;
             return (
               <button
-                ref={(element) => {
+                ref={(element): void => {
                   tabRefs[index()] = element;
                 }}
                 type="button"
@@ -130,7 +130,7 @@ export function Tabs(props: TabsProps) {
                   "is-active": selectedItem()?.id === item.id,
                 }}
                 data-testid={item.testId}
-                onClick={() => selectItem(item)}
+                onClick={(): void => selectItem(item)}
               >
                 {item.label}
               </button>
@@ -139,7 +139,7 @@ export function Tabs(props: TabsProps) {
         </For>
       </div>
       <For each={items()}>
-        {(item) => (
+        {(item): JSX.Element => (
           <div
             id={`${baseId}-${item.id}-panel`}
             role="tabpanel"

@@ -60,21 +60,21 @@ export function createAppCommandsController(deps: AppCommandsControllerDeps) {
     clearPreferredColumn: deps.clearPreferredColumn,
     resetTransactionGrouping: deps.resetTransactionGrouping,
     toolbarStyleState: deps.toolbarStyleState,
-    selectionCollapsed: () => isSelectionCollapsed(deps.state.selection),
+    selectionCollapsed: (): boolean => isSelectionCollapsed(deps.state.selection),
     selectedImageRun: deps.selectedImageRun,
-    openLinkDialog: (initialHref) =>
+    openLinkDialog: (initialHref): void =>
       deps.setLinkDialog({ isOpen: true, initialHref }),
-    openImageAltDialog: (initialAlt) =>
+    openImageAltDialog: (initialAlt): void =>
       deps.setImageAltDialog({ isOpen: true, initialAlt }),
-    openImageCaptionDialog: (initialCaption) =>
+    openImageCaptionDialog: (initialCaption): void =>
       deps.setImageCaptionDialog({ isOpen: true, initialCaption }),
-    imageCaptionLabel: () =>
+    imageCaptionLabel: (): "Figure" | "Figura" =>
       deps.locale().startsWith("en") ? "Figure" : "Figura",
   });
 
   const keyboardCommandsController = {
     ...commandsController,
-    applyBooleanStyleCommand: (style: BooleanStyleKey) =>
+    applyBooleanStyleCommand: (style: BooleanStyleKey): void =>
       deps.applyBooleanStyleCommand(style),
   };
 

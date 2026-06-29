@@ -1,4 +1,4 @@
-import type { EditorNamedStyle, EditorTableNode } from "@/core/model.js";
+import type { EditorNamedStyle, EditorTableNode, EditorParagraphNode } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
 import { domTextMeasurer } from "@/ui/textMeasurement.js";
 import { resolveTableColumnWidthsPx } from "@/ui/tableGeometry.js";
@@ -11,6 +11,8 @@ import {
   DEFAULT_FONT_SIZE_PX as DEFAULT_FONT_SIZE,
 } from "@/core/units.js";
 import { NO_WRAP_MEASURE_WIDTH_PX } from "@/core/layoutConstants.js";
+import type { ResolvedTableCellFormatting } from "@/core/tableStyleResolver.js";
+
 const DEFAULT_LINE_HEIGHT = 1.15;
 const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 14.4;
 const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
@@ -187,14 +189,14 @@ export function estimateTableRowHeight(
   const columnCount = Math.max(
     1,
     ...tableEntries.map(
-      (entry) => entry.visualColumnIndex + Math.max(1, entry.colSpan),
+      (entry): number => entry.visualColumnIndex + Math.max(1, entry.colSpan),
     ),
   );
   const rowFormatting =
     table && rowIndex !== undefined
-      ? (() => {
+      ? ((): ResolvedTableCellFormatting | undefined => {
           const entry = tableEntries.find(
-            (candidate) => candidate.rowIndex === rowIndex,
+            (candidate): boolean => candidate.rowIndex === rowIndex,
           );
           return entry
             ? resolveEffectiveTableCellFormatting({
@@ -216,11 +218,11 @@ export function estimateTableRowHeight(
       ? getCachedTableColumnGeometry(table, contentWidth)
       : null;
 
-  const cellHeights = row.cells.map((sourceCell, cellIndex) => {
+  const cellHeights = row.cells.map((sourceCell, cellIndex): number => {
     const entry =
       rowIndex !== undefined
         ? tableEntries.find(
-            (candidate) =>
+            (candidate): boolean =>
               candidate.rowIndex === rowIndex &&
               candidate.cellIndex === cellIndex,
           )
@@ -239,7 +241,7 @@ export function estimateTableRowHeight(
     const cell = {
       ...sourceCell,
       style: formatting?.cellStyle ?? sourceCell.style,
-      blocks: sourceCell.blocks.map((paragraph) =>
+      blocks: sourceCell.blocks.map((paragraph): EditorParagraphNode =>
         resolveCachedTableCellParagraph(paragraph, formatting, styles),
       ),
     };
@@ -401,7 +403,7 @@ export function getTableSegmentHeight(
       ? table.rows
           .slice(0, repeatedHeaderRowCount)
           .reduce(
-            (sum, row, index) =>
+            (sum, row, index): number =>
               sum +
               estimateTableRowHeight(
                 row,
@@ -418,7 +420,7 @@ export function getTableSegmentHeight(
   const bodyHeight = table.rows
     .slice(rowStartIndex, rowEndIndexExclusive)
     .reduce(
-      (sum, row, indexOffset) =>
+      (sum, row, indexOffset): number =>
         sum +
         estimateTableRowHeight(
           row,

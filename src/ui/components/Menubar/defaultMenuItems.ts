@@ -123,7 +123,7 @@ export const defaultMenuItems: MenuItem[] = [
     path: "View/Show Margins",
     labelKey: "menu.view.margins",
     command: "toggleShowMargins",
-    icon: (host) =>
+    icon: (host): "check-square" | "square" =>
       host.commands.state("toggleShowMargins").isActive
         ? "check-square"
         : "square",
@@ -133,7 +133,7 @@ export const defaultMenuItems: MenuItem[] = [
     path: "View/Show Paragraph Marks",
     labelKey: "menu.view.paragraphMarks",
     command: "toggleShowParagraphMarks",
-    icon: (host) =>
+    icon: (host): "check-square" | "square" =>
       host.commands.state("toggleShowParagraphMarks").isActive
         ? "check-square"
         : "square",
@@ -143,7 +143,7 @@ export const defaultMenuItems: MenuItem[] = [
     path: "View/Precise Fonts",
     labelKey: "menu.view.preciseFonts",
     command: "togglePreciseFonts",
-    icon: (host) =>
+    icon: (host): "check-square" | "square" =>
       host.commands.state("togglePreciseFonts").isActive
         ? "check-square"
         : "square",
@@ -337,7 +337,7 @@ export const defaultMenuItems: MenuItem[] = [
     path: "Layout/Orientation/Portrait",
     labelKey: "section.portrait",
     command: { name: "setOrientation", payload: "portrait" },
-    icon: (host) =>
+    icon: (host): "" | "check" =>
       host.commands.state("toggleOrientation").isActive ? "" : "check",
   },
   {
@@ -345,7 +345,7 @@ export const defaultMenuItems: MenuItem[] = [
     path: "Layout/Orientation/Landscape",
     labelKey: "section.landscape",
     command: { name: "setOrientation", payload: "landscape" },
-    icon: (host) =>
+    icon: (host): "" | "check" =>
       host.commands.state("toggleOrientation").isActive ? "check" : "",
   },
 

@@ -8,8 +8,7 @@ import {
   type EditorEditingZone,
   type EditorState,
   type EditorTableCellNode,
-  type EditorTableRowNode,
-} from "@/core/model.js";
+  type EditorTableRowNode, EditorParagraphNode } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import {
   findCellAtVisualColumn,
@@ -54,9 +53,9 @@ export function createTableRowColumnOperations(
       ),
     );
 
-    const hasVerticalSpansInTable = tableBlock.rows.some((row) =>
+    const hasVerticalSpansInTable = tableBlock.rows.some((row): boolean =>
       row.cells.some(
-        (cell) =>
+        (cell): boolean =>
           Math.max(1, cell.rowSpan ?? 1) > 1 || cell.vMerge !== undefined,
       ),
     );
@@ -65,24 +64,24 @@ export function createTableRowColumnOperations(
     if (hasVerticalSpansInTable) {
       const tableLayout = buildTableCellLayout(tableBlock);
       const selectedEntry = tableLayout.find(
-        (layoutEntry) =>
+        (layoutEntry): boolean =>
           layoutEntry.rowIndex === location.rowIndex &&
           layoutEntry.cellIndex === location.cellIndex,
       );
       const sourceEntries = tableLayout.filter(
-        (layoutEntry) => layoutEntry.rowIndex === location.rowIndex,
+        (layoutEntry): boolean => layoutEntry.rowIndex === location.rowIndex,
       );
       const templateEntries =
         sourceEntries.length > 0
           ? sourceEntries
           : tableLayout.filter(
-              (layoutEntry) =>
+              (layoutEntry): boolean =>
                 layoutEntry.rowIndex === Math.max(0, location.rowIndex - 1),
             );
       blankRow = createEditorTableRow(
-        templateEntries.map((layoutEntry) => {
+        templateEntries.map((layoutEntry): EditorTableCellNode => {
           const spanningEntry = tableLayout.find(
-            (candidate) =>
+            (candidate): boolean =>
               candidate.visualColumnIndex === layoutEntry.visualColumnIndex &&
               candidate.visualRowIndex < insertIndex &&
               candidate.visualRowIndex + candidate.rowSpan > insertIndex,
@@ -123,7 +122,7 @@ export function createTableRowColumnOperations(
       const nextParagraph =
         targetCell?.blocks[0] ??
         blankRow.cells.find(
-          (cell) => cell.vMerge !== "continue" && cell.blocks[0],
+          (cell): false | EditorParagraphNode => cell.vMerge !== "continue" && cell.blocks[0],
         )?.blocks[0] ??
         findFirstNavigableParagraphInTable(tableBlock);
       return commitTableMutation(
@@ -135,7 +134,7 @@ export function createTableRowColumnOperations(
     }
 
     blankRow = createEditorTableRow(
-      sourceRow.cells.map((cell) =>
+      sourceRow.cells.map((cell): EditorTableCellNode =>
         createEditorTableCell(
           [createEditorParagraph("")],
           Math.max(1, cell.colSpan ?? 1),
@@ -158,7 +157,7 @@ export function createTableRowColumnOperations(
     const nextParagraph =
       targetCell?.blocks[0] ??
       blankRow.cells.find(
-        (cell) => cell.vMerge !== "continue" && cell.blocks[0],
+        (cell): false | EditorParagraphNode => cell.vMerge !== "continue" && cell.blocks[0],
       )?.blocks[0] ??
       findFirstNavigableParagraphInTable(tableBlock);
     return commitTableMutation(
@@ -194,23 +193,23 @@ export function createTableRowColumnOperations(
     }
 
     const blockedByRestartCell = rowToDelete.cells.some(
-      (cell) =>
+      (cell): boolean =>
         cell.vMerge !== "continue" && Math.max(1, cell.rowSpan ?? 1) > 1,
     );
     if (blockedByRestartCell) {
       return current;
     }
 
-    const hasVerticalSpansInTable = tableBlock.rows.some((row) =>
+    const hasVerticalSpansInTable = tableBlock.rows.some((row): boolean =>
       row.cells.some(
-        (cell) =>
+        (cell): boolean =>
           Math.max(1, cell.rowSpan ?? 1) > 1 || cell.vMerge !== undefined,
       ),
     );
 
     const selectedEntry = hasVerticalSpansInTable
       ? buildTableCellLayout(tableBlock).find(
-          (layoutEntry) =>
+          (layoutEntry): boolean =>
             layoutEntry.rowIndex === location.rowIndex &&
             layoutEntry.cellIndex === location.cellIndex,
         )
@@ -265,14 +264,14 @@ export function createTableRowColumnOperations(
     if (!mut) return current;
     const { tableBlock, location, targetBlocks } = mut;
 
-    const hasHorizontalSpansInTable = tableBlock.rows.some((row) =>
-      row.cells.some((cell) => Math.max(1, cell.colSpan ?? 1) > 1),
+    const hasHorizontalSpansInTable = tableBlock.rows.some((row): boolean =>
+      row.cells.some((cell): boolean => Math.max(1, cell.colSpan ?? 1) > 1),
     );
 
     if (hasHorizontalSpansInTable) {
       const tableLayout = buildTableCellLayout(tableBlock);
       const selectedEntry = tableLayout.find(
-        (entry) =>
+        (entry): boolean =>
           entry.rowIndex === location.rowIndex &&
           entry.cellIndex === location.cellIndex,
       );
@@ -409,7 +408,7 @@ export function createTableRowColumnOperations(
     if (current.trackChangesEnabled) {
       const layout = buildTableCellLayout(tableBlock);
       const selected = layout.find(
-        (entry) =>
+        (entry): boolean =>
           entry.rowIndex === location.rowIndex &&
           entry.cellIndex === location.cellIndex,
       );
@@ -429,14 +428,14 @@ export function createTableRowColumnOperations(
       return commitTableMutation(current, targetBlocks, location.zone, null);
     }
 
-    const hasHorizontalSpansInTable = tableBlock.rows.some((row) =>
-      row.cells.some((cell) => Math.max(1, cell.colSpan ?? 1) > 1),
+    const hasHorizontalSpansInTable = tableBlock.rows.some((row): boolean =>
+      row.cells.some((cell): boolean => Math.max(1, cell.colSpan ?? 1) > 1),
     );
 
     if (hasHorizontalSpansInTable) {
       const tableLayout = buildTableCellLayout(tableBlock);
       const selectedEntry = tableLayout.find(
-        (entry) =>
+        (entry): boolean =>
           entry.rowIndex === location.rowIndex &&
           entry.cellIndex === location.cellIndex,
       );

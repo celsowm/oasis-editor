@@ -154,7 +154,7 @@ function buildTocBlocks(
   resolvePage: TocPageNumberResolver,
   rightTabPositionPt: number,
 ): EditorParagraphNode[] {
-  const entries = headings.map((heading) =>
+  const entries = headings.map((heading): EditorParagraphNode =>
     buildEntryParagraph(heading, resolvePage(heading.id), rightTabPositionPt),
   );
   return [buildStartMarkerParagraph(), ...entries, buildEndMarkerParagraph()];
@@ -185,7 +185,7 @@ function replaceSectionBlocks(
  */
 export function insertTableOfContents(
   state: EditorState,
-  resolvePage: TocPageNumberResolver = () => undefined,
+  resolvePage: TocPageNumberResolver = (): undefined => undefined,
   maxLevel = DEFAULT_TOC_MAX_LEVEL,
 ): EditorState {
   const zone = getActiveZone(state);
@@ -204,10 +204,10 @@ export function insertTableOfContents(
   );
 
   const focus = clampPosition(state, state.selection.focus);
-  const blockIndex = section.blocks.findIndex((block) => {
+  const blockIndex = section.blocks.findIndex((block): boolean => {
     if (block.id === focus.paragraphId) return true;
     if (block.type === "paragraph") return false;
-    return getBlockParagraphs(block).some((p) => p.id === focus.paragraphId);
+    return getBlockParagraphs(block).some((p): boolean => p.id === focus.paragraphId);
   });
   const insertAt = blockIndex === -1 ? section.blocks.length : blockIndex + 1;
 
@@ -277,7 +277,7 @@ function findTocRegion(blocks: EditorBlockNode[]): TocRegion | null {
  */
 export function updateTableOfContents(
   state: EditorState,
-  resolvePage: TocPageNumberResolver = () => undefined,
+  resolvePage: TocPageNumberResolver = (): undefined => undefined,
   maxLevel = DEFAULT_TOC_MAX_LEVEL,
 ): EditorState {
   const sectionIndex = getActiveSectionIndex(state);
@@ -289,7 +289,7 @@ export function updateTableOfContents(
   if (!region) return state;
 
   const headings = collectTocHeadings(state, maxLevel);
-  const entries = headings.map((heading) =>
+  const entries = headings.map((heading): EditorParagraphNode =>
     buildEntryParagraph(
       heading,
       resolvePage(heading.id),

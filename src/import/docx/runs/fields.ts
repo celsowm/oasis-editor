@@ -3,6 +3,6 @@ import { WORD_NS, getChildrenByTagNameNS } from "@/import/docx/xmlHelpers.js";
 
 export function getRunInstructionText(runElement: XmlElement): string {
   return getChildrenByTagNameNS(runElement, WORD_NS, "instrText")
-    .map((element) => element.textContent ?? "")
+    .map((element): string => element.textContent ?? "")
     .join("");
 }

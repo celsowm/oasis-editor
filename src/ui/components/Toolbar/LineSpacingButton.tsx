@@ -9,6 +9,7 @@ import {
 } from "@/ui/components/Dialogs/LineSpacingDialog.js";
 import { Popover } from "./primitives/Popover.js";
 import type { ToolbarActionApi } from "./schema/items.js";
+import { JSX } from "solid-js";
 
 const PRESET_VALUES: number[] = [1.0, 1.15, 1.5, 2.0, 2.5, 3.0];
 
@@ -28,7 +29,7 @@ export interface LineSpacingButtonProps {
   api: ToolbarActionApi;
 }
 
-export function LineSpacingButton(props: LineSpacingButtonProps) {
+export function LineSpacingButton(props: LineSpacingButtonProps): JSX.Element {
   const t = useI18n();
   const api = props.api;
   const [isOpen, setIsOpen] = createSignal(false);
@@ -40,22 +41,22 @@ export function LineSpacingButton(props: LineSpacingButtonProps) {
       spacingAfter: "",
     });
 
-  const currentLineHeight = createMemo<number | null>(() => {
+  const currentLineHeight = createMemo<number | null>((): number | null => {
     const raw = toStr(api.commands.state("setLineHeight").value);
     if (raw === "") return null;
     const num = Number(raw);
     return Number.isFinite(num) ? num : null;
   });
 
-  const close = () => setIsOpen(false);
+  const close = (): false => setIsOpen(false);
 
-  const applyPreset = (value: number) => {
+  const applyPreset = (value: number): void => {
     api.commands.execute("setLineHeight", value);
     api.focusEditor();
     close();
   };
 
-  const openDialog = () => {
+  const openDialog = (): void => {
     setDialogInitial({
       lineHeight: toStr(api.commands.state("setLineHeight").value),
       spacingBefore: toStr(api.commands.state("setSpacingBefore").value),
@@ -68,7 +69,7 @@ export function LineSpacingButton(props: LineSpacingButtonProps) {
   const handleDialogApply = (
     values: LineSpacingDialogApplyValues,
     original: LineSpacingDialogInitialValues,
-  ) => {
+  ): void => {
     const originalLH = original.lineHeight ? Number(original.lineHeight) : null;
     const originalSB = original.spacingBefore
       ? Number(original.spacingBefore)
@@ -96,13 +97,13 @@ export function LineSpacingButton(props: LineSpacingButtonProps) {
         onOpenChange={setIsOpen}
         panelRole="menu"
         panelClass="oasis-editor-toolbar-dropdown-menu oasis-editor-line-spacing-menu"
-        trigger={(popover) => (
+        trigger={(popover): JSX.Element => (
           <button
-            ref={(el) => popover.ref(el)}
+            ref={(el): void => popover.ref(el)}
             type="button"
             class="oasis-editor-tool-button oasis-editor-tool-button-dropdown oasis-editor-line-spacing-button"
             classList={{ "oasis-editor-tool-button-active": popover.open }}
-            onClick={() => popover.toggle()}
+            onClick={(): void => popover.toggle()}
             title={t("metric.lineSpacing")}
             aria-label={t("metric.lineSpacing")}
             aria-haspopup="menu"
@@ -137,9 +138,9 @@ export function LineSpacingButton(props: LineSpacingButtonProps) {
         )}
       >
         <For each={PRESET_VALUES}>
-          {(value) => {
+          {(value): JSX.Element => {
             const label = formatPreset(value);
-            const isActive = () => {
+            const isActive = (): boolean => {
               const lh = currentLineHeight();
               return lh !== null && approxEqual(lh, value);
             };
@@ -153,7 +154,7 @@ export function LineSpacingButton(props: LineSpacingButtonProps) {
                 role="menuitemradio"
                 aria-checked={isActive()}
                 data-testid={`editor-toolbar-line-spacing-${label.replace(".", "_")}`}
-                onClick={() => applyPreset(value)}
+                onClick={(): void => applyPreset(value)}
                 title={t("metric.lineSpacingOption", [label])}
               >
                 <span
@@ -211,7 +212,7 @@ export function LineSpacingButton(props: LineSpacingButtonProps) {
           <LineSpacingDialog
             isOpen={dialogOpen()}
             initial={dialogInitial()}
-            onClose={() => setDialogOpen(false)}
+            onClose={(): false => setDialogOpen(false)}
             onApply={handleDialogApply}
           />
         </Portal>

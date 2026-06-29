@@ -80,7 +80,7 @@ export function getParagraphLineHeight(
     paragraph.style?.styleId,
     styles,
   );
-  const maxRunHeight = paragraph.runs.reduce((largest, run) => {
+  const maxRunHeight = paragraph.runs.reduce((largest, run): number => {
     const runTextStyle = resolveEffectiveTextStyleForParagraph(
       run.styles,
       paragraph.style?.styleId,

@@ -81,7 +81,7 @@ export function textRunStylesToCss(style?: EditorTextStyle): string {
       // CSS linear-gradient angle: DrawingML 0° = rightward → CSS 90°.
       const cssAngle = (((90 - (style.textFill.angle ?? 0)) % 360) + 360) % 360;
       const stopsCss = style.textFill.stops
-        .map((s) => `${s.color} ${Math.round(s.position * 100)}%`)
+        .map((s): string => `${s.color} ${Math.round(s.position * 100)}%`)
         .join(",");
       parts.push(`background:linear-gradient(${cssAngle}deg,${stopsCss})`);
       parts.push("-webkit-background-clip:text");
@@ -96,7 +96,7 @@ export function textRunStylesToCss(style?: EditorTextStyle): string {
   }
   if (style.textShadow) {
     const dirRad = (style.textShadow.dirDeg * Math.PI) / 180;
-    const px = (pt: number) => (pt * PX_PER_POINT).toFixed(2);
+    const px = (pt: number): string => (pt * PX_PER_POINT).toFixed(2);
     const ox = (
       Math.cos(dirRad) *
       style.textShadow.distPt *

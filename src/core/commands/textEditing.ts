@@ -38,7 +38,7 @@ function cloneFragmentRuns(runs: EditorTextRun[]): EditorTextRun[] {
 }
 
 function getRunsLength(runs: EditorTextRun[]): number {
-  return runs.reduce((total, run) => total + run.text.length, 0);
+  return runs.reduce((total, run): number => total + run.text.length, 0);
 }
 
 function collectSelectionFragments(state: EditorState): SelectionFragment[] {
@@ -79,7 +79,7 @@ function insertFragmentsAtPosition(
   }
   const paragraphs = getParagraphs(state);
   const targetIndex = paragraphs.findIndex(
-    (paragraph) => paragraph.id === targetPosition.paragraphId,
+    (paragraph): boolean => paragraph.id === targetPosition.paragraphId,
   );
   if (targetIndex === -1) {
     return state;
@@ -97,7 +97,7 @@ function insertFragmentsAtPosition(
       targetOffset,
       firstRuns,
     );
-    const nextParagraphs = paragraphs.map((candidate, index) =>
+    const nextParagraphs = paragraphs.map((candidate, index): EditorParagraphNode =>
       index === targetIndex ? nextTarget : candidate,
     );
     const insertedLength = getRunsLength(firstRuns);
@@ -126,7 +126,7 @@ function insertFragmentsAtPosition(
     [...beforeRuns, ...firstRuns],
     getStyleAtOffset(targetParagraph, targetOffset),
   );
-  const insertedMiddle = middleFragments.map((fragment) =>
+  const insertedMiddle = middleFragments.map((fragment): EditorParagraphNode =>
     buildParagraphFromRuns(
       cloneParagraph(fragment.paragraphTemplate),
       cloneFragmentRuns(fragment.runs),
@@ -166,7 +166,7 @@ function isTargetInsideSelection(
   }
   const paragraphs = getParagraphs(state);
   const targetIndex = paragraphs.findIndex(
-    (paragraph) => paragraph.id === targetPosition.paragraphId,
+    (paragraph): boolean => paragraph.id === targetPosition.paragraphId,
   );
   if (targetIndex === -1) {
     return false;
@@ -201,7 +201,7 @@ function mapTargetAfterDelete(
   const normalized = normalizeSelection(state);
   const paragraphs = getParagraphs(state);
   const targetIndex = paragraphs.findIndex(
-    (paragraph) => paragraph.id === targetPosition.paragraphId,
+    (paragraph): boolean => paragraph.id === targetPosition.paragraphId,
   );
   if (targetIndex === -1) {
     return targetPosition;
@@ -290,7 +290,7 @@ export function insertTextAtSelection(
 
   const nextParagraph = insertRunsAtOffset(paragraph, offset, [insertedRun]);
   const paragraphs = getParagraphs(collapsedState);
-  const nextParagraphs = paragraphs.map((candidate, candidateIndex) =>
+  const nextParagraphs = paragraphs.map((candidate, candidateIndex): EditorParagraphNode =>
     candidateIndex === index ? nextParagraph : candidate,
   );
 
@@ -334,12 +334,12 @@ export function insertPlainTextAtSelection(
   const tailRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
   const middleParagraphs = lines
     .slice(1, -1)
-    .map((line) =>
+    .map((line): EditorParagraphNode =>
       createParagraphFromRuns([{ text: line, styles: insertionStyles }]),
     );
   const lastParagraph = createParagraphFromRuns([
     { text: lines[lines.length - 1], styles: insertionStyles },
-    ...tailRuns.map((run) => ({ text: run.text, styles: run.styles })),
+    ...tailRuns.map((run): { text: string; styles: EditorTextStyle | undefined; } => ({ text: run.text, styles: run.styles })),
   ]);
   const paragraphs = getParagraphs(collapsedState);
   const nextParagraphs = [

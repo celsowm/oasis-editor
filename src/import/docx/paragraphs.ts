@@ -160,7 +160,7 @@ function splitRunsAtPageBreaks(runs: ImportedRun[]): {
     }
 
     const parts = run.text.split(PAGE_BREAK_MARKER);
-    parts.forEach((part, index) => {
+    parts.forEach((part, index): void => {
       appendRun(run, part);
       if (index < parts.length - 1) {
         hasPageBreak = true;

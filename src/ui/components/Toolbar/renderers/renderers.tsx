@@ -48,7 +48,7 @@ function renderMenuContent(
   }
   return (
     <For each={content.items}>
-      {(child) => <ToolbarItemRenderer item={child} api={api} />}
+      {(child): JSX.Element => <ToolbarItemRenderer item={child} api={api} />}
     </For>
   );
 }
@@ -65,7 +65,7 @@ function RenderButton(props: RendererProps<ButtonItem>): JSX.Element {
       disabled={b.disabled()}
       data-testid={props.item.testId}
       tooltip={resolveTooltip(props.item, props.api)}
-      onClick={() => runItem(props.item, props.api)}
+      onClick={(): void => runItem(props.item, props.api)}
     />
   );
 }
@@ -82,7 +82,7 @@ function RenderToggle(props: RendererProps<ToggleItem>): JSX.Element {
       disabled={b.disabled()}
       data-testid={props.item.testId}
       tooltip={resolveTooltip(props.item, props.api)}
-      onClick={() => runItem(props.item, props.api)}
+      onClick={(): void => runItem(props.item, props.api)}
     />
   );
 }
@@ -118,7 +118,7 @@ function RenderSplit(props: RendererProps<SplitItem>): JSX.Element {
       rootActive={b.active() || open()}
       mainTestId={props.item.testId}
       mainPressed={b.active()}
-      onMain={() => runItem(props.item, props.api)}
+      onMain={(): void => runItem(props.item, props.api)}
       menuTestId={
         props.item.testId ? `${props.item.testId}-dropdown` : undefined
       }
@@ -135,7 +135,7 @@ function RenderSplit(props: RendererProps<SplitItem>): JSX.Element {
 
 function RenderSelect(props: RendererProps<SelectItem>): JSX.Element {
   const b = bindItem(props.item, props.api);
-  const onChange: JSX.EventHandler<HTMLSelectElement, Event> = (event) => {
+  const onChange: JSX.EventHandler<HTMLSelectElement, Event> = (event): void => {
     const value = event.currentTarget.value;
     props.api.commands.execute(props.item.command, value);
   };
@@ -152,7 +152,7 @@ function RenderSelect(props: RendererProps<SelectItem>): JSX.Element {
         <option value="">{props.item.placeholder}</option>
       </Show>
       <For each={props.item.options(props.api)}>
-        {(option) => <option value={option.value}>{option.label}</option>}
+        {(option): JSX.Element => <option value={option.value}>{option.label}</option>}
       </For>
     </Select>
   );
@@ -225,7 +225,7 @@ function RenderSeparator(_props: RendererProps<SeparatorItem>): JSX.Element {
 function RenderGroup(props: RendererProps<GroupItem>): JSX.Element {
   return (
     <For each={props.item.items}>
-      {(child) => <ToolbarItemRenderer item={child} api={props.api} />}
+      {(child): JSX.Element => <ToolbarItemRenderer item={child} api={props.api} />}
     </For>
   );
 }
@@ -305,7 +305,7 @@ export function ToolbarItemRenderer(props: {
       }}
     >
       <Show when={component()}>
-        {(comp) => (
+        {(comp): JSX.Element => (
           <Dynamic component={comp()} item={props.item} api={props.api} />
         )}
       </Show>

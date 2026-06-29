@@ -71,7 +71,7 @@ export interface EditorInteractionWiring {
 export function useEditorInteractionWiring(
   ctx: EditorInteractionWiringContext,
 ): EditorInteractionWiring {
-  const state = () => ctx.state;
+  const state = (): EditorState => ctx.state;
 
   const tableResize = createEditorTableResize({
     state,
@@ -92,7 +92,7 @@ export function useEditorInteractionWiring(
 
   const revisionController = createEditorRevisionController({
     state,
-    surfaceRef: () => ctx.surfaceRef() ?? null,
+    surfaceRef: (): HTMLDivElement | null => ctx.surfaceRef() ?? null,
     zoomFactor: ctx.zoomFactor,
   });
 
@@ -140,7 +140,7 @@ export function useEditorInteractionWiring(
     state,
     applyState: ctx.applyState,
     applyTransactionalState: ctx.applyTransactionalState,
-    surfaceRef: () => ctx.surfaceRef() ?? null,
+    surfaceRef: (): HTMLDivElement | null => ctx.surfaceRef() ?? null,
     caretBox: ctx.caretBox,
     preferredColumnX: ctx.preferredColumnX,
     setPreferredColumnX: ctx.setPreferredColumnX,

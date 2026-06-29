@@ -8,8 +8,7 @@ import {
   createFontTabValuesFromInitial,
   createAdvancedTabValuesFromInitial,
   buildFontDialogPreviewStyle,
-  buildFontDialogApplyValues,
-} from "@/ui/components/Dialogs/FontDialogModel.js";
+  buildFontDialogApplyValues, FontFaceStyle } from "@/ui/components/Dialogs/FontDialogModel.js";
 import { WORD_FONT_SIZES } from "./FontDialogTypes.js";
 import type {
   FontDialogProps,
@@ -33,7 +32,7 @@ export function useFontDialogController(
       createAdvancedTabValuesFromInitial(props.initial),
     );
 
-  createEffect(() => {
+  createEffect((): void => {
     if (props.isOpen) {
       setActiveTab("font");
       setFontTabValues(createFontTabValuesFromInitial(props.initial));
@@ -41,24 +40,24 @@ export function useFontDialogController(
     }
   });
 
-  const selectedFontStyle = createMemo<FontStylePreset>(() =>
+  const selectedFontStyle = createMemo<FontStylePreset>((): FontFaceStyle =>
     resolveFontFaceStyle(fontTabValues().bold, fontTabValues().italic),
   );
-  const visibleFamilyOptions = createMemo(() => {
+  const visibleFamilyOptions = createMemo((): string[] => {
     const needle = fontTabValues().familyFilter.trim().toLowerCase();
     if (!needle) return props.familyOptions;
-    return props.familyOptions.filter((family) =>
+    return props.familyOptions.filter((family): boolean =>
       family.toLowerCase().includes(needle),
     );
   });
-  const effectiveSizeOptions = createMemo(() => {
+  const effectiveSizeOptions = createMemo((): number[] => {
     const set = new Set<number>(WORD_FONT_SIZES);
     for (const size of props.sizeOptions) set.add(size);
     const current = Number(fontTabValues().fontSize);
     if (Number.isFinite(current) && current > 0) set.add(current);
-    return Array.from(set).sort((a, b) => a - b);
+    return Array.from(set).sort((a, b): number => a - b);
   });
-  const customSizeError = createMemo(() => {
+  const customSizeError = createMemo((): string => {
     const raw = fontTabValues().fontSize.trim();
     if (!raw) return "";
     const parsed = Number(raw);
@@ -66,7 +65,7 @@ export function useFontDialogController(
       ? ""
       : t("dialog.font.sizeInvalid");
   });
-  const advancedValidationError = createMemo(() => {
+  const advancedValidationError = createMemo((): string => {
     const advanced = advancedTabValues();
     if (
       advanced.characterScale.trim() &&
@@ -100,11 +99,11 @@ export function useFontDialogController(
     }
     return "";
   });
-  const previewStyle = createMemo(() =>
+  const previewStyle = createMemo((): Record<string, string | number | undefined> =>
     buildFontDialogPreviewStyle(fontTabValues(), advancedTabValues()),
   );
 
-  const applyFontStylePreset = (value: FontStylePreset) => {
+  const applyFontStylePreset = (value: FontStylePreset): void => {
     setFontTabValues((current) => ({
       ...current,
       bold: value === "bold" || value === "boldItalic",
@@ -112,7 +111,7 @@ export function useFontDialogController(
     }));
   };
 
-  const handleApply = () => {
+  const handleApply = (): void => {
     if (advancedValidationError()) {
       return;
     }
@@ -126,20 +125,20 @@ export function useFontDialogController(
   const updateFontTab = <K extends keyof FontTabValues>(
     key: K,
     value: FontTabValues[K],
-  ) => {
+  ): void => {
     setFontTabValues((current) => ({ ...current, [key]: value }));
   };
 
   const updateAdvancedTab = <K extends keyof AdvancedTabValues>(
     key: K,
     value: AdvancedTabValues[K],
-  ) => {
+  ): void => {
     setAdvancedTabValues((current) => ({ ...current, [key]: value }));
   };
 
   return {
     activeTab,
-    setActiveTab: (tab) => setActiveTab(tab),
+    setActiveTab: (tab): "font" | "advanced" => setActiveTab(tab),
     fontTabValues,
     setFontTabValues,
     advancedTabValues,

@@ -23,11 +23,11 @@ export function computeLayoutInvalidationFromTransaction(
   // header/body/footer block ids.
   const serializeSections = (state: EditorState): string =>
     getDocumentSectionsCanonical(state.document)
-      .map((section) =>
+      .map((section): string =>
         [
-          ...(section.header ?? []).map((block) => block.id),
-          ...section.blocks.map((block) => block.id),
-          ...(section.footer ?? []).map((block) => block.id),
+          ...(section.header ?? []).map((block): string => block.id),
+          ...section.blocks.map((block): string => block.id),
+          ...(section.footer ?? []).map((block): string => block.id),
         ].join("|"),
       )
       .join("||");

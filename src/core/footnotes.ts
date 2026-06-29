@@ -166,7 +166,7 @@ export interface FootnoteReferenceInfo {
 export function listReferencedFootnotes(
   document: EditorDocument,
 ): FootnoteReferenceInfo[] {
-  return listReferencedNotes(document, footnoteTraversal).map((info) => ({
+  return listReferencedNotes(document, footnoteTraversal).map((info): { footnoteId: string; customMark: string | undefined; index: number; } => ({
     footnoteId: info.id,
     customMark: info.customMark,
     index: info.index,

@@ -1,4 +1,4 @@
-import type { EditorState, EditorTextStyle } from "@/core/model.js";
+import type { EditorState, EditorTextStyle, EditorParagraphNode, EditorTextRun } from "@/core/model.js";
 import { getParagraphLength, getParagraphs } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import type {
@@ -32,7 +32,7 @@ export function toggleTextStyle(
   );
 
   const touchedRuns = touchedParagraphs
-    .flatMap((paragraph, relativeIndex) => {
+    .flatMap((paragraph, relativeIndex): EditorTextRun[] => {
       const paragraphIndex = normalized.startIndex + relativeIndex;
       const startOffset =
         paragraphIndex === normalized.startIndex
@@ -44,14 +44,14 @@ export function toggleTextStyle(
           : getParagraphLength(paragraph);
       return sliceRuns(paragraph, startOffset, endOffset);
     })
-    .filter((run) => run.text.length > 0);
+    .filter((run): boolean => run.text.length > 0);
 
   if (touchedRuns.length === 0) {
     return state;
   }
 
-  const shouldEnable = !touchedRuns.every((run) => Boolean(run.styles?.[key]));
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+  const shouldEnable = !touchedRuns.every((run): boolean => Boolean(run.styles?.[key]));
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
     if (
       paragraphIndex < normalized.startIndex ||
       paragraphIndex > normalized.endIndex
@@ -92,7 +92,7 @@ export function clearSelectedTextFormatting(state: EditorState): EditorState {
   }
 
   const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
     if (
       paragraphIndex < normalized.startIndex ||
       paragraphIndex > normalized.endIndex
@@ -135,7 +135,7 @@ export function setTextStyleValue<K extends ValueTextStyleKey>(
   }
 
   const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
     if (
       paragraphIndex < normalized.startIndex ||
       paragraphIndex > normalized.endIndex

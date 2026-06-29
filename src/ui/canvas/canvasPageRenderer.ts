@@ -44,26 +44,26 @@ export function createCanvasPageRenderer(options: {
   let lastDpr = 0;
   let rafHandle: number | null = null;
 
-  const schedulePaint = () => {
+  const schedulePaint = (): void => {
     if (rafHandle !== null) return;
     rafHandle = requestAnimationFrame(paint);
   };
 
-  const invalidatePage = () => {
+  const invalidatePage = (): void => {
     lastPaintedPage = undefined;
   };
 
-  const invalidateDecorations = () => {
+  const invalidateDecorations = (): void => {
     lastShowMargins = undefined;
     lastShowParagraphMarks = undefined;
   };
 
-  const invalidateActiveZone = () => {
+  const invalidateActiveZone = (): void => {
     lastActiveZone = undefined;
     lastActiveFootnoteId = undefined;
   };
 
-  const paint = () => {
+  const paint = (): void => {
     rafHandle = null;
     const canvas = options.getCanvas();
     if (!canvas) return;
@@ -120,7 +120,7 @@ export function createCanvasPageRenderer(options: {
     const footerZoneTop = resolveCanvasFooterZoneTop(page);
     const bodyWidth = getPageContentWidth(page.pageSettings);
     const zoneBodyBottom = page.bodyBottom ?? height;
-    const onUpdate = () => {
+    const onUpdate = (): void => {
       invalidatePage();
       schedulePaint();
     };
@@ -205,7 +205,7 @@ export function createCanvasPageRenderer(options: {
 
     ctx.save();
     ctx.globalAlpha = bodyAlpha;
-    if (columnRects && page.blocks.some((b) => b.columnIndex !== undefined)) {
+    if (columnRects && page.blocks.some((b): boolean => b.columnIndex !== undefined)) {
       // Newspaper columns: paint each column's blocks from the body top at its
       // own X/width. renderBlockList accumulates its cursor from originY per
       // call, so per-column invocation restarts each column at the top.
@@ -321,7 +321,7 @@ export function createCanvasPageRenderer(options: {
     invalidatePage,
     invalidateDecorations,
     invalidateActiveZone,
-    dispose() {
+    dispose(): void {
       if (rafHandle !== null) {
         cancelAnimationFrame(rafHandle);
         rafHandle = null;

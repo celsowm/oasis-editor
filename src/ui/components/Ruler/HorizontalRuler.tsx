@@ -28,6 +28,8 @@ import {
   type RulerGeometry,
   type RulerIndents,
 } from "./rulerGeometry.js";
+import type { RulerTick } from "@/ui/components/Ruler/rulerGeometry.js";
+import { JSX } from "solid-js";
 
 export interface HorizontalRulerProps {
   state: Accessor<EditorState>;
@@ -72,7 +74,7 @@ function numFromStyle(value: string | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-export function HorizontalRuler(props: HorizontalRulerProps) {
+export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
   const t = useI18n();
   let pageRef: HTMLDivElement | undefined;
   const [scrollLeft, setScrollLeft] = createSignal(0);
@@ -84,16 +86,16 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
   const [pageLeft, setPageLeft] = createSignal(EDITOR_SCROLL_PADDING_PX);
   const [drag, setDrag] = createSignal<DragState | null>(null);
 
-  const pageSettings = createMemo(() => getActivePageSettings(props.state()));
+  const pageSettings = createMemo((): EditorPageSettings => getActivePageSettings(props.state()));
 
   // Keep the ruler horizontally in sync with the document viewport, and track
   // where the page actually sits so the ruler origin lines up with the caret.
-  createEffect(() => {
+  createEffect((): void => {
     const viewport = props.viewportRef();
     if (!viewport) return;
     // Re-measure whenever the page width changes (re-runs this effect).
     pageSettings().width;
-    const sync = () => {
+    const sync = (): void => {
       setScrollLeft(viewport.scrollLeft);
       const left = measurePageLeft(viewport);
       if (left !== null) setPageLeft(left);
@@ -105,14 +107,14 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
     viewport.addEventListener("scroll", sync, { passive: true });
     const observer = new ResizeObserver(sync);
     observer.observe(viewport);
-    onCleanup(() => {
+    onCleanup((): void => {
       cancelAnimationFrame(raf);
       viewport.removeEventListener("scroll", sync);
       observer.disconnect();
     });
   });
 
-  const indents = createMemo<RulerIndents>(() => {
+  const indents = createMemo<RulerIndents>((): { indentLeft: number; indentRight: number; indentFirstLine: number; indentHanging: number; } => {
     const style = getToolbarStyleState(props.state());
     return {
       indentLeft: numFromStyle(style.indentLeft),
@@ -122,12 +124,12 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
     };
   });
 
-  const baseGeometry = createMemo(() =>
+  const baseGeometry = createMemo((): RulerGeometry =>
     computeRulerGeometry(pageSettings(), indents()),
   );
 
   // Geometry actually drawn, applying the live drag preview without committing.
-  const geometry = createMemo<RulerGeometry>(() => {
+  const geometry = createMemo<RulerGeometry>((): RulerGeometry => {
     const base = baseGeometry();
     const d = drag();
     if (!d) return base;
@@ -170,16 +172,16 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
       ? "in"
       : "cm";
 
-  const ticks = createMemo(() =>
+  const ticks = createMemo((): RulerTick[] =>
     computeRulerTicks(pageSettings().width, baseGeometry().contentLeft, unit()),
   );
 
   // Scale a document-px value into the screen-px space the ruler renders in.
-  const z = () => props.zoomFactor();
+  const z = (): number => props.zoomFactor();
   const sx = (value: number): number => value * z();
 
   const trackWidth = createMemo(
-    () => pageLeft() * 2 + sx(pageSettings().width),
+    (): number => pageLeft() * 2 + sx(pageSettings().width),
   );
 
   const pageXFromClient = (clientX: number): number => {
@@ -189,7 +191,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
     return clamp((clientX - rect.left) / z(), 0, pageSettings().width);
   };
 
-  const beginDrag = (type: DragType, event: PointerEvent) => {
+  const beginDrag = (type: DragType, event: PointerEvent): void => {
     if (props.readOnly()) return;
     event.preventDefault();
     event.stopPropagation();
@@ -197,14 +199,14 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
     target.setPointerCapture?.(event.pointerId);
     setDrag({ type, previewX: pageXFromClient(event.clientX) });
 
-    const onMove = (moveEvent: PointerEvent) => {
-      setDrag((current) =>
+    const onMove = (moveEvent: PointerEvent): void => {
+      setDrag((current): { previewX: number; type: DragType; } | null =>
         current
           ? { ...current, previewX: pageXFromClient(moveEvent.clientX) }
           : current,
       );
     };
-    const onUp = () => {
+    const onUp = (): void => {
       target.releasePointerCapture?.(event.pointerId);
       target.removeEventListener("pointermove", onMove);
       target.removeEventListener("pointerup", onUp);
@@ -217,7 +219,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
     target.addEventListener("pointercancel", onUp);
   };
 
-  const commitDrag = () => {
+  const commitDrag = (): void => {
     const d = drag();
     if (!d) return;
     const settings = pageSettings();
@@ -350,7 +352,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
 
           {/* Ticks */}
           <For each={ticks()}>
-            {(tick) => (
+            {(tick): JSX.Element => (
               <>
                 <div
                   class={`oasis-editor-horizontal-ruler-tick oasis-editor-horizontal-ruler-tick-${tick.kind}`}
@@ -375,7 +377,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
             style={{ left: `${sx(geometry().contentLeft)}px` }}
             title={t("ruler.leftMargin")}
             aria-label={t("ruler.leftMargin")}
-            onPointerDown={(event) => beginDrag("leftMargin", event)}
+            onPointerDown={(event): void => beginDrag("leftMargin", event)}
           />
           <button
             type="button"
@@ -383,7 +385,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
             style={{ left: `${sx(geometry().contentRight)}px` }}
             title={t("ruler.rightMargin")}
             aria-label={t("ruler.rightMargin")}
-            onPointerDown={(event) => beginDrag("rightMargin", event)}
+            onPointerDown={(event): void => beginDrag("rightMargin", event)}
           />
 
           {/* Indent markers */}
@@ -393,7 +395,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
             style={{ left: `${sx(geometry().firstLineX)}px` }}
             title={t("ruler.firstLineIndent")}
             aria-label={t("ruler.firstLineIndent")}
-            onPointerDown={(event) => beginDrag("firstLine", event)}
+            onPointerDown={(event): void => beginDrag("firstLine", event)}
           />
           <button
             type="button"
@@ -401,7 +403,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
             style={{ left: `${sx(geometry().leftIndentX)}px` }}
             title={t("ruler.hangingIndent")}
             aria-label={t("ruler.hangingIndent")}
-            onPointerDown={(event) => beginDrag("hanging", event)}
+            onPointerDown={(event): void => beginDrag("hanging", event)}
           />
           <button
             type="button"
@@ -409,7 +411,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
             style={{ left: `${sx(geometry().leftIndentX)}px` }}
             title={t("ruler.leftIndent")}
             aria-label={t("ruler.leftIndent")}
-            onPointerDown={(event) => beginDrag("leftIndent", event)}
+            onPointerDown={(event): void => beginDrag("leftIndent", event)}
           />
           <button
             type="button"
@@ -417,7 +419,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
             style={{ left: `${sx(geometry().rightIndentX)}px` }}
             title={t("ruler.rightIndent")}
             aria-label={t("ruler.rightIndent")}
-            onPointerDown={(event) => beginDrag("rightIndent", event)}
+            onPointerDown={(event): void => beginDrag("rightIndent", event)}
           />
         </div>
       </div>

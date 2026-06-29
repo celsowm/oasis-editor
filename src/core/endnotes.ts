@@ -97,7 +97,7 @@ export interface EndnoteReferenceInfo {
 export function listReferencedEndnotes(
   document: EditorDocument,
 ): EndnoteReferenceInfo[] {
-  return listReferencedNotes(document, endnoteTraversal).map((info) => ({
+  return listReferencedNotes(document, endnoteTraversal).map((info): { endnoteId: string; customMark: string | undefined; index: number; } => ({
     endnoteId: info.id,
     customMark: info.customMark,
     index: info.index,

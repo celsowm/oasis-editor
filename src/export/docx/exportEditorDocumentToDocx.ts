@@ -54,7 +54,7 @@ function buildPartContext(
   const hyperlinks: Array<{ rId: string; href: string }> = [];
   const hyperlinkMap = new Map<string, string>();
 
-  visitBlocks(blocks, (paragraph) => {
+  visitBlocks(blocks, (paragraph): void => {
     for (const run of paragraph.runs) {
       const link = run.styles?.link;
       if (link && !link.startsWith("#") && !hyperlinkMap.has(link)) {
@@ -206,7 +206,7 @@ export async function exportEditorDocumentToDocx(
 
   const bodyContext = annotateContext(
     buildPartContext(
-      sections.flatMap((section) => section.blocks),
+      sections.flatMap((section): EditorBlockNode[] => section.blocks),
       numberingContext,
       buildState,
       document,
@@ -215,17 +215,17 @@ export async function exportEditorDocumentToDocx(
   const hasComments = commentPlan !== undefined;
   const parts: PartDefinition[] = [];
   const sectionReferences: SectionReferenceDefinition[] = sections.map(
-    () => ({}),
+    (): {} => ({}),
   );
   let nextHeaderIndex = 1;
   let nextFooterIndex = 1;
 
-  sections.forEach((section, sectionIndex) => {
+  sections.forEach((section, sectionIndex): void => {
     const addPart = (
       kind: "header" | "footer",
       type: "default" | "first" | "even",
       blocks: EditorBlockNode[] | undefined,
-    ) => {
+    ): void => {
       if (!blocks || blocks.length === 0) {
         return;
       }
@@ -265,7 +265,7 @@ export async function exportEditorDocumentToDocx(
 
   const hasNumbering = numberingContext.definitions.length > 0;
   const hasEvenAndOddHeaders = sections.some(
-    (section) =>
+    (section): boolean =>
       (section.evenPageHeader?.length ?? 0) > 0 ||
       (section.evenPageFooter?.length ?? 0) > 0,
   );
@@ -291,7 +291,7 @@ export async function exportEditorDocumentToDocx(
         referencedFootnotes,
         numberingContext,
         buildState,
-        (blocks) =>
+        (blocks): DocContext =>
           buildPartContext(blocks, numberingContext, buildState, document),
         document.styles,
         footnoteIdMap,
@@ -306,7 +306,7 @@ export async function exportEditorDocumentToDocx(
         referencedEndnotes,
         numberingContext,
         buildState,
-        (blocks) =>
+        (blocks): DocContext =>
           buildPartContext(blocks, numberingContext, buildState, document),
         document.styles,
         endnoteIdMap,
@@ -316,8 +316,8 @@ export async function exportEditorDocumentToDocx(
     allImages.push(...endnotesPart.partContext.images);
   }
   const imageExtensions = allImages
-    .filter((img) => img.kind === "embedded")
-    .map((img) => img.target.split(".").pop()?.toLowerCase())
+    .filter((img): boolean => img.kind === "embedded")
+    .map((img): string | undefined => img.target.split(".").pop()?.toLowerCase())
     .filter((ext): ext is string => Boolean(ext));
 
   const hasStyles =

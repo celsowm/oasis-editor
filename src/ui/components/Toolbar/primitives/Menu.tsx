@@ -33,9 +33,9 @@ export function Menu(props: MenuProps): JSX.Element {
         panelRole="menu"
         panelClass={`oasis-editor-toolbar-dropdown-menu ${props.panelClass || ""}`}
         onPanelMouseLeave={undefined}
-        trigger={(api) => (
+        trigger={(api): JSX.Element => (
           <button
-            ref={(el) => api.ref(el)}
+            ref={(el): void => api.ref(el)}
             type="button"
             class="oasis-editor-tool-button oasis-editor-tool-button-dropdown"
             classList={{
@@ -43,7 +43,7 @@ export function Menu(props: MenuProps): JSX.Element {
               "oasis-editor-tool-button-ribbon-large":
                 props.ribbonSize === "large",
             }}
-            onClick={() => api.toggle()}
+            onClick={(): void => api.toggle()}
             disabled={props.disabled}
             title={props.tooltip}
             aria-label={ariaLabel()}
@@ -67,7 +67,7 @@ export function Menu(props: MenuProps): JSX.Element {
         )}
       >
         <div
-          onClick={(event) => {
+          onClick={(event): void => {
             // Close when an actionable button inside is clicked, but keep open
             // for nested dropdowns and inline list-option panels.
             const el = event.target as HTMLElement;

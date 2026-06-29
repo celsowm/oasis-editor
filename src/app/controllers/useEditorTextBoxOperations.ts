@@ -50,14 +50,14 @@ export function createEditorTextBoxOperations(
     {
       label: "text box",
       getSelected: getSelectedTextBoxSize,
-      applyResize: (current, width, height, direction) =>
+      applyResize: (current, width, height, direction): EditorState =>
         resizeSelectedTextBox(current, width, height, {
           handleDirection: direction,
         }),
       // Cap growth at the page/cell content width, but never below the box's
       // current width so an already-wide floating box isn't clamped smaller on
       // the first pointer move.
-      getMaxWidth: (current, paragraphId) => {
+      getMaxWidth: (current, paragraphId): number => {
         const contentMax = getMaxInlineImageWidth(
           deps.surfaceRef(),
           current.document,
@@ -82,7 +82,7 @@ export function createEditorTextBoxOperations(
   const rotateSession = createRotateSession(
     {
       label: "text box",
-      applyRotate: (current, rotation) =>
+      applyRotate: (current, rotation): EditorState =>
         rotateSelectedTextBox(current, rotation),
     },
     {
@@ -100,7 +100,7 @@ export function createEditorTextBoxOperations(
     paragraphOffset: number,
     direction: ResizeHandleDirection,
     event: MouseEvent & { currentTarget: HTMLElement },
-  ) => {
+  ): void => {
     event.preventDefault();
     event.stopPropagation();
     resizeSession.start(
@@ -116,7 +116,7 @@ export function createEditorTextBoxOperations(
     paragraphId: string,
     paragraphOffset: number,
     event: MouseEvent & { currentTarget: HTMLElement },
-  ) => {
+  ): void => {
     event.preventDefault();
     event.stopPropagation();
     rotateSession.start(paragraphId, paragraphOffset, event, deps.state);

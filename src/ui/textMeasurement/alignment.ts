@@ -48,8 +48,8 @@ function getLineContentWidth(
   // Slot positions are keyed by offset; the slot after the last content char
   // marks that character's trailing edge.
   const trailingSlot =
-    line.slots.find((slot) => slot.offset === contentOffset + 1) ??
-    line.slots.find((slot) => slot.offset === contentOffset);
+    line.slots.find((slot): boolean => slot.offset === contentOffset + 1) ??
+    line.slots.find((slot): boolean => slot.offset === contentOffset);
   if (!trailingSlot) {
     return 0;
   }
@@ -91,7 +91,7 @@ function justifyLineBySpaces(
   let shift = 0;
   return {
     ...line,
-    slots: line.slots.map((slot) => {
+    slots: line.slots.map((slot): { left: number; paragraphId: string; offset: number; top: number; height: number; } => {
       while (
         spaceIndex < spaceOffsets.length &&
         slot.offset > spaceOffsets[spaceIndex]!
@@ -127,7 +127,7 @@ export function applyParagraphAlignment(
     return lines;
   }
 
-  return lines.map((line, lineIndex) => {
+  return lines.map((line, lineIndex): EditorLayoutLine => {
     const availableWidth =
       line.availableWidth ??
       getAvailableWidth(paragraph, styles, contentWidth, lineIndex === 0);

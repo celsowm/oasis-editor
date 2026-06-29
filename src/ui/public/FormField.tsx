@@ -21,8 +21,8 @@ export function FormField(props: FormFieldProps): JSX.Element {
     "classList",
     "children",
   ]);
-  const descriptionId = () => local.for ?? `${fallbackId}-description`;
-  const errorId = () => local.for ?? `${fallbackId}-error`;
+  const descriptionId = (): string => local.for ?? `${fallbackId}-description`;
+  const errorId = (): string => local.for ?? `${fallbackId}-error`;
 
   return (
     <div
@@ -40,7 +40,10 @@ export function FormField(props: FormFieldProps): JSX.Element {
       </Show>
       {local.children}
       <Show when={local.description}>
-        <StatusText id={descriptionId()} class="oasis-editor-ui-field-description">
+        <StatusText
+          id={descriptionId()}
+          class="oasis-editor-ui-field-description"
+        >
           {local.description}
         </StatusText>
       </Show>

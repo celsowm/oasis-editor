@@ -7,8 +7,7 @@ import { insertTextAtSelection } from "@/core/commands/text.js";
 import {
   getParagraphs,
   getParagraphText,
-  paragraphOffsetToPosition,
-} from "@/core/model.js";
+  paragraphOffsetToPosition, EditorState } from "@/core/model.js";
 import type { EditorKeyboardDeps } from "./EditorKeyboardDeps.js";
 
 export interface EditorCommandExecutor {
@@ -32,11 +31,11 @@ export interface EditorKeyBinding {
 export class EditorCommandRegistry {
   private bindings: Map<string, EditorKeyBinding> = new Map();
 
-  register(binding: EditorKeyBinding) {
+  register(binding: EditorKeyBinding): void {
     this.bindings.set(binding.id, binding);
   }
 
-  unregister(id: string) {
+  unregister(id: string): void {
     this.bindings.delete(id);
   }
 
@@ -85,7 +84,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     command: "selectAll",
     key: "a",
     ctrlOrMeta: true,
-    execute: (deps) => {
+    execute: (deps): boolean => {
       const currentState = deps.state();
       const paragraphs = getParagraphs(currentState);
       if (paragraphs.length === 0) return false;
@@ -111,7 +110,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     key: "a",
     ctrlOrMeta: true,
     alt: true,
-    execute: (deps) => {
+    execute: (deps): boolean => {
       const selectedImage = deps.selectedImageRun();
       if (selectedImage) {
         deps.commandsController.promptForImageAlt();
@@ -126,7 +125,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     key: "f",
     ctrlOrMeta: true,
     alt: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.commandsController.applyInsertFootnoteCommand();
       return true;
     },
@@ -137,7 +136,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     key: "v",
     ctrlOrMeta: true,
     shift: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.setForcePlainTextPaste(true);
       deps.focusInput();
       return true;
@@ -148,7 +147,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     command: "bold",
     key: "b",
     ctrlOrMeta: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.commandsController.applyBooleanStyleCommand("bold");
       return true;
     },
@@ -158,7 +157,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     command: "italic",
     key: "i",
     ctrlOrMeta: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.commandsController.applyBooleanStyleCommand("italic");
       return true;
     },
@@ -168,7 +167,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     command: "underline",
     key: "u",
     ctrlOrMeta: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.commandsController.applyBooleanStyleCommand("underline");
       return true;
     },
@@ -178,7 +177,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     command: "link",
     key: "k",
     ctrlOrMeta: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.commandsController.promptForLink();
       return true;
     },
@@ -189,7 +188,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     key: "7",
     ctrlOrMeta: true,
     shift: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.commandsController.applyParagraphListCommand("ordered");
       return true;
     },
@@ -200,7 +199,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     key: "8",
     ctrlOrMeta: true,
     shift: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.commandsController.applyParagraphListCommand("bullet");
       return true;
     },
@@ -210,7 +209,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     command: "find",
     key: "f",
     ctrlOrMeta: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.toggleFindReplace(true);
       return true;
     },
@@ -220,7 +219,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     command: "replace",
     key: "h",
     ctrlOrMeta: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.toggleReplace(true);
       return true;
     },
@@ -230,7 +229,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     command: "undo",
     key: "z",
     ctrlOrMeta: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.performUndo();
       return true;
     },
@@ -241,7 +240,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     key: "z",
     ctrlOrMeta: true,
     shift: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.performRedo();
       return true;
     },
@@ -251,7 +250,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     command: "redo",
     key: "y",
     ctrlOrMeta: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.performRedo();
       return true;
     },
@@ -261,11 +260,11 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     command: "pageBreak",
     key: "Enter",
     ctrlOrMeta: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState((current) =>
-        deps.applyTableAwareParagraphEdit(current, (temp) =>
+      deps.applyTransactionalState((current): EditorState =>
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
           insertPageBreakAtSelection(temp),
         ),
       );
@@ -278,11 +277,11 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     command: "lineBreak",
     key: "Enter",
     shift: true,
-    execute: (deps) => {
+    execute: (deps): true => {
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState((current) =>
-        deps.applyTableAwareParagraphEdit(current, (temp) =>
+      deps.applyTransactionalState((current): EditorState =>
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
           insertTextAtSelection(temp, "\n"),
         ),
       );
@@ -294,14 +293,14 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     id: "splitBlock",
     command: "splitBlock",
     key: "Enter",
-    execute: (deps) => {
+    execute: (deps): true => {
       if (deps.commandsController.handleListEnter()) {
         return true;
       }
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState((current) =>
-        deps.applyTableAwareParagraphEdit(current, (temp) =>
+      deps.applyTransactionalState((current): EditorState =>
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
           splitBlockAtSelection(temp),
         ),
       );

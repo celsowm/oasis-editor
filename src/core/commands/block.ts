@@ -4,8 +4,7 @@ import type {
   EditorPosition,
   EditorState,
   EditorSection,
-  EditorTabStop,
-} from "@/core/model.js";
+  EditorTabStop, EditorParagraphNode, EditorTextStyle } from "@/core/model.js";
 import {
   getBlockParagraphs,
   getDocumentSections,
@@ -47,7 +46,7 @@ export function moveBlockToPosition(
   let movedBlock: EditorBlockNode | undefined;
 
   const removeFromBlocks = (blocks: EditorBlockNode[]): EditorBlockNode[] => {
-    const idx = blocks.findIndex((b) => b.id === blockId);
+    const idx = blocks.findIndex((b): boolean => b.id === blockId);
     if (idx >= 0) {
       movedBlock = blocks[idx];
       return [...blocks.slice(0, idx), ...blocks.slice(idx + 1)];
@@ -79,7 +78,7 @@ export function moveBlockToPosition(
   // Check if target is inside the moved block itself
   if (movedBlock.type === "table") {
     const internalParagraphs = getBlockParagraphs(movedBlock);
-    if (internalParagraphs.some((p) => p.id === targetId)) {
+    if (internalParagraphs.some((p): boolean => p.id === targetId)) {
       return state;
     }
   }
@@ -87,10 +86,10 @@ export function moveBlockToPosition(
   const insertIntoBlocks = (
     blocks: EditorBlockNode[],
   ): { nextBlocks: EditorBlockNode[]; found: boolean } => {
-    const idx = blocks.findIndex((b) => {
+    const idx = blocks.findIndex((b): boolean => {
       if (b.id === targetId) return true;
       if (b.type === "table") {
-        return getBlockParagraphs(b).some((p) => p.id === targetId);
+        return getBlockParagraphs(b).some((p): boolean => p.id === targetId);
       }
       return false;
     });
@@ -158,9 +157,9 @@ export function splitBlockAtSelection(state: EditorState): EditorState {
     secondRuns.length > 0
       ? createParagraphFromRunsLike(
           paragraph,
-          secondRuns.map((run) => ({ text: run.text, styles: run.styles })),
+          secondRuns.map((run): { text: string; styles: EditorTextStyle | undefined; } => ({ text: run.text, styles: run.styles })),
         )
-      : (() => {
+      : ((): EditorParagraphNode => {
           const emptyParagraph = createEditorParagraph("");
           emptyParagraph.style = paragraph.style
             ? { ...paragraph.style }
@@ -204,9 +203,9 @@ export function insertPageBreakAtSelection(state: EditorState): EditorState {
     secondRuns.length > 0
       ? createParagraphFromRunsLike(
           paragraph,
-          secondRuns.map((run) => ({ text: run.text, styles: run.styles })),
+          secondRuns.map((run): { text: string; styles: EditorTextStyle | undefined; } => ({ text: run.text, styles: run.styles })),
         )
-      : (() => {
+      : ((): EditorParagraphNode => {
           const emptyParagraph = createEditorParagraph("");
           emptyParagraph.style = paragraph.style
             ? { ...paragraph.style }
@@ -259,7 +258,7 @@ export function insertSectionBreakAtSelection(
   }
 
   // Split the current section blocks at the current paragraph
-  const blockIndex = section.blocks.findIndex((block) => {
+  const blockIndex = section.blocks.findIndex((block): boolean => {
     if (block.type === "paragraph") {
       return block.id === paragraph.id;
     }
@@ -288,9 +287,9 @@ export function insertSectionBreakAtSelection(
     secondRuns.length > 0
       ? createParagraphFromRunsLike(
           paragraph,
-          secondRuns.map((run) => ({ text: run.text, styles: run.styles })),
+          secondRuns.map((run): { text: string; styles: EditorTextStyle | undefined; } => ({ text: run.text, styles: run.styles })),
         )
-      : (() => {
+      : ((): EditorParagraphNode => {
           const emptyParagraph = createEditorParagraph("");
           emptyParagraph.style = paragraph.style
             ? { ...paragraph.style }
@@ -384,7 +383,7 @@ export function setParagraphStyle<K extends ValueParagraphStyleKey>(
   const startIndex = normalized.startIndex;
   const endIndex = normalized.endIndex;
 
-  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
     if (paragraphIndex < startIndex || paragraphIndex > endIndex) {
       return cloneParagraph(paragraph);
     }

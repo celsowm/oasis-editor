@@ -1,4 +1,4 @@
-export function getGuideBounds(viewportRef: () => HTMLElement | undefined) {
+export function getGuideBounds(viewportRef: () => HTMLElement | undefined): { left: number; top: number; width: number; height: number; } {
   const viewport = viewportRef();
   if (!viewport) {
     return {
@@ -17,7 +17,7 @@ export function getGuideBounds(viewportRef: () => HTMLElement | undefined) {
   };
 }
 
-function setResizeCursorClass(isCol: boolean) {
+function setResizeCursorClass(isCol: boolean): void {
   if (isCol) {
     document.body.classList.add("oasis-editor-hover-col-resize");
     document.body.classList.remove("oasis-editor-hover-row-resize");
@@ -27,15 +27,15 @@ function setResizeCursorClass(isCol: boolean) {
   }
 }
 
-export function clearResizeCursorClasses() {
+export function clearResizeCursorClasses(): void {
   document.body.classList.remove("oasis-editor-hover-col-resize");
   document.body.classList.remove("oasis-editor-hover-row-resize");
 }
 
-export function setHoverCursorClass(isCol: boolean) {
+export function setHoverCursorClass(isCol: boolean): void {
   setResizeCursorClass(isCol);
 }
 
-export function setActiveCursorClass(isCol: boolean) {
+export function setActiveCursorClass(isCol: boolean): void {
   setResizeCursorClass(isCol);
 }

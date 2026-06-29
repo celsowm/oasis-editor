@@ -196,7 +196,7 @@ export function startLongTaskObserver(): void {
   }
 
   try {
-    observer = new PerformanceObserver((list) => {
+    observer = new PerformanceObserver((list): void => {
       for (const entry of list.getEntries()) {
         longTasks.push({
           duration: roundTo(entry.duration, 2),
@@ -233,7 +233,7 @@ export function computePercentiles(durations: number[]): {
   if (durations.length === 0) {
     return { p50: 0, p95: 0, p99: 0, max: 0, count: 0 };
   }
-  const sorted = [...durations].sort((a, b) => a - b);
+  const sorted = [...durations].sort((a, b): number => a - b);
   return {
     p50: percentile(sorted, 50),
     p95: percentile(sorted, 95),
@@ -246,23 +246,23 @@ export function computePercentiles(durations: number[]): {
 // --- Global report (on-demand) ---
 
 export function installGlobalReport(): void {
-  (window as unknown as Record<string, unknown>).__OASIS_PERF_REPORT = () => {
+  (window as unknown as Record<string, unknown>).__OASIS_PERF_REPORT = (): void => {
     const layoutDurations = marks
-      .filter((m) => m.name.startsWith("layout:"))
-      .map((m) => m.duration);
+      .filter((m): boolean => m.name.startsWith("layout:"))
+      .map((m): number => m.duration);
 
     const inputToLayout = marks
-      .filter((m) => m.name === "input-to-layout")
-      .map((m) => m.duration);
+      .filter((m): boolean => m.name === "input-to-layout")
+      .map((m): number => m.duration);
 
     const inputText = marks
-      .filter((m) => m.name === "input:text")
-      .map((m) => m.duration);
+      .filter((m): boolean => m.name === "input:text")
+      .map((m): number => m.duration);
 
     const layoutP = computePercentiles(layoutDurations);
     const inputToLayoutP = computePercentiles(inputToLayout);
     const inputTextP = computePercentiles(inputText);
-    const longtaskDurations = longTasks.map((t) => t.duration);
+    const longtaskDurations = longTasks.map((t): number => t.duration);
     const longtaskP = computePercentiles(longtaskDurations);
 
     // eslint-disable-next-line no-console

@@ -28,50 +28,50 @@ export function createEditorTableContextMenuActions(
   const { state, tableOps, applyTableContextCommand } = deps;
   return {
     isInsideTable: deps.isInsideTable,
-    canMerge: () => tableOps.canMergeSelectedTable(state()),
-    canSplit: () => tableOps.canSplitSelectedTable(state()),
-    canEditColumn: () => tableOps.canEditSelectedTableColumn(state()),
-    canEditRow: () => tableOps.canEditSelectedTableRow(state()),
-    openProperties: () => deps.openTablePropertiesDialog("table"),
-    openBordersAndShading: () => deps.openTablePropertiesDialog("cell"),
-    merge: () =>
+    canMerge: (): boolean => tableOps.canMergeSelectedTable(state()),
+    canSplit: (): boolean => tableOps.canSplitSelectedTable(state()),
+    canEditColumn: (): boolean => tableOps.canEditSelectedTableColumn(state()),
+    canEditRow: (): boolean => tableOps.canEditSelectedTableRow(state()),
+    openProperties: (): void => deps.openTablePropertiesDialog("table"),
+    openBordersAndShading: (): void => deps.openTablePropertiesDialog("cell"),
+    merge: (): void =>
       applyTableContextCommand(
-        (current) => tableOps.mergeSelectedTable(current),
+        (current): EditorState => tableOps.mergeSelectedTable(current),
         MERGE_KEYS.mergeTable,
       ),
-    split: () =>
+    split: (): void =>
       applyTableContextCommand(
-        (current) => tableOps.splitSelectedTable(current),
+        (current): EditorState => tableOps.splitSelectedTable(current),
         MERGE_KEYS.splitTable,
       ),
-    insertColumnBefore: () =>
+    insertColumnBefore: (): void =>
       applyTableContextCommand(
-        (current) => tableOps.insertSelectedTableColumn(current, -1),
+        (current): EditorState => tableOps.insertSelectedTableColumn(current, -1),
         MERGE_KEYS.insertTableColumn,
       ),
-    insertColumnAfter: () =>
+    insertColumnAfter: (): void =>
       applyTableContextCommand(
-        (current) => tableOps.insertSelectedTableColumn(current, 1),
+        (current): EditorState => tableOps.insertSelectedTableColumn(current, 1),
         MERGE_KEYS.insertTableColumn,
       ),
-    deleteColumn: () =>
+    deleteColumn: (): void =>
       applyTableContextCommand(
-        (current) => tableOps.deleteSelectedTableColumn(current),
+        (current): EditorState => tableOps.deleteSelectedTableColumn(current),
         MERGE_KEYS.deleteTableColumn,
       ),
-    insertRowBefore: () =>
+    insertRowBefore: (): void =>
       applyTableContextCommand(
-        (current) => tableOps.insertSelectedTableRow(current, -1),
+        (current): EditorState => tableOps.insertSelectedTableRow(current, -1),
         MERGE_KEYS.insertTableRow,
       ),
-    insertRowAfter: () =>
+    insertRowAfter: (): void =>
       applyTableContextCommand(
-        (current) => tableOps.insertSelectedTableRow(current, 1),
+        (current): EditorState => tableOps.insertSelectedTableRow(current, 1),
         MERGE_KEYS.insertTableRow,
       ),
-    deleteRow: () =>
+    deleteRow: (): void =>
       applyTableContextCommand(
-        (current) => tableOps.deleteSelectedTableRow(current),
+        (current): EditorState => tableOps.deleteSelectedTableRow(current),
         MERGE_KEYS.deleteTableRow,
       ),
   };

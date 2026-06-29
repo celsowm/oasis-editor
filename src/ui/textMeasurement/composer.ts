@@ -73,7 +73,7 @@ function subtractInterval(
     }
   }
 
-  return result.filter((segment) => segment.right - segment.left > 1);
+  return result.filter((segment): boolean => segment.right - segment.left > 1);
 }
 
 interface LineSegment {
@@ -96,8 +96,8 @@ function mergeIntervals(
 ): Array<{ left: number; right: number }> {
   if (intervals.length <= 1) return intervals.slice();
   const sorted = intervals
-    .filter((interval) => interval.right > interval.left)
-    .sort((a, b) => a.left - b.left);
+    .filter((interval): boolean => interval.right > interval.left)
+    .sort((a, b): number => a.left - b.left);
   const merged: Array<{ left: number; right: number }> = [];
   for (const interval of sorted) {
     const last = merged[merged.length - 1];
@@ -124,7 +124,7 @@ function coveredIntervalsAtScanline(
     const t = (y - a.y) / (b.y - a.y);
     xs.push(a.x + t * (b.x - a.x));
   }
-  xs.sort((p, q) => p - q);
+  xs.sort((p, q): number => p - q);
   const intervals: Array<{ left: number; right: number }> = [];
   for (let k = 0; k + 1 < xs.length; k += 2) {
     intervals.push({ left: xs[k]!, right: xs[k + 1]! });
@@ -238,13 +238,13 @@ function resolveLineFlowBox(options: {
 
   const ordered = segments
     .slice()
-    .sort((a, b) => a.left - b.left)
-    .map((segment) => ({
+    .sort((a, b): number => a.left - b.left)
+    .map((segment): { left: number; width: number; } => ({
       left: segment.left,
       width: Math.max(1, segment.right - segment.left),
     }));
 
-  const widest = ordered.reduce((best, current) =>
+  const widest = ordered.reduce((best, current): { left: number; width: number; } =>
     current.width > best.width ? current : best,
   );
 
@@ -273,11 +273,11 @@ export function measureParagraphMinContentWidthPx(
     getLineStartInset(paragraph, styles, false),
   );
   const inset = Math.max(firstLineInset, otherLineInset);
-  const largestUnbreakableToken = tokens.reduce((largest, token) => {
+  const largestUnbreakableToken = tokens.reduce((largest, token): number => {
     if (token.kind !== "text") return largest;
     return Math.max(largest, token.width);
   }, 0);
-  const largestInlineObject = paragraph.runs.reduce((largest, run) => {
+  const largestInlineObject = paragraph.runs.reduce((largest, run): number => {
     const image = getRunImage(run);
     const textBox = getRunTextBox(run);
     const imageWidth = image && !image.floating ? image.width : 0;
@@ -299,12 +299,12 @@ export function composeMeasuredParagraphLines(
   const measuredChars = buildMeasuredChars(paragraph, fragments, styles);
   const tokens = tokenizeMeasuredChars(measuredChars);
   const charByOffset = new Map<number, string>(
-    measuredChars.map((char) => [char.offset, char.char] as const),
+    measuredChars.map((char): readonly [number, string] => [char.offset, char.char] as const),
   );
   const fallbackFontSize = Math.max(
     DEFAULT_FONT_SIZE,
     ...paragraph.runs.map(
-      (run) =>
+      (run): number =>
         resolveEffectiveTextStyleForParagraph(
           run.styles,
           paragraph.style?.styleId,
@@ -399,7 +399,7 @@ export function composeMeasuredParagraphLines(
   let lineAvailableWidth = currentFlow.segments[0]!.width;
   let lineSlotLefts = [lineStartInset];
 
-  const applySegment = (nextOffset: number) => {
+  const applySegment = (nextOffset: number): void => {
     lineStartOffset = nextOffset;
     lineEndOffset = nextOffset;
     lineWidth = 0;
@@ -418,7 +418,7 @@ export function composeMeasuredParagraphLines(
   // Commit the current segment as a layout line. Does not advance `top`; that
   // happens once per band in `advanceRegion`. When `trailingHyphenWidth` is set
   // the line was broken mid-word: mark it so renderers draw a trailing hyphen.
-  const flushLine = (hardBreak = false, trailingHyphenWidth?: number) => {
+  const flushLine = (hardBreak = false, trailingHyphenWidth?: number): void => {
     // An inline image/text box grows the line so it does not overlap adjacent
     // lines; normal text lines keep their font-derived height.
     const effectiveHeight = Math.max(lineHeight, lineMaxObjectHeight);
@@ -447,7 +447,7 @@ export function composeMeasuredParagraphLines(
   // Move to the next writable region after a wrap. A soft wrap first tries the
   // next gap on the current band (same `top`); a hard break, or an exhausted
   // band, advances `top` to a fresh band and recomputes its segments.
-  const resetLine = (nextOffset: number, softWrap = true) => {
+  const resetLine = (nextOffset: number, softWrap = true): void => {
     if (softWrap && segmentIndex + 1 < currentFlow.segments.length) {
       segmentIndex += 1;
       applySegment(nextOffset);
@@ -484,11 +484,11 @@ export function composeMeasuredParagraphLines(
   };
 
   const measureTokenAt = (token: MeasuredToken): number =>
-    token.chars.some((char) => char.char === "\t")
+    token.chars.some((char): boolean => char.char === "\t")
       ? measureCharsAt(token.chars, lineWidth)
       : token.width;
 
-  const appendChars = (chars: MeasuredChar[]) => {
+  const appendChars = (chars: MeasuredChar[]): void => {
     for (const char of chars) {
       lineWidth +=
         char.char === "\t"
@@ -513,7 +513,7 @@ export function composeMeasuredParagraphLines(
   // Lay a word's characters onto the current line, breaking between characters
   // only when an individual chunk would overflow. Last-resort fallback for words
   // with no usable hyphenation point.
-  const layoutByChars = (chars: MeasuredChar[]) => {
+  const layoutByChars = (chars: MeasuredChar[]): void => {
     let currentChunk: MeasuredChar[] = [];
     let currentChunkWidth = 0;
     for (const char of chars) {
@@ -548,7 +548,7 @@ export function composeMeasuredParagraphLines(
   };
 
   const hyphenLimit = hyphenation?.consecutiveLimit ?? 0;
-  const canHyphenateMore = () =>
+  const canHyphenateMore = (): boolean =>
     hyphenLimit <= 0 || consecutiveHyphens < hyphenLimit;
 
   // How many leading chars of `chars` to keep on the current line (with a
@@ -559,7 +559,7 @@ export function composeMeasuredParagraphLines(
     remainingWidth: number,
   ): { breakIndex: number; hyphenWidth: number } | null => {
     if (!hyphenation?.enabled || !canHyphenateMore()) return null;
-    const word = chars.map((char) => char.char).join("");
+    const word = chars.map((char): string => char.char).join("");
     if (
       !shouldHyphenateWord(word, {
         doNotHyphenateCaps: hyphenation.doNotHyphenateCaps,
@@ -567,7 +567,7 @@ export function composeMeasuredParagraphLines(
     ) {
       return null;
     }
-    const langTag = chars.find((char) => char.style?.language?.value)?.style
+    const langTag = chars.find((char): string | null | undefined => char.style?.language?.value)?.style
       ?.language?.value;
     const points = findHyphenationPoints(
       word,
@@ -599,7 +599,7 @@ export function composeMeasuredParagraphLines(
   // Place a word that begins a fresh line. Fits whole when possible; otherwise
   // hyphenates an oversized word and recurses on the remainder; falls back to
   // character breaking only when nothing else fits.
-  const layoutFreshWord = (chars: MeasuredChar[]) => {
+  const layoutFreshWord = (chars: MeasuredChar[]): void => {
     if (measureCharsAt(chars, 0) <= lineAvailableWidth) {
       appendChars(chars);
       return;

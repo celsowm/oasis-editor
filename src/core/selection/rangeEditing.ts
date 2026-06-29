@@ -57,7 +57,7 @@ export function deleteSelectionRange(state: EditorState): EditorState {
     const author = "User";
     const date = Date.now();
 
-    const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+    const nextParagraphs = paragraphs.map((paragraph, paragraphIndex): EditorParagraphNode => {
       if (
         paragraphIndex < normalized.startIndex ||
         paragraphIndex > normalized.endIndex

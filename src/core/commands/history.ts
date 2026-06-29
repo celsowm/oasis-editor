@@ -2,8 +2,7 @@ import type {
   EditorBlockNode,
   EditorState,
   EditorTableCellNode,
-  EditorTableRowNode,
-} from "@/core/model.js";
+  EditorTableRowNode, EditorParagraphNode, EditorTextRun } from "@/core/model.js";
 import {
   getDocumentSections,
   getParagraphLength,
@@ -73,7 +72,7 @@ function transformTableRevisionBlocks(
             ...mergeState.previousCells,
           );
         } else {
-          mergeState.previousCells.forEach((previousCell, offset) => {
+          mergeState.previousCells.forEach((previousCell, offset): void => {
             const targetRow = sourceRows[rowIndex + offset];
             if (targetRow) targetRow.cells[cellIndex] = previousCell;
           });
@@ -212,13 +211,13 @@ export function acceptRevision(
   revisionId: string,
 ): EditorState {
   const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((paragraph) => {
+  const nextParagraphs = paragraphs.map((paragraph): EditorParagraphNode => {
     const nextRuns = paragraph.runs
       .filter(
-        (run) =>
+        (run): boolean =>
           !(run.revision?.id === revisionId && run.revision.type === "delete"),
       )
-      .map((run) => {
+      .map((run): EditorTextRun => {
         if (run.revision?.id === revisionId && run.revision.type === "insert") {
           const nextRun = { ...run };
           delete nextRun.revision;
@@ -229,7 +228,7 @@ export function acceptRevision(
 
     if (
       nextRuns.length === paragraph.runs.length &&
-      nextRuns.every((run, i) => run === paragraph.runs[i])
+      nextRuns.every((run, i): boolean => run === paragraph.runs[i])
     ) {
       return paragraph;
     }
@@ -253,13 +252,13 @@ export function rejectRevision(
   revisionId: string,
 ): EditorState {
   const paragraphs = getParagraphs(state);
-  const nextParagraphs = paragraphs.map((paragraph) => {
+  const nextParagraphs = paragraphs.map((paragraph): EditorParagraphNode => {
     const nextRuns = paragraph.runs
       .filter(
-        (run) =>
+        (run): boolean =>
           !(run.revision?.id === revisionId && run.revision.type === "insert"),
       )
-      .map((run) => {
+      .map((run): EditorTextRun => {
         if (run.revision?.id === revisionId && run.revision.type === "delete") {
           const nextRun = { ...run };
           delete nextRun.revision;
@@ -270,7 +269,7 @@ export function rejectRevision(
 
     if (
       nextRuns.length === paragraph.runs.length &&
-      nextRuns.every((run, i) => run === paragraph.runs[i])
+      nextRuns.every((run, i): boolean => run === paragraph.runs[i])
     ) {
       return paragraph;
     }
@@ -296,9 +295,9 @@ function collectTableRevisionIds(
 ): void {
   for (const block of blocks) {
     if (block.type === "paragraph") continue;
-    const tableSelected = block.rows.some((row) =>
-      row.cells.some((cell) =>
-        cell.blocks.some((paragraph) => selectedParagraphIds.has(paragraph.id)),
+    const tableSelected = block.rows.some((row): boolean =>
+      row.cells.some((cell): boolean =>
+        cell.blocks.some((paragraph): boolean => selectedParagraphIds.has(paragraph.id)),
       ),
     );
     if (tableSelected) {
@@ -306,8 +305,8 @@ function collectTableRevisionIds(
       if (block.gridRevision) revisionIds.add(block.gridRevision.id);
     }
     for (const row of block.rows) {
-      const selectedCells = row.cells.filter((cell) =>
-        cell.blocks.some((paragraph) => selectedParagraphIds.has(paragraph.id)),
+      const selectedCells = row.cells.filter((cell): boolean =>
+        cell.blocks.some((paragraph): boolean => selectedParagraphIds.has(paragraph.id)),
       );
       if (selectedCells.length > 0) {
         if (row.style?.revision) revisionIds.add(row.style.revision.id);
@@ -350,7 +349,7 @@ export function acceptRevisionsInSelection(state: EditorState): EditorState {
   const selectedParagraphIds = new Set(
     paragraphs
       .slice(normalized.startIndex, normalized.endIndex + 1)
-      .map((paragraph) => paragraph.id),
+      .map((paragraph): string => paragraph.id),
   );
   for (const section of getDocumentSections(state.document)) {
     for (const blocks of [
@@ -400,7 +399,7 @@ export function rejectRevisionsInSelection(state: EditorState): EditorState {
   const selectedParagraphIds = new Set(
     paragraphs
       .slice(normalized.startIndex, normalized.endIndex + 1)
-      .map((paragraph) => paragraph.id),
+      .map((paragraph): string => paragraph.id),
   );
   for (const section of getDocumentSections(state.document)) {
     for (const blocks of [

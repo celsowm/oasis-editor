@@ -1,5 +1,5 @@
 import type { CommandBus } from "@/core/commands/CommandBus.js";
-import type { CommandRef } from "@/core/commands/CommandRef.js";
+import type { CommandRef, ResolvedCommandRef } from "@/core/commands/CommandRef.js";
 import { resolveCommandRef } from "@/core/commands/CommandRef.js";
 import type {
   EditorDocument,
@@ -152,7 +152,7 @@ export function createOasisEditorClient(): OasisEditorClientController {
   let disposeHost: (() => void | Promise<void>) | undefined;
   let dirty = false;
 
-  const ready = new Promise<Editor>((resolve, reject) => {
+  const ready = new Promise<Editor>((resolve, reject): void => {
     resolveReady = resolve;
     rejectReady = reject;
   });
@@ -160,7 +160,7 @@ export function createOasisEditorClient(): OasisEditorClientController {
   const emit = <TEvent extends OasisEditorClientEvent>(
     event: TEvent,
     payload: OasisEditorClientEvents[TEvent],
-  ) => {
+  ): void => {
     if (event === "change") {
       dirty = true;
     }
@@ -180,7 +180,7 @@ export function createOasisEditorClient(): OasisEditorClientController {
       callback as OasisEditorClientEventHandler<OasisEditorClientEvent>,
     );
     listeners.set(event, handlers);
-    return () => {
+    return (): void => {
       handlers.delete(
         callback as OasisEditorClientEventHandler<OasisEditorClientEvent>,
       );
@@ -188,12 +188,12 @@ export function createOasisEditorClient(): OasisEditorClientController {
     };
   };
 
-  const getRuntimeEditor = () => host?.getRuntimeEditor() ?? null;
-  const requireHost = () => {
+  const getRuntimeEditor = (): Editor | null => host?.getRuntimeEditor() ?? null;
+  const requireHost = (): OasisEditorClientHost => {
     if (!host) throw new Error("Oasis editor client is not mounted.");
     return host;
   };
-  const normalizePayload = (command: CommandRef, payloadOverride?: unknown) => {
+  const normalizePayload = (command: CommandRef, payloadOverride?: unknown): ResolvedCommandRef => {
     const resolved = resolveCommandRef(command, payloadOverride);
     if (
       resolved.name === "insertTable" &&
@@ -255,125 +255,125 @@ export function createOasisEditorClient(): OasisEditorClientController {
   return {
     ready,
     commands,
-    connectHost(nextHost) {
+    connectHost(nextHost): void {
       host = nextHost;
     },
-    setDispose(dispose) {
+    setDispose(dispose): void {
       disposeHost = dispose;
     },
-    resolveReady(editor) {
+    resolveReady(editor): void {
       dirty = false;
       resolveReady(editor);
       emit("ready", editor);
     },
-    rejectReady(error) {
+    rejectReady(error): void {
       rejectReady(error);
       emit("error", error);
     },
     emit,
-    dispose() {
+    dispose(): void | Promise<void> {
       if (disposed) return;
       disposed = true;
       return disposeHost?.();
     },
-    getState() {
+    getState(): EditorState {
       return requireHost().getState();
     },
-    getDocument() {
+    getDocument(): EditorDocument {
       return requireHost().getDocument();
     },
-    setDocument(document) {
+    setDocument(document): void {
       requireHost().setDocument(document);
     },
-    loadDocument(document) {
+    loadDocument(document): void {
       requireHost().setDocument(document);
       dirty = false;
     },
-    updateDocument(updater) {
+    updateDocument(updater): void {
       const current = requireHost().getDocument();
       requireHost().setDocument(updater(current));
     },
-    resetDocument() {
+    resetDocument(): void {
       requireHost().resetDocument();
       dirty = false;
     },
-    async save() {
+    async save(): Promise<void> {
       await requireHost().saveDocument();
       dirty = false;
     },
-    isDirty() {
+    isDirty(): boolean {
       return dirty;
     },
-    markClean() {
+    markClean(): void {
       dirty = false;
     },
-    getSelection() {
+    getSelection(): EditorSelection {
       return requireHost().getSelection();
     },
-    setSelection(selection) {
+    setSelection(selection): void {
       requireHost().setSelection(selection);
     },
-    focusEditor() {
+    focusEditor(): void {
       requireHost().focus();
     },
-    blurEditor() {
+    blurEditor(): void {
       requireHost().blur();
     },
     document: {
-      get: () => requireHost().getDocument(),
-      set: (document) => requireHost().setDocument(document),
-      load: (document) => {
+      get: (): EditorDocument => requireHost().getDocument(),
+      set: (document): void => requireHost().setDocument(document),
+      load: (document): void => {
         requireHost().setDocument(document);
         dirty = false;
       },
-      update: (updater) => {
+      update: (updater): void => {
         const current = requireHost().getDocument();
         requireHost().setDocument(updater(current));
       },
-      reset: () => {
+      reset: (): void => {
         requireHost().resetDocument();
         dirty = false;
       },
-      save: async () => {
+      save: async (): Promise<void> => {
         await requireHost().saveDocument();
         dirty = false;
       },
-      isDirty: () => dirty,
-      markClean: () => {
+      isDirty: (): boolean => dirty,
+      markClean: (): void => {
         dirty = false;
       },
     },
     selection: {
-      get: () => requireHost().getSelection(),
-      set: (selection) => requireHost().setSelection(selection),
+      get: (): EditorSelection => requireHost().getSelection(),
+      set: (selection): void => requireHost().setSelection(selection),
     },
     focus: {
-      focus: () => requireHost().focus(),
-      blur: () => requireHost().blur(),
+      focus: (): void => requireHost().focus(),
+      blur: (): void => requireHost().blur(),
     },
     history: {
-      undo: () => commands.execute("undo"),
-      redo: () => commands.execute("redo"),
-      canUndo: () => commands.canExecute("undo"),
-      canRedo: () => commands.canExecute("redo"),
-      clear: () => requireHost().clearHistory(),
+      undo: (): unknown => commands.execute("undo"),
+      redo: (): unknown => commands.execute("redo"),
+      canUndo: (): boolean => commands.canExecute("undo"),
+      canRedo: (): boolean => commands.canExecute("redo"),
+      clear: (): void => requireHost().clearHistory(),
     },
     import: {
-      docx: (file) => requireHost().importDocx(file),
+      docx: (file): Promise<void> => requireHost().importDocx(file),
     },
     export: {
-      docx: () => requireHost().exportDocx(),
-      pdf: () => requireHost().exportPdf(),
+      docx: (): Promise<unknown> => requireHost().exportDocx(),
+      pdf: (): Promise<unknown> => requireHost().exportPdf(),
     },
     on: addListener,
     once(event, callback) {
-      const unsubscribe = addListener(event, (payload) => {
+      const unsubscribe = addListener(event, (payload): void => {
         unsubscribe();
         callback(payload);
       });
       return unsubscribe;
     },
-    off(event, callback) {
+    off(event, callback): void {
       const handlers = listeners.get(event);
       if (!handlers) return;
       handlers.delete(

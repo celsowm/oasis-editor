@@ -20,9 +20,9 @@ export function Checkbox(props: CheckboxProps): JSX.Element {
     "class",
     "id",
   ]);
-  const id = () => local.id ?? fallbackId;
-  const descriptionId = () => `${id()}-description`;
-  const errorId = () => `${id()}-error`;
+  const id = (): string => local.id ?? fallbackId;
+  const descriptionId = (): string => `${id()}-description`;
+  const errorId = (): string => `${id()}-error`;
 
   return (
     <label class={`oasis-editor-ui-checkbox ${local.class ?? ""}`} for={id()}>
@@ -37,7 +37,7 @@ export function Checkbox(props: CheckboxProps): JSX.Element {
         ]
           .filter(Boolean)
           .join(" ")}
-        onChange={(event) => local.onChange?.(event.currentTarget.checked)}
+        onChange={(event): void | undefined => local.onChange?.(event.currentTarget.checked)}
         {...others}
       />
       <span class="oasis-editor-ui-checkbox-copy">

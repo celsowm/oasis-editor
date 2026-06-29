@@ -53,7 +53,7 @@ export function serializeEditorSelectionToHtml(state: EditorState): string {
   const htmlParts: string[] = [];
   let activeListKind: EditorParagraphListStyle["kind"] | null = null;
 
-  const closeList = () => {
+  const closeList = (): void => {
     if (activeListKind) {
       htmlParts.push(activeListKind === "bullet" ? "</ul>" : "</ol>");
       activeListKind = null;
@@ -115,7 +115,7 @@ export function insertClipboardParagraphsAtSelection(
   const paragraphs = getParagraphs(collapsedState);
   const beforeRuns = sliceRuns(paragraph, 0, offset);
   const afterRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
-  const pastedParagraphs = paragraphsSpec.map((spec) => {
+  const pastedParagraphs = paragraphsSpec.map((spec): EditorParagraphNode => {
     const nextParagraph = createEditorParagraphFromRuns(
       spec.runs.map((run) => ({
         text: run.text,
@@ -136,7 +136,7 @@ export function insertClipboardParagraphsAtSelection(
   if (pastedParagraphs.length === 1) {
     const source = pastedParagraphs[0]!;
     const sourceLength = source.runs.reduce(
-      (total, run) => total + run.text.length,
+      (total, run): number => total + run.text.length,
       0,
     );
     const mergedParagraph = buildParagraphFromRuns(
@@ -162,7 +162,7 @@ export function insertClipboardParagraphsAtSelection(
     nextSelection = withSelection(
       paragraphOffsetToPosition(
         mergedParagraph,
-        beforeRuns.reduce((total, run) => total + run.text.length, 0) +
+        beforeRuns.reduce((total, run): number => total + run.text.length, 0) +
           sourceLength,
       ),
     );
@@ -170,7 +170,7 @@ export function insertClipboardParagraphsAtSelection(
     const firstSource = pastedParagraphs[0]!;
     const lastSource = pastedParagraphs[pastedParagraphs.length - 1]!;
     const lastSourceLength = lastSource.runs.reduce(
-      (total, run) => total + run.text.length,
+      (total, run): number => total + run.text.length,
       0,
     );
     const firstParagraph = buildParagraphFromRuns(

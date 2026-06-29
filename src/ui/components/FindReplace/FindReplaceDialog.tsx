@@ -7,16 +7,17 @@ import { StatusText } from "@/ui/public/StatusText.js";
 import { SurfaceButton } from "@/ui/public/SurfaceButton.js";
 import { Text } from "@/ui/public/Text.js";
 import { TextField } from "@/ui/public/TextField.js";
+import { JSX } from "solid-js";
 
 export interface FindReplaceDialogProps {
   fr: UseEditorFindReplaceResult;
 }
 
-export function FindReplaceDialog(props: FindReplaceDialogProps) {
+export function FindReplaceDialog(props: FindReplaceDialogProps): JSX.Element {
   const t = useI18n();
   const { fr } = props;
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent): void => {
     if (e.key === "Enter") {
       e.preventDefault();
       if (e.shiftKey) {
@@ -37,7 +38,7 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
           <SurfaceButton
             class="oasis-editor-fr-close"
             icon="x"
-            onClick={() => fr.setIsOpen(false)}
+            onClick={(): void => fr.setIsOpen(false)}
             label={t("generic.close")}
           />
         </div>
@@ -49,7 +50,7 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
                 type="text"
                 placeholder={t("find.placeholder")}
                 value={fr.searchTerm()}
-                onChange={(value) => fr.setSearchTerm(value)}
+                onChange={(value): void => fr.setSearchTerm(value)}
                 autofocus
                 controlClass="oasis-editor-fr-input"
               />
@@ -81,7 +82,7 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
               type="text"
               placeholder={t("replace.placeholder")}
               value={fr.replaceTerm()}
-              onChange={(value) => fr.setReplaceTerm(value)}
+              onChange={(value): void => fr.setReplaceTerm(value)}
               controlClass="oasis-editor-fr-input"
             />
             <Stack class="oasis-editor-fr-actions" direction="row" spacing={1}>
@@ -107,7 +108,7 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
               class="oasis-editor-fr-checkbox"
               label={t("find.matchCase")}
               checked={fr.findOptions().matchCase}
-              onChange={(checked) =>
+              onChange={(checked): void =>
                 fr.setFindOptions({
                   ...fr.findOptions(),
                   matchCase: checked,
@@ -118,7 +119,7 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
               class="oasis-editor-fr-checkbox"
               label={t("find.wholeWord")}
               checked={fr.findOptions().wholeWord}
-              onChange={(checked) =>
+              onChange={(checked): void =>
                 fr.setFindOptions({
                   ...fr.findOptions(),
                   wholeWord: checked,

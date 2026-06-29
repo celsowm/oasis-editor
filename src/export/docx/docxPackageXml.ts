@@ -26,7 +26,7 @@ export function buildContentTypesXml(
   hasFontTable: boolean,
 ): string {
   const overrides = parts
-    .map((part) => {
+    .map((part): string => {
       const contentType =
         part.kind === "header"
           ? "application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"
@@ -125,7 +125,7 @@ export function buildDocumentRelationshipsXml(
  */
 export function buildFontTableXml(fonts: EditorFontInfo[]): string {
   const fontXml = fonts
-    .map((font) => {
+    .map((font): string => {
       const children: string[] = [];
       if (font.altName)
         children.push(`<w:altName w:val="${escapeXml(font.altName)}"/>`);
@@ -139,7 +139,7 @@ export function buildFontTableXml(fonts: EditorFontInfo[]): string {
         children.push(`<w:pitch w:val="${escapeXml(font.pitch)}"/>`);
       if (font.sig) {
         const attrs = Object.entries(font.sig)
-          .map(([key, value]) => `w:${key}="${escapeXml(value)}"`)
+          .map(([key, value]): string => `w:${key}="${escapeXml(value)}"`)
           .join(" ");
         if (attrs) children.push(`<w:sig ${attrs}/>`);
       }

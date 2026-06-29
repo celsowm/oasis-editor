@@ -33,7 +33,7 @@ function serializeW14FillXml(fill: EditorTextFill): string {
     return serializeW14SolidFillXml(fill.color);
   }
   const gsXml = fill.stops
-    .map((s) => {
+    .map((s): string => {
       const hex = normalizeDocxColor(s.color);
       const pos = Math.round(s.position * OOXML_PERCENT_DENOMINATOR);
       const alphaXml =

@@ -21,7 +21,7 @@ export function createEditorAppState(options: {
     createSignal<EditorState>(initialEditorState);
 
   const state = new Proxy({} as EditorState, {
-    get(_, prop) {
+    get(_, prop): any {
       const current = stateAccessor() as unknown;
       if (
         current === null ||
@@ -31,7 +31,7 @@ export function createEditorAppState(options: {
       }
       return Reflect.get(current as object, prop);
     },
-    has(_, prop) {
+    has(_, prop): boolean {
       const current = stateAccessor() as unknown;
       if (
         current === null ||
@@ -70,7 +70,7 @@ export function createEditorAppState(options: {
     },
   });
 
-  const commitState = (next: EditorState) => {
+  const commitState = (next: EditorState): void => {
     stateSnapshot = next;
     setStateSignal(next);
   };
@@ -79,6 +79,6 @@ export function createEditorAppState(options: {
     state,
     setStateSignal,
     commitState,
-    getStateSnapshot: () => stateSnapshot,
+    getStateSnapshot: (): EditorState => stateSnapshot,
   };
 }

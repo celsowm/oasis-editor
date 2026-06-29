@@ -10,10 +10,10 @@ import {
 } from "@/core/model.js";
 
 export const getRowVisualWidth = (row: EditorTableRowNode): number =>
-  row.cells.reduce((sum, cell) => sum + Math.max(1, cell.colSpan ?? 1), 0);
+  row.cells.reduce((sum, cell): number => sum + Math.max(1, cell.colSpan ?? 1), 0);
 
 export const getTableVisualWidth = (table: EditorTableNode): number =>
-  table.rows.reduce((max, row) => Math.max(max, getRowVisualWidth(row)), 0);
+  table.rows.reduce((max, row): number => Math.max(max, getRowVisualWidth(row)), 0);
 
 export const findCellAtVisualColumn = (
   row: EditorTableRowNode,
@@ -57,13 +57,13 @@ export const resolveAdjacentTableCellPosition = (
     ];
     for (const block of allBlocks) {
       if (block.type !== "table") continue;
-      const cells = block.rows.flatMap((row) =>
+      const cells = block.rows.flatMap((row): EditorTableCellNode[] =>
         row.cells.filter(
-          (cell) => cell.vMerge !== "continue" && cell.blocks.length > 0,
+          (cell): boolean => cell.vMerge !== "continue" && cell.blocks.length > 0,
         ),
       );
-      const currentCellIndex = cells.findIndex((cell) =>
-        cell.blocks.some((paragraph) => paragraph.id === paragraphId),
+      const currentCellIndex = cells.findIndex((cell): boolean =>
+        cell.blocks.some((paragraph): boolean => paragraph.id === paragraphId),
       );
       if (currentCellIndex === -1) continue;
       const nextCell = cells[currentCellIndex + delta];

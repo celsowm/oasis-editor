@@ -91,7 +91,7 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
     };
   };
 
-  const performUndo = () => {
+  const performUndo = (): void => {
     const step = takeEditorUndoStep(
       deps.getHistoryState(),
       deps.stateSnapshot(),
@@ -100,13 +100,13 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
       return;
     }
 
-    deps.updateHistoryState(() => step.history);
+    deps.updateHistoryState((): EditorHistoryState => step.history);
     deps.clearPreferredColumn();
     deps.applyHistoryState(step.nextState);
     deps.focusInput();
   };
 
-  const performRedo = () => {
+  const performRedo = (): void => {
     const step = takeEditorRedoStep(
       deps.getHistoryState(),
       deps.stateSnapshot(),
@@ -115,13 +115,13 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
       return;
     }
 
-    deps.updateHistoryState(() => step.history);
+    deps.updateHistoryState((): EditorHistoryState => step.history);
     deps.clearPreferredColumn();
     deps.applyHistoryState(step.nextState);
     deps.focusInput();
   };
 
-  const moveSelectedImageByParagraph = (direction: -1 | 1) => {
+  const moveSelectedImageByParagraph = (direction: -1 | 1): boolean => {
     const selectedImage = deps.imageOps().getSelectedImageInfo(deps.state());
     if (!selectedImage) {
       return false;
@@ -129,7 +129,7 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
 
     const paragraphs = getParagraphs(deps.state());
     const sourceIndex = paragraphs.findIndex(
-      (paragraph) => paragraph.id === selectedImage.paragraph.id,
+      (paragraph): boolean => paragraph.id === selectedImage.paragraph.id,
     );
     if (sourceIndex < 0) {
       return false;
@@ -152,7 +152,7 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
         direction < 0 ? getParagraphLength(insertedParagraph) : 0,
       );
       deps.applyTransactionalState(
-        () => moveSelectedImageToPosition(nextState, targetPosition),
+        (): EditorState => moveSelectedImageToPosition(nextState, targetPosition),
         {
           mergeKey: MERGE_KEYS.moveImage,
         },
@@ -166,7 +166,7 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
       direction < 0 ? getParagraphLength(targetParagraph) : 0;
 
     deps.applyTransactionalState(
-      (current) =>
+      (current): EditorState =>
         moveSelectedImageToPosition(
           current,
           paragraphOffsetToPosition(targetParagraph, targetOffset),
@@ -179,7 +179,7 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
 
   const applySelectionPreservingStructure = (
     nextSelection: EditorState["selection"],
-  ) => {
+  ): void => {
     const snapshot = deps.stateSnapshot();
     deps.applyHistoryState({
       ...snapshot,

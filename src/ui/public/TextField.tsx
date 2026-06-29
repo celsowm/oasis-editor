@@ -25,9 +25,9 @@ export function TextField(props: TextFieldProps): JSX.Element {
     "classList",
     "id",
   ]);
-  const id = () => local.id ?? fallbackId;
-  const descriptionId = () => `${id()}-description`;
-  const errorId = () => `${id()}-error`;
+  const id = (): string => local.id ?? fallbackId;
+  const descriptionId = (): string => `${id()}-description`;
+  const errorId = (): string => `${id()}-error`;
 
   return (
     <label
@@ -50,7 +50,7 @@ export function TextField(props: TextFieldProps): JSX.Element {
         ]
           .filter(Boolean)
           .join(" ")}
-        onInput={(event) => local.onChange?.(event.currentTarget.value)}
+        onInput={(event): void | undefined => local.onChange?.(event.currentTarget.value)}
         {...others}
       />
       <Show when={local.description}>

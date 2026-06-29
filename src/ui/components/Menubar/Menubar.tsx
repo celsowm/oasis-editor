@@ -9,6 +9,7 @@ import {
 import { SurfaceButton } from "@/ui/public/SurfaceButton.js";
 import { Text } from "@/ui/public/Text.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
+import { JSX } from "solid-js";
 
 export interface MenubarProps {
   host: () => MenubarHost;
@@ -23,17 +24,17 @@ interface MenuTreeItem {
   item?: MenuItem;
 }
 
-export function Menubar(props: MenubarProps) {
+export function Menubar(props: MenubarProps): JSX.Element {
   const t = useI18n();
   const [activeMenu, setActiveMenu] = createSignal<string | null>(null);
 
-  const menuItems = () => props.registry.getItems();
-  const visibleMenuItems = () => menuItems().filter((item) => !item.hidden);
-  const itemByPath = () =>
-    new Map(visibleMenuItems().map((item) => [item.path, item]));
+  const menuItems = (): MenuItem[] => props.registry.getItems();
+  const visibleMenuItems = (): MenuItem[] => menuItems().filter((item): boolean => !item.hidden);
+  const itemByPath = (): Map<string, MenuItem> =>
+    new Map(visibleMenuItems().map((item): [string, MenuItem] => [item.path, item]));
 
   // Build tree from paths (e.g. "File/New")
-  const menuTree = () => {
+  const menuTree = (): MenuTreeItem[] => {
     const tree: MenuTreeItem[] = [];
     const byPath = itemByPath();
 
@@ -44,7 +45,7 @@ export function Menubar(props: MenubarProps) {
       for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
         currentPath = currentPath ? `${currentPath}/${part}` : part;
-        let existingNode = currentLevel.find((n) => n.label === part);
+        let existingNode = currentLevel.find((n): boolean => n.label === part);
         if (!existingNode) {
           existingNode = {
             id: part,
@@ -74,38 +75,38 @@ export function Menubar(props: MenubarProps) {
       return [{ ...node, children }];
     });
 
-  const handleDocumentClick = (e: MouseEvent) => {
+  const handleDocumentClick = (e: MouseEvent): void => {
     // Basic click outside
     if (activeMenu() && !(e.target as Element).closest(".oasis-menubar")) {
       setActiveMenu(null);
     }
   };
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent): void => {
     if (e.key === "Escape") {
       setActiveMenu(null);
     }
   };
 
-  onMount(() => {
+  onMount((): void => {
     document.addEventListener("click", handleDocumentClick);
     document.addEventListener("keydown", handleKeyDown);
   });
 
-  onCleanup(() => {
+  onCleanup((): void => {
     document.removeEventListener("click", handleDocumentClick);
     document.removeEventListener("keydown", handleKeyDown);
   });
 
-  const topLevelItems = () => pruneTree(menuTree());
+  const topLevelItems = (): MenuTreeItem[] => pruneTree(menuTree());
 
   return (
     <div class="oasis-menubar" role="menubar">
       <For each={topLevelItems()}>
-        {(topLevel) => (
+        {(topLevel): JSX.Element => (
           <div
             class="oasis-menubar-menu"
-            onMouseEnter={() => {
+            onMouseEnter={(): void => {
               if (activeMenu() && activeMenu() !== topLevel.id) {
                 setActiveMenu(topLevel.id);
               }
@@ -116,7 +117,7 @@ export function Menubar(props: MenubarProps) {
               classList={{
                 "oasis-menubar-button-active": activeMenu() === topLevel.id,
               }}
-              onClick={(e) => {
+              onClick={(e): void => {
                 e.stopPropagation();
                 if (activeMenu() === topLevel.id) {
                   setActiveMenu(null);
@@ -135,11 +136,11 @@ export function Menubar(props: MenubarProps) {
             <Show when={activeMenu() === topLevel.id}>
               <div class="oasis-menubar-dropdown" role="menu">
                 <For each={topLevel.children}>
-                  {(child) => (
+                  {(child): JSX.Element => (
                     <MenuNode
                       node={child}
                       host={props.host}
-                      onClose={() => setActiveMenu(null)}
+                      onClose={(): null => setActiveMenu(null)}
                     />
                   )}
                 </For>
@@ -156,7 +157,7 @@ function MenuNode(props: {
   node: MenuTreeItem;
   host: () => MenubarHost;
   onClose: () => void;
-}) {
+}): JSX.Element {
   const t = useI18n();
   const { node, onClose } = props;
   const isSeparator = node.item?.separator;
@@ -174,10 +175,10 @@ function MenuNode(props: {
     label = t(node.item.labelKey) || node.label;
   }
   const rawIcon = node.item?.icon;
-  const icon = () =>
+  const icon = (): string | undefined =>
     typeof rawIcon === "function" ? rawIcon(props.host()) : rawIcon;
 
-  const handleClick = (e: MouseEvent) => {
+  const handleClick = (e: MouseEvent): void => {
     e.stopPropagation();
     if (hasChildren) return;
 
@@ -192,10 +193,10 @@ function MenuNode(props: {
     <SurfaceButton
       class="oasis-menubar-item"
       label={label}
-      onMouseEnter={() => {
+      onMouseEnter={(): void => {
         if (hasChildren) setShowSub(true);
       }}
-      onMouseLeave={() => {
+      onMouseLeave={(): void => {
         if (hasChildren) setShowSub(false);
       }}
       onClick={handleClick}
@@ -221,7 +222,7 @@ function MenuNode(props: {
       <Show when={showSub() && hasChildren}>
         <div class="oasis-menubar-submenu" role="menu">
           <For each={node.children}>
-            {(child) => (
+            {(child): JSX.Element => (
               <MenuNode node={child} host={props.host} onClose={onClose} />
             )}
           </For>

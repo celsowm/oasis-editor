@@ -3,8 +3,7 @@ import type {
   EditorLayoutFragment,
   EditorLayoutLine,
   EditorParagraphNode,
-  EditorTextStyle,
-} from "@/core/model.js";
+  EditorTextStyle, EditorCaretSlot } from "@/core/model.js";
 import { resolveEffectiveParagraphStyle } from "@/core/model.js";
 import { EMPHASIS_GLYPH } from "@/core/textStyleMappings.js";
 import { PX_PER_POINT } from "@/layoutProjection/constants.js";
@@ -61,7 +60,7 @@ export function drawTabLeaders(
   color: string,
 ): void {
   const slotByOffset = new Map(
-    line.slots.map((slot) => [slot.offset, slot] as const),
+    line.slots.map((slot): readonly [number, EditorCaretSlot] => [slot.offset, slot] as const),
   );
   const paragraphStyle = resolveEffectiveParagraphStyle(
     paragraph.style,
@@ -78,10 +77,10 @@ export function drawTabLeaders(
     const lineStart = line.slots[0]?.left ?? 0;
     const relativeLeft = slot.left - lineStart;
     const stop = tabs
-      .filter((tab) => tab.type !== "clear")
+      .filter((tab): boolean => tab.type !== "clear")
       .map((tab) => ({ ...tab, positionPx: tab.position * PX_PER_POINT }))
-      .filter((tab) => tab.positionPx > relativeLeft + 0.01)
-      .sort((a, b) => a.positionPx - b.positionPx)[0];
+      .filter((tab): boolean => tab.positionPx > relativeLeft + 0.01)
+      .sort((a, b): number => a.positionPx - b.positionPx)[0];
     const leader =
       stop?.leader && stop.leader !== "none" ? stop.leader : undefined;
     if (!leader) continue;

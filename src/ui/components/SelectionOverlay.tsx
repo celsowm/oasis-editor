@@ -1,4 +1,5 @@
 import { Index } from "solid-js";
+import { JSX } from "solid-js";
 
 interface SelectionBox {
   left: number;
@@ -11,11 +12,11 @@ interface SelectionOverlayProps {
   boxes: SelectionBox[];
 }
 
-export function SelectionOverlay(props: SelectionOverlayProps) {
+export function SelectionOverlay(props: SelectionOverlayProps): JSX.Element {
   return (
     <div aria-hidden="true" class="oasis-editor-selection-overlay-root">
       <Index each={props.boxes}>
-        {(box) => (
+        {(box): JSX.Element => (
           <span
             aria-hidden="true"
             class="oasis-editor-selection-box"

@@ -22,7 +22,7 @@ export function drawUnderlineWithStyle(
 ): void {
   const lineWidthPx = underlineStyleLineWidthPx(underlineStyle);
 
-  const drawAt = (yy: number, dash?: number[]) => {
+  const drawAt = (yy: number, dash?: number[]): void => {
     writer.drawLine(pageIndex, {
       x1: pxToPt(x1),
       y1: pxToPt(yy),

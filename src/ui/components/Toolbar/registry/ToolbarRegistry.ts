@@ -30,7 +30,7 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
   private listeners = new Set<() => void>();
 
   register(item: ToolbarItem): void {
-    const index = this.entries.findIndex((entry) => entry.id === item.id);
+    const index = this.entries.findIndex((entry): boolean => entry.id === item.id);
     if (index >= 0) {
       this.entries[index] = item;
     } else {
@@ -49,7 +49,7 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
   }
 
   replace(targetId: string, item: ToolbarItem): void {
-    const index = this.entries.findIndex((entry) => entry.id === targetId);
+    const index = this.entries.findIndex((entry): boolean => entry.id === targetId);
     if (index < 0) {
       this.register(item);
       return;
@@ -59,7 +59,7 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
   }
 
   remove(id: string): void {
-    const next = this.entries.filter((entry) => entry.id !== id);
+    const next = this.entries.filter((entry): boolean => entry.id !== id);
     if (next.length !== this.entries.length) {
       this.entries = next;
       this.emit();
@@ -67,7 +67,7 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
   }
 
   move(id: string, target: ToolbarMoveTarget): void {
-    const index = this.entries.findIndex((entry) => entry.id === id);
+    const index = this.entries.findIndex((entry): boolean => entry.id === id);
     if (index < 0) {
       return;
     }
@@ -83,7 +83,7 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
   }
 
   get(id: string): ToolbarItem | undefined {
-    return this.entries.find((entry) => entry.id === id);
+    return this.entries.find((entry): boolean => entry.id === id);
   }
 
   getOrdered(): ToolbarItem[] {
@@ -104,7 +104,7 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
 
   onChange(callback: () => void): () => void {
     this.listeners.add(callback);
-    return () => this.listeners.delete(callback);
+    return (): boolean => this.listeners.delete(callback);
   }
 
   private spliceRelative(
@@ -113,9 +113,9 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
     offset: 0 | 1,
   ): void {
     // Drop any pre-existing item with the same id so position is unambiguous.
-    this.entries = this.entries.filter((entry) => entry.id !== item.id);
+    this.entries = this.entries.filter((entry): boolean => entry.id !== item.id);
     const targetIndex = this.entries.findIndex(
-      (entry) => entry.id === targetId,
+      (entry): boolean => entry.id === targetId,
     );
     if (targetIndex < 0) {
       this.entries.push(item);
@@ -131,24 +131,24 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
     }
     if ("before" in target) {
       const index = this.entries.findIndex(
-        (entry) => entry.id === target.before,
+        (entry): boolean => entry.id === target.before,
       );
       return index >= 0 ? index : null;
     }
-    const index = this.entries.findIndex((entry) => entry.id === target.after);
+    const index = this.entries.findIndex((entry): boolean => entry.id === target.after);
     return index >= 0 ? index + 1 : null;
   }
 
   private sortByOrder(): void {
     // Stable sort by `order` (undefined sinks to the end, keeping insertion order).
     this.entries = this.entries
-      .map((item, index) => ({ item, index }))
-      .sort((a, b) => {
+      .map((item, index): { item: ToolbarItem; index: number; } => ({ item, index }))
+      .sort((a, b): number => {
         const orderA = a.item.order ?? MAX_ORDER;
         const orderB = b.item.order ?? MAX_ORDER;
         return orderA - orderB || a.index - b.index;
       })
-      .map((entry) => entry.item);
+      .map((entry): ToolbarItem => entry.item);
   }
 
   private emit(): void {

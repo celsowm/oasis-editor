@@ -46,7 +46,7 @@ interface TableSelectionResolversDeps {
 function compareCellLocations(
   left: TableCellLayoutEntry,
   right: TableCellLayoutEntry,
-) {
+): number {
   if (left.visualRowIndex !== right.visualRowIndex) {
     return left.visualRowIndex - right.visualRowIndex;
   }
@@ -90,12 +90,12 @@ function getSelectionTableContext(
 
   const tableLayout = buildTableCellLayout(tableBlock);
   const anchorCell = tableLayout.find(
-    (entry) =>
+    (entry): boolean =>
       entry.rowIndex === anchorLocation.rowIndex &&
       entry.cellIndex === anchorLocation.cellIndex,
   );
   const focusCell = tableLayout.find(
-    (entry) =>
+    (entry): boolean =>
       entry.rowIndex === focusLocation.rowIndex &&
       entry.cellIndex === focusLocation.cellIndex,
   );
@@ -208,7 +208,7 @@ export function createTableSelectionResolvers(
       context.focusCell.visualColumnIndex + context.focusCell.colSpan - 1,
     );
 
-    const cells = context.tableLayout.filter((entry) => {
+    const cells = context.tableLayout.filter((entry): boolean => {
       return (
         entry.visualRowIndex <= endRow &&
         entry.visualRowIndex + entry.rowSpan - 1 >= startRow &&

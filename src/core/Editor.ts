@@ -8,6 +8,7 @@ import { PluginCollection } from "./plugins/PluginCollection.js";
 import { CommandRegistry } from "./commands/CommandRegistry.js";
 import { PluginUiRegistry } from "./plugins/PluginUiRegistry.js";
 import type { OasisEditor, OasisPlugin } from "./plugin.js";
+import type { EditorSelection } from "@/core/model.js";
 
 /**
  * Options accepted by the synchronous `new Editor(...)` path. Plugins are
@@ -46,7 +47,7 @@ export class Editor implements OasisEditor {
     return editor;
   }
 
-  private initializeState(options: SynchronousEditorOptions) {
+  private initializeState(options: SynchronousEditorOptions): void {
     const initialState = options.doc
       ? createEditorStateFromDocument(options.doc)
       : createInitialEditorState();
@@ -61,14 +62,14 @@ export class Editor implements OasisEditor {
     return this.stateStore;
   }
 
-  dispatch(updater: (state: EditorState) => EditorState) {
+  dispatch(updater: (state: EditorState) => EditorState): void {
     // Basic dispatch logic, in a real app this would be more complex (transactions)
     const next = updater(this.stateStore);
     this.setState(next);
     this.emit("change:data", this.stateStore);
   }
 
-  async destroy() {
+  async destroy(): Promise<void> {
     await this.pluginCollection.destroy();
     this.commands.clear();
     this.ui.clear();
@@ -79,18 +80,18 @@ export class Editor implements OasisEditor {
     const handlers = this.listeners.get(event) ?? new Set();
     handlers.add(callback);
     this.listeners.set(event, handlers);
-    return () => this.off(event, callback);
+    return (): void => this.off(event, callback);
   }
 
   once(event: string, callback: (...args: unknown[]) => void): () => void {
-    const wrapper = (...args: unknown[]) => {
+    const wrapper = (...args: unknown[]): void => {
       this.off(event, wrapper);
       callback(...args);
     };
     return this.on(event, wrapper);
   }
 
-  off(event: string, callback: (...args: unknown[]) => void) {
+  off(event: string, callback: (...args: unknown[]) => void): void {
     const handlers = this.listeners.get(event);
     if (!handlers) {
       return;
@@ -101,7 +102,7 @@ export class Editor implements OasisEditor {
     }
   }
 
-  private emit(event: string, ...args: unknown[]) {
+  private emit(event: string, ...args: unknown[]): void {
     const handlers = this.listeners.get(event);
     if (!handlers) {
       return;
@@ -116,9 +117,9 @@ export class Editor implements OasisEditor {
       editor: this,
       commands: this.commands,
       ui: this.ui,
-      getState: () => this.state,
-      getDocument: () => this.state.document,
-      getSelection: () => this.state.selection,
+      getState: (): EditorState => this.state,
+      getDocument: (): EditorDocument => this.state.document,
+      getSelection: (): EditorSelection => this.state.selection,
     };
   }
 }

@@ -20,22 +20,22 @@ export function GridPicker(props: GridPickerProps): JSX.Element {
     col: 0,
   });
 
-  const maxRows = () => props.maxRows ?? 10;
-  const maxCols = () => props.maxCols ?? 10;
-  const icon = () => props.icon ?? "table";
-  const tooltip = () => props.tooltip || t("toolbar.table");
+  const maxRows = (): number => props.maxRows ?? 10;
+  const maxCols = (): number => props.maxCols ?? 10;
+  const icon = (): string => props.icon ?? "table";
+  const tooltip = (): string => props.tooltip || t("toolbar.table");
 
-  const close = () => {
+  const close = (): void => {
     setIsOpen(false);
     setHover({ row: 0, col: 0 });
   };
 
-  const selectGridSize = (rows: number, cols: number) => {
+  const selectGridSize = (rows: number, cols: number): void => {
     close();
-    queueMicrotask(() => props.onSelect(rows, cols));
+    queueMicrotask((): void => props.onSelect(rows, cols));
   };
 
-  const handleKeyDown = (event: KeyboardEvent) => {
+  const handleKeyDown = (event: KeyboardEvent): void => {
     if (!isOpen()) return;
     const cur = hover();
     let row = cur.row || 1;
@@ -69,15 +69,15 @@ export function GridPicker(props: GridPickerProps): JSX.Element {
     }
   };
 
-  createEffect(() => {
+  createEffect((): void => {
     if (!isOpen()) return;
     window.addEventListener("keydown", handleKeyDown);
-    onCleanup(() => window.removeEventListener("keydown", handleKeyDown));
+    onCleanup((): void => window.removeEventListener("keydown", handleKeyDown));
   });
 
-  const rows = () => Array.from({ length: maxRows() }, (_, i) => i + 1);
-  const cols = () => Array.from({ length: maxCols() }, (_, i) => i + 1);
-  const statusLabel = () => {
+  const rows = (): number[] => Array.from({ length: maxRows() }, (_, i): number => i + 1);
+  const cols = (): number[] => Array.from({ length: maxCols() }, (_, i): number => i + 1);
+  const statusLabel = (): string => {
     const h = hover();
     return h.row === 0 || h.col === 0
       ? t("toolbar.table")
@@ -88,16 +88,16 @@ export function GridPicker(props: GridPickerProps): JSX.Element {
     <div class="oasis-editor-toolbar-dropdown">
       <Popover
         open={isOpen()}
-        onOpenChange={(open) => (open ? setIsOpen(true) : close())}
+        onOpenChange={(open): true | void => (open ? setIsOpen(true) : close())}
         panelClass="oasis-editor-table-grid-picker"
-        onPanelMouseLeave={() => setHover({ row: 0, col: 0 })}
-        trigger={(api) => (
+        onPanelMouseLeave={(): { row: number; col: number; } => setHover({ row: 0, col: 0 })}
+        trigger={(api): JSX.Element => (
           <button
-            ref={(el) => api.ref(el)}
+            ref={(el): void => api.ref(el)}
             type="button"
             class="oasis-editor-tool-button"
             classList={{ "oasis-editor-tool-button-active": api.open }}
-            onClick={() => api.toggle()}
+            onClick={(): void => api.toggle()}
             title={tooltip()}
             aria-label={tooltip()}
             data-testid={props.testId}
@@ -115,9 +115,9 @@ export function GridPicker(props: GridPickerProps): JSX.Element {
           }}
         >
           <For each={rows()}>
-            {(r) => (
+            {(r): JSX.Element => (
               <For each={cols()}>
-                {(c) => (
+                {(c): JSX.Element => (
                   <button
                     type="button"
                     class="oasis-editor-table-grid-picker-cell"
@@ -126,9 +126,9 @@ export function GridPicker(props: GridPickerProps): JSX.Element {
                         r <= hover().row && c <= hover().col,
                     }}
                     data-testid={`editor-toolbar-table-grid-${r}x${c}`}
-                    onMouseEnter={() => setHover({ row: r, col: c })}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => selectGridSize(r, c)}
+                    onMouseEnter={(): { row: number; col: number; } => setHover({ row: r, col: c })}
+                    onMouseDown={(event): void => event.preventDefault()}
+                    onClick={(): void => selectGridSize(r, c)}
                     aria-label={`${r} × ${c}`}
                   />
                 )}

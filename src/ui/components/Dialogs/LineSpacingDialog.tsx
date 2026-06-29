@@ -5,6 +5,7 @@ import { FormField } from "@/ui/public/FormField.js";
 import { Grid } from "@/ui/public/Grid.js";
 import { NumberField } from "@/ui/public/NumberField.js";
 import { Dialog } from "./Dialog.js";
+import { JSX } from "solid-js";
 
 export interface LineSpacingDialogInitialValues {
   lineHeight: string;
@@ -28,7 +29,7 @@ export interface LineSpacingDialogProps {
   ) => void;
 }
 
-export function LineSpacingDialog(props: LineSpacingDialogProps) {
+export function LineSpacingDialog(props: LineSpacingDialogProps): JSX.Element {
   const t = useI18n();
   const parseNumber = (value: string): number | null => {
     if (value.trim() === "") return null;
@@ -40,7 +41,7 @@ export function LineSpacingDialog(props: LineSpacingDialogProps) {
   const [spacingBefore, setSpacingBefore] = createSignal<number | null>(null);
   const [spacingAfter, setSpacingAfter] = createSignal<number | null>(null);
 
-  createEffect(() => {
+  createEffect((): void => {
     if (props.isOpen) {
       setLineHeight(parseNumber(props.initial.lineHeight ?? ""));
       setSpacingBefore(parseNumber(props.initial.spacingBefore ?? ""));
@@ -48,14 +49,14 @@ export function LineSpacingDialog(props: LineSpacingDialogProps) {
     }
   });
 
-  const previewStyle = createMemo(() => {
+  const previewStyle = createMemo((): Record<string, string | undefined> => {
     const lh = lineHeight();
     return {
       "line-height": lh !== null && lh > 0 ? String(lh) : undefined,
     } as Record<string, string | undefined>;
   });
 
-  const handleApply = () => {
+  const handleApply = (): void => {
     props.onApply(
       {
         lineHeight: lineHeight(),

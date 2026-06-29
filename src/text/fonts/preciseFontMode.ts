@@ -29,18 +29,18 @@ export function isPreciseFontModeEnabled(): boolean {
 export function setPreciseFontModeEnabled(value: boolean): void {
   if (enabled === value) return;
   enabled = value;
-  setVersion((current) => current + 1);
+  setVersion((current): number => current + 1);
 }
 
 export function setAvailableLocalFontFamilies(
   families: Iterable<string>,
 ): void {
   availableLocalFamilies = new Set(
-    Array.from(families, (family) => family.trim().toLowerCase()).filter(
+    Array.from(families, (family): string => family.trim().toLowerCase()).filter(
       Boolean,
     ),
   );
-  setVersion((current) => current + 1);
+  setVersion((current): number => current + 1);
 }
 
 /** True when the given (document-requested) family is installed locally. */

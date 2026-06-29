@@ -55,7 +55,7 @@ export function createActionCommandBuilder(
     execute: (payload?: unknown) => void,
     state?: () => Partial<CommandState>,
   ): OasisCommand => ({
-    execute: (payload?: unknown) => {
+    execute: (payload?: unknown): boolean => {
       execute(payload);
       return true;
     },

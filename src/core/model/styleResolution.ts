@@ -31,7 +31,7 @@ export interface StyleMerger<T> {
 
 export function createObjectMerger<T>(): StyleMerger<T> {
   return {
-    merge(resolved, local) {
+    merge(resolved, local): T {
       if (!local) {
         return { ...(resolved as object) } as T;
       }
@@ -79,7 +79,7 @@ export function resolveDefaultParagraphStyleId(
   }
 
   const exactNormal = Object.values(styles).find(
-    (style) =>
+    (style): boolean =>
       style.type === "paragraph" && style.id.toLowerCase() === "normal",
   );
   if (exactNormal) {
@@ -87,7 +87,7 @@ export function resolveDefaultParagraphStyleId(
   }
 
   const namedNormal = Object.values(styles).find(
-    (style) =>
+    (style): boolean =>
       style.type === "paragraph" && style.name.toLowerCase() === "normal",
   );
   if (namedNormal) {

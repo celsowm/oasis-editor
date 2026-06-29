@@ -132,7 +132,7 @@ function collectRenderedLineGeometry(
 
       for (const line of block.layout.lines) {
         const text = normalizeLineText(
-          line.fragments.map((fragment) => fragment.text).join(""),
+          line.fragments.map((fragment): string => fragment.text).join(""),
         );
         if (text.length === 0) {
           continue;
@@ -248,9 +248,9 @@ function collectEditorPageSnapshots(
     );
 
     return {
-      headerLineTexts: headerLines.map((line) => line.text),
-      bodyLineTexts: bodyLines.map((line) => line.text),
-      footerLineTexts: footerLines.map((line) => line.text),
+      headerLineTexts: headerLines.map((line): string => line.text),
+      bodyLineTexts: bodyLines.map((line): string => line.text),
+      footerLineTexts: footerLines.map((line): string => line.text),
       width: page.pageSettings.width,
       height: page.pageSettings.height,
       headerTop: getPageHeaderZoneTop(page.pageSettings),
@@ -358,29 +358,29 @@ function compareWordAndEditorLayout(
     const footerEnd = editorPage.pageHeight * PT_PER_PX + 1;
     const wordHeaderLinesWithGeometry = wordPage.lines
       .filter(
-        (line) =>
+        (line): boolean =>
           line.y >= editorPage.headerTop * PT_PER_PX - 1 &&
           line.y < headerLimit,
       )
-      .filter((line) => normalizeLineText(line.text).length > 0);
+      .filter((line): boolean => normalizeLineText(line.text).length > 0);
     const wordBodyLinesWithGeometry = wordPage.lines
       .filter(
-        (line) =>
+        (line): boolean =>
           line.y >= editorPage.bodyTop * PT_PER_PX - 1 && line.y < footerStart,
       )
-      .filter((line) => normalizeLineText(line.text).length > 0);
+      .filter((line): boolean => normalizeLineText(line.text).length > 0);
     const wordFooterLinesWithGeometry = wordPage.lines
-      .filter((line) => line.y >= footerStart && line.y <= footerEnd)
-      .filter((line) => normalizeLineText(line.text).length > 0);
+      .filter((line): boolean => line.y >= footerStart && line.y <= footerEnd)
+      .filter((line): boolean => normalizeLineText(line.text).length > 0);
     const wordHeaderLines = wordHeaderLinesWithGeometry
-      .map((line) => normalizeLineText(line.text))
-      .filter((line) => line.length > 0);
+      .map((line): string => normalizeLineText(line.text))
+      .filter((line): boolean => line.length > 0);
     const wordBodyLines = wordBodyLinesWithGeometry
-      .map((line) => normalizeLineText(line.text))
-      .filter((line) => line.length > 0);
+      .map((line): string => normalizeLineText(line.text))
+      .filter((line): boolean => line.length > 0);
     const wordFooterLines = wordFooterLinesWithGeometry
-      .map((line) => normalizeLineText(line.text))
-      .filter((line) => line.length > 0);
+      .map((line): string => normalizeLineText(line.text))
+      .filter((line): boolean => line.length > 0);
 
     const zones = [
       {

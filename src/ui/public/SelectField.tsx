@@ -33,9 +33,9 @@ export function SelectField(props: SelectFieldProps): JSX.Element {
     "classList",
     "id",
   ]);
-  const id = () => local.id ?? fallbackId;
-  const descriptionId = () => `${id()}-description`;
-  const errorId = () => `${id()}-error`;
+  const id = (): string => local.id ?? fallbackId;
+  const descriptionId = (): string => `${id()}-description`;
+  const errorId = (): string => `${id()}-error`;
 
   return (
     <label
@@ -58,11 +58,11 @@ export function SelectField(props: SelectFieldProps): JSX.Element {
         ]
           .filter(Boolean)
           .join(" ")}
-        onChange={(event) => local.onChange?.(event.currentTarget.value)}
+        onChange={(event): void | undefined => local.onChange?.(event.currentTarget.value)}
         {...others}
       >
         <For each={local.options}>
-          {(option) => (
+          {(option): JSX.Element => (
             <option value={option.value} disabled={option.disabled}>
               {option.label}
             </option>

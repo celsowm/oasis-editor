@@ -22,10 +22,11 @@ import {
   findPreviousWordBoundary,
   findNextWordBoundary,
 } from "@/core/wordBoundaries.js";
-import { buildTableCellLayout } from "@/core/tableLayout.js";
+import { buildTableCellLayout, TableCellLayoutEntry } from "@/core/tableLayout.js";
 import { getParagraphEntries } from "@/ui/canvas/CanvasGeometry.js";
 import type { CaretBox } from "@/ui/editorUiTypes.js";
 import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
+import type { CanvasSnapshotSlot } from "@/ui/canvas/canvasSnapshotTypes.js";
 
 export interface UseEditorNavigationProps {
   state: () => EditorState;
@@ -54,10 +55,10 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
   const moveSelectionToParagraphBoundary = (
     boundary: "start" | "end",
     extend: boolean,
-  ) => {
+  ): boolean => {
     const state = deps.state();
     const targetParagraph = getParagraphs(state).find(
-      (paragraph) => paragraph.id === state.selection.focus.paragraphId,
+      (paragraph): boolean => paragraph.id === state.selection.focus.paragraphId,
     );
     if (!targetParagraph) {
       return false;
@@ -82,7 +83,7 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
   const moveSelectionToDocumentBoundary = (
     boundary: "start" | "end",
     extend: boolean,
-  ) => {
+  ): boolean => {
     const state = deps.state();
     const paragraphs = getParagraphs(state);
     if (paragraphs.length === 0) {
@@ -110,11 +111,11 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
   const moveSelectionByWord = (
     direction: "left" | "right",
     extend: boolean,
-  ) => {
+  ): boolean => {
     const state = deps.state();
     const paragraphs = getParagraphs(state);
     const focusParagraphIndex = paragraphs.findIndex(
-      (paragraph) => paragraph.id === state.selection.focus.paragraphId,
+      (paragraph): boolean => paragraph.id === state.selection.focus.paragraphId,
     );
     const focusParagraph = paragraphs[focusParagraphIndex];
     if (!focusParagraph) {
@@ -171,15 +172,15 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
     return true;
   };
 
-  const moveVerticalByBlock = (direction: -1 | 1) => {
+  const moveVerticalByBlock = (direction: -1 | 1): boolean => {
     return moveVerticalSelection(direction, false);
   };
 
-  const moveVerticalSelection = (direction: -1 | 1, extend: boolean) => {
+  const moveVerticalSelection = (direction: -1 | 1, extend: boolean): boolean => {
     const state = deps.state();
     const paragraphs = getParagraphs(state);
     const currentIndex = paragraphs.findIndex(
-      (paragraph) => paragraph.id === state.selection.focus.paragraphId,
+      (paragraph): boolean => paragraph.id === state.selection.focus.paragraphId,
     );
     if (currentIndex === -1) {
       return false;
@@ -216,7 +217,7 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
       if (block && block.type === "table") {
         const tableLayout = buildTableCellLayout(block);
         const currentCell = tableLayout.find(
-          (entry) =>
+          (entry): boolean =>
             entry.rowIndex === tableLocation.rowIndex &&
             entry.cellIndex === tableLocation.cellIndex,
         );
@@ -232,7 +233,7 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
 
           for (const rowIndex of candidateRows) {
             const rowCandidates = tableLayout.filter(
-              (entry) =>
+              (entry): boolean =>
                 entry.visualRowIndex === rowIndex &&
                 entry.cell.blocks.length > 0 &&
                 entry.cell.vMerge !== "continue",
@@ -242,11 +243,11 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
             }
 
             const scoredCandidates = rowCandidates
-              .map((entry) => {
+              .map((entry): { entry: TableCellLayoutEntry; distance: number; } => {
                 const paragraphId = entry.cell.blocks[0]?.id;
                 const cellRect = paragraphId
                   ? snapshot?.paragraphs.find(
-                      (paragraph) =>
+                      (paragraph): boolean | undefined =>
                         paragraph.paragraphId === paragraphId &&
                         paragraph.tableCell &&
                         paragraph.tableCell.tableId === block.id,
@@ -264,7 +265,7 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
                       : 0;
                 return { entry, distance };
               })
-              .sort((left, right) => left.distance - right.distance);
+              .sort((left, right): number => left.distance - right.distance);
 
             const candidate = scoredCandidates[0]?.entry;
             if (!candidate) {
@@ -275,7 +276,7 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
               direction < 0
                 ? candidate.cell.blocks[candidate.cell.blocks.length - 1]!.id
                 : candidate.cell.blocks[0]!.id;
-            targetIndex = paragraphs.findIndex((p) => p.id === targetId);
+            targetIndex = paragraphs.findIndex((p): boolean => p.id === targetId);
             break;
           }
         } else {
@@ -283,7 +284,7 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
             const firstParaId = block.rows[0]?.cells[0]?.blocks[0]?.id;
             if (firstParaId) {
               targetIndex =
-                paragraphs.findIndex((p) => p.id === firstParaId) - 1;
+                paragraphs.findIndex((p): boolean => p.id === firstParaId) - 1;
             }
           } else {
             const lastRow = block.rows[block.rows.length - 1];
@@ -291,7 +292,7 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
             const lastParaId = lastCell?.blocks[lastCell.blocks.length - 1]?.id;
             if (lastParaId) {
               targetIndex =
-                paragraphs.findIndex((p) => p.id === lastParaId) + 1;
+                paragraphs.findIndex((p): boolean => p.id === lastParaId) + 1;
             }
           }
         }
@@ -316,7 +317,7 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
       const boundaryLine = direction < 0 ? lines[lines.length - 1]! : lines[0]!;
       offset = boundaryLine.slots.length
         ? boundaryLine.slots.reduce(
-            (best, slot) =>
+            (best, slot): CanvasSnapshotSlot =>
               Math.abs(desiredX - slot.left) < Math.abs(desiredX - best.left)
                 ? slot
                 : best,
@@ -332,7 +333,7 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
 
     deps.setPreferredColumnX(desiredX);
     deps.resetTransactionGrouping();
-    deps.applyTransactionalState((current) =>
+    deps.applyTransactionalState((current): EditorState =>
       setSelection(current, {
         anchor: extend
           ? current.selection.anchor

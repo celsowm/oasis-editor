@@ -11,6 +11,7 @@ import {
   getParagraphRectFromSnapshot,
 } from "@/ui/canvas/CanvasGeometry.js";
 import { CaretOverlay } from "./CaretOverlay.js";
+import { JSX } from "solid-js";
 
 export function DropCaret(props: {
   surfaceRef: HTMLDivElement | undefined;
@@ -21,8 +22,8 @@ export function DropCaret(props: {
   targetPos: () => EditorPosition;
   pointerPos?: () => { x: number; y: number } | null;
   caretViewport?: () => { left: number; top: number; height: number } | null;
-}) {
-  const layout = createMemo(() => {
+}): JSX.Element {
+  const layout = createMemo((): { viewportLeft: number; viewportTop: number; height: number; } | null => {
     const pos = props.targetPos();
     const surfaceRef = props.surfaceRef;
     if (!surfaceRef) return null;
@@ -40,7 +41,7 @@ export function DropCaret(props: {
 
     if (snapshot) {
       const paragraphNode = getParagraphs(props.state).find(
-        (p) => p.id === pos.paragraphId,
+        (p): boolean => p.id === pos.paragraphId,
       );
       const paragraphOffset = paragraphNode
         ? positionToParagraphOffset(paragraphNode, pos)
@@ -91,7 +92,7 @@ export function DropCaret(props: {
 
   return (
     <Show when={layout()}>
-      {(l) => (
+      {(l): JSX.Element => (
         <CaretOverlay
           active={true}
           fixed={true}

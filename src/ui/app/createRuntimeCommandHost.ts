@@ -42,7 +42,7 @@ export function createRuntimeCommandHost(
   );
   let disposed = false;
 
-  const commandStateOf = (commandRef: CommandRef) => {
+  const commandStateOf = (commandRef: CommandRef): { isEnabled: boolean; isActive: boolean; value: unknown; } => {
     const commandName = commandRefName(commandRef);
     const cmd = runtimeEditor().commands.get(commandName);
     if (!cmd) {
@@ -58,14 +58,14 @@ export function createRuntimeCommandHost(
 
   const toolbarHost = (): ToolbarHost => ({
     commands: {
-      execute: (command, payload) => {
+      execute: (command, payload): unknown => {
         const resolved = resolveCommandRef(command, payload);
         return runtimeEditor().commands.execute(
           resolved.name,
           resolved.payload,
         );
       },
-      canExecute: (command, payload) => {
+      canExecute: (command, payload): boolean => {
         const resolved = resolveCommandRef(command, payload);
         return runtimeEditor().commands.canExecute(
           resolved.name,
@@ -77,7 +77,7 @@ export function createRuntimeCommandHost(
     focusEditor: options.focusEditor,
   });
 
-  const initialize = async () => {
+  const initialize = async (): Promise<void> => {
     try {
       const initializedRuntimeEditor = await Editor.create({
         doc: options.initialDocument,
@@ -93,7 +93,7 @@ export function createRuntimeCommandHost(
       await previousRuntimeEditor.destroy();
       setRuntimeReady(true);
 
-      requestAnimationFrame(() => {
+      requestAnimationFrame((): void => {
         options.onSettled?.();
         options.onReady?.(initializedRuntimeEditor);
       });
@@ -104,7 +104,7 @@ export function createRuntimeCommandHost(
     }
   };
 
-  const dispose = async () => {
+  const dispose = async (): Promise<void> => {
     disposed = true;
     await runtimeEditor().destroy();
   };

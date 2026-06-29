@@ -1,8 +1,7 @@
 import type { CommandRef } from "@/core/commands/CommandRef.js";
 import type {
   ToolbarActionApi,
-  ToolbarItem,
-} from "@/ui/components/Toolbar/schema/items.js";
+  ToolbarItem, ToolbarCommandState } from "@/ui/components/Toolbar/schema/items.js";
 
 export interface ItemBinding {
   active: () => boolean;
@@ -23,7 +22,7 @@ export function bindItem(
   api: ToolbarActionApi,
 ): ItemBinding {
   const command = itemCommand(item);
-  const cmdState = () =>
+  const cmdState = (): ToolbarCommandState =>
     command
       ? api.commands.state(command)
       : { isEnabled: true, isActive: false, value: undefined };
@@ -31,10 +30,10 @@ export function bindItem(
   const overrides = item.type === "separator" ? undefined : item;
 
   return {
-    active: () => overrides?.isActive?.(api) ?? cmdState().isActive,
-    disabled: () => overrides?.isDisabled?.(api) ?? !cmdState().isEnabled,
-    value: () => overrides?.value?.(api) ?? cmdState().value,
-    visible: () => overrides?.isVisible?.(api) ?? true,
+    active: (): any => overrides?.isActive?.(api) ?? cmdState().isActive,
+    disabled: (): boolean => overrides?.isDisabled?.(api) ?? !cmdState().isEnabled,
+    value: (): any => overrides?.value?.(api) ?? cmdState().value,
+    visible: (): boolean => overrides?.isVisible?.(api) ?? true,
   };
 }
 

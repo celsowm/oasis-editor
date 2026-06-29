@@ -32,7 +32,7 @@ export function parseDropCapFrame(
     return null;
   }
 
-  const text = runs.map((run) => run.text).join("");
+  const text = runs.map((run): string => run.text).join("");
   if (text.length === 0) {
     return null;
   }

@@ -14,6 +14,7 @@ import type {
   OasisEditorAppDocumentProps,
   OasisEditorAppRuntimeProps,
 } from "../OasisEditorAppProps.js";
+import type { DocumentPersistence } from "@/app/controllers/useEditorPersistence.js";
 
 type DocumentRuntime = ReturnType<typeof createEditorDocumentRuntime>;
 type InteractionRuntime = ReturnType<typeof createEditorInteractionRuntime>;
@@ -74,7 +75,7 @@ export function createEditorCommandRuntime(deps: EditorCommandRuntimeDeps) {
       selectedImageRun: interaction.selectedImageRun,
       tableOps: interaction.tableOps,
       toolbarStyleState: interaction.styleController.toolbarStyleState,
-      applyBooleanStyleCommand: (style: BooleanStyleKey) =>
+      applyBooleanStyleCommand: (style: BooleanStyleKey): void =>
         interaction.styleController.applyToolbarBooleanStyleCommand(style),
       locale: deps.locale,
       setLinkDialog: deps.setLinkDialog,
@@ -91,7 +92,7 @@ export function createEditorCommandRuntime(deps: EditorCommandRuntimeDeps) {
     menuRegistry,
   } = useEditorRuntimeBootstrap({
     essentials: {
-      state: () => deps.state,
+      state: (): EditorState => deps.state,
       isReadOnly: deps.isReadOnly,
       forcePlainTextPaste: {
         get: deps.getForcePlainTextPaste,
@@ -123,14 +124,14 @@ export function createEditorCommandRuntime(deps: EditorCommandRuntimeDeps) {
     initialDocument: deps.getStateSnapshot().document,
     focusEditor: deps.focusInput,
     logger: deps.logger,
-    onReady: (editor) => {
+    onReady: (editor): void => {
       runtimeClient.resolveReady(editor);
       deps.runtimeOptions().onReady?.(runtimeClient);
     },
-    onSettled: () => {
+    onSettled: (): void => {
       deps.setInitialLoading(false);
     },
-    onError: (error) => runtimeClient.rejectReady(error),
+    onError: (error): void => runtimeClient.rejectReady(error),
   });
 
   connectEditorClientHost(runtimeClient, {
@@ -143,23 +144,23 @@ export function createEditorCommandRuntime(deps: EditorCommandRuntimeDeps) {
     focusInput: deps.focusInput,
     setFocused: deps.setFocused,
     clearHistory: doc.clearHistory,
-    getPersistence: () =>
+    getPersistence: (): DocumentPersistence =>
       deps.documentOptions().persistence ?? doc.fallbackPersistence,
     docIO: doc.docIO,
   });
 
-  createEffect(() => {
+  createEffect((): void => {
     if (!runtimeReady()) return;
     deps.state.document;
     deps.state.selection;
     deps.state.activeSectionIndex;
     deps.state.activeZone;
     const snapshot = deps.cloneState(deps.getStateSnapshot());
-    runtimeEditor().dispatch(() => snapshot);
+    runtimeEditor().dispatch((): EditorState => snapshot);
   });
 
   const { handleKeyDown } = createEditorKeyboardBinding({
-    state: () => deps.state,
+    state: (): EditorState => deps.state,
     isReadOnly: deps.isReadOnly,
     logger: deps.logger,
     focusInput: deps.focusInput,

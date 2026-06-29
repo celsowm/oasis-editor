@@ -14,6 +14,7 @@ import { debounce } from "@/utils/throttle.js";
 import { getParagraphEntries } from "@/ui/canvas/CanvasGeometry.js";
 import type { EditorLayoutDocument } from "@/core/model.js";
 import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
+import { JSX } from "solid-js";
 
 export interface OutlinePanelProps {
   state: EditorState;
@@ -26,7 +27,7 @@ export interface OutlinePanelProps {
   snapshotProvider: CanvasLayoutSnapshotProvider;
 }
 
-export function OutlinePanel(props: OutlinePanelProps) {
+export function OutlinePanel(props: OutlinePanelProps): JSX.Element {
   const t = useI18n();
   const [collapsed, setCollapsed] = createSignal(
     props.defaultCollapsed ?? false,
@@ -35,29 +36,29 @@ export function OutlinePanel(props: OutlinePanelProps) {
   const [activeId, setActiveId] = createSignal<string | null>(null);
 
   // Load collapsed state from localStorage
-  onMount(() => {
+  onMount((): void => {
     const saved = localStorage.getItem("oasis-outline-collapsed");
     if (saved !== null) {
       setCollapsed(saved === "true");
     }
   });
 
-  const toggleCollapsed = () => {
+  const toggleCollapsed = (): void => {
     const next = !collapsed();
     setCollapsed(next);
     localStorage.setItem("oasis-outline-collapsed", String(next));
   };
 
-  const updateOutline = debounce((doc: EditorDocument) => {
+  const updateOutline = debounce((doc: EditorDocument): void => {
     setItems(outlineFrom(doc));
   }, 100);
 
-  createEffect(() => {
+  createEffect((): void => {
     updateOutline(props.state.document);
   });
 
   // Snapshot-driven detection of the currently visible heading.
-  const recomputeActive = () => {
+  const recomputeActive = (): void => {
     const surface = props.surfaceRef?.();
     if (!surface) return;
     const snapshot = props.snapshotProvider.getCanvasLayoutSnapshot({
@@ -91,20 +92,20 @@ export function OutlinePanel(props: OutlinePanelProps) {
   const recomputeActiveDebounced = debounce(recomputeActive, 80);
   let scrollTarget: HTMLElement | Window | null = null;
 
-  onMount(() => {
+  onMount((): void => {
     scrollTarget = props.viewportRef?.() ?? window;
     scrollTarget.addEventListener("scroll", recomputeActiveDebounced, {
       passive: true,
     });
     recomputeActive();
 
-    createEffect(() => {
+    createEffect((): void => {
       items(); // depend on items
       setTimeout(recomputeActive, 80);
     });
   });
 
-  onCleanup(() => {
+  onCleanup((): void => {
     if (scrollTarget) {
       scrollTarget.removeEventListener("scroll", recomputeActiveDebounced);
     }
@@ -144,9 +145,9 @@ export function OutlinePanel(props: OutlinePanelProps) {
             }
           >
             <For each={items()}>
-              {(item) => (
+              {(item): JSX.Element => (
                 <div
-                  onClick={() => props.onNavigate(item.anchor)}
+                  onClick={(): void => props.onNavigate(item.anchor)}
                   class="oasis-outline-item"
                   classList={{
                     "oasis-outline-item-active": activeId() === item.id,

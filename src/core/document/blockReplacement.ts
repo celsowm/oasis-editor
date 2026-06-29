@@ -4,8 +4,7 @@ import type {
   EditorSection,
   EditorSelection,
   EditorState,
-  EditorTableCellNode,
-} from "@/core/model.js";
+  EditorTableCellNode, EditorTableNode, EditorTableRowNode } from "@/core/model.js";
 import {
   getActiveSectionIndex,
   getActiveZone,
@@ -36,16 +35,16 @@ export function replaceParagraphsInBlocks(
   let index = 0;
   const processBlocks = (nodes: EditorBlockNode[]): EditorBlockNode[] => {
     let changed = false;
-    const result = nodes.map((node) => {
+    const result = nodes.map((node): EditorParagraphNode | EditorTableNode => {
       if (node.type === "paragraph") {
         const next = newParagraphs[index++] ?? node;
         if (next !== node) changed = true;
         return next;
       }
       let tableChanged = false;
-      const newRows = node.rows.map((row) => {
+      const newRows = node.rows.map((row): EditorTableRowNode => {
         let rowChanged = false;
-        const newCells = row.cells.map((cell) => {
+        const newCells = row.cells.map((cell): EditorTableCellNode => {
           const newBlocks = processBlocks(cell.blocks) as EditorParagraphNode[];
           if (newBlocks === cell.blocks) return cell;
           rowChanged = true;
@@ -164,14 +163,14 @@ export function updateTableCellsInBlocks(
   updateCell: (cell: EditorTableCellNode) => EditorTableCellNode,
 ): EditorBlockNode[] {
   let changed = false;
-  const result = blocks.map((block) => {
+  const result = blocks.map((block): EditorParagraphNode | EditorTableNode => {
     if (block.type === "paragraph") return block;
 
     let tableChanged = false;
-    const newRows = block.rows.map((row) => {
+    const newRows = block.rows.map((row): EditorTableRowNode => {
       let rowChanged = false;
-      const newCells = row.cells.map((cell) => {
-        const isSelected = cell.blocks.some((paragraph) =>
+      const newCells = row.cells.map((cell): EditorTableCellNode => {
+        const isSelected = cell.blocks.some((paragraph): boolean =>
           selectedParagraphIds.has(paragraph.id),
         );
         if (!isSelected) return cell;

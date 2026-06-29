@@ -82,7 +82,7 @@ function buildWrapPolygonXml(
   const first = wrapPolygon[0]!;
   const body = [
     point(first, "start"),
-    ...wrapPolygon.slice(1).map((p) => point(p, "lineTo")),
+    ...wrapPolygon.slice(1).map((p): string => point(p, "lineTo")),
     // Close the loop back to the start point.
     point(first, "lineTo"),
   ].join("");

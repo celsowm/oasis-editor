@@ -29,7 +29,7 @@ export function createEditorTextInput(deps: UseEditorTextInputProps) {
 
   const handleTextInput = (
     event: InputEvent & { currentTarget: HTMLTextAreaElement },
-  ) => {
+  ): void => {
     markStart("input:text");
     if (deps.isReadOnly()) {
       deps.logger.debug(
@@ -58,8 +58,8 @@ export function createEditorTextInput(deps: UseEditorTextInputProps) {
     const state = deps.state();
     const sel = state.selection;
     const currentRun = getParagraphs(state)
-      .find((p) => p.id === sel.anchor.paragraphId)
-      ?.runs.find((r) => r.id === sel.anchor.runId);
+      .find((p): boolean => p.id === sel.anchor.paragraphId)
+      ?.runs.find((r): boolean => r.id === sel.anchor.runId);
     const runStyle = currentRun
       ? {
           bold: currentRun.styles?.bold,
@@ -73,8 +73,8 @@ export function createEditorTextInput(deps: UseEditorTextInputProps) {
     deps.clearPreferredColumn();
     const pendingStyle = cloneStyle(deps.pendingCaretTextStyle());
     deps.applyTransactionalState(
-      (current) =>
-        deps.applyTableAwareParagraphEdit(current, (temp) =>
+      (current): EditorState =>
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
           insertTextAtSelection(temp, text, pendingStyle),
         ),
       {
@@ -86,14 +86,14 @@ export function createEditorTextInput(deps: UseEditorTextInputProps) {
     markEnd("input:text");
   };
 
-  const handleCompositionStart = () => {
+  const handleCompositionStart = (): void => {
     deps.logger.debug("input:composition start");
     setComposing(true);
   };
 
   const handleCompositionEnd = (
     event: CompositionEvent & { currentTarget: HTMLTextAreaElement },
-  ) => {
+  ): void => {
     if (deps.isReadOnly()) {
       event.currentTarget.value = "";
       setComposing(false);
@@ -116,8 +116,8 @@ export function createEditorTextInput(deps: UseEditorTextInputProps) {
     deps.clearPreferredColumn();
     const pendingStyle = cloneStyle(deps.pendingCaretTextStyle());
     deps.applyTransactionalState(
-      (current) =>
-        deps.applyTableAwareParagraphEdit(current, (temp) =>
+      (current): EditorState =>
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
           insertTextAtSelection(temp, text, pendingStyle),
         ),
       {

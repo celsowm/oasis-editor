@@ -60,7 +60,7 @@ export class DocumentIndexBuilder {
 
   build(): Map<string, DocumentParagraphIndexEntry> {
     const sections = getDocumentSections(this.document);
-    sections.forEach((section, sectionIndex) => {
+    sections.forEach((section, sectionIndex): void => {
       this.indexZone({ zone: "header", blocks: section.header }, sectionIndex);
       this.indexZone(
         { zone: "header", blocks: section.firstPageHeader },
@@ -88,7 +88,7 @@ export class DocumentIndexBuilder {
   private indexZone(src: ZoneBlockSource, sectionIndex: number): void {
     if (!src.blocks) return;
     let paraIndex = 0;
-    src.blocks.forEach((block, blockIndex) => {
+    src.blocks.forEach((block, blockIndex): void => {
       paraIndex = this.indexBlock(block, blockIndex, {
         sectionIndex,
         zone: src.zone,
@@ -118,9 +118,9 @@ export class DocumentIndexBuilder {
         );
         return paraIndex + 1;
       case "table":
-        block.rows.forEach((row, rowIndex) => {
-          row.cells.forEach((cell, cellIndex) => {
-            cell.blocks.forEach((cp, cpIndex) => {
+        block.rows.forEach((row, rowIndex): void => {
+          row.cells.forEach((cell, cellIndex): void => {
+            cell.blocks.forEach((cp, cpIndex): void => {
               this.recordParagraph(
                 cp,
                 {
@@ -194,19 +194,19 @@ export class WeakMapDocumentIndexCache implements DocumentIndexCache {
     EditorParagraphNode[]
   >();
 
-  getIndex(document: EditorDocument) {
+  getIndex(document: EditorDocument): Map<string, DocumentParagraphIndexEntry> | undefined {
     return this.indexMap.get(document);
   }
   setIndex(
     document: EditorDocument,
     index: Map<string, DocumentParagraphIndexEntry>,
-  ) {
+  ): void {
     this.indexMap.set(document, index);
   }
-  getParagraphs(document: EditorDocument) {
+  getParagraphs(document: EditorDocument): EditorParagraphNode[] | undefined {
     return this.paragraphsMap.get(document);
   }
-  setParagraphs(document: EditorDocument, paragraphs: EditorParagraphNode[]) {
+  setParagraphs(document: EditorDocument, paragraphs: EditorParagraphNode[]): void {
     this.paragraphsMap.set(document, paragraphs);
   }
 }
@@ -233,13 +233,13 @@ export function getDocumentParagraphsCanonical(
     return cached;
   }
   const sections = getDocumentSections(document);
-  const sectionParagraphs = sections.flatMap((section) =>
+  const sectionParagraphs = sections.flatMap((section): EditorParagraphNode[] =>
     collectSectionParagraphs(section),
   );
 
   const footnoteItems = document.footnotes?.items;
   const footnoteParagraphs: EditorParagraphNode[] = footnoteItems
-    ? Object.values(footnoteItems).flatMap((footnote) =>
+    ? Object.values(footnoteItems).flatMap((footnote): EditorParagraphNode[] =>
         footnote.blocks.flatMap(getBlockParagraphs),
       )
     : [];

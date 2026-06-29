@@ -58,16 +58,16 @@ export function probeLocalFontFamilies(): Promise<string[]> {
   const queryLocalFonts = getQueryLocalFonts();
   if (!queryLocalFonts) return Promise.resolve([]);
 
-  inFlight = (async () => {
+  inFlight = (async (): Promise<string[]> => {
     try {
       const fonts = await queryLocalFonts();
       const families = Array.from(
         new Set(
           fonts
-            .map((font) => font.family?.trim() || font.fullName?.trim() || "")
+            .map((font): string => font.family?.trim() || font.fullName?.trim() || "")
             .filter(Boolean),
         ),
-      ).sort((a, b) => a.localeCompare(b));
+      ).sort((a, b): number => a.localeCompare(b));
       cachedFamilies = families;
       setAvailableLocalFontFamilies(families);
       return families;
@@ -110,13 +110,13 @@ function selectFaceProgram(
   const targetPs = (font.postscriptName ?? "").trim().toLowerCase();
   if (targetPs) {
     const byName = programs.find(
-      (program) => program.metadata.postscriptName.toLowerCase() === targetPs,
+      (program): boolean => program.metadata.postscriptName.toLowerCase() === targetPs,
     );
     if (byName) return byName;
   }
   const { bold, italic } = classifyFaceStyle(font);
   const byStyle = programs.find(
-    (program) =>
+    (program): boolean =>
       program.metadata.macStyleBold === bold &&
       program.metadata.macStyleItalic === italic,
   );
@@ -138,7 +138,7 @@ export async function loadPreciseFontProgramsForFamilies(
   if (!queryLocalFonts) return false;
 
   const wanted = new Set(
-    Array.from(families, (family) => normalizeFamily(family).toLowerCase()),
+    Array.from(families, (family): string => normalizeFamily(family).toLowerCase()),
   );
   wanted.delete("helvetica"); // normalizeFamily's empty-input fallback
   if (wanted.size === 0) return false;
@@ -165,7 +165,7 @@ export async function loadPreciseFontProgramsForFamilies(
     const { bold, italic } = classifyFaceStyle(font);
     if (hasPreciseFontFace(family, bold, italic)) continue;
     try {
-      const buffer = await font.blob().then((blob) => blob.arrayBuffer());
+      const buffer = await font.blob().then((blob): Promise<ArrayBuffer> => blob.arrayBuffer());
       const program = selectFaceProgram(new Uint8Array(buffer), font);
       registerPreciseFont(family, bold, italic, program);
       registered.push(
@@ -181,14 +181,14 @@ export async function loadPreciseFontProgramsForFamilies(
   // (e.g. "Aptos Display" instead of "Aptos", or an Office cloud font that the
   // browser cannot enumerate at all) is visible instead of failing silently.
   const localFamilies = Array.from(
-    new Set(fonts.map((font) => (font.family ?? "").trim()).filter(Boolean)),
+    new Set(fonts.map((font): string => (font.family ?? "").trim()).filter(Boolean)),
   );
   const unmatched = Array.from(wanted).filter(
-    (token) => !localFamilies.some((name) => name.toLowerCase() === token),
+    (token): boolean => !localFamilies.some((name): boolean => name.toLowerCase() === token),
   );
-  const nearMatches = unmatched.flatMap((token) => {
+  const nearMatches = unmatched.flatMap((token): string[] => {
     const stem = token.split(" ")[0]!;
-    return localFamilies.filter((name) => name.toLowerCase().includes(stem));
+    return localFamilies.filter((name): boolean => name.toLowerCase().includes(stem));
   });
   fontLogger.info("precise:load", {
     wanted: Array.from(wanted),

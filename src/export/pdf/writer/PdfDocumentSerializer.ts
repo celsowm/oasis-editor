@@ -32,7 +32,7 @@ function chunkByteLength(chunk: string | Uint8Array): number {
 
 /** Concatenates string (UTF-8) and binary chunks into one byte buffer. */
 function concatChunks(chunks: Array<string | Uint8Array>): Uint8Array {
-  const total = chunks.reduce((sum, chunk) => sum + chunkByteLength(chunk), 0);
+  const total = chunks.reduce((sum, chunk): number => sum + chunkByteLength(chunk), 0);
   const out = new Uint8Array(total);
   let offset = 0;
   for (const chunk of chunks) {
@@ -58,7 +58,7 @@ function buildContentStreamObject(streamText: string): Uint8Array {
 
 /** Escapes a string for a PDF literal `(...)` string (used for `/URI`). */
 function encodePdfLiteralString(value: string): string {
-  return value.replace(/[\\()]/g, (char) => `\\${char}`);
+  return value.replace(/[\\()]/g, (char): string => `\\${char}`);
 }
 
 /**
@@ -66,13 +66,13 @@ function encodePdfLiteralString(value: string): string {
  * a byte-order mark, so non-ASCII headings (e.g. accented Portuguese) render.
  */
 function encodePdfTextString(value: string): string {
-  const codePoints = Array.from(value).map((ch) => ch.codePointAt(0) ?? 0x3f);
+  const codePoints = Array.from(value).map((ch): number => ch.codePointAt(0) ?? 0x3f);
   return `<FEFF${encodePdfUtf16Hex(codePoints)}>`;
 }
 
 /** Formats a date as a PDF date string in UTC: `D:YYYYMMDDHHmmSS+00'00'`. */
 function formatPdfDate(date: Date): string {
-  const pad = (n: number, width = 2) => String(n).padStart(width, "0");
+  const pad = (n: number, width = 2): string => String(n).padStart(width, "0");
   return (
     `D:${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}` +
     `${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}+00'00'`
@@ -129,7 +129,7 @@ function buildOutlineTree(items: OasisPdfOutlineItem[]): OutlineNode[] {
 
 function countOutlineDescendants(node: OutlineNode): number {
   return node.children.reduce(
-    (total, child) => total + 1 + countOutlineDescendants(child),
+    (total, child): number => total + 1 + countOutlineDescendants(child),
     0,
   );
 }
@@ -161,7 +161,7 @@ export function serializePdfDocument(
     const stream = `${page.commands.join("\n")}\n`;
     const contentObjectId = addObject(buildContentStreamObject(stream));
     const imageResourceXml = Array.from(page.imageResourceNames)
-      .map((resourceName) => {
+      .map((resourceName): string => {
         const objectId = imageObjectIds.get(resourceName);
         return objectId ? `/${resourceName} ${objectId} 0 R` : "";
       })
@@ -171,7 +171,7 @@ export function serializePdfDocument(
       ? ` /XObject << ${imageResourceXml} >>`
       : "";
     const shadingResourceXml = Array.from(page.shadingResourceNames)
-      .map((resourceName) => {
+      .map((resourceName): string => {
         const objectId = shadingObjectIds.get(resourceName);
         return objectId ? `/${resourceName} ${objectId} 0 R` : "";
       })
@@ -180,7 +180,7 @@ export function serializePdfDocument(
     const shadingResourceDictXml = shadingResourceXml
       ? ` /Shading << ${shadingResourceXml} >>`
       : "";
-    const annotationObjectIds = page.annotations.map((annotation) => {
+    const annotationObjectIds = page.annotations.map((annotation): number => {
       // PDF annotation rects are in default user space (bottom-left origin), so
       // flip the writer's top-left y the same way drawRect does.
       const x1 = annotation.x;
@@ -203,7 +203,7 @@ export function serializePdfDocument(
     });
     const annotsXml =
       annotationObjectIds.length > 0
-        ? `\n/Annots [${annotationObjectIds.map((id) => `${id} 0 R`).join(" ")}]`
+        ? `\n/Annots [${annotationObjectIds.map((id): string => `${id} 0 R`).join(" ")}]`
         : "";
     const pageObjectId = addObject(
       [
@@ -223,11 +223,11 @@ export function serializePdfDocument(
   // the now-known page object. Duplicate/unresolved names are dropped.
   let namesObjectId: number | undefined;
   const resolvedDestinations = namedDestinations
-    .filter((dest) => pageObjectIds[dest.pageIndex] !== undefined)
-    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    .filter((dest): boolean => pageObjectIds[dest.pageIndex] !== undefined)
+    .sort((a, b): 0 | 1 | -1 => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   if (resolvedDestinations.length > 0) {
     const namesArray = resolvedDestinations
-      .map((dest) => {
+      .map((dest): string => {
         const pageObjectId = pageObjectIds[dest.pageIndex]!;
         const pageHeight = pages[dest.pageIndex]!.height;
         const top = pageHeight - dest.y;
@@ -243,14 +243,14 @@ export function serializePdfDocument(
   // sibling/parent/child cross-links the spec requires. Object ids are
   // pre-allocated so the cross-links can point at not-yet-emitted siblings.
   let outlineRootId: number | undefined;
-  const resolvedNames = new Set(resolvedDestinations.map((dest) => dest.name));
+  const resolvedNames = new Set(resolvedDestinations.map((dest): string => dest.name));
   const outlineRoots = buildOutlineTree(
-    outlineItems.filter((item) => resolvedNames.has(item.destName)),
+    outlineItems.filter((item): boolean => resolvedNames.has(item.destName)),
   );
   if (outlineRoots.length > 0) {
     outlineRootId = addObject("");
     const assignIds = (nodes: OutlineNode[]): number[] =>
-      nodes.map((node) => {
+      nodes.map((node): number => {
         const id = addObject("");
         (node as OutlineNode & { id: number; childIds: number[] }).id = id;
         (node as OutlineNode & { id: number; childIds: number[] }).childIds =
@@ -259,7 +259,7 @@ export function serializePdfDocument(
       });
     const rootIds = assignIds(outlineRoots);
     const emit = (nodes: OutlineNode[], parentId: number): void => {
-      nodes.forEach((node, index) => {
+      nodes.forEach((node, index): void => {
         const self = node as OutlineNode & { id: number; childIds: number[] };
         const prev = index > 0 ? nodes[index - 1] : undefined;
         const next = index < nodes.length - 1 ? nodes[index + 1] : undefined;
@@ -281,7 +281,7 @@ export function serializePdfDocument(
       });
     };
     emit(outlineRoots, outlineRootId);
-    const totalItems = outlineItems.filter((item) =>
+    const totalItems = outlineItems.filter((item): boolean =>
       resolvedNames.has(item.destName),
     ).length;
     objects[outlineRootId - 1]!.body = [
@@ -305,7 +305,7 @@ export function serializePdfDocument(
     .join("\n");
   objects[pagesObjectId - 1]!.body = [
     "<< /Type /Pages",
-    `/Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(" ")}]`,
+    `/Kids [${pageObjectIds.map((id): string => `${id} 0 R`).join(" ")}]`,
     `/Count ${pageObjectIds.length}`,
     ">>",
   ].join("\n");

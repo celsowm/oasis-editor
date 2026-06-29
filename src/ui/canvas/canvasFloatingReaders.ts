@@ -36,7 +36,7 @@ function resolveFloatingTopLeft(
   floating: FloatingPositionInfo,
   opts: FloatingTopLeftOptions,
 ): { left: number; top: number } {
-  const emuToPx = (value: number | undefined) =>
+  const emuToPx = (value: number | undefined): number =>
     value === undefined ? 0 : value / EMU_PER_PX;
 
   const h = floating.positionH;
@@ -104,10 +104,10 @@ export function collectFloatingImagesFromLines(options: {
 
       const slot =
         line.slots.find(
-          (candidate) => candidate.offset === fragment.startOffset,
+          (candidate): boolean => candidate.offset === fragment.startOffset,
         ) ??
         line.slots.find(
-          (candidate) => candidate.offset >= fragment.startOffset,
+          (candidate): boolean => candidate.offset >= fragment.startOffset,
         );
       if (!slot) {
         continue;
@@ -192,10 +192,10 @@ export function collectFloatingTextBoxesFromLines(options: {
 
       const slot =
         line.slots.find(
-          (candidate) => candidate.offset === fragment.startOffset,
+          (candidate): boolean => candidate.offset === fragment.startOffset,
         ) ??
         line.slots.find(
-          (candidate) => candidate.offset >= fragment.startOffset,
+          (candidate): boolean => candidate.offset >= fragment.startOffset,
         );
 
       if (!slot) {

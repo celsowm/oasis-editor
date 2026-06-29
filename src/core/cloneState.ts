@@ -80,7 +80,7 @@ export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
                       style: previousCell.style
                         ? { ...previousCell.style }
                         : undefined,
-                      blocks: previousCell.blocks.map((paragraph) =>
+                      blocks: previousCell.blocks.map((paragraph): EditorBlockNode =>
                         cloneBlock(paragraph),
                       ) as EditorParagraphNode[],
                     }),

@@ -6,7 +6,7 @@ import { createTranslator, type TranslateFn } from "./index.js";
  * (e.g. isolated tests) default to pt-BR. This is a fixed translator, not
  * mutable global state — per-instance providers override it.
  */
-const defaultTranslator = createTranslator(() => "pt-BR");
+const defaultTranslator = createTranslator((): "pt-BR" => "pt-BR");
 
 const I18nContext = createContext<TranslateFn>(defaultTranslator);
 

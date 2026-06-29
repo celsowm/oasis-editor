@@ -36,7 +36,7 @@ function pad4(length: number): number {
 }
 
 function concat(chunks: Uint8Array[]): Uint8Array {
-  const total = chunks.reduce((sum, chunk) => sum + pad4(chunk.byteLength), 0);
+  const total = chunks.reduce((sum, chunk): number => sum + pad4(chunk.byteLength), 0);
   const result = new Uint8Array(total);
   let offset = 0;
   for (const chunk of chunks) {
@@ -97,7 +97,7 @@ function subsetClosure(
   const loca = font.getRawTableData("loca");
   const head = font.getRawTableData("head");
   if (!glyf || !loca || !head) {
-    return Array.from(new Set([0, ...initialGlyphs])).sort((a, b) => a - b);
+    return Array.from(new Set([0, ...initialGlyphs])).sort((a, b): number => a - b);
   }
 
   const offsets = readLoca(loca, u16(head, 50));
@@ -111,7 +111,7 @@ function subsetClosure(
       continue;
     }
     const glyph = glyf.slice(range.start, range.end);
-    collectCompositeGlyphs(glyph, (componentId) => {
+    collectCompositeGlyphs(glyph, (componentId): void => {
       if (!used.has(componentId)) {
         used.add(componentId);
         stack.push(componentId);
@@ -119,12 +119,12 @@ function subsetClosure(
     });
   }
 
-  return Array.from(used).sort((a, b) => a - b);
+  return Array.from(used).sort((a, b): number => a - b);
 }
 
 function buildLoca(offsets: number[]): Uint8Array {
   const loca = new Uint8Array(offsets.length * 4);
-  offsets.forEach((offset, index) => writeU32(loca, index * 4, offset));
+  offsets.forEach((offset, index): void => writeU32(loca, index * 4, offset));
   return loca;
 }
 
@@ -213,7 +213,7 @@ export class TrueTypePdfFontSubsetter implements FontSubsetter {
     const fontFile = buildSfnt(
       0x00010000,
       new Map(
-        Object.entries(tables).map(([tag, data]) => [
+        Object.entries(tables).map(([tag, data]): [number, Uint8Array<ArrayBufferLike>] => [
           (tag.charCodeAt(0) << 24) |
             (tag.charCodeAt(1) << 16) |
             (tag.charCodeAt(2) << 8) |
@@ -235,7 +235,7 @@ export class TrueTypePdfFontSubsetter implements FontSubsetter {
       fontFile,
       widths,
       unicode,
-      encodeGlyph: (glyphId) => glyphId,
+      encodeGlyph: (glyphId): number => glyphId,
     };
   }
 }

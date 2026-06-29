@@ -34,11 +34,11 @@ export function createEditorStyleController(deps: UseEditorStyleProps) {
     EditorTextStyle | undefined
   >(undefined);
 
-  const clearPendingCaretTextStyle = () => {
+  const clearPendingCaretTextStyle = (): void => {
     setPendingCaretTextStyle(undefined);
   };
 
-  createEffect(() => {
+  createEffect((): void => {
     if (!isSelectionCollapsed(deps.state().selection)) {
       clearPendingCaretTextStyle();
     }
@@ -47,8 +47,8 @@ export function createEditorStyleController(deps: UseEditorStyleProps) {
   const updatePendingCaretTextStyleValue = <K extends ValueStyleKey>(
     key: K,
     value: EditorTextStyle[K] | null,
-  ) => {
-    setPendingCaretTextStyle((current) => {
+  ): void => {
+    setPendingCaretTextStyle((current): EditorTextStyle | undefined => {
       const next = { ...(current ?? {}) } as Record<string, unknown>;
       if (value === null || value === undefined || value === "") {
         delete next[key];
@@ -64,8 +64,8 @@ export function createEditorStyleController(deps: UseEditorStyleProps) {
   const updatePendingCaretBooleanStyle = (
     key: BooleanStyleKey,
     enabled: boolean,
-  ) => {
-    setPendingCaretTextStyle((current) => {
+  ): void => {
+    setPendingCaretTextStyle((current): EditorTextStyle => {
       const next = { ...(current ?? {}) } as Record<string, unknown>;
       next[key] = enabled;
       if (key === "superscript" && enabled) {
@@ -116,7 +116,7 @@ export function createEditorStyleController(deps: UseEditorStyleProps) {
   const applyToolbarValueStyleCommand = <K extends ValueStyleKey>(
     key: K,
     value: EditorTextStyle[K] | null,
-  ) => {
+  ): void => {
     if (isSelectionCollapsed(deps.state().selection)) {
       deps.logger.info(`setPendingStyle:${key}=${JSON.stringify(value)}`);
       deps.clearPreferredColumn();
@@ -129,7 +129,7 @@ export function createEditorStyleController(deps: UseEditorStyleProps) {
     deps.commandsController().applyValueStyleCommand(key, value);
   };
 
-  const applyToolbarBooleanStyleCommand = (key: BooleanStyleKey) => {
+  const applyToolbarBooleanStyleCommand = (key: BooleanStyleKey): void => {
     if (isSelectionCollapsed(deps.state().selection)) {
       const nextValue = !toolbarStyleState()[key];
       deps.logger.info(`setPendingStyle:${key}=${JSON.stringify(nextValue)}`);

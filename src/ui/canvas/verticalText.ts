@@ -251,7 +251,7 @@ export function layoutStackedGlyphs(
     : columnRight + columnWidth / 2;
   let y = box.y;
 
-  const newColumn = () => {
+  const newColumn = (): void => {
     if (columnsRtl) {
       columnRight -= columnWidth;
       columnCenter = columnRight - columnWidth / 2;

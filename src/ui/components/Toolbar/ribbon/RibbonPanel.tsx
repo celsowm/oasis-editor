@@ -19,6 +19,7 @@ import {
   type RibbonGroupWidth,
 } from "./ribbonModel.js";
 import { RibbonGroup } from "./RibbonGroup.js";
+import type { RibbonGroupModel, ResolvedRibbonGroupModel } from "@/ui/components/Toolbar/ribbon/ribbonModel.js";
 
 export interface RibbonPanelProps {
   activeTab: Accessor<RibbonTabId>;
@@ -33,10 +34,10 @@ export function RibbonPanel(props: RibbonPanelProps): JSX.Element {
   >({});
   let panelRef: HTMLDivElement | undefined;
 
-  const groups = createMemo(() =>
+  const groups = createMemo((): RibbonGroupModel[] =>
     buildRibbonGroups(props.items(), props.activeTab(), props.api.t),
   );
-  const resolvedGroups = createMemo(() =>
+  const resolvedGroups = createMemo((): ResolvedRibbonGroupModel[] =>
     resolveResponsiveRibbonGroups(groups(), availableWidth(), measurements()),
   );
 
@@ -64,18 +65,18 @@ export function RibbonPanel(props: RibbonPanelProps): JSX.Element {
     setAvailableWidth(Math.floor(panelBox.width));
   };
 
-  onMount(() => {
+  onMount((): void => {
     const panel = panelRef;
     if (!panel) return;
-    const observer = new ResizeObserver(() => {
+    const observer = new ResizeObserver((): void => {
       requestAnimationFrame(measureGroups);
     });
     observer.observe(panel);
     requestAnimationFrame(measureGroups);
-    onCleanup(() => observer.disconnect());
+    onCleanup((): void => observer.disconnect());
   });
 
-  createEffect(() => {
+  createEffect((): void => {
     props.activeTab();
     props.items();
     requestAnimationFrame(measureGroups);
@@ -91,7 +92,7 @@ export function RibbonPanel(props: RibbonPanelProps): JSX.Element {
       data-testid="editor-ribbon-panel"
     >
       <For each={resolvedGroups()}>
-        {(group) => <RibbonGroup group={group} api={props.api} />}
+        {(group): JSX.Element => <RibbonGroup group={group} api={props.api} />}
       </For>
     </div>
   );

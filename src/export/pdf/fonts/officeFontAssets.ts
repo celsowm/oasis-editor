@@ -108,7 +108,7 @@ export function resolveMetricCompatibleFamily(
 ): string {
   const normalized = normalizeFamily(fontFamily).toLowerCase();
   for (const definition of OFFICE_COMPAT_FONT_FAMILIES) {
-    const names = [definition.family, ...definition.aliases].map((name) =>
+    const names = [definition.family, ...definition.aliases].map((name): string =>
       name.toLowerCase(),
     );
     if (names.includes(normalized)) {

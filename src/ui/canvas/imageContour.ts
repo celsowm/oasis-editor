@@ -25,7 +25,7 @@ const MAX_POINTS = 40;
 const contourCache = new Map<string, EditorWrapPolygonPoint[]>();
 
 function rectangle(): EditorWrapPolygonPoint[] {
-  return RECTANGLE.map((point) => ({ ...point }));
+  return RECTANGLE.map((point): { x: number; y: number; } => ({ ...point }));
 }
 
 // 8-connected neighbor offsets in clockwise order (N, NE, E, SE, S, SW, W, NW).
@@ -237,7 +237,7 @@ export function traceAlphaMaskContour(
     return rectangle();
   }
 
-  return simplified.map(([x, y]) => ({
+  return simplified.map(([x, y]): { x: number; y: number; } => ({
     x: Math.min(1, Math.max(0, x / width)),
     y: Math.min(1, Math.max(0, y / height)),
   }));
@@ -250,7 +250,7 @@ export function traceImageAlphaContour(
   const cacheKey = img.src;
   const cached = contourCache.get(cacheKey);
   if (cached) {
-    return cached.map((point) => ({ ...point }));
+    return cached.map((point): { x: number; y: number; } => ({ ...point }));
   }
 
   const built = buildAlphaMask(img);
@@ -260,5 +260,5 @@ export function traceImageAlphaContour(
 
   const polygon = traceAlphaMaskContour(built.mask, built.width, built.height);
   contourCache.set(cacheKey, polygon);
-  return polygon.map((point) => ({ ...point }));
+  return polygon.map((point): { x: number; y: number; } => ({ ...point }));
 }

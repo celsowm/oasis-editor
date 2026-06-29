@@ -79,7 +79,7 @@ export function createResizeSession(
     paragraphId: string,
     paragraphOffset: number,
   ): EditorState["selection"] | null => {
-    const paragraph = getParagraphs(state).find((p) => p.id === paragraphId);
+    const paragraph = getParagraphs(state).find((p): boolean => p.id === paragraphId);
     if (!paragraph) {
       return null;
     }
@@ -100,7 +100,7 @@ export function createResizeSession(
     },
   });
 
-  const handleMouseMove = (event: MouseEvent) => {
+  const handleMouseMove = (event: MouseEvent): void => {
     const resize = active;
     if (!resize) {
       return;
@@ -138,7 +138,7 @@ export function createResizeSession(
     );
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (): void => {
     const resize = active;
     if (resize) {
       deps.updateHistoryState((current) => ({
@@ -152,7 +152,7 @@ export function createResizeSession(
     deps.focusInput();
   };
 
-  const stop = () => {
+  const stop = (): void => {
     active = null;
     window.removeEventListener("mousemove", handleMouseMove);
     window.removeEventListener("mouseup", handleMouseUp);
@@ -164,7 +164,7 @@ export function createResizeSession(
     handleDirection: ResizeHandleDirection,
     event: MouseEvent,
     initialState: EditorState,
-  ) => {
+  ): void => {
     const selection = selectionForObject(
       initialState,
       paragraphId,

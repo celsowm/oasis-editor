@@ -44,8 +44,8 @@ export function serializeRun(
     paragraphStyleId,
     styles,
   );
-  const runProps = () => serializeRunProperties(materializedRunStyle);
-  const asText = () => `<w:r>${runProps()}${serializeRunText(run.text)}</w:r>`;
+  const runProps = (): string => serializeRunProperties(materializedRunStyle);
+  const asText = (): string => `<w:r>${runProps()}${serializeRunText(run.text)}</w:r>`;
 
   // Dispatch by run kind, exhaustively: adding a `RunKind` variant forces a
   // branch here (compile error otherwise), so DOCX export can never silently
@@ -53,15 +53,15 @@ export function serializeRun(
   // null) — e.g. an image with no relationship — in which case the run falls
   // back to plain text, preserving the previous behaviour.
   return visitRun(run, {
-    footnoteReference: (r) =>
+    footnoteReference: (r): string =>
       serializeFootnoteReference(r, materializedRunStyle, context) ?? asText(),
-    endnoteReference: (r) =>
+    endnoteReference: (r): string =>
       serializeEndnoteReference(r, materializedRunStyle, context) ?? asText(),
-    fieldChar: (r) => serializeFieldCharRun(r.fieldChar!, runProps()),
-    fieldInstruction: (r) =>
+    fieldChar: (r): string => serializeFieldCharRun(r.fieldChar!, runProps()),
+    fieldInstruction: (r): string =>
       serializeInstrTextRun(r.fieldInstruction!, runProps()),
-    field: (r) => serializeFieldRun(r.field!.type, runProps()),
-    textBox: (r) =>
+    field: (r): string => serializeFieldRun(r.field!.type, runProps()),
+    textBox: (r): string =>
       serializeTextBoxRun(
         r,
         r.textBox!,
@@ -70,7 +70,7 @@ export function serializeRun(
         runProps(),
         serializeBlocksXml,
       ),
-    image: (r) => {
+    image: (r): string => {
       const rId = context.imageMap.get(r.id);
       if (rId) {
         const result = serializeImageRun(r.id, rId, context, runProps());
@@ -80,9 +80,9 @@ export function serializeRun(
       }
       return asText();
     },
-    sym: (r) =>
+    sym: (r): string =>
       `<w:r>${runProps()}<w:sym w:font="${escapeXml(r.sym!.font)}" w:char="${r.sym!.char}"/></w:r>`,
-    text: () => asText(),
+    text: (): string => asText(),
   });
 }
 

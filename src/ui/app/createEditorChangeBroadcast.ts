@@ -19,8 +19,8 @@ export interface EditorChangeBroadcastDeps {
  * events. Must be called synchronously within the component owner so the effect
  * is tracked. Extracted from `OasisEditorApp` (S1).
  */
-export function createEditorChangeBroadcast(deps: EditorChangeBroadcastDeps) {
-  createEffect(() => {
+export function createEditorChangeBroadcast(deps: EditorChangeBroadcastDeps): void {
+  createEffect((): void => {
     deps.state.document;
     deps.state.selection;
     deps.state.activeSectionIndex;

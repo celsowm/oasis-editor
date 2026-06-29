@@ -24,22 +24,22 @@ export interface MenuItem {
 export class MenuRegistry {
   private items: MenuItem[] = [];
 
-  register(item: MenuItem) {
-    const existingIndex = this.items.findIndex((entry) => entry.id === item.id);
+  register(item: MenuItem): void {
+    const existingIndex = this.items.findIndex((entry): boolean => entry.id === item.id);
     if (existingIndex >= 0) {
       this.items[existingIndex] = item;
     } else {
       this.items.push(item);
     }
     this.items.sort(
-      (a, b) =>
+      (a, b): number =>
         (a.order ?? Number.MAX_SAFE_INTEGER) -
         (b.order ?? Number.MAX_SAFE_INTEGER),
     );
   }
 
-  unregister(id: string) {
-    this.items = this.items.filter((i) => i.id !== id);
+  unregister(id: string): void {
+    this.items = this.items.filter((i): boolean => i.id !== id);
   }
 
   getItems(): MenuItem[] {

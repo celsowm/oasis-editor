@@ -85,7 +85,7 @@ export function buildCommentExportPlan(
   };
 
   const comments: AssignedComment[] = [];
-  registry.order.forEach((id, index) => {
+  registry.order.forEach((id, index): void => {
     const comment = registry.items[id];
     if (!comment) return;
     const wId = assignedId.get(id)!;
@@ -143,7 +143,7 @@ const COMMENTS_XMLNS = `xmlns:w="${WORD_NS}" xmlns:w14="${WORD14_NS}" xmlns:w15=
 function serializeCommentBody(text: string): string {
   const lines = text.split("\n");
   const runs = lines
-    .map((line, i) => {
+    .map((line, i): string => {
       const brk = i > 0 ? "<w:br/>" : "";
       return `${brk}<w:t xml:space="preserve">${escapeXml(line)}</w:t>`;
     })
@@ -154,7 +154,7 @@ function serializeCommentBody(text: string): string {
 /** Build `word/comments.xml` from the assigned comments. */
 export function buildCommentsPartXml(plan: CommentExportPlan): string {
   const body = plan.comments
-    .map(({ comment, wId, paraId }) => {
+    .map(({ comment, wId, paraId }): string => {
       const dateAttr =
         comment.date !== undefined
           ? ` w:date="${new Date(comment.date).toISOString().replace(/\.\d{3}Z$/, "Z")}"`
@@ -180,7 +180,7 @@ export function buildCommentsPartXml(plan: CommentExportPlan): string {
 export function buildCommentsExtendedPartXml(plan: CommentExportPlan): string {
   const body = plan.comments
     .map(
-      ({ comment, paraId }) =>
+      ({ comment, paraId }): string =>
         `<w15:commentEx w15:paraId="${paraId}" w15:done="${comment.resolved ? "1" : "0"}"/>`,
     )
     .join("");

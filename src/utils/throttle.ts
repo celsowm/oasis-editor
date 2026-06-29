@@ -6,9 +6,9 @@ export function debounce<T extends (...args: never[]) => void>(
   delay: number,
 ): (...args: Parameters<T>) => void {
   let timer: ReturnType<typeof setTimeout> | null = null;
-  return (...args: Parameters<T>) => {
+  return (...args: Parameters<T>): void => {
     if (timer !== null) clearTimeout(timer);
-    timer = setTimeout(() => {
+    timer = setTimeout((): void => {
       timer = null;
       fn(...args);
     }, delay);

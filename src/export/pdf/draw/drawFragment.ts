@@ -4,8 +4,7 @@ import type {
   EditorLayoutLine,
   EditorParagraphNode,
   EditorTextStyle,
-  EditorPageSettings,
-} from "@/core/model.js";
+  EditorPageSettings, EditorCaretSlot } from "@/core/model.js";
 import {
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
@@ -71,7 +70,7 @@ export async function drawFloatingImagesForParagraph(options: {
   layer: "behind" | "front";
 }): Promise<void> {
   for (const line of options.lines) {
-    const slots = new Map(line.slots.map((slot) => [slot.offset, slot]));
+    const slots = new Map(line.slots.map((slot): [number, EditorCaretSlot] => [slot.offset, slot]));
     for (const fragment of line.fragments) {
       const image = fragment.image;
       if (!image?.floating) continue;
@@ -214,7 +213,7 @@ function emitFragmentGlyphs(
       : groupSlotChunksByOffsetGaps(chars);
   for (const chunk of chunks) {
     const chunkText = chunk
-      .map((c) => (styles.allCaps ? c.char.toUpperCase() : c.char))
+      .map((c): string => (styles.allCaps ? c.char.toUpperCase() : c.char))
       .join("");
     if (chunkText.length === 0) continue;
     emitTextChunk(chunkCtx, originX + chunk[0]!.left, chunkText);
@@ -222,7 +221,7 @@ function emitFragmentGlyphs(
   // Trailing hyphen on last fragment of an auto-hyphenated line.
   if (line.trailingHyphen && fragment.endOffset >= line.endOffset) {
     const endSlot =
-      line.slots.find((slot) => slot.offset === line.endOffset) ??
+      line.slots.find((slot): boolean => slot.offset === line.endOffset) ??
       line.slots[line.slots.length - 1];
     if (endSlot) emitTextChunk(chunkCtx, originX + endSlot.left, "-");
   }
@@ -243,8 +242,8 @@ export async function drawFragmentText(
   if (fragment.image) {
     if (fragment.image.floating) return;
     const slot =
-      line.slots.find((c) => c.offset === fragment.startOffset) ??
-      line.slots.find((c) => c.offset >= fragment.startOffset);
+      line.slots.find((c): boolean => c.offset === fragment.startOffset) ??
+      line.slots.find((c): boolean => c.offset >= fragment.startOffset);
     if (!slot) return;
     const resourceName = await registerPdfImageRun(
       writer,
@@ -266,8 +265,8 @@ export async function drawFragmentText(
   if (fragment.textBox) {
     if (fragment.textBox.floating) return;
     const slot =
-      line.slots.find((c) => c.offset === fragment.startOffset) ??
-      line.slots.find((c) => c.offset >= fragment.startOffset);
+      line.slots.find((c): boolean => c.offset === fragment.startOffset) ??
+      line.slots.find((c): boolean => c.offset >= fragment.startOffset);
     if (!slot) return;
     await paintTextBox(
       writer,
@@ -302,7 +301,7 @@ export async function drawFragmentText(
     originY + line.top + line.height * TEXT_BASELINE_RATIO - baselineShiftPx;
   const chars = resolveFragmentSlots(line, fragment);
   const text = chars
-    .map((char) => (styles.allCaps ? char.char.toUpperCase() : char.char))
+    .map((char): string => (styles.allCaps ? char.char.toUpperCase() : char.char))
     .join("");
   const firstChar = chars[0];
   if (!firstChar || text.length === 0) return;

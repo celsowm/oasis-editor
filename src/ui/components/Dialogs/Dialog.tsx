@@ -24,32 +24,32 @@ export interface DialogProps {
   closeOnOverlayClick?: boolean;
 }
 
-export function Dialog(props: DialogProps) {
+export function Dialog(props: DialogProps): JSX.Element {
   const t = useI18n();
   let dialogRef: HTMLDivElement | undefined;
   const fallbackTitleId = createUniqueId();
-  const titleId = createMemo(() => props.titleId ?? fallbackTitleId);
-  const size = createMemo(() => props.size ?? "md");
-  const dialogClass = createMemo(() =>
+  const titleId = createMemo((): string => props.titleId ?? fallbackTitleId);
+  const size = createMemo((): "sm" | "md" | "lg" | "font" => props.size ?? "md");
+  const dialogClass = createMemo((): string =>
     ["oasis-editor-dialog", `oasis-editor-dialog-${size()}`, props.class]
       .filter(Boolean)
       .join(" "),
   );
-  const bodyClass = createMemo(() =>
+  const bodyClass = createMemo((): string =>
     ["oasis-editor-dialog-body", props.bodyClass].filter(Boolean).join(" "),
   );
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent): void => {
     if (e.key === "Escape" && props.isOpen) {
       props.onClose();
     }
   };
 
-  onMount(() => {
+  onMount((): void => {
     window.addEventListener("keydown", handleKeyDown);
   });
 
-  onCleanup(() => {
+  onCleanup((): void => {
     window.removeEventListener("keydown", handleKeyDown);
   });
 
@@ -57,7 +57,7 @@ export function Dialog(props: DialogProps) {
     <Show when={props.isOpen}>
       <div
         class="oasis-editor-dialog-overlay"
-        onClick={() => {
+        onClick={(): void => {
           if (props.closeOnOverlayClick ?? true) {
             props.onClose();
           }
@@ -66,7 +66,7 @@ export function Dialog(props: DialogProps) {
         <div
           ref={dialogRef}
           class={dialogClass()}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e): void => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
           aria-label={props.ariaLabel}

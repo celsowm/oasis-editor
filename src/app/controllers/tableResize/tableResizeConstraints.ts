@@ -11,6 +11,7 @@ import {
   parseSizeToPt,
 } from "./tableResizeUnits.js";
 import type { TableGeometry } from "./tableResizeTypes.js";
+import type { SnapshotCellRect } from "@/app/controllers/tableResize/tableResizeTypes.js";
 
 const CONTENT_MIN_WIDTH_GUARD_PX = 12;
 const CONTENT_MIN_HEIGHT_GUARD_PX = 4;
@@ -52,7 +53,7 @@ export function resolveRowHeightsPx(
 
   const geometryByKey = new Map(
     geometry.cells.map(
-      (cell) => [`${cell.rowIndex}:${cell.cellIndex}`, cell] as const,
+      (cell): readonly [`${number}:${number}`, SnapshotCellRect] => [`${cell.rowIndex}:${cell.cellIndex}`, cell] as const,
     ),
   );
 
@@ -64,7 +65,7 @@ export function resolveRowHeightsPx(
     }
 
     const singleSpan = tableLayout.find(
-      (entry) => entry.rowIndex === rowIndex && entry.rowSpan === 1,
+      (entry): boolean => entry.rowIndex === rowIndex && entry.rowSpan === 1,
     );
     if (singleSpan) {
       const geometryCell = geometryByKey.get(
@@ -87,7 +88,7 @@ export function resolveColumnWidthsPt(
   const visualColumnCount = Math.max(
     1,
     ...tableLayout.map(
-      (entry) => entry.visualColumnIndex + Math.max(1, entry.colSpan),
+      (entry): number => entry.visualColumnIndex + Math.max(1, entry.colSpan),
     ),
   );
   const maxColumnIndex = visualColumnCount - 1;
@@ -97,7 +98,7 @@ export function resolveColumnWidthsPt(
   );
   const geometryByKey = new Map(
     geometry.cells.map(
-      (cell) => [`${cell.rowIndex}:${cell.cellIndex}`, cell] as const,
+      (cell): readonly [`${number}:${number}`, SnapshotCellRect] => [`${cell.rowIndex}:${cell.cellIndex}`, cell] as const,
     ),
   );
 
@@ -147,14 +148,14 @@ export function resolveMinRowHeightPx(
     const cell = row.cells[cellIndex];
     if (!cell) continue;
     const layoutEntry = tableLayout.find(
-      (entry) =>
+      (entry): boolean =>
         entry.rowIndex === targetRowIndex && entry.cellIndex === cellIndex,
     );
     if (!layoutEntry || layoutEntry.rowSpan !== 1) {
       continue;
     }
     const geometryCell = geometry.cells.find(
-      (candidate) =>
+      (candidate): boolean =>
         candidate.rowIndex === targetRowIndex &&
         candidate.cellIndex === cellIndex,
     );
@@ -177,7 +178,7 @@ export function resolveMinColumnWidthsPx(
   const result: Record<number, number> = {};
   const geometryByKey = new Map(
     geometry.cells.map(
-      (cell) => [`${cell.rowIndex}:${cell.cellIndex}`, cell] as const,
+      (cell): readonly [`${number}:${number}`, SnapshotCellRect] => [`${cell.rowIndex}:${cell.cellIndex}`, cell] as const,
     ),
   );
   for (const entry of tableLayout) {
@@ -190,7 +191,7 @@ export function resolveMinColumnWidthsPx(
     if (!cell) continue;
     const visualCol = entry.visualColumnIndex;
     const currentMin = result[visualCol] ?? minFloor;
-    const minContentWidth = cell.blocks.reduce((largest, paragraph) => {
+    const minContentWidth = cell.blocks.reduce((largest, paragraph): number => {
       return Math.max(
         largest,
         measureParagraphMinContentWidthPx(paragraph, state.document.styles),
