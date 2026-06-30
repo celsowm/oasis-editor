@@ -7,7 +7,11 @@ import {
 import { PluginCollection } from "./plugins/PluginCollection.js";
 import { CommandRegistry } from "./commands/CommandRegistry.js";
 import { PluginUiRegistry } from "./plugins/PluginUiRegistry.js";
-import type { OasisEditor, OasisPlugin } from "./plugin.js";
+import type {
+  OasisCommandContext,
+  OasisEditor,
+  OasisPlugin,
+} from "./plugin.js";
 import type { EditorSelection } from "@/core/model.js";
 
 /**
@@ -112,14 +116,7 @@ export class Editor implements OasisEditor {
     }
   }
 
-  private createCommandContext(): {
-    editor: this;
-    commands: CommandRegistry;
-    ui: PluginUiRegistry;
-    getState: () => EditorState;
-    getDocument: () => EditorDocument;
-    getSelection: () => EditorSelection;
-  } {
+  private createCommandContext(): OasisCommandContext {
     return {
       editor: this,
       commands: this.commands,
