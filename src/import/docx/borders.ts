@@ -53,6 +53,10 @@ export interface EditorBoxBorders {
   borderEnd?: EditorBorderStyle;
   borderTopLeftToBottomRight?: EditorBorderStyle;
   borderTopRightToBottomLeft?: EditorBorderStyle;
+  /** `w:pBdr/w:between`: border between adjacent matching paragraphs. */
+  borderBetween?: EditorBorderStyle;
+  /** `w:pBdr/w:bar`: vertical bar border at the paragraph's leading edge. */
+  borderBar?: EditorBorderStyle;
 }
 
 export interface EditorTableBorders extends EditorBoxBorders {
@@ -95,6 +99,12 @@ export function parseDocxBoxBorders(
     ),
     borderTopRightToBottomLeft: parseDocxBorder(
       getFirstChildByTagNameNS(container, WORD_NS, "tr2bl"),
+    ),
+    borderBetween: parseDocxBorder(
+      getFirstChildByTagNameNS(container, WORD_NS, "between"),
+    ),
+    borderBar: parseDocxBorder(
+      getFirstChildByTagNameNS(container, WORD_NS, "bar"),
     ),
   };
 }

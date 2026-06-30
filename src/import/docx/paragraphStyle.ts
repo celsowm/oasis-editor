@@ -1,4 +1,4 @@
-import { type Element as XmlElement } from "@xmldom/xmldom";
+import { type Element as XmlElement, XMLSerializer } from "@xmldom/xmldom";
 import type { EditorParagraphStyle, EditorTabStop } from "@/core/model.js";
 import { DEFAULT_EDITOR_STYLES } from "@/core/editorState.js";
 import { resolveEffectiveParagraphStyle } from "@/core/model.js";
@@ -19,6 +19,7 @@ import {
   DOCX_IMPLICIT_SINGLE_LINE_HEIGHT,
 } from "./units.js";
 import { parseDocxBoxBorders } from "./borders.js";
+import { parseTableConditionalFlags } from "./tableProperties.js";
 import {
   stripUndefined,
   emptyOrUndefined,
@@ -123,6 +124,57 @@ export function normalizeImportedParagraphStyle(
     tabs: style.tabs ?? undefined,
     textDirection: style.textDirection ?? undefined,
     outlineLevel: style.outlineLevel ?? undefined,
+    suppressLineNumbers:
+      style.suppressLineNumbers !== undefined ||
+      effective.suppressLineNumbers !== defaultEffective.suppressLineNumbers
+        ? effective.suppressLineNumbers
+        : undefined,
+    bidi:
+      style.bidi !== undefined || effective.bidi !== defaultEffective.bidi
+        ? effective.bidi
+        : undefined,
+    kinsoku:
+      style.kinsoku !== undefined ||
+      effective.kinsoku !== defaultEffective.kinsoku
+        ? effective.kinsoku
+        : undefined,
+    wordWrap:
+      style.wordWrap !== undefined ||
+      effective.wordWrap !== defaultEffective.wordWrap
+        ? effective.wordWrap
+        : undefined,
+    overflowPunct:
+      style.overflowPunct !== undefined ||
+      effective.overflowPunct !== defaultEffective.overflowPunct
+        ? effective.overflowPunct
+        : undefined,
+    topLinePunct:
+      style.topLinePunct !== undefined ||
+      effective.topLinePunct !== defaultEffective.topLinePunct
+        ? effective.topLinePunct
+        : undefined,
+    autoSpaceDE:
+      style.autoSpaceDE !== undefined ||
+      effective.autoSpaceDE !== defaultEffective.autoSpaceDE
+        ? effective.autoSpaceDE
+        : undefined,
+    autoSpaceDN:
+      style.autoSpaceDN !== undefined ||
+      effective.autoSpaceDN !== defaultEffective.autoSpaceDN
+        ? effective.autoSpaceDN
+        : undefined,
+    adjustRightInd:
+      style.adjustRightInd !== undefined ||
+      effective.adjustRightInd !== defaultEffective.adjustRightInd
+        ? effective.adjustRightInd
+        : undefined,
+    textAlignment: style.textAlignment ?? undefined,
+    textboxTightWrap: style.textboxTightWrap ?? undefined,
+    divId: style.divId ?? undefined,
+    conditionalStyle: style.conditionalStyle ?? undefined,
+    borderBetween: style.borderBetween ?? undefined,
+    borderBar: style.borderBar ?? undefined,
+    framePrXml: style.framePrXml ?? undefined,
   });
 
   return normalized;
@@ -361,12 +413,20 @@ export function parseParagraphStyle(
     "pBdr",
   );
   if (paragraphBorders) {
-    const { borderTop, borderRight, borderBottom, borderLeft } =
-      parseDocxBoxBorders(paragraphBorders);
+    const {
+      borderTop,
+      borderRight,
+      borderBottom,
+      borderLeft,
+      borderBetween,
+      borderBar,
+    } = parseDocxBoxBorders(paragraphBorders);
     if (borderTop) style.borderTop = borderTop;
     if (borderRight) style.borderRight = borderRight;
     if (borderBottom) style.borderBottom = borderBottom;
     if (borderLeft) style.borderLeft = borderLeft;
+    if (borderBetween) style.borderBetween = borderBetween;
+    if (borderBar) style.borderBar = borderBar;
   }
 
   const shading = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "shd");
@@ -395,6 +455,121 @@ export function parseParagraphStyle(
     const level = Number(outlineLvlVal);
     if (Number.isFinite(level) && level >= 0 && level <= 8) {
       style.outlineLevel = level;
+    }
+  }
+
+  // ---- Paragraph decorations (CJK typography, RTL, legacy/positional) ----
+  // These are round-trip-only flags; parseOnOffProperty honors explicit
+  // `w:val="0"`. Default-on flags (kinsoku/wordWrap/overflowPunct/autoSpace*/
+  // adjustRightInd) are still captured so an explicit "off" round-trips.
+  const suppressLineNumbers = parseOnOffProperty(
+    paragraphProperties,
+    "suppressLineNumbers",
+  );
+  if (suppressLineNumbers !== undefined) {
+    style.suppressLineNumbers = suppressLineNumbers;
+  }
+  const bidi = parseOnOffProperty(paragraphProperties, "bidi");
+  if (bidi !== undefined) {
+    style.bidi = bidi;
+  }
+  const kinsoku = parseOnOffProperty(paragraphProperties, "kinsoku");
+  if (kinsoku !== undefined) {
+    style.kinsoku = kinsoku;
+  }
+  const wordWrap = parseOnOffProperty(paragraphProperties, "wordWrap");
+  if (wordWrap !== undefined) {
+    style.wordWrap = wordWrap;
+  }
+  const overflowPunct = parseOnOffProperty(
+    paragraphProperties,
+    "overflowPunct",
+  );
+  if (overflowPunct !== undefined) {
+    style.overflowPunct = overflowPunct;
+  }
+  const topLinePunct = parseOnOffProperty(paragraphProperties, "topLinePunct");
+  if (topLinePunct !== undefined) {
+    style.topLinePunct = topLinePunct;
+  }
+  const autoSpaceDE = parseOnOffProperty(paragraphProperties, "autoSpaceDE");
+  if (autoSpaceDE !== undefined) {
+    style.autoSpaceDE = autoSpaceDE;
+  }
+  const autoSpaceDN = parseOnOffProperty(paragraphProperties, "autoSpaceDN");
+  if (autoSpaceDN !== undefined) {
+    style.autoSpaceDN = autoSpaceDN;
+  }
+  const adjustRightInd = parseOnOffProperty(
+    paragraphProperties,
+    "adjustRightInd",
+  );
+  if (adjustRightInd !== undefined) {
+    style.adjustRightInd = adjustRightInd;
+  }
+
+  const textAlignmentEl = getFirstChildByTagNameNS(
+    paragraphProperties,
+    WORD_NS,
+    "textAlignment",
+  );
+  const textAlignmentVal = getAttributeValue(textAlignmentEl, "val");
+  if (
+    textAlignmentVal === "auto" ||
+    textAlignmentVal === "top" ||
+    textAlignmentVal === "center" ||
+    textAlignmentVal === "baseline" ||
+    textAlignmentVal === "bottom"
+  ) {
+    style.textAlignment = textAlignmentVal;
+  }
+
+  const textboxTightWrapEl = getFirstChildByTagNameNS(
+    paragraphProperties,
+    WORD_NS,
+    "textboxTightWrap",
+  );
+  const textboxTightWrapVal = getAttributeValue(textboxTightWrapEl, "val");
+  if (
+    textboxTightWrapVal === "none" ||
+    textboxTightWrapVal === "allLines" ||
+    textboxTightWrapVal === "firstLineOnly" ||
+    textboxTightWrapVal === "firstLastLine"
+  ) {
+    style.textboxTightWrap = textboxTightWrapVal;
+  }
+
+  const divIdEl = getFirstChildByTagNameNS(
+    paragraphProperties,
+    WORD_NS,
+    "divId",
+  );
+  const divIdVal = getAttributeValue(divIdEl, "val");
+  if (divIdVal !== null) {
+    const divId = Number(divIdVal);
+    if (Number.isFinite(divId) && divId >= 0) {
+      style.divId = Math.floor(divId);
+    }
+  }
+
+  const conditionalStyle = parseTableConditionalFlags(paragraphProperties);
+  if (conditionalStyle) {
+    style.conditionalStyle = conditionalStyle;
+  }
+
+  // A non-drop-cap `w:framePr` (a positioned text frame) is not rendered; the
+  // verbatim XML is preserved so it round-trips losslessly. Drop-cap frames are
+  // owned by `parseDropCapFrame` (which discards the whole paragraph), so they
+  // must not be captured here — only frames without an active `dropCap`.
+  const framePrEl = getFirstChildByTagNameNS(
+    paragraphProperties,
+    WORD_NS,
+    "framePr",
+  );
+  if (framePrEl) {
+    const frameDropCap = getAttributeValue(framePrEl, "dropCap");
+    if (!frameDropCap || frameDropCap === "none") {
+      style.framePrXml = new XMLSerializer().serializeToString(framePrEl);
     }
   }
 

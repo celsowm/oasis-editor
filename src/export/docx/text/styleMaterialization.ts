@@ -39,6 +39,22 @@ export function materializeParagraphStyle(
     tabs: effective.tabs,
     textDirection: effective.textDirection,
     outlineLevel: effective.outlineLevel,
+    suppressLineNumbers: effective.suppressLineNumbers,
+    bidi: effective.bidi,
+    kinsoku: effective.kinsoku,
+    wordWrap: effective.wordWrap,
+    overflowPunct: effective.overflowPunct,
+    topLinePunct: effective.topLinePunct,
+    autoSpaceDE: effective.autoSpaceDE,
+    autoSpaceDN: effective.autoSpaceDN,
+    adjustRightInd: effective.adjustRightInd,
+    textAlignment: effective.textAlignment,
+    textboxTightWrap: effective.textboxTightWrap,
+    divId: effective.divId,
+    conditionalStyle: effective.conditionalStyle,
+    borderBetween: effective.borderBetween,
+    borderBar: effective.borderBar,
+    framePrXml: effective.framePrXml,
   };
 }
 

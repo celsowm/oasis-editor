@@ -10,7 +10,11 @@
  * differently under strict mode, so we widen the cast at the object
  * level. The runtime values are byte-identical to the original.
  */
-import type { EditorTextStyle, EditorParagraphStyle } from "./types/styles.js";
+import type {
+  EditorTextStyle,
+  EditorParagraphStyle,
+  EditorTableConditionalFlags,
+} from "./types/styles.js";
 import type {
   EditorUnderlineStyle,
   EditorLigatures,
@@ -118,6 +122,33 @@ export const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> =
       | "tbRlV"
       | null,
     outlineLevel: null as unknown as number | null,
+    suppressLineNumbers: false,
+    bidi: false,
+    kinsoku: true,
+    wordWrap: true,
+    overflowPunct: true,
+    topLinePunct: false,
+    autoSpaceDE: true,
+    autoSpaceDN: true,
+    adjustRightInd: true,
+    textAlignment: null as unknown as
+      | "auto"
+      | "top"
+      | "center"
+      | "baseline"
+      | "bottom"
+      | null,
+    textboxTightWrap: null as unknown as
+      | "none"
+      | "allLines"
+      | "firstLineOnly"
+      | "firstLastLine"
+      | null,
+    divId: null as unknown as number | null,
+    conditionalStyle: null as unknown as EditorTableConditionalFlags | null,
+    borderBetween: null as unknown as EditorBorderStyle | null,
+    borderBar: null as unknown as EditorBorderStyle | null,
+    framePrXml: null as unknown as string | null,
   });
 
 export const EFFECTIVE_PARAGRAPH_STYLE_DEFAULTS: Required<EditorParagraphStyle> =

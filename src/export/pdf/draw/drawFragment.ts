@@ -12,7 +12,10 @@ import {
   resolveEffectiveTextStyleForParagraph,
 } from "@/core/model.js";
 import { resolveOpenTypeFeatureTags } from "@/core/textStyleMappings.js";
-import { TEXT_BASELINE_RATIO } from "@/core/layoutConstants.js";
+import {
+  TEXT_BASELINE_RATIO,
+  resolveTextAlignmentBaselineOffset,
+} from "@/core/layoutConstants.js";
 import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
 import { paintTextBox } from "./drawTextBoxShape.js";
 import type { BlockDrawers } from "./blockDrawers.js";
@@ -301,8 +304,21 @@ export async function drawFragmentText(
     ? textStyleToFontSizePt(styles) * 0.8
     : textStyleToFontSizePt(styles);
   const baselineShiftPx = (styles.baselineShift ?? 0) * PX_PER_POINT;
+  const paragraphStyle = resolveEffectiveParagraphStyle(
+    paragraph.style,
+    document.styles,
+  );
+  const textAlignOffset = resolveTextAlignmentBaselineOffset(
+    paragraphStyle.textAlignment,
+    styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
+    line.height,
+  );
   const baselineY =
-    originY + line.top + line.height * TEXT_BASELINE_RATIO - baselineShiftPx;
+    originY +
+    line.top +
+    line.height * TEXT_BASELINE_RATIO -
+    baselineShiftPx +
+    textAlignOffset;
   const chars = resolveFragmentSlots(line, fragment);
   const text = chars
     .map((char): string =>

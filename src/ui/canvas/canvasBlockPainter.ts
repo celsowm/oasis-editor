@@ -11,6 +11,7 @@ import {
   FOOTNOTE_MARKER_GUTTER_PX,
   PX_PER_POINT,
   getParagraphBorderInsets,
+  paragraphBetweenBorderMatches,
 } from "@/layoutProjection/index.js";
 import {
   drawFloatingImagesForParagraph,
@@ -64,7 +65,8 @@ function drawParagraphDecorations(
     !!paragraphStyle.borderTop ||
     !!paragraphStyle.borderRight ||
     !!paragraphStyle.borderBottom ||
-    !!paragraphStyle.borderLeft;
+    !!paragraphStyle.borderLeft ||
+    !!paragraphStyle.borderBar;
   if (!paragraphStyle.shading && !hasBorder) {
     return;
   }
@@ -98,6 +100,15 @@ function drawParagraphDecorations(
       left: toCanvasEdge(paragraphStyle.borderLeft),
     });
   }
+
+  // `w:bar`: a vertical stroke at the paragraph's leading edge, drawn at the
+  // box's left boundary. Drawn as a zero-width box with only a "left" edge so
+  // the dash/solid/dotted logic is reused.
+  if (paragraphStyle.borderBar) {
+    drawBorderBox(ctx, left, contentTop, 0, boxHeight, {
+      left: toCanvasEdge(paragraphStyle.borderBar),
+    });
+  }
 }
 
 export function renderBlockList(
@@ -112,7 +123,8 @@ export function renderBlockList(
   pageSettings?: EditorPageSettings,
 ): void {
   let cursorY = originY;
-  for (const block of blocks) {
+  for (let blockIndex = 0; blockIndex < blocks.length; blockIndex += 1) {
+    const block = blocks[blockIndex]!;
     if (block.sourceBlock.type === "paragraph" && block.layout) {
       const paragraphStyle = resolveEffectiveParagraphStyle(
         block.sourceBlock.style,
@@ -211,6 +223,41 @@ export function renderBlockList(
           onUpdate,
           layer: "front",
         });
+      }
+
+      // `w:between`: a horizontal border drawn at the bottom of this paragraph
+      // when the next sibling paragraph (same page, different id) also defines a
+      // matching `between` edge. Word suppresses it across page breaks; since
+      // the block list is per-page, a next-block on the next page is simply not
+      // in this array.
+      const nextBlock = blocks[blockIndex + 1];
+      if (
+        nextBlock?.sourceBlock.type === "paragraph" &&
+        nextBlock.layout &&
+        nextBlock.sourceBlock.id !== block.sourceBlock.id
+      ) {
+        const nextStyle = resolveEffectiveParagraphStyle(
+          nextBlock.sourceBlock.style,
+          state.document.styles,
+        );
+        if (paragraphBetweenBorderMatches(paragraphStyle, nextStyle)) {
+          let linesHeight = 0;
+          for (const line of block.layout.lines) {
+            linesHeight = Math.max(linesHeight, line.top + line.height);
+          }
+          const betweenY = textTop + linesHeight;
+          const barLeft = originX + (paragraphStyle.indentLeft ?? 0);
+          const barRight =
+            originX + contentWidth - (paragraphStyle.indentRight ?? 0);
+          drawBorderBox(
+            ctx,
+            barLeft,
+            betweenY,
+            Math.max(0, barRight - barLeft),
+            0,
+            { top: toCanvasEdge(paragraphStyle.borderBetween) },
+          );
+        }
       }
     } else if (block.sourceBlock.type === "table") {
       const floating = block.sourceBlock.style?.floating;

@@ -3,6 +3,7 @@ import type {
   EditorParagraphStyle,
   EditorTabStop,
   EditorNamedStyle,
+  EditorTableConditionalFlags,
 } from "@/core/model.js";
 import {
   escapeXml,
@@ -13,6 +14,7 @@ import {
 } from "@/export/docx/xmlUtils.js";
 import { serializeParagraphBorders } from "@/export/docx/borders.js";
 import { materializeParagraphStyle } from "./styleMaterialization.js";
+import { TABLE_CONDITIONAL_FLAG_ATTRIBUTES } from "@/core/docxTableMaps.js";
 
 function serializeParagraphTabs(
   tabs: EditorTabStop[] | null | undefined,
@@ -38,6 +40,81 @@ function serializeParagraphTabs(
     .filter(Boolean);
 
   return parts.length > 0 ? `<w:tabs>${parts.join("")}</w:tabs>` : "";
+}
+
+/**
+ * Serializes `w:cnfStyle` (conditional style flags) into the 12-bit legacy
+ * bitmask form (`w:val`). Flag order matches `TABLE_CONDITIONAL_FLAG_ATTRIBUTES`,
+ * the same order used by the import parser. Returns "" when no flags are set.
+ */
+function serializeConditionalStyle(
+  flags: EditorTableConditionalFlags | null | undefined,
+): string {
+  if (!flags) {
+    return "";
+  }
+  const bits = TABLE_CONDITIONAL_FLAG_ATTRIBUTES.map(([, key]): string =>
+    flags[key] ? "1" : "0",
+  ).join("");
+  return `<w:cnfStyle w:val="${bits}"/>`;
+}
+
+/**
+ * Serializes the paragraph decoration elements (CJK typography, RTL, legacy and
+ * positional flags, plus non-drop-cap `w:framePr`). These are round-trip-only
+ * properties. Default-on flags emit only an explicit `w:val="0"` (off); the
+ * `w:pBdr` `between`/`bar` edges are emitted by `serializeParagraphBorders`.
+ *
+ * Element order is kept close to the OOXML schema, though (like the rest of
+ * this serializer) not strictly enforced — Word tolerates the relaxed order.
+ */
+function serializeParagraphDecorations(style: EditorParagraphStyle): string[] {
+  const parts: string[] = [];
+  if (style.framePrXml) {
+    parts.push(style.framePrXml);
+  }
+  if (style.suppressLineNumbers) {
+    parts.push("<w:suppressLineNumbers/>");
+  }
+  if (style.bidi) {
+    parts.push("<w:bidi/>");
+  }
+  // Default-on flags: emit only when explicitly turned off.
+  if (style.kinsoku === false) {
+    parts.push('<w:kinsoku w:val="0"/>');
+  }
+  if (style.wordWrap === false) {
+    parts.push('<w:wordWrap w:val="0"/>');
+  }
+  if (style.overflowPunct === false) {
+    parts.push('<w:overflowPunct w:val="0"/>');
+  }
+  if (style.topLinePunct) {
+    parts.push("<w:topLinePunct/>");
+  }
+  if (style.autoSpaceDE === false) {
+    parts.push('<w:autoSpaceDE w:val="0"/>');
+  }
+  if (style.autoSpaceDN === false) {
+    parts.push('<w:autoSpaceDN w:val="0"/>');
+  }
+  if (style.adjustRightInd === false) {
+    parts.push('<w:adjustRightInd w:val="0"/>');
+  }
+  if (style.textAlignment) {
+    parts.push(`<w:textAlignment w:val="${style.textAlignment}"/>`);
+  }
+  if (style.textboxTightWrap) {
+    parts.push(`<w:textboxTightWrap w:val="${style.textboxTightWrap}"/>`);
+  }
+  if (style.divId != null) {
+    parts.push(`<w:divId w:val="${style.divId}"/>`);
+  }
+  const cnfStyle = serializeConditionalStyle(style.conditionalStyle);
+  if (cnfStyle) {
+    parts.push(cnfStyle);
+  }
+  return parts;
 }
 
 /**
@@ -129,6 +206,8 @@ export function serializeParagraphStyleXml(
   if (style.outlineLevel != null) {
     parts.push(`<w:outlineLvl w:val="${style.outlineLevel}"/>`);
   }
+
+  parts.push(...serializeParagraphDecorations(style));
 
   return parts.length > 0 ? `<w:pPr>${parts.join("")}</w:pPr>` : "";
 }
@@ -226,6 +305,8 @@ export function serializeParagraphProperties(
   if (style.outlineLevel != null) {
     parts.push(`<w:outlineLvl w:val="${style.outlineLevel}"/>`);
   }
+
+  parts.push(...serializeParagraphDecorations(style));
 
   const numbering = numberingInfo.get(paragraph.id);
   if (numbering) {

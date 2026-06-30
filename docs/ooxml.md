@@ -151,26 +151,27 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Paragraph | `w:keepLines` | `w:pPr` | `w:val` | Keep lines together. | Avoids splitting paragraph across pages. Explicit `w:val="0"` is honored. | P1 | Supported |
 | Paragraph | `w:pageBreakBefore` | `w:pPr` | `w:val` | Start paragraph on new page. | Core for pagination. Explicit `w:val="0"` is honored. | P1 | Supported |
 | Paragraph | `w:widowControl` | `w:pPr` | `w:val` | Widow/orphan control. | Can change page breaks in Word. | P2 | Supported |
-| Paragraph | `w:suppressLineNumbers` | `w:pPr` | `w:val` | Suppress line numbering for paragraph. | Relevant when section line numbering is enabled. | P3 | Not supported |
-| Paragraph | `w:pBdr` | `w:pPr` | — | Paragraph border container. | Includes top/left/bottom/right/between/bar border edges. | P1 | Partial |
-| Paragraph | `w:top` / `w:left` / `w:bottom` / `w:right` / `w:between` / `w:bar` | `w:pBdr` | border attrs | Paragraph border edge. | Use common border parser; `between` applies between adjacent matching paragraphs. | P1 | Partial |
+| Paragraph | `w:suppressLineNumbers` | `w:pPr` | `w:val` | Suppress line numbering for paragraph. | Relevant when section line numbering is enabled. Explicit `w:val="0"` is honored. | P3 | Supported |
+| Paragraph | `w:pBdr` | `w:pPr` | — | Paragraph border container. | Includes top/left/bottom/right/between/bar border edges. | P1 | Supported |
+| Paragraph | `w:top` / `w:left` / `w:bottom` / `w:right` / `w:between` / `w:bar` | `w:pBdr` | border attrs | Paragraph border edge. | Use common border parser; `between` applies between adjacent matching paragraphs. All six edges rendered on canvas/PDF. | P1 | Supported |
 | Paragraph | `w:shd` | `w:pPr` | `w:val`, `w:color`, `w:fill`, theme attrs | Paragraph shading. | Resolve theme colors when possible. | P1 | Supported |
-| Paragraph | `w:framePr` | `w:pPr` | `w:w`, `w:h`, `w:x`, `w:y`, `w:hSpace`, `w:vSpace`, `w:wrap`, `w:hAnchor`, `w:vAnchor`, `w:dropCap`, `w:lines` | Text frame / positioned paragraph. | Used by old Word text boxes/drop caps; difficult in browser layout. | P2 | Not supported |
+| Paragraph | `w:framePr` | `w:pPr` | `w:w`, `w:h`, `w:x`, `w:y`, `w:hSpace`, `w:vSpace`, `w:wrap`, `w:hAnchor`, `w:vAnchor`, `w:dropCap`, `w:lines` | Text frame / positioned paragraph. | Drop-cap frames are rendered via the drop-cap path; non-drop-cap frames are preserved verbatim for round-trip (not rendered in browser layout). | P2 | Supported |
 | Paragraph | `w:rPr` | `w:pPr` | run property children | Default run props for paragraph mark. | Affects paragraph mark and sometimes inherited run formatting. | P1 | Supported |
 | Paragraph | `w:sectPr` | `w:pPr` | section children | Section break after this paragraph. | Do not only scan `body/sectPr`; sections may be paragraph-scoped. | P0 | Supported |
-| Paragraph | `w:bidi` | `w:pPr` | `w:val` | Right-to-left paragraph layout. | Affects alignment, indentation and text flow. | P1 | Not supported |
+| Paragraph | `w:bidi` | `w:pPr` | `w:val` | Right-to-left paragraph layout. | Affects alignment, indentation and text flow. Preserved for round-trip; explicit `w:val="0"` is honored. | P1 | Supported |
 | Paragraph | `w:mirrorIndents` | `w:pPr` | `w:val` | Mirror paragraph indents. | Relevant for facing pages/book layout. | P3 | Not supported |
 | Paragraph | `w:snapToGrid` | `w:pPr` | `w:val` | Snap paragraph to document grid. | East Asian/grid documents; may affect line height. | P2 | Partial |
 | Paragraph | `w:suppressAutoHyphens` | `w:pPr` | `w:val` | Disable auto hyphenation. | Line breaking fidelity. | P2 | Not supported |
-| Paragraph | `w:kinsoku` | `w:pPr` | `w:val` | East Asian line-breaking rule. | Preserve/approximate unless implementing full CJK line breaking. | P3 | Not supported |
-| Paragraph | `w:wordWrap` | `w:pPr` | `w:val` | Allow line break inside Latin words. | Layout fidelity for CJK mixed text. | P3 | Not supported |
-| Paragraph | `w:overflowPunct` | `w:pPr` | `w:val` | Punctuation overflow behavior. | CJK typography. | P3 | Not supported |
-| Paragraph | `w:topLinePunct` | `w:pPr` | `w:val` | Compress punctuation at line start. | CJK typography. | P3 | Not supported |
-| Paragraph | `w:autoSpaceDE` / `w:autoSpaceDN` | `w:pPr` | `w:val` | Auto spacing between East Asian/Latin or digits. | Can alter measured text widths. | P3 | Not supported |
-| Paragraph | `w:textAlignment` | `w:pPr` | `w:val` | Vertical text alignment within line. | Values such as auto/top/center/baseline/bottom. | P2 | Not supported |
-| Paragraph | `w:textboxTightWrap` | `w:pPr` | `w:val` | Tight wrap behavior in text boxes. | Rare but relevant for shapes/text boxes. | P3 | Not supported |
-| Paragraph | `w:divId` | `w:pPr` | `w:val` | HTML import mapping id. | Preserve only for most importers. | P4 | Not supported |
-| Paragraph | `w:cnfStyle` | `w:pPr` | conditional flags | Conditional style flags. | Most visible in table style contexts. | P2 | Not supported |
+| Paragraph | `w:kinsoku` | `w:pPr` | `w:val` | East Asian line-breaking rule. | Preserved for round-trip; default on, explicit `w:val="0"` is honored. | P3 | Supported |
+| Paragraph | `w:wordWrap` | `w:pPr` | `w:val` | Allow line break inside Latin words. | Preserved for round-trip; default on, explicit `w:val="0"` is honored. | P3 | Supported |
+| Paragraph | `w:overflowPunct` | `w:pPr` | `w:val` | Punctuation overflow behavior. | Preserved for round-trip; default on, explicit `w:val="0"` is honored. | P3 | Supported |
+| Paragraph | `w:topLinePunct` | `w:pPr` | `w:val` | Compress punctuation at line start. | Preserved for round-trip; default off, explicit `w:val="0"` is honored. | P3 | Supported |
+| Paragraph | `w:autoSpaceDE` / `w:autoSpaceDN` | `w:pPr` | `w:val` | Auto spacing between East Asian/Latin or digits. | Preserved for round-trip; default on, explicit `w:val="0"` is honored. | P3 | Supported |
+| Paragraph | `w:adjustRightInd` | `w:pPr` | `w:val` | Adjust right indent for the character grid. | Preserved for round-trip; default on, explicit `w:val="0"` is honored. | P3 | Supported |
+| Paragraph | `w:textAlignment` | `w:pPr` | `w:val` | Vertical text alignment within line. | Values auto/top/center/baseline/bottom; `auto`/`baseline` = default common baseline (no shift). Non-default values reposition smaller runs within mixed-size lines on canvas/PDF. | P2 | Supported |
+| Paragraph | `w:textboxTightWrap` | `w:pPr` | `w:val` | Tight wrap behavior in text boxes. | Values none/allLines/firstLineOnly/firstLastLine; preserved for round-trip. | P3 | Supported |
+| Paragraph | `w:divId` | `w:pPr` | `w:val` | HTML import mapping id. | Preserved verbatim for round-trip. | P4 | Supported |
+| Paragraph | `w:cnfStyle` | `w:pPr` | conditional flags | Conditional style flags. | 12-bit bitmask and individual attributes parsed/emitted; most visible in table style contexts. | P2 | Supported |
 | Paragraph | `w:pPrChange` | `w:pPr` | `w:id`, `w:author`, `w:date` | Tracked paragraph property change. | Preserve or use for revision-aware rendering. | P3 | Not supported |
 
 ## Run-level content

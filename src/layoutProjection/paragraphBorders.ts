@@ -34,3 +34,24 @@ export function getParagraphBorderInsets(
     bottom: edgeInset(style.borderBottom),
   };
 }
+
+/**
+ * Word draws a `w:between` paragraph border only when two *consecutive*
+ * paragraphs both define a matching `between` edge (same style, width, and
+ * color). This predicate encodes that matching rule so the canvas and PDF
+ * renderers share one source of truth. Returns false when either side has no
+ * visible `between` border.
+ */
+export function paragraphBetweenBorderMatches(
+  a: EditorParagraphStyle,
+  b: EditorParagraphStyle,
+): boolean {
+  const ba = a.borderBetween;
+  const bb = b.borderBetween;
+  if (!isVisibleBorder(ba) || !isVisibleBorder(bb)) {
+    return false;
+  }
+  return (
+    ba!.type === bb!.type && ba!.width === bb!.width && ba!.color === bb!.color
+  );
+}

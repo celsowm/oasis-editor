@@ -37,10 +37,14 @@ export function drawParagraphDecorations(
     [paragraphStyle.borderBottom, "bottom"],
     [paragraphStyle.borderLeft, "left"],
   ];
-  const hasBorder = edges.some(
-    ([border]): boolean | null | undefined =>
-      border && border.type !== "none" && border.width > 0,
-  );
+  const hasBorder =
+    edges.some(
+      ([border]): boolean | null | undefined =>
+        border && border.type !== "none" && border.width > 0,
+    ) ||
+    (paragraphStyle.borderBar != null &&
+      paragraphStyle.borderBar.type !== "none" &&
+      paragraphStyle.borderBar.width > 0);
   if (!paragraphStyle.shading && !hasBorder) {
     return;
   }
@@ -89,6 +93,21 @@ export function drawParagraphDecorations(
       stroke: border.color,
       lineWidth: border.width,
       dashArray: borderDashArray(border.type),
+    });
+  }
+
+  // `w:bar`: a vertical stroke at the paragraph's leading edge, drawn at the
+  // box's left boundary (mirrors the canvas renderer).
+  const bar = paragraphStyle.borderBar;
+  if (bar && bar.type !== "none" && bar.width > 0) {
+    writer.drawLine(pageIndex, {
+      x1: pxToPt(left),
+      y1: pxToPt(contentTop),
+      x2: pxToPt(left),
+      y2: pxToPt(bottom),
+      stroke: bar.color,
+      lineWidth: bar.width,
+      dashArray: borderDashArray(bar.type),
     });
   }
 }

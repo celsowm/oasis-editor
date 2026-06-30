@@ -4,8 +4,12 @@ import type {
   EditorState,
 } from "@/core/model.js";
 import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
+import { resolveEffectiveParagraphStyle } from "@/core/model.js";
 import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
-import { TEXT_BASELINE_RATIO } from "@/core/layoutConstants.js";
+import {
+  TEXT_BASELINE_RATIO,
+  resolveTextAlignmentBaselineOffset,
+} from "@/core/layoutConstants.js";
 import { createEditorLogger } from "@/utils/logger.js";
 import { resolveListPrefix } from "./listNumbering.js";
 import { paintTextBox } from "./canvasTextBoxPainter.js";
@@ -221,6 +225,11 @@ export function drawParagraph(
       slotByOffset.set(slot.offset, slot);
     }
     const baselineY = originY + line.top + line.height * TEXT_BASELINE_RATIO;
+    const paragraphStyle = resolveEffectiveParagraphStyle(
+      paragraph.style,
+      state.document.styles,
+    );
+    const textAlignment = paragraphStyle.textAlignment;
 
     const listPrefix =
       line.index === 0 ? resolveListPrefix(paragraph, state.document) : "";
@@ -373,7 +382,13 @@ export function drawParagraph(
           state,
           styles,
           originX,
-          baselineY + renderMetrics.baselineOffset,
+          baselineY +
+            renderMetrics.baselineOffset +
+            resolveTextAlignmentBaselineOffset(
+              textAlignment,
+              fontSize,
+              line.height,
+            ),
         );
         if (styles.reflection) {
           drawFragmentReflection(
@@ -382,7 +397,13 @@ export function drawParagraph(
             slotByOffset,
             styles,
             originX,
-            baselineY + renderMetrics.baselineOffset,
+            baselineY +
+              renderMetrics.baselineOffset +
+              resolveTextAlignmentBaselineOffset(
+                textAlignment,
+                fontSize,
+                line.height,
+              ),
             styles.reflection,
           );
         }

@@ -135,6 +135,55 @@ export interface EditorParagraphStyle {
   textDirection?: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV" | null;
   /** `w:outlineLvl/@w:val`: outline level 0–8 (0 = Heading 1 … 8 = Heading 9). */
   outlineLevel?: number | null;
+  /**
+   * Paragraph decorations. These are mostly CJK typography, RTL, and
+   * legacy/positional flags whose value to the editor is faithful round-trip
+   * rather than on-canvas rendering. Booleans follow the same convention as
+   * the rest of this interface: the stored value reflects the OOXML state and
+   * export honors explicit `w:val="0"`.
+   */
+  /** `w:suppressLineNumbers/@w:val`: omit this paragraph from section line numbering. */
+  suppressLineNumbers?: boolean;
+  /** `w:bidi/@w:val`: paragraph flows right-to-left. */
+  bidi?: boolean;
+  /** `w:kinsoku/@w:val`: East Asian line-breaking rule (default on). */
+  kinsoku?: boolean;
+  /** `w:wordWrap/@w:val`: allow a Latin word to break across lines (default on). */
+  wordWrap?: boolean;
+  /** `w:overflowPunct/@w:val`: allow punctuation to overflow the margin (default on). */
+  overflowPunct?: boolean;
+  /** `w:topLinePunct/@w:val`: compress leading punctuation at line start. */
+  topLinePunct?: boolean;
+  /** `w:autoSpaceDE/@w:val`: auto-space between East Asian and Latin text (default on). */
+  autoSpaceDE?: boolean;
+  /** `w:autoSpaceDN/@w:val`: auto-space between East Asian and digits (default on). */
+  autoSpaceDN?: boolean;
+  /** `w:adjustRightInd/@w:val`: adjust right indent for character grid (default on). */
+  adjustRightInd?: boolean;
+  /** `w:textAlignment/@w:val`: vertical alignment of text within the line. */
+  textAlignment?: "auto" | "top" | "center" | "baseline" | "bottom" | null;
+  /** `w:textboxTightWrap/@w:val`: tight wrap behavior for text boxes. */
+  textboxTightWrap?:
+    | "none"
+    | "allLines"
+    | "firstLineOnly"
+    | "firstLastLine"
+    | null;
+  /** `w:divId/@w:val`: HTML-div mapping id (preserve only). */
+  divId?: number | null;
+  /** `w:cnfStyle/@w:val`: conditional style flags (table-style context). */
+  conditionalStyle?: EditorTableConditionalFlags | null;
+  /** `w:pBdr/w:between`: border drawn between adjacent matching paragraphs. */
+  borderBetween?: EditorBorderStyle | null;
+  /** `w:pBdr/w:bar`: vertical bar border at the left of the paragraph. */
+  borderBar?: EditorBorderStyle | null;
+  /**
+   * `w:framePr` — opaque serialized XML preserved verbatim for round-trip when
+   * the frame is not a drop cap. Drop-cap frames are owned by `dropCap`; every
+   * other `w:framePr` (positioned text frame) is re-emitted so the property is
+   * never silently dropped. Not rendered on any surface.
+   */
+  framePrXml?: string | null;
 }
 
 /** Row properties from a conditional format's `w:trPr`. */

@@ -5,6 +5,7 @@ export {
 } from "./constants.js";
 export {
   getParagraphBorderInsets,
+  paragraphBetweenBorderMatches,
   type ParagraphBorderInsets,
 } from "./paragraphBorders.js";
 export { estimateParagraphBlockHeight } from "./blockHeights.js";

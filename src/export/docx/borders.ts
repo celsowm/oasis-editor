@@ -34,6 +34,8 @@ interface EditorBoxBorders {
   borderRight?: EditorBorderStyle | null;
   borderBottom?: EditorBorderStyle | null;
   borderLeft?: EditorBorderStyle | null;
+  borderBetween?: EditorBorderStyle | null;
+  borderBar?: EditorBorderStyle | null;
 }
 
 /**
@@ -48,6 +50,8 @@ export function serializeParagraphBorders(style: EditorBoxBorders): string {
     ["left", style.borderLeft],
     ["bottom", style.borderBottom],
     ["right", style.borderRight],
+    ["between", style.borderBetween],
+    ["bar", style.borderBar],
   ];
   const parts = edges
     .filter((entry): entry is [string, EditorBorderStyle] => entry[1] != null)

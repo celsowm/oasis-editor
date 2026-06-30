@@ -5,7 +5,10 @@ import type {
 } from "@/core/model.js";
 import { resolveEffectiveParagraphStyle } from "@/core/model.js";
 import { assertNever } from "@/core/assertNever.js";
-import { getParagraphBorderInsets } from "@/layoutProjection/index.js";
+import {
+  getParagraphBorderInsets,
+  paragraphBetweenBorderMatches,
+} from "@/layoutProjection/index.js";
 import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
 import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import { drawParagraph, drawParagraphDecorations } from "./drawParagraph.js";
@@ -14,6 +17,8 @@ import { drawTableBlock } from "./drawTable.js";
 import { drawFloatingTextBoxesForParagraph } from "./drawTextBoxShape.js";
 import { resolveCanvasTableWidth } from "@/ui/canvas/CanvasTableLayout.js";
 import { resolveFloatingTableRect } from "@/layoutProjection/floatingObjects.js";
+import { pxToPt } from "@/export/pdf/units.js";
+import { borderDashArray } from "./borderDash.js";
 import type { BlockDrawers } from "./blockDrawers.js";
 
 /**
@@ -42,7 +47,8 @@ export async function drawBlockList(
 
   const contentTop = originY;
   let cursorY = originY;
-  for (const block of blocks) {
+  for (let blockIndex = 0; blockIndex < blocks.length; blockIndex += 1) {
+    const block = blocks[blockIndex]!;
     switch (block.sourceBlock.type) {
       case "paragraph": {
         if (!block.layout) {
@@ -186,6 +192,54 @@ export async function drawBlockList(
       default:
         assertNever(block.sourceBlock, "block");
     }
+
+    // `w:between`: a horizontal border at the bottom of this paragraph when the
+    // next sibling paragraph (same page, different id) also defines a matching
+    // `between` edge. Mirrors the canvas renderer; cross-page is naturally
+    // suppressed because the block list is per-page.
+    if (block.sourceBlock.type === "paragraph" && block.layout) {
+      const nextBlock = blocks[blockIndex + 1];
+      if (
+        nextBlock?.sourceBlock.type === "paragraph" &&
+        nextBlock.layout &&
+        nextBlock.sourceBlock.id !== block.sourceBlock.id
+      ) {
+        const curStyle = resolveEffectiveParagraphStyle(
+          block.sourceBlock.style,
+          document.styles,
+        );
+        const nextStyle = resolveEffectiveParagraphStyle(
+          nextBlock.sourceBlock.style,
+          document.styles,
+        );
+        if (paragraphBetweenBorderMatches(curStyle, nextStyle)) {
+          const spacingBefore =
+            block.layout.startOffset === 0 && cursorY > originY
+              ? (curStyle.spacingBefore ?? 0)
+              : 0;
+          const textTop =
+            cursorY + spacingBefore + getParagraphBorderInsets(curStyle).top;
+          let linesHeight = 0;
+          for (const line of block.layout.lines) {
+            linesHeight = Math.max(linesHeight, line.top + line.height);
+          }
+          const betweenY = textTop + linesHeight;
+          const barLeft = originX + (curStyle.indentLeft ?? 0);
+          const barRight = originX + contentWidth - (curStyle.indentRight ?? 0);
+          const between = curStyle.borderBetween!;
+          writer.drawLine(pageIndex, {
+            x1: pxToPt(barLeft),
+            y1: pxToPt(betweenY),
+            x2: pxToPt(barRight),
+            y2: pxToPt(betweenY),
+            stroke: between.color,
+            lineWidth: between.width,
+            dashArray: borderDashArray(between.type),
+          });
+        }
+      }
+    }
+
     cursorY += Math.max(0, block.estimatedHeight);
   }
 }
