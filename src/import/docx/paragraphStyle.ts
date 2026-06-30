@@ -129,6 +129,11 @@ export function normalizeImportedParagraphStyle(
       effective.suppressLineNumbers !== defaultEffective.suppressLineNumbers
         ? effective.suppressLineNumbers
         : undefined,
+    suppressAutoHyphens:
+      style.suppressAutoHyphens !== undefined ||
+      effective.suppressAutoHyphens !== defaultEffective.suppressAutoHyphens
+        ? effective.suppressAutoHyphens
+        : undefined,
     bidi:
       style.bidi !== undefined || effective.bidi !== defaultEffective.bidi
         ? effective.bidi
@@ -468,6 +473,13 @@ export function parseParagraphStyle(
   );
   if (suppressLineNumbers !== undefined) {
     style.suppressLineNumbers = suppressLineNumbers;
+  }
+  const suppressAutoHyphens = parseOnOffProperty(
+    paragraphProperties,
+    "suppressAutoHyphens",
+  );
+  if (suppressAutoHyphens !== undefined) {
+    style.suppressAutoHyphens = suppressAutoHyphens;
   }
   const bidi = parseOnOffProperty(paragraphProperties, "bidi");
   if (bidi !== undefined) {

@@ -6,6 +6,7 @@ import type {
 import {
   getRunImage,
   getRunTextBox,
+  resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
 } from "@/core/model.js";
 import { PX_PER_POINT } from "@/core/units.js";
@@ -74,7 +75,16 @@ export function composeMeasuredParagraphLines(
   const { paragraph, fragments, styles, contentWidth, defaultTabStop } =
     options;
   const exclusions = options.exclusions ?? [];
-  const hyphenation = options.hyphenation;
+  // `w:suppressAutoHyphens`: a paragraph may opt out of document-wide
+  // auto-hyphenation. Resolved here (not at the caller) so every composer entry
+  // point — measure, project, min-width — stays in sync.
+  const effectiveParagraphStyle = resolveEffectiveParagraphStyle(
+    paragraph.style,
+    styles,
+  );
+  const hyphenation = effectiveParagraphStyle.suppressAutoHyphens
+    ? undefined
+    : options.hyphenation;
   const measuredChars = buildMeasuredChars(paragraph, fragments, styles);
   const tokens = tokenizeMeasuredChars(measuredChars);
   const charByOffset = new Map<number, string>(

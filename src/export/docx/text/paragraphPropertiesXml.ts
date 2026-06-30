@@ -76,6 +76,9 @@ function serializeParagraphDecorations(style: EditorParagraphStyle): string[] {
   if (style.suppressLineNumbers) {
     parts.push("<w:suppressLineNumbers/>");
   }
+  if (style.suppressAutoHyphens) {
+    parts.push("<w:suppressAutoHyphens/>");
+  }
   if (style.bidi) {
     parts.push("<w:bidi/>");
   }

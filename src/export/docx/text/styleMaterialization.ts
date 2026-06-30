@@ -40,6 +40,7 @@ export function materializeParagraphStyle(
     textDirection: effective.textDirection,
     outlineLevel: effective.outlineLevel,
     suppressLineNumbers: effective.suppressLineNumbers,
+    suppressAutoHyphens: effective.suppressAutoHyphens,
     bidi: effective.bidi,
     kinsoku: effective.kinsoku,
     wordWrap: effective.wordWrap,

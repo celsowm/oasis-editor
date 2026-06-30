@@ -59,9 +59,9 @@ describe("hyphenation engine", () => {
   });
 
   it("finds English break points", () => {
-    expect(findHyphenationPoints("hyphenation", "en-us").length).toBeGreaterThan(
-      0,
-    );
+    expect(
+      findHyphenationPoints("hyphenation", "en-us").length,
+    ).toBeGreaterThan(0);
   });
 
   it("ignores leading/trailing punctuation when finding points", () => {
@@ -107,6 +107,21 @@ describe("composeMeasuredParagraphLines hyphenation", () => {
       "casa extraordinário casa extraordinário casa",
     );
     const lines = measure(paragraph, 110);
+    expect(lines.some((line) => line.trailingHyphen)).toBe(false);
+  });
+
+  it("suppresses hyphenation when the paragraph opts out via suppressAutoHyphens", () => {
+    // Same text that hyphenates when enabled (see the first test in this
+    // block), but the paragraph carries w:suppressAutoHyphens so the composer
+    // must drop the document-wide hyphenation options for this paragraph.
+    const base = createEditorParagraph(
+      "casa extraordinário casa extraordinário casa",
+    );
+    const paragraph: EditorParagraphNode = {
+      ...base,
+      style: { ...(base.style ?? {}), suppressAutoHyphens: true },
+    };
+    const lines = measure(paragraph, 110, enabled);
     expect(lines.some((line) => line.trailingHyphen)).toBe(false);
   });
 

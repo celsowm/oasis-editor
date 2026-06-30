@@ -52,6 +52,14 @@ describe("DOCX import/export: paragraph decorations", () => {
       expect(xml).toContain("<w:suppressLineNumbers/>");
     });
 
+    it("round-trips w:suppressAutoHyphens", async () => {
+      const { model, xml } = await importSingleParagraph(
+        `<w:suppressAutoHyphens/>`,
+      );
+      expect(model.style?.suppressAutoHyphens).toBe(true);
+      expect(xml).toContain("<w:suppressAutoHyphens/>");
+    });
+
     it("round-trips w:bidi", async () => {
       const { model, xml } = await importSingleParagraph(`<w:bidi/>`);
       expect(model.style?.bidi).toBe(true);

@@ -161,7 +161,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Paragraph | `w:bidi` | `w:pPr` | `w:val` | Right-to-left paragraph layout. | Affects alignment, indentation and text flow. Preserved for round-trip; explicit `w:val="0"` is honored. | P1 | Supported |
 | Paragraph | `w:mirrorIndents` | `w:pPr` | `w:val` | Mirror paragraph indents. | Relevant for facing pages/book layout. | P3 | Not supported |
 | Paragraph | `w:snapToGrid` | `w:pPr` | `w:val` | Snap paragraph to document grid. | East Asian/grid documents; may affect line height. | P2 | Partial |
-| Paragraph | `w:suppressAutoHyphens` | `w:pPr` | `w:val` | Disable auto hyphenation. | Line breaking fidelity. | P2 | Not supported |
+| Paragraph | `w:suppressAutoHyphens` | `w:pPr` | `w:val` | Disable auto hyphenation. | Per-paragraph opt-out of document-wide `w:autoHyphenation`; the composer drops hyphenation options for that paragraph. | P2 | Supported |
 | Paragraph | `w:kinsoku` | `w:pPr` | `w:val` | East Asian line-breaking rule. | Preserved for round-trip; default on, explicit `w:val="0"` is honored. | P3 | Supported |
 | Paragraph | `w:wordWrap` | `w:pPr` | `w:val` | Allow line break inside Latin words. | Preserved for round-trip; default on, explicit `w:val="0"` is honored. | P3 | Supported |
 | Paragraph | `w:overflowPunct` | `w:pPr` | `w:val` | Punctuation overflow behavior. | Preserved for round-trip; default on, explicit `w:val="0"` is honored. | P3 | Supported |

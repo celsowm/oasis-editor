@@ -144,6 +144,8 @@ export interface EditorParagraphStyle {
    */
   /** `w:suppressLineNumbers/@w:val`: omit this paragraph from section line numbering. */
   suppressLineNumbers?: boolean;
+  /** `w:suppressAutoHyphens/@w:val`: disable auto-hyphenation for this paragraph. */
+  suppressAutoHyphens?: boolean;
   /** `w:bidi/@w:val`: paragraph flows right-to-left. */
   bidi?: boolean;
   /** `w:kinsoku/@w:val`: East Asian line-breaking rule (default on). */

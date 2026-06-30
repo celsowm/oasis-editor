@@ -123,6 +123,7 @@ export const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> =
       | null,
     outlineLevel: null as unknown as number | null,
     suppressLineNumbers: false,
+    suppressAutoHyphens: false,
     bidi: false,
     kinsoku: true,
     wordWrap: true,
