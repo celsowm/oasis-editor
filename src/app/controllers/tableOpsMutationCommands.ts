@@ -65,17 +65,15 @@ export const applyTableAwareParagraphEdit = (
 
   const zone = location.zone;
   const currentBlocks = getTargetBlocks(current, zone);
-  const clonedTable = cloneBlock(
-    currentBlocks[location.blockIndex],
-  ) as EditorTableNode;
-  if (!clonedTable || clonedTable.type !== "table") {
+  const originalTableBlock = currentBlocks[
+    location.blockIndex
+  ] as EditorTableNode;
+  if (!originalTableBlock || originalTableBlock.type !== "table") {
     return edit(current);
   }
-  const nextBlocks = currentBlocks.map(
-    (block, i): EditorBlockNode =>
-      i === location.blockIndex ? clonedTable : block,
-  );
-  const tableBlock = clonedTable;
+  const tableBlock = cloneBlock(originalTableBlock) as EditorTableNode;
+  const nextBlocks = [...currentBlocks];
+  nextBlocks[location.blockIndex] = tableBlock;
 
   const targetCell =
     tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
@@ -134,9 +132,14 @@ export function resolveLocationTableMutation(
     getActiveSectionIndex(current),
   );
   if (!location) return null;
-  const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
-  const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-  if (!tableBlock || tableBlock.type !== "table") return null;
+  const currentBlocks = getTargetBlocks(current, location.zone);
+  const originalTableBlock = currentBlocks[
+    location.blockIndex
+  ] as EditorTableNode;
+  if (!originalTableBlock || originalTableBlock.type !== "table") return null;
+  const targetBlocks = [...currentBlocks];
+  const tableBlock = cloneBlock(originalTableBlock) as EditorTableNode;
+  targetBlocks[location.blockIndex] = tableBlock;
   return { tableBlock, location, targetBlocks };
 }
 

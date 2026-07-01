@@ -122,9 +122,8 @@ function createTableSelectionAwareCommandsImpl(
       if (!clonedTable) {
         return current;
       }
-      const targetBlocks = currentBlocks.map(
-        (block, i): EditorBlockNode => (i === blockIndex ? clonedTable : block),
-      );
+      const targetBlocks = [...currentBlocks];
+      targetBlocks[blockIndex] = clonedTable;
       const tableBlock = clonedTable;
 
       let paragraphIndex = 0;
