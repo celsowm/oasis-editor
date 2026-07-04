@@ -116,6 +116,8 @@ export interface OasisCommandPayloads {
   tableToggleBandedColumns: undefined;
   setTableStyle: string;
   tableToggleAutoFit: undefined;
+  tableDistributeColumns: undefined;
+  tableDistributeRows: undefined;
   insertTable: InsertTablePayload;
 }
 

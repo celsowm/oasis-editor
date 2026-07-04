@@ -257,6 +257,8 @@ export const en = {
   "table.bandedColumns": "Banded Columns",
   "table.tableStyle": "Table Style",
   "table.autoFit": "AutoFit",
+  "table.distributeRows": "Distribute Rows",
+  "table.distributeColumns": "Distribute Columns",
   "table.cellWidth": "Cell Width",
   "table.cellBgColorPrompt": "Cell Background Color:",
   "table.cellWidthPrompt": "Cell Width (e.g. 50% or 200pt):",

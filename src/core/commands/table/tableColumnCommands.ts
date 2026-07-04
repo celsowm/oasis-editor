@@ -9,9 +9,13 @@ import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { PT_PER_PX } from "@/core/units.js";
 import {
   createTableRevisionMetadata,
+  updateActiveTableBlocks,
   updateStateSections,
   updateTablesInBlocks,
 } from "./tableCommandUtils.js";
+
+/** Fallback per-column width (pt) when a table has no resolvable grid. */
+const DEFAULT_DISTRIBUTED_COLUMN_PT = 120;
 
 function parseWidthToPt(value: number | string | undefined): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -168,4 +172,58 @@ export function setTableColumnWidths(
     (blocks: EditorBlockNode[]): EditorBlockNode[] =>
       updateTablesInBlocks(blocks, updateTable),
   );
+}
+
+/**
+ * Equalize the widths of every visual column in the active table (Word's
+ * "Distribute Columns"), preserving the table's total width. Merged cells keep
+ * their span, so a cell spanning N columns gets N equal shares.
+ */
+export function distributeSelectedTableColumns(
+  state: EditorState,
+): EditorState {
+  return updateActiveTableBlocks(state, (table): EditorTableNode => {
+    const layout = buildTableCellLayout(table);
+    const visualColumnCount = Math.max(
+      1,
+      ...layout.map(
+        (entry): number => entry.visualColumnIndex + Math.max(1, entry.colSpan),
+      ),
+    );
+    const totalPt = (table.gridCols ?? []).reduce(
+      (sum, width): number =>
+        sum + (typeof width === "number" && width > 0 ? width : 0),
+      0,
+    );
+    const total =
+      totalPt > 0 ? totalPt : visualColumnCount * DEFAULT_DISTRIBUTED_COLUMN_PT;
+    const columnWidth = total / visualColumnCount;
+    const nextGridCols = Array.from(
+      { length: visualColumnCount },
+      (): number => columnWidth,
+    );
+    const nextRows = table.rows.map((row, rowIndex) => ({
+      ...row,
+      cells: row.cells.map((cell, cellIndex): EditorTableCellNode => {
+        const entry = layout.find(
+          (item): boolean =>
+            item.rowIndex === rowIndex && item.cellIndex === cellIndex,
+        );
+        if (!entry) return cell;
+        return {
+          ...cell,
+          style: {
+            ...(cell.style ?? {}),
+            width: columnWidth * Math.max(1, entry.colSpan),
+          },
+        };
+      }),
+    }));
+    return {
+      ...table,
+      gridCols: nextGridCols,
+      rows: nextRows,
+      style: { ...(table.style ?? {}), width: total },
+    };
+  });
 }

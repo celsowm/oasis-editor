@@ -419,6 +419,16 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
     group: "tableStyles",
     row: 1,
   },
+  "editor-toolbar-tbl-distribute-rows": {
+    tab: "tableLayout",
+    group: "cellSize",
+    row: 1,
+  },
+  "editor-toolbar-tbl-distribute-cols": {
+    tab: "tableLayout",
+    group: "cellSize",
+    row: 1,
+  },
   "editor-toolbar-tbl-autofit": {
     tab: "tableLayout",
     group: "cellSize",
@@ -954,7 +964,23 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     command: "setTableStyle",
     options: tableStyleOptions,
   });
-  // AutoFit toggle on the Layout tab's Cell Size group.
+  // Cell Size group on the Layout tab: distribute + AutoFit.
+  items.push({
+    type: "button",
+    id: "editor-toolbar-tbl-distribute-rows",
+    testId: "editor-toolbar-tbl-distribute-rows",
+    iconName: "rows",
+    command: "tableDistributeRows",
+    tooltipKey: "table.distributeRows",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-tbl-distribute-cols",
+    testId: "editor-toolbar-tbl-distribute-cols",
+    iconName: "columns",
+    command: "tableDistributeColumns",
+    tooltipKey: "table.distributeColumns",
+  });
   items.push({
     type: "toggle",
     id: "editor-toolbar-tbl-autofit",

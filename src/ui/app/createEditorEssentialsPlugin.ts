@@ -6,6 +6,8 @@ import {
 } from "@/core/commands/block.js";
 import { insertShapeAtSelection } from "@/core/commands/shape.js";
 import {
+  distributeSelectedTableColumns,
+  distributeSelectedTableRows,
   setTableCellBorders,
   setTableCellStyleValue,
   setTableCellWidth,
@@ -726,6 +728,16 @@ export function createEditorEssentialsRuntimePlugin(
             table?.style?.layout === "autofit" ? "fixed" : "autofit";
           return setTableStyleValue(current, "layout", nextLayout);
         }, MERGE_KEYS.tableDistribute),
+      distributeColumns: (): void =>
+        apply(
+          (current): EditorState => distributeSelectedTableColumns(current),
+          MERGE_KEYS.tableDistribute,
+        ),
+      distributeRows: (): void =>
+        apply(
+          (current): EditorState => distributeSelectedTableRows(current),
+          MERGE_KEYS.tableDistribute,
+        ),
       canMerge: (): boolean =>
         options.tableOps.canMergeSelectedTable(options.state()),
       canSplit: (): boolean =>

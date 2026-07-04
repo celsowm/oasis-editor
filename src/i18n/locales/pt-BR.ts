@@ -257,6 +257,8 @@ export const ptBR = {
   "table.bandedColumns": "Colunas em Tiras",
   "table.tableStyle": "Estilo de Tabela",
   "table.autoFit": "AutoAjuste",
+  "table.distributeRows": "Distribuir Linhas",
+  "table.distributeColumns": "Distribuir Colunas",
   "table.cellWidth": "Largura da Célula",
   "table.cellBgColorPrompt": "Cor de Fundo da Célula:",
   "table.cellWidthPrompt": "Largura da Célula (ex: 50% ou 200pt):",

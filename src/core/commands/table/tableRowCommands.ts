@@ -123,3 +123,39 @@ export function setTableRowHeight(
     updateTablesInBlocks(blocks, updateTable),
   );
 }
+
+/** Fallback row height (px) when no row in the table has an explicit height. */
+const DEFAULT_DISTRIBUTED_ROW_PX = 24;
+
+/**
+ * Equalize the heights of every row in the active table (Word's "Distribute
+ * Rows"). Uses the tallest explicit row height as the target (or a default when
+ * none is set) with the `atLeast` rule so cell content can still grow.
+ */
+export function distributeSelectedTableRows(state: EditorState): EditorState {
+  return updateActiveTableBlocks(state, (table): EditorTableNode => {
+    let target = 0;
+    for (const row of table.rows) {
+      const height = row.style?.height;
+      const px =
+        typeof height === "number"
+          ? height
+          : typeof height === "string"
+            ? Number.parseFloat(height)
+            : 0;
+      if (Number.isFinite(px) && px > target) target = px;
+    }
+    if (target <= 0) target = DEFAULT_DISTRIBUTED_ROW_PX;
+    const nextRows = table.rows.map(
+      (row): EditorTableRowNode => ({
+        ...row,
+        style: {
+          ...(row.style ?? {}),
+          height: target,
+          heightRule: "atLeast",
+        },
+      }),
+    );
+    return { ...table, rows: nextRows };
+  });
+}

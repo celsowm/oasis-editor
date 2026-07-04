@@ -20,14 +20,12 @@ distribute rows/columns.
 
 ## Status
 
-Phases 1–4 are **implemented**. The two contextual tabs appear only inside a
-table and auto-focus **Table Design** on entry; the **Table Layout** tab carries
-the row/column/merge/alignment buttons; **Table Design** carries the six
-`tblLook` toggles, a shading color picker, border presets, and a named
-table-style selector; an **AutoFit** toggle switches the table sizing layout.
-The one remaining parity item is **Distribute rows / columns** (equal-size
-distribution), deferred because it needs careful grid math (colspans, percentage
-widths) with no existing producer to build on.
+All five phases are **implemented**. The two contextual tabs appear only inside
+a table and auto-focus **Table Design** on entry; the **Table Layout** tab
+carries the row/column/merge/alignment buttons plus **Distribute Rows**,
+**Distribute Columns**, and an **AutoFit** toggle; **Table Design** carries the
+six `tblLook` toggles, a shading color picker, border presets, and a named
+table-style selector.
 
 > The data model already supports every Design feature
 > (`EditorTableStyle.tblLook`, `conditionalFormats`, `rowBandSize`, resolver in
@@ -124,9 +122,12 @@ Build the missing command layer, then wire the UI.
   item type. A visual card gallery can replace the select later.
 - **AutoFit** toggle on `tableLayout` (Cell Size): a `tableToggleAutoFit`
   command over the `EditorTableStyle.layout: "fixed" | "autofit"` field.
-- **Distribute rows / columns** *(deferred)*: equal-size distribution over
-  `setTableColumnWidths` / row-height producers. Needs grid math for colspans and
-  percentage widths; tracked as the sole remaining parity gap.
+- **Distribute rows / columns** on `tableLayout` (Cell Size): the
+  `distributeSelectedTableColumns` producer equalizes visual-column widths while
+  preserving total width (merged cells keep their span);
+  `distributeSelectedTableRows` equalizes row heights to the tallest explicit
+  height (or a default) with the `atLeast` rule so content can still grow. Both
+  operate on the active table via `updateActiveTableBlocks`.
 - **i18n**: add `ribbon.tab.tableDesign` / `ribbon.tab.tableLayout`, the new
   `ribbon.group.*` keys, and per-button tooltip keys under `src/i18n/`.
 

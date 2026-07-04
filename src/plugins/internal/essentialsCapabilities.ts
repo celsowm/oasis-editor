@@ -168,6 +168,10 @@ export interface EssentialsTableCapability {
   getLayout: () => "fixed" | "autofit" | null;
   /** Toggle the selected table between fixed and autofit sizing. */
   toggleAutoFit: () => void;
+  /** Equalize the widths of every column in the selected table. */
+  distributeColumns: () => void;
+  /** Equalize the heights of every row in the selected table. */
+  distributeRows: () => void;
   canMerge: () => boolean;
   canSplit: () => boolean;
   canEditColumn: () => boolean;

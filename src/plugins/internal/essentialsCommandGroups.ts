@@ -618,6 +618,23 @@ export function buildTableCommands({
         isActive: table.getLayout() === "autofit",
       }),
     ),
+    tableDistributeColumns: actionCommand(
+      "tableDistributeColumns",
+      (): void => table.distributeColumns(),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableDistributeColumns") &&
+          table.canEditColumn(),
+      }),
+    ),
+    tableDistributeRows: actionCommand(
+      "tableDistributeRows",
+      (): void => table.distributeRows(),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableDistributeRows") && table.canEditRow(),
+      }),
+    ),
     insertTable: actionCommand("insertTable", (p): void => {
       const { rows, cols, columns } = (p ?? {}) as {
         rows?: number;
