@@ -41,6 +41,15 @@ export interface SelectedTextBoxBox {
   floating: boolean;
 }
 
+/** Bounding box of the table containing the caret (move/resize handles). */
+export interface SelectedTableBox {
+  tableId: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 export interface RevisionBox {
   revisionId: string;
   author: string;
@@ -122,6 +131,10 @@ export interface EditorSurfaceProps {
     event: MouseEvent & { currentTarget: HTMLElement },
   ) => void;
   onTableDragHandleMouseDown: (tableId: string, event: MouseEvent) => void;
+  onTableCornerResizeHandleMouseDown: (
+    tableId: string,
+    event: MouseEvent,
+  ) => void;
   onRevisionMouseEnter: (revisionId: string, event: MouseEvent) => void;
   onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;
 }

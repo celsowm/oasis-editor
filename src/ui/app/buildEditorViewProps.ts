@@ -7,6 +7,7 @@ import type {
   RevisionBox,
   SelectedImageBox,
   SelectedTextBoxBox,
+  SelectedTableBox,
   SelectionBox,
 } from "@/ui/editorUiTypes.js";
 import type { EditorLayoutDocument } from "@/core/model.js";
@@ -21,6 +22,7 @@ import type {
 import type { createEditorFocusController } from "./useEditorFocus.js";
 import type { createEditorSurfaceEvents } from "@/app/controllers/useEditorSurfaceEvents.js";
 import type { createEditorTableResize } from "@/app/controllers/useEditorTableResize.js";
+import type { createEditorTableCornerResize } from "@/app/controllers/useEditorTableCornerResize.js";
 import type { createEditorTableDrag } from "@/app/controllers/useEditorTableDrag.js";
 import type { createEditorTextInput } from "@/app/controllers/useEditorTextInput.js";
 import type { createEditorRevisionController } from "@/app/controllers/useEditorRevision.js";
@@ -46,6 +48,7 @@ export interface EditorViewOverlayInput {
   commentHighlights: Accessor<CommentHighlightBox[]>;
   selectedImageBox: Accessor<SelectedImageBox | null>;
   selectedTextBoxBox: Accessor<SelectedTextBoxBox | null>;
+  selectedTableBox: Accessor<SelectedTableBox | null>;
   layoutOptions: LayoutOptionsOverlay;
   caretBox: Accessor<CaretBox>;
   inputBox: Accessor<InputBox>;
@@ -70,6 +73,7 @@ export interface EditorViewFileInput {
 export interface EditorViewSurfaceInput {
   surfaceEvents: ReturnType<typeof createEditorSurfaceEvents>;
   tableResize: ReturnType<typeof createEditorTableResize>;
+  tableCornerResize: ReturnType<typeof createEditorTableCornerResize>;
   tableDrag: ReturnType<typeof createEditorTableDrag>;
   revisionController: ReturnType<typeof createEditorRevisionController>;
   handleDrop: OasisEditorEditorSurfaceHandlers["onDrop"];
@@ -144,6 +148,7 @@ export function buildEditorViewProps(
     commentHighlights: overlayInput.commentHighlights,
     selectedImageBox: overlayInput.selectedImageBox,
     selectedTextBoxBox: overlayInput.selectedTextBoxBox,
+    selectedTableBox: overlayInput.selectedTableBox,
     layoutOptions: overlayInput.layoutOptions,
     caretBox: overlayInput.caretBox,
     inputBox: overlayInput.inputBox,
@@ -193,6 +198,8 @@ export function buildEditorViewProps(
     onImageRotateHandleMouseDown: surface.handleImageRotateHandleMouseDown,
     onTextBoxRotateHandleMouseDown: surface.handleTextBoxRotateHandleMouseDown,
     onTableDragHandleMouseDown: surface.tableDrag.handleMouseDown,
+    onTableCornerResizeHandleMouseDown:
+      surface.tableCornerResize.handleMouseDown,
     onRevisionMouseEnter: surface.revisionController.handleRevisionMouseEnter,
     onRevisionMouseLeave: surface.revisionController.handleRevisionMouseLeave,
     onEditorContextMenu: (event): void =>

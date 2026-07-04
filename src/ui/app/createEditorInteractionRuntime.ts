@@ -225,6 +225,7 @@ function createEditorInteractionRuntimeImpl(
     styleController,
     onEditorMouseDown,
     tableResize: wiring.tableResize,
+    tableCornerResize: wiring.tableCornerResize,
     tableDrag: wiring.tableDrag,
     revisionController: wiring.revisionController,
     textDrag: wiring.textDrag,

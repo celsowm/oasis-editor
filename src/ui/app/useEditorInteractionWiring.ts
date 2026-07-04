@@ -2,6 +2,7 @@ import { getParagraphById, type EditorState } from "@/core/model.js";
 import type { EditorLogger } from "@/utils/logger.js";
 import { createEditorClipboardController } from "@/app/controllers/useEditorClipboard.js";
 import { createEditorTableResize } from "@/app/controllers/useEditorTableResize.js";
+import { createEditorTableCornerResize } from "@/app/controllers/useEditorTableCornerResize.js";
 import { createEditorTableDrag } from "@/app/controllers/useEditorTableDrag.js";
 import { createEditorSurfaceEvents } from "@/app/controllers/useEditorSurfaceEvents.js";
 import { createEditorTextInput } from "@/app/controllers/useEditorTextInput.js";
@@ -54,6 +55,7 @@ export interface EditorInteractionWiringContext {
 
 export interface EditorInteractionWiring {
   tableResize: ReturnType<typeof createEditorTableResize>;
+  tableCornerResize: ReturnType<typeof createEditorTableCornerResize>;
   tableDrag: ReturnType<typeof createEditorTableDrag>;
   revisionController: ReturnType<typeof createEditorRevisionController>;
   textDrag: ReturnType<typeof createEditorTextDrag>;
@@ -78,6 +80,15 @@ export function useEditorInteractionWiring(
     applyTransactionalState: ctx.applyTransactionalState,
     surfaceRef: ctx.surfaceRef,
     viewportRef: ctx.viewportRef,
+    zoomFactor: ctx.zoomFactor,
+    documentLayout: ctx.documentLayout,
+    canvasSnapshotProvider: ctx.canvasSnapshotProvider,
+  });
+
+  const tableCornerResize = createEditorTableCornerResize({
+    state,
+    applyTransactionalState: ctx.applyTransactionalState,
+    surfaceRef: ctx.surfaceRef,
     zoomFactor: ctx.zoomFactor,
     documentLayout: ctx.documentLayout,
     canvasSnapshotProvider: ctx.canvasSnapshotProvider,
@@ -169,6 +180,7 @@ export function useEditorInteractionWiring(
 
   return {
     tableResize,
+    tableCornerResize,
     tableDrag,
     revisionController,
     textDrag,

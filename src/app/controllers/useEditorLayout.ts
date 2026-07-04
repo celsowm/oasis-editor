@@ -23,6 +23,7 @@ import type {
 import type {
   SelectedImageSelectionBox,
   SelectedTextBoxSelectionBox,
+  SelectedTableBox,
 } from "@/ui/canvas/CanvasSelectionGeometry.js";
 
 interface UseEditorLayoutProps {
@@ -104,6 +105,8 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
     createSignal<SelectedImageSelectionBox | null>(null);
   const [selectedTextBoxBox, setSelectedTextBoxBox] =
     createSignal<SelectedTextBoxSelectionBox | null>(null);
+  const [selectedTableBox, setSelectedTableBox] =
+    createSignal<SelectedTableBox | null>(null);
   const [caretBox, setCaretBox] = createSignal<CaretBox>({
     left: 0,
     top: 0,
@@ -139,6 +142,7 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
       setCommentHighlights([]);
       setSelectedImageBox(null);
       setSelectedTextBoxBox(null);
+      setSelectedTableBox(null);
       setCaretBox(
         (
           current,
@@ -161,6 +165,7 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
       setCommentHighlights([]);
       setSelectedImageBox(null);
       setSelectedTextBoxBox(null);
+      setSelectedTableBox(null);
       setCaretBox(
         (
           current,
@@ -177,6 +182,7 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
     setCommentHighlights(computeCommentHighlights(snapshot, props.state));
     setSelectedImageBox(geometry.selectedImageBox);
     setSelectedTextBoxBox(geometry.selectedTextBoxBox);
+    setSelectedTableBox(geometry.selectedTableBox);
     setInputBox(geometry.inputBox);
     setCaretBox(geometry.caretBox);
   };
@@ -313,6 +319,7 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
     commentHighlights,
     selectedImageBox,
     selectedTextBoxBox,
+    selectedTableBox,
     caretBox,
     preferredColumnX,
     setPreferredColumnX,

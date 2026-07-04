@@ -303,6 +303,87 @@ describe("canvas selection geometry", () => {
 
     // Blinking cursor should be hidden during multi-cell selection
     expect(geometry.caretBox.visible).toBe(false);
+
+    // The move/resize handles' box unions every cell of the active table.
+    expect(geometry.selectedTableBox).toEqual({
+      tableId: table.id,
+      left: 90,
+      top: 90,
+      width: 370,
+      height: 60,
+    });
+  });
+
+  it("exposes selectedTableBox for a collapsed caret inside a table", () => {
+    const pCell1 = createEditorParagraph("cell1");
+    const pCell2 = createEditorParagraph("cell2");
+    const table = createEditorTable([
+      createEditorTableRow([
+        createEditorTableCell([pCell1]),
+        createEditorTableCell([pCell2]),
+      ]),
+    ]);
+    const state = createEditorStateFromDocument(createEditorDocument([table]));
+    const caret = paragraphOffsetToPosition(pCell1, 0);
+    const selectedState = {
+      ...state,
+      selection: { anchor: caret, focus: caret },
+    };
+
+    const makeCell = (
+      paragraph: EditorParagraphNode,
+      index: number,
+      left: number,
+    ): CanvasSnapshotParagraph =>
+      ({
+        paragraph,
+        paragraphId: paragraph.id,
+        paragraphIndex: index,
+        zone: "main",
+        pageIndex: 0,
+        startOffset: 0,
+        endOffset: 5,
+        textLength: 5,
+        left: left + 10,
+        top: 100,
+        width: 150,
+        height: 40,
+        lines: [],
+        tableCell: {
+          tableId: table.id,
+          rowIndex: 0,
+          cellIndex: index,
+          left,
+          top: 90,
+          width: 170,
+          height: 60,
+          anchorPosition: caret,
+        },
+      }) as CanvasSnapshotParagraph;
+
+    const snapP1 = makeCell(pCell1, 0, 90);
+    const snapP2 = makeCell(pCell2, 1, 290);
+    const snapshot: CanvasLayoutSnapshot = {
+      surfaceRect: { left: 20, top: 10, width: 1000, height: 800 } as DOMRect,
+      pages: [],
+      paragraphs: [snapP1, snapP2],
+      paragraphsById: new Map([
+        [pCell1.id, [snapP1]],
+        [pCell2.id, [snapP2]],
+      ]),
+      inlineImages: [],
+      unsupportedRegions: [],
+    } as unknown as CanvasLayoutSnapshot;
+
+    const geometry = computeCanvasSelectionGeometry(snapshot, selectedState);
+    // Union of both cells, offset by the surface origin (20,10).
+    expect(geometry.selectedTableBox).toEqual({
+      tableId: table.id,
+      left: 70,
+      top: 80,
+      width: 370,
+      height: 60,
+    });
   });
 
   it("hides text highlight and exposes selectedImageBox when selection is a single inline image", () => {

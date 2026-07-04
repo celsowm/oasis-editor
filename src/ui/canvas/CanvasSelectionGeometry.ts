@@ -41,12 +41,22 @@ export interface SelectedTextBoxSelectionBox {
   floating: boolean;
 }
 
+/** Bounding box of the table containing the caret, for the move/resize handles. */
+export interface SelectedTableBox {
+  tableId: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 export interface CanvasSelectionGeometryResult {
   selectionBoxes: SelectionBox[];
   caretBox: CaretBox;
   inputBox: InputBox;
   selectedImageBox: SelectedImageSelectionBox | null;
   selectedTextBoxBox: SelectedTextBoxSelectionBox | null;
+  selectedTableBox: SelectedTableBox | null;
 }
 
 const TEXT_SELECTION_ANTIALIAS_OVERSCAN_PX = 1;
@@ -448,11 +458,44 @@ export function computeCanvasSelectionGeometry(
       !selectedTextBoxBox,
   };
 
+  // The table containing the caret gets a bounding box so the move/resize
+  // handles can be positioned. Use the focus paragraph's snapshot cell to pick
+  // the innermost table id, then union that table's cell rects (same
+  // surface-relative convention as the image/text-box boxes above).
+  let selectedTableBox: SelectedTableBox | null = null;
+  const focusTableId =
+    (snapshot.paragraphsById.get(focusParagraphId) ?? [])[0]?.tableCell
+      ?.tableId ?? null;
+  if (focusTableId) {
+    let left = Number.POSITIVE_INFINITY;
+    let top = Number.POSITIVE_INFINITY;
+    let right = Number.NEGATIVE_INFINITY;
+    let bottom = Number.NEGATIVE_INFINITY;
+    for (const paragraph of snapshot.paragraphs) {
+      const cell = paragraph.tableCell;
+      if (!cell || cell.tableId !== focusTableId) continue;
+      left = Math.min(left, cell.left);
+      top = Math.min(top, cell.top);
+      right = Math.max(right, cell.left + cell.width);
+      bottom = Math.max(bottom, cell.top + cell.height);
+    }
+    if (Number.isFinite(left) && right > left && bottom > top) {
+      selectedTableBox = {
+        tableId: focusTableId,
+        left: left - surfaceRect.left,
+        top: top - surfaceRect.top,
+        width: right - left,
+        height: bottom - top,
+      };
+    }
+  }
+
   return {
     selectionBoxes,
     inputBox: { left: caretLeft, top: caretTop, height: caretHeight },
     caretBox,
     selectedImageBox,
     selectedTextBoxBox,
+    selectedTableBox,
   };
 }

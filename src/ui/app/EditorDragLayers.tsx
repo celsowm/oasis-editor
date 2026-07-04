@@ -4,6 +4,7 @@ import type { EditorLayoutDocument, EditorState } from "@/core/model.js";
 import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 import type { createEditorImageOperations } from "@/app/controllers/useEditorImageOperations.js";
 import type { createEditorTableResize } from "@/app/controllers/useEditorTableResize.js";
+import type { createEditorTableCornerResize } from "@/app/controllers/useEditorTableCornerResize.js";
 import type { createEditorTableDrag } from "@/app/controllers/useEditorTableDrag.js";
 import type { createEditorTextDrag } from "@/app/controllers/useEditorTextDrag.js";
 import { JSX } from "solid-js";
@@ -15,6 +16,7 @@ export interface EditorDragLayersProps {
   snapshotProvider: CanvasLayoutSnapshotProvider;
   zoomFactor?: () => number;
   tableResize: ReturnType<typeof createEditorTableResize>;
+  tableCornerResize: ReturnType<typeof createEditorTableCornerResize>;
   imageOps: ReturnType<typeof createEditorImageOperations>;
   tableDrag: ReturnType<typeof createEditorTableDrag>;
   textDrag: ReturnType<typeof createEditorTextDrag>;
@@ -51,6 +53,20 @@ export function EditorDragLayers(props: EditorDragLayersProps): JSX.Element {
                     width: `${resizing().guideBounds.width}px`,
                     height: "0px",
                   }),
+            }}
+          />
+        )}
+      </Show>
+
+      <Show when={props.tableCornerResize.previewRect()}>
+        {(rect): JSX.Element => (
+          <div
+            class="oasis-editor-table-resize-outline"
+            style={{
+              left: `${rect().left}px`,
+              top: `${rect().top}px`,
+              width: `${rect().width}px`,
+              height: `${rect().height}px`,
             }}
           />
         )}

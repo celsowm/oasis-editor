@@ -164,6 +164,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     commentHighlights,
     selectedImageBox,
     selectedTextBoxBox,
+    selectedTableBox,
     caretBox,
     preferredColumnX,
     setPreferredColumnX,
@@ -213,6 +214,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     styleController,
     onEditorMouseDown,
     tableResize,
+    tableCornerResize,
     tableDrag,
     revisionController,
     textDrag,
@@ -317,6 +319,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
       commentHighlights,
       selectedImageBox,
       selectedTextBoxBox,
+      selectedTableBox,
       layoutOptions: layoutOptionsOverlay,
       caretBox,
       inputBox,
@@ -333,6 +336,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     surface: {
       surfaceEvents: surfaceEventsWithTextDrag,
       tableResize,
+      tableCornerResize,
       tableDrag,
       revisionController,
       handleDrop,
@@ -486,6 +490,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           snapshotProvider={canvasSnapshotProvider}
           zoomFactor={zoom.zoomFactor}
           tableResize={tableResize}
+          tableCornerResize={tableCornerResize}
           imageOps={imageOps}
           tableDrag={tableDrag}
           textDrag={textDrag}

@@ -78,6 +78,62 @@
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
+/* Live dashed outline shown while dragging the bottom-right resize handle. */
+.oasis-editor-table-resize-outline {
+  position: fixed;
+  pointer-events: none;
+  border: 1px dashed var(--oasis-text-muted);
+  background-color: rgba(148, 163, 184, 0.08);
+  z-index: 10001;
+}
+
+/*
+ * Word-style table handles. The container tracks the table's box (in the scaled
+ * content layer) but is transparent to the pointer; only the two grips are
+ * interactive.
+ */
+.oasis-editor-table-handles-overlay {
+  position: absolute;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.oasis-editor-table-move-handle,
+.oasis-editor-table-resize-corner {
+  position: absolute;
+  pointer-events: auto;
+  padding: 0;
+  background-color: var(--oasis-paper);
+  border: 1px solid var(--oasis-border-color);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.oasis-editor-table-move-handle {
+  top: -16px;
+  left: -16px;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  cursor: move;
+  background-image:
+    linear-gradient(var(--oasis-text-muted), var(--oasis-text-muted)),
+    linear-gradient(var(--oasis-text-muted), var(--oasis-text-muted));
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size:
+    10px 2px,
+    2px 10px;
+}
+
+.oasis-editor-table-resize-corner {
+  right: -6px;
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  cursor: nwse-resize;
+}
+
 .oasis-editor-image-ghost {
   position: fixed;
   pointer-events: none;

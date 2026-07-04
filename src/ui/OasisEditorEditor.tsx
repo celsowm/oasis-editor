@@ -43,11 +43,13 @@ import type {
   RevisionBox,
   SelectedImageBox,
   SelectedTextBoxBox,
+  SelectedTableBox,
   SelectionBox,
 } from "./editorUiTypes.js";
 import type { EditorComment } from "@/core/model.js";
 import type { ResizeHandleDirection } from "./resizeGeometry.js";
 import { ResizeHandlesOverlay } from "./overlays/ResizeHandlesOverlay.js";
+import { TableHandlesOverlay } from "./overlays/TableHandlesOverlay.js";
 import { ZOOM_MIN, ZOOM_MAX, ZOOM_STEP, clampZoom } from "./app/editorZoom.js";
 
 type ImportProgress = ImportProgressState;
@@ -73,6 +75,7 @@ export interface OasisEditorEditorOverlayProps {
   commentHighlights: Accessor<CommentHighlightBox[]>;
   selectedImageBox: Accessor<SelectedImageBox | null>;
   selectedTextBoxBox: Accessor<SelectedTextBoxBox | null>;
+  selectedTableBox: Accessor<SelectedTableBox | null>;
   caretBox: Accessor<CaretBox>;
   inputBox: Accessor<InputBox>;
   hoveredRevision: Accessor<RevisionBox | null>;
@@ -133,6 +136,10 @@ export interface OasisEditorEditorSurfaceHandlers {
     event: MouseEvent & { currentTarget: HTMLElement },
   ) => void;
   onTableDragHandleMouseDown: (tableId: string, event: MouseEvent) => void;
+  onTableCornerResizeHandleMouseDown: (
+    tableId: string,
+    event: MouseEvent,
+  ) => void;
   onRevisionMouseEnter: (revisionId: string, event: MouseEvent) => void;
   onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;
   onEditorContextMenu?: (event: MouseEvent) => void;
@@ -360,6 +367,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
   const selectedTextBox = createMemo((): SelectedTextBoxBox | null =>
     overlays().selectedTextBoxBox(),
   );
+  const selectedTable = createMemo((): SelectedTableBox | null =>
+    overlays().selectedTableBox(),
+  );
   const commentsById = createMemo<Record<string, EditorComment>>(
     (): Record<string, EditorComment> =>
       props.state().document.comments?.items ?? {},
@@ -476,6 +486,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
               onTableDragHandleMouseDown={
                 surfaceHandlers().onTableDragHandleMouseDown
               }
+              onTableCornerResizeHandleMouseDown={
+                surfaceHandlers().onTableCornerResizeHandleMouseDown
+              }
               onRevisionMouseEnter={surfaceHandlers().onRevisionMouseEnter}
               onRevisionMouseLeave={surfaceHandlers().onRevisionMouseLeave}
             />
@@ -555,6 +568,27 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
                 surfaceHandlers().onTextBoxRotateHandleMouseDown(
                   textBox.paragraphId,
                   textBox.startOffset,
+                  event,
+                );
+              }}
+            />
+
+            <TableHandlesOverlay
+              box={selectedTable}
+              readOnly={Boolean(layout().readOnly)}
+              onMoveStart={(event): void => {
+                const table = selectedTable();
+                if (!table) return;
+                surfaceHandlers().onTableDragHandleMouseDown(
+                  table.tableId,
+                  event,
+                );
+              }}
+              onResizeStart={(event): void => {
+                const table = selectedTable();
+                if (!table) return;
+                surfaceHandlers().onTableCornerResizeHandleMouseDown(
+                  table.tableId,
                   event,
                 );
               }}
