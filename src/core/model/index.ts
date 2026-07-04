@@ -108,6 +108,8 @@ export type {
   EditorPageSettings,
   EditorColumnsSettings,
   EditorSection,
+  EditorPageNumbering,
+  EditorSectionVerticalAlign,
   EditorFontInfo,
   EditorFootnoteSettings,
   EditorFootnotes,

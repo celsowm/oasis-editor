@@ -3,10 +3,17 @@ import type {
   EditorDocument,
   EditorNamedStyle,
   EditorPageSettings,
+  EditorSection,
 } from "@/core/model.js";
 import { getDocumentSections } from "@/core/model.js";
 import type { DocContext, SectionReferenceDefinition } from "./docxTypes.js";
-import { OFFICE_REL_NS, pxToTwips, WORD14_NS, WORD_NS } from "./xmlUtils.js";
+import {
+  OFFICE_REL_NS,
+  pxToTwips,
+  WORD14_NS,
+  WORD_NS,
+  escapeXml,
+} from "./xmlUtils.js";
 import { serializeBlocksXml } from "./textXml.js";
 
 const DOCUMENT_XMLNS =
@@ -19,7 +26,9 @@ const DOCUMENT_XMLNS =
 
 function serializeSectionPropertiesWithReferences(
   pageSettings: EditorPageSettings,
-  references?: SectionReferenceDefinition,
+  references: SectionReferenceDefinition | undefined,
+  section: EditorSection,
+  nextBreakType: EditorSection["breakType"],
 ): string {
   const width = pxToTwips(pageSettings.width, 12240);
   const height = pxToTwips(pageSettings.height, 15840);
@@ -51,6 +60,15 @@ function serializeSectionPropertiesWithReferences(
       ? "<w:titlePg/>"
       : "";
 
+  // w:type describes how the *following* section begins and lives on this
+  // sectPr (the off-by-one inverse of the import mapping). `nextPage` is the
+  // Word default and is omitted. The last section has no following section, so
+  // nextBreakType is undefined and nothing is emitted.
+  const typeXml =
+    nextBreakType && nextBreakType !== "nextPage"
+      ? `<w:type w:val="${nextBreakType}"/>`
+      : "";
+
   const columns = pageSettings.columns;
   let columnsXml = "";
   if (columns && columns.count > 1) {
@@ -69,7 +87,33 @@ function serializeSectionPropertiesWithReferences(
     }
   }
 
-  return `<w:sectPr>${referencesXml}${titlePageXml}<w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/>${columnsXml}</w:sectPr>`;
+  // w:pgNumType — page numbering format/start/chapter (round-trip preservation).
+  const pgNum = section.pageNumbering;
+  let pgNumTypeXml = "";
+  if (pgNum) {
+    const attrs: string[] = [];
+    if (pgNum.start !== undefined) attrs.push(`w:start="${pgNum.start}"`);
+    if (pgNum.format) attrs.push(`w:fmt="${escapeXml(pgNum.format)}"`);
+    if (pgNum.chapterStyle)
+      attrs.push(`w:chapStyle="${escapeXml(pgNum.chapterStyle)}"`);
+    if (pgNum.chapterSeparator)
+      attrs.push(`w:chapSep="${escapeXml(pgNum.chapterSeparator)}"`);
+    if (attrs.length > 0) {
+      pgNumTypeXml = `<w:pgNumType ${attrs.join(" ")}/>`;
+    }
+  }
+
+  // w:vAlign — vertical justification of page contents. `top` is the Word
+  // default and is omitted.
+  const vAlignXml =
+    section.verticalAlignment && section.verticalAlignment !== "top"
+      ? `<w:vAlign w:val="${section.verticalAlignment}"/>`
+      : "";
+
+  // w:bidi — right-to-left section layout (on/off element).
+  const bidiXml = section.bidi ? "<w:bidi/>" : "";
+
+  return `<w:sectPr>${referencesXml}${titlePageXml}${typeXml}<w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/>${pgNumTypeXml}${columnsXml}${vAlignXml}${bidiXml}</w:sectPr>`;
 }
 
 export function buildDocumentXml(
@@ -89,6 +133,8 @@ export function buildDocumentXml(
       const sectionPr = serializeSectionPropertiesWithReferences(
         section.pageSettings,
         sectionReferences[sectionIndex],
+        section,
+        sections[sectionIndex + 1]?.breakType,
       );
       return blocksXml + sectionPr;
     })

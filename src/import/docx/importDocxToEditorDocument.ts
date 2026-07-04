@@ -188,6 +188,24 @@ export async function importDocxToEditorDocument(
       if (parsedParagraph.pageBreakAfter) {
         pendingPageBreakBefore = true;
       }
+      // A paragraph may carry its own w:sectPr inside w:pPr. This is how Word
+      // writes intermediate section breaks (the final section's sectPr is a
+      // direct child of w:body, but every earlier section ends with a sectPr
+      // nested in the last paragraph's pPr). Detect it here so multi-section
+      // documents don't collapse into a single section.
+      const paragraphProperties = getFirstChildByTagNameNS(
+        element,
+        WORD_NS,
+        "pPr",
+      );
+      const inlineSectPr = paragraphProperties
+        ? getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "sectPr")
+        : null;
+      if (inlineSectPr) {
+        sectionProps.push(parseSectionProperties(inlineSectPr));
+        sectionBlocks.push([]);
+        pendingPageBreakBefore = false;
+      }
       reportBodyProgress();
     } else if (element.localName === "tbl") {
       appendBodyBlock(
@@ -341,6 +359,17 @@ export async function importDocxToEditorDocument(
     };
     const pageSettings = normalizePageSettings(rawPageSettings);
 
+    // w:type lives on the sectPr that *ends* a section and describes how the
+    // *following* section begins, so section[i].breakType (i >= 1) comes from
+    // sectionProps[i - 1]. The first section always begins on a new page, so its
+    // breakType is left undefined. pgNumType/vAlign/bidi are properties *of*
+    // the section, so they map same-index from sectionProps[i].
+    const breakType =
+      i > 0 ? sectionProps[i - 1]?.breakType : undefined;
+    const pageNumbering = props.pageNumbering;
+    const verticalAlignment = props.verticalAlignment;
+    const bidi = props.bidi;
+
     sections.push({
       id: `section:${i + 1}`,
       blocks:
@@ -354,6 +383,10 @@ export async function importDocxToEditorDocument(
       footer: footer.length > 0 ? footer : undefined,
       firstPageFooter: firstPageFooter.length > 0 ? firstPageFooter : undefined,
       evenPageFooter: evenPageFooter.length > 0 ? evenPageFooter : undefined,
+      ...(breakType ? { breakType } : {}),
+      ...(pageNumbering ? { pageNumbering } : {}),
+      ...(verticalAlignment ? { verticalAlignment } : {}),
+      ...(bidi ? { bidi } : {}),
     });
   }
 
@@ -442,7 +475,11 @@ export async function importDocxToEditorDocument(
         (section.evenPageHeader?.length ?? 0) > 0 ||
         (section.footer?.length ?? 0) > 0 ||
         (section.firstPageFooter?.length ?? 0) > 0 ||
-        (section.evenPageFooter?.length ?? 0) > 0,
+        (section.evenPageFooter?.length ?? 0) > 0 ||
+        section.breakType !== undefined ||
+        section.pageNumbering !== undefined ||
+        section.verticalAlignment !== undefined ||
+        section.bidi !== undefined,
     );
 
   const hasAssets = Object.keys(assets.assets).length > 0;

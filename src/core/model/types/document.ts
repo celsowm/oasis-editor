@@ -50,6 +50,30 @@ export interface EditorPageSettings {
   columns?: EditorColumnsSettings;
 }
 
+/**
+ * Page numbering settings for a section (`w:pgNumType`). Preserved for
+ * round-trip; `start` is intended to seed PAGE-field numbering in a future
+ * pass. The `format` string is stored verbatim from the OOXML `ST_NumberFormat`
+ * vocabulary (decimal, upperRoman, lowerLetter, …) so uncommon values survive
+ * round-trip even though the editor only renders a subset.
+ */
+export interface EditorPageNumbering {
+  /** `w:start` — first page number of this section. */
+  start?: number;
+  /** `w:fmt` — page number format (OOXML `ST_NumberFormat` value). */
+  format?: string;
+  /** `w:chapStyle` — heading style id used for chapter-based page numbers. */
+  chapterStyle?: string;
+  /** `w:chapSep` — separator between chapter number and page number. */
+  chapterSeparator?: string;
+}
+
+/**
+ * Vertical justification of a section's page contents (`w:vAlign`).
+ * `top` is the Word default and is omitted on export.
+ */
+export type EditorSectionVerticalAlign = "top" | "center" | "both" | "bottom";
+
 export interface EditorSection {
   id: string;
   blocks: EditorBlockNode[];
@@ -60,7 +84,21 @@ export interface EditorSection {
   footer?: EditorBlockNode[];
   firstPageFooter?: EditorBlockNode[];
   evenPageFooter?: EditorBlockNode[];
-  breakType?: "nextPage" | "continuous";
+  /**
+   * How this section *begins* (a page break, a continuous flow, …). Mirrors the
+   * editor's own section-break command. OOXML stores this as `w:type` on the
+   * *previous* section's `w:sectPr`; the importer applies the off-by-one so the
+   * value describes the section it sits on. `nextPage` is the Word default and
+   * is omitted on export. Only `continuous` currently affects layout rendering;
+   * `evenPage`/`oddPage`/`nextColumn` are preserved for round-trip.
+   */
+  breakType?: "nextPage" | "continuous" | "evenPage" | "oddPage" | "nextColumn";
+  /** `w:pgNumType` — page numbering format/start/chapter. Round-trip only. */
+  pageNumbering?: EditorPageNumbering;
+  /** `w:vAlign` — vertical justification of page contents. Round-trip only. */
+  verticalAlignment?: EditorSectionVerticalAlign;
+  /** `w:bidi` — right-to-left section layout. Round-trip only. */
+  bidi?: boolean;
 }
 
 /**
