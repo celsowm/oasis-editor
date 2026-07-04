@@ -108,6 +108,14 @@ export interface OasisCommandPayloads {
   tableAlignCenter: undefined;
   tableAlignRight: undefined;
   tableSetCellWidth: string | number;
+  tableToggleHeaderRow: undefined;
+  tableToggleTotalRow: undefined;
+  tableToggleBandedRows: undefined;
+  tableToggleFirstColumn: undefined;
+  tableToggleLastColumn: undefined;
+  tableToggleBandedColumns: undefined;
+  setTableStyle: string;
+  tableToggleAutoFit: undefined;
   insertTable: InsertTablePayload;
 }
 

@@ -8,6 +8,7 @@ import type { ColorPalette } from "./palette.js";
 // here so existing toolbar consumers keep importing from the schema entrypoint.
 export {
   RIBBON_TABS,
+  CONTEXTUAL_TABS,
   type RibbonTabId,
   type RibbonRow,
   type RibbonSize,

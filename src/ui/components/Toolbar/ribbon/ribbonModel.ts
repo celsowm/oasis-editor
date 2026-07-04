@@ -3,14 +3,20 @@ import type {
   RibbonGroupResizeState,
   RibbonRow,
   RibbonTabId,
+  ToolbarActionApi,
   ToolbarItem,
 } from "@/ui/components/Toolbar/schema/items.js";
-import { RIBBON_TABS } from "@/ui/components/Toolbar/schema/items.js";
+import {
+  CONTEXTUAL_TABS,
+  RIBBON_TABS,
+} from "@/ui/components/Toolbar/schema/items.js";
 import type { TranslateFn, TranslationKey } from "@/i18n/index.js";
 
 export interface RibbonTabDefinition {
   id: RibbonTabId;
   label: string;
+  /** True for tabs that only appear while their gating command is active. */
+  contextual: boolean;
 }
 
 export interface RibbonGroupModel {
@@ -43,6 +49,8 @@ const TAB_LABEL_KEYS: Record<RibbonTabId, TranslationKey> = {
   collaboration: "ribbon.tab.collaboration",
   protection: "ribbon.tab.protection",
   view: "ribbon.tab.view",
+  tableDesign: "ribbon.tab.tableDesign",
+  tableLayout: "ribbon.tab.tableLayout",
   plugins: "ribbon.tab.plugins",
   ai: "ribbon.tab.ai",
 };
@@ -61,12 +69,38 @@ const GROUP_LABEL_KEYS: Record<string, TranslationKey> = {
   table: "ribbon.group.table",
   section: "ribbon.group.section",
   general: "ribbon.group.general",
+  tableStyleOptions: "ribbon.group.tableStyleOptions",
+  tableStyles: "ribbon.group.tableStyles",
+  borders: "ribbon.group.borders",
+  rowsColumns: "ribbon.group.rowsColumns",
+  merge: "ribbon.group.merge",
+  cellSize: "ribbon.group.cellSize",
+  alignment: "ribbon.group.alignment",
 };
+
+/**
+ * A contextual tab (e.g. table tools) is included only when its gating command
+ * reports `isActive`. Non-contextual tabs are always present. When no `api` is
+ * supplied, contextual tabs are omitted (used for static/enumeration contexts).
+ */
+export function isRibbonTabVisible(
+  id: RibbonTabId,
+  api?: Pick<ToolbarActionApi, "commands">,
+): boolean {
+  const gatingCommand = CONTEXTUAL_TABS[id];
+  if (!gatingCommand) return true;
+  return api ? api.commands.state(gatingCommand).isActive : false;
+}
 
 export function buildRibbonTabDefinitions(
   t: TranslateFn,
+  api?: Pick<ToolbarActionApi, "commands">,
 ): RibbonTabDefinition[] {
-  return RIBBON_TABS.map((id) => ({ id, label: t(TAB_LABEL_KEYS[id]) }));
+  return RIBBON_TABS.filter((id) => isRibbonTabVisible(id, api)).map((id) => ({
+    id,
+    label: t(TAB_LABEL_KEYS[id]),
+    contextual: CONTEXTUAL_TABS[id] !== undefined,
+  }));
 }
 
 export const DEFAULT_RIBBON_TAB: RibbonTabId = "plugins";
@@ -98,6 +132,18 @@ const RIBBON_GROUP_ORDER: Partial<Record<RibbonTabId, Record<string, number>>> =
     },
     references: {
       footnotes: 10,
+    },
+    tableDesign: {
+      tableStyleOptions: 10,
+      tableStyles: 20,
+      borders: 30,
+    },
+    tableLayout: {
+      table: 10,
+      rowsColumns: 20,
+      merge: 30,
+      cellSize: 40,
+      alignment: 50,
     },
     plugins: {
       general: 10,
@@ -168,6 +214,18 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
   },
   references: {
     footnotes: { priority: 10, collapsedIcon: "footnote" },
+  },
+  tableDesign: {
+    tableStyleOptions: { priority: 20, collapsedIcon: "list-checks" },
+    tableStyles: { priority: 10, collapsedIcon: "table" },
+    borders: { priority: 30, collapsedIcon: "frame" },
+  },
+  tableLayout: {
+    table: { priority: 15, collapsedIcon: "table-properties" },
+    rowsColumns: { priority: 20, collapsedIcon: "rows" },
+    merge: { priority: 30, collapsedIcon: "combine" },
+    cellSize: { priority: 40, collapsedIcon: "move-horizontal" },
+    alignment: { priority: 50, collapsedIcon: "align-left" },
   },
   plugins: {
     general: { priority: 50, collapsedIcon: "plug" },

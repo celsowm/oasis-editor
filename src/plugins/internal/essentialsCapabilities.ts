@@ -141,9 +141,33 @@ export interface EssentialsSectionCapability {
   setPageMargins: (margins: Partial<EditorPageMargins>) => void;
 }
 
+/** Which `w:tblLook` conditional-formatting option a toggle command controls. */
+export type TableLookFlag =
+  | "firstRow"
+  | "lastRow"
+  | "firstCol"
+  | "lastCol"
+  | "bandedRows"
+  | "bandedCols";
+
+/** Resolved on/off state of every tblLook option for the selected table. */
+export type TableLookState = Record<TableLookFlag, boolean>;
+
 export interface EssentialsTableCapability {
   insideTable: () => boolean;
   selectionLabel: () => string | null;
+  /** Resolved tblLook option state for the selected table (null if none). */
+  getTblLook: () => TableLookState | null;
+  /** Flip one tblLook option on the selected table. */
+  toggleTblLook: (flag: TableLookFlag) => void;
+  /** Named table-style id currently applied to the selected table. */
+  getStyleId: () => string | null;
+  /** Apply a named table style to the selected table (empty clears it). */
+  setStyleId: (styleId: string) => void;
+  /** Sizing mode of the selected table (`fixed`/`autofit`, null if none). */
+  getLayout: () => "fixed" | "autofit" | null;
+  /** Toggle the selected table between fixed and autofit sizing. */
+  toggleAutoFit: () => void;
   canMerge: () => boolean;
   canSplit: () => boolean;
   canEditColumn: () => boolean;

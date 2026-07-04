@@ -39,6 +39,9 @@ export const MERGE_KEYS = {
   tableWidth: "tableWidth",
   tableAlign: "tableAlign",
   tableCellWidth: "tableCellWidth",
+  tableStyleOptions: "tableStyleOptions",
+  tableStyleGallery: "tableStyleGallery",
+  tableDistribute: "tableDistribute",
   layoutWrapPreset: "layoutWrapPreset",
   layoutFixedPosition: "layoutFixedPosition",
 } as const;

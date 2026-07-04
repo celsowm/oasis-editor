@@ -18,6 +18,17 @@ Goal: two contextual tabs mirroring Word, with **full command parity** —
 including the currently-missing `tblLook` toggles, a table-style gallery, and
 distribute rows/columns.
 
+## Status
+
+Phases 1–4 are **implemented**. The two contextual tabs appear only inside a
+table and auto-focus **Table Design** on entry; the **Table Layout** tab carries
+the row/column/merge/alignment buttons; **Table Design** carries the six
+`tblLook` toggles, a shading color picker, border presets, and a named
+table-style selector; an **AutoFit** toggle switches the table sizing layout.
+The one remaining parity item is **Distribute rows / columns** (equal-size
+distribution), deferred because it needs careful grid math (colspans, percentage
+widths) with no existing producer to build on.
+
 > The data model already supports every Design feature
 > (`EditorTableStyle.tblLook`, `conditionalFormats`, `rowBandSize`, resolver in
 > `tableStyleResolver.ts`). The gap is **command + UI wiring**, not the model.
@@ -105,14 +116,17 @@ Build the missing command layer, then wire the UI.
 
 ## Phase 4 — Table-style gallery + distribute/autofit (parity finish)
 
-- **Style gallery** (the large center gallery in the Design screenshot): a new
-  `tableStyleGallery` command that lists available named table styles and applies
-  one via `setActiveTableStyleValue(state, tableId, "styleId", id)`. Render with
-  the existing `styleGallery` item type on `tableDesign`. Source styles from the
-  document's table-style definitions, with a small built-in set as fallback.
-- **Distribute rows / columns** and **AutoFit** toggle on `tableLayout`: new
-  commands over `setTableColumnWidths` / row-height producers and the
-  `EditorTableStyle.layout: "fixed" | "autofit"` field.
+- **Style selector** (the center gallery in the Design screenshot): a
+  `setTableStyle` command that lists the document's named table styles and
+  applies one via `setTableStyleValue(state, "styleId", id)`. Shipped as a `wide`
+  `select` populated from the `documentStyles` command (filtered to
+  `type === "table"`) on `tableDesign` — functionally the gallery without a new
+  item type. A visual card gallery can replace the select later.
+- **AutoFit** toggle on `tableLayout` (Cell Size): a `tableToggleAutoFit`
+  command over the `EditorTableStyle.layout: "fixed" | "autofit"` field.
+- **Distribute rows / columns** *(deferred)*: equal-size distribution over
+  `setTableColumnWidths` / row-height producers. Needs grid math for colspans and
+  percentage widths; tracked as the sole remaining parity gap.
 - **i18n**: add `ribbon.tab.tableDesign` / `ribbon.tab.tableLayout`, the new
   `ribbon.group.*` keys, and per-button tooltip keys under `src/i18n/`.
 

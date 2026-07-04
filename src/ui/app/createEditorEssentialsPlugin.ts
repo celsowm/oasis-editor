@@ -16,6 +16,7 @@ import {
   findParagraphTableLocation,
   getActiveSectionIndex,
   getDocumentParagraphs,
+  getDocumentSections,
   getParagraphText,
   paragraphOffsetToPosition,
   resolveNamedTextStyle,
@@ -23,6 +24,7 @@ import {
   type EditorNamedStyle,
   type EditorPageMargins,
   type EditorState,
+  type EditorTableNode,
 } from "@/core/model.js";
 import { isSelectionCollapsed, normalizeSelection } from "@/core/selection.js";
 import {
@@ -31,10 +33,11 @@ import {
   type TocPageNumberResolver,
 } from "@/core/commands/tableOfContents.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
-import {
-  createEssentialsPlugin,
-  type EssentialsTableCapability,
-} from "@/plugins/internal/createEssentialsPlugin.js";
+import { createEssentialsPlugin } from "@/plugins/internal/createEssentialsPlugin.js";
+import type {
+  EssentialsTableCapability,
+  TableLookState,
+} from "@/plugins/internal/essentialsCapabilities.js";
 import { togglePreciseFontMode } from "./localFontAccess.js";
 import {
   fontSizePtToPx,
@@ -603,6 +606,40 @@ export function createEditorEssentialsRuntimePlugin(
       options.applyTransactionalState(producer, { mergeKey });
       options.focusInput();
     };
+    const RAW_TBL_LOOK_DEFAULTS = {
+      firstRow: false,
+      lastRow: false,
+      firstCol: false,
+      lastCol: false,
+      noHBand: false,
+      noVBand: false,
+    };
+    const selectedTableIn = (state: EditorState): EditorTableNode | null => {
+      const secIdx = getActiveSectionIndex(state);
+      const loc = findParagraphTableLocation(
+        state.document,
+        state.selection.focus.paragraphId,
+        secIdx,
+      );
+      if (!loc) return null;
+      const section = getDocumentSections(state.document)[secIdx];
+      if (!section) return null;
+      const blocks =
+        loc.zone === "header"
+          ? (section.header ?? [])
+          : loc.zone === "footer"
+            ? (section.footer ?? [])
+            : section.blocks;
+      const table = blocks[loc.blockIndex];
+      return table && table.type === "table" ? table : null;
+    };
+    const rawTblLookIn = (
+      state: EditorState,
+    ): typeof RAW_TBL_LOOK_DEFAULTS | null => {
+      const table = selectedTableIn(state);
+      if (!table) return null;
+      return { ...RAW_TBL_LOOK_DEFAULTS, ...(table.style?.tblLook ?? {}) };
+    };
     const selectionLabel = (): string | null => {
       const normalized = normalizeSelection(options.state());
       if (normalized.isCollapsed) return null;
@@ -633,6 +670,62 @@ export function createEditorEssentialsRuntimePlugin(
     return {
       insideTable,
       selectionLabel,
+      getTblLook: (): TableLookState | null => {
+        const raw = rawTblLookIn(options.state());
+        if (!raw) return null;
+        return {
+          firstRow: raw.firstRow,
+          lastRow: raw.lastRow,
+          firstCol: raw.firstCol,
+          lastCol: raw.lastCol,
+          // Banding is stored as the negated "no band" flags in OOXML.
+          bandedRows: !raw.noHBand,
+          bandedCols: !raw.noVBand,
+        };
+      },
+      toggleTblLook: (flag): void =>
+        apply((current): EditorState => {
+          const raw = rawTblLookIn(current);
+          if (!raw) return current;
+          const next = { ...raw };
+          switch (flag) {
+            case "firstRow":
+              next.firstRow = !raw.firstRow;
+              break;
+            case "lastRow":
+              next.lastRow = !raw.lastRow;
+              break;
+            case "firstCol":
+              next.firstCol = !raw.firstCol;
+              break;
+            case "lastCol":
+              next.lastCol = !raw.lastCol;
+              break;
+            case "bandedRows":
+              next.noHBand = !raw.noHBand;
+              break;
+            case "bandedCols":
+              next.noVBand = !raw.noVBand;
+              break;
+          }
+          return setTableStyleValue(current, "tblLook", next);
+        }, MERGE_KEYS.tableStyleOptions),
+      getStyleId: () =>
+        selectedTableIn(options.state())?.style?.styleId ?? null,
+      setStyleId: (styleId: string): void =>
+        apply(
+          (current): EditorState =>
+            setTableStyleValue(current, "styleId", styleId || null),
+          MERGE_KEYS.tableStyleGallery,
+        ),
+      getLayout: () => selectedTableIn(options.state())?.style?.layout ?? null,
+      toggleAutoFit: (): void =>
+        apply((current): EditorState => {
+          const table = selectedTableIn(current);
+          const nextLayout =
+            table?.style?.layout === "autofit" ? "fixed" : "autofit";
+          return setTableStyleValue(current, "layout", nextLayout);
+        }, MERGE_KEYS.tableDistribute),
       canMerge: (): boolean =>
         options.tableOps.canMergeSelectedTable(options.state()),
       canSplit: (): boolean =>

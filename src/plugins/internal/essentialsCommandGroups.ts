@@ -554,6 +554,70 @@ export function buildTableCommands({
     tableSetCellWidth: actionCommand("tableSetCellWidth", (p): void =>
       table.setCellWidth(String(p)),
     ),
+    tableToggleHeaderRow: actionCommand(
+      "tableToggleHeaderRow",
+      (): void => table.toggleTblLook("firstRow"),
+      (): { isEnabled: boolean; isActive: boolean } => ({
+        isEnabled: table.insideTable(),
+        isActive: table.getTblLook()?.firstRow ?? false,
+      }),
+    ),
+    tableToggleTotalRow: actionCommand(
+      "tableToggleTotalRow",
+      (): void => table.toggleTblLook("lastRow"),
+      (): { isEnabled: boolean; isActive: boolean } => ({
+        isEnabled: table.insideTable(),
+        isActive: table.getTblLook()?.lastRow ?? false,
+      }),
+    ),
+    tableToggleBandedRows: actionCommand(
+      "tableToggleBandedRows",
+      (): void => table.toggleTblLook("bandedRows"),
+      (): { isEnabled: boolean; isActive: boolean } => ({
+        isEnabled: table.insideTable(),
+        isActive: table.getTblLook()?.bandedRows ?? false,
+      }),
+    ),
+    tableToggleFirstColumn: actionCommand(
+      "tableToggleFirstColumn",
+      (): void => table.toggleTblLook("firstCol"),
+      (): { isEnabled: boolean; isActive: boolean } => ({
+        isEnabled: table.insideTable(),
+        isActive: table.getTblLook()?.firstCol ?? false,
+      }),
+    ),
+    tableToggleLastColumn: actionCommand(
+      "tableToggleLastColumn",
+      (): void => table.toggleTblLook("lastCol"),
+      (): { isEnabled: boolean; isActive: boolean } => ({
+        isEnabled: table.insideTable(),
+        isActive: table.getTblLook()?.lastCol ?? false,
+      }),
+    ),
+    tableToggleBandedColumns: actionCommand(
+      "tableToggleBandedColumns",
+      (): void => table.toggleTblLook("bandedCols"),
+      (): { isEnabled: boolean; isActive: boolean } => ({
+        isEnabled: table.insideTable(),
+        isActive: table.getTblLook()?.bandedCols ?? false,
+      }),
+    ),
+    setTableStyle: actionCommand(
+      "setTableStyle",
+      (p): void => table.setStyleId(String(p ?? "")),
+      (): { isEnabled: boolean; value: string | null } => ({
+        isEnabled: table.insideTable(),
+        value: table.getStyleId(),
+      }),
+    ),
+    tableToggleAutoFit: actionCommand(
+      "tableToggleAutoFit",
+      (): void => table.toggleAutoFit(),
+      (): { isEnabled: boolean; isActive: boolean } => ({
+        isEnabled: table.insideTable(),
+        isActive: table.getLayout() === "autofit",
+      }),
+    ),
     insertTable: actionCommand("insertTable", (p): void => {
       const { rows, cols, columns } = (p ?? {}) as {
         rows?: number;

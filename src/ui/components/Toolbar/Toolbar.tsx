@@ -1,5 +1,6 @@
 import {
   For,
+  createEffect,
   createMemo,
   createSignal,
   onCleanup,
@@ -46,6 +47,20 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
   const [version, setVersion] = createSignal(0);
   const [activeTab, setActiveTab] = createSignal<RibbonTabId>("home");
 
+  // Word-style contextual tabs: when the caret enters a table, surface the
+  // table tabs and focus Design; when it leaves, fall back off the (now hidden)
+  // contextual tab so a stale panel is never shown.
+  const CONTEXTUAL_TABLE_TABS: RibbonTabId[] = ["tableDesign", "tableLayout"];
+  createEffect((prevInside?: boolean): boolean => {
+    const inside = api.commands.state("tableContext").isActive;
+    if (inside && prevInside === false) {
+      setActiveTab("tableDesign");
+    } else if (!inside && CONTEXTUAL_TABLE_TABS.includes(activeTab())) {
+      setActiveTab("home");
+    }
+    return inside;
+  });
+
   onMount((): void => {
     const unsubscribe = props.registry.onChange((): number =>
       setVersion((v): number => v + 1),
@@ -88,7 +103,11 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
     >
       {view() === "ribbon" ? (
         <>
-          <RibbonTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+          <RibbonTabs
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            api={api}
+          />
           <RibbonPanel activeTab={activeTab} items={items} api={api} />
         </>
       ) : layout() === "overflow" ? (

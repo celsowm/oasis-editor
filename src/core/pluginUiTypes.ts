@@ -14,11 +14,24 @@ export const RIBBON_TABS = [
   "collaboration",
   "protection",
   "view",
+  "tableDesign",
+  "tableLayout",
   "plugins",
   "ai",
 ] as const;
 
 export type RibbonTabId = (typeof RIBBON_TABS)[number];
+
+/**
+ * Contextual tabs are hidden from the tab strip unless their gating command
+ * reports `isActive`. This mirrors Word's contextual ribbons (e.g. table tools
+ * that appear only when the caret is inside a table). The mapping is
+ * UI-agnostic: the value is the command id whose `isActive` state gates the tab.
+ */
+export const CONTEXTUAL_TABS: Partial<Record<RibbonTabId, string>> = {
+  tableDesign: "tableContext",
+  tableLayout: "tableContext",
+};
 export type RibbonRow = 1 | 2;
 export type RibbonSize = "normal" | "large";
 export type RibbonGroupResizeState = "full" | "compact" | "collapsed";

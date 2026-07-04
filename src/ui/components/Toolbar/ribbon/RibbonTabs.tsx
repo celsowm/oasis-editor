@@ -1,32 +1,44 @@
-import { For, type Accessor, type Setter } from "solid-js";
-import { useI18n } from "@/i18n/I18nContext.js";
-import type { RibbonTabId } from "@/ui/components/Toolbar/schema/items.js";
-import { buildRibbonTabDefinitions } from "./ribbonModel.js";
+import { For, createMemo, type Accessor, type Setter } from "solid-js";
+import type {
+  RibbonTabId,
+  ToolbarActionApi,
+} from "@/ui/components/Toolbar/schema/items.js";
+import {
+  buildRibbonTabDefinitions,
+  type RibbonTabDefinition,
+} from "./ribbonModel.js";
 import { JSX } from "solid-js";
 
 export interface RibbonTabsProps {
   activeTab: Accessor<RibbonTabId>;
   setActiveTab: Setter<RibbonTabId>;
+  api: ToolbarActionApi;
 }
 
 export function RibbonTabs(props: RibbonTabsProps): JSX.Element {
-  const tabs = buildRibbonTabDefinitions(useI18n());
+  // Reactive: contextual tabs (e.g. table tools) enter/leave the strip as the
+  // gating command state changes on selection.
+  const tabs = createMemo<RibbonTabDefinition[]>(() =>
+    buildRibbonTabDefinitions(props.api.t, props.api),
+  );
 
   const moveTab = (current: RibbonTabId, delta: number): void => {
-    const index = tabs.findIndex((tab): boolean => tab.id === current);
-    const next = tabs[(index + delta + tabs.length) % tabs.length];
+    const list = tabs();
+    const index = list.findIndex((tab): boolean => tab.id === current);
+    const next = list[(index + delta + list.length) % list.length];
     if (next) props.setActiveTab(next.id);
   };
 
   return (
     <div class="oasis-editor-ribbon-tabs" role="tablist">
-      <For each={tabs}>
+      <For each={tabs()}>
         {(tab): JSX.Element => (
           <button
             type="button"
             class="oasis-editor-ribbon-tab"
             classList={{
               "oasis-editor-ribbon-tab-active": props.activeTab() === tab.id,
+              "oasis-editor-ribbon-tab-contextual": tab.contextual === true,
             }}
             role="tab"
             aria-selected={props.activeTab() === tab.id}
@@ -44,10 +56,11 @@ export function RibbonTabs(props: RibbonTabsProps): JSX.Element {
                 moveTab(tab.id, -1);
               } else if (event.key === "Home") {
                 event.preventDefault();
-                props.setActiveTab(tabs[0]!.id);
+                props.setActiveTab(tabs()[0]!.id);
               } else if (event.key === "End") {
                 event.preventDefault();
-                props.setActiveTab(tabs[tabs.length - 1]!.id);
+                const list = tabs();
+                props.setActiveTab(list[list.length - 1]!.id);
               }
             }}
           >

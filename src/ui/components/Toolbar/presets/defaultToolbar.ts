@@ -1,4 +1,4 @@
-import type { TranslateFn } from "@/i18n/index.js";
+import type { TranslateFn, TranslationKey } from "@/i18n/index.js";
 import { STANDARD_FONT_SIZES_PT, fontSizePxToPt } from "@/ui/fontSizeUnits.js";
 import type {
   RibbonRow,
@@ -12,7 +12,6 @@ import { UnderlineControl } from "@/ui/components/Toolbar/controls/UnderlineCont
 import { ListOptionsControl } from "@/ui/components/Toolbar/controls/ListOptionsControl.js";
 import { LineSpacingButton } from "@/ui/components/Toolbar/LineSpacingButton.js";
 import { MetricGroup } from "@/ui/components/Toolbar/groups/MetricGroup.js";
-import { TableGroup } from "@/ui/components/Toolbar/groups/TableGroup.js";
 import { SectionGroup } from "@/ui/components/Toolbar/groups/SectionGroup.js";
 import { MarginsGroup } from "@/ui/components/Toolbar/groups/MarginsGroup.js";
 import { ShapeGallery } from "@/ui/components/Toolbar/ShapeGallery.js";
@@ -24,6 +23,12 @@ const documentStyles = (api: ToolbarActionApi): ToolbarDocumentStyle[] =>
   (api.commands.state("documentStyles").value as
     | ToolbarDocumentStyle[]
     | undefined) ?? [];
+
+/** Named table styles for the Table Design gallery select. */
+const tableStyleOptions = (api: ToolbarActionApi): SelectOption[] =>
+  documentStyles(api)
+    .filter((s) => s.type === "table")
+    .map((s) => ({ value: s.id, label: s.name }));
 
 const fontFamilyOptions = (api: ToolbarActionApi): SelectOption[] => {
   const values = new Set<string>([
@@ -120,6 +125,125 @@ const LIST_BUTTONS: Array<{
   },
 ];
 
+/** No-arg table commands surfaced as first-class buttons on the Table Layout tab. */
+const TABLE_LAYOUT_BUTTONS: Array<{
+  id: string;
+  command: string;
+  icon: string;
+  tooltipKey: TranslationKey;
+}> = [
+  {
+    id: "editor-toolbar-tbl-insert-row-above",
+    command: "tableInsertRowBefore",
+    icon: "rows",
+    tooltipKey: "table.insertRowAbove",
+  },
+  {
+    id: "editor-toolbar-tbl-insert-row-below",
+    command: "tableInsertRowAfter",
+    icon: "rows",
+    tooltipKey: "table.insertRowBelow",
+  },
+  {
+    id: "editor-toolbar-tbl-delete-row",
+    command: "tableDeleteRow",
+    icon: "trash-2",
+    tooltipKey: "table.deleteRow",
+  },
+  {
+    id: "editor-toolbar-tbl-insert-col-left",
+    command: "tableInsertColumnBefore",
+    icon: "columns",
+    tooltipKey: "table.insertColumnLeft",
+  },
+  {
+    id: "editor-toolbar-tbl-insert-col-right",
+    command: "tableInsertColumnAfter",
+    icon: "columns",
+    tooltipKey: "table.insertColumnRight",
+  },
+  {
+    id: "editor-toolbar-tbl-delete-col",
+    command: "tableDeleteColumn",
+    icon: "trash-2",
+    tooltipKey: "table.deleteColumn",
+  },
+  {
+    id: "editor-toolbar-tbl-merge",
+    command: "tableMerge",
+    icon: "combine",
+    tooltipKey: "table.mergeTooltip",
+  },
+  {
+    id: "editor-toolbar-tbl-split",
+    command: "tableSplit",
+    icon: "split",
+    tooltipKey: "table.splitTooltip",
+  },
+  {
+    id: "editor-toolbar-tbl-width-100",
+    command: "tableWidth100",
+    icon: "maximize",
+    tooltipKey: "table.width100Tooltip",
+  },
+  {
+    id: "editor-toolbar-tbl-align-left",
+    command: "tableAlignLeft",
+    icon: "align-left",
+    tooltipKey: "table.alignLeft",
+  },
+  {
+    id: "editor-toolbar-tbl-align-center",
+    command: "tableAlignCenter",
+    icon: "align-center",
+    tooltipKey: "table.alignCenter",
+  },
+  {
+    id: "editor-toolbar-tbl-align-right",
+    command: "tableAlignRight",
+    icon: "align-right",
+    tooltipKey: "table.alignRight",
+  },
+];
+
+/** tblLook conditional-formatting toggles on the Table Design tab. */
+const TABLE_DESIGN_TOGGLES: Array<{
+  id: string;
+  command: string;
+  labelKey: TranslationKey;
+}> = [
+  {
+    id: "editor-toolbar-tbl-header-row",
+    command: "tableToggleHeaderRow",
+    labelKey: "table.headerRow",
+  },
+  {
+    id: "editor-toolbar-tbl-total-row",
+    command: "tableToggleTotalRow",
+    labelKey: "table.totalRow",
+  },
+  {
+    id: "editor-toolbar-tbl-banded-rows",
+    command: "tableToggleBandedRows",
+    labelKey: "table.bandedRows",
+  },
+  {
+    id: "editor-toolbar-tbl-first-col",
+    command: "tableToggleFirstColumn",
+    labelKey: "table.firstColumn",
+  },
+  {
+    id: "editor-toolbar-tbl-last-col",
+    command: "tableToggleLastColumn",
+    labelKey: "table.lastColumn",
+  },
+  {
+    id: "editor-toolbar-tbl-banded-cols",
+    command: "tableToggleBandedColumns",
+    labelKey: "table.bandedColumns",
+  },
+];
+
 interface RibbonPlacement {
   tab: RibbonTabId;
   group: string;
@@ -193,8 +317,113 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "sep-paragraph": { tab: "home", group: "paragraph", row: 2 },
   "editor-toolbar-metrics": { tab: "layout", group: "paragraph", row: 1 },
   "sep-metrics": { tab: "layout", group: "paragraph", row: 2 },
-  "editor-toolbar-table": { tab: "layout", group: "table", row: 1 },
-  "sep-table": { tab: "layout", group: "table", row: 2 },
+  "editor-toolbar-tbl-insert-row-above": {
+    tab: "tableLayout",
+    group: "rowsColumns",
+    row: 1,
+  },
+  "editor-toolbar-tbl-insert-row-below": {
+    tab: "tableLayout",
+    group: "rowsColumns",
+    row: 1,
+  },
+  "editor-toolbar-tbl-delete-row": {
+    tab: "tableLayout",
+    group: "rowsColumns",
+    row: 1,
+  },
+  "editor-toolbar-tbl-insert-col-left": {
+    tab: "tableLayout",
+    group: "rowsColumns",
+    row: 2,
+  },
+  "editor-toolbar-tbl-insert-col-right": {
+    tab: "tableLayout",
+    group: "rowsColumns",
+    row: 2,
+  },
+  "editor-toolbar-tbl-delete-col": {
+    tab: "tableLayout",
+    group: "rowsColumns",
+    row: 2,
+  },
+  "editor-toolbar-tbl-merge": { tab: "tableLayout", group: "merge", row: 1 },
+  "editor-toolbar-tbl-split": { tab: "tableLayout", group: "merge", row: 2 },
+  "editor-toolbar-tbl-width-100": {
+    tab: "tableLayout",
+    group: "cellSize",
+    row: 1,
+  },
+  "editor-toolbar-tbl-align-left": {
+    tab: "tableLayout",
+    group: "alignment",
+    row: 1,
+  },
+  "editor-toolbar-tbl-align-center": {
+    tab: "tableLayout",
+    group: "alignment",
+    row: 1,
+  },
+  "editor-toolbar-tbl-align-right": {
+    tab: "tableLayout",
+    group: "alignment",
+    row: 1,
+  },
+  "editor-toolbar-tbl-header-row": {
+    tab: "tableDesign",
+    group: "tableStyleOptions",
+    row: 1,
+  },
+  "editor-toolbar-tbl-total-row": {
+    tab: "tableDesign",
+    group: "tableStyleOptions",
+    row: 1,
+  },
+  "editor-toolbar-tbl-banded-rows": {
+    tab: "tableDesign",
+    group: "tableStyleOptions",
+    row: 1,
+  },
+  "editor-toolbar-tbl-first-col": {
+    tab: "tableDesign",
+    group: "tableStyleOptions",
+    row: 2,
+  },
+  "editor-toolbar-tbl-last-col": {
+    tab: "tableDesign",
+    group: "tableStyleOptions",
+    row: 2,
+  },
+  "editor-toolbar-tbl-banded-cols": {
+    tab: "tableDesign",
+    group: "tableStyleOptions",
+    row: 2,
+  },
+  "editor-toolbar-tbl-shading": {
+    tab: "tableDesign",
+    group: "borders",
+    row: 1,
+  },
+  "editor-toolbar-tbl-borders": {
+    tab: "tableDesign",
+    group: "borders",
+    row: 2,
+  },
+  "editor-toolbar-tbl-no-borders": {
+    tab: "tableDesign",
+    group: "borders",
+    row: 2,
+  },
+  "editor-toolbar-tbl-style": {
+    tab: "tableDesign",
+    group: "tableStyles",
+    row: 1,
+  },
+  "editor-toolbar-tbl-autofit": {
+    tab: "tableLayout",
+    group: "cellSize",
+    row: 2,
+  },
   "editor-toolbar-margins": { tab: "layout", group: "section", row: 1 },
   "editor-toolbar-section": { tab: "layout", group: "section", row: 1 },
 };
@@ -661,17 +890,79 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   });
   items.push({ type: "separator", id: "sep-metrics" });
 
-  // --- Table (contextual) ---
+  // --- Table Layout (contextual tab) ---
+  // First-class ribbon buttons for the existing no-arg table commands. The
+  // whole tab is shown only inside a table (see CONTEXTUAL_TABS); each button
+  // additionally derives its enabled state from its command.
+  for (const spec of TABLE_LAYOUT_BUTTONS) {
+    items.push({
+      type: "button",
+      id: spec.id,
+      testId: spec.id,
+      iconName: spec.icon,
+      command: spec.command,
+      tooltipKey: spec.tooltipKey,
+    });
+  }
+
+  // --- Table Design (contextual tab) ---
+  // Table Style Options: tblLook conditional-formatting toggles.
+  for (const spec of TABLE_DESIGN_TOGGLES) {
+    items.push({
+      type: "toggle",
+      id: spec.id,
+      testId: spec.id,
+      command: spec.command,
+      labelKey: spec.labelKey,
+      tooltipKey: spec.labelKey,
+    });
+  }
+  // Borders: shading (a real color picker, not a prompt) + border presets.
   items.push({
-    type: "custom",
-    id: "editor-toolbar-table",
-    isVisible: (api) => api.commands.state("tableContext").isActive,
-    render: (api) => TableGroup({ api }),
+    type: "colorPicker",
+    id: "editor-toolbar-tbl-shading",
+    testId: "editor-toolbar-tbl-shading",
+    kind: "shading",
+    command: "tableCellShading",
+    defaultValue: "#f1f5f9",
+    tooltipKey: "table.cellColor",
   });
   items.push({
-    type: "separator",
-    id: "sep-table",
-    isVisible: (api) => api.commands.state("tableContext").isActive,
+    type: "button",
+    id: "editor-toolbar-tbl-borders",
+    testId: "editor-toolbar-tbl-borders",
+    iconName: "frame",
+    command: "tableCellBorders",
+    tooltipKey: "table.applyBorders",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-tbl-no-borders",
+    testId: "editor-toolbar-tbl-no-borders",
+    iconName: "square",
+    command: "tableCellNoBorders",
+    tooltipKey: "table.removeBorders",
+  });
+  // Table Styles: apply a named table style (the document's table-style gallery).
+  items.push({
+    type: "select",
+    id: "editor-toolbar-tbl-style",
+    testId: "editor-toolbar-tbl-style",
+    tooltipKey: "table.tableStyle",
+    placeholder: t("table.tableStyle"),
+    width: "wide",
+    command: "setTableStyle",
+    options: tableStyleOptions,
+  });
+  // AutoFit toggle on the Layout tab's Cell Size group.
+  items.push({
+    type: "toggle",
+    id: "editor-toolbar-tbl-autofit",
+    testId: "editor-toolbar-tbl-autofit",
+    iconName: "move-horizontal",
+    command: "tableToggleAutoFit",
+    labelKey: "table.autoFit",
+    tooltipKey: "table.autoFit",
   });
 
   // --- Section ---

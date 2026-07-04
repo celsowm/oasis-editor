@@ -71,6 +71,25 @@
   color: #111111;
 }
 
+/*
+ * Contextual tabs (table tools) mirror Word: an accent-colored strip marks them
+ * as tools that appear only while the caret is inside a table.
+ */
+.oasis-editor-ribbon-tab-contextual {
+  color: #7b2d63;
+  box-shadow: inset 0 2px 0 0 #b4368f;
+}
+
+.oasis-editor-ribbon-tab-contextual:hover {
+  background: #f7ecf3;
+}
+
+.oasis-editor-ribbon-tab-contextual.oasis-editor-ribbon-tab-active {
+  color: #7b2d63;
+  border-color: #d9a9c9;
+  box-shadow: inset 0 2px 0 0 #b4368f;
+}
+
 .oasis-editor-ribbon-panel {
   display: flex;
   align-items: stretch;

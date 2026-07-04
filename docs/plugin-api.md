@@ -137,6 +137,46 @@ authors: `Stack spacing={2}`, `Stack direction={{ xs: "column", sm: "row" }}`,
 `Grid container spacing={2}`, and `Grid size={{ xs: 12, md: 6 }}` are supported
 without requiring a MUI theme or `sx` runtime.
 
+## Contextual Ribbon Tabs
+
+Most ribbon tabs are always visible. A **contextual tab** appears only while a
+gating command reports `isActive` — the mechanism behind the Word-style
+**Table Design** / **Table Layout** tabs, which show only when the caret is
+inside a table and hide again when it leaves.
+
+The vocabulary lives in the core (`src/core/pluginUiTypes.ts`):
+
+```ts
+export const RIBBON_TABS = [
+  /* … */ "view",
+  "tableDesign",
+  "tableLayout",
+  "plugins",
+  "ai",
+] as const;
+
+// Maps a contextual tab id → the command id whose `isActive` state gates it.
+export const CONTEXTUAL_TABS: Partial<Record<RibbonTabId, string>> = {
+  tableDesign: "tableContext",
+  tableLayout: "tableContext",
+};
+```
+
+To register a new contextual tab:
+
+1. Add its id to `RIBBON_TABS` and a `CONTEXTUAL_TABS[id] = "<gatingCommand>"`
+   entry. The gating command's `state(...).isActive` decides visibility.
+2. Add a `TAB_LABEL_KEYS` entry (and matching `ribbon.tab.*` i18n keys), plus
+   any `RIBBON_GROUP_ORDER` / group label keys for its groups
+   (`src/ui/components/Toolbar/ribbon/ribbonModel.ts`).
+3. Place items on the tab with `tab: "<id>"` — ordinary ribbon items; they only
+   render while the tab is visible.
+
+The tab strip filters through `buildRibbonTabDefinitions(t, api)` /
+`isRibbonTabVisible(id, api)` and re-renders reactively on selection change.
+`Toolbar.tsx` auto-focuses the first contextual tab when its gate turns on and
+falls back to **Home** when it turns off, matching Word.
+
 ## Floating Actions And Side Panels
 
 Plugins can contribute persistent UI declaratively through `ui`, or register it
