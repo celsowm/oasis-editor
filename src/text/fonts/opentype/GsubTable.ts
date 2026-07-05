@@ -1,4 +1,5 @@
 import { BinaryReader } from "@/text/truetype/BinaryReader.js";
+import { parseExtensionLookup } from "@/text/fonts/opentype/extensionLookup.js";
 import {
   collectLookupIndices,
   parseClassDef,
@@ -466,15 +467,9 @@ function parseSubtable(
       return parseLigatureSubst(reader, offset);
     case 6:
       return parseChainContextSubst(reader, offset);
-    case 7: {
+    case 7:
       // Extension substitution: unwrap to the real subtable.
-      reader.seek(offset);
-      const format = reader.u16();
-      if (format !== 1) return null;
-      const extensionType = reader.u16();
-      const extensionOffset = offset + reader.u32();
-      return parseSubtable(reader, extensionOffset, extensionType);
-    }
+      return parseExtensionLookup(reader, offset, parseSubtable);
     default:
       return null;
   }
