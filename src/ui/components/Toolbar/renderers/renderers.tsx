@@ -148,6 +148,8 @@ function RenderSelect(props: RendererProps<SelectItem>): JSX.Element {
       value={(b.value() as string | undefined) ?? ""}
       data-testid={props.item.testId}
       tooltip={resolveTooltip(props.item, props.api)}
+      label={resolveLabel(props.item, props.api)}
+      ribbonSize={props.item.ribbonSize}
       onChange={onChange}
     >
       <Show when={props.item.placeholder !== undefined}>
@@ -190,6 +192,8 @@ function RenderColorPicker(props: RendererProps<ColorPickerItem>): JSX.Element {
       defaultValue={props.item.defaultValue}
       lastValue={lastValue()}
       tooltip={resolveTooltip(props.item, props.api) ?? ""}
+      label={resolveLabel(props.item, props.api)}
+      ribbonSize={props.item.ribbonSize}
       testId={props.item.testId ?? props.item.id}
       palette={props.item.palette ?? DEFAULT_PALETTE}
       automaticLabel={props.api.t("toolbar.colorAutomatic")}
@@ -215,6 +219,8 @@ function RenderGridPicker(props: RendererProps<GridPickerItem>): JSX.Element {
       testId={props.item.testId}
       tooltip={resolveTooltip(props.item, props.api)}
       icon={props.item.iconName}
+      label={resolveLabel(props.item, props.api)}
+      ribbonSize={props.item.ribbonSize}
       maxRows={props.item.maxRows}
       maxCols={props.item.maxCols}
       onSelect={onSelect}

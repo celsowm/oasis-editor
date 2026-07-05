@@ -263,6 +263,72 @@
   margin-left: 0;
 }
 
+.oasis-editor-toolbar-view-ribbon .oasis-editor-color-split-ribbon-large {
+  min-width: 64px;
+  max-width: 96px;
+  min-height: 63px;
+  height: 63px;
+}
+
+.oasis-editor-toolbar-view-ribbon .oasis-editor-color-split-ribbon-large .oasis-editor-color-split-main {
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  width: auto;
+  padding: 5px 4px 3px;
+}
+
+.oasis-editor-toolbar-view-ribbon .oasis-editor-color-split-ribbon-large .oasis-editor-color-split-menu-button {
+  align-self: stretch;
+  height: auto;
+}
+
+.oasis-editor-toolbar-view-ribbon .oasis-editor-color-split-ribbon-large span:not(.oasis-editor-color-split-icon):not(.oasis-editor-color-split-indicator) {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 11px;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.oasis-editor-tool-select-ribbon-large-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 64px;
+  max-width: 96px;
+  min-height: 63px;
+  height: 63px;
+  padding: 5px 4px 3px;
+  box-sizing: border-box;
+}
+
+.oasis-editor-tool-select-ribbon-large-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 11px;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--oasis-text);
+}
+
+.oasis-editor-toolbar-view-ribbon .oasis-editor-tool-select-ribbon-large {
+  width: 100%;
+  height: auto;
+  min-height: 24px;
+}
+
 .oasis-editor-toolbar-view-ribbon .oasis-editor-tool-select {
   padding: 3px 7px;
   border-radius: 3px;

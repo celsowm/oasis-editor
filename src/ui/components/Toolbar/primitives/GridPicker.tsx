@@ -1,4 +1,4 @@
-import { For, createEffect, createSignal, onCleanup, type JSX } from "solid-js";
+import { For, Show, createEffect, createSignal, onCleanup, type JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Popover } from "./Popover.js";
 
@@ -7,6 +7,8 @@ export interface GridPickerProps {
   tooltip?: string;
   testId?: string;
   icon?: string;
+  label?: string;
+  ribbonSize?: "normal" | "large";
   maxRows?: number;
   maxCols?: number;
 }
@@ -100,13 +102,20 @@ export function GridPicker(props: GridPickerProps): JSX.Element {
             ref={(el): void => api.ref(el)}
             type="button"
             class="oasis-editor-tool-button"
-            classList={{ "oasis-editor-tool-button-active": api.open }}
+            classList={{
+              "oasis-editor-tool-button-active": api.open,
+              "oasis-editor-tool-button-ribbon-large":
+                props.ribbonSize === "large",
+            }}
             onClick={(): void => api.toggle()}
             title={tooltip()}
             aria-label={tooltip()}
             data-testid={props.testId}
           >
             <i data-lucide={icon()} />
+            <Show when={props.label}>
+              <span>{props.label}</span>
+            </Show>
           </button>
         )}
       >

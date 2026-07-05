@@ -1,9 +1,11 @@
-import { createEffect, splitProps, type JSX } from "solid-js";
+import { createEffect, Show, splitProps, type JSX } from "solid-js";
 
 export interface ToolbarSelectProps extends JSX.SelectHTMLAttributes<HTMLSelectElement> {
   wide?: boolean;
   small?: boolean;
   tooltip?: string;
+  label?: string;
+  ribbonSize?: "normal" | "large";
 }
 
 /**
@@ -19,6 +21,8 @@ export function Select(props: ToolbarSelectProps): JSX.Element {
     "tooltip",
     "aria-label",
     "value",
+    "label",
+    "ribbonSize",
   ]);
 
   const ariaLabel = (): string => local["aria-label"] || local.tooltip || "";
@@ -34,13 +38,14 @@ export function Select(props: ToolbarSelectProps): JSX.Element {
     }
   });
 
-  return (
+  const select = (): JSX.Element => (
     <select
       ref={selectRef}
       class={`oasis-editor-tool-select ${local.class || ""}`}
       classList={{
         "oasis-editor-tool-select-wide": local.wide,
         "oasis-editor-tool-select-small": local.small,
+        "oasis-editor-tool-select-ribbon-large": local.ribbonSize === "large",
       }}
       title={local.tooltip}
       aria-label={ariaLabel()}
@@ -49,5 +54,18 @@ export function Select(props: ToolbarSelectProps): JSX.Element {
     >
       {others.children}
     </select>
+  );
+
+  return (
+    <Show when={local.ribbonSize === "large"} fallback={select()}>
+      <div class="oasis-editor-tool-select-ribbon-large-wrap">
+        <Show when={local.label}>
+          <span class="oasis-editor-tool-select-ribbon-large-label">
+            {local.label}
+          </span>
+        </Show>
+        {select()}
+      </div>
+    </Show>
   );
 }

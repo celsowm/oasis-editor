@@ -144,6 +144,9 @@ export interface SelectItem extends ToolbarItemBase {
   /** Leading "empty" option label, if any (e.g. font placeholder). */
   placeholder?: string;
   width?: "wide" | "small" | "default";
+  /** Caption shown above the control when `ribbonSize` is `"large"`. */
+  labelKey?: TranslationKey;
+  label?: string;
 }
 
 export interface StyleGalleryItem extends ToolbarItemBase {
@@ -161,6 +164,9 @@ export interface ColorPickerItem extends ToolbarItemBase {
   command: CommandRef;
   palette?: ColorPalette;
   defaultValue: string;
+  /** Caption shown under the swatch when `ribbonSize` is `"large"`. */
+  labelKey?: TranslationKey;
+  label?: string;
 }
 
 export interface GridPickerItem extends ToolbarItemBase {
@@ -169,6 +175,9 @@ export interface GridPickerItem extends ToolbarItemBase {
   command: CommandRef;
   maxRows?: number;
   maxCols?: number;
+  /** Caption shown under the icon when `ribbonSize` is `"large"`. */
+  labelKey?: TranslationKey;
+  label?: string;
 }
 
 export interface SeparatorItem {

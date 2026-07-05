@@ -9,6 +9,7 @@ export interface SplitButtonProps {
   tooltip?: string;
   rootClass?: string;
   rootActive?: boolean;
+  ribbonSize?: "normal" | "large";
   /** Main (left) button. */
   mainContent: JSX.Element;
   mainTestId?: string;
@@ -43,6 +44,8 @@ export function SplitButton(props: SplitButtonProps): JSX.Element {
           class={props.rootClass ?? "oasis-editor-color-split"}
           classList={{
             "oasis-editor-color-split-active": props.rootActive ?? api.open,
+            "oasis-editor-color-split-ribbon-large":
+              props.ribbonSize === "large",
           }}
           title={props.tooltip}
         >

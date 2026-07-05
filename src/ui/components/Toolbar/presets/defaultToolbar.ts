@@ -727,6 +727,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     testId: "editor-toolbar-insert-image",
     iconName: "image",
     tooltipKey: "toolbar.image",
+    labelKey: "toolbar.image",
+    ribbonSize: "large",
     command: "insertImage",
   });
   items.push({
@@ -735,6 +737,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     testId: "editor-toolbar-insert-shape",
     iconName: "shapes",
     tooltipKey: "toolbar.shapes",
+    labelKey: "toolbar.shapes",
+    ribbonSize: "large",
     panelClass: "oasis-editor-shape-gallery-panel",
     content: {
       kind: "custom",
@@ -746,6 +750,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     id: "editor-toolbar-insert-table",
     testId: "editor-toolbar-insert-table",
     tooltipKey: "toolbar.table",
+    labelKey: "toolbar.table",
+    ribbonSize: "large",
     command: "insertTable",
   });
   items.push({
@@ -755,6 +761,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     iconName: "link",
     command: "link",
     tooltip: `${t("toolbar.link")} (${mod}+K)`,
+    labelKey: "toolbar.link",
+    ribbonSize: "large",
   });
   items.push({
     type: "button",
@@ -763,6 +771,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     iconName: "unlink",
     command: "unlink",
     tooltipKey: "toolbar.unlink",
+    labelKey: "toolbar.unlink",
+    ribbonSize: "large",
   });
   items.push({
     type: "button",
@@ -771,6 +781,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     iconName: "footnote",
     command: "insertFootnote",
     tooltip: `${t("toolbar.footnote")} (${mod}+Alt+F)`,
+    labelKey: "toolbar.footnote",
+    ribbonSize: "large",
   });
   items.push({
     type: "button",
@@ -778,6 +790,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     testId: "editor-toolbar-image-alt",
     iconName: "file-text",
     tooltipKey: "toolbar.alt",
+    labelKey: "toolbar.alt",
+    ribbonSize: "large",
     command: "editImageAlt",
     isVisible: (api) => api.commands.state("editImageAlt").isEnabled,
   });
@@ -787,6 +801,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     testId: "editor-toolbar-image-caption",
     iconName: "subtitles",
     tooltipKey: "toolbar.imageCaption",
+    labelKey: "toolbar.imageCaption",
+    ribbonSize: "large",
     command: "insertImageCaption",
     isVisible: (api) => api.commands.state("insertImageCaption").isEnabled,
   });
@@ -896,6 +912,7 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   items.push({
     type: "custom",
     id: "editor-toolbar-metrics",
+    ribbonSize: "large",
     render: (api) => MetricGroup({ api }),
   });
   items.push({ type: "separator", id: "sep-metrics" });
@@ -912,6 +929,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
       iconName: spec.icon,
       command: spec.command,
       tooltipKey: spec.tooltipKey,
+      labelKey: spec.tooltipKey,
+      ribbonSize: "large",
     });
   }
 
@@ -925,6 +944,7 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
       command: spec.command,
       labelKey: spec.labelKey,
       tooltipKey: spec.labelKey,
+      ribbonSize: "large",
     });
   }
   // Borders: shading (a real color picker, not a prompt) + border presets.
@@ -936,6 +956,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     command: "tableCellShading",
     defaultValue: "#f1f5f9",
     tooltipKey: "table.cellColor",
+    labelKey: "table.cellColor",
+    ribbonSize: "large",
   });
   items.push({
     type: "button",
@@ -944,6 +966,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     iconName: "frame",
     command: "tableCellBorders",
     tooltipKey: "table.applyBorders",
+    labelKey: "table.applyBorders",
+    ribbonSize: "large",
   });
   items.push({
     type: "button",
@@ -952,6 +976,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     iconName: "square",
     command: "tableCellNoBorders",
     tooltipKey: "table.removeBorders",
+    labelKey: "table.removeBorders",
+    ribbonSize: "large",
   });
   // Table Styles: apply a named table style (the document's table-style gallery).
   items.push({
@@ -959,6 +985,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     id: "editor-toolbar-tbl-style",
     testId: "editor-toolbar-tbl-style",
     tooltipKey: "table.tableStyle",
+    labelKey: "table.tableStyle",
+    ribbonSize: "large",
     placeholder: t("table.tableStyle"),
     width: "wide",
     command: "setTableStyle",
@@ -972,6 +1000,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     iconName: "rows",
     command: "tableDistributeRows",
     tooltipKey: "table.distributeRows",
+    labelKey: "table.distributeRows",
+    ribbonSize: "large",
   });
   items.push({
     type: "button",
@@ -980,6 +1010,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     iconName: "columns",
     command: "tableDistributeColumns",
     tooltipKey: "table.distributeColumns",
+    labelKey: "table.distributeColumns",
+    ribbonSize: "large",
   });
   items.push({
     type: "toggle",
@@ -989,6 +1021,7 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     command: "tableToggleAutoFit",
     labelKey: "table.autoFit",
     tooltipKey: "table.autoFit",
+    ribbonSize: "large",
   });
 
   // --- Section ---

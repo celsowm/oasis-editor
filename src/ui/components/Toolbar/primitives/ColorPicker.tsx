@@ -12,6 +12,8 @@ export interface ColorPickerProps {
   lastValue: string;
   tooltip: string;
   testId: string;
+  label?: string;
+  ribbonSize?: "normal" | "large";
   palette: ColorPalette;
   automaticLabel?: string;
   noColorLabel?: string;
@@ -53,6 +55,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
       open={isOpen()}
       onOpenChange={(open): true | void => (open ? setIsOpen(true) : close())}
       tooltip={props.tooltip}
+      ribbonSize={props.ribbonSize}
       panelClass="oasis-editor-color-menu"
       panelRole="menu"
       onPanelMouseLeave={(): null => setPreviewColor(null)}
@@ -62,16 +65,21 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
       menuTestId={`${props.testId}-dropdown`}
       menuAriaLabel={`${props.tooltip} menu`}
       mainContent={
-        <span class="oasis-editor-color-split-icon">
-          <i data-lucide={props.icon} />
-          <span
-            class="oasis-editor-color-split-indicator"
-            classList={{
-              "oasis-editor-color-split-indicator-empty": !displayColor(),
-            }}
-            style={{ "background-color": displayColor() ?? undefined }}
-          />
-        </span>
+        <>
+          <span class="oasis-editor-color-split-icon">
+            <i data-lucide={props.icon} />
+            <span
+              class="oasis-editor-color-split-indicator"
+              classList={{
+                "oasis-editor-color-split-indicator-empty": !displayColor(),
+              }}
+              style={{ "background-color": displayColor() ?? undefined }}
+            />
+          </span>
+          <Show when={props.label}>
+            <span>{props.label}</span>
+          </Show>
+        </>
       }
     >
       <Show when={clearLabel()}>
