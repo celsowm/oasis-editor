@@ -33,6 +33,7 @@ import {
   collectInlineImagesFromLines,
   collectInlineTextBoxesFromLines,
 } from "./canvasInlineReaders.js";
+import { toSnapshotLines } from "./canvasSnapshotLines.js";
 
 import type {
   CanvasSnapshotSlot,
@@ -348,27 +349,11 @@ export function buildCanvasLayoutSnapshot(
             top: cursorY,
             width: blockContentWidth,
             height: Math.max(0, block.estimatedHeight),
-            lines: block.layout.lines.map((line) => ({
-              startOffset: line.startOffset,
-              endOffset: line.endOffset,
-              top: lineTopOffset + line.top,
-              height: line.height,
-              slots: line.slots.map(
-                (
-                  slot,
-                ): {
-                  offset: number;
-                  left: number;
-                  top: number;
-                  height: number;
-                } => ({
-                  offset: slot.offset,
-                  left: blockContentLeft + slot.left,
-                  top: lineTopOffset + slot.top,
-                  height: slot.height,
-                }),
-              ),
-            })),
+            lines: toSnapshotLines(
+              block.layout.lines,
+              blockContentLeft,
+              lineTopOffset,
+            ),
           });
           inlineImages.push(
             ...collectInlineImagesFromLines({
@@ -533,27 +518,11 @@ export function buildCanvasLayoutSnapshot(
                     state,
                     carry: verticalCarry,
                   })
-                : paragraphLayout.lines.map((line) => ({
-                    startOffset: line.startOffset,
-                    endOffset: line.endOffset,
-                    top: paragraphLayout.originY + line.top,
-                    height: line.height,
-                    slots: line.slots.map(
-                      (
-                        slot,
-                      ): {
-                        offset: number;
-                        left: number;
-                        top: number;
-                        height: number;
-                      } => ({
-                        offset: slot.offset,
-                        left: paragraphLayout.originX + slot.left,
-                        top: paragraphLayout.originY + slot.top,
-                        height: slot.height,
-                      }),
-                    ),
-                  }));
+                : toSnapshotLines(
+                    paragraphLayout.lines,
+                    paragraphLayout.originX,
+                    paragraphLayout.originY,
+                  );
               snapshotParagraphs.push({
                 paragraph: paragraphLayout.paragraph,
                 paragraphId,
