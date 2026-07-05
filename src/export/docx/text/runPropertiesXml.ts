@@ -9,6 +9,7 @@ import type {
 import {
   escapeXml,
   normalizeDocxColor,
+  serializeShading,
   toHalfPoints,
 } from "@/export/docx/xmlUtils.js";
 import {
@@ -384,9 +385,7 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
     );
   }
   if (styles.shading) {
-    parts.push(
-      `<w:shd w:val="clear" w:color="auto" w:fill="${normalizeDocxColor(styles.shading, "FFFFFF")}"/>`,
-    );
+    parts.push(serializeShading(styles.shading));
   }
   if (
     styles.fitText !== undefined &&

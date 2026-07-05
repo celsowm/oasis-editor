@@ -53,3 +53,8 @@ export function normalizeDocxColor(
 ): string {
   return normalizeHex6(color) ?? fallback;
 }
+
+/** Serializes a solid-fill `<w:shd>` element (clear pattern, auto color). */
+export function serializeShading(fill: string | undefined): string {
+  return `<w:shd w:val="clear" w:color="auto" w:fill="${normalizeDocxColor(fill, "FFFFFF")}"/>`;
+}

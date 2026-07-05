@@ -16,7 +16,7 @@ import {
   buildTableCellLayout,
   TableCellLayoutEntry,
 } from "@/core/tableLayout.js";
-import { escapeXml, normalizeDocxColor, pointsToTwips } from "./xmlUtils.js";
+import { escapeXml, pointsToTwips, serializeShading } from "./xmlUtils.js";
 import { serializeDocxBorderAttrs } from "./borders.js";
 
 const DEFAULT_TABLE_BORDER_COLOR = "6F6F6F";
@@ -245,9 +245,7 @@ function serializeTableCellProperties(
     parts.push("<w:vMerge/>");
   }
   if (cell.style?.shading) {
-    parts.push(
-      `<w:shd w:val="clear" w:color="auto" w:fill="${normalizeDocxColor(cell.style.shading, "FFFFFF")}"/>`,
-    );
+    parts.push(serializeShading(cell.style.shading));
   }
   const noWrap = serializeOnOffElement("noWrap", cell.style?.noWrap);
   if (noWrap) {

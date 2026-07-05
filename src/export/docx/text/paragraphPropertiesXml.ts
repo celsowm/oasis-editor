@@ -7,9 +7,9 @@ import type {
 } from "@/core/model.js";
 import {
   escapeXml,
-  normalizeDocxColor,
   pointsToTwips,
   pxToTwips,
+  serializeShading,
   toTwips,
 } from "@/export/docx/xmlUtils.js";
 import { serializeParagraphBorders } from "@/export/docx/borders.js";
@@ -199,9 +199,7 @@ export function serializeParagraphStyleXml(
     parts.push(paragraphBorders);
   }
   if (style.shading) {
-    parts.push(
-      `<w:shd w:val="clear" w:color="auto" w:fill="${normalizeDocxColor(style.shading, "FFFFFF")}"/>`,
-    );
+    parts.push(serializeShading(style.shading));
   }
   if (style.textDirection) {
     parts.push(`<w:textDirection w:val="${style.textDirection}"/>`);
@@ -298,9 +296,7 @@ export function serializeParagraphProperties(
     parts.push(paragraphBorders);
   }
   if (style.shading) {
-    parts.push(
-      `<w:shd w:val="clear" w:color="auto" w:fill="${normalizeDocxColor(style.shading, "FFFFFF")}"/>`,
-    );
+    parts.push(serializeShading(style.shading));
   }
   if (style.textDirection) {
     parts.push(`<w:textDirection w:val="${style.textDirection}"/>`);
