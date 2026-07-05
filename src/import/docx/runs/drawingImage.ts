@@ -1,10 +1,6 @@
 import JSZip from "jszip";
 import { type Element as XmlElement } from "@xmldom/xmldom";
-import type {
-  EditorImageRunData,
-  EditorImageFloatingLayout,
-  EditorImageFloatingPosition,
-} from "@/core/model.js";
+import type { EditorImageRunData } from "@/core/model.js";
 import {
   getAttributeValue,
   findElementDeep,
@@ -14,12 +10,17 @@ import {
   EMU_PER_PX,
   OOXML_PERCENT_DENOMINATOR,
   OOXML_ROTATION_UNITS,
+  parseOptionalInt,
 } from "./units.js";
 import {
   isAbsoluteUri,
   parseBlipRels,
   loadEmbeddedImage,
 } from "./relationships.js";
+import {
+  findDrawingContainer,
+  parseFloatingLayout,
+} from "./drawingAnchorLayout.js";
 
 function parseSrcRect(picPic: XmlElement): EditorImageRunData["crop"] {
   const srcRect = findElementDeep(picPic, "srcRect");
@@ -52,81 +53,6 @@ function parseSrcRect(picPic: XmlElement): EditorImageRunData["crop"] {
     return undefined;
   }
   return crop;
-}
-
-function findDrawingContainer(
-  drawing: XmlElement,
-): { element: XmlElement; kind: "inline" | "anchor" } | undefined {
-  for (let index = 0; index < drawing.childNodes.length; index += 1) {
-    const node = drawing.childNodes[index];
-    if (node?.nodeType !== node.ELEMENT_NODE) {
-      continue;
-    }
-    const element = node as XmlElement;
-    if (element.localName === "inline" || element.localName === "anchor") {
-      return { element, kind: element.localName };
-    }
-  }
-  return undefined;
-}
-
-function parseAnchorBoolean(
-  value: string | null | undefined,
-): boolean | undefined {
-  if (value === "1" || value === "true") {
-    return true;
-  }
-  if (value === "0" || value === "false") {
-    return false;
-  }
-  return undefined;
-}
-
-function parseAnchorPosition(
-  anchor: XmlElement,
-  localName: "positionH" | "positionV",
-): EditorImageFloatingPosition | undefined {
-  const element = findElementDeep(anchor, localName);
-  if (!element) {
-    return undefined;
-  }
-  const align = findElementDeep(element, "align")?.textContent?.trim();
-  const offsetText = findElementDeep(element, "posOffset")?.textContent?.trim();
-  const offset = parseOptionalInt(offsetText);
-  const position = {
-    relativeFrom: element.getAttribute("relativeFrom") ?? undefined,
-    ...(align ? { align } : {}),
-    ...(offset !== undefined ? { offset } : {}),
-  };
-  if (
-    position.relativeFrom === undefined &&
-    position.align === undefined &&
-    position.offset === undefined
-  ) {
-    return undefined;
-  }
-  return position;
-}
-
-function parseOptionalInt(
-  value: string | null | undefined,
-): number | undefined {
-  if (value === null || value === undefined || value === "") {
-    return undefined;
-  }
-  const parsed = parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function parseAnchorWrap(
-  anchor: XmlElement,
-): EditorImageFloatingLayout["wrap"] {
-  if (findElementDeep(anchor, "wrapSquare")) return "square";
-  if (findElementDeep(anchor, "wrapTight")) return "tight";
-  if (findElementDeep(anchor, "wrapThrough")) return "through";
-  if (findElementDeep(anchor, "wrapTopAndBottom")) return "topAndBottom";
-  if (findElementDeep(anchor, "wrapNone")) return "none";
-  return undefined;
 }
 
 /** OOXML wrap polygons use a 0..21600 normalized coordinate space. */
@@ -165,42 +91,6 @@ function parseWrapPolygon(
     }
   }
   return points.length >= 3 ? points : undefined;
-}
-
-function parseFloatingLayout(
-  anchor: XmlElement,
-): EditorImageFloatingLayout | undefined {
-  const positionH = parseAnchorPosition(anchor, "positionH");
-  const positionV = parseAnchorPosition(anchor, "positionV");
-  const wrap = parseAnchorWrap(anchor);
-  const distT = parseOptionalInt(anchor.getAttribute("distT"));
-  const distB = parseOptionalInt(anchor.getAttribute("distB"));
-  const distL = parseOptionalInt(anchor.getAttribute("distL"));
-  const distR = parseOptionalInt(anchor.getAttribute("distR"));
-  const simplePos = parseAnchorBoolean(anchor.getAttribute("simplePos"));
-  const relativeHeight = parseOptionalInt(
-    anchor.getAttribute("relativeHeight"),
-  );
-  const behindDoc = parseAnchorBoolean(anchor.getAttribute("behindDoc"));
-  const locked = parseAnchorBoolean(anchor.getAttribute("locked"));
-  const layoutInCell = parseAnchorBoolean(anchor.getAttribute("layoutInCell"));
-  const allowOverlap = parseAnchorBoolean(anchor.getAttribute("allowOverlap"));
-  return {
-    type: "floating",
-    ...(distT !== undefined ? { distT } : {}),
-    ...(distB !== undefined ? { distB } : {}),
-    ...(distL !== undefined ? { distL } : {}),
-    ...(distR !== undefined ? { distR } : {}),
-    ...(simplePos !== undefined ? { simplePos } : {}),
-    ...(relativeHeight !== undefined ? { relativeHeight } : {}),
-    ...(behindDoc !== undefined ? { behindDoc } : {}),
-    ...(locked !== undefined ? { locked } : {}),
-    ...(layoutInCell !== undefined ? { layoutInCell } : {}),
-    ...(allowOverlap !== undefined ? { allowOverlap } : {}),
-    ...(positionH ? { positionH } : {}),
-    ...(positionV ? { positionV } : {}),
-    ...(wrap ? { wrap } : {}),
-  };
 }
 
 function parseFillMode(picPic: XmlElement): EditorImageRunData["fillMode"] {
