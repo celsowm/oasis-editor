@@ -5,6 +5,10 @@ import type {
   CanvasSnapshotFloatingTextBox,
   ResolveTextBoxRenderHeight,
 } from "./canvasSnapshotTypes.js";
+import {
+  findSlotForOffset,
+  resolveInclusiveEndOffset,
+} from "./canvasLineSlotLookup.js";
 
 // Readers that recover floating image / text-box geometry from the painted
 // canvas lines, mirroring the painter's floating-object positioning. Extracted
@@ -102,13 +106,7 @@ export function collectFloatingImagesFromLines(options: {
         continue;
       }
 
-      const slot =
-        line.slots.find(
-          (candidate): boolean => candidate.offset === fragment.startOffset,
-        ) ??
-        line.slots.find(
-          (candidate): boolean => candidate.offset >= fragment.startOffset,
-        );
+      const slot = findSlotForOffset(line.slots, fragment.startOffset);
       if (!slot) {
         continue;
       }
@@ -132,10 +130,10 @@ export function collectFloatingImagesFromLines(options: {
         footnoteId: options.footnoteId,
         pageIndex: options.pageIndex,
         startOffset: fragment.startOffset,
-        endOffset:
-          fragment.endOffset > fragment.startOffset
-            ? fragment.endOffset
-            : fragment.startOffset + 1,
+        endOffset: resolveInclusiveEndOffset(
+          fragment.startOffset,
+          fragment.endOffset,
+        ),
         left,
         top,
         width: image.width,
@@ -190,13 +188,7 @@ export function collectFloatingTextBoxesFromLines(options: {
         continue;
       }
 
-      const slot =
-        line.slots.find(
-          (candidate): boolean => candidate.offset === fragment.startOffset,
-        ) ??
-        line.slots.find(
-          (candidate): boolean => candidate.offset >= fragment.startOffset,
-        );
+      const slot = findSlotForOffset(line.slots, fragment.startOffset);
 
       if (!slot) {
         continue;
@@ -221,10 +213,10 @@ export function collectFloatingTextBoxesFromLines(options: {
         footnoteId: options.footnoteId,
         pageIndex: options.pageIndex,
         startOffset: fragment.startOffset,
-        endOffset:
-          fragment.endOffset > fragment.startOffset
-            ? fragment.endOffset
-            : fragment.startOffset + 1,
+        endOffset: resolveInclusiveEndOffset(
+          fragment.startOffset,
+          fragment.endOffset,
+        ),
         left,
         top,
         width: textBox.width,

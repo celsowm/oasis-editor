@@ -4,6 +4,10 @@ import type {
   CanvasSnapshotInlineTextBox,
   ResolveTextBoxRenderHeight,
 } from "./canvasSnapshotTypes.js";
+import {
+  findSlotForOffset,
+  resolveInclusiveEndOffset,
+} from "./canvasLineSlotLookup.js";
 
 // Readers that recover inline image / text-box geometry from the painted canvas
 // lines. Extracted from CanvasLayoutSnapshot.ts (S2).
@@ -71,17 +75,11 @@ export function collectInlineImagesFromLines(options: {
         continue;
       }
       const imageStartOffset = fragment.startOffset;
-      const imageEndOffset =
-        fragment.endOffset > imageStartOffset
-          ? fragment.endOffset
-          : imageStartOffset + 1;
-      const slot =
-        line.slots.find(
-          (candidate): boolean => candidate.offset === imageStartOffset,
-        ) ??
-        line.slots.find(
-          (candidate): boolean => candidate.offset >= imageStartOffset,
-        );
+      const imageEndOffset = resolveInclusiveEndOffset(
+        imageStartOffset,
+        fragment.endOffset,
+      );
+      const slot = findSlotForOffset(line.slots, imageStartOffset);
       if (!slot) {
         continue;
       }
@@ -147,15 +145,11 @@ export function collectInlineTextBoxesFromLines(options: {
         continue;
       }
       const startOffset = fragment.startOffset;
-      const endOffset =
-        fragment.endOffset > startOffset ? fragment.endOffset : startOffset + 1;
-      const slot =
-        line.slots.find(
-          (candidate): boolean => candidate.offset === startOffset,
-        ) ??
-        line.slots.find(
-          (candidate): boolean => candidate.offset >= startOffset,
-        );
+      const endOffset = resolveInclusiveEndOffset(
+        startOffset,
+        fragment.endOffset,
+      );
+      const slot = findSlotForOffset(line.slots, startOffset);
       if (!slot) {
         continue;
       }
