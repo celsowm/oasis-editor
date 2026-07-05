@@ -7,9 +7,10 @@ import {
   VNode,
   RendererNode,
   RendererElement,
+  type PropType,
 } from "vue";
-import { mount } from "oasis-editor";
 import type { OasisEditorAppProps, OasisEditorClient } from "oasis-editor";
+import { createOasisMountController } from "./mountController.js";
 
 export const OasisEditor = defineComponent({
   name: "OasisEditor",
@@ -19,25 +20,21 @@ export const OasisEditor = defineComponent({
       default: (): Record<string, never> => ({}),
     },
     class: String,
-    style: [String, Object] as unknown as () =>
-      | string
-      | Record<string, unknown>,
-    onClient: Function as unknown as () => (client: OasisEditorClient) => void,
+    style: [String, Object] as PropType<string | Record<string, unknown>>,
+    onClient: Function as PropType<(client: OasisEditorClient) => void>,
   },
   setup(props) {
     const root = ref<HTMLElement | null>(null);
-    let instance: ReturnType<typeof mount> | null = null;
+    const controller = createOasisMountController();
 
     onMounted((): void => {
       if (root.value) {
-        instance = mount(root.value, props.config);
-        props.onClient?.(instance);
+        controller.mount(root.value, props.config, props.onClient);
       }
     });
 
     onBeforeUnmount((): void => {
-      instance?.unmount();
-      instance = null;
+      controller.unmount();
     });
 
     return (): VNode<

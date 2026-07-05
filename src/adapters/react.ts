@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
-import { mount } from "oasis-editor";
 import type { OasisEditorAppProps, OasisEditorClient } from "oasis-editor";
+import { createOasisMountController } from "./mountController.js";
 
 export type ReactOasisEditorProps = OasisEditorAppProps & {
   /**
@@ -12,16 +12,14 @@ export type ReactOasisEditorProps = OasisEditorAppProps & {
 
 export const OasisEditor: React.FC<ReactOasisEditorProps> = (props) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const instanceRef = useRef<ReturnType<typeof mount> | null>(null);
 
   useEffect(() => {
+    const controller = createOasisMountController();
     if (containerRef.current) {
-      instanceRef.current = mount(containerRef.current, props);
-      props.onClient?.(instanceRef.current);
+      controller.mount(containerRef.current, props, props.onClient);
     }
     return (): void => {
-      instanceRef.current?.unmount();
-      instanceRef.current = null;
+      controller.unmount();
     };
   }, []); // mount-only — remount component to apply new config
 
