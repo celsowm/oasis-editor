@@ -6,7 +6,7 @@ import type {
   EditorTableCellNode,
 } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
-import { PT_PER_PX } from "@/core/units.js";
+import { parseUnitToPt as parseWidthToPt } from "@/core/units/parseUnitToPt.js";
 import {
   createTableRevisionMetadata,
   updateActiveTableBlocks,
@@ -16,32 +16,6 @@ import {
 
 /** Fallback per-column width (pt) when a table has no resolvable grid. */
 const DEFAULT_DISTRIBUTED_COLUMN_PT = 120;
-
-function parseWidthToPt(value: number | string | undefined): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value !== "string") {
-    return null;
-  }
-  const trimmed = value.trim().toLowerCase();
-  if (!trimmed || trimmed.includes("%")) {
-    return null;
-  }
-  if (trimmed.endsWith("pt")) {
-    const parsed = Number.parseFloat(trimmed.slice(0, -2));
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  if (trimmed.endsWith("px")) {
-    const parsed = Number.parseFloat(trimmed.slice(0, -2));
-    return Number.isFinite(parsed) ? parsed * PT_PER_PX : null;
-  }
-  if (!/^[+-]?\d+(\.\d+)?$/.test(trimmed)) {
-    return null;
-  }
-  const parsed = Number.parseFloat(trimmed);
-  return Number.isFinite(parsed) ? parsed : null;
-}
 
 export function setTableColumnWidths(
   state: EditorState,
