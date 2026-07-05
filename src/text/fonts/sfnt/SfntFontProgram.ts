@@ -13,6 +13,10 @@ import type {
   FontMetadata,
   ParsedFontProgram,
 } from "@/text/fonts/core/types.js";
+import {
+  computeNaturalLineHeightPx,
+  computeWordTextTopOffsetPx,
+} from "@/text/fontMetricsUtil.js";
 
 function readSignedFixed16_16(reader: BinaryReader, offset: number): number {
   const integer = reader.u16At(offset);
@@ -162,17 +166,18 @@ export class SfntFontProgram implements ParsedFontProgram {
   }
 
   naturalLineHeightPx(fontSizePx: number): number {
-    const { ascent, descent, lineGap } = this.verticalMetrics;
-    return ((ascent - descent + lineGap) / this.unitsPerEm) * fontSizePx;
+    return computeNaturalLineHeightPx(
+      this.verticalMetrics,
+      this.unitsPerEm,
+      fontSizePx,
+    );
   }
 
   wordTextTopOffsetPx(fontSizePx: number): number {
-    if (!this.os2VerticalMetrics) {
-      return 0;
-    }
-    const { winAscent, typoAscender } = this.os2VerticalMetrics;
-    return (
-      (Math.max(0, winAscent - typoAscender) / this.unitsPerEm) * fontSizePx
+    return computeWordTextTopOffsetPx(
+      this.os2VerticalMetrics,
+      this.unitsPerEm,
+      fontSizePx,
     );
   }
 

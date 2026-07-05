@@ -12,6 +12,10 @@ import {
   type Os2VerticalMetrics,
   type VerticalMetrics,
 } from "./tableParsers.js";
+import {
+  computeNaturalLineHeightPx,
+  computeWordTextTopOffsetPx,
+} from "@/text/fontMetricsUtil.js";
 
 /**
  * A minimal TrueType/OpenType font parser that exposes horizontal advance
@@ -68,8 +72,11 @@ export class TrueTypeFont implements AdvanceWidthSource {
    * a line of text into before any line-spacing multiple is applied.
    */
   naturalLineHeightPx(fontSizePx: number): number {
-    const { ascent, descent, lineGap } = this.verticalMetrics;
-    return ((ascent - descent + lineGap) / this.unitsPerEm) * fontSizePx;
+    return computeNaturalLineHeightPx(
+      this.verticalMetrics,
+      this.unitsPerEm,
+      fontSizePx,
+    );
   }
 
   /**
@@ -80,12 +87,10 @@ export class TrueTypeFont implements AdvanceWidthSource {
    * docGrid snapping.
    */
   wordTextTopOffsetPx(fontSizePx: number): number {
-    if (!this.os2VerticalMetrics) {
-      return 0;
-    }
-    const { winAscent, typoAscender } = this.os2VerticalMetrics;
-    return (
-      (Math.max(0, winAscent - typoAscender) / this.unitsPerEm) * fontSizePx
+    return computeWordTextTopOffsetPx(
+      this.os2VerticalMetrics,
+      this.unitsPerEm,
+      fontSizePx,
     );
   }
 
