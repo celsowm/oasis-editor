@@ -1,41 +1,50 @@
 import { isPresetGeometrySupported } from "./catalog.js";
+import { arrowSegments } from "./families/arrows.js";
 import {
-  actionButtonSegments,
-  arrowSegments,
+  ribbonSegments,
+  scrollSegments,
+  waveSegments,
+} from "./families/banners.js";
+import { braceSegments, bracketSegments } from "./families/bracesBrackets.js";
+import { calloutSegments } from "./families/callouts.js";
+import {
   bevelSegments,
-  blockArcSegments,
-  braceSegments,
-  bracketSegments,
-  calloutSegments,
   canSegments,
-  cloudSegments,
-  connectorSegments,
   cornerSegments,
   cubeSegments,
-  donutSegments,
-  flowChartSegments,
   foldedCornerSegments,
   frameSegments,
   halfFrameSegments,
+  plaqueSegments,
+  tabbedRectSegments,
+} from "./families/containers3d.js";
+import { connectorSegments } from "./families/connectors.js";
+import {
+  cloudSegments,
+  donutSegments,
   heartSegments,
+  moonSegments,
+  noSmokingSegments,
+  smileySegments,
+  teardropSegments,
+} from "./families/decorative.js";
+import {
+  actionButtonSegments,
+  flowChartSegments,
+} from "./families/flowchart.js";
+import {
+  blockArcSegments,
   mathDivideSegments,
   mathEqualSegments,
   mathNotEqualSegments,
-  mixedRectSegments,
-  moonSegments,
-  noSmokingSegments,
-  plaqueSegments,
   plusSegments,
-  ribbonSegments,
-  scrollSegments,
-  smileySegments,
+  xSegments,
+} from "./families/mathSymbols.js";
+import {
+  mixedRectSegments,
   snipRectSegments,
   snipRoundRectSegments,
-  tabbedRectSegments,
-  teardropSegments,
-  waveSegments,
-  xSegments,
-} from "./families.js";
+} from "./families/rectVariants.js";
 import {
   arcSegments,
   ellipseSegments,
