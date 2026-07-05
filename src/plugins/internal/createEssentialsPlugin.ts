@@ -4,12 +4,10 @@ import {
   createCommandBuilder,
   createValueCommandBuilder,
 } from "./essentialsCommandBuilders.js";
-import {
-  buildCoreFormattingCommands,
-  buildDocumentAndBrowserCommands,
-  buildParagraphAndSectionCommands,
-  buildTableCommands,
-} from "./essentialsCommandGroups.js";
+import { buildCoreFormattingCommands } from "./essentialsCommandGroups/coreFormatting.js";
+import { buildDocumentAndBrowserCommands } from "./essentialsCommandGroups/documentAndBrowser.js";
+import { buildParagraphAndSectionCommands } from "./essentialsCommandGroups/paragraphAndSection.js";
+import { buildTableCommands } from "./essentialsCommandGroups/table.js";
 import type { EssentialsPluginDeps } from "./essentialsCapabilities.js";
 
 export type {
