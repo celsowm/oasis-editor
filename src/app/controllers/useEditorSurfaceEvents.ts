@@ -3,6 +3,7 @@ import {
   type EditorState,
   type EditorPosition,
   type EditorParagraphNode,
+  type EditorBlockNode,
   findParagraphTableLocation,
   findParagraphLocation,
   getDocumentParagraphs,
@@ -26,6 +27,29 @@ import type { SurfaceHit } from "@/ui/canvas/CanvasHitTestService.js";
  */
 const REUSE_MOUSE_DOWN_HIT_MAX_AGE_MS = 600;
 const REUSE_MOUSE_DOWN_HIT_MAX_DISTANCE_PX = 8;
+
+/**
+ * Resolves the first navigable paragraph in a header/footer zone, creating a
+ * boundary paragraph (and the containing block array) when the zone is empty.
+ */
+function resolveZoneFirstParagraph(
+  blocks: EditorBlockNode[] | undefined,
+  zone: "header" | "footer",
+): {
+  paragraph: EditorParagraphNode | null;
+  blocks: EditorBlockNode[] | undefined;
+} {
+  if (!blocks || blocks.length === 0) {
+    const paragraph = createSectionBoundaryParagraph(zone);
+    return { paragraph, blocks: [paragraph] };
+  }
+  const firstBlock = blocks[0]!;
+  const paragraph =
+    firstBlock.type === "paragraph"
+      ? firstBlock
+      : (getBlockParagraphs(firstBlock)[0] ?? null);
+  return { paragraph, blocks };
+}
 
 export interface UseEditorSurfaceEventsProps {
   state: () => EditorState;
@@ -181,27 +205,13 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
     let zoneParagraph: EditorParagraphNode | null = null;
 
     if (targetZone === "header") {
-      if (!newHeader || newHeader.length === 0) {
-        zoneParagraph = createSectionBoundaryParagraph("header");
-        newHeader = [zoneParagraph];
-      } else {
-        const firstBlock = newHeader[0];
-        zoneParagraph =
-          firstBlock.type === "paragraph"
-            ? firstBlock
-            : (getBlockParagraphs(firstBlock)[0] ?? null);
-      }
+      const resolved = resolveZoneFirstParagraph(newHeader, "header");
+      zoneParagraph = resolved.paragraph;
+      newHeader = resolved.blocks;
     } else if (targetZone === "footer") {
-      if (!newFooter || newFooter.length === 0) {
-        zoneParagraph = createSectionBoundaryParagraph("footer");
-        newFooter = [zoneParagraph];
-      } else {
-        const firstBlock = newFooter[0];
-        zoneParagraph =
-          firstBlock.type === "paragraph"
-            ? firstBlock
-            : (getBlockParagraphs(firstBlock)[0] ?? null);
-      }
+      const resolved = resolveZoneFirstParagraph(newFooter, "footer");
+      zoneParagraph = resolved.paragraph;
+      newFooter = resolved.blocks;
     }
 
     if (newHeader !== section.header || newFooter !== section.footer) {
