@@ -8,6 +8,7 @@ import {
   type EditorEditingZone,
   type EditorState,
   type EditorTableCellNode,
+  type EditorTableNode,
   type EditorTableRowNode,
   EditorParagraphNode,
 } from "@/core/model.js";
@@ -23,6 +24,38 @@ import {
   resolveLocationTableMutation,
 } from "./tableOpsMutationCommands.js";
 import { createTableRevisionMetadata } from "@/core/commands/table/tableCommandUtils.js";
+
+/** Stamps a track-changes revision of `type` onto `target.style`, preserving any existing style. */
+function markTableRevision<TStyle extends { revision?: unknown }>(
+  target: { style?: TStyle },
+  type: "insert" | "delete",
+): void {
+  target.style = {
+    ...(target.style ?? {}),
+    revision: { ...createTableRevisionMetadata(), type },
+  } as TStyle;
+}
+
+/**
+ * Resolves the paragraph to move the caret into after a row/column mutation:
+ * the target cell's first block, else (when a fallback row is given) the
+ * first non-continuation cell's first block in that row, else the table's
+ * first navigable paragraph.
+ */
+function resolveNextTableParagraph(
+  tableBlock: EditorTableNode,
+  targetCell: EditorTableCellNode | null | undefined,
+  fallbackRow?: EditorTableRowNode,
+): EditorParagraphNode | null {
+  return (
+    targetCell?.blocks[0] ??
+    fallbackRow?.cells.find(
+      (cell): false | EditorParagraphNode =>
+        cell.vMerge !== "continue" && cell.blocks[0],
+    )?.blocks[0] ??
+    findFirstNavigableParagraphInTable(tableBlock)
+  );
+}
 
 interface TableRowColumnOperationsDeps {
   getTargetBlocks: (
@@ -115,26 +148,18 @@ function createTableRowColumnOperationsImpl(
         }),
       );
       if (current.trackChangesEnabled) {
-        blankRow.style = {
-          ...(blankRow.style ?? {}),
-          revision: {
-            ...createTableRevisionMetadata(),
-            type: "insert",
-          },
-        };
+        markTableRevision(blankRow, "insert");
       }
       tableBlock.rows.splice(insertIndex, 0, blankRow);
 
       const targetVisualColumn =
         selectedEntry?.visualColumnIndex ?? location.cellIndex;
       const targetCell = findCellAtVisualColumn(blankRow, targetVisualColumn);
-      const nextParagraph =
-        targetCell?.blocks[0] ??
-        blankRow.cells.find(
-          (cell): false | EditorParagraphNode =>
-            cell.vMerge !== "continue" && cell.blocks[0],
-        )?.blocks[0] ??
-        findFirstNavigableParagraphInTable(tableBlock);
+      const nextParagraph = resolveNextTableParagraph(
+        tableBlock,
+        targetCell,
+        blankRow,
+      );
       return commitTableMutation(
         current,
         targetBlocks,
@@ -153,25 +178,17 @@ function createTableRowColumnOperationsImpl(
       ),
     );
     if (current.trackChangesEnabled) {
-      blankRow.style = {
-        ...(blankRow.style ?? {}),
-        revision: {
-          ...createTableRevisionMetadata(),
-          type: "insert",
-        },
-      };
+      markTableRevision(blankRow, "insert");
     }
     tableBlock.rows.splice(insertIndex, 0, blankRow);
 
     const targetCell =
       blankRow.cells[Math.min(location.cellIndex, blankRow.cells.length - 1)];
-    const nextParagraph =
-      targetCell?.blocks[0] ??
-      blankRow.cells.find(
-        (cell): false | EditorParagraphNode =>
-          cell.vMerge !== "continue" && cell.blocks[0],
-      )?.blocks[0] ??
-      findFirstNavigableParagraphInTable(tableBlock);
+    const nextParagraph = resolveNextTableParagraph(
+      tableBlock,
+      targetCell,
+      blankRow,
+    );
     return commitTableMutation(
       current,
       targetBlocks,
@@ -194,13 +211,7 @@ function createTableRowColumnOperationsImpl(
       return current;
     }
     if (current.trackChangesEnabled) {
-      rowToDelete.style = {
-        ...(rowToDelete.style ?? {}),
-        revision: {
-          ...createTableRevisionMetadata(),
-          type: "delete",
-        },
-      };
+      markTableRevision(rowToDelete, "delete");
       return commitTableMutation(current, targetBlocks, location.zone, null);
     }
 
@@ -258,8 +269,7 @@ function createTableRowColumnOperationsImpl(
           ),
         )
       : null;
-    const nextParagraph =
-      targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+    const nextParagraph = resolveNextTableParagraph(tableBlock, targetCell);
     return commitTableMutation(
       current,
       targetBlocks,
@@ -303,12 +313,7 @@ function createTableRowColumnOperationsImpl(
               createEditorParagraph(""),
             ]);
             if (current.trackChangesEnabled) {
-              insertedCell.style = {
-                revision: {
-                  ...createTableRevisionMetadata(),
-                  type: "insert",
-                },
-              };
+              markTableRevision(insertedCell, "insert");
             }
             nextCells.push(insertedCell);
             inserted = true;
@@ -348,12 +353,7 @@ function createTableRowColumnOperationsImpl(
             createEditorParagraph(""),
           ]);
           if (current.trackChangesEnabled) {
-            insertedCell.style = {
-              revision: {
-                ...createTableRevisionMetadata(),
-                type: "insert",
-              },
-            };
+            markTableRevision(insertedCell, "insert");
           }
           nextCells.push(insertedCell);
         }
@@ -365,8 +365,7 @@ function createTableRowColumnOperationsImpl(
       const targetCell = targetRow
         ? findCellAtVisualColumn(targetRow, insertVisualColumn)
         : null;
-      const nextParagraph =
-        targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+      const nextParagraph = resolveNextTableParagraph(tableBlock, targetCell);
       return commitTableMutation(
         current,
         targetBlocks,
@@ -386,20 +385,14 @@ function createTableRowColumnOperationsImpl(
     for (const row of tableBlock.rows) {
       const insertedCell = createEditorTableCell([createEditorParagraph("")]);
       if (current.trackChangesEnabled) {
-        insertedCell.style = {
-          revision: {
-            ...createTableRevisionMetadata(),
-            type: "insert",
-          },
-        };
+        markTableRevision(insertedCell, "insert");
       }
       row.cells.splice(insertIndex, 0, insertedCell);
     }
 
     const targetRow = tableBlock.rows[location.rowIndex];
     const targetCell = targetRow?.cells[insertIndex];
-    const nextParagraph =
-      targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+    const nextParagraph = resolveNextTableParagraph(tableBlock, targetCell);
     return commitTableMutation(
       current,
       targetBlocks,
@@ -428,13 +421,7 @@ function createTableRowColumnOperationsImpl(
       for (const row of tableBlock.rows) {
         const cell = findCellAtVisualColumn(row, visualColumn);
         if (cell) {
-          cell.style = {
-            ...(cell.style ?? {}),
-            revision: {
-              ...createTableRevisionMetadata(),
-              type: "delete",
-            },
-          };
+          markTableRevision(cell, "delete");
         }
       }
       return commitTableMutation(current, targetBlocks, location.zone, null);
@@ -490,8 +477,7 @@ function createTableRowColumnOperationsImpl(
             Math.max(0, getRowVisualWidth(targetRow) - 1),
           ),
         );
-      const nextParagraph =
-        targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+      const nextParagraph = resolveNextTableParagraph(tableBlock, targetCell);
       return commitTableMutation(
         current,
         targetBlocks,
@@ -513,8 +499,7 @@ function createTableRowColumnOperationsImpl(
       targetRow?.cells[
         Math.min(location.cellIndex, targetRow.cells.length - 1)
       ];
-    const nextParagraph =
-      targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+    const nextParagraph = resolveNextTableParagraph(tableBlock, targetCell);
     return commitTableMutation(
       current,
       targetBlocks,
