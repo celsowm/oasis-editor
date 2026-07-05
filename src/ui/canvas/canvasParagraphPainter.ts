@@ -11,6 +11,7 @@ import {
   resolveTextAlignmentBaselineOffset,
 } from "@/core/layoutConstants.js";
 import { createEditorLogger } from "@/utils/logger.js";
+import { CANVAS_MUTED_MARK_COLOR } from "./canvasTheme.js";
 import { resolveListPrefix } from "./listNumbering.js";
 import { paintTextBox } from "./canvasTextBoxPainter.js";
 import { resolveTextBoxRenderHeight } from "./textBoxRenderHeight.js";
@@ -490,7 +491,7 @@ export function drawParagraph(
       if (markSlot) {
         ctx.save();
         ctx.font = "400 13px Calibri";
-        ctx.fillStyle = "#9ca3af";
+        ctx.fillStyle = CANVAS_MUTED_MARK_COLOR;
         const y = originY + line.top + line.height * TEXT_BASELINE_RATIO;
         ctx.fillText("¶", originX + markSlot.left + 2, y);
         ctx.restore();

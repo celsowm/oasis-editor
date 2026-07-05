@@ -11,6 +11,10 @@ import {
   getPageHeaderZoneTop,
 } from "@/core/model.js";
 import {
+  CANVAS_MARGIN_GUIDE_COLOR,
+  CANVAS_MUTED_MARK_COLOR,
+} from "./canvasTheme.js";
+import {
   renderBlockList,
   renderFootnoteBlockList,
 } from "./canvasBlockPainter.js";
@@ -154,7 +158,7 @@ export function createCanvasPageRenderer(options: {
     if (state.showMargins) {
       const contentHeight = Math.max(24, Math.floor(zoneBodyBottom - bodyTop));
       ctx.save();
-      ctx.strokeStyle = "#d1d5db";
+      ctx.strokeStyle = CANVAS_MARGIN_GUIDE_COLOR;
       ctx.lineWidth = 1;
       ctx.setLineDash([5, 5]);
       if (columnRects) {
@@ -171,7 +175,7 @@ export function createCanvasPageRenderer(options: {
     if (columnRects && columns?.separator) {
       const contentHeight = Math.max(24, Math.floor(zoneBodyBottom - bodyTop));
       ctx.save();
-      ctx.strokeStyle = "#9ca3af";
+      ctx.strokeStyle = CANVAS_MUTED_MARK_COLOR;
       ctx.lineWidth = 1;
       for (let i = 0; i < columnRects.length - 1; i += 1) {
         const rect = columnRects[i]!;

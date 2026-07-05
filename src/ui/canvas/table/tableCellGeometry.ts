@@ -6,6 +6,7 @@ import type {
   EditorTextRun,
 } from "@/core/model.js";
 import { PX_PER_POINT as POINT_TO_PX } from "@/core/units.js";
+import { CANVAS_DEFAULT_TABLE_BORDER_COLOR } from "@/ui/canvas/canvasTheme.js";
 import type { CanvasTableBorderSpec } from "./types.js";
 
 const DEFAULT_CELL_PADDING_TOP_BOTTOM_PX = 0;
@@ -34,7 +35,7 @@ export function parseDimensionToPx(
 }
 
 export function resolveDefaultBorder(): CanvasTableBorderSpec {
-  return { width: 1, color: "#6f6f6f", type: "solid" };
+  return { width: 1, color: CANVAS_DEFAULT_TABLE_BORDER_COLOR, type: "solid" };
 }
 
 export function resolveBorder(
@@ -47,7 +48,7 @@ export function resolveBorder(
   );
   return {
     width,
-    color: border.color ?? "#6f6f6f",
+    color: border.color ?? CANVAS_DEFAULT_TABLE_BORDER_COLOR,
     type: border.type ?? "solid",
   };
 }
