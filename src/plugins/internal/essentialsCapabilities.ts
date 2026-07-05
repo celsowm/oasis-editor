@@ -1,6 +1,7 @@
 import type { EditorPageMargins } from "@/core/model.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
 import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
+import type { OasisBuiltinCommand } from "@/core/commands/builtinCommands.js";
 
 // Capability contracts the Essentials plugin operates on. Extracted to a leaf
 // module so `createEssentialsPlugin` (which builds the plugin) and
@@ -8,7 +9,7 @@ import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
 // can both depend on them without importing each other.
 
 export interface EssentialsFeatureGate {
-  isCommandEnabled: (commandName: string) => boolean;
+  isCommandEnabled: (commandName: OasisBuiltinCommand) => boolean;
 }
 
 export interface EssentialsStyleCapability {

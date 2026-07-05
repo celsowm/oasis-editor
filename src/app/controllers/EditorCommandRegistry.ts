@@ -10,6 +10,7 @@ import {
   paragraphOffsetToPosition,
   EditorState,
 } from "@/core/model.js";
+import type { OasisBuiltinCommand } from "@/core/commands/builtinCommands.js";
 import type { EditorKeyboardDeps } from "./EditorKeyboardDeps.js";
 
 export interface EditorCommandExecutor {
@@ -22,7 +23,7 @@ export interface EditorCommandExecutor {
 
 export interface EditorKeyBinding {
   id: string;
-  command?: string;
+  command?: OasisBuiltinCommand;
   key: string;
   ctrlOrMeta?: boolean;
   shift?: boolean;

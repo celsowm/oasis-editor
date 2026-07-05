@@ -1,25 +1,28 @@
 import type { CommandState, OasisCommand } from "@/core/plugin.js";
+import type { OasisBuiltinCommand } from "@/core/commands/builtinCommands.js";
 
-export type CommandEnabledResolver = (commandName: string) => boolean;
+export type CommandEnabledResolver = (
+  commandName: OasisBuiltinCommand,
+) => boolean;
 export type CommandBuilder = (
-  name: string,
+  name: OasisBuiltinCommand,
   execute: () => boolean,
   state?: () => Partial<CommandState>,
 ) => OasisCommand;
 export type ValueCommandBuilder = (
-  name: string,
+  name: OasisBuiltinCommand,
   execute: (payload?: unknown) => boolean,
   value: () => unknown,
 ) => OasisCommand;
 export type ActionCommandBuilder = (
-  name: string,
+  name: OasisBuiltinCommand,
   execute: (payload?: unknown) => void,
   state?: () => Partial<CommandState>,
 ) => OasisCommand;
 
 export function createCommandBuilder(isCommandEnabled: CommandEnabledResolver) {
   return (
-    name: string,
+    name: OasisBuiltinCommand,
     execute: () => boolean,
     state?: () => Partial<CommandState>,
   ): OasisCommand => ({
@@ -35,7 +38,7 @@ export function createValueCommandBuilder(
   isCommandEnabled: CommandEnabledResolver,
 ) {
   return (
-    name: string,
+    name: OasisBuiltinCommand,
     execute: (payload?: unknown) => boolean,
     value: () => unknown,
   ): OasisCommand => ({
@@ -51,7 +54,7 @@ export function createActionCommandBuilder(
   isCommandEnabled: CommandEnabledResolver,
 ) {
   return (
-    name: string,
+    name: OasisBuiltinCommand,
     execute: (payload?: unknown) => void,
     state?: () => Partial<CommandState>,
   ): OasisCommand => ({

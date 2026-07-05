@@ -1,4 +1,5 @@
 import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
+import type { OasisBuiltinCommand } from "@/core/commands/builtinCommands.js";
 import {
   insertPageBreakAtSelection,
   setParagraphStyle,
@@ -99,7 +100,7 @@ export function createEditorEssentialsRuntimePlugin(
   options: CreateEditorEssentialsPluginOptions,
 ): OasisPlugin {
   const essentialsGate = {
-    isCommandEnabled: (commandName: string): boolean =>
+    isCommandEnabled: (commandName: OasisBuiltinCommand): boolean =>
       !options.isReadOnly() &&
       (commandName !== "insertFootnote" ||
         options.commandsController.canInsertFootnoteCommand()),

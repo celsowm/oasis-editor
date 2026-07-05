@@ -90,7 +90,18 @@ export const OASIS_BUILTIN_COMMANDS = [
   "tableAlignCenter",
   "tableAlignRight",
   "tableSetCellWidth",
+  "tableToggleHeaderRow",
+  "tableToggleTotalRow",
+  "tableToggleBandedRows",
+  "tableToggleFirstColumn",
+  "tableToggleLastColumn",
+  "tableToggleBandedColumns",
+  "setTableStyle",
+  "tableToggleAutoFit",
+  "tableDistributeColumns",
+  "tableDistributeRows",
   "insertTable",
+  "insertShape",
 ] as const;
 
 export type OasisBuiltinCommand = (typeof OASIS_BUILTIN_COMMANDS)[number];
