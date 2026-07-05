@@ -10,6 +10,7 @@ import { NumberField } from "@/ui/public/NumberField.js";
 import { SelectField } from "@/ui/public/SelectField.js";
 import { Stack } from "@/ui/public/Stack.js";
 import { Tabs } from "@/ui/components/Tabs/Tabs.js";
+import { parseNumber } from "@/utils/parseNumber.js";
 import { Dialog } from "./Dialog.js";
 import { TabStopsDialog } from "./TabStopsDialog.js";
 
@@ -108,12 +109,6 @@ export interface ParagraphDialogProps {
   ) => void;
   /** Persist the current values onto the default paragraph style. */
   onSetDefault?: (values: ParagraphDialogApplyValues) => void;
-}
-
-function parseNumber(value: string): number | null {
-  if (value.trim() === "") return null;
-  const num = Number(value);
-  return Number.isFinite(num) ? num : null;
 }
 
 /** Map the model's `lineRule` + `lineHeight` onto a Word line-spacing mode. */

@@ -4,6 +4,7 @@ import { Button } from "@/ui/public/Button.js";
 import { FormField } from "@/ui/public/FormField.js";
 import { Grid } from "@/ui/public/Grid.js";
 import { NumberField } from "@/ui/public/NumberField.js";
+import { parseNumber } from "@/utils/parseNumber.js";
 import { Dialog } from "./Dialog.js";
 import { JSX } from "solid-js";
 
@@ -31,11 +32,6 @@ export interface LineSpacingDialogProps {
 
 export function LineSpacingDialog(props: LineSpacingDialogProps): JSX.Element {
   const t = useI18n();
-  const parseNumber = (value: string): number | null => {
-    if (value.trim() === "") return null;
-    const num = Number(value);
-    return Number.isFinite(num) ? num : null;
-  };
 
   const [lineHeight, setLineHeight] = createSignal<number | null>(null);
   const [spacingBefore, setSpacingBefore] = createSignal<number | null>(null);

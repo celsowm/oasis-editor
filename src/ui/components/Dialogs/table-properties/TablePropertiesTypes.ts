@@ -4,6 +4,7 @@ import type {
   EditorTableRowHeightRule,
   EditorTableFloatingLayout,
 } from "@/core/model.js";
+import { parseNumber } from "@/utils/parseNumber.js";
 
 export type TableWidthUnit = "points" | "percent";
 export type BorderStyleValue = "none" | "solid" | "dashed" | "dotted";
@@ -163,12 +164,6 @@ export interface TableFormState {
 
 export const DEFAULT_BORDER_WIDTH_PT = 0.5;
 export const DEFAULT_BORDER_COLOR = "#000000";
-
-export function parseNumber(value: string): number | null {
-  if (value.trim() === "") return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
 
 export function parseWidth(
   value: string,
