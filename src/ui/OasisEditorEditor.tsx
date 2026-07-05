@@ -7,8 +7,6 @@ import {
   type JSX,
 } from "solid-js";
 import { CanvasEditorSurface } from "./components/CanvasEditorSurface.js";
-import { useI18n } from "@/i18n/I18nContext.js";
-import { OasisBrandMark } from "./components/OasisBrandMark.js";
 import { HorizontalRuler } from "./components/Ruler/HorizontalRuler.js";
 import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
@@ -17,7 +15,6 @@ import { RevisionOverlay } from "./components/RevisionOverlay.js";
 import { CommentHighlightOverlay } from "./components/CommentHighlightOverlay.js";
 import { FloatingTableToolbar } from "./components/FloatingToolbar/FloatingTableToolbar.js";
 import { FloatingLayoutOptions } from "./components/FloatingToolbar/FloatingLayoutOptions.js";
-import { type TranslationKey } from "@/i18n/index.js";
 import {
   getDocumentPageSettings,
   getDocumentSections,
@@ -38,7 +35,9 @@ import type {
 import type { EditorComment } from "@/core/model.js";
 import { ResizeHandlesOverlay } from "./overlays/ResizeHandlesOverlay.js";
 import { TableHandlesOverlay } from "./overlays/TableHandlesOverlay.js";
-import { ZOOM_MIN, ZOOM_MAX, ZOOM_STEP, clampZoom } from "./app/editorZoom.js";
+import { clampZoom } from "./app/editorZoom.js";
+import { EditorImportProgressOverlay } from "./EditorImportProgressOverlay.js";
+import { EditorStatusBar } from "./EditorStatusBar.js";
 import type {
   OasisEditorEditorFileHandlers,
   OasisEditorEditorInputHandlers,
@@ -60,7 +59,6 @@ export type {
 } from "./OasisEditorEditorProps.js";
 
 export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
-  const t = useI18n();
   const layout = (): OasisEditorEditorLayoutProps => props.layout;
   const overlays = (): OasisEditorEditorOverlayProps => props.overlays;
   const refs = (): OasisEditorEditorRefProps => props.refs ?? {};
@@ -549,153 +547,17 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
           </div>
         </div>
       </div>
-      <Show when={overlays().importProgress?.()}>
-        {(progress): JSX.Element => {
-          const isDone = progress().phase === "done";
-          const isError = progress().phase === "error";
-          return (
-            <div
-              class="oasis-editor-import-overlay"
-              classList={{
-                "oasis-editor-import-overlay-done": isDone,
-                "oasis-editor-import-overlay-error": isError,
-              }}
-              data-testid="editor-import-overlay"
-              role="status"
-              aria-live="polite"
-              aria-busy={!isDone && !isError}
-            >
-              <div class="oasis-editor-import-card">
-                <OasisBrandMark height={40} class="oasis-editor-loading-mark" />
-                <div class="oasis-editor-import-title">
-                  {t("import.overlay.title")}
-                </div>
-                <div
-                  class="oasis-editor-import-phase"
-                  data-testid="editor-import-phase"
-                >
-                  {t(`import.phase.${progress().phase}` as TranslationKey)}
-                </div>
-                <div class="oasis-editor-import-progress-track">
-                  <div
-                    class="oasis-editor-import-progress-bar"
-                    classList={{
-                      "oasis-editor-import-progress-bar-done": isDone,
-                      "oasis-editor-import-progress-bar-error": isError,
-                      "oasis-editor-import-progress-bar-indeterminate":
-                        progress().phase === "applying-editor-state" ||
-                        progress().phase === "stabilizing-layout",
-                    }}
-                    data-testid="editor-import-progress-bar"
-                    style={{ width: `${progress().progress}%` }}
-                  />
-                </div>
-                <div class="oasis-editor-import-progress-label">
-                  {isDone ? (
-                    <span class="oasis-editor-import-done-icon">
-                      {t("import.phase.done")}
-                    </span>
-                  ) : isError ? (
-                    <span class="oasis-editor-import-error-icon">
-                      {t("import.phase.error")}
-                    </span>
-                  ) : (
-                    <>{Math.round(progress().progress)}%</>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        }}
-      </Show>
-      <div class="oasis-editor-statusbar" data-testid="editor-statusbar">
-        <div class="oasis-editor-statusbar-group oasis-editor-statusbar-start">
-          <span
-            class="oasis-editor-statusbar-item"
-            data-testid="editor-statusbar-word-count"
-          >
-            {t("status.words", [wordCount()])}
-          </span>
-          <span
-            class="oasis-editor-statusbar-item"
-            data-testid="editor-statusbar-character-count"
-          >
-            {t("status.characters", [characterCount()])}
-          </span>
-          <span class="oasis-editor-statusbar-item">
-            {t("status.page", [currentPage(), totalPages()])}
-          </span>
-        </div>
-        <div class="oasis-editor-statusbar-group oasis-editor-statusbar-end">
-          <div
-            class="oasis-editor-statusbar-zoom"
-            data-testid="editor-statusbar-zoom-control"
-            aria-label={t("status.zoom")}
-          >
-            <button
-              type="button"
-              class="oasis-editor-zoom-button"
-              aria-label={`${t("status.zoom")} -`}
-              disabled={zoomPercent() <= ZOOM_MIN}
-              onClick={(): void => adjustZoom(-ZOOM_STEP)}
-            >
-              −
-            </button>
-            <input
-              class="oasis-editor-zoom-slider"
-              type="range"
-              min={ZOOM_MIN}
-              max={ZOOM_MAX}
-              step={ZOOM_STEP}
-              value={zoomPercent()}
-              aria-label={t("status.zoom")}
-              aria-valuetext={`${zoomPercent()}%`}
-              onInput={(event): void =>
-                setZoomPercent(clampZoom(event.currentTarget.valueAsNumber))
-              }
-            />
-            <button
-              type="button"
-              class="oasis-editor-zoom-button"
-              aria-label={`${t("status.zoom")} +`}
-              disabled={zoomPercent() >= ZOOM_MAX}
-              onClick={(): void => adjustZoom(ZOOM_STEP)}
-            >
-              +
-            </button>
-            <span
-              class="oasis-editor-statusbar-item oasis-editor-zoom-value"
-              data-testid="editor-statusbar-zoom"
-            >
-              {zoomPercent()}%
-            </span>
-          </div>
-          <Show when={overlays().persistenceStatus}>
-            {((): JSX.Element => {
-              const rawStatus = overlays().persistenceStatus!();
-              const status = rawStatus.toLowerCase();
-              const key = status.includes("saved")
-                ? "status.saved"
-                : status.includes("saving")
-                  ? "status.saving"
-                  : status.includes("error")
-                    ? "status.error"
-                    : null;
-              return (
-                <Show when={key}>
-                  <span
-                    class={`oasis-editor-statusbar-item oasis-editor-persistence-status oasis-editor-status-${status
-                      .replace("...", "ing")
-                      .replace(".", "")}`}
-                  >
-                    {t(key as TranslationKey)}
-                  </span>
-                </Show>
-              );
-            })()}
-          </Show>
-        </div>
-      </div>
+      <EditorImportProgressOverlay progress={overlays().importProgress} />
+      <EditorStatusBar
+        wordCount={wordCount}
+        characterCount={characterCount}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        zoomPercent={zoomPercent}
+        adjustZoom={adjustZoom}
+        setZoomPercent={setZoomPercent}
+        persistenceStatus={overlays().persistenceStatus}
+      />
     </div>
   );
 }
