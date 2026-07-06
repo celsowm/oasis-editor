@@ -364,8 +364,7 @@ export async function importDocxToEditorDocument(
     // sectionProps[i - 1]. The first section always begins on a new page, so its
     // breakType is left undefined. pgNumType/vAlign/bidi are properties *of*
     // the section, so they map same-index from sectionProps[i].
-    const breakType =
-      i > 0 ? sectionProps[i - 1]?.breakType : undefined;
+    const breakType = i > 0 ? sectionProps[i - 1]?.breakType : undefined;
     const pageNumbering = props.pageNumbering;
     const verticalAlignment = props.verticalAlignment;
     const bidi = props.bidi;

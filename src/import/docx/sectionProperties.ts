@@ -164,8 +164,7 @@ export function parseSectionProperties(sectPr: XmlElement): SectionProperties {
   let pageNumbering: EditorPageNumbering | undefined;
   if (pgNumType) {
     const startRaw = getAttributeValue(pgNumType, "start");
-    const start =
-      startRaw !== null ? Number.parseInt(startRaw, 10) : undefined;
+    const start = startRaw !== null ? Number.parseInt(startRaw, 10) : undefined;
     const format = getAttributeValue(pgNumType, "fmt") ?? undefined;
     const chapterStyle = getAttributeValue(pgNumType, "chapStyle") ?? undefined;
     const chapterSeparator =

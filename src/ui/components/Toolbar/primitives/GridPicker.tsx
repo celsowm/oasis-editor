@@ -1,4 +1,11 @@
-import { For, Show, createEffect, createSignal, onCleanup, type JSX } from "solid-js";
+import {
+  For,
+  Show,
+  createEffect,
+  createSignal,
+  onCleanup,
+  type JSX,
+} from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Popover } from "./Popover.js";
 
