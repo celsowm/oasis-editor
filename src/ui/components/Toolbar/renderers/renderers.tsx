@@ -53,24 +53,16 @@ function renderMenuContent(
   );
 }
 
-function RenderButton(props: RendererProps<ButtonItem>): JSX.Element {
-  const b = bindItem(props.item, props.api);
-  return (
-    <Button
-      icon={props.item.iconName}
-      label={resolveLabel(props.item, props.api)}
-      wide={props.item.wide}
-      ribbonSize={props.item.ribbonSize}
-      active={b.active()}
-      disabled={b.disabled()}
-      data-testid={props.item.testId}
-      tooltip={resolveTooltip(props.item, props.api)}
-      onClick={(): void => runItem(props.item, props.api)}
-    />
-  );
-}
-
-function RenderToggle(props: RendererProps<ToggleItem>): JSX.Element {
+/**
+ * Shared renderer for `button` and `toggle` items. They have identical markup
+ * (an icon/label Button bound to the item's command) — the only difference is
+ * semantic (toggle reports `active` from command state), which `bindItem` already
+ * handles generically without branching on the item type. Kept as one function
+ * so the two stay in lockstep; mapped to both toolbar item types below.
+ */
+function RenderActionButton(
+  props: RendererProps<ButtonItem | ToggleItem>,
+): JSX.Element {
   const b = bindItem(props.item, props.api);
   return (
     <Button
@@ -250,8 +242,8 @@ export const TOOLBAR_RENDERERS: Record<
   ToolbarItemType,
   Component<RendererProps>
 > = {
-  button: RenderButton as Component<RendererProps>,
-  toggle: RenderToggle as Component<RendererProps>,
+  button: RenderActionButton as Component<RendererProps>,
+  toggle: RenderActionButton as Component<RendererProps>,
   split: RenderSplit as Component<RendererProps>,
   menu: RenderMenu as Component<RendererProps>,
   select: RenderSelect as Component<RendererProps>,

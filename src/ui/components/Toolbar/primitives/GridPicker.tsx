@@ -8,6 +8,7 @@ import {
 } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Popover } from "./Popover.js";
+import { ToolIcon } from "@/ui/utils/customIcons.js";
 
 export interface GridPickerProps {
   onSelect: (rows: number, cols: number) => void;
@@ -119,7 +120,7 @@ export function GridPicker(props: GridPickerProps): JSX.Element {
             aria-label={tooltip()}
             data-testid={props.testId}
           >
-            <i data-lucide={icon()} />
+            <ToolIcon name={icon()} />
             <Show when={props.label}>
               <span>{props.label}</span>
             </Show>

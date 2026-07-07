@@ -1,5 +1,6 @@
 import { type JSX } from "solid-js";
 import { Popover } from "./Popover.js";
+import { DropdownChevron } from "./DropdownChevron.js";
 
 type PanelRole = JSX.HTMLAttributes<HTMLDivElement>["role"];
 
@@ -69,7 +70,7 @@ export function SplitButton(props: SplitButtonProps): JSX.Element {
             aria-expanded={api.open}
             onClick={(): void => api.toggle()}
           >
-            <i data-lucide="chevron-down" />
+            <DropdownChevron />
           </button>
         </div>
       )}

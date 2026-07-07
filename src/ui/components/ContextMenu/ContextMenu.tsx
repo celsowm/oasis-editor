@@ -1,5 +1,6 @@
 import { For, Show, createEffect, onCleanup, onMount } from "solid-js";
 import "./ContextMenu.css";
+import { CheckIcon } from "@/ui/utils/customIcons.js";
 import { JSX } from "solid-js";
 
 export interface ContextMenuItem {
@@ -119,7 +120,12 @@ export function ContextMenu(props: ContextMenuProps): JSX.Element {
                 <Show
                   when={item.icon}
                   fallback={
-                    <i style={{ visibility: "hidden" }} data-lucide="check" />
+                    <span
+                      style={{ visibility: "hidden", "flex-shrink": "0" }}
+                      aria-hidden="true"
+                    >
+                      <CheckIcon size={16} />
+                    </span>
                   }
                 >
                   <i data-lucide={item.icon} />

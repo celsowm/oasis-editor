@@ -12,6 +12,7 @@ import type {
 } from "./schema/items.js";
 import { Popover } from "./primitives/Popover.js";
 import { Select } from "./primitives/Select.js";
+import { DropdownChevron } from "./primitives/DropdownChevron.js";
 
 export function getQuickStyles(
   styles: ToolbarDocumentStyle[],
@@ -206,7 +207,7 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
               data-testid={expandTestId}
               onClick={(): void => popover.toggle()}
             >
-              <i data-lucide="chevron-down" />
+              <DropdownChevron />
             </button>
           </div>
         </div>

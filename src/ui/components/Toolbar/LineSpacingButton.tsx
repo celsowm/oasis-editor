@@ -7,7 +7,8 @@ import {
   type LineSpacingDialogApplyValues,
   type LineSpacingDialogInitialValues,
 } from "@/ui/components/Dialogs/LineSpacingDialog.js";
-import { Popover } from "./primitives/Popover.js";
+import { Menu } from "./primitives/Menu.js";
+import { CheckIcon } from "@/ui/utils/customIcons.js";
 import type { ToolbarActionApi } from "./schema/items.js";
 import { JSX } from "solid-js";
 
@@ -29,10 +30,19 @@ export interface LineSpacingButtonProps {
   api: ToolbarActionApi;
 }
 
+/**
+ * Line-spacing dropdown. Composes the shared `Menu` primitive (which owns the
+ * trigger, the popover, the affordance chevron and the close-on-click behavior)
+ * instead of re-implementing that plumbing. The only line-spacing-specific
+ * concerns left here are the preset list, the active-state check and the
+ * "more options" dialog.
+ *
+ * The trigger glyph is the registered `lineSpacing` custom icon (see
+ * `customIcons`); the active-item check uses the shared `CheckIcon`.
+ */
 export function LineSpacingButton(props: LineSpacingButtonProps): JSX.Element {
   const t = useI18n();
   const api = props.api;
-  const [isOpen, setIsOpen] = createSignal(false);
   const [dialogOpen, setDialogOpen] = createSignal(false);
   const [dialogInitial, setDialogInitial] =
     createSignal<LineSpacingDialogInitialValues>({
@@ -48,12 +58,10 @@ export function LineSpacingButton(props: LineSpacingButtonProps): JSX.Element {
     return Number.isFinite(num) ? num : null;
   });
 
-  const close = (): false => setIsOpen(false);
-
   const applyPreset = (value: number): void => {
     api.commands.execute("setLineHeight", value);
     api.focusEditor();
-    close();
+    // The Menu closes itself on inner-button click; no manual close needed.
   };
 
   const openDialog = (): void => {
@@ -63,7 +71,7 @@ export function LineSpacingButton(props: LineSpacingButtonProps): JSX.Element {
       spacingAfter: toStr(api.commands.state("setSpacingAfter").value),
     });
     setDialogOpen(true);
-    close();
+    // The Menu closes itself on inner-button click; no manual close needed.
   };
 
   const handleDialogApply = (
@@ -91,51 +99,12 @@ export function LineSpacingButton(props: LineSpacingButtonProps): JSX.Element {
   };
 
   return (
-    <div class="oasis-editor-toolbar-dropdown">
-      <Popover
-        open={isOpen()}
-        onOpenChange={setIsOpen}
-        panelRole="menu"
-        panelClass="oasis-editor-toolbar-dropdown-menu oasis-editor-line-spacing-menu"
-        trigger={(popover): JSX.Element => (
-          <button
-            ref={(el): void => popover.ref(el)}
-            type="button"
-            class="oasis-editor-tool-button oasis-editor-tool-button-dropdown oasis-editor-line-spacing-button"
-            classList={{ "oasis-editor-tool-button-active": popover.open }}
-            onClick={(): void => popover.toggle()}
-            title={t("metric.lineSpacing")}
-            aria-label={t("metric.lineSpacing")}
-            aria-haspopup="menu"
-            aria-expanded={popover.open}
-            data-testid="editor-toolbar-line-spacing"
-          >
-            <span class="oasis-editor-line-spacing-icon" aria-hidden="true">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                {/* Up arrow head */}
-                <polyline points="4 7 7 4 10 7" />
-                {/* Vertical shaft */}
-                <line x1="7" y1="4" x2="7" y2="20" />
-                {/* Down arrow head */}
-                <polyline points="4 17 7 20 10 17" />
-                {/* Horizontal lines */}
-                <line x1="13" y1="6" x2="21" y2="6" />
-                <line x1="13" y1="12" x2="21" y2="12" />
-                <line x1="13" y1="18" x2="21" y2="18" />
-              </svg>
-            </span>
-          </button>
-        )}
+    <>
+      <Menu
+        icon="lineSpacing"
+        testId="editor-toolbar-line-spacing"
+        tooltip={t("metric.lineSpacing")}
+        panelClass="oasis-editor-line-spacing-menu"
       >
         <For each={PRESET_VALUES}>
           {(value): JSX.Element => {
@@ -162,19 +131,7 @@ export function LineSpacingButton(props: LineSpacingButtonProps): JSX.Element {
                   aria-hidden="true"
                 >
                   <Show when={isActive()}>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                    <CheckIcon size={14} />
                   </Show>
                 </span>
                 <span class="oasis-editor-line-spacing-item-label">
@@ -205,7 +162,7 @@ export function LineSpacingButton(props: LineSpacingButtonProps): JSX.Element {
             {t("metric.lineSpacingOptions")}
           </span>
         </button>
-      </Popover>
+      </Menu>
 
       <Show when={dialogOpen()}>
         <Portal>
@@ -217,6 +174,6 @@ export function LineSpacingButton(props: LineSpacingButtonProps): JSX.Element {
           />
         </Portal>
       </Show>
-    </div>
+    </>
   );
 }

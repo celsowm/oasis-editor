@@ -1,5 +1,7 @@
 import { Show, createSignal, type JSX } from "solid-js";
 import { Popover } from "./Popover.js";
+import { DropdownChevron } from "./DropdownChevron.js";
+import { ToolIcon } from "@/ui/utils/customIcons.js";
 
 export interface MenuProps {
   icon?: string;
@@ -52,16 +54,13 @@ export function Menu(props: MenuProps): JSX.Element {
             data-testid={props.testId}
           >
             <Show when={props.icon}>
-              <i data-lucide={props.icon} />
+              <ToolIcon name={props.icon!} />
             </Show>
             <Show when={props.label}>
               <span class="oasis-editor-tool-button-label">{props.label}</span>
             </Show>
             <Show when={!props.hideChevron}>
-              <i
-                data-lucide="chevron-down"
-                class="oasis-editor-dropdown-chevron"
-              />
+              <DropdownChevron />
             </Show>
           </button>
         )}

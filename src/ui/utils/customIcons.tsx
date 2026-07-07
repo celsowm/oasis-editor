@@ -11,16 +11,50 @@ import { Show, type JSX } from "solid-js";
  */
 export type CustomIconRenderer = () => JSX.Element;
 
+/**
+ * Shared SVG shell for custom icons. Centralizes the boilerplate
+ * (`xmlns`/`width`/`height`/`viewBox`/`aria-hidden`) that every custom icon used
+ * to repeat, so new glyphs only declare their inner markup. Defaults to lucide's
+ * 24x24 viewBox so existing toolbar icon sizing applies identically; callers can
+ * override `width`/`height`/`viewBox` for non-default glyphs (e.g. the line
+ * spacing arrow) and pass arbitrary SVG presentation attributes.
+ */
+export interface SvgIconProps {
+  width?: number | string;
+  height?: number | string;
+  viewBox?: string;
+  fill?: string;
+  stroke?: string;
+  "stroke-width"?: number | string;
+  "stroke-linecap"?: JSX.SvgSVGAttributes<SVGSVGElement>["stroke-linecap"];
+  "stroke-linejoin"?: JSX.SvgSVGAttributes<SVGSVGElement>["stroke-linejoin"];
+  class?: string;
+  children: JSX.Element;
+}
+
+export function SvgIcon(props: SvgIconProps): JSX.Element {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={props.width ?? 24}
+      height={props.height ?? 24}
+      viewBox={props.viewBox ?? "0 0 24 24"}
+      fill={props.fill ?? "none"}
+      stroke={props.stroke}
+      stroke-width={props["stroke-width"]}
+      stroke-linecap={props["stroke-linecap"]}
+      stroke-linejoin={props["stroke-linejoin"]}
+      class={props.class}
+      aria-hidden="true"
+    >
+      {props.children}
+    </svg>
+  );
+}
+
 /** Word-style footnote glyph: "ab" in the current color with a red superscript "1". */
 const FootnoteIcon: CustomIconRenderer = (): JSX.Element => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    aria-hidden="true"
-  >
+  <SvgIcon fill="none">
     <text
       x="2"
       y="18"
@@ -41,30 +75,74 @@ const FootnoteIcon: CustomIconRenderer = (): JSX.Element => (
     >
       1
     </text>
-  </svg>
+  </SvgIcon>
 );
 
 /** Word-like first-line indent glyph: a simple ">" on the first line. */
 const SpecialIndentFirstLineIcon: CustomIconRenderer = (): JSX.Element => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <g fill="currentColor">
+  <SvgIcon fill="currentColor">
+    <g>
       <path d="M3.375 4.875 L7.125 8.625 L3.375 12.375 L2.25 11.25 L4.875 8.625 L2.25 6 Z" />
       <rect x="10.125" y="6" width="9" height="1.6875" rx="0.25" />
       <rect x="5.625" y="10.875" width="13.5" height="1.6875" rx="0.25" />
       <rect x="5.625" y="15.75" width="13.5" height="1.6875" rx="0.25" />
     </g>
-  </svg>
+  </SvgIcon>
+);
+
+/**
+ * Line-spacing dropdown glyph: a vertical up/down double arrow next to three
+ * stacked horizontal lines. Registered as a custom icon so the LineSpacing
+ * dropdown can render it through the normal `icon` prop like any other control,
+ * instead of hand-rolling its own trigger markup.
+ */
+const LineSpacingIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon
+    width={18}
+    height={18}
+    stroke="currentColor"
+    stroke-width={2}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    {/* Up arrow head */}
+    <polyline points="4 7 7 4 10 7" />
+    {/* Vertical shaft */}
+    <line x1="7" y1="4" x2="7" y2="20" />
+    {/* Down arrow head */}
+    <polyline points="4 17 7 20 10 17" />
+    {/* Horizontal lines */}
+    <line x1="13" y1="6" x2="21" y2="6" />
+    <line x1="13" y1="12" x2="21" y2="12" />
+    <line x1="13" y1="18" x2="21" y2="18" />
+  </SvgIcon>
+);
+
+/**
+ * Checkmark glyph used to mark the active item in radio/check menus. Replaces the
+ * duplicated inline `<polyline points="20 6 9 17 4 12">` previously copy-pasted
+ * into LineSpacingButton and ContextMenu. Rendered at 14px to match the previous
+ * line-spacing check size; ContextMenu renders its own 18px variant via lucide.
+ */
+export const CheckIcon = (props: { size?: number }): JSX.Element => (
+  <SvgIcon
+    width={props.size ?? 14}
+    height={props.size ?? 14}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width={2.5}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polyline points="20 6 9 17 4 12" />
+  </SvgIcon>
 );
 
 const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   footnote: FootnoteIcon,
   specialIndentFirstLine: SpecialIndentFirstLineIcon,
+  lineSpacing: LineSpacingIcon,
 };
 
 export function getCustomIcon(name?: string): CustomIconRenderer | undefined {

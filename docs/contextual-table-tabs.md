@@ -75,7 +75,7 @@ phase adds it, using the `tableContext` signal that already exists.
     (or `tableLayout`);
   - active → inactive while a contextual tab is selected: fall back to `home`.
 - **Visual treatment.** A contextual-tab CSS class (accent-colored group-header
-  strip) in `src/styles/oasis-editor/toolbar.css`, using existing design tokens.
+  strip) in `src/ui/components/Toolbar/toolbar.css`, using existing design tokens.
   Only light-mode token values are needed (no dark theme ships today).
 
 ## Phase 2 — Populate "Tabela Layout" from existing commands
