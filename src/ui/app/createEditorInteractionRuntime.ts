@@ -1,6 +1,6 @@
 import { getSelectedImageRun } from "@/core/commands/image.js";
 import { getSelectedTextBoxRun } from "@/core/commands/textBox.js";
-import { cloneEditorState } from "@/core/cloneState.js";
+
 import type { EditorPosition, EditorState } from "@/core/model.js";
 import type { EditorLogger } from "@/utils/logger.js";
 import { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
@@ -125,7 +125,7 @@ function createEditorInteractionRuntimeImpl(
     applyTransactionalState,
     applySelectionToStatePreservingStructure: (current, nextSelection) => ({
       ...current,
-      document: cloneEditorState(current).document,
+      document: current.document,
       selection: nextSelection,
     }),
     focusInput,
