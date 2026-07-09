@@ -33,6 +33,11 @@ export interface CreateEditorEssentialsPluginOptions {
   importInputRef: () => HTMLInputElement | undefined;
   imageInputRef: () => HTMLInputElement | undefined;
   selectedImageRun: () => SelectedImageRun | null;
+  /** Interactive image crop-mode signal (owned by the image operations). */
+  imageCropMode: {
+    isActive: () => boolean;
+    toggle: () => void;
+  };
   selectionBoxes: () => Array<unknown>;
   focusInput: () => void;
   applyState: (nextState: EditorState) => void;

@@ -16,6 +16,7 @@ export const RIBBON_TABS = [
   "view",
   "tableDesign",
   "tableLayout",
+  "imageFormat",
   "plugins",
   "ai",
 ] as const;
@@ -31,6 +32,7 @@ export type RibbonTabId = (typeof RIBBON_TABS)[number];
 export const CONTEXTUAL_TABS: Partial<Record<RibbonTabId, string>> = {
   tableDesign: "tableContext",
   tableLayout: "tableContext",
+  imageFormat: "imageContext",
 };
 export type RibbonRow = 1 | 2;
 export type RibbonSize = "normal" | "large";

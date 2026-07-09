@@ -388,6 +388,7 @@ export const ptBR = {
   "ribbon.tab.view": "Exibir",
   "ribbon.tab.tableDesign": "Design da Tabela",
   "ribbon.tab.tableLayout": "Layout da Tabela",
+  "ribbon.tab.imageFormat": "Formato da Imagem",
   "ribbon.tab.plugins": "Plugins",
   "ribbon.tab.ai": "IA",
 
@@ -412,6 +413,20 @@ export const ptBR = {
   "ribbon.group.merge": "Mesclar",
   "ribbon.group.cellSize": "Tamanho da Célula",
   "ribbon.group.alignment": "Alinhamento",
+  "ribbon.group.size": "Tamanho",
+
+  // Image format (contextual tab)
+  "image.crop": "Cortar",
+  "image.height": "Altura",
+  "image.width": "Largura",
+  "image.cropReset": "Redefinir corte",
+  "image.cropRatio.square": "1:1",
+  "image.cropRatio.16x9": "16:9",
+  "image.cropRatio.4x3": "4:3",
+  "image.cropRatio.3x2": "3:2",
+  "image.cropRatio.2x3": "2:3",
+  "image.cropRatio.3x4": "3:4",
+  "image.cropRatio.9x16": "9:16",
 
   // Export
   "toolbar.exportDocx": "Exportar DOCX",

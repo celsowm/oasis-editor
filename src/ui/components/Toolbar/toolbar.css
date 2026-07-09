@@ -604,6 +604,60 @@
   padding: 0 4px;
 }
 
+/* Image Format > Size group: an icon + labelled centimetre field per row. */
+.oasis-editor-image-size-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 4px;
+}
+
+.oasis-editor-image-size-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--oasis-text-muted);
+}
+
+.oasis-editor-image-size-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.oasis-editor-image-size-metric {
+  grid-template-columns: minmax(40px, auto) minmax(58px, 76px);
+}
+
+/* Cortar split-button menu: toggle + aspect-ratio preset grid. */
+.oasis-editor-image-crop-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 168px;
+}
+
+.oasis-editor-image-crop-ratios {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+}
+
+.oasis-editor-image-crop-ratio {
+  height: 28px;
+  border: 1px solid var(--oasis-toolbar-border);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.oasis-editor-image-crop-ratio:hover {
+  background: var(--oasis-toolbar-hover-bg, rgba(37, 99, 235, 0.12));
+}
+
 .oasis-editor-tool-color-input {
   width: 24px;
   height: 24px;

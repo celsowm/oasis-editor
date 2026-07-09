@@ -17,6 +17,8 @@ export const MERGE_KEYS = {
   link: "link",
   imageAlt: "imageAlt",
   imageCaption: "imageCaption",
+  imageResize: "imageResize",
+  imageCrop: "imageCrop",
   layoutWrapPolygon: "layoutWrapPolygon",
   specialIndent: "specialIndent",
   paraBorders: "paraBorders",

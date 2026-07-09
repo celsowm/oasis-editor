@@ -235,6 +235,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
   const selectedImage = createMemo((): SelectedImageBox | null =>
     overlays().selectedImageBox(),
   );
+  const imageCropMode = (): boolean => overlays().imageCropMode?.() ?? false;
   const selectedTextBox = createMemo((): SelectedTextBoxBox | null =>
     overlays().selectedTextBoxBox(),
   );
@@ -379,42 +380,66 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
               />
             </Show>
 
-            <ResizeHandlesOverlay
-              box={selectedImage}
-              readOnly={Boolean(layout().readOnly)}
-              variantClass="oasis-editor-image-selection-overlay"
-              rotation={(): number => selectedImage()?.rotation ?? 0}
-              onResizeStart={(direction, event): void => {
-                const image = selectedImage();
-                if (!image) return;
-                event.preventDefault();
-                event.stopPropagation();
-                surfaceHandlers().onImageResizeHandleMouseDown(
-                  image.paragraphId,
-                  image.startOffset,
-                  direction,
-                  event,
-                );
-              }}
-              onRotateStart={(event): void => {
-                const image = selectedImage();
-                if (!image) return;
-                surfaceHandlers().onImageRotateHandleMouseDown(
-                  image.paragraphId,
-                  image.startOffset,
-                  event,
-                );
-              }}
-              onBodyMouseDown={(event): void => {
-                const image = selectedImage();
-                if (!image) return;
-                surfaceHandlers().onImageMouseDown(
-                  image.paragraphId,
-                  image.startOffset,
-                  event,
-                );
-              }}
-            />
+            <Show
+              when={imageCropMode()}
+              fallback={
+                <ResizeHandlesOverlay
+                  box={selectedImage}
+                  readOnly={Boolean(layout().readOnly)}
+                  variantClass="oasis-editor-image-selection-overlay"
+                  rotation={(): number => selectedImage()?.rotation ?? 0}
+                  onResizeStart={(direction, event): void => {
+                    const image = selectedImage();
+                    if (!image) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    surfaceHandlers().onImageResizeHandleMouseDown(
+                      image.paragraphId,
+                      image.startOffset,
+                      direction,
+                      event,
+                    );
+                  }}
+                  onRotateStart={(event): void => {
+                    const image = selectedImage();
+                    if (!image) return;
+                    surfaceHandlers().onImageRotateHandleMouseDown(
+                      image.paragraphId,
+                      image.startOffset,
+                      event,
+                    );
+                  }}
+                  onBodyMouseDown={(event): void => {
+                    const image = selectedImage();
+                    if (!image) return;
+                    surfaceHandlers().onImageMouseDown(
+                      image.paragraphId,
+                      image.startOffset,
+                      event,
+                    );
+                  }}
+                />
+              }
+            >
+              <ResizeHandlesOverlay
+                box={selectedImage}
+                readOnly={Boolean(layout().readOnly)}
+                variantClass="oasis-editor-image-crop-overlay"
+                rotation={(): number => selectedImage()?.rotation ?? 0}
+                onResizeStart={(direction, event): void => {
+                  const image = selectedImage();
+                  if (!image) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  surfaceHandlers().onImageCropHandleMouseDown?.(
+                    image.paragraphId,
+                    image.startOffset,
+                    direction,
+                    event,
+                  );
+                }}
+              />
+            </Show>
 
             <ResizeHandlesOverlay
               box={selectedTextBox}

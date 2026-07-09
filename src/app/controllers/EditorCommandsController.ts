@@ -16,6 +16,10 @@ import {
   getSelectedImageCaption,
   setSelectedImageCaption,
   setSelectedImageAlt,
+  setSelectedImageWidthCm,
+  setSelectedImageHeightCm,
+  applySelectedImageCropAspect,
+  type ImageCropAspectMode,
 } from "@/core/commands/image.js";
 import {
   getLinkAtSelection,
@@ -77,6 +81,28 @@ export interface EditorCommandsControllerDeps
   openImageAltDialog: (initialAlt: string) => void;
   openImageCaptionDialog: (initialCaption: string) => void;
   imageCaptionLabel: () => string;
+}
+
+/**
+ * Parses a crop aspect-ratio preset id into an {@link ImageCropAspectMode}.
+ * Accepts `"a:b"` / `"a/b"` ratios and the reset aliases `reset`/`fit`/`fill`.
+ * Returns `null` for unrecognized input.
+ */
+function parseCropAspectPreset(preset: string): ImageCropAspectMode | null {
+  const value = preset.trim().toLowerCase();
+  if (value === "reset" || value === "fit" || value === "fill") {
+    return "reset";
+  }
+  const parts = value.split(/[:/]/);
+  if (parts.length !== 2) {
+    return null;
+  }
+  const a = Number(parts[0]);
+  const b = Number(parts[1]);
+  if (!Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0) {
+    return null;
+  }
+  return a / b;
 }
 
 export function createEditorCommandsController(
@@ -476,6 +502,39 @@ function createEditorCommandsControllerImpl(
     deps.openImageCaptionDialog(getSelectedImageCaption(state) ?? "");
   };
 
+  const applyImageWidthCmCommand = (cm: number): void => {
+    if (!selectedImageRun() || !Number.isFinite(cm) || cm <= 0) {
+      return;
+    }
+    execTransactional(
+      (current): EditorState => setSelectedImageWidthCm(current, cm),
+      { mergeKey: MERGE_KEYS.imageResize },
+    );
+  };
+
+  const applyImageHeightCmCommand = (cm: number): void => {
+    if (!selectedImageRun() || !Number.isFinite(cm) || cm <= 0) {
+      return;
+    }
+    execTransactional(
+      (current): EditorState => setSelectedImageHeightCm(current, cm),
+      { mergeKey: MERGE_KEYS.imageResize },
+    );
+  };
+
+  const applyImageCropAspectCommand = (preset: string): void => {
+    if (!selectedImageRun()) {
+      return;
+    }
+    const mode = parseCropAspectPreset(preset);
+    if (mode === null) {
+      return;
+    }
+    execTransactional((current): EditorState =>
+      applySelectedImageCropAspect(current, mode),
+    );
+  };
+
   return {
     applyBooleanStyleCommand,
     applyValueStyleCommand,
@@ -504,6 +563,9 @@ function createEditorCommandsControllerImpl(
     promptForImageAlt,
     applyImageCaptionCommand,
     promptForImageCaption,
+    applyImageWidthCmCommand,
+    applyImageHeightCmCommand,
+    applyImageCropAspectCommand,
     handleListTab,
     handleListEnter,
     handleListBoundaryBackspace,

@@ -327,6 +327,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
       focused,
       showCaret: shouldShowCaret,
       importProgress: docIO.importProgress,
+      imageCropMode: imageOps.cropMode,
     },
     refs: { focusController },
     files: {
@@ -348,6 +349,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
         textBoxOps.handleTextBoxResizeHandleMouseDown,
       handleImageRotateHandleMouseDown:
         imageOps.handleImageRotateHandleMouseDown,
+      handleImageCropHandleMouseDown:
+        imageOps.handleImageCropHandleMouseDown,
       handleTextBoxRotateHandleMouseDown:
         textBoxOps.handleTextBoxRotateHandleMouseDown,
       handleEditorContextMenu,
@@ -383,6 +386,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     textDrag.stopDrag();
     imageOps.stopImageDrag();
     imageOps.stopImageResize();
+    imageOps.stopImageCrop();
     textBoxOps.stopTextBoxResize();
     stopIconObserver();
   });

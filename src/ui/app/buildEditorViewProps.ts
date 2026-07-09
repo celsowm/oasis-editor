@@ -56,6 +56,7 @@ export interface EditorViewOverlayInput {
   focused: Accessor<boolean>;
   showCaret: Accessor<boolean>;
   importProgress: Accessor<ImportProgress | null>;
+  imageCropMode: Accessor<boolean>;
 }
 
 /** Owner of the editor element refs. */
@@ -82,6 +83,9 @@ export interface EditorViewSurfaceInput {
   handleImageResizeHandleMouseDown: OasisEditorEditorSurfaceHandlers["onImageResizeHandleMouseDown"];
   handleTextBoxResizeHandleMouseDown: OasisEditorEditorSurfaceHandlers["onTextBoxResizeHandleMouseDown"];
   handleImageRotateHandleMouseDown: OasisEditorEditorSurfaceHandlers["onImageRotateHandleMouseDown"];
+  handleImageCropHandleMouseDown: NonNullable<
+    OasisEditorEditorSurfaceHandlers["onImageCropHandleMouseDown"]
+  >;
   handleTextBoxRotateHandleMouseDown: OasisEditorEditorSurfaceHandlers["onTextBoxRotateHandleMouseDown"];
   handleEditorContextMenu: (event: MouseEvent) => void;
 }
@@ -156,6 +160,7 @@ export function buildEditorViewProps(
     focused: overlayInput.focused,
     showCaret: overlayInput.showCaret,
     importProgress: overlayInput.importProgress,
+    imageCropMode: overlayInput.imageCropMode,
   };
 
   const refs: OasisEditorEditorRefProps = {
@@ -196,6 +201,7 @@ export function buildEditorViewProps(
     onImageResizeHandleMouseDown: surface.handleImageResizeHandleMouseDown,
     onTextBoxResizeHandleMouseDown: surface.handleTextBoxResizeHandleMouseDown,
     onImageRotateHandleMouseDown: surface.handleImageRotateHandleMouseDown,
+    onImageCropHandleMouseDown: surface.handleImageCropHandleMouseDown,
     onTextBoxRotateHandleMouseDown: surface.handleTextBoxRotateHandleMouseDown,
     onTableDragHandleMouseDown: surface.tableDrag.handleMouseDown,
     onTableCornerResizeHandleMouseDown:

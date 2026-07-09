@@ -175,6 +175,16 @@ export interface OasisPdfImageOptions {
   width: number;
   height: number;
   rotation?: number;
+  /**
+   * Crop fractions (0..1 trimmed per edge, matching `a:srcRect`). When present,
+   * only the cropped sub-region is shown, scaled to fill the box.
+   */
+  crop?: {
+    left?: number;
+    top?: number;
+    right?: number;
+    bottom?: number;
+  };
 }
 
 export type OasisPdfFontResource =

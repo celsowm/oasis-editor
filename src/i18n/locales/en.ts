@@ -387,6 +387,7 @@ export const en = {
   "ribbon.tab.view": "View",
   "ribbon.tab.tableDesign": "Table Design",
   "ribbon.tab.tableLayout": "Table Layout",
+  "ribbon.tab.imageFormat": "Picture Format",
   "ribbon.tab.plugins": "Plugins",
   "ribbon.tab.ai": "AI",
 
@@ -411,6 +412,20 @@ export const en = {
   "ribbon.group.merge": "Merge",
   "ribbon.group.cellSize": "Cell Size",
   "ribbon.group.alignment": "Alignment",
+  "ribbon.group.size": "Size",
+
+  // Image format (contextual tab)
+  "image.crop": "Crop",
+  "image.height": "Height",
+  "image.width": "Width",
+  "image.cropReset": "Reset crop",
+  "image.cropRatio.square": "1:1",
+  "image.cropRatio.16x9": "16:9",
+  "image.cropRatio.4x3": "4:3",
+  "image.cropRatio.3x2": "3:2",
+  "image.cropRatio.2x3": "2:3",
+  "image.cropRatio.3x4": "3:4",
+  "image.cropRatio.9x16": "9:16",
 
   // Export
   "toolbar.exportDocx": "Export DOCX",

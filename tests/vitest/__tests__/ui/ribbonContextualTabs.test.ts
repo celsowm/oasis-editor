@@ -49,4 +49,31 @@ describe("contextual ribbon tabs", () => {
     );
     expect(isRibbonTabVisible("tableDesign", apiInsideTable(true))).toBe(true);
   });
+
+  it("surfaces the image format tab only while an image is selected", () => {
+    /** Api whose only active command is `imageContext`. */
+    const apiImageSelected = (selected: boolean) =>
+      ({
+        commands: {
+          state: (command: string) => ({
+            isEnabled: command === "imageContext" ? selected : false,
+            isActive: command === "imageContext" ? selected : false,
+            value: null,
+          }),
+        },
+      }) as unknown as Pick<ToolbarActionApi, "commands">;
+
+    expect(isRibbonTabVisible("imageFormat")).toBe(false);
+    expect(isRibbonTabVisible("imageFormat", apiImageSelected(false))).toBe(
+      false,
+    );
+    expect(isRibbonTabVisible("imageFormat", apiImageSelected(true))).toBe(true);
+
+    const ids = buildRibbonTabDefinitions(t, apiImageSelected(true)).map(
+      (d) => d.id,
+    );
+    expect(ids).toContain("imageFormat");
+    // The image tab is gated on `imageContext`, not `tableContext`.
+    expect(ids).not.toContain("tableDesign");
+  });
 });

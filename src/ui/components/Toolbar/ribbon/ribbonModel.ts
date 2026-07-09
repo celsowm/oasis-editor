@@ -51,6 +51,7 @@ const TAB_LABEL_KEYS: Record<RibbonTabId, TranslationKey> = {
   view: "ribbon.tab.view",
   tableDesign: "ribbon.tab.tableDesign",
   tableLayout: "ribbon.tab.tableLayout",
+  imageFormat: "ribbon.tab.imageFormat",
   plugins: "ribbon.tab.plugins",
   ai: "ribbon.tab.ai",
 };
@@ -76,6 +77,7 @@ const GROUP_LABEL_KEYS: Record<string, TranslationKey> = {
   merge: "ribbon.group.merge",
   cellSize: "ribbon.group.cellSize",
   alignment: "ribbon.group.alignment",
+  size: "ribbon.group.size",
 };
 
 /**
@@ -144,6 +146,9 @@ const RIBBON_GROUP_ORDER: Partial<Record<RibbonTabId, Record<string, number>>> =
       merge: 30,
       cellSize: 40,
       alignment: 50,
+    },
+    imageFormat: {
+      size: 10,
     },
     plugins: {
       general: 10,
@@ -226,6 +231,9 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
     merge: { priority: 30, collapsedIcon: "combine" },
     cellSize: { priority: 40, collapsedIcon: "move-horizontal" },
     alignment: { priority: 50, collapsedIcon: "align-left" },
+  },
+  imageFormat: {
+    size: { priority: 40, collapsedIcon: "crop" },
   },
   plugins: {
     general: { priority: 50, collapsedIcon: "plug" },

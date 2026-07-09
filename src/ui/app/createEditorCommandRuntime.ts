@@ -116,6 +116,10 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
       importInputRef: deps.importInputRef,
       imageInputRef: deps.imageInputRef,
       selectedImageRun: interaction.selectedImageRun,
+      imageCropMode: {
+        isActive: interaction.imageOps.cropMode,
+        toggle: interaction.imageOps.toggleCropMode,
+      },
       selectionBoxes: doc.selectionBoxes,
       focusInput: deps.focusInput,
       applyState: deps.applyState,

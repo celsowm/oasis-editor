@@ -22,7 +22,7 @@ import type {
 } from "@/ui/OasisEditorAppProps.js";
 import { RibbonTabs } from "./ribbon/RibbonTabs.js";
 import { RibbonPanel } from "./ribbon/RibbonPanel.js";
-import type { RibbonTabId } from "./schema/items.js";
+import { CONTEXTUAL_TABS, type RibbonTabId } from "./schema/items.js";
 import type { ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
 
 const shouldAllowNativeMouseDown = (target: EventTarget | null): boolean =>
@@ -47,18 +47,34 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
   const [version, setVersion] = createSignal(0);
   const [activeTab, setActiveTab] = createSignal<RibbonTabId>("home");
 
-  // Word-style contextual tabs: when the caret enters a table, surface the
-  // table tabs and focus Design; when it leaves, fall back off the (now hidden)
-  // contextual tab so a stale panel is never shown.
-  const CONTEXTUAL_TABLE_TABS: RibbonTabId[] = ["tableDesign", "tableLayout"];
-  createEffect((prevInside?: boolean): boolean => {
-    const inside = api.commands.state("tableContext").isActive;
-    if (inside && prevInside === false) {
-      setActiveTab("tableDesign");
-    } else if (!inside && CONTEXTUAL_TABLE_TABS.includes(activeTab())) {
+  // Word-style contextual tabs (table tools, image format, …): when a gating
+  // command turns active, surface its tab and focus the first one; when the
+  // active tab's gating command turns inactive, fall back to Home so a stale
+  // panel is never shown. Generic over every `CONTEXTUAL_TABS` entry so multiple
+  // contextual features coexist without hardcoded per-feature blocks.
+  const CONTEXTUAL_TAB_ENTRIES = Object.entries(CONTEXTUAL_TABS) as Array<
+    [RibbonTabId, string]
+  >;
+  createEffect((prev?: Map<string, boolean>): Map<string, boolean> => {
+    const current = new Map<string, boolean>();
+    for (const [, command] of CONTEXTUAL_TAB_ENTRIES) {
+      if (!current.has(command)) {
+        current.set(command, api.commands.state(command).isActive);
+      }
+    }
+    // Focus the first contextual tab whose gating command just became active.
+    for (const [tab, command] of CONTEXTUAL_TAB_ENTRIES) {
+      if ((current.get(command) ?? false) && !(prev?.get(command) ?? false)) {
+        setActiveTab(tab);
+        break;
+      }
+    }
+    // Leave a now-hidden contextual tab.
+    const activeCommand = CONTEXTUAL_TABS[activeTab()];
+    if (activeCommand && !(current.get(activeCommand) ?? false)) {
       setActiveTab("home");
     }
-    return inside;
+    return current;
   });
 
   onMount((): void => {

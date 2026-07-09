@@ -70,6 +70,11 @@ export interface OasisCommandPayloads {
   insertImage: undefined;
   editImageAlt: undefined;
   insertImageCaption: undefined;
+  imageContext: undefined;
+  imageWidthCm: number | string | null;
+  imageHeightCm: number | string | null;
+  imageCrop: undefined;
+  imageCropAspect: string;
   outdent: undefined;
   indent: undefined;
   togglePageBreakBefore: undefined;

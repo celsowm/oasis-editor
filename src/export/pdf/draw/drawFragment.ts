@@ -107,6 +107,7 @@ export async function drawFloatingImagesForParagraph(options: {
         width: pxToPt(rect.width),
         height: pxToPt(rect.height),
         rotation: image.rotation,
+        crop: image.crop,
       });
     }
   }
@@ -265,6 +266,7 @@ export async function drawFragmentText(
       width: pxToPt(fragment.image.width),
       height: pxToPt(fragment.image.height),
       rotation: fragment.image.rotation,
+      crop: fragment.image.crop,
     });
     return;
   }

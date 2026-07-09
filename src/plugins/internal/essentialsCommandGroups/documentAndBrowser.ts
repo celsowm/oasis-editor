@@ -84,5 +84,45 @@ export function buildDocumentAndBrowserCommands({
         isActive: image.isSelected(),
       }),
     ),
+    imageContext: actionCommand(
+      "imageContext",
+      (): void => {},
+      (): { isEnabled: boolean; isActive: boolean; value: null } => ({
+        isEnabled: image.isSelected(),
+        isActive: image.isSelected(),
+        value: null,
+      }),
+    ),
+    imageWidthCm: actionCommand(
+      "imageWidthCm",
+      (p): void => image.setWidthCm(Number(p)),
+      (): { isEnabled: boolean; value: number | null } => ({
+        isEnabled: image.isSelected(),
+        value: image.getSizeCm()?.width ?? null,
+      }),
+    ),
+    imageHeightCm: actionCommand(
+      "imageHeightCm",
+      (p): void => image.setHeightCm(Number(p)),
+      (): { isEnabled: boolean; value: number | null } => ({
+        isEnabled: image.isSelected(),
+        value: image.getSizeCm()?.height ?? null,
+      }),
+    ),
+    imageCrop: actionCommand(
+      "imageCrop",
+      (): void => image.toggleCrop(),
+      (): { isEnabled: boolean; isActive: boolean } => ({
+        isEnabled: image.isSelected(),
+        isActive: image.isCropActive(),
+      }),
+    ),
+    imageCropAspect: actionCommand(
+      "imageCropAspect",
+      (p): void => image.applyCropAspect(String(p)),
+      (): { isEnabled: boolean } => ({
+        isEnabled: image.isSelected(),
+      }),
+    ),
   };
 }

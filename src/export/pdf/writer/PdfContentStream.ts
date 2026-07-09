@@ -336,6 +336,22 @@ export class PdfContentStream {
     const rotation = Number.isFinite(options.rotation)
       ? (options.rotation ?? 0)
       : 0;
+
+    const crop = options.crop;
+    const cl = crop?.left ?? 0;
+    const ct = crop?.top ?? 0;
+    const cr = crop?.right ?? 0;
+    const cb = crop?.bottom ?? 0;
+    if (crop && (cl > 0 || ct > 0 || cr > 0 || cb > 0)) {
+      this.drawCroppedImage(options, bottom, rotation, {
+        left: cl,
+        top: ct,
+        right: cr,
+        bottom: cb,
+      });
+      return;
+    }
+
     if (rotation === 0) {
       page.commands.push(
         [
@@ -378,6 +394,74 @@ export class PdfContentStream {
           formatNumber(d),
           formatNumber(e),
           formatNumber(f),
+          "cm",
+        ].join(" "),
+        `/${options.resourceName} Do`,
+        "Q",
+      ].join("\n"),
+    );
+  }
+
+  /**
+   * Draws a cropped image by clipping to the displayed box and scaling the full
+   * image so only the cropped sub-region fills it — mirroring the canvas/DOCX
+   * `a:srcRect` semantics. Works with rotation by mapping box-local space to the
+   * page (rotation about the box centre), clipping in that space, then drawing
+   * the enlarged image behind the clip.
+   */
+  private drawCroppedImage(
+    options: OasisPdfImageOptions,
+    bottom: number,
+    rotation: number,
+    crop: { left: number; top: number; right: number; bottom: number },
+  ): void {
+    const page = this.page;
+    const { width, height } = options;
+    const fw = Math.max(1e-4, 1 - crop.left - crop.right);
+    const fh = Math.max(1e-4, 1 - crop.top - crop.bottom);
+    const fullWidth = width / fw;
+    const fullHeight = height / fh;
+    // Full-image placement in box-local space (box occupies [0,width]×[0,height],
+    // y-up). `left`/`bottom` crop push the image origin below/left of the box.
+    const originX = -crop.left * fullWidth;
+    const originY = -crop.bottom * fullHeight;
+
+    // R: box-local → page, with rotation about the box centre (see drawImage).
+    const radians = (-rotation * Math.PI) / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    const cxl = width / 2;
+    const cyl = height / 2;
+    const cxPage = options.x + width / 2;
+    const cyPage = bottom + height / 2;
+    const ra = cos;
+    const rb = sin;
+    const rc = -sin;
+    const rd = cos;
+    const re = cxPage - (ra * cxl + rc * cyl);
+    const rf = cyPage - (rb * cxl + rd * cyl);
+
+    page.commands.push(
+      [
+        "q",
+        [
+          formatNumber(ra),
+          formatNumber(rb),
+          formatNumber(rc),
+          formatNumber(rd),
+          formatNumber(re),
+          formatNumber(rf),
+          "cm",
+        ].join(" "),
+        // Clip to the displayed box (box-local coordinates).
+        `0 0 ${formatNumber(width)} ${formatNumber(height)} re W n`,
+        [
+          formatNumber(fullWidth),
+          "0",
+          "0",
+          formatNumber(fullHeight),
+          formatNumber(originX),
+          formatNumber(originY),
           "cm",
         ].join(" "),
         `/${options.resourceName} Do`,

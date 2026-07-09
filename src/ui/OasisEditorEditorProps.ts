@@ -49,6 +49,8 @@ export interface OasisEditorEditorOverlayProps {
   focused: Accessor<boolean>;
   showCaret: Accessor<boolean>;
   importProgress?: Accessor<ImportProgress | null>;
+  /** Whether interactive image crop mode is active (shows crop handles). */
+  imageCropMode?: Accessor<boolean>;
   toolbarHost?: () => ToolbarHost;
   persistenceStatus?: () => string;
   showFloatingTableToolbar?: Accessor<boolean>;
@@ -95,6 +97,12 @@ export interface OasisEditorEditorSurfaceHandlers {
   onImageRotateHandleMouseDown: (
     paragraphId: string,
     paragraphOffset: number,
+    event: MouseEvent & { currentTarget: HTMLElement },
+  ) => void;
+  onImageCropHandleMouseDown?: (
+    paragraphId: string,
+    paragraphOffset: number,
+    direction: ResizeHandleDirection,
     event: MouseEvent & { currentTarget: HTMLElement },
   ) => void;
   onTextBoxRotateHandleMouseDown: (

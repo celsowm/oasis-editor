@@ -3,9 +3,11 @@ import type {
   EditorPosition,
   EditorState,
   EditorImageRunData,
+  EditorImageCrop,
   EditorImageFloatingLayout,
   EditorTextRun,
 } from "@/core/model.js";
+import { PX_PER_CM } from "@/core/units.js";
 import {
   getSelectedObjectRun,
   type SelectedObjectRun,
@@ -103,6 +105,188 @@ export function resizeSelectedImage(
     width: Math.max(24, Math.round(width)),
     height: Math.max(24, Math.round(height)),
   }));
+}
+
+/** Minimum on-screen image dimension in CSS px (mirrors resizeSelectedImage). */
+const MIN_IMAGE_PX = 24;
+
+/** Displayed size of the selected image, in centimetres, or `null`. */
+export function getSelectedImageSizeCm(
+  state: EditorState,
+): { width: number; height: number } | null {
+  const selectedImage = getSelectedImageRun(state);
+  const image = selectedImage && getRunImage(selectedImage.run);
+  if (!image) {
+    return null;
+  }
+  return {
+    width: image.width / PX_PER_CM,
+    height: image.height / PX_PER_CM,
+  };
+}
+
+/**
+ * Sets the displayed width from a centimetre value, scaling the height by the
+ * current aspect ratio (Word locks aspect for pictures).
+ */
+export function setSelectedImageWidthCm(
+  state: EditorState,
+  cm: number,
+): EditorState {
+  const selectedImage = getSelectedImageRun(state);
+  const image = selectedImage && getRunImage(selectedImage.run);
+  if (!image || !Number.isFinite(cm) || cm <= 0) {
+    return state;
+  }
+  const nextWidth = Math.max(MIN_IMAGE_PX, Math.round(cm * PX_PER_CM));
+  const ratio = image.height / image.width;
+  return resizeSelectedImage(state, nextWidth, nextWidth * ratio);
+}
+
+/** Sets the displayed height from a centimetre value, scaling width to match. */
+export function setSelectedImageHeightCm(
+  state: EditorState,
+  cm: number,
+): EditorState {
+  const selectedImage = getSelectedImageRun(state);
+  const image = selectedImage && getRunImage(selectedImage.run);
+  if (!image || !Number.isFinite(cm) || cm <= 0) {
+    return state;
+  }
+  const nextHeight = Math.max(MIN_IMAGE_PX, Math.round(cm * PX_PER_CM));
+  const ratio = image.width / image.height;
+  return resizeSelectedImage(state, nextHeight * ratio, nextHeight);
+}
+
+/** Crop fractions of the selected image (`a:srcRect`), or `null`. */
+export function getSelectedImageCrop(
+  state: EditorState,
+): EditorImageCrop | null {
+  const selectedImage = getSelectedImageRun(state);
+  const image = selectedImage && getRunImage(selectedImage.run);
+  return image?.crop ?? null;
+}
+
+/** Clamp a single crop side to `[0, 0.99)`; treat non-finite as 0. */
+function clampCropSide(value: number | undefined): number {
+  if (!value || !Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+  return Math.min(value, 0.99);
+}
+
+/** Normalize crop fractions; returns `undefined` when nothing is trimmed. */
+function normalizeCrop(
+  crop: EditorImageCrop | null | undefined,
+): EditorImageCrop | undefined {
+  if (!crop) {
+    return undefined;
+  }
+  const left = clampCropSide(crop.left);
+  const top = clampCropSide(crop.top);
+  const right = clampCropSide(crop.right);
+  const bottom = clampCropSide(crop.bottom);
+  // Keep opposite sides from crossing (leave at least 1% visible each axis).
+  const safeRight = Math.min(right, Math.max(0, 0.99 - left));
+  const safeBottom = Math.min(bottom, Math.max(0, 0.99 - top));
+  if (left === 0 && top === 0 && safeRight === 0 && safeBottom === 0) {
+    return undefined;
+  }
+  return { left, top, right: safeRight, bottom: safeBottom };
+}
+
+export interface ImageCropUpdate {
+  crop: EditorImageCrop | null;
+  /** Optional new displayed width (px) — used when cropping shrinks the box. */
+  width?: number;
+  /** Optional new displayed height (px). */
+  height?: number;
+}
+
+/**
+ * Applies a crop (and optionally a new displayed size) to the selected image.
+ * Passing `crop: null` clears the crop. Round-trips to DOCX `a:srcRect`.
+ */
+export function setSelectedImageCrop(
+  state: EditorState,
+  update: ImageCropUpdate,
+): EditorState {
+  return patchSelectedImage(state, (image) => {
+    const next: EditorImageRunData = { ...image };
+    const crop = normalizeCrop(update.crop);
+    if (crop) {
+      next.crop = crop;
+    } else {
+      delete next.crop;
+    }
+    if (update.width !== undefined) {
+      next.width = Math.max(MIN_IMAGE_PX, Math.round(update.width));
+    }
+    if (update.height !== undefined) {
+      next.height = Math.max(MIN_IMAGE_PX, Math.round(update.height));
+    }
+    return next;
+  });
+}
+
+/** Aspect-ratio crop preset: a numeric `width/height` ratio, or `"reset"`. */
+export type ImageCropAspectMode = number | "reset";
+
+/**
+ * Computes a centred crop that makes the displayed box match `mode` (a
+ * `width/height` ratio), trimming the longer axis and shrinking that box
+ * dimension so the image is not distorted. `"reset"` clears the crop.
+ */
+export function computeImageAspectCrop(
+  image: EditorImageRunData,
+  mode: ImageCropAspectMode,
+): ImageCropUpdate {
+  if (mode === "reset") {
+    return { crop: null };
+  }
+  const target = mode;
+  const { width: W, height: H } = image;
+  if (!Number.isFinite(target) || target <= 0 || W <= 0 || H <= 0) {
+    return { crop: image.crop ?? null };
+  }
+  const c = image.crop ?? {};
+  const l0 = clampCropSide(c.left);
+  const t0 = clampCropSide(c.top);
+  const r0 = clampCropSide(c.right);
+  const b0 = clampCropSide(c.bottom);
+  const currentRatio = W / H;
+  if (currentRatio > target) {
+    // Too wide → trim left/right, shrink the box width.
+    const newWidth = H * target;
+    const addFrac = ((W - newWidth) / W) * Math.max(0, 1 - l0 - r0);
+    return {
+      crop: { ...c, left: l0 + addFrac / 2, right: r0 + addFrac / 2 },
+      width: newWidth,
+    };
+  }
+  if (currentRatio < target) {
+    // Too tall → trim top/bottom, shrink the box height.
+    const newHeight = W / target;
+    const addFrac = ((H - newHeight) / H) * Math.max(0, 1 - t0 - b0);
+    return {
+      crop: { ...c, top: t0 + addFrac / 2, bottom: b0 + addFrac / 2 },
+      height: newHeight,
+    };
+  }
+  return { crop: image.crop ?? null };
+}
+
+/** Applies an aspect-ratio crop preset to the selected image. */
+export function applySelectedImageCropAspect(
+  state: EditorState,
+  mode: ImageCropAspectMode,
+): EditorState {
+  const selectedImage = getSelectedImageRun(state);
+  const image = selectedImage && getRunImage(selectedImage.run);
+  if (!image) {
+    return state;
+  }
+  return setSelectedImageCrop(state, computeImageAspectCrop(image, mode));
 }
 
 /** Normalize an angle to the [0, 360) range; `0` collapses to `undefined`. */

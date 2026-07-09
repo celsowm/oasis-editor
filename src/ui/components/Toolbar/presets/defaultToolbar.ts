@@ -7,6 +7,10 @@ import { MetricGroup } from "@/ui/components/Toolbar/groups/MetricGroup.js";
 import { SectionGroup } from "@/ui/components/Toolbar/groups/SectionGroup.js";
 import { MarginsGroup } from "@/ui/components/Toolbar/groups/MarginsGroup.js";
 import { ShapeGallery } from "@/ui/components/Toolbar/ShapeGallery.js";
+import {
+  ImageSizeField,
+  ImageCropMenu,
+} from "@/ui/components/Toolbar/controls/ImageSizeControls.js";
 import { withDefaultRibbonPlacement } from "./defaultToolbar/ribbonPlacements.js";
 import {
   ALIGN_BUTTONS,
@@ -374,6 +378,32 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     isVisible: (api) => api.commands.state("insertImageCaption").isEnabled,
   });
   items.push({ type: "separator", id: "sep-insert" });
+
+  // --- Image Format (contextual tab): Size group (crop + height/width) ---
+  items.push({
+    type: "menu",
+    id: "editor-toolbar-image-crop",
+    testId: "editor-toolbar-image-crop",
+    iconName: "crop",
+    tooltipKey: "image.crop",
+    labelKey: "image.crop",
+    ribbonSize: "large",
+    isActive: (api) => api.commands.state("imageCrop").isActive,
+    panelClass: "oasis-editor-image-crop-panel",
+    content: { kind: "custom", render: (api) => ImageCropMenu({ api }) },
+  });
+  items.push({
+    type: "custom",
+    id: "editor-toolbar-image-height",
+    testId: "editor-toolbar-image-height",
+    render: (api) => ImageSizeField({ api, dimension: "height" }),
+  });
+  items.push({
+    type: "custom",
+    id: "editor-toolbar-image-width",
+    testId: "editor-toolbar-image-width",
+    render: (api) => ImageSizeField({ api, dimension: "width" }),
+  });
 
   // --- Paragraph ---
   for (const button of ALIGN_BUTTONS) {

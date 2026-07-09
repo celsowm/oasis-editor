@@ -103,6 +103,18 @@ export interface EssentialsImageCapability {
   promptAlt: () => void;
   promptCaption: () => void;
   isSelected: () => boolean;
+  /** Displayed size of the selected image in centimetres, or `null`. */
+  getSizeCm: () => { width: number; height: number } | null;
+  /** Set the displayed width (cm), scaling height to keep the aspect ratio. */
+  setWidthCm: (cm: number) => void;
+  /** Set the displayed height (cm), scaling width to keep the aspect ratio. */
+  setHeightCm: (cm: number) => void;
+  /** Whether interactive crop mode is currently active. */
+  isCropActive: () => boolean;
+  /** Toggle interactive crop mode for the selected image. */
+  toggleCrop: () => void;
+  /** Apply an aspect-ratio crop preset (e.g. "16:9", "1:1", "reset"). */
+  applyCropAspect: (preset: string) => void;
 }
 
 export interface EssentialsBrowserCapability {

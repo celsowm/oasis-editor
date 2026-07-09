@@ -1,5 +1,5 @@
 import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
-import { createSignal } from "solid-js";
+import { createEffect, createSignal } from "solid-js";
 import {
   getDocumentParagraphs,
   getParagraphs,
@@ -23,6 +23,7 @@ import type { EditorLogger } from "@/utils/logger.js";
 import type { EditorHistoryState } from "@/ui/editorHistory.js";
 import { createResizeSession } from "./createResizeSession.js";
 import { createRotateSession } from "./createRotateSession.js";
+import { createCropSession } from "./createCropSession.js";
 
 export interface ActiveImageDrag {
   paragraphId: string;
@@ -85,8 +86,25 @@ export function createEditorImageOperations(
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
   const [dragging, setDragging] = createSignal(false);
+  const [cropMode, setCropMode] = createSignal(false);
   const [draggedImageInfo, setDraggedImageInfo] =
     createSignal<ActiveImageDrag | null>(null);
+
+  // Crop mode only makes sense while an image is selected; leave it as soon as
+  // the selection moves off the image (click away, delete, caret move).
+  createEffect((): void => {
+    if (cropMode() && !getSelectedImageInfo(deps.state)) {
+      setCropMode(false);
+    }
+  });
+
+  const toggleCropMode = (): void => {
+    if (!getSelectedImageInfo(deps.state)) {
+      setCropMode(false);
+      return;
+    }
+    setCropMode((value): boolean => !value);
+  };
   const [mousePos, setMousePos] = createSignal({ x: 0, y: 0 });
   const [dropTargetPos, setDropTargetPos] = createSignal<EditorPosition | null>(
     null,
@@ -224,6 +242,16 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
       logger: deps.logger,
     },
   );
+
+  const imageCropSession = createCropSession({
+    state: deps.state,
+    applyState: deps.applyState,
+    updateHistoryState: deps.updateHistoryState,
+    cloneState: deps.cloneState,
+    focusInput: deps.focusInput,
+    logger: deps.logger,
+    zoomFactor: deps.zoomFactor,
+  });
 
   const handleImageDragMouseMove = (event: MouseEvent): void => {
     let dragState = activeImageDrag;
@@ -389,8 +417,28 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
     imageRotateSession.start(paragraphId, paragraphOffset, event, deps.state);
   };
 
+  const handleImageCropHandleMouseDown = (
+    paragraphId: string,
+    paragraphOffset: number,
+    direction: ResizeHandleDirection,
+    event: MouseEvent & { currentTarget: HTMLElement },
+  ): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    imageCropSession.start(
+      paragraphId,
+      paragraphOffset,
+      direction,
+      event,
+      deps.state,
+    );
+  };
+
   return {
     dragging,
+    cropMode,
+    setCropMode,
+    toggleCropMode,
     draggedImageInfo,
     mousePos,
     dropTargetPos,
@@ -399,8 +447,10 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
     stopImageDrag,
     stopImageResize: imageResizeSession.stop,
     stopImageRotate: imageRotateSession.stop,
+    stopImageCrop: imageCropSession.stop,
     handleImageMouseDown,
     handleImageResizeHandleMouseDown,
     handleImageRotateHandleMouseDown,
+    handleImageCropHandleMouseDown,
   };
 }

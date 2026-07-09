@@ -226,6 +226,23 @@
   cursor: grabbing;
 }
 
+/* Crop mode: a neutral frame with black square crop handles (Word-style). The
+   handles reuse `.oasis-editor-resize-handle` positioning; only the look changes. */
+.oasis-editor-image-crop-overlay {
+  border: 1px dashed rgba(15, 23, 42, 0.85);
+  box-shadow: 0 0 0 100vmax rgba(15, 23, 42, 0.32);
+  cursor: default;
+}
+
+.oasis-editor-image-crop-overlay .oasis-editor-resize-handle {
+  width: 12px;
+  height: 12px;
+  border-radius: 0;
+  border: 1px solid #ffffff;
+  background: #111827;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.5);
+}
+
 .oasis-editor-caret {
   position: absolute;
   width: 0;
