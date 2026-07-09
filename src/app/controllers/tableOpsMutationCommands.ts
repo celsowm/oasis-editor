@@ -134,7 +134,10 @@ export function resolveLocationTableMutation(
     getActiveSectionIndex(current),
   );
   if (!location) return null;
-  const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
+  const targetBlocks = [...getTargetBlocks(current, location.zone)];
+  targetBlocks[location.blockIndex] = cloneBlock(
+    targetBlocks[location.blockIndex],
+  );
   const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
   if (!tableBlock || tableBlock.type !== "table") return null;
   return { tableBlock, location, targetBlocks };

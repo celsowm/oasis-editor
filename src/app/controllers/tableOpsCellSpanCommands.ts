@@ -66,9 +66,8 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, range.zone)
-      .map(cloneBlock);
+    const targetBlocks = [...deps.getTargetBlocks(current, range.zone)];
+    targetBlocks[range.blockIndex] = cloneBlock(targetBlocks[range.blockIndex]);
     const tableBlock = targetBlocks[range.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -144,9 +143,8 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, range.zone)
-      .map(cloneBlock);
+    const targetBlocks = [...deps.getTargetBlocks(current, range.zone)];
+    targetBlocks[range.blockIndex] = cloneBlock(targetBlocks[range.blockIndex]);
     const tableBlock = targetBlocks[range.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
