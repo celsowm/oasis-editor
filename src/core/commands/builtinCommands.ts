@@ -57,6 +57,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "imageHeightCm",
   "imageCrop",
   "imageCropAspect",
+  "imageBorder",
   "outdent",
   "indent",
   "togglePageBreakBefore",

@@ -1,5 +1,6 @@
-import { For, Show, createSignal, type JSX } from "solid-js";
+import { Show, createSignal, type JSX } from "solid-js";
 import { SplitButton } from "./SplitButton.js";
+import { ColorGrids } from "./ColorGrids.js";
 import type { ColorPalette } from "@/ui/components/Toolbar/schema/palette.js";
 
 export type ColorPickerKind = "color" | "highlight" | "shading";
@@ -102,67 +103,15 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
         </button>
       </Show>
 
-      <div class="oasis-editor-color-menu-section">
-        <div class="oasis-editor-color-menu-heading">
-          {props.themeColorsLabel}
-        </div>
-        <div class="oasis-editor-color-theme-grid">
-          <For each={props.palette.themeColors}>
-            {(theme): JSX.Element => (
-              <div class="oasis-editor-color-theme-column">
-                <For each={theme.values}>
-                  {(color): JSX.Element => (
-                    <button
-                      type="button"
-                      class="oasis-editor-color-swatch"
-                      classList={{
-                        "oasis-editor-color-swatch-active":
-                          activeColor() === normalizeColor(color),
-                      }}
-                      style={{ "background-color": color }}
-                      title={`${theme.name} ${color}`}
-                      aria-label={`${theme.name} ${color}`}
-                      data-testid={`${props.testId}-theme-swatch-${color.replace("#", "")}`}
-                      onMouseEnter={(): string => setPreviewColor(color)}
-                      onFocus={(): string => setPreviewColor(color)}
-                      onBlur={(): null => setPreviewColor(null)}
-                      onClick={(): void => applyColor(color)}
-                    />
-                  )}
-                </For>
-              </div>
-            )}
-          </For>
-        </div>
-      </div>
-
-      <div class="oasis-editor-color-menu-section">
-        <div class="oasis-editor-color-menu-heading">
-          {props.standardColorsLabel}
-        </div>
-        <div class="oasis-editor-color-standard-grid">
-          <For each={props.palette.standardColors}>
-            {(swatch): JSX.Element => (
-              <button
-                type="button"
-                class="oasis-editor-color-swatch"
-                classList={{
-                  "oasis-editor-color-swatch-active":
-                    activeColor() === normalizeColor(swatch.value),
-                }}
-                style={{ "background-color": swatch.value }}
-                title={swatch.name}
-                aria-label={swatch.name}
-                data-testid={`${props.testId}-standard-swatch-${swatch.value.replace("#", "")}`}
-                onMouseEnter={(): string => setPreviewColor(swatch.value)}
-                onFocus={(): string => setPreviewColor(swatch.value)}
-                onBlur={(): null => setPreviewColor(null)}
-                onClick={(): void => applyColor(swatch.value)}
-              />
-            )}
-          </For>
-        </div>
-      </div>
+      <ColorGrids
+        palette={props.palette}
+        themeColorsLabel={props.themeColorsLabel}
+        standardColorsLabel={props.standardColorsLabel}
+        activeColor={activeColor()}
+        testId={props.testId}
+        onPreview={setPreviewColor}
+        onPick={applyColor}
+      />
 
       <Show when={props.palette.allowCustom ?? true}>
         <button

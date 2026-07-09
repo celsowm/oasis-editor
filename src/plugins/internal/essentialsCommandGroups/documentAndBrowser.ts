@@ -1,4 +1,6 @@
 import type { OasisPlugin } from "@/core/plugin.js";
+import type { EditorImageBorder } from "@/core/model.js";
+import type { ImageBorderPatch } from "@/core/commands/image.js";
 import type { ActionCommandBuilder } from "../essentialsCommandBuilders.js";
 import type {
   EssentialsBrowserCapability,
@@ -122,6 +124,14 @@ export function buildDocumentAndBrowserCommands({
       (p): void => image.applyCropAspect(String(p)),
       (): { isEnabled: boolean } => ({
         isEnabled: image.isSelected(),
+      }),
+    ),
+    imageBorder: actionCommand(
+      "imageBorder",
+      (p): void => image.setBorder(p as ImageBorderPatch),
+      (): { isEnabled: boolean; value: EditorImageBorder | null } => ({
+        isEnabled: image.isSelected(),
+        value: image.getBorder(),
       }),
     ),
   };

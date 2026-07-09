@@ -19,7 +19,7 @@ import {
 import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
 import { paintTextBox } from "./drawTextBoxShape.js";
 import type { BlockDrawers } from "./blockDrawers.js";
-import { registerPdfImageRun } from "@/export/pdf/images.js";
+import { drawImageObject } from "./drawImageObject.js";
 import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import {
   DEFAULT_FONT_SIZE_PX,
@@ -94,21 +94,16 @@ export async function drawFloatingImagesForParagraph(options: {
         lineTop: options.paragraphTop + line.top,
         anchorLeft: options.contentLeft + (slot?.left ?? 0),
       });
-      const resourceName = await registerPdfImageRun(
+      await drawImageObject(
         options.writer,
+        options.pageIndex,
         options.document,
         image,
+        pxToPt(rect.x),
+        pxToPt(rect.y),
+        pxToPt(rect.width),
+        pxToPt(rect.height),
       );
-      if (!resourceName) continue;
-      options.writer.drawImage(options.pageIndex, {
-        resourceName,
-        x: pxToPt(rect.x),
-        y: pxToPt(rect.y),
-        width: pxToPt(rect.width),
-        height: pxToPt(rect.height),
-        rotation: image.rotation,
-        crop: image.crop,
-      });
     }
   }
 }
@@ -253,21 +248,16 @@ export async function drawFragmentText(
       line.slots.find((c): boolean => c.offset === fragment.startOffset) ??
       line.slots.find((c): boolean => c.offset >= fragment.startOffset);
     if (!slot) return;
-    const resourceName = await registerPdfImageRun(
+    await drawImageObject(
       writer,
+      pageIndex,
       document,
       fragment.image,
+      pxToPt(originX + slot.left),
+      pxToPt(originY + line.top + line.height - fragment.image.height),
+      pxToPt(fragment.image.width),
+      pxToPt(fragment.image.height),
     );
-    if (!resourceName) return;
-    writer.drawImage(pageIndex, {
-      resourceName,
-      x: pxToPt(originX + slot.left),
-      y: pxToPt(originY + line.top + line.height - fragment.image.height),
-      width: pxToPt(fragment.image.width),
-      height: pxToPt(fragment.image.height),
-      rotation: fragment.image.rotation,
-      crop: fragment.image.crop,
-    });
     return;
   }
 

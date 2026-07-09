@@ -169,6 +169,21 @@ export interface ColorPickerItem extends ToolbarItemBase {
   label?: string;
 }
 
+/**
+ * Word's Picture Border control: a wide horizontal trigger over a popup that
+ * carries colour grids plus Weight/Dashes flyouts. Its own item type (rather
+ * than a `colorPicker` variant) because a border is three facets — colour,
+ * weight, dash — dispatched as partial patches of one command.
+ */
+export interface PictureBorderItem extends ToolbarItemBase {
+  type: "pictureBorder";
+  /** Command dispatched with an `ImageBorderPatch` payload. */
+  command: CommandRef;
+  palette?: ColorPalette;
+  labelKey?: TranslationKey;
+  label?: string;
+}
+
 export interface GridPickerItem extends ToolbarItemBase {
   type: "gridPicker";
   /** Command dispatched with `{ rows, cols }` as payload. */
@@ -209,6 +224,7 @@ export type ToolbarItem =
   | SelectItem
   | StyleGalleryItem
   | ColorPickerItem
+  | PictureBorderItem
   | GridPickerItem
   | SeparatorItem
   | GroupItem

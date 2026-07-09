@@ -1,4 +1,5 @@
-import type { EditorPageMargins } from "@/core/model.js";
+import type { EditorImageBorder, EditorPageMargins } from "@/core/model.js";
+import type { ImageBorderPatch } from "@/core/commands/image.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
 import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
 import type { OasisBuiltinCommand } from "@/core/commands/builtinCommands.js";
@@ -115,6 +116,10 @@ export interface EssentialsImageCapability {
   toggleCrop: () => void;
   /** Apply an aspect-ratio crop preset (e.g. "16:9", "1:1", "reset"). */
   applyCropAspect: (preset: string) => void;
+  /** Outline of the selected image (`pic:spPr/a:ln`), or `null`. */
+  getBorder: () => EditorImageBorder | null;
+  /** Merge a partial outline edit; `{ color: null }` removes the outline. */
+  setBorder: (patch: ImageBorderPatch) => void;
 }
 
 export interface EssentialsBrowserCapability {

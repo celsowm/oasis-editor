@@ -405,6 +405,17 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     render: (api) => ImageSizeField({ api, dimension: "width" }),
   });
 
+  // --- Image Format (contextual tab): Picture Styles group ---
+  items.push({
+    type: "pictureBorder",
+    id: "editor-toolbar-image-border",
+    testId: "editor-toolbar-image-border",
+    command: "imageBorder",
+    labelKey: "image.border",
+    tooltipKey: "image.border",
+    ribbonSize: "large",
+  });
+
   // --- Paragraph ---
   for (const button of ALIGN_BUTTONS) {
     items.push({

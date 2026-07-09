@@ -3,8 +3,10 @@ import type {
   EditorPosition,
   EditorState,
   EditorImageRunData,
+  EditorImageBorder,
   EditorImageCrop,
   EditorImageFloatingLayout,
+  EditorLineDash,
   EditorTextRun,
 } from "@/core/model.js";
 import { PX_PER_CM } from "@/core/units.js";
@@ -287,6 +289,55 @@ export function applySelectedImageCropAspect(
     return state;
   }
   return setSelectedImageCrop(state, computeImageAspectCrop(image, mode));
+}
+
+/** Outline of the selected image (`pic:spPr/a:ln`), or `null`. */
+export function getSelectedImageBorder(
+  state: EditorState,
+): EditorImageBorder | null {
+  const selectedImage = getSelectedImageRun(state);
+  const image = selectedImage && getRunImage(selectedImage.run);
+  return image?.border ?? null;
+}
+
+/**
+ * A partial edit of the image outline, as dispatched by the picture-border
+ * toolbar popup. Each popup action touches one facet, so the patch merges onto
+ * whatever border the image already has. `color: null` removes the outline.
+ */
+export interface ImageBorderPatch {
+  color?: string | null;
+  widthPt?: number;
+  dash?: EditorLineDash;
+}
+
+/** Colour Word applies when a weight/dash is chosen before any colour. */
+const DEFAULT_IMAGE_BORDER_COLOR = "#000000";
+
+/** Merges `patch` onto the selected image's outline. `color: null` clears it. */
+export function setSelectedImageBorder(
+  state: EditorState,
+  patch: ImageBorderPatch,
+): EditorState {
+  return patchSelectedImage(state, (image) => {
+    if (patch.color === null) {
+      const { border: _removed, ...rest } = image;
+      return rest;
+    }
+    const border: EditorImageBorder = {
+      ...(image.border ?? { color: DEFAULT_IMAGE_BORDER_COLOR }),
+    };
+    if (patch.color !== undefined) {
+      border.color = patch.color;
+    }
+    if (patch.widthPt !== undefined) {
+      border.widthPt = patch.widthPt;
+    }
+    if (patch.dash !== undefined) {
+      border.dash = patch.dash;
+    }
+    return { ...image, border };
+  });
 }
 
 /** Normalize an angle to the [0, 360) range; `0` collapses to `undefined`. */

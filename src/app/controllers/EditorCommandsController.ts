@@ -19,6 +19,8 @@ import {
   setSelectedImageWidthCm,
   setSelectedImageHeightCm,
   applySelectedImageCropAspect,
+  setSelectedImageBorder,
+  type ImageBorderPatch,
   type ImageCropAspectMode,
 } from "@/core/commands/image.js";
 import {
@@ -530,8 +532,17 @@ function createEditorCommandsControllerImpl(
     if (mode === null) {
       return;
     }
-    execTransactional((current): EditorState =>
-      applySelectedImageCropAspect(current, mode),
+    execTransactional(
+      (current): EditorState => applySelectedImageCropAspect(current, mode),
+    );
+  };
+
+  const applyImageBorderCommand = (patch: ImageBorderPatch): void => {
+    if (!selectedImageRun()) {
+      return;
+    }
+    execTransactional(
+      (current): EditorState => setSelectedImageBorder(current, patch),
     );
   };
 
@@ -566,6 +577,7 @@ function createEditorCommandsControllerImpl(
     applyImageWidthCmCommand,
     applyImageHeightCmCommand,
     applyImageCropAspectCommand,
+    applyImageBorderCommand,
     handleListTab,
     handleListEnter,
     handleListBoundaryBackspace,

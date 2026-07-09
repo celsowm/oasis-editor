@@ -413,6 +413,7 @@ export const en = {
   "ribbon.group.cellSize": "Cell Size",
   "ribbon.group.alignment": "Alignment",
   "ribbon.group.size": "Size",
+  "ribbon.group.imageStyles": "Picture Styles",
 
   // Image format (contextual tab)
   "image.crop": "Crop",
@@ -426,6 +427,20 @@ export const en = {
   "image.cropRatio.2x3": "2:3",
   "image.cropRatio.3x4": "3:4",
   "image.cropRatio.9x16": "9:16",
+  "image.border": "Picture Border",
+  "image.borderNone": "No Outline",
+  "image.borderMoreColors": "More Outline Colors...",
+  "image.borderWeight": "Weight",
+  "image.borderDashes": "Dashes",
+  "image.borderDash.solid": "Solid",
+  "image.borderDash.sysDot": "Round Dot",
+  "image.borderDash.sysDash": "Square Dot",
+  "image.borderDash.dot": "Dot",
+  "image.borderDash.dash": "Dash",
+  "image.borderDash.dashDot": "Dash Dot",
+  "image.borderDash.lgDash": "Long Dash",
+  "image.borderDash.lgDashDot": "Long Dash Dot",
+  "image.borderDash.lgDashDotDot": "Long Dash Dot Dot",
 
   // Export
   "toolbar.exportDocx": "Export DOCX",

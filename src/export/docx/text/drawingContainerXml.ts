@@ -1,10 +1,12 @@
 import type {
+  EditorImageBorder,
   EditorImageFloatingLayout,
   EditorWrapPolygonPoint,
 } from "@/core/model.js";
 import type { DocContext } from "@/export/docx/docxTypes.js";
 import { escapeXml } from "@/export/docx/xmlUtils.js";
 import {
+  EMU_PER_PT,
   OOXML_PERCENT_DENOMINATOR,
   OOXML_ROTATION_UNITS,
 } from "./constants.js";
@@ -42,6 +44,24 @@ export function buildSrcRect(
     return "";
   }
   return `<a:srcRect l="${l}" t="${t}" r="${r}" b="${b}"/>`;
+}
+
+/**
+ * The picture outline. Belongs inside `pic:spPr` right after `a:prstGeom` —
+ * `CT_ShapeProperties` sequences xfrm, geometry, fill, then `a:ln` (a picture's
+ * fill lives in `pic:blipFill`, so nothing sits between the two here).
+ */
+export function buildImageLnXml(border: EditorImageBorder | undefined): string {
+  if (!border) {
+    return "";
+  }
+  const widthAttr =
+    border.widthPt !== undefined
+      ? ` w="${Math.round(border.widthPt * EMU_PER_PT)}"`
+      : "";
+  const fill = `<a:solidFill><a:srgbClr val="${escapeXml(border.color.replace(/^#/, ""))}"/></a:solidFill>`;
+  const dash = border.dash ? `<a:prstDash val="${border.dash}"/>` : "";
+  return `<a:ln${widthAttr}>${fill}${dash}</a:ln>`;
 }
 
 function buildAnchorBool(

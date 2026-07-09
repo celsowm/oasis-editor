@@ -1,5 +1,6 @@
 import { For, Show, createSignal, type Component, type JSX } from "solid-js";
 import { Dynamic } from "solid-js/web";
+import type { EditorImageBorder } from "@/core/model.js";
 import type {
   ButtonItem,
   ColorPickerItem,
@@ -8,6 +9,7 @@ import type {
   GroupItem,
   MenuContent,
   MenuItem,
+  PictureBorderItem,
   SelectItem,
   StyleGalleryItem,
   SeparatorItem,
@@ -33,6 +35,9 @@ import { SplitButton } from "@/ui/components/Toolbar/primitives/SplitButton.js";
 import { DEFAULT_PALETTE } from "@/ui/components/Toolbar/presets/defaultPalette.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
 import { StyleGallery } from "@/ui/components/Toolbar/StyleGallery.js";
+import { PictureBorderPicker } from "@/ui/components/Toolbar/primitives/PictureBorderPicker.js";
+import type { ImageBorderPatch } from "@/core/commands/image.js";
+import { PICTURE_BORDER_DASH_OPTIONS } from "@/ui/components/Toolbar/pictureBorderPresets.js";
 
 export interface RendererProps<I extends ToolbarItem = ToolbarItem> {
   item: I;
@@ -202,6 +207,34 @@ function RenderColorPicker(props: RendererProps<ColorPickerItem>): JSX.Element {
   );
 }
 
+function RenderPictureBorder(
+  props: RendererProps<PictureBorderItem>,
+): JSX.Element {
+  const b = bindItem(props.item, props.api);
+  return (
+    <PictureBorderPicker
+      border={(b.value() as EditorImageBorder | null | undefined) ?? null}
+      palette={props.item.palette ?? DEFAULT_PALETTE}
+      disabled={b.disabled()}
+      testId={props.item.testId ?? props.item.id}
+      label={resolveLabel(props.item, props.api) ?? props.api.t("image.border")}
+      noOutlineLabel={props.api.t("image.borderNone")}
+      moreColorsLabel={props.api.t("image.borderMoreColors")}
+      weightLabel={props.api.t("image.borderWeight")}
+      dashesLabel={props.api.t("image.borderDashes")}
+      themeColorsLabel={props.api.t("toolbar.themeColors")}
+      standardColorsLabel={props.api.t("toolbar.standardColors")}
+      dashOptions={PICTURE_BORDER_DASH_OPTIONS.map((option) => ({
+        value: option.value,
+        label: props.api.t(option.labelKey),
+      }))}
+      onApply={(patch: ImageBorderPatch): void => {
+        props.api.commands.execute(props.item.command, patch);
+      }}
+    />
+  );
+}
+
 function RenderGridPicker(props: RendererProps<GridPickerItem>): JSX.Element {
   const onSelect = (rows: number, cols: number): void => {
     props.api.commands.execute(props.item.command, { rows, cols });
@@ -249,6 +282,7 @@ export const TOOLBAR_RENDERERS: Record<
   select: RenderSelect as Component<RendererProps>,
   styleGallery: RenderStyleGallery as Component<RendererProps>,
   colorPicker: RenderColorPicker as Component<RendererProps>,
+  pictureBorder: RenderPictureBorder as Component<RendererProps>,
   gridPicker: RenderGridPicker as Component<RendererProps>,
   separator: RenderSeparator as Component<RendererProps>,
   group: RenderGroup as Component<RendererProps>,

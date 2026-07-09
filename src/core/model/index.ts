@@ -20,6 +20,8 @@ export type {
   EditorParagraphListStyle,
   EditorImageCrop,
   EditorImageFillMode,
+  EditorLineDash,
+  EditorImageBorder,
   EditorImageFloatingPosition,
   EditorImageFloatingLayout,
   EditorImageRunData,

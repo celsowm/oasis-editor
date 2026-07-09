@@ -919,6 +919,159 @@
   pointer-events: none;
 }
 
+/* Wide horizontal dropdown (Picture Border): icon, label and chevron on one
+   line, filling a ribbon group's full height. Selectors are qualified up to
+   the `.oasis-editor-toolbar-item-ribbon-large` wrapper because the generic
+   large-item rules above (same wrapper, `.oasis-editor-tool-button`) otherwise
+   win on specificity and stack the button into Word's icon-over-label column. */
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-toolbar-item-ribbon-large
+  .oasis-editor-wide-menu-button,
+.oasis-editor-wide-menu-button {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  width: auto;
+  min-width: 156px;
+  max-width: none;
+  min-height: 30px;
+  height: 63px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-toolbar-item-ribbon-large
+  .oasis-editor-wide-menu-button
+  .oasis-editor-wide-menu-button-label {
+  display: block;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-toolbar-item-ribbon-large
+  .oasis-editor-wide-menu-button
+  .oasis-editor-dropdown-chevron {
+  margin-left: auto;
+}
+
+.oasis-editor-wide-menu-button-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.oasis-editor-wide-menu-button-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  box-sizing: border-box;
+}
+
+.oasis-editor-wide-menu-button-indicator-empty {
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 2px,
+    var(--oasis-text-muted) 2px 3px
+  );
+}
+
+.oasis-editor-wide-menu-button-label {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The Weight/Dashes flyouts hang outside the panel, so it must not clip. */
+.oasis-editor-picture-border-menu {
+  overflow: visible;
+}
+
+.oasis-editor-picture-border-submenu-row {
+  position: relative;
+}
+
+.oasis-editor-picture-border-submenu-trigger .oasis-editor-dropdown-chevron {
+  margin-left: auto;
+  transform: none;
+}
+
+.oasis-editor-picture-border-submenu-open {
+  background: var(--oasis-hover-bg);
+}
+
+.oasis-editor-picture-border-flyout {
+  position: absolute;
+  top: -4px;
+  left: calc(100% + 2px);
+  z-index: 1001;
+  width: 176px;
+  display: grid;
+  gap: 1px;
+  box-sizing: border-box;
+  padding: 4px;
+  background: var(--oasis-paper);
+  border: 1px solid var(--oasis-toolbar-border);
+  border-radius: var(--oasis-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.oasis-editor-picture-border-option {
+  width: 100%;
+  min-height: 26px;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--oasis-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.oasis-editor-picture-border-option:hover,
+.oasis-editor-picture-border-option:focus-visible {
+  background: var(--oasis-hover-bg);
+  outline: none;
+}
+
+.oasis-editor-picture-border-option-active {
+  background: var(--oasis-accent-soft);
+}
+
+.oasis-editor-picture-border-preview {
+  width: 48px;
+  flex-shrink: 0;
+  border-bottom: 1px solid currentColor;
+}
+
+.oasis-editor-picture-border-preview-svg {
+  width: 48px;
+  height: 4px;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.oasis-editor-picture-border-option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .oasis-editor-toolbar-badge {
   background: var(--oasis-accent-soft);
   color: var(--oasis-accent);

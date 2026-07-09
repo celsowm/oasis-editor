@@ -97,6 +97,8 @@ export interface OasisPdfRectOptions {
   fill?: string;
   stroke?: string;
   lineWidth?: number;
+  /** Stroke dash pattern, in points. Ignored without a `stroke`. */
+  dashArray?: number[];
 }
 
 export interface OasisPdfLineOptions {

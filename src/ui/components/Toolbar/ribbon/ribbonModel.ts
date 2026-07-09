@@ -78,6 +78,7 @@ const GROUP_LABEL_KEYS: Record<string, TranslationKey> = {
   cellSize: "ribbon.group.cellSize",
   alignment: "ribbon.group.alignment",
   size: "ribbon.group.size",
+  imageStyles: "ribbon.group.imageStyles",
 };
 
 /**
@@ -148,7 +149,8 @@ const RIBBON_GROUP_ORDER: Partial<Record<RibbonTabId, Record<string, number>>> =
       alignment: 50,
     },
     imageFormat: {
-      size: 10,
+      imageStyles: 10,
+      size: 20,
     },
     plugins: {
       general: 10,
@@ -233,6 +235,7 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
     alignment: { priority: 50, collapsedIcon: "align-left" },
   },
   imageFormat: {
+    imageStyles: { priority: 30, collapsedIcon: "square" },
     size: { priority: 40, collapsedIcon: "crop" },
   },
   plugins: {

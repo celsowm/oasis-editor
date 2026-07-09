@@ -58,6 +58,11 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-image-crop": { tab: "imageFormat", group: "size", row: 1 },
   "editor-toolbar-image-height": { tab: "imageFormat", group: "size", row: 1 },
   "editor-toolbar-image-width": { tab: "imageFormat", group: "size", row: 2 },
+  "editor-toolbar-image-border": {
+    tab: "imageFormat",
+    group: "imageStyles",
+    row: 1,
+  },
   "editor-toolbar-align-left": { tab: "home", group: "paragraph", row: 2 },
   "editor-toolbar-align-center": { tab: "home", group: "paragraph", row: 2 },
   "editor-toolbar-align-right": { tab: "home", group: "paragraph", row: 2 },

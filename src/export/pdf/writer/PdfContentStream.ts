@@ -24,6 +24,14 @@ import {
   textMarkerComment,
 } from "./pdfPrimitives.js";
 
+/** The `d` operator for a dash pattern in points, or `null` for a solid line. */
+function buildDashCommand(dashArray: number[] | undefined): string | null {
+  if (!dashArray || dashArray.length === 0) {
+    return null;
+  }
+  return `[${dashArray.map((value): string => formatNumber(value)).join(" ")}] 0 d`;
+}
+
 export class PdfContentStream {
   constructor(
     readonly page: OasisPdfPage,
@@ -62,6 +70,10 @@ export class PdfContentStream {
     if (options.stroke) {
       commands.push(colorCommand(options.stroke, "RG", [0, 0, 0]));
       commands.push(`${formatNumber(options.lineWidth ?? 1)} w`);
+      const dashCommand = buildDashCommand(options.dashArray);
+      if (dashCommand) {
+        commands.push(dashCommand);
+      }
     }
 
     commands.push(
@@ -87,10 +99,7 @@ export class PdfContentStream {
 
   drawLine(options: OasisPdfLineOptions): void {
     const page = this.page;
-    const dashCommand =
-      options.dashArray && options.dashArray.length > 0
-        ? `[${options.dashArray.map((value): string => formatNumber(value)).join(" ")}] 0 d`
-        : null;
+    const dashCommand = buildDashCommand(options.dashArray);
 
     const commands: string[] = [
       "q",

@@ -82,6 +82,7 @@ function buildPartContext(
         alt: run.image.alt,
         crop: run.image.crop,
         fillMode: run.image.fillMode,
+        border: run.image.border,
         rotation: run.image.rotation,
         flipH: run.image.flipH,
         flipV: run.image.flipV,

@@ -1,4 +1,5 @@
 import type {
+  EditorImageBorder,
   EditorImageRunData,
   EditorLayoutLine,
   EditorPageSettings,
@@ -6,6 +7,8 @@ import type {
   EditorCaretSlot,
 } from "@/core/model.js";
 import { resolveImageSrc } from "@/core/model.js";
+import { lineDashPatternPt } from "@/core/lineDash.js";
+import { PX_PER_POINT } from "@/core/units.js";
 import {
   getImageFloatingGeometry,
   resolveFloatingObjectRect,
@@ -20,10 +23,61 @@ function clamp01(value: number): number {
 }
 
 /**
+ * Strokes the picture outline (`pic:spPr/a:ln`) around the displayed box. The
+ * stroke is centred on the edge and overflows by half its width, exactly like
+ * Word — the layout box is never grown to accommodate it.
+ *
+ * Crop and tiling are irrelevant here: they change what fills the box, not the
+ * box. Flips are deliberately left out of the transform too — a rectangle is
+ * flip-symmetric, and `scale(-1, …)` would only reverse the dash phase.
+ */
+function strokeImageBorder(
+  ctx: CanvasRenderingContext2D,
+  border: EditorImageBorder,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  rotation: number | undefined,
+): void {
+  ctx.save();
+  ctx.translate(x + width / 2, y + height / 2);
+  if (rotation) ctx.rotate(rotation * DEG_TO_RAD);
+  ctx.strokeStyle = border.color;
+  ctx.lineWidth = Math.max(1, (border.widthPt ?? 1) * PX_PER_POINT);
+  ctx.setLineDash(
+    lineDashPatternPt(border.dash).map((value): number => value * PX_PER_POINT),
+  );
+  ctx.strokeRect(-width / 2, -height / 2, width, height);
+  ctx.restore();
+}
+
+/**
  * Draw an inline image fragment, honoring crop (`a:srcRect`), rotation
- * (`a:xfrm/@rot`) and horizontal/vertical flips.
+ * (`a:xfrm/@rot`), horizontal/vertical flips and the picture outline.
  */
 export function drawImageFragment(
+  ctx: CanvasRenderingContext2D,
+  img: CanvasImageSource & { naturalWidth: number; naturalHeight: number },
+  image: EditorImageRunData,
+  x: number,
+  y: number,
+): void {
+  drawImageContent(ctx, img, image, x, y);
+  if (image.border) {
+    strokeImageBorder(
+      ctx,
+      image.border,
+      x,
+      y,
+      image.width,
+      image.height,
+      image.rotation,
+    );
+  }
+}
+
+function drawImageContent(
   ctx: CanvasRenderingContext2D,
   img: CanvasImageSource & { naturalWidth: number; naturalHeight: number },
   image: EditorImageRunData,

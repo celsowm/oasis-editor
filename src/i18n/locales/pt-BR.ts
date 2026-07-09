@@ -414,6 +414,7 @@ export const ptBR = {
   "ribbon.group.cellSize": "Tamanho da Célula",
   "ribbon.group.alignment": "Alinhamento",
   "ribbon.group.size": "Tamanho",
+  "ribbon.group.imageStyles": "Estilos de Imagem",
 
   // Image format (contextual tab)
   "image.crop": "Cortar",
@@ -427,6 +428,20 @@ export const ptBR = {
   "image.cropRatio.2x3": "2:3",
   "image.cropRatio.3x4": "3:4",
   "image.cropRatio.9x16": "9:16",
+  "image.border": "Borda de Imagem",
+  "image.borderNone": "Sem Contorno",
+  "image.borderMoreColors": "Mais Cores de Contorno...",
+  "image.borderWeight": "Espessura",
+  "image.borderDashes": "Traços",
+  "image.borderDash.solid": "Sólido",
+  "image.borderDash.sysDot": "Ponto Redondo",
+  "image.borderDash.sysDash": "Ponto Quadrado",
+  "image.borderDash.dot": "Pontilhado",
+  "image.borderDash.dash": "Tracejado",
+  "image.borderDash.dashDot": "Traço e Ponto",
+  "image.borderDash.lgDash": "Traço Longo",
+  "image.borderDash.lgDashDot": "Traço Longo e Ponto",
+  "image.borderDash.lgDashDotDot": "Traço Longo e Dois Pontos",
 
   // Export
   "toolbar.exportDocx": "Exportar DOCX",

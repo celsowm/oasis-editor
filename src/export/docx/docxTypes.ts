@@ -1,5 +1,6 @@
 import type {
   EditorBlockNode,
+  EditorImageBorder,
   EditorImageCrop,
   EditorImageFillMode,
   EditorImageFloatingLayout,
@@ -42,6 +43,7 @@ export interface DocContext {
     alt?: string;
     crop?: EditorImageCrop;
     fillMode?: EditorImageFillMode;
+    border?: EditorImageBorder;
     rotation?: number;
     flipH?: boolean;
     flipV?: boolean;

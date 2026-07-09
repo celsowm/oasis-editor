@@ -162,6 +162,35 @@ export interface EditorImageCrop {
 
 export type EditorImageFillMode = "stretch" | "tile";
 
+/**
+ * Preset dash patterns for an outline, mapped from DrawingML `a:prstDash/@val`.
+ * The member names are the serialized OOXML tokens.
+ */
+export type EditorLineDash =
+  | "solid"
+  | "dot"
+  | "sysDot"
+  | "dash"
+  | "sysDash"
+  | "dashDot"
+  | "lgDash"
+  | "lgDashDot"
+  | "lgDashDotDot";
+
+/**
+ * An image outline, mapped from `pic:spPr/a:ln`. Word centers the stroke on the
+ * displayed box edge and reserves no layout space for it. An absent `border`
+ * means no outline.
+ */
+export interface EditorImageBorder {
+  /** `a:ln/a:solidFill/a:srgbClr` as `#RRGGBB`. */
+  color: string;
+  /** `a:ln/@w`, in points. Absent ⇒ 1pt. */
+  widthPt?: number;
+  /** `a:ln/a:prstDash/@val`. Absent ⇒ solid. */
+  dash?: EditorLineDash;
+}
+
 export interface EditorImageFloatingPosition {
   relativeFrom?: string;
   align?: string;
@@ -200,6 +229,7 @@ export interface EditorImageRunData {
   linkedSrc?: string;
   crop?: EditorImageCrop;
   fillMode?: EditorImageFillMode;
+  border?: EditorImageBorder;
   rotation?: number;
   flipH?: boolean;
   flipV?: boolean;
