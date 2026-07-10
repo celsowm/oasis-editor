@@ -118,6 +118,135 @@ const LineSpacingIcon: CustomIconRenderer = (): JSX.Element => (
   </SvgIcon>
 );
 
+/** Office-like table glyph shell: a compact 3×3 grid with a command mark. */
+const TableIcon = (props: { children: JSX.Element }): JSX.Element => (
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.65}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="5.25" y="5.25" width="13.5" height="13.5" rx="0.7" />
+    <path d="M9.75 5.25v13.5M14.25 5.25v13.5M5.25 9.75h13.5M5.25 14.25h13.5" />
+    {props.children}
+  </SvgIcon>
+);
+
+const TableInsertRowAboveIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M12 1.75v3M10.5 3.25 12 1.75l1.5 1.5" />
+    <path d="M5.25 8h13.5" stroke-width={2.5} />
+  </TableIcon>
+);
+
+const TableInsertRowBelowIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M12 22.25v-3M10.5 20.75 12 22.25l1.5-1.5" />
+    <path d="M5.25 16h13.5" stroke-width={2.5} />
+  </TableIcon>
+);
+
+const TableDeleteRowIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M4.5 12h15" stroke="#d14343" stroke-width={2.6} />
+  </TableIcon>
+);
+
+const TableInsertColumnLeftIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M1.75 12h3M3.25 10.5 1.75 12l1.5 1.5" />
+    <path d="M8 5.25v13.5" stroke-width={2.5} />
+  </TableIcon>
+);
+
+const TableInsertColumnRightIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M22.25 12h-3M20.75 10.5l1.5 1.5-1.5 1.5" />
+    <path d="M16 5.25v13.5" stroke-width={2.5} />
+  </TableIcon>
+);
+
+const TableDeleteColumnIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M12 4.5v15" stroke="#d14343" stroke-width={2.6} />
+  </TableIcon>
+);
+
+const TableMergeIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M7.25 12h9.5M9.25 10l-2 2 2 2M14.75 10l2 2-2 2" stroke-width={2} />
+  </TableIcon>
+);
+
+const TableSplitIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M12 8v8M10 10l2-2 2 2M10 14l2 2 2-2" stroke-width={2} />
+  </TableIcon>
+);
+
+const TableWidthIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M3 21h18M4.5 19.5 3 21l1.5 1.5M19.5 19.5 21 21l-1.5 1.5" />
+  </TableIcon>
+);
+
+const TableDistributeRowsIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M2.5 6h19M2.5 18h19M12 1.75v2.5M10.5 3.25 12 1.75l1.5 1.5M12 22.25v-2.5M10.5 20.75 12 22.25l1.5-1.5" />
+  </TableIcon>
+);
+
+const TableDistributeColumnsIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M6 2.5v19M18 2.5v19M1.75 12h2.5M3.25 10.5 1.75 12l1.5 1.5M22.25 12h-2.5M20.75 10.5l1.5 1.5-1.5 1.5" />
+  </TableIcon>
+);
+
+const TableAutoFitIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M2 21h20M5 19 2 21l3 2M19 19l3 2-3 2M8 12h8M10 10l-2 2 2 2M14 10l2 2-2 2" />
+  </TableIcon>
+);
+
+const TableAlignIcon = (
+  alignment: "left" | "center" | "right",
+): JSX.Element => {
+  const x = alignment === "left" ? 6.75 : alignment === "center" ? 10.5 : 14.25;
+  return (
+    <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
+      <rect x="4" y="4" width="16" height="16" rx="0.8" />
+      <path d={`M${x} 9h6M${x} 12h6M${x} 15h6`} />
+    </SvgIcon>
+  );
+};
+
+const TableAlignLeftIcon: CustomIconRenderer = (): JSX.Element =>
+  TableAlignIcon("left");
+const TableAlignCenterIcon: CustomIconRenderer = (): JSX.Element =>
+  TableAlignIcon("center");
+const TableAlignRightIcon: CustomIconRenderer = (): JSX.Element =>
+  TableAlignIcon("right");
+
+const TableBordersIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M3 3l18 18" stroke-width={2} />
+  </TableIcon>
+);
+
+const TableNoBordersIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
+    <rect
+      x="5"
+      y="5"
+      width="14"
+      height="14"
+      rx="0.8"
+      stroke-dasharray="2.5 2"
+    />
+    <path d="M3 3l18 18" stroke="#d14343" stroke-width={2.1} />
+  </SvgIcon>
+);
+
 /**
  * Checkmark glyph used to mark the active item in radio/check menus. Replaces the
  * duplicated inline `<polyline points="20 6 9 17 4 12">` previously copy-pasted
@@ -143,6 +272,23 @@ const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   footnote: FootnoteIcon,
   specialIndentFirstLine: SpecialIndentFirstLineIcon,
   lineSpacing: LineSpacingIcon,
+  tableInsertRowAbove: TableInsertRowAboveIcon,
+  tableInsertRowBelow: TableInsertRowBelowIcon,
+  tableDeleteRow: TableDeleteRowIcon,
+  tableInsertColumnLeft: TableInsertColumnLeftIcon,
+  tableInsertColumnRight: TableInsertColumnRightIcon,
+  tableDeleteColumn: TableDeleteColumnIcon,
+  tableMerge: TableMergeIcon,
+  tableSplit: TableSplitIcon,
+  tableWidth: TableWidthIcon,
+  tableDistributeRows: TableDistributeRowsIcon,
+  tableDistributeColumns: TableDistributeColumnsIcon,
+  tableAutoFit: TableAutoFitIcon,
+  tableAlignLeft: TableAlignLeftIcon,
+  tableAlignCenter: TableAlignCenterIcon,
+  tableAlignRight: TableAlignRightIcon,
+  tableBorders: TableBordersIcon,
+  tableNoBorders: TableNoBordersIcon,
 };
 
 export function getCustomIcon(name?: string): CustomIconRenderer | undefined {

@@ -19,6 +19,8 @@ export interface OasisEditorLoadingOptions {
 }
 
 export interface OasisEditorAppUiProps {
+  /** Visual chrome palette. Defaults to light to preserve existing embeds. */
+  theme?: "light" | "dark";
   showChrome?: boolean;
   shell?: "document" | "inline" | "balloon";
   uiVariant?: "classic" | "docs";

@@ -19,6 +19,27 @@ import {
   patchStyleValue,
 } from "./tableCommandUtils.js";
 
+export type TableBorderPreset =
+  | "bottom"
+  | "top"
+  | "left"
+  | "right"
+  | "none"
+  | "all"
+  | "outside"
+  | "inside"
+  | "insideHorizontal"
+  | "insideVertical"
+  | "diagonalDown"
+  | "diagonalUp";
+
+/** Word's default border: black, solid, one half point. */
+export const DEFAULT_TABLE_BORDER: EditorBorderStyle = {
+  width: 0.5,
+  type: "solid",
+  color: "#000000",
+};
+
 function collectTableSelectedParagraphIds(state: EditorState): Set<string> {
   const selectedParagraphIds = new Set<string>();
   const activeSectionIndex = getActiveSectionIndex(state);
@@ -189,4 +210,67 @@ export function setTableCellBorders(
   nextState = setTableCellStyleValue(nextState, "borderBottom", border);
   nextState = setTableCellStyleValue(nextState, "borderLeft", border);
   return nextState;
+}
+
+/** Apply a ribbon Borders preset to the selected cells. The cell-style command
+ * already resolves rectangular table selections (including merged cells) and
+ * keeps property revisions intact. */
+export function applyTableBorderPreset(
+  state: EditorState,
+  preset: TableBorderPreset,
+  border: EditorBorderStyle = DEFAULT_TABLE_BORDER,
+): EditorState {
+  const apply = (
+    current: EditorState,
+    keys: Array<
+      keyof Pick<
+        EditorTableCellStyle,
+        | "borderTop"
+        | "borderRight"
+        | "borderBottom"
+        | "borderLeft"
+        | "borderTopLeftToBottomRight"
+        | "borderTopRightToBottomLeft"
+      >
+    >,
+    value: EditorBorderStyle | null,
+  ): EditorState =>
+    keys.reduce(
+      (next, key): EditorState => setTableCellStyleValue(next, key, value),
+      current,
+    );
+  const edges: Array<
+    keyof Pick<
+      EditorTableCellStyle,
+      "borderTop" | "borderRight" | "borderBottom" | "borderLeft"
+    >
+  > = ["borderTop", "borderRight", "borderBottom", "borderLeft"];
+  switch (preset) {
+    case "none":
+      return apply(
+        state,
+        [...edges, "borderTopLeftToBottomRight", "borderTopRightToBottomLeft"],
+        null,
+      );
+    case "bottom":
+      return apply(state, ["borderBottom"], border);
+    case "top":
+      return apply(state, ["borderTop"], border);
+    case "left":
+      return apply(state, ["borderLeft"], border);
+    case "right":
+      return apply(state, ["borderRight"], border);
+    case "diagonalDown":
+      return apply(state, ["borderTopLeftToBottomRight"], border);
+    case "diagonalUp":
+      return apply(state, ["borderTopRightToBottomLeft"], border);
+    // Direct per-cell borders deliberately cover all selected-cell edges. The
+    // canvas de-duplicates shared strokes while DOCX preserves each cell edge.
+    case "all":
+    case "outside":
+    case "inside":
+    case "insideHorizontal":
+    case "insideVertical":
+      return apply(state, edges, border);
+  }
 }

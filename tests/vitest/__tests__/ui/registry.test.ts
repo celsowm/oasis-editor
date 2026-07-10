@@ -161,6 +161,33 @@ describe("UI registries", () => {
     ).toMatchObject({ tab: "layout", group: "section", ribbonSize: "large" });
   });
 
+  it("keeps table mutations prominent while secondary table actions stay compact", () => {
+    const items = createDefaultToolbarPreset(t);
+    const byId = (id: string): (typeof items)[number] | undefined =>
+      items.find((item) => item.id === id);
+
+    for (const id of [
+      "editor-toolbar-tbl-insert-row-above",
+      "editor-toolbar-tbl-insert-row-below",
+      "editor-toolbar-tbl-insert-col-left",
+      "editor-toolbar-tbl-insert-col-right",
+      "editor-toolbar-tbl-merge",
+    ]) {
+      expect(byId(id)).toMatchObject({ ribbonSize: "large" });
+    }
+    for (const id of [
+      "editor-toolbar-tbl-delete-row",
+      "editor-toolbar-tbl-delete-col",
+      "editor-toolbar-tbl-split",
+      "editor-toolbar-tbl-autofit",
+    ]) {
+      expect(byId(id)).not.toMatchObject({ ribbonSize: "large" });
+    }
+    expect(byId("editor-toolbar-tbl-style-options")).toMatchObject({
+      ribbonSize: "large",
+    });
+  });
+
   it("separates large ribbon items from normal two-row items", () => {
     const groups = buildRibbonGroups(
       [

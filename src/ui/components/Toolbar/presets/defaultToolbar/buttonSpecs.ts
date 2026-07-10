@@ -62,77 +62,83 @@ export const TABLE_LAYOUT_BUTTONS: Array<{
   command: string;
   icon: string;
   tooltipKey: TranslationKey;
+  ribbonSize?: "large";
 }> = [
   {
     id: "editor-toolbar-tbl-insert-row-above",
     command: "tableInsertRowBefore",
-    icon: "rows",
+    icon: "tableInsertRowAbove",
     tooltipKey: "table.insertRowAbove",
+    ribbonSize: "large",
   },
   {
     id: "editor-toolbar-tbl-insert-row-below",
     command: "tableInsertRowAfter",
-    icon: "rows",
+    icon: "tableInsertRowBelow",
     tooltipKey: "table.insertRowBelow",
+    ribbonSize: "large",
   },
   {
     id: "editor-toolbar-tbl-delete-row",
     command: "tableDeleteRow",
-    icon: "trash-2",
+    icon: "tableDeleteRow",
     tooltipKey: "table.deleteRow",
   },
   {
     id: "editor-toolbar-tbl-insert-col-left",
     command: "tableInsertColumnBefore",
-    icon: "columns",
+    icon: "tableInsertColumnLeft",
     tooltipKey: "table.insertColumnLeft",
+    ribbonSize: "large",
   },
   {
     id: "editor-toolbar-tbl-insert-col-right",
     command: "tableInsertColumnAfter",
-    icon: "columns",
+    icon: "tableInsertColumnRight",
     tooltipKey: "table.insertColumnRight",
+    ribbonSize: "large",
   },
   {
     id: "editor-toolbar-tbl-delete-col",
     command: "tableDeleteColumn",
-    icon: "trash-2",
+    icon: "tableDeleteColumn",
     tooltipKey: "table.deleteColumn",
   },
   {
     id: "editor-toolbar-tbl-merge",
     command: "tableMerge",
-    icon: "combine",
+    icon: "tableMerge",
     tooltipKey: "table.mergeTooltip",
+    ribbonSize: "large",
   },
   {
     id: "editor-toolbar-tbl-split",
     command: "tableSplit",
-    icon: "split",
+    icon: "tableSplit",
     tooltipKey: "table.splitTooltip",
   },
   {
     id: "editor-toolbar-tbl-width-100",
     command: "tableWidth100",
-    icon: "maximize",
+    icon: "tableWidth",
     tooltipKey: "table.width100Tooltip",
   },
   {
     id: "editor-toolbar-tbl-align-left",
     command: "tableAlignLeft",
-    icon: "align-left",
+    icon: "tableAlignLeft",
     tooltipKey: "table.alignLeft",
   },
   {
     id: "editor-toolbar-tbl-align-center",
     command: "tableAlignCenter",
-    icon: "align-center",
+    icon: "tableAlignCenter",
     tooltipKey: "table.alignCenter",
   },
   {
     id: "editor-toolbar-tbl-align-right",
     command: "tableAlignRight",
-    icon: "align-right",
+    icon: "tableAlignRight",
     tooltipKey: "table.alignRight",
   },
 ];

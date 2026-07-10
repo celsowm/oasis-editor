@@ -3,6 +3,7 @@ import type { ImageBorderPatch } from "@/core/commands/image.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
 import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
 import type { OasisBuiltinCommand } from "@/core/commands/builtinCommands.js";
+import type { TableBorderPreset } from "@/core/commands/table.js";
 
 // Capability contracts the Essentials plugin operates on. Extracted to a leaf
 // module so `createEssentialsPlugin` (which builds the plugin) and
@@ -83,6 +84,13 @@ export interface EssentialsDocumentStyleDescriptor {
   color?: string;
   bold?: boolean;
   italic?: boolean;
+  tablePreview?: {
+    wholeFill?: string;
+    headerFill?: string;
+    bandFill?: string;
+    borderColor?: string;
+    headerColor?: string;
+  };
 }
 
 export interface EssentialsDocumentCapability {
@@ -205,6 +213,11 @@ export interface EssentialsTableCapability {
   cellShading: (color: string | null) => void;
   cellBorders: () => void;
   cellNoBorders: () => void;
+  applyBorderPreset: (preset: TableBorderPreset) => void;
+  isDrawingBorders: () => boolean;
+  toggleDrawingBorders: () => void;
+  isShowingGridlines: () => boolean;
+  toggleGridlines: () => void;
   width100: () => void;
   alignLeft: () => void;
   alignCenter: () => void;

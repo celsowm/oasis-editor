@@ -7,6 +7,9 @@ import { MetricGroup } from "@/ui/components/Toolbar/groups/MetricGroup.js";
 import { SectionGroup } from "@/ui/components/Toolbar/groups/SectionGroup.js";
 import { MarginsGroup } from "@/ui/components/Toolbar/groups/MarginsGroup.js";
 import { ShapeGallery } from "@/ui/components/Toolbar/ShapeGallery.js";
+import { TableStyleGallery } from "@/ui/components/Toolbar/TableStyleGallery.js";
+import { TableStyleOptions } from "@/ui/components/Toolbar/TableStyleOptions.js";
+import { TableBordersMenu } from "@/ui/components/Toolbar/TableBordersMenu.js";
 import {
   ImageSizeField,
   ImageCropMenu,
@@ -15,7 +18,6 @@ import { withDefaultRibbonPlacement } from "./defaultToolbar/ribbonPlacements.js
 import {
   ALIGN_BUTTONS,
   LIST_BUTTONS,
-  TABLE_DESIGN_TOGGLES,
   TABLE_LAYOUT_BUTTONS,
 } from "./defaultToolbar/buttonSpecs.js";
 import {
@@ -23,7 +25,6 @@ import {
   fontFamilyOptions,
   fontSizeOptions,
   mod,
-  tableStyleOptions,
 } from "./defaultToolbar/optionBuilders.js";
 
 /**
@@ -538,23 +539,21 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
       command: spec.command,
       tooltipKey: spec.tooltipKey,
       labelKey: spec.tooltipKey,
-      ribbonSize: "large",
+      ribbonSize: spec.ribbonSize,
     });
   }
 
   // --- Table Design (contextual tab) ---
-  // Table Style Options: tblLook conditional-formatting toggles.
-  for (const spec of TABLE_DESIGN_TOGGLES) {
-    items.push({
-      type: "toggle",
-      id: spec.id,
-      testId: spec.id,
-      command: spec.command,
-      labelKey: spec.labelKey,
-      tooltipKey: spec.labelKey,
-      ribbonSize: "large",
-    });
-  }
+  // Table Style Options mirrors Word's compact two-column checkbox group.
+  items.push({
+    type: "custom",
+    id: "editor-toolbar-tbl-style-options",
+    tab: "tableDesign",
+    group: "tableStyleOptions",
+    row: 1,
+    ribbonSize: "large",
+    render: (api) => TableStyleOptions({ api }),
+  });
   // Borders: shading (a real color picker, not a prompt) + border presets.
   items.push({
     type: "colorPicker",
@@ -565,71 +564,67 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     defaultValue: "#f1f5f9",
     tooltipKey: "table.cellColor",
     labelKey: "table.cellColor",
-    ribbonSize: "large",
   });
   items.push({
-    type: "button",
+    type: "custom",
     id: "editor-toolbar-tbl-borders",
     testId: "editor-toolbar-tbl-borders",
-    iconName: "frame",
-    command: "tableCellBorders",
-    tooltipKey: "table.applyBorders",
-    labelKey: "table.applyBorders",
     ribbonSize: "large",
+    render: (api) => TableBordersMenu({ api }),
   });
   items.push({
-    type: "button",
-    id: "editor-toolbar-tbl-no-borders",
-    testId: "editor-toolbar-tbl-no-borders",
-    iconName: "square",
-    command: "tableCellNoBorders",
-    tooltipKey: "table.removeBorders",
-    labelKey: "table.removeBorders",
+    type: "toggle",
+    id: "editor-toolbar-tbl-border-painter",
+    testId: "editor-toolbar-tbl-border-painter",
+    iconName: "paintbrush",
+    command: "toggleTableDrawBorders",
+    label: "Pincel de Borda",
+    tooltip: "Pincel de Borda",
     ribbonSize: "large",
   });
-  // Table Styles: apply a named table style (the document's table-style gallery).
+  // Table Styles: real previews of the document's effective table styles.
   items.push({
-    type: "select",
+    type: "custom",
     id: "editor-toolbar-tbl-style",
     testId: "editor-toolbar-tbl-style",
-    tooltipKey: "table.tableStyle",
-    labelKey: "table.tableStyle",
+    tab: "tableDesign",
+    group: "tableStyles",
+    row: 1,
     ribbonSize: "large",
-    placeholder: t("table.tableStyle"),
-    width: "wide",
-    command: "setTableStyle",
-    options: tableStyleOptions,
+    render: (api) =>
+      TableStyleGallery({
+        api,
+        styles: documentStyles(api),
+        testId: "editor-toolbar-tbl-style",
+      }),
   });
   // Cell Size group on the Layout tab: distribute + AutoFit.
   items.push({
     type: "button",
     id: "editor-toolbar-tbl-distribute-rows",
     testId: "editor-toolbar-tbl-distribute-rows",
-    iconName: "rows",
+    iconName: "tableDistributeRows",
     command: "tableDistributeRows",
     tooltipKey: "table.distributeRows",
     labelKey: "table.distributeRows",
-    ribbonSize: "large",
   });
   items.push({
     type: "button",
     id: "editor-toolbar-tbl-distribute-cols",
     testId: "editor-toolbar-tbl-distribute-cols",
-    iconName: "columns",
+    iconName: "tableDistributeColumns",
     command: "tableDistributeColumns",
     tooltipKey: "table.distributeColumns",
     labelKey: "table.distributeColumns",
-    ribbonSize: "large",
   });
   items.push({
     type: "toggle",
     id: "editor-toolbar-tbl-autofit",
     testId: "editor-toolbar-tbl-autofit",
-    iconName: "move-horizontal",
+    iconName: "tableAutoFit",
     command: "tableToggleAutoFit",
     labelKey: "table.autoFit",
     tooltipKey: "table.autoFit",
-    ribbonSize: "large",
   });
 
   // --- Section ---

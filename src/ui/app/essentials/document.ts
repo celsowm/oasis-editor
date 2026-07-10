@@ -4,6 +4,7 @@ import {
   resolveNamedTextStyle,
   type EditorState,
 } from "@/core/model.js";
+import { resolveNamedTableStyle } from "@/core/tableStyleResolver.js";
 import type {
   EssentialsDocumentCapability,
   EssentialsDocumentStyleDescriptor,
@@ -26,6 +27,15 @@ export function buildEssentialsDocument(
       }
       return Object.values(styles).map((style) => {
         const preview = resolveNamedTextStyle(style.id, styles);
+        const tableStyle =
+          style.type === "table"
+            ? resolveNamedTableStyle(style.id, styles).tableStyle
+            : undefined;
+        const whole = tableStyle?.conditionalFormats?.wholeTable;
+        const header = tableStyle?.conditionalFormats?.firstRow;
+        const band = tableStyle?.conditionalFormats?.band1Horz;
+        const border =
+          whole?.borders?.borderBottom ?? tableStyle?.borders?.borderBottom;
         return {
           id: style.id,
           name: style.name,
@@ -41,6 +51,15 @@ export function buildEssentialsDocument(
           color: preview.color ?? undefined,
           bold: preview.bold ?? undefined,
           italic: preview.italic ?? undefined,
+          tablePreview: tableStyle
+            ? {
+                wholeFill: whole?.shading,
+                headerFill: header?.shading,
+                bandFill: band?.shading,
+                borderColor: border?.color,
+                headerColor: header?.textStyle?.color ?? undefined,
+              }
+            : undefined,
         };
       });
     },

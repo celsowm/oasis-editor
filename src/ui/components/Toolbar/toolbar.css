@@ -17,8 +17,8 @@
   min-height: 118px;
   padding: 0;
   box-sizing: border-box;
-  background: #f4f4f4;
-  border-bottom: 1px solid #cfcfcf;
+  background: var(--oasis-ribbon-chrome, #f4f4f4);
+  border-bottom: 1px solid var(--oasis-ribbon-border, #cfcfcf);
   box-shadow: none;
   overflow: hidden;
 }
@@ -30,8 +30,8 @@
   height: 34px;
   padding: 0 8px;
   box-sizing: border-box;
-  background: #f2f2f2;
-  border-bottom: 1px solid #d0d0d0;
+  background: var(--oasis-ribbon-tabs-bg, #f2f2f2);
+  border-bottom: 1px solid var(--oasis-ribbon-border, #d0d0d0);
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -48,7 +48,7 @@
   border-bottom: none;
   border-radius: 3px 3px 0 0;
   background: transparent;
-  color: #2f2f2f;
+  color: var(--oasis-ribbon-text, #2f2f2f);
   font: inherit;
   font-size: 12px;
   line-height: 1;
@@ -57,7 +57,7 @@
 }
 
 .oasis-editor-ribbon-tab:hover {
-  background: #ececec;
+  background: var(--oasis-ribbon-hover, #ececec);
 }
 
 .oasis-editor-ribbon-tab:focus-visible {
@@ -66,9 +66,9 @@
 }
 
 .oasis-editor-ribbon-tab-active {
-  background: #ffffff;
-  border-color: #cfcfcf;
-  color: #111111;
+  background: var(--oasis-ribbon-panel-bg, #ffffff);
+  border-color: var(--oasis-ribbon-border, #cfcfcf);
+  color: var(--oasis-ribbon-active-text, #111111);
 }
 
 /*
@@ -76,18 +76,18 @@
  * as tools that appear only while the caret is inside a table.
  */
 .oasis-editor-ribbon-tab-contextual {
-  color: #7b2d63;
-  box-shadow: inset 0 2px 0 0 #b4368f;
+  color: var(--oasis-contextual-text, #7b2d63);
+  box-shadow: inset 0 2px 0 0 var(--oasis-contextual-accent, #b4368f);
 }
 
 .oasis-editor-ribbon-tab-contextual:hover {
-  background: #f7ecf3;
+  background: var(--oasis-contextual-hover, #f7ecf3);
 }
 
 .oasis-editor-ribbon-tab-contextual.oasis-editor-ribbon-tab-active {
-  color: #7b2d63;
-  border-color: #d9a9c9;
-  box-shadow: inset 0 2px 0 0 #b4368f;
+  color: var(--oasis-contextual-text, #7b2d63);
+  border-color: var(--oasis-contextual-border, #d9a9c9);
+  box-shadow: inset 0 2px 0 0 var(--oasis-contextual-accent, #b4368f);
 }
 
 .oasis-editor-ribbon-panel {
@@ -98,7 +98,7 @@
   min-height: 83px;
   padding: 5px 8px 3px;
   box-sizing: border-box;
-  background: #ffffff;
+  background: var(--oasis-ribbon-panel-bg, #ffffff);
   overflow-x: hidden;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -110,7 +110,7 @@
   align-items: stretch;
   padding: 0 9px;
   box-sizing: border-box;
-  border-right: 1px solid #dcdcdc;
+  border-right: 1px solid var(--oasis-ribbon-group-border, #dcdcdc);
   min-width: max-content;
   max-height: 75px;
 }
@@ -172,7 +172,7 @@
 
 .oasis-editor-ribbon-group-label {
   min-width: 0;
-  color: #6f6f6f;
+  color: var(--oasis-ribbon-muted, #6f6f6f);
   font-size: 10px;
   line-height: 12px;
   text-align: center;
@@ -1869,6 +1869,208 @@
   height: 49px;
   border-right-width: 2px;
   background: #f7f7f7;
+}
+
+/* Table Design uses a purpose-built gallery: unlike paragraph style names, a
+ * table's visual identity is its header/banding/border treatment. */
+.oasis-editor-table-style-options {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  grid-template-rows: repeat(3, 20px);
+  align-content: center;
+  column-gap: 12px;
+  row-gap: 1px;
+  min-width: 196px;
+  height: 63px;
+}
+
+.oasis-editor-table-style-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--oasis-ribbon-text, var(--oasis-text));
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.oasis-editor-table-style-option input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: var(--oasis-contextual-accent, var(--oasis-accent));
+}
+
+.oasis-editor-table-style-option:has(input:disabled) {
+  opacity: 0.48;
+  cursor: default;
+}
+
+.oasis-editor-table-style-gallery {
+  display: flex;
+  width: clamp(280px, 34vw, 510px);
+  height: 63px;
+  border: 1px solid var(--oasis-ribbon-border, #9a9a9a);
+  background: var(--oasis-ribbon-panel-bg, #f7f7f7);
+  box-sizing: border-box;
+}
+
+.oasis-editor-table-style-strip {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.oasis-editor-table-style-card {
+  display: grid;
+  grid-template-rows: 39px 16px;
+  flex: 0 0 72px;
+  width: 72px;
+  min-width: 0;
+  height: 61px;
+  padding: 3px;
+  border: 2px solid transparent;
+  background: transparent;
+  color: var(--oasis-ribbon-text, var(--oasis-text));
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.oasis-editor-table-style-preview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--table-border);
+  background: var(--table-fill);
+}
+
+.oasis-editor-table-style-preview i {
+  border-right: 1px solid var(--table-border);
+  border-bottom: 1px solid var(--table-border);
+  background: var(--table-fill);
+}
+
+.oasis-editor-table-style-preview i:nth-child(-n + 3) {
+  color: var(--table-header-color);
+  background: var(--table-header-fill);
+}
+
+.oasis-editor-table-style-preview i:nth-child(n + 7) { background: var(--table-band-fill); }
+.oasis-editor-table-style-preview i:nth-child(3n) { border-right: 0; }
+.oasis-editor-table-style-preview i:nth-child(n + 7) { border-bottom: 0; }
+
+.oasis-editor-table-style-card-label {
+  overflow: hidden;
+  padding-top: 2px;
+  font-size: 9px;
+  line-height: 12px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.oasis-editor-table-style-card:hover,
+.oasis-editor-table-style-card:focus-visible,
+.oasis-editor-table-style-card-active {
+  border-color: var(--oasis-contextual-accent, #4c8bf5);
+  background: var(--oasis-contextual-hover, #e7f1fb);
+  outline: none;
+}
+
+.oasis-editor-table-style-expand {
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  width: 24px;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--oasis-ribbon-border, #9a9a9a);
+  background: var(--oasis-ribbon-hover, #ededed);
+  color: var(--oasis-ribbon-text, #333);
+  cursor: pointer;
+}
+
+.oasis-editor-table-style-expand:hover,
+.oasis-editor-table-style-expand:focus-visible { background: var(--oasis-contextual-hover, #dcecf9); outline: none; }
+
+.oasis-editor-table-style-gallery-panel {
+  z-index: 1200;
+  width: min(440px, calc(100vw - 16px));
+  max-height: min(420px, calc(100vh - 88px));
+  padding: 6px;
+  border: 1px solid var(--oasis-ribbon-border, #777);
+  background: var(--oasis-ribbon-panel-bg, #fff);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 28%);
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.oasis-editor-table-style-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.oasis-editor-table-style-grid .oasis-editor-table-style-card { width: 100%; }
+.oasis-editor-table-style-gallery-empty { display: grid; place-items: center; width: 120px; height: 63px; color: var(--oasis-ribbon-muted, var(--oasis-text-muted)); font-size: 10px; }
+
+.oasis-editor-table-borders-trigger {
+  position: relative;
+}
+
+.oasis-editor-table-borders-trigger .oasis-editor-dropdown-chevron {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+}
+
+.oasis-editor-table-borders-menu {
+  position: relative;
+  z-index: 1300;
+  width: 210px;
+  padding: 4px 0;
+  background: var(--oasis-ribbon-panel-bg, #fff);
+  border: 1px solid var(--oasis-ribbon-border, #777);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 28%);
+}
+
+.oasis-editor-table-borders-action {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--oasis-ribbon-text, var(--oasis-text));
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.oasis-editor-table-borders-action:hover,
+.oasis-editor-table-borders-action:focus-visible {
+  background: var(--oasis-contextual-hover, #e7f1fb);
+  outline: none;
+}
+
+.oasis-editor-table-border-preset-icon {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+
+.oasis-editor-table-borders-action > svg:not(.oasis-editor-table-border-preset-icon),
+.oasis-editor-table-borders-text-icon { width: 20px; height: 20px; flex: 0 0 20px; text-align: center; }
+.oasis-editor-table-borders-text-icon { font-size: 14px; line-height: 20px; }
+.oasis-editor-table-borders-divider { height: 1px; margin: 3px 0; background: var(--oasis-ribbon-group-border, #dcdcdc); }
+
+.oasis-editor-app[data-theme="dark"] .oasis-editor-tool-button,
+.oasis-editor-app[data-theme="dark"] .oasis-editor-tool-select {
+  color: var(--oasis-ribbon-text);
 }
 
 .oasis-editor-toolbar-view-compact .oasis-editor-style-gallery-compact {

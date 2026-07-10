@@ -1,6 +1,7 @@
 import type { CommandRef } from "./CommandRef.js";
 import type { EditorPageMargins } from "@/core/model.js";
 import type { TextCaseMode } from "./text.js";
+import type { TableBorderPreset } from "./table.js";
 
 export interface InsertTablePayload {
   rows: number;
@@ -108,6 +109,9 @@ export interface OasisCommandPayloads {
   tableCellShading: string | null;
   tableCellBorders: undefined;
   tableCellNoBorders: undefined;
+  tableApplyBorderPreset: TableBorderPreset;
+  toggleTableDrawBorders: undefined;
+  toggleTableGridlines: undefined;
   tableWidth100: undefined;
   tableAlignLeft: undefined;
   tableAlignCenter: undefined;

@@ -99,6 +99,27 @@ export function buildTableCommands({
     tableCellNoBorders: actionCommand("tableCellNoBorders", (): void =>
       table.cellNoBorders(),
     ),
+    tableApplyBorderPreset: actionCommand("tableApplyBorderPreset", (p): void =>
+      table.applyBorderPreset(
+        p as import("@/core/commands/table.js").TableBorderPreset,
+      ),
+    ),
+    toggleTableDrawBorders: actionCommand(
+      "toggleTableDrawBorders",
+      (): void => table.toggleDrawingBorders(),
+      (): { isEnabled: boolean; isActive: boolean } => ({
+        isEnabled: table.insideTable(),
+        isActive: table.isDrawingBorders(),
+      }),
+    ),
+    toggleTableGridlines: actionCommand(
+      "toggleTableGridlines",
+      (): void => table.toggleGridlines(),
+      (): { isEnabled: boolean; isActive: boolean } => ({
+        isEnabled: table.insideTable(),
+        isActive: table.isShowingGridlines(),
+      }),
+    ),
     tableWidth100: actionCommand("tableWidth100", (): void => table.width100()),
     tableAlignLeft: actionCommand("tableAlignLeft", (): void =>
       table.alignLeft(),

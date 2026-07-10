@@ -90,7 +90,7 @@ function mergeTableStyles(
   };
 }
 
-function resolveNamedTableStyle(
+export function resolveNamedTableStyle(
   styleId: string | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
   seen = new Set<string>(),

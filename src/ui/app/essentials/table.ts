@@ -2,6 +2,7 @@ import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import {
   distributeSelectedTableColumns,
   distributeSelectedTableRows,
+  applyTableBorderPreset,
   setTableCellBorders,
   setTableCellStyleValue,
   setTableCellWidth,
@@ -24,6 +25,8 @@ import type { CreateEditorEssentialsPluginOptions } from "./types.js";
 export function buildEssentialsTable(
   options: CreateEditorEssentialsPluginOptions,
 ): EssentialsTableCapability {
+  let drawingBorders = false;
+  let showingGridlines = false;
   const insideTable = (): boolean =>
     Boolean(
       findParagraphTableLocation(
@@ -248,6 +251,21 @@ export function buildEssentialsTable(
           }),
         MERGE_KEYS.tableBorders,
       ),
+    applyBorderPreset: (preset): void =>
+      apply(
+        (current): EditorState => applyTableBorderPreset(current, preset),
+        MERGE_KEYS.tableBorders,
+      ),
+    isDrawingBorders: (): boolean => drawingBorders,
+    toggleDrawingBorders: (): void => {
+      drawingBorders = !drawingBorders;
+      options.applyState({ ...options.state() });
+    },
+    isShowingGridlines: (): boolean => showingGridlines,
+    toggleGridlines: (): void => {
+      showingGridlines = !showingGridlines;
+      options.applyState({ ...options.state() });
+    },
     width100: (): void =>
       apply(
         (current): EditorState => setTableStyleValue(current, "width", "100%"),

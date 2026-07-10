@@ -47,6 +47,14 @@ export interface ToolbarDocumentStyle {
   color?: string;
   bold?: boolean;
   italic?: boolean;
+  /** Narrow, renderer-safe colour data for the table-style ribbon gallery. */
+  tablePreview?: {
+    wholeFill?: string;
+    headerFill?: string;
+    bandFill?: string;
+    borderColor?: string;
+    headerColor?: string;
+  };
 }
 
 /**

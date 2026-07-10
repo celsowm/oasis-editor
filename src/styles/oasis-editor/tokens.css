@@ -45,3 +45,37 @@
   --oasis-menu-shadow: 0 8px 24px rgba(60, 64, 67, 0.18);
   --oasis-focus-ring: 0 0 0 2px rgba(26, 115, 232, 0.22);
 }
+
+/* The editor chrome is intentionally themed independently from the document
+ * canvas: switching theme must never change exported or printed content. */
+.oasis-editor-app[data-theme="dark"] {
+  color-scheme: dark;
+  --oasis-bg: #171717;
+  --oasis-paper: #ffffff;
+  --oasis-toolbar-bg: #202020;
+  --oasis-toolbar-border: #3c3c3c;
+  --oasis-toolbar-shadow: none;
+  --oasis-text: #f3f3f3;
+  --oasis-text-muted: #b8b8b8;
+  --oasis-accent: #78b9ff;
+  --oasis-accent-soft: #193a5a;
+  --oasis-accent-active: #234b70;
+  --oasis-accent-active-text: #ffffff;
+  --oasis-border-color: #3c3c3c;
+  --oasis-border-color-muted: #303030;
+  --oasis-hover-bg: #313131;
+  --oasis-active-bg: #3b3b3b;
+  --oasis-ribbon-chrome: #1f1f1f;
+  --oasis-ribbon-tabs-bg: #161616;
+  --oasis-ribbon-panel-bg: #242424;
+  --oasis-ribbon-border: #3d3d3d;
+  --oasis-ribbon-group-border: #454545;
+  --oasis-ribbon-text: #f1f1f1;
+  --oasis-ribbon-active-text: #ffffff;
+  --oasis-ribbon-muted: #bdbdbd;
+  --oasis-ribbon-hover: #303030;
+  --oasis-contextual-text: #9dccff;
+  --oasis-contextual-accent: #5ba9ef;
+  --oasis-contextual-border: #4389c8;
+  --oasis-contextual-hover: #203b52;
+}

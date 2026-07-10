@@ -394,6 +394,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   return (
     <I18nProvider translator={translator}>
       <div
+        data-theme={ui().theme ?? "light"}
         classList={{
           "oasis-editor-shell": true,
           "oasis-editor-app": true,
