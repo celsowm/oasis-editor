@@ -31,6 +31,18 @@ const allowlistedFiles = new Map([
     "pending toolbar migration",
   ],
   [
+    "src/ui/components/Toolbar/TableBordersMenu.tsx",
+    "pending table borders menu migration",
+  ],
+  [
+    "src/ui/components/Toolbar/TableStyleGallery.tsx",
+    "pending table style gallery migration",
+  ],
+  [
+    "src/ui/components/Toolbar/TableStyleOptions.tsx",
+    "pending table style options migration",
+  ],
+  [
     "src/ui/components/FloatingToolbar/FloatingLayoutOptions.tsx",
     "pending floating toolbar migration",
   ],
