@@ -1,6 +1,7 @@
 import { For, type JSX } from "solid-js";
 import type { TranslationKey } from "@/i18n/index.js";
 import type { ToolbarActionApi } from "./schema/items.js";
+import { Checkbox } from "@/ui/public/Checkbox.js";
 
 const OPTIONS: Array<{ command: string; label: TranslationKey }> = [
   { command: "tableToggleHeaderRow", label: "table.headerRow" },
@@ -21,17 +22,15 @@ export function TableStyleOptions(props: {
           const state = (): boolean =>
             props.api.commands.state(option.command).isActive;
           return (
-            <label class="oasis-editor-table-style-option">
-              <input
-                type="checkbox"
-                checked={state()}
-                disabled={!props.api.commands.state(option.command).isEnabled}
-                onChange={(): void => {
-                  props.api.commands.execute(option.command);
-                }}
-              />
-              <span>{props.api.t(option.label)}</span>
-            </label>
+            <Checkbox
+              class="oasis-editor-table-style-option"
+              label={props.api.t(option.label)}
+              checked={state()}
+              disabled={!props.api.commands.state(option.command).isEnabled}
+              onChange={(): void => {
+                props.api.commands.execute(option.command);
+              }}
+            />
           );
         }}
       </For>

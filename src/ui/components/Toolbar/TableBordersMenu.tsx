@@ -2,8 +2,11 @@ import { For, createSignal, type JSX } from "solid-js";
 import type { TableBorderPreset } from "@/core/commands/table.js";
 import type { ToolbarActionApi } from "./schema/items.js";
 import { Popover } from "./primitives/Popover.js";
+import { Button } from "./primitives/Button.js";
 import { DropdownChevron } from "./primitives/DropdownChevron.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
+import { SurfaceButton } from "@/ui/public/SurfaceButton.js";
+import { Text } from "@/ui/public/Text.js";
 
 type MenuItem = { preset: TableBorderPreset; label: string };
 const GROUPS: MenuItem[][] = [
@@ -89,20 +92,19 @@ export function TableBordersMenu(props: {
       panelRole="menu"
       panelClass="oasis-editor-table-borders-menu"
       trigger={(popover): JSX.Element => (
-        <button
+        <Button
           ref={popover.ref}
-          type="button"
-          class="oasis-editor-tool-button oasis-editor-table-borders-trigger"
-          classList={{ "oasis-editor-tool-button-active": popover.open }}
+          class="oasis-editor-table-borders-trigger"
+          active={popover.open}
           aria-haspopup="menu"
           aria-expanded={popover.open}
-          title="Bordas"
+          tooltip="Bordas"
           onClick={(): void => popover.toggle()}
         >
           <ToolIcon name="tableBorders" />
-          <span>Bordas</span>
+          <Text>Bordas</Text>
           <DropdownChevron />
-        </button>
+        </Button>
       )}
     >
       <For each={GROUPS}>
@@ -110,15 +112,15 @@ export function TableBordersMenu(props: {
           <div class="oasis-editor-table-borders-section">
             <For each={group}>
               {(item): JSX.Element => (
-                <button
-                  type="button"
+                <SurfaceButton
                   class="oasis-editor-table-borders-action"
                   role="menuitem"
+                  label={item.label}
                   onClick={(): void => apply(item.preset)}
                 >
                   <Preview preset={item.preset} />
-                  <span>{item.label}</span>
-                </button>
+                  <Text>{item.label}</Text>
+                </SurfaceButton>
               )}
             </For>
             {index() < GROUPS.length - 1 && (
@@ -128,50 +130,50 @@ export function TableBordersMenu(props: {
         )}
       </For>
       <div class="oasis-editor-table-borders-divider" />
-      <button
-        type="button"
+      <SurfaceButton
         class="oasis-editor-table-borders-action"
         role="menuitem"
+        label="Linha Horizontal"
         onClick={(): void => apply("bottom")}
       >
-        <span class="oasis-editor-table-borders-text-icon">A</span>
-        <span>Linha Horizontal</span>
-      </button>
-      <button
-        type="button"
+        <Text class="oasis-editor-table-borders-text-icon">A</Text>
+        <Text>Linha Horizontal</Text>
+      </SurfaceButton>
+      <SurfaceButton
         class="oasis-editor-table-borders-action"
         role="menuitem"
+        label="Desenhar Tabela"
         onClick={(): void => {
           props.api.commands.execute("toggleTableDrawBorders");
           setOpen(false);
         }}
       >
         <ToolIcon name="tableBorders" />
-        <span>Desenhar Tabela</span>
-      </button>
-      <button
-        type="button"
+        <Text>Desenhar Tabela</Text>
+      </SurfaceButton>
+      <SurfaceButton
         class="oasis-editor-table-borders-action"
         role="menuitem"
+        label="Exibir Linhas de Grade"
         onClick={(): void => {
           props.api.commands.execute("toggleTableGridlines");
           setOpen(false);
         }}
       >
         <ToolIcon name="tableBorders" />
-        <span>Exibir Linhas de Grade</span>
-      </button>
-      <button
-        type="button"
+        <Text>Exibir Linhas de Grade</Text>
+      </SurfaceButton>
+      <SurfaceButton
         class="oasis-editor-table-borders-action"
         role="menuitem"
+        label="Bordas e Sombreamento…"
         onClick={(): void => {
           props.api.commands.execute("tableCellBorders");
         }}
       >
         <ToolIcon name="tableBorders" />
-        <span>Bordas e Sombreamento…</span>
-      </button>
+        <Text>Bordas e Sombreamento…</Text>
+      </SurfaceButton>
     </Popover>
   );
 }

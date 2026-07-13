@@ -1895,6 +1895,15 @@
   cursor: pointer;
 }
 
+.oasis-editor-table-style-option .oasis-editor-ui-checkbox-copy {
+  display: contents;
+}
+
+.oasis-editor-table-style-option .oasis-editor-ui-field-label {
+  font: inherit;
+  color: inherit;
+}
+
 .oasis-editor-table-style-option input {
   width: 13px;
   height: 13px;
@@ -1936,6 +1945,8 @@
   color: var(--oasis-ribbon-text, var(--oasis-text));
   cursor: pointer;
   box-sizing: border-box;
+  border-radius: 0;
+  font-weight: 400;
 }
 
 .oasis-editor-table-style-preview {
@@ -1991,6 +2002,8 @@
   background: var(--oasis-ribbon-hover, #ededed);
   color: var(--oasis-ribbon-text, #333);
   cursor: pointer;
+  min-height: 0;
+  border-radius: 0;
 }
 
 .oasis-editor-table-style-expand:hover,
@@ -2046,6 +2059,9 @@
   font-size: 12px;
   text-align: left;
   cursor: pointer;
+  justify-content: flex-start;
+  border-radius: 0;
+  font-weight: 400;
 }
 
 .oasis-editor-table-borders-action:hover,
