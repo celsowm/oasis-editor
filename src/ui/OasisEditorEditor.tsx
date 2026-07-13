@@ -338,6 +338,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
             <CanvasEditorSurface
               state={props.state}
               documentLayout={layout().documentLayout}
+              remoteWebFonts={layout().remoteWebFonts}
               measuredBlockHeights={layout().measuredBlockHeights}
               measuredParagraphLayouts={layout().measuredParagraphLayouts}
               viewportRef={(): HTMLDivElement | undefined =>

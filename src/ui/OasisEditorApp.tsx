@@ -307,6 +307,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   } = buildEditorViewProps({
     layout: {
       documentLayout,
+      remoteWebFonts: documentOptions().remoteWebFonts,
       viewportHeight: ui().viewportHeight,
       className: ui().class,
       style: ui().style,
@@ -349,8 +350,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
         textBoxOps.handleTextBoxResizeHandleMouseDown,
       handleImageRotateHandleMouseDown:
         imageOps.handleImageRotateHandleMouseDown,
-      handleImageCropHandleMouseDown:
-        imageOps.handleImageCropHandleMouseDown,
+      handleImageCropHandleMouseDown: imageOps.handleImageCropHandleMouseDown,
       handleTextBoxRotateHandleMouseDown:
         textBoxOps.handleTextBoxRotateHandleMouseDown,
       handleEditorContextMenu,

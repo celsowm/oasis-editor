@@ -3,7 +3,7 @@ import type {
   VerticalMetrics,
 } from "@/text/truetype/tableParsers.js";
 
-export type FontFormat = "ttf" | "woff2";
+export type FontFormat = "ttf" | "woff" | "woff2";
 
 export interface FontDecoder {
   readonly format: FontFormat;

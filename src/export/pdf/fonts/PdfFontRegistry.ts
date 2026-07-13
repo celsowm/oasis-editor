@@ -5,6 +5,7 @@ import {
   OFFICE_COMPAT_FONT_FAMILIES,
   ROBOTO_FONT_FILES,
 } from "./officeFontAssets.js";
+import { getRemotePdfFontFaces } from "@/text/fonts/remoteWebFonts.js";
 
 export interface PdfFontResolveOptions {
   fontFamily?: string | null;
@@ -160,6 +161,32 @@ export class PdfFontRegistry {
         },
       });
       this.fallbackFamily = "Roboto";
+    }
+  }
+
+  async loadRemoteWebFontFaces(
+    options: PdfBundledFontLoadOptions = {},
+  ): Promise<void> {
+    if (!options.families) return;
+    const faces = await getRemotePdfFontFaces(options.families);
+    for (const face of faces) {
+      const resourceName = `Remote${pdfResourceNamePrefix(
+        face.postscriptName || face.family,
+      )}`;
+      this.registerFontFace({
+        key: faceKey(face.family, face.bold, face.italic),
+        family: face.family,
+        bold: face.bold,
+        italic: face.italic,
+        writerResourceName: resourceName,
+        pdfResource: {
+          kind: "unicode",
+          resourceName,
+          family: face.family,
+          fontData: face.fontData,
+          postscriptName: face.postscriptName,
+        },
+      });
     }
   }
 

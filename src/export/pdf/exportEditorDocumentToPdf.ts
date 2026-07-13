@@ -122,8 +122,12 @@ export async function exportEditorDocumentToPdf(
 ): Promise<ArrayBuffer> {
   document = renumberImageCaptionsInDocument(document);
   const fontRegistry = new PdfFontRegistry();
+  const fontFamilies = collectPdfFontFamilies(document);
   await fontRegistry.loadBundledUnicodeFaces({
-    families: collectPdfFontFamilies(document),
+    families: fontFamilies,
+  });
+  await fontRegistry.loadRemoteWebFontFaces({
+    families: fontFamilies,
   });
   const writer = new OasisPdfWriter(fontRegistry.getPdfFontResources());
   writer.setDocumentInfo(resolveDocumentInfo(document));

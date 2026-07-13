@@ -5,7 +5,9 @@ import {
   buildCanvasFont,
   getMeasuredFontSize,
   getRenderedMeasureChar,
+  measureCanvasTextWidth,
 } from "./fontMetrics.js";
+import { isRemoteWebFontActive } from "@/text/fonts/remoteWebFonts.js";
 
 const TAB_SIZE = 4;
 
@@ -65,11 +67,18 @@ function measureBaseCharacterWidth(
   renderedChar: string,
   styles: EditorTextStyle | undefined,
   fontSize: number,
+  canvasFont: string,
 ): number {
   const provider = getFontMetricsProvider();
   const bold = Boolean(styles?.bold);
   const italic = Boolean(styles?.italic);
   const fontFamily = styles?.fontFamily ?? "Calibri";
+
+  if (isRemoteWebFontActive(fontFamily)) {
+    const text = renderedChar === "\t" ? " ".repeat(TAB_SIZE) : renderedChar;
+    const measured = measureCanvasTextWidth(text, canvasFont);
+    if (measured !== null) return measured;
+  }
 
   if (renderedChar === "\t") {
     // A tab renders as TAB_SIZE spaces; measure one space and scale.
@@ -125,7 +134,7 @@ export function measureCharacterWidth(
     return cached;
   }
 
-  let width = measureBaseCharacterWidth(renderedChar, styles, fontSize);
+  let width = measureBaseCharacterWidth(renderedChar, styles, fontSize, font);
   width = Math.max(0, width * scale + spacing);
   textMeasureCache.set(cacheKey, width);
   return width;

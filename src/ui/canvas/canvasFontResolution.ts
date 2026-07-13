@@ -7,6 +7,7 @@ import {
   isPreciseFontModeEnabled,
 } from "@/text/fonts/preciseFontMode.js";
 import { hasPreciseFont } from "@/text/fonts/preciseFontMetrics.js";
+import { isRemoteWebFontActive } from "@/text/fonts/remoteWebFonts.js";
 import { PX_PER_POINT } from "@/layoutProjection/constants.js";
 import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
 
@@ -41,10 +42,11 @@ export function resolveCanvasFontFamily(
     isPreciseFontModeEnabled() &&
     isLocalFontFamilyAvailable(requested) &&
     hasPreciseFont(requested);
+  const requestedFirst = preciseFirst || isRemoteWebFontActive(requested);
   const families =
     requested.toLowerCase() === metric.toLowerCase()
       ? [metric]
-      : preciseFirst
+      : requestedFirst
         ? [requested, metric]
         : [metric, requested];
   const generic = /serif/i.test(fontFamily ?? "") ? "serif" : "sans-serif";

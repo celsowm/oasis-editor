@@ -22,6 +22,7 @@ import {
 import { preloadLayoutFonts } from "@/text/fonts/FontMetricsProvider.js";
 import { preciseFontModeVersion } from "@/text/fonts/preciseFontMode.js";
 import { loadPreciseFontProgramsForFamilies } from "@/ui/app/localFontAccess.js";
+import { loadRemoteWebFonts } from "@/text/fonts/remoteWebFonts.js";
 import { collectPdfFontFamilies } from "@/export/pdf/fonts/collectPdfFontFamilies.js";
 import { resolveMetricCompatibleFamily } from "@/export/pdf/fonts/officeFontAssets.js";
 import {
@@ -102,12 +103,16 @@ export function CanvasEditorSurface(props: EditorSurfaceProps): JSX.Element {
         checksBefore: checkBrowserFonts(families),
       });
       void (async (): Promise<void> => {
+        const remoteFontsReady = props.remoteWebFonts
+          ? loadRemoteWebFonts(families)
+          : Promise.resolve(false);
         await preloadLayoutFonts(families);
         // In precise font mode, also pull the real installed faces so the layout
         // engine measures with them (not just paints them) — this is what makes
         // page breaks match Word for fonts whose substitute is not actually
         // metric-compatible (e.g. Aptos).
         await loadPreciseFontProgramsForFamilies(families);
+        await remoteFontsReady;
         clearTextMeasureCache();
         clearNormalLineHeightCache();
         clearProjectedParagraphLayoutCache();

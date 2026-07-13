@@ -42,6 +42,8 @@ export interface OasisEditorAppUiProps {
 export interface OasisEditorAppDocumentProps {
   initialDocument?: EditorDocument;
   initialState?: EditorState;
+  /** Load otherwise unavailable document fonts from Google Fonts/CDNFonts. */
+  remoteWebFonts?: boolean;
   onStateChange?: (state: EditorState) => void;
   readOnly?: boolean;
   persistenceEnabled?: boolean;

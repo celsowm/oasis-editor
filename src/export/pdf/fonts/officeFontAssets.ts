@@ -118,6 +118,19 @@ export function resolveMetricCompatibleFamily(
   return "Roboto";
 }
 
+/** True when a family already has an embedded browser/layout face. */
+export function isBundledMetricFontFamily(
+  fontFamily: string | null | undefined,
+): boolean {
+  const normalized = normalizeFamily(fontFamily).toLowerCase();
+  if (normalized === "roboto") return true;
+  return OFFICE_COMPAT_FONT_FAMILIES.some((definition): boolean =>
+    [definition.family, ...definition.aliases].some(
+      (name): boolean => name.toLowerCase() === normalized,
+    ),
+  );
+}
+
 /** Maps a bold/italic combination to the corresponding {@link FontFaceFiles} key. */
 export function faceStyleKey(
   bold: boolean,

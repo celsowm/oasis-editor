@@ -1,5 +1,7 @@
 import type { EditorTextStyle } from "@/core/model.js";
 import { getFontMetricsProvider } from "@/text/fonts/FontMetricsProvider.js";
+import { isRemoteWebFontActive } from "@/text/fonts/remoteWebFonts.js";
+import { resolveCanvasFontFamily } from "@/ui/canvas/canvasFontResolution.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
 
 const DEFAULT_WORD_SINGLE_LINE_RATIO = 1.223;
@@ -50,10 +52,20 @@ export function buildCanvasFont(
   fallbackFontSize: number,
 ): string {
   const fontSize = getMeasuredFontSize(styles, fallbackFontSize);
-  const fontFamily = styles?.fontFamily ?? "Calibri, sans-serif";
+  const fontFamily = resolveCanvasFontFamily(styles?.fontFamily);
   const fontWeight = styles?.bold ? "700" : "400";
   const fontStyle = styles?.italic ? "italic" : "normal";
   return `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+}
+
+export function measureCanvasTextWidth(
+  text: string,
+  font: string,
+): number | null {
+  const context = getCanvasContext();
+  if (!context) return null;
+  context.font = font;
+  return context.measureText(text).width;
 }
 
 const normalLineHeightCache = new Map<string, number>();
@@ -86,12 +98,15 @@ function measureNormalLineHeight(
   // height for fonts like Times New Roman (~1.15em), inflating line spacing and
   // pushing content onto later pages than Word. The fallback path runs only
   // when no metric face is available (CJK/emoji, or fonts not yet preloaded).
-  const metricLineHeight = getFontMetricsProvider().getNaturalLineHeightPx(
-    styles?.fontFamily,
-    styles?.bold ?? false,
-    styles?.italic ?? false,
-    fontSize,
-  );
+  const remoteFontActive = isRemoteWebFontActive(styles?.fontFamily);
+  const metricLineHeight = remoteFontActive
+    ? null
+    : getFontMetricsProvider().getNaturalLineHeightPx(
+        styles?.fontFamily,
+        styles?.bold ?? false,
+        styles?.italic ?? false,
+        fontSize,
+      );
   if (metricLineHeight != null && metricLineHeight > 0) {
     normalLineHeightCache.set(font, metricLineHeight);
     return metricLineHeight;
@@ -103,10 +118,16 @@ function measureNormalLineHeight(
   if (context) {
     context.font = font;
     const metrics = context.measureText("Hg");
-    const ascent =
-      metrics.actualBoundingBoxAscent ?? metrics.fontBoundingBoxAscent ?? 0;
-    const descent =
-      metrics.actualBoundingBoxDescent ?? metrics.fontBoundingBoxDescent ?? 0;
+    const ascent = remoteFontActive
+      ? (metrics.fontBoundingBoxAscent ?? metrics.actualBoundingBoxAscent ?? 0)
+      : (metrics.actualBoundingBoxAscent ?? metrics.fontBoundingBoxAscent ?? 0);
+    const descent = remoteFontActive
+      ? (metrics.fontBoundingBoxDescent ??
+        metrics.actualBoundingBoxDescent ??
+        0)
+      : (metrics.actualBoundingBoxDescent ??
+        metrics.fontBoundingBoxDescent ??
+        0);
     const canvasMeasured = ascent + descent;
     if (canvasMeasured > 0) {
       measured = canvasMeasured;

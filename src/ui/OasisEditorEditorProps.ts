@@ -23,6 +23,7 @@ type ImportProgress = ImportProgressState;
 
 export interface OasisEditorEditorLayoutProps {
   documentLayout: Accessor<EditorLayoutDocument>;
+  remoteWebFonts?: boolean;
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
   viewportHeight?: number | string;

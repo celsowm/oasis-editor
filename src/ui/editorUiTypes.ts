@@ -95,6 +95,7 @@ export interface LayoutOptionsOverlay {
 export interface EditorSurfaceProps {
   state: Accessor<EditorState>;
   documentLayout: Accessor<EditorLayoutDocument>;
+  remoteWebFonts?: boolean;
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
   /**

@@ -1,5 +1,6 @@
 import type { FontDecoder } from "@/text/fonts/core/types.js";
 import { TtfDecoder } from "./TtfDecoder.js";
+import { WoffDecoder } from "./WoffDecoder.js";
 import { Woff2Decoder } from "./Woff2Decoder.js";
 
 export class FontDecoderRegistry {
@@ -31,5 +32,6 @@ export class FontDecoderRegistry {
 
 export const defaultFontDecoderRegistry = new FontDecoderRegistry([
   new Woff2Decoder(),
+  new WoffDecoder(),
   new TtfDecoder(),
 ]);

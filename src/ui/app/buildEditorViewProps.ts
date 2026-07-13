@@ -34,6 +34,7 @@ type ImportProgress = NonNullable<
 /** Page sizing / zoom inputs that shape the layout prop bundle. */
 export interface EditorViewLayoutInput {
   documentLayout: Accessor<EditorLayoutDocument>;
+  remoteWebFonts?: boolean;
   viewportHeight: number | string | undefined;
   className: string | undefined;
   style: JSX.CSSProperties | undefined;
@@ -139,6 +140,7 @@ export function buildEditorViewProps(
 
   const layout: OasisEditorEditorLayoutProps = {
     documentLayout: layoutInput.documentLayout,
+    remoteWebFonts: layoutInput.remoteWebFonts,
     viewportHeight: layoutInput.viewportHeight,
     class: layoutInput.className,
     style: layoutInput.style,

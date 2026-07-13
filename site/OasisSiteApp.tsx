@@ -520,7 +520,10 @@ function EditorPage(props: { language: Language }) {
               uiVariant: "docs",
               locale: props.language === "pt" ? "pt-BR" : "en",
             }}
-            document={testProps().document}
+            document={{
+              remoteWebFonts: true,
+              ...testProps().document,
+            }}
             runtime={testProps().runtime}
           />
         </div>
