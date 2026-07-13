@@ -6,6 +6,8 @@ import {
 } from "@/ui/components/CanvasEditorSurface.js";
 import { resolveFragmentPaintBounds } from "@/ui/canvas/canvasParagraphPainter.js";
 import { applyCanvasTextFeatureHints } from "@/ui/canvas/canvasFontResolution.js";
+import { getRenderedChar } from "@/ui/canvas/paragraph/canvasTextEffects.js";
+import { measureCharacterWidth } from "@/ui/textMeasurement/characterWidth.js";
 
 /**
  * Minimal stand-in exposing the canvas text-feature properties so the
@@ -13,12 +15,37 @@ import { applyCanvasTextFeatureHints } from "@/ui/canvas/canvasFontResolution.js
  */
 function createFeatureContext(): {
   fontKerning: "auto" | "normal" | "none";
-  textRendering: "auto" | "optimizeSpeed" | "optimizeLegibility" | "geometricPrecision";
+  textRendering:
+    | "auto"
+    | "optimizeSpeed"
+    | "optimizeLegibility"
+    | "geometricPrecision";
 } {
   return { fontKerning: "auto", textRendering: "auto" };
 }
 
 describe("canvas text rendering metrics", () => {
+  it("renders Word small caps with full-size capitals and reduced uppercase lowercase letters", () => {
+    expect(
+      resolveCanvasTextRenderMetrics({ smallCaps: true }, 16, "A"),
+    ).toEqual({ fontSize: 16, baselineOffset: -0 });
+    expect(
+      resolveCanvasTextRenderMetrics({ smallCaps: true }, 16, "a"),
+    ).toEqual({ fontSize: 12.8, baselineOffset: -0 });
+    expect(getRenderedChar("a", { smallCaps: true })).toBe("A");
+    const fullCapital = measureCharacterWidth(
+      "A",
+      { fontFamily: "Calibri", smallCaps: true },
+      16,
+    );
+    const reducedLowercase = measureCharacterWidth(
+      "a",
+      { fontFamily: "Calibri", smallCaps: true },
+      16,
+    );
+    expect(reducedLowercase).toBeCloseTo(fullCapital * 0.8, 4);
+  });
+
   it("renders superscript smaller and above the normal baseline", () => {
     const metrics = resolveCanvasTextRenderMetrics({ superscript: true }, 16);
 

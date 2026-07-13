@@ -5,6 +5,7 @@ import {
 } from "@/text/fonts/preciseFontMode.js";
 import {
   hasPreciseFontFace,
+  registerPreciseBrowserFontFace,
   registerPreciseFont,
 } from "@/text/fonts/preciseFontMetrics.js";
 import { SfntFontProgram } from "@/text/fonts/sfnt/SfntFontProgram.js";
@@ -174,7 +175,25 @@ export async function loadPreciseFontProgramsForFamilies(
       const buffer = await font
         .blob()
         .then((blob): Promise<ArrayBuffer> => blob.arrayBuffer());
-      const program = selectFaceProgram(new Uint8Array(buffer), font);
+      const bytes = new Uint8Array(buffer);
+      const program = selectFaceProgram(bytes, font);
+      // Browser paint and layout must use the same exact local bytes. If a
+      // browser cannot register the private face, keep the existing fallback
+      // rather than mixing precise metrics with a different painted font.
+      if (typeof document !== "undefined") {
+        const browserFamily = await registerPreciseBrowserFontFace(
+          family,
+          bold,
+          italic,
+          bytes,
+        );
+        if (!browserFamily) {
+          failed.push(
+            `${family} (${font.style ?? "?"}): FontFace registration failed`,
+          );
+          continue;
+        }
+      }
       registerPreciseFont(family, bold, italic, program);
       registered.push(
         `${family} ${bold ? "B" : ""}${italic ? "I" : ""}`.trim(),

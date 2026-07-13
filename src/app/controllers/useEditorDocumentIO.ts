@@ -24,8 +24,9 @@ const PHASE_RANGES: Record<ImportProgressPhase, [number, number]> = {
   opening: [8, 20],
   parsing: [20, 72],
   finishing: [72, 78],
-  "applying-editor-state": [78, 88],
-  "stabilizing-layout": [88, 98],
+  "preparing-fonts": [78, 90],
+  "applying-editor-state": [90, 94],
+  "stabilizing-layout": [94, 99],
   done: [100, 100],
   error: [100, 100],
 };
@@ -42,6 +43,8 @@ export interface UseEditorDocumentIOProps {
   stabilizeLayoutAfterImport: () => Promise<void>;
   resetEditorChromeState: () => void;
   focusInput: () => void;
+  requestLocalFontAccess: () => Promise<boolean>;
+  prepareDocumentFonts: (document: EditorDocument) => Promise<void>;
   logger: EditorLogger;
 }
 
@@ -97,6 +100,8 @@ function createEditorDocumentIOImpl(deps: UseEditorDocumentIOProps) {
     stabilizeLayoutAfterImport: deps.stabilizeLayoutAfterImport,
     resetEditorChromeState: deps.resetEditorChromeState,
     focusInput: deps.focusInput,
+    requestLocalFontAccess: deps.requestLocalFontAccess,
+    prepareDocumentFonts: deps.prepareDocumentFonts,
     setImportPhase,
     clearImportProgressSoon,
     now: (): number => performance.now(),

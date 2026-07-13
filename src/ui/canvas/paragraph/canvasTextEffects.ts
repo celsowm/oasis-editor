@@ -5,6 +5,7 @@ import { PX_PER_POINT } from "@/layoutProjection/constants.js";
 import { DEG_TO_RAD } from "../canvasBorders.js";
 import { resolveGradientAxis } from "@/core/gradientAxis.js";
 import { resolveFragmentPaintBounds } from "./canvasRunBackground.js";
+import { resolveRenderedTextChar } from "@/core/smallCaps.js";
 
 export function hexToRgba(color: string, alpha: number): string {
   const [r, g, b] = parseHexColorToRgb255(color) ?? [0, 0, 0];
@@ -206,7 +207,7 @@ export function drawFragmentReflection(
   if (!firstSlot) return;
   const text = fragment.chars
     .filter((c): boolean => c.char !== "\n" && c.char !== "\t")
-    .map((c): string => (styles.allCaps ? c.char.toUpperCase() : c.char))
+    .map((c): string => resolveRenderedTextChar(c.char, styles))
     .join("");
   if (!text) return;
   const scale =
@@ -239,7 +240,7 @@ export function drawFragmentReflection(
 
 export function getRenderedChar(
   char: string,
-  styles: { allCaps?: boolean },
+  styles: { allCaps?: boolean; smallCaps?: boolean },
 ): string {
-  return styles.allCaps ? char.toUpperCase() : char;
+  return resolveRenderedTextChar(char, styles);
 }

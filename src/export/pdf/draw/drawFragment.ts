@@ -39,6 +39,10 @@ import {
   resolveDecorationLineY,
   DOUBLE_STRIKE_OFFSET_PX,
 } from "@/core/decorationGeometry.js";
+import {
+  isLowercaseSmallCapsChar,
+  resolveRenderedTextChar,
+} from "@/core/smallCaps.js";
 
 // Fragment-level sub-modules — each owns one rendering concern.
 import {
@@ -215,11 +219,41 @@ function emitFragmentGlyphs(
       ? groupSlotChunksByWhitespace(chars)
       : groupSlotChunksByOffsetGaps(chars);
   for (const chunk of chunks) {
-    const chunkText = chunk
-      .map((c): string => (styles.allCaps ? c.char.toUpperCase() : c.char))
-      .join("");
-    if (chunkText.length === 0) continue;
-    emitTextChunk(chunkCtx, originX + chunk[0]!.left, chunkText);
+    let segment: typeof chunk = [];
+    let segmentReduced = false;
+    const flush = (): void => {
+      if (segment.length === 0) return;
+      const text = segment
+        .map((char): string => resolveRenderedTextChar(char.char, styles))
+        .join("");
+      if (text.length > 0) {
+        const fontSizePt = segmentReduced
+          ? chunkCtx.fontSizePt * 0.8
+          : chunkCtx.fontSizePt;
+        emitTextChunk(
+          {
+            ...chunkCtx,
+            fontSizePt,
+            baseTextOptions: {
+              ...chunkCtx.baseTextOptions,
+              fontSize: fontSizePt,
+            },
+          },
+          originX + segment[0]!.left,
+          text,
+        );
+      }
+      segment = [];
+    };
+    for (const char of chunk) {
+      const reduced = Boolean(
+        styles.smallCaps && isLowercaseSmallCapsChar(char.char),
+      );
+      if (segment.length > 0 && reduced !== segmentReduced) flush();
+      segmentReduced = reduced;
+      segment.push(char);
+    }
+    flush();
   }
   // Trailing hyphen on last fragment of an auto-hyphenated line.
   if (line.trailingHyphen && fragment.endOffset >= line.endOffset) {
@@ -292,9 +326,7 @@ export async function drawFragmentText(
     bold: styles.bold,
     italic: styles.italic,
   });
-  const fontSizePt = styles.smallCaps
-    ? textStyleToFontSizePt(styles) * 0.8
-    : textStyleToFontSizePt(styles);
+  const fontSizePt = textStyleToFontSizePt(styles);
   const baselineShiftPx = (styles.baselineShift ?? 0) * PX_PER_POINT;
   const paragraphStyle = resolveEffectiveParagraphStyle(
     paragraph.style,
@@ -313,9 +345,7 @@ export async function drawFragmentText(
     textAlignOffset;
   const chars = resolveFragmentSlots(line, fragment);
   const text = chars
-    .map((char): string =>
-      styles.allCaps ? char.char.toUpperCase() : char.char,
-    )
+    .map((char): string => resolveRenderedTextChar(char.char, styles))
     .join("");
   const firstChar = chars[0];
   if (!firstChar || text.length === 0) return;

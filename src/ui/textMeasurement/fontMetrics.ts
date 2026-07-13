@@ -3,6 +3,10 @@ import { getFontMetricsProvider } from "@/text/fonts/FontMetricsProvider.js";
 import { isRemoteWebFontActive } from "@/text/fonts/remoteWebFonts.js";
 import { resolveCanvasFontFamily } from "@/ui/canvas/canvasFontResolution.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
+import {
+  isLowercaseSmallCapsChar,
+  resolveRenderedTextChar,
+} from "@/core/smallCaps.js";
 
 const DEFAULT_WORD_SINGLE_LINE_RATIO = 1.223;
 
@@ -35,23 +39,27 @@ function getCanvasContext(): CanvasRenderingContext2D | null {
 export function getMeasuredFontSize(
   styles: EditorTextStyle | undefined,
   fallbackFontSize: number,
+  sourceChar?: string,
 ): number {
   const fontSize = styles?.fontSize ?? fallbackFontSize;
-  return styles?.smallCaps ? fontSize * 0.8 : fontSize;
+  return styles?.smallCaps && sourceChar && isLowercaseSmallCapsChar(sourceChar)
+    ? fontSize * 0.8
+    : fontSize;
 }
 
 export function getRenderedMeasureChar(
   char: string,
   styles: EditorTextStyle | undefined,
 ): string {
-  return styles?.allCaps ? char.toUpperCase() : char;
+  return resolveRenderedTextChar(char, styles);
 }
 
 export function buildCanvasFont(
   styles: EditorTextStyle | undefined,
   fallbackFontSize: number,
+  sourceChar?: string,
 ): string {
-  const fontSize = getMeasuredFontSize(styles, fallbackFontSize);
+  const fontSize = getMeasuredFontSize(styles, fallbackFontSize, sourceChar);
   const fontFamily = resolveCanvasFontFamily(styles?.fontFamily);
   const fontWeight = styles?.bold ? "700" : "400";
   const fontStyle = styles?.italic ? "italic" : "normal";

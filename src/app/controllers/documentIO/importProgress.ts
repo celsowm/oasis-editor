@@ -9,6 +9,7 @@ import type { ImportStage } from "@/import/DocumentFormatImporter.js";
 export type ImportProgressPhase =
   | "reading-file"
   | ImportStage
+  | "preparing-fonts"
   | "applying-editor-state"
   | "stabilizing-layout"
   | "done"

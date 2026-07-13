@@ -47,6 +47,7 @@ export function EditorImportProgressOverlay(
                     "oasis-editor-import-progress-bar-done": isDone,
                     "oasis-editor-import-progress-bar-error": isError,
                     "oasis-editor-import-progress-bar-indeterminate":
+                      progress().phase === "preparing-fonts" ||
                       progress().phase === "applying-editor-state" ||
                       progress().phase === "stabilizing-layout",
                   }}

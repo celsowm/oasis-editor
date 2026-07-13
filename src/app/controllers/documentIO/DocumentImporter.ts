@@ -97,6 +97,10 @@ export interface DocumentImporterDeps {
   stabilizeLayoutAfterImport: () => Promise<void>;
   resetEditorChromeState: () => void;
   focusInput: () => void;
+  requestLocalFontAccess: () => Promise<boolean>;
+  prepareDocumentFonts: (
+    document: Parameters<typeof getDocumentParagraphs>[0],
+  ) => Promise<void>;
   setImportPhase: (phase: ImportProgressPhase, subProgress?: number) => void;
   clearImportProgressSoon: () => void;
   now: () => number;
@@ -127,6 +131,14 @@ export function createDocumentImporter(deps: DocumentImporterDeps): {
       size: file.size,
     });
     deps.setImportPhase("reading-file");
+    // Start the browser permission request while the file-input change event
+    // still has user activation. The parsed family set is only available later,
+    // but delaying queryLocalFonts until then can make browsers reject the
+    // permission prompt.
+    const localFontAccess =
+      importer.id === "docx"
+        ? deps.requestLocalFontAccess().catch((): false => false)
+        : Promise.resolve(false);
 
     try {
       const readingStartedAt = deps.now();
@@ -172,6 +184,15 @@ export function createDocumentImporter(deps: DocumentImporterDeps): {
         "import:document-diagnostics",
         buildImportedDocumentDiagnostics(document),
       );
+
+      const fontPreparationStartedAt = deps.now();
+      deps.setImportPhase("preparing-fonts");
+      await localFontAccess;
+      await deps.prepareDocumentFonts(document);
+      deps.logger.info("import:phase", {
+        phase: "preparing-fonts",
+        durationMs: roundTo(deps.now() - fontPreparationStartedAt, 2),
+      });
 
       deps.setImportPhase("applying-editor-state");
       deps.resetEditorChromeState();

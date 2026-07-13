@@ -15,21 +15,9 @@ import {
   EditorLayoutDocument,
 } from "@/core/model.js";
 import { buildSegmentTable } from "@/core/tableLayout.js";
-import {
-  clearNormalLineHeightCache,
-  clearTextMeasureCache,
-} from "@/ui/textMeasurement.js";
-import { preloadLayoutFonts } from "@/text/fonts/FontMetricsProvider.js";
 import { preciseFontModeVersion } from "@/text/fonts/preciseFontMode.js";
-import { loadPreciseFontProgramsForFamilies } from "@/ui/app/localFontAccess.js";
-import { loadRemoteWebFonts } from "@/text/fonts/remoteWebFonts.js";
 import { collectPdfFontFamilies } from "@/export/pdf/fonts/collectPdfFontFamilies.js";
-import { resolveMetricCompatibleFamily } from "@/export/pdf/fonts/officeFontAssets.js";
-import {
-  bumpLayoutMetricsEpoch,
-  clearProjectedParagraphLayoutCache,
-  layoutMetricsEpoch,
-} from "@/layoutProjection/index.js";
+import { layoutMetricsEpoch } from "@/layoutProjection/index.js";
 import { resolveFloatingTableRect } from "@/layoutProjection/floatingObjects.js";
 import {
   buildCanvasTableLayout,
@@ -39,42 +27,12 @@ import { createEditorLogger } from "@/utils/logger.js";
 import { PageBreak } from "@/ui/components/PageBreak.js";
 import { createCanvasPageRenderer } from "@/ui/canvas/canvasPageRenderer.js";
 import { JSX } from "solid-js";
+import { prepareDocumentFonts } from "@/ui/app/documentFontPreparation.js";
 
 export { resolveCanvasTextRenderMetrics } from "@/ui/canvas/canvasParagraphPainter.js";
 export { resolveCanvasFooterZoneTop } from "@/ui/canvas/canvasPageRenderer.js";
 
 const surfaceLogger = createEditorLogger("canvas-surface");
-
-function checkBrowserFonts(families: Array<string | null | undefined>): {
-  status: string;
-  checks: Array<{
-    requested: string | null;
-    metricFamily: string;
-    normal: boolean;
-    bold: boolean;
-    italic: boolean;
-    boldItalic: boolean;
-  }>;
-} {
-  if (typeof document === "undefined" || !document.fonts) {
-    return { status: "unavailable", checks: [] };
-  }
-  return {
-    status: document.fonts.status,
-    checks: families.map((family) => {
-      const requested = family ?? null;
-      const metricFamily = resolveMetricCompatibleFamily(family);
-      return {
-        requested,
-        metricFamily,
-        normal: document.fonts.check(`400 14px "${metricFamily}"`),
-        bold: document.fonts.check(`700 14px "${metricFamily}"`),
-        italic: document.fonts.check(`400 italic 14px "${metricFamily}"`),
-        boldItalic: document.fonts.check(`700 italic 14px "${metricFamily}"`),
-      };
-    }),
-  };
-}
 
 export function CanvasEditorSurface(props: EditorSurfaceProps): JSX.Element {
   // In the browser, font advance-width metrics load asynchronously. Until they
@@ -97,31 +55,9 @@ export function CanvasEditorSurface(props: EditorSurfaceProps): JSX.Element {
   );
   createEffect(
     on([fontFamiliesKey, preciseFontModeVersion], (): void => {
-      const families = documentFontFamilies();
-      surfaceLogger.info("fonts:collect", {
-        families,
-        checksBefore: checkBrowserFonts(families),
+      void prepareDocumentFonts(props.state().document, {
+        remoteWebFonts: props.remoteWebFonts,
       });
-      void (async (): Promise<void> => {
-        const remoteFontsReady = props.remoteWebFonts
-          ? loadRemoteWebFonts(families)
-          : Promise.resolve(false);
-        await preloadLayoutFonts(families);
-        // In precise font mode, also pull the real installed faces so the layout
-        // engine measures with them (not just paints them) — this is what makes
-        // page breaks match Word for fonts whose substitute is not actually
-        // metric-compatible (e.g. Aptos).
-        await loadPreciseFontProgramsForFamilies(families);
-        await remoteFontsReady;
-        clearTextMeasureCache();
-        clearNormalLineHeightCache();
-        clearProjectedParagraphLayoutCache();
-        bumpLayoutMetricsEpoch();
-        surfaceLogger.info("fonts:ready", {
-          families,
-          checksAfter: checkBrowserFonts(families),
-        });
-      })();
     }),
   );
   const documentLayout = createMemo((): EditorLayoutDocument => {

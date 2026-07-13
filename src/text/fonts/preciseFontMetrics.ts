@@ -18,6 +18,8 @@ import type { SfntFontProgram } from "./sfnt/SfntFontProgram.js";
  */
 const registry = new Map<string, SfntFontProgram>();
 const familiesWithPreciseFont = new Set<string>();
+const browserFamilyAliases = new Map<string, string>();
+const browserFaces = new Map<string, FontFace>();
 
 function faceKey(family: string, bold: boolean, italic: boolean): string {
   return `${normalizeFamily(family).toLowerCase()}|${bold ? "b" : ""}${italic ? "i" : ""}`;
@@ -36,6 +38,73 @@ export function registerPreciseFont(
 export function clearPreciseFonts(): void {
   registry.clear();
   familiesWithPreciseFont.clear();
+  if (typeof document !== "undefined" && document.fonts) {
+    for (const face of browserFaces.values()) {
+      document.fonts.delete(face);
+    }
+  }
+  browserFaces.clear();
+  browserFamilyAliases.clear();
+}
+
+function preciseBrowserFamilyAlias(family: string): string {
+  return `Oasis Precise ${normalizeFamily(family)}`;
+}
+
+/**
+ * Registers the exact locally-read bytes under an Oasis-owned CSS family.
+ * Using a private alias prevents a previously loaded remote @font-face with the
+ * document family name from painting different glyphs than the local program
+ * used by the layout engine.
+ */
+export async function registerPreciseBrowserFontFace(
+  family: string,
+  bold: boolean,
+  italic: boolean,
+  bytes: Uint8Array,
+): Promise<string | null> {
+  if (
+    typeof document === "undefined" ||
+    typeof FontFace === "undefined" ||
+    !document.fonts
+  ) {
+    return null;
+  }
+  const key = faceKey(family, bold, italic);
+  const existing = browserFaces.get(key);
+  if (existing) {
+    await existing.loaded;
+    return (
+      browserFamilyAliases.get(normalizeFamily(family).toLowerCase()) ?? null
+    );
+  }
+
+  const alias = preciseBrowserFamilyAlias(family);
+  const source = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(source).set(bytes);
+  const face = new FontFace(alias, source, {
+    style: italic ? "italic" : "normal",
+    weight: bold ? "700" : "400",
+  });
+  document.fonts.add(face);
+  try {
+    await face.load();
+    browserFaces.set(key, face);
+    browserFamilyAliases.set(normalizeFamily(family).toLowerCase(), alias);
+    return alias;
+  } catch {
+    document.fonts.delete(face);
+    return null;
+  }
+}
+
+/** Exact CSS family registered for a locally-read precise font, when present. */
+export function getPreciseBrowserFontFamily(
+  family: string | null | undefined,
+): string | null {
+  return (
+    browserFamilyAliases.get(normalizeFamily(family).toLowerCase()) ?? null
+  );
 }
 
 /** Whether any real face is loaded for the family (ignores the mode flag). */

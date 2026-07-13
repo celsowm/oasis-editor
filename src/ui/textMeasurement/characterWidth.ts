@@ -120,8 +120,8 @@ export function measureCharacterWidth(
     return 0;
   }
 
-  const fontSize = getMeasuredFontSize(styles, fallbackFontSize);
-  const font = buildCanvasFont(styles, fallbackFontSize);
+  const fontSize = getMeasuredFontSize(styles, fallbackFontSize, char);
+  const font = buildCanvasFont(styles, fallbackFontSize, char);
   const renderedChar = getRenderedMeasureChar(char, styles);
   const scale =
     styles?.characterScale && styles.characterScale > 0

@@ -6,10 +6,14 @@ import {
   isLocalFontFamilyAvailable,
   isPreciseFontModeEnabled,
 } from "@/text/fonts/preciseFontMode.js";
-import { hasPreciseFont } from "@/text/fonts/preciseFontMetrics.js";
+import {
+  getPreciseBrowserFontFamily,
+  hasPreciseFont,
+} from "@/text/fonts/preciseFontMetrics.js";
 import { isRemoteWebFontActive } from "@/text/fonts/remoteWebFonts.js";
 import { PX_PER_POINT } from "@/layoutProjection/constants.js";
 import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
+import { isLowercaseSmallCapsChar } from "@/core/smallCaps.js";
 
 // Pure canvas font/metric resolution helpers. Extracted from
 // `canvasParagraphPainter` into this leaf so `verticalText` can use them without
@@ -42,13 +46,19 @@ export function resolveCanvasFontFamily(
     isPreciseFontModeEnabled() &&
     isLocalFontFamilyAvailable(requested) &&
     hasPreciseFont(requested);
+  const preciseBrowserFamily = preciseFirst
+    ? getPreciseBrowserFontFamily(requested)
+    : null;
   const requestedFirst = preciseFirst || isRemoteWebFontActive(requested);
-  const families =
+  const families: string[] =
     requested.toLowerCase() === metric.toLowerCase()
       ? [metric]
       : requestedFirst
         ? [requested, metric]
         : [metric, requested];
+  if (preciseBrowserFamily) {
+    families.unshift(preciseBrowserFamily);
+  }
   const generic = /serif/i.test(fontFamily ?? "") ? "serif" : "sans-serif";
   return [...families.map(quoteFontFamily), generic].join(", ");
 }
@@ -63,9 +73,10 @@ export function resolveCanvasTextRenderMetrics(
       }
     | undefined,
   fontSize: number,
+  sourceChar?: string,
 ): { fontSize: number; baselineOffset: number } {
   const explicitBaselineShift = (styles?.baselineShift ?? 0) * PX_PER_POINT;
-  if (styles?.smallCaps) {
+  if (styles?.smallCaps && sourceChar && isLowercaseSmallCapsChar(sourceChar)) {
     return {
       fontSize: fontSize * 0.8,
       baselineOffset: -explicitBaselineShift,
@@ -178,7 +189,10 @@ type RunStyleInput =
     }
   | undefined;
 
-export function resolveCanvasRunPaintStyle(styles: RunStyleInput): {
+export function resolveCanvasRunPaintStyle(
+  styles: RunStyleInput,
+  sourceChar?: string,
+): {
   font: string;
   fillStyle: string;
   renderMetrics: ReturnType<typeof resolveCanvasTextRenderMetrics>;
@@ -188,7 +202,11 @@ export function resolveCanvasRunPaintStyle(styles: RunStyleInput): {
   const fontFamily = resolveCanvasFontFamily(styles?.fontFamily);
   const fontWeight = styles?.bold ? "700" : "400";
   const fontStyle = styles?.italic ? "italic" : "normal";
-  const renderMetrics = resolveCanvasTextRenderMetrics(styles, fontSize);
+  const renderMetrics = resolveCanvasTextRenderMetrics(
+    styles,
+    fontSize,
+    sourceChar,
+  );
   return {
     font: `${fontStyle} ${fontWeight} ${renderMetrics.fontSize}px ${fontFamily}`,
     fillStyle: styles?.color ?? "#000000",

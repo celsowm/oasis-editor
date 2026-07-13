@@ -64,6 +64,15 @@ export interface FontMetricsProvider {
 
 const familyFileCache = new Map<string, FontFaceFiles>();
 const fontLogger = createEditorLogger("fonts");
+const browserFaceLoads = new Map<
+  string,
+  Promise<{
+    family: string;
+    style: keyof FontFaceFiles;
+    status: "loaded" | "unsupported" | "failed";
+    error?: string;
+  }>
+>();
 
 /** Resolves an editor font family to the bundled face files, falling back to Roboto. */
 function resolveFaceFiles(family: string | null | undefined): FontFaceFiles {
@@ -96,12 +105,21 @@ function registerBrowserFontFace(
   status: "loaded" | "unsupported" | "failed";
   error?: string;
 }> {
+  const cacheKey = `${family.toLowerCase()}|${style}`;
+  const cached = browserFaceLoads.get(cacheKey);
+  if (cached) return cached;
   if (
     typeof document === "undefined" ||
     typeof FontFace === "undefined" ||
     !document.fonts
   ) {
-    return Promise.resolve({ family, style, status: "unsupported" });
+    const unsupported = Promise.resolve({
+      family,
+      style,
+      status: "unsupported" as const,
+    });
+    browserFaceLoads.set(cacheKey, unsupported);
+    return unsupported;
   }
 
   const source = new ArrayBuffer(bytes.byteLength);
@@ -111,7 +129,7 @@ function registerBrowserFontFace(
     weight: style === "bold" || style === "bolditalic" ? "700" : "400",
   });
   document.fonts.add(fontFace);
-  return fontFace.load().then(
+  const load = fontFace.load().then(
     (): { family: string; style: keyof FontFaceFiles; status: "loaded" } => ({
       family,
       style,
@@ -131,6 +149,8 @@ function registerBrowserFontFace(
       error: String(error),
     }),
   );
+  browserFaceLoads.set(cacheKey, load);
+  return load;
 }
 
 class BundledFontMetricsProvider implements FontMetricsProvider {
@@ -192,14 +212,16 @@ class BundledFontMetricsProvider implements FontMetricsProvider {
   }
 
   /** Parses and caches already-loaded bytes (used by the browser preloader). */
-  ingest(fileName: string, bytes: Uint8Array): void {
+  ingest(fileName: string, bytes: Uint8Array): boolean {
     // A prior synchronous load may have cached `null` (no sync brotli in the
     // browser). Only skip when a successful parse is already cached, so the
     // preloaded bytes actually replace that failed attempt.
     if (this.parsedFonts.get(fileName)) {
-      return;
+      return false;
     }
-    this.parsedFonts.set(fileName, tryParse(bytes));
+    const parsed = tryParse(bytes);
+    this.parsedFonts.set(fileName, parsed);
+    return parsed !== null;
   }
 
   private getFont(fileName: string): SfntFontProgram | null {
@@ -238,7 +260,7 @@ export function getFontMetricsProvider(): FontMetricsProvider {
  */
 export async function preloadLayoutFonts(
   families?: Iterable<string | null | undefined>,
-): Promise<void> {
+): Promise<boolean> {
   const requestedFamilies = families ? Array.from(families) : null;
   const startedAt =
     typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -319,18 +341,26 @@ export async function preloadLayoutFonts(
           ),
         };
       }
-      sharedProvider.ingest(entry.fileName, bytes);
+      const metricsChanged = sharedProvider.ingest(entry.fileName, bytes);
       const originalBytes = readOriginalFontAsset(entry.fileName) ?? bytes;
+      let browserFacesChanged = false;
       const registrations = await Promise.all(
-        Array.from(entry.familyNames, (familyName) =>
-          registerBrowserFontFace(familyName, entry.style, originalBytes),
-        ),
+        Array.from(entry.familyNames, (familyName) => {
+          const cacheKey = `${familyName.toLowerCase()}|${entry.style}`;
+          if (!browserFaceLoads.has(cacheKey)) browserFacesChanged = true;
+          return registerBrowserFontFace(
+            familyName,
+            entry.style,
+            originalBytes,
+          );
+        }),
       );
       return {
         fileName: entry.fileName,
         style: entry.style,
         bytes: bytes.byteLength,
         registrations,
+        changed: metricsChanged || browserFacesChanged,
       };
     }),
   );
@@ -344,4 +374,5 @@ export async function preloadLayoutFonts(
         ? document.fonts.status
         : "unavailable",
   });
+  return results.some((result) => "changed" in result && result.changed);
 }

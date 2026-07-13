@@ -1,13 +1,19 @@
+// @vitest-environment jsdom
+
 import { afterEach, describe, expect, it } from "vitest";
 import { getFontMetricsProvider } from "@/text/fonts/FontMetricsProvider.js";
 import {
   clearPreciseFonts,
+  getPreciseBrowserFontFamily,
   getPreciseFontProgram,
   hasPreciseFont,
+  registerPreciseBrowserFontFace,
   registerPreciseFont,
 } from "@/text/fonts/preciseFontMetrics.js";
+import { resolveCanvasFontFamily } from "@/ui/canvas/canvasFontResolution.js";
 import {
   isPreciseFontModeEnabled,
+  setAvailableLocalFontFamilies,
   setPreciseFontModeEnabled,
 } from "@/text/fonts/preciseFontMode.js";
 import { SfntFontProgram } from "@/text/fonts/sfnt/SfntFontProgram.js";
@@ -25,6 +31,7 @@ function arimoProgram(): SfntFontProgram {
 describe("precise font metrics override", () => {
   afterEach(() => {
     clearPreciseFonts();
+    setAvailableLocalFontFamilies([]);
     setPreciseFontModeEnabled(false);
   });
 
@@ -97,5 +104,69 @@ describe("precise font metrics override", () => {
     setPreciseFontModeEnabled(true);
     // No bold face registered → regular real face is used rather than the substitute.
     expect(getPreciseFontProgram("Aptos", true, false)).not.toBeNull();
+  });
+
+  it("keeps the metric-compatible face first until an exact browser face exists", () => {
+    registerPreciseFont("Aptos", false, false, arimoProgram());
+    setPreciseFontModeEnabled(true);
+
+    expect(getPreciseBrowserFontFamily("Aptos")).toBeNull();
+    expect(resolveCanvasFontFamily("Aptos")).toMatch(/^Carlito/);
+  });
+
+  it("paints through the private browser alias backed by the same local bytes", async () => {
+    const originalFontFace = globalThis.FontFace;
+    const originalFonts = Object.getOwnPropertyDescriptor(document, "fonts");
+    const faces = new Set<FontFace>();
+    class FakeFontFace {
+      readonly loaded = Promise.resolve(this);
+      constructor(
+        readonly family: string,
+        _source: string | BufferSource,
+        _descriptors?: FontFaceDescriptors,
+      ) {}
+      load(): Promise<this> {
+        return Promise.resolve(this);
+      }
+    }
+    Object.defineProperty(globalThis, "FontFace", {
+      configurable: true,
+      value: FakeFontFace,
+    });
+    Object.defineProperty(document, "fonts", {
+      configurable: true,
+      value: {
+        add: (face: FontFace): void => void faces.add(face),
+        delete: (face: FontFace): boolean => faces.delete(face),
+      },
+    });
+
+    try {
+      const bytes = readFontAssetSync("Arimo-Regular.woff2")!;
+      expect(
+        await registerPreciseBrowserFontFace("Aptos", false, false, bytes),
+      ).toBe("Oasis Precise Aptos");
+      registerPreciseFont("Aptos", false, false, arimoProgram());
+      setAvailableLocalFontFamilies(["Aptos"]);
+      setPreciseFontModeEnabled(true);
+
+      expect(resolveCanvasFontFamily("Aptos")).toMatch(
+        /^"Oasis Precise Aptos", Aptos, Carlito/,
+      );
+    } finally {
+      if (originalFontFace) {
+        Object.defineProperty(globalThis, "FontFace", {
+          configurable: true,
+          value: originalFontFace,
+        });
+      } else {
+        delete (globalThis as { FontFace?: typeof FontFace }).FontFace;
+      }
+      if (originalFonts) {
+        Object.defineProperty(document, "fonts", originalFonts);
+      } else {
+        delete (document as { fonts?: FontFaceSet }).fonts;
+      }
+    }
   });
 });

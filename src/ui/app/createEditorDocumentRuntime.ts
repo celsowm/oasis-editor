@@ -12,6 +12,8 @@ import { bumpLayoutMetricsEpoch } from "@/layoutProjection/index.js";
 import { useEditorTransactions } from "./useEditorTransactions.js";
 import { createEditorChangeBroadcast } from "./createEditorChangeBroadcast.js";
 import type { OasisEditorAppDocumentProps } from "../OasisEditorAppProps.js";
+import { enablePreciseFontMode } from "./localFontAccess.js";
+import { prepareDocumentFonts } from "./documentFontPreparation.js";
 
 type EditorImageOperations = ReturnType<typeof createEditorImageOperations>;
 
@@ -86,6 +88,12 @@ function createEditorDocumentRuntimeImpl(deps: EditorDocumentRuntimeDeps) {
     },
     resetEditorChromeState: (): void => resetEditorChromeState(),
     focusInput,
+    requestLocalFontAccess: enablePreciseFontMode,
+    prepareDocumentFonts: async (document): Promise<void> => {
+      await prepareDocumentFonts(document, {
+        remoteWebFonts: documentOptions().remoteWebFonts,
+      });
+    },
     logger,
   });
   const isImportInProgress = (): boolean =>

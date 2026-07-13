@@ -178,6 +178,21 @@ function drawTextFragment(
     }
 
     const renderedChar = getRenderedChar(char.char, styles);
+    if (styles.smallCaps) {
+      flushSegment();
+      const previousFont = ctx.font;
+      ctx.font = resolveCanvasRunPaintStyle(styles, char.char).font;
+      drawStyledText(
+        ctx,
+        renderedChar,
+        originX + slot.left,
+        baselineY,
+        scale,
+        styles,
+      );
+      ctx.font = previousFont;
+      continue;
+    }
     if (hasManualCharacterSpacing) {
       flushSegment();
       drawStyledText(
