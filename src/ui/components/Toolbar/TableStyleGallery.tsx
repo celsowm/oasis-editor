@@ -9,6 +9,8 @@ import {
 import type { ToolbarActionApi, ToolbarDocumentStyle } from "./schema/items.js";
 import { Popover } from "./primitives/Popover.js";
 import { DropdownChevron } from "./primitives/DropdownChevron.js";
+import { SurfaceButton } from "@/ui/public/SurfaceButton.js";
+import { Text } from "@/ui/public/Text.js";
 
 export interface TableStyleGalleryProps {
   api: ToolbarActionApi;
@@ -91,19 +93,20 @@ export function TableStyleGallery(props: TableStyleGalleryProps): JSX.Element {
         const preview = (): NonNullable<ToolbarDocumentStyle["tablePreview"]> =>
           style.tablePreview ?? {};
         return (
-          <button
-            type="button"
+          <SurfaceButton
             class="oasis-editor-table-style-card"
+            active={isActive(style)}
             classList={{
               "oasis-editor-table-style-card-active": isActive(style),
             }}
             role="option"
             aria-selected={isActive(style)}
             title={style.name}
+            label={style.name}
             data-style-id={style.id}
             onClick={(): void => apply(style)}
           >
-            <span
+            <Text
               class="oasis-editor-table-style-preview"
               style={{
                 "--table-fill": preview().wholeFill ?? "#ffffff",
@@ -124,11 +127,11 @@ export function TableStyleGallery(props: TableStyleGalleryProps): JSX.Element {
               <i />
               <i />
               <i />
-            </span>
-            <span class="oasis-editor-table-style-card-label">
+            </Text>
+            <Text class="oasis-editor-table-style-card-label">
               {style.name}
-            </span>
-          </button>
+            </Text>
+          </SurfaceButton>
         );
       }}
     </For>
@@ -138,9 +141,9 @@ export function TableStyleGallery(props: TableStyleGalleryProps): JSX.Element {
     <Show
       when={styles().length > 0}
       fallback={
-        <span class="oasis-editor-table-style-gallery-empty">
+        <Text class="oasis-editor-table-style-gallery-empty">
           {props.api.t("table.tableStyle")}
-        </span>
+        </Text>
       }
     >
       <Popover
@@ -155,17 +158,16 @@ export function TableStyleGallery(props: TableStyleGalleryProps): JSX.Element {
             <div class="oasis-editor-table-style-strip" role="listbox">
               {cards()}
             </div>
-            <button
-              type="button"
+            <SurfaceButton
               class="oasis-editor-table-style-expand"
-              aria-label={props.api.t("table.tableStyle")}
+              label={props.api.t("table.tableStyle")}
               aria-haspopup="listbox"
               aria-expanded={popover.open}
               data-testid={`${testId()}-expand`}
               onClick={(): void => popover.toggle()}
             >
               <DropdownChevron />
-            </button>
+            </SurfaceButton>
           </div>
         )}
       >
