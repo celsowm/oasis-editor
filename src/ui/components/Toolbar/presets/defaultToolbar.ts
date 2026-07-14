@@ -38,48 +38,35 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
 
   // --- File ---
   items.push({
-    type: "menu",
-    id: "editor-toolbar-file-dropdown",
-    group: "file",
-    iconName: "file",
-    tooltipKey: "toolbar.file",
-    content: {
-      kind: "items",
-      items: [
-        {
-          type: "button",
-          id: "editor-toolbar-export-docx",
-          testId: "editor-toolbar-export-docx",
-          iconName: "file-text",
-          labelKey: "toolbar.exportDocx",
-          wide: true,
-          tooltipKey: "toolbar.exportDocx",
-          command: "exportDocx",
-        },
-        {
-          type: "button",
-          id: "editor-toolbar-export-pdf",
-          testId: "editor-toolbar-export-pdf",
-          iconName: "file-down",
-          labelKey: "toolbar.exportPdf",
-          wide: true,
-          tooltipKey: "toolbar.exportPdf",
-          command: "exportPdf",
-        },
-        {
-          type: "button",
-          id: "editor-toolbar-import-document",
-          testId: "editor-toolbar-import-document",
-          iconName: "upload",
-          labelKey: "toolbar.import",
-          wide: true,
-          tooltipKey: "toolbar.import",
-          command: "importDocument",
-        },
-      ],
-    },
+    type: "button",
+    id: "editor-toolbar-export-docx",
+    testId: "editor-toolbar-export-docx",
+    iconName: "file-text",
+    labelKey: "toolbar.exportDocx",
+    tooltipKey: "toolbar.exportDocx",
+    command: "exportDocx",
+    ribbonSize: "large",
   });
-  items.push({ type: "separator", id: "sep-file", group: "file" });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-export-pdf",
+    testId: "editor-toolbar-export-pdf",
+    iconName: "file-down",
+    labelKey: "toolbar.exportPdf",
+    tooltipKey: "toolbar.exportPdf",
+    command: "exportPdf",
+    ribbonSize: "large",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-import-document",
+    testId: "editor-toolbar-import-document",
+    iconName: "upload",
+    labelKey: "toolbar.import",
+    tooltipKey: "toolbar.import",
+    command: "importDocument",
+    ribbonSize: "large",
+  });
 
   // --- History ---
   items.push({

@@ -1,5 +1,4 @@
 export const OASIS_TOOLBAR_ITEMS = {
-  fileDropdown: "editor-toolbar-file-dropdown",
   exportDocx: "editor-toolbar-export-docx",
   exportPdf: "editor-toolbar-export-pdf",
   importDocument: "editor-toolbar-import-document",
