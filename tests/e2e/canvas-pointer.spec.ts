@@ -173,8 +173,14 @@ async function clickToolbarAction(page: Page, testId: string) {
 }
 
 async function insertTable(page: Page, rows: number, cols: number) {
+  const insertTab = page.getByRole("tab", { name: /Inserir/i });
+  if (await insertTab.isVisible()) {
+    await insertTab.click();
+  }
   await clickToolbarAction(page, "editor-toolbar-insert-table");
-  const gridCell = page.getByTestId(`editor-toolbar-table-grid-${rows}x${cols}`);
+  const gridCell = page.getByTestId(
+    `editor-toolbar-table-grid-${rows}x${cols}`,
+  );
   await expect(gridCell).toBeVisible();
   await gridCell.click();
 }

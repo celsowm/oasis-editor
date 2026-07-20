@@ -49,7 +49,6 @@ export interface ShellProps {
   measuredParagraphLayouts: Accessor<Record<string, EditorLayoutParagraph>>;
   documentLayout: Accessor<EditorLayoutDocument>;
   viewportHeight: Accessor<number | string | undefined>;
-  showFloatingTableToolbar: Accessor<boolean>;
   layout: Omit<
     OasisEditorEditorLayoutProps,
     | "documentLayout"
@@ -60,7 +59,7 @@ export interface ShellProps {
   >;
   overlays: Omit<
     OasisEditorEditorOverlayProps,
-    "toolbarHost" | "persistenceStatus" | "showFloatingTableToolbar"
+    "toolbarHost" | "persistenceStatus"
   >;
   refs: OasisEditorEditorRefProps;
   surfaceHandlers: OasisEditorEditorSurfaceHandlers;
@@ -178,8 +177,6 @@ export function DocumentShell(props: ShellProps): JSX.Element {
                 ...props.overlays,
                 toolbarHost: props.toolbarHost,
                 persistenceStatus: (): string => props.persistenceStatus(),
-                showFloatingTableToolbar: (): boolean =>
-                  props.showFloatingTableToolbar(),
               }}
               refs={{
                 ...props.refs,

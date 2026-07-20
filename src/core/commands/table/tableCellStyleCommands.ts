@@ -11,7 +11,10 @@ import {
   getParagraphs,
 } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
-import { buildTableCellLayout } from "@/core/tableLayout.js";
+import {
+  buildTableCellLayout,
+  type TableCellLayoutEntry,
+} from "@/core/tableLayout.js";
 import { updateTableCellsInBlocks } from "@/core/document/blockReplacement.js";
 import {
   createTableRevisionMetadata,
@@ -40,8 +43,26 @@ export const DEFAULT_TABLE_BORDER: EditorBorderStyle = {
   color: "#000000",
 };
 
-function collectTableSelectedParagraphIds(state: EditorState): Set<string> {
-  const selectedParagraphIds = new Set<string>();
+/** Explicitly suppresses a border. Missing cell borders intentionally fall
+ * back to the editor's default visible table border. */
+export const NO_TABLE_BORDER: EditorBorderStyle = {
+  width: 0,
+  type: "none",
+  color: "transparent",
+};
+
+interface TableBorderSelection {
+  entries: TableCellLayoutEntry[];
+  selectedEntries: TableCellLayoutEntry[];
+  startRow: number;
+  endRow: number;
+  startCol: number;
+  endCol: number;
+}
+
+function resolveTableBorderSelection(
+  state: EditorState,
+): TableBorderSelection | null {
   const activeSectionIndex = getActiveSectionIndex(state);
   const anchorLoc = findParagraphTableLocation(
     state.document,
@@ -53,14 +74,13 @@ function collectTableSelectedParagraphIds(state: EditorState): Set<string> {
     state.selection.focus.paragraphId,
     activeSectionIndex,
   );
-
   if (
     !anchorLoc ||
     !focusLoc ||
     anchorLoc.blockIndex !== focusLoc.blockIndex ||
     anchorLoc.zone !== focusLoc.zone
   ) {
-    return selectedParagraphIds;
+    return null;
   }
 
   const blocks = getBlocksForZone(
@@ -68,25 +88,21 @@ function collectTableSelectedParagraphIds(state: EditorState): Set<string> {
     activeSectionIndex,
     anchorLoc.zone,
   );
-  const tableBlock = blocks?.[anchorLoc.blockIndex];
-  if (!tableBlock || tableBlock.type !== "table") {
-    return selectedParagraphIds;
-  }
+  const table = blocks?.[anchorLoc.blockIndex];
+  if (!table || table.type !== "table") return null;
 
-  const tableLayout = buildTableCellLayout(tableBlock);
-  const anchorCell = tableLayout.find(
+  const entries = buildTableCellLayout(table);
+  const anchorCell = entries.find(
     (entry): boolean =>
       entry.rowIndex === anchorLoc.rowIndex &&
       entry.cellIndex === anchorLoc.cellIndex,
   );
-  const focusCell = tableLayout.find(
+  const focusCell = entries.find(
     (entry): boolean =>
       entry.rowIndex === focusLoc.rowIndex &&
       entry.cellIndex === focusLoc.cellIndex,
   );
-  if (!anchorCell || !focusCell) {
-    return selectedParagraphIds;
-  }
+  if (!anchorCell || !focusCell) return null;
 
   const startRow = Math.min(
     anchorCell.visualRowIndex,
@@ -104,16 +120,21 @@ function collectTableSelectedParagraphIds(state: EditorState): Set<string> {
     anchorCell.visualColumnIndex + anchorCell.colSpan - 1,
     focusCell.visualColumnIndex + focusCell.colSpan - 1,
   );
-
-  const cells = tableLayout.filter(
+  const selectedEntries = entries.filter(
     (entry): boolean =>
       entry.visualRowIndex <= endRow &&
       entry.visualRowIndex + entry.rowSpan - 1 >= startRow &&
       entry.visualColumnIndex <= endCol &&
       entry.visualColumnIndex + entry.colSpan - 1 >= startCol,
   );
+  return { entries, selectedEntries, startRow, endRow, startCol, endCol };
+}
 
-  for (const entry of cells) {
+function collectTableSelectedParagraphIds(state: EditorState): Set<string> {
+  const selectedParagraphIds = new Set<string>();
+  const selection = resolveTableBorderSelection(state);
+  if (!selection) return selectedParagraphIds;
+  for (const entry of selection.selectedEntries) {
     for (const paragraph of entry.cell.blocks) {
       selectedParagraphIds.add(paragraph.id);
     }
@@ -220,57 +241,249 @@ export function applyTableBorderPreset(
   preset: TableBorderPreset,
   border: EditorBorderStyle = DEFAULT_TABLE_BORDER,
 ): EditorState {
-  const apply = (
-    current: EditorState,
-    keys: Array<
-      keyof Pick<
-        EditorTableCellStyle,
-        | "borderTop"
-        | "borderRight"
-        | "borderBottom"
-        | "borderLeft"
-        | "borderTopLeftToBottomRight"
-        | "borderTopRightToBottomLeft"
-      >
-    >,
-    value: EditorBorderStyle | null,
-  ): EditorState =>
-    keys.reduce(
-      (next, key): EditorState => setTableCellStyleValue(next, key, value),
-      current,
-    );
-  const edges: Array<
-    keyof Pick<
-      EditorTableCellStyle,
-      "borderTop" | "borderRight" | "borderBottom" | "borderLeft"
-    >
-  > = ["borderTop", "borderRight", "borderBottom", "borderLeft"];
-  switch (preset) {
-    case "none":
-      return apply(
-        state,
-        [...edges, "borderTopLeftToBottomRight", "borderTopRightToBottomLeft"],
-        null,
-      );
-    case "bottom":
-      return apply(state, ["borderBottom"], border);
-    case "top":
-      return apply(state, ["borderTop"], border);
-    case "left":
-      return apply(state, ["borderLeft"], border);
-    case "right":
-      return apply(state, ["borderRight"], border);
-    case "diagonalDown":
-      return apply(state, ["borderTopLeftToBottomRight"], border);
-    case "diagonalUp":
-      return apply(state, ["borderTopRightToBottomLeft"], border);
-    // Direct per-cell borders deliberately cover all selected-cell edges. The
-    // canvas de-duplicates shared strokes while DOCX preserves each cell edge.
-    case "all":
-    case "outside":
-    case "inside":
-    case "insideHorizontal":
-    case "insideVertical":
-      return apply(state, edges, border);
+  type BorderKey = keyof Pick<
+    EditorTableCellStyle,
+    | "borderTop"
+    | "borderRight"
+    | "borderBottom"
+    | "borderLeft"
+    | "borderStart"
+    | "borderEnd"
+    | "borderTopLeftToBottomRight"
+    | "borderTopRightToBottomLeft"
+  >;
+  const selection = resolveTableBorderSelection(state);
+  if (!selection) return state;
+
+  const patches = new Map<
+    string,
+    Partial<Record<BorderKey, EditorBorderStyle>>
+  >();
+  const selectedIds = new Set(
+    selection.selectedEntries.map((entry): string => entry.cell.id),
+  );
+  const occupancy = new Map<string, TableCellLayoutEntry>();
+  for (const entry of selection.entries) {
+    for (
+      let row = entry.visualRowIndex;
+      row < entry.visualRowIndex + entry.rowSpan;
+      row += 1
+    ) {
+      for (
+        let col = entry.visualColumnIndex;
+        col < entry.visualColumnIndex + entry.colSpan;
+        col += 1
+      ) {
+        occupancy.set(`${row}:${col}`, entry);
+      }
+    }
   }
+  const set = (
+    entry: TableCellLayoutEntry | undefined,
+    key: BorderKey,
+    value = border,
+  ): void => {
+    if (!entry) return;
+    const patch = patches.get(entry.cell.id) ?? {};
+    patch[key] = value;
+    patches.set(entry.cell.id, patch);
+  };
+  const setPair = (
+    first: TableCellLayoutEntry | undefined,
+    firstKey: BorderKey,
+    second: TableCellLayoutEntry | undefined,
+    secondKey: BorderKey,
+    value = border,
+  ): void => {
+    set(first, firstKey, value);
+    if (second && second.cell.id !== first?.cell.id)
+      set(second, secondKey, value);
+  };
+  const applySide = (
+    side: "top" | "right" | "bottom" | "left",
+    value = border,
+  ): void => {
+    if (side === "top" || side === "bottom") {
+      const row = side === "top" ? selection.startRow : selection.endRow;
+      const outsideRow = row + (side === "top" ? -1 : 1);
+      for (let col = selection.startCol; col <= selection.endCol; col += 1) {
+        const owner = occupancy.get(`${row}:${col}`);
+        if (!owner || !selectedIds.has(owner.cell.id)) continue;
+        setPair(
+          owner,
+          side === "top" ? "borderTop" : "borderBottom",
+          occupancy.get(`${outsideRow}:${col}`),
+          side === "top" ? "borderBottom" : "borderTop",
+          value,
+        );
+      }
+      return;
+    }
+    const col = side === "left" ? selection.startCol : selection.endCol;
+    const outsideCol = col + (side === "left" ? -1 : 1);
+    for (let row = selection.startRow; row <= selection.endRow; row += 1) {
+      const owner = occupancy.get(`${row}:${col}`);
+      if (!owner || !selectedIds.has(owner.cell.id)) continue;
+      setPair(
+        owner,
+        side === "left" ? "borderLeft" : "borderRight",
+        occupancy.get(`${row}:${outsideCol}`),
+        side === "left" ? "borderRight" : "borderLeft",
+        value,
+      );
+    }
+  };
+  const applyInsideHorizontal = (): void => {
+    for (let row = selection.startRow + 1; row <= selection.endRow; row += 1) {
+      for (let col = selection.startCol; col <= selection.endCol; col += 1) {
+        const above = occupancy.get(`${row - 1}:${col}`);
+        const below = occupancy.get(`${row}:${col}`);
+        if (
+          above &&
+          below &&
+          above.cell.id !== below.cell.id &&
+          selectedIds.has(above.cell.id) &&
+          selectedIds.has(below.cell.id)
+        ) {
+          setPair(above, "borderBottom", below, "borderTop");
+        }
+      }
+    }
+  };
+  const applyInsideVertical = (): void => {
+    for (let col = selection.startCol + 1; col <= selection.endCol; col += 1) {
+      for (let row = selection.startRow; row <= selection.endRow; row += 1) {
+        const left = occupancy.get(`${row}:${col - 1}`);
+        const right = occupancy.get(`${row}:${col}`);
+        if (
+          left &&
+          right &&
+          left.cell.id !== right.cell.id &&
+          selectedIds.has(left.cell.id) &&
+          selectedIds.has(right.cell.id)
+        ) {
+          setPair(left, "borderRight", right, "borderLeft");
+        }
+      }
+    }
+  };
+
+  switch (preset) {
+    case "none": {
+      for (const entry of selection.selectedEntries) {
+        for (const key of [
+          "borderTop",
+          "borderRight",
+          "borderBottom",
+          "borderLeft",
+          "borderStart",
+          "borderEnd",
+          "borderTopLeftToBottomRight",
+          "borderTopRightToBottomLeft",
+        ] as BorderKey[])
+          set(entry, key, NO_TABLE_BORDER);
+      }
+      applySide("top", NO_TABLE_BORDER);
+      applySide("right", NO_TABLE_BORDER);
+      applySide("bottom", NO_TABLE_BORDER);
+      applySide("left", NO_TABLE_BORDER);
+      break;
+    }
+    case "top":
+      applySide("top");
+      break;
+    case "right":
+      applySide("right");
+      break;
+    case "bottom":
+      applySide("bottom");
+      break;
+    case "left":
+      applySide("left");
+      break;
+    case "outside":
+      applySide("top");
+      applySide("right");
+      applySide("bottom");
+      applySide("left");
+      break;
+    case "insideHorizontal":
+      applyInsideHorizontal();
+      break;
+    case "insideVertical":
+      applyInsideVertical();
+      break;
+    case "inside":
+      applyInsideHorizontal();
+      applyInsideVertical();
+      break;
+    case "all":
+      applySide("top");
+      applySide("right");
+      applySide("bottom");
+      applySide("left");
+      applyInsideHorizontal();
+      applyInsideVertical();
+      break;
+    case "diagonalDown":
+      for (const entry of selection.selectedEntries)
+        set(entry, "borderTopLeftToBottomRight");
+      break;
+    case "diagonalUp":
+      for (const entry of selection.selectedEntries)
+        set(entry, "borderTopRightToBottomLeft");
+      break;
+  }
+
+  if (patches.size === 0) return state;
+  const touchedParagraphIds = new Set<string>();
+  for (const entry of selection.entries) {
+    if (!patches.has(entry.cell.id)) continue;
+    for (const paragraph of entry.cell.blocks)
+      touchedParagraphIds.add(paragraph.id);
+  }
+  const updateCell = (cell: EditorTableCellNode): EditorTableCellNode => {
+    const patch = patches.get(cell.id);
+    if (!patch) return cell;
+    let style = cell.style;
+    if (state.trackChangesEnabled && !style?.propertyRevision) {
+      style = {
+        ...(style ?? {}),
+        propertyRevision: {
+          ...createTableRevisionMetadata(),
+          type: "property",
+          previous: { ...(style ?? {}) },
+        },
+      };
+    }
+    for (const [key, value] of Object.entries(patch) as Array<
+      [BorderKey, EditorBorderStyle]
+    >) {
+      style = patchStyleValue(style, key, value);
+    }
+    return { ...cell, style };
+  };
+  const nextSections = getDocumentSections(state.document).map((section) => ({
+    ...section,
+    blocks: updateTableCellsInBlocks(
+      section.blocks,
+      touchedParagraphIds,
+      updateCell,
+    ),
+    header: section.header
+      ? updateTableCellsInBlocks(
+          section.header,
+          touchedParagraphIds,
+          updateCell,
+        )
+      : undefined,
+    footer: section.footer
+      ? updateTableCellsInBlocks(
+          section.footer,
+          touchedParagraphIds,
+          updateCell,
+        )
+      : undefined,
+  }));
+  return { ...state, document: { ...state.document, sections: nextSections } };
 }

@@ -54,7 +54,6 @@ export interface OasisEditorEditorOverlayProps {
   imageCropMode?: Accessor<boolean>;
   toolbarHost?: () => ToolbarHost;
   persistenceStatus?: () => string;
-  showFloatingTableToolbar?: Accessor<boolean>;
   layoutOptions?: LayoutOptionsOverlay;
 }
 

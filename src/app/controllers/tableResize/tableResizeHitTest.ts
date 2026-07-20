@@ -13,7 +13,7 @@ const EDGE_THRESHOLD_COLUMN_PX = 4;
 const EDGE_THRESHOLD_ROW_PX = 4;
 
 export function findTableResizeHoverInfo(
-  event: MouseEvent,
+  event: Pick<MouseEvent, "clientX" | "clientY">,
   surface: HTMLElement,
   state: EditorState,
   documentLayout: EditorLayoutDocument,
@@ -39,6 +39,14 @@ export function findTableResizeHoverInfo(
   } | null = null;
 
   for (const geometry of geometries) {
+    if (
+      event.clientX < geometry.bounds.left - EDGE_THRESHOLD_COLUMN_PX ||
+      event.clientX > geometry.bounds.right + EDGE_THRESHOLD_COLUMN_PX ||
+      event.clientY < geometry.bounds.top - EDGE_THRESHOLD_ROW_PX ||
+      event.clientY > geometry.bounds.bottom + EDGE_THRESHOLD_ROW_PX
+    ) {
+      continue;
+    }
     for (const cell of geometry.cells) {
       const verticallyAligned =
         event.clientY >= cell.top - EDGE_THRESHOLD_COLUMN_PX &&

@@ -9,12 +9,19 @@ import {
   getEditableBlocksForZone,
   type EditorPosition,
 } from "@/core/model.js";
+import {
+  cancelScheduledAnimationFrame,
+  scheduleAnimationFrame,
+} from "./animationFrame.js";
+
+let tableDragCursorOwner: object | null = null;
 
 export interface TableDragOps {
   dragging: () => boolean;
   startClientY: () => number;
   handleMouseDown: (tableId: string, event: MouseEvent) => void;
   dropTargetPos: () => EditorPosition | null;
+  stop: () => void;
 }
 
 export function createEditorTableDrag(deps: {
@@ -57,32 +64,55 @@ function createEditorTableDragImpl(deps: {
   const [startClientY, setStartClientY] = createSignal(0);
   const [startClientX, setStartClientX] = createSignal(0);
   const [mousePos, setMousePos] = createSignal({ x: 0, y: 0 });
+  let dragFrameHandle: number | null = null;
+  let dragPendingPoint: { clientX: number; clientY: number } | null = null;
+  const cursorOwner = {};
+
+  const positionsEqual = (
+    left: EditorPosition | null,
+    right: EditorPosition | null,
+  ): boolean =>
+    left === right ||
+    (left !== null &&
+      right !== null &&
+      left.paragraphId === right.paragraphId &&
+      left.runId === right.runId &&
+      left.offset === right.offset);
+
+  const updateDropTarget = (next: EditorPosition | null): void => {
+    setDropTargetPos((current): EditorPosition | null =>
+      positionsEqual(current, next) ? current : next,
+    );
+  };
 
   const stopDrag = (): void => {
+    dragPendingPoint = null;
+    if (dragFrameHandle !== null) {
+      cancelScheduledAnimationFrame(dragFrameHandle);
+      dragFrameHandle = null;
+    }
     setDragging(false);
     setDraggedTableInfo(null);
     setDropTargetPos(null);
     window.removeEventListener("mousemove", handleMouseMove);
     window.removeEventListener("mouseup", handleMouseUp);
-    document.body.style.cursor = "";
-  };
-
-  const handleMouseMove = (event: MouseEvent): void => {
-    setMousePos({ x: event.clientX, y: event.clientY });
-    if (!dragging()) {
-      const delta = Math.abs(event.clientY - startClientY());
-      if (delta > 4) {
-        setDragging(true);
-        document.body.style.cursor = "grabbing";
-      } else {
-        return;
+    if (tableDragCursorOwner === cursorOwner) {
+      tableDragCursorOwner = null;
+      if (document.body.style.cursor === "grabbing") {
+        document.body.style.cursor = "";
       }
     }
+  };
 
-    document.body.style.cursor = "grabbing";
+  const processDragFrame = (): void => {
+    dragFrameHandle = null;
+    const point = dragPendingPoint;
+    dragPendingPoint = null;
+    if (!point || !dragging()) return;
+    setMousePos({ x: point.clientX, y: point.clientY });
     const pos = deps.resolvePositionAtSurfacePoint(
-      event.clientX,
-      event.clientY,
+      point.clientX,
+      point.clientY,
     );
 
     // Check if target is inside the dragged table
@@ -102,13 +132,28 @@ function createEditorTableDragImpl(deps: {
           tableBlock.type === "table" &&
           tableBlock.id === tableId
         ) {
-          setDropTargetPos(null);
+          updateDropTarget(null);
           return;
         }
       }
     }
 
-    setDropTargetPos(pos);
+    updateDropTarget(pos);
+  };
+
+  const handleMouseMove = (event: MouseEvent): void => {
+    if (!dragging()) {
+      const delta = Math.abs(event.clientY - startClientY());
+      if (delta <= 4) return;
+      setDragging(true);
+      tableDragCursorOwner = cursorOwner;
+      document.body.style.cursor = "grabbing";
+    }
+
+    dragPendingPoint = { clientX: event.clientX, clientY: event.clientY };
+    if (dragFrameHandle === null) {
+      dragFrameHandle = scheduleAnimationFrame(processDragFrame);
+    }
   };
 
   const handleMouseUp = (event: MouseEvent): void => {
@@ -190,5 +235,6 @@ function createEditorTableDragImpl(deps: {
     mousePos,
     dropTargetPos,
     handleMouseDown,
+    stop: stopDrag,
   };
 }

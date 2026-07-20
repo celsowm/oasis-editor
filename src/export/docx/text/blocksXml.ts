@@ -14,6 +14,7 @@ import { serializeTableXml } from "@/export/docx/tableXml.js";
 import { assertNever } from "@/core/assertNever.js";
 import { serializeParagraphProperties } from "./paragraphPropertiesXml.js";
 import { serializeRunWithRelationships } from "./runXml.js";
+import { serializeSdtPrXml } from "./sdtXml.js";
 import { serializeDropCapFrameParagraph } from "./dropCapXml.js";
 
 /**
@@ -179,7 +180,7 @@ export function serializeBlocksXml(
     }
     const inner = serializeBlocksXml(group, context, styles);
     out +=
-      `<w:sdt>${wrapper.sdtPrXml}${wrapper.sdtEndPrXml ?? ""}` +
+      `<w:sdt>${serializeSdtPrXml(wrapper.sdtPr)}${wrapper.sdtEndPrXml ?? ""}` +
       `<w:sdtContent>${inner}</w:sdtContent></w:sdt>`;
     i = j;
   }

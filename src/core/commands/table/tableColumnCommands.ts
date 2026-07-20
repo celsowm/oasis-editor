@@ -28,6 +28,12 @@ export function setTableColumnWidths(
     if (table.id !== tableId) return table;
 
     const tableLayout = buildTableCellLayout(table);
+    const layoutByRowAndCell = new Map(
+      tableLayout.map((entry) => [
+        `${entry.rowIndex}:${entry.cellIndex}`,
+        entry,
+      ]),
+    );
     const visualColumnCount = Math.max(
       1,
       ...tableLayout.map(
@@ -64,10 +70,7 @@ export function setTableColumnWidths(
     const nextRows = table.rows.map((row, rowIndex) => {
       const nextCells = row.cells.map(
         (cell, cellIndex): EditorTableCellNode => {
-          const entry = tableLayout.find(
-            (item): boolean =>
-              item.rowIndex === rowIndex && item.cellIndex === cellIndex,
-          );
+          const entry = layoutByRowAndCell.get(`${rowIndex}:${cellIndex}`);
           if (!entry) return cell;
 
           const rightVisualColumnIndex =

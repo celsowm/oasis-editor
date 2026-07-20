@@ -13,7 +13,6 @@ import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
 import { RevisionOverlay } from "./components/RevisionOverlay.js";
 import { CommentHighlightOverlay } from "./components/CommentHighlightOverlay.js";
-import { FloatingTableToolbar } from "./components/FloatingToolbar/FloatingTableToolbar.js";
 import { FloatingLayoutOptions } from "./components/FloatingToolbar/FloatingLayoutOptions.js";
 import {
   getDocumentPageSettings,
@@ -490,19 +489,6 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
                 );
               }}
             />
-
-            <Show
-              when={
-                overlays().toolbarHost && overlays().showFloatingTableToolbar
-              }
-            >
-              <FloatingTableToolbar
-                host={overlays().toolbarHost!}
-                selectionBoxes={overlays().selectionBoxes}
-                visible={overlays().showFloatingTableToolbar!}
-                surfaceRef={(): HTMLDivElement | undefined => scrollContentRef}
-              />
-            </Show>
 
             <Show when={overlays().layoutOptions}>
               {(layoutOptions): JSX.Element => (

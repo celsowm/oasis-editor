@@ -95,11 +95,19 @@ export function setTableRowHeight(
   rowIndex: number,
   height: number | string | null,
 ): EditorState {
+  return setTableRowHeights(state, tableId, { [rowIndex]: height });
+}
+
+export function setTableRowHeights(
+  state: EditorState,
+  tableId: string,
+  rowHeights: Readonly<Record<number, number | string | null>>,
+): EditorState {
   const updateTable = (table: EditorTableNode): EditorTableNode => {
     if (table.id !== tableId) return table;
-    const nextRows = [...table.rows];
-    const row = nextRows[rowIndex];
-    if (row) {
+    const nextRows = table.rows.map((row, rowIndex): EditorTableRowNode => {
+      if (!Object.prototype.hasOwnProperty.call(rowHeights, rowIndex))
+        return row;
       let style = row.style;
       if (state.trackChangesEnabled && !style?.propertyRevision) {
         style = {
@@ -111,11 +119,11 @@ export function setTableRowHeight(
           },
         };
       }
-      nextRows[rowIndex] = {
+      return {
         ...row,
-        style: patchStyleValue(style, "height", height),
+        style: patchStyleValue(style, "height", rowHeights[rowIndex]!),
       };
-    }
+    });
     return { ...table, rows: nextRows };
   };
 

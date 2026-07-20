@@ -42,6 +42,9 @@ export function resolveBorder(
   border: EditorBorderStyle | undefined,
 ): CanvasTableBorderSpec {
   if (!border) return resolveDefaultBorder();
+  if (border.type === "none" || border.width <= 0) {
+    return { width: 0, color: "transparent", type: "none" };
+  }
   const width = Math.max(
     0,
     Number.isFinite(border.width) ? toPx(border.width) : 1,

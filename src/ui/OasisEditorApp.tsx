@@ -257,7 +257,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     commandsController,
     runtimeReady,
     runtimeEditor,
-    commandStateOf,
     toolbarHost,
     toolbarRegistry,
     menuRegistry,
@@ -384,6 +383,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     onCleanupHook();
     surfaceEventsWithTextDrag.stopDragging();
     textDrag.stopDrag();
+    tableResize.stop();
+    tableCornerResize.stop();
+    tableDrag.stop();
     imageOps.stopImageDrag();
     imageOps.stopImageResize();
     imageOps.stopImageCrop();
@@ -460,8 +462,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
             persistenceStatus,
             toolbarRegistry,
             menuRegistry,
-            showFloatingTableToolbar: (): boolean =>
-              !isReadOnly() && commandStateOf("tableContext").value !== null,
           }}
           chrome={{
             showChrome,

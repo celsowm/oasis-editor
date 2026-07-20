@@ -25,6 +25,10 @@ import {
   setHoverCursorClass,
   setActiveCursorClass,
 } from "./tableResize/tableResizeDom.js";
+import {
+  cancelScheduledAnimationFrame,
+  scheduleAnimationFrame,
+} from "./animationFrame.js";
 
 export { type TableResizeOps } from "./tableResize/tableResizeTypes.js";
 
@@ -43,12 +47,17 @@ export function createEditorTableResize(deps: {
   zoomFactor?: () => number;
 }): TableResizeOps {
   const [resizing, setResizing] = createSignal<TableResizeState | null>(null);
+  let hoverFrameHandle: number | null = null;
+  let hoverPendingPoint: { clientX: number; clientY: number } | null = null;
+  let resizeFrameHandle: number | null = null;
+  let resizePendingPoint: { clientX: number; clientY: number } | null = null;
+  const cursorOwner = {};
 
-  const handleMouseMove = (event: MouseEvent): void => {
-    if (resizing()) {
-      setActiveCursorClass(resizing()!.type === "column");
-      return;
-    }
+  const processHoverFrame = (): void => {
+    hoverFrameHandle = null;
+    const point = hoverPendingPoint;
+    hoverPendingPoint = null;
+    if (!point || resizing()) return;
 
     const surface = deps.surfaceRef();
     if (!surface) {
@@ -57,7 +66,7 @@ export function createEditorTableResize(deps: {
     }
 
     const info = findTableResizeHoverInfo(
-      event,
+      point,
       surface,
       deps.state(),
       deps.documentLayout(),
@@ -69,10 +78,28 @@ export function createEditorTableResize(deps: {
       return;
     }
 
-    setHoverCursorClass(info.side === "left" || info.side === "right");
+    setHoverCursorClass(
+      info.side === "left" || info.side === "right",
+      cursorOwner,
+    );
+  };
+
+  const handleMouseMove = (event: MouseEvent): void => {
+    if (resizing()) return;
+    hoverPendingPoint = { clientX: event.clientX, clientY: event.clientY };
+    if (hoverFrameHandle === null) {
+      hoverFrameHandle = scheduleAnimationFrame(processHoverFrame);
+    }
   };
 
   const handleMouseDown = (event: MouseEvent): boolean => {
+    hoverPendingPoint = null;
+    if (hoverFrameHandle !== null) {
+      cancelScheduledAnimationFrame(hoverFrameHandle);
+      hoverFrameHandle = null;
+    }
+    clearResizeCursorClasses();
+
     const surface = deps.surfaceRef();
     if (!surface) return false;
 
@@ -130,7 +157,7 @@ export function createEditorTableResize(deps: {
         guideBounds: getGuideBounds(deps.viewportRef),
       });
 
-      setActiveCursorClass(true);
+      setActiveCursorClass(true, cursorOwner);
       window.addEventListener("mousemove", handleWindowMouseMove);
       window.addEventListener("mouseup", handleWindowMouseUp);
       event.preventDefault();
@@ -171,7 +198,7 @@ export function createEditorTableResize(deps: {
       guideBounds: getGuideBounds(deps.viewportRef),
     });
 
-    setActiveCursorClass(false);
+    setActiveCursorClass(false, cursorOwner);
     window.addEventListener("mousemove", handleWindowMouseMove);
     window.addEventListener("mouseup", handleWindowMouseUp);
     event.preventDefault();
@@ -180,17 +207,42 @@ export function createEditorTableResize(deps: {
   };
 
   const handleWindowMouseMove = (event: MouseEvent): void => {
-    const currentResizing = resizing();
-    if (!currentResizing) return;
+    if (!resizing()) return;
+    resizePendingPoint = { clientX: event.clientX, clientY: event.clientY };
+    if (resizeFrameHandle === null) {
+      resizeFrameHandle = scheduleAnimationFrame(processResizeFrame);
+    }
+  };
 
+  const processResizeFrame = (): void => {
+    resizeFrameHandle = null;
+    const point = resizePendingPoint;
+    resizePendingPoint = null;
+    const currentResizing = resizing();
+    if (!point || !currentResizing) return;
     setResizing({
       ...currentResizing,
       currentPos:
-        currentResizing.type === "column" ? event.clientX : event.clientY,
+        currentResizing.type === "column" ? point.clientX : point.clientY,
       guideBounds: getGuideBounds(deps.viewportRef),
     });
+  };
 
-    setActiveCursorClass(currentResizing.type === "column");
+  const stop = (): void => {
+    hoverPendingPoint = null;
+    resizePendingPoint = null;
+    if (hoverFrameHandle !== null) {
+      cancelScheduledAnimationFrame(hoverFrameHandle);
+      hoverFrameHandle = null;
+    }
+    if (resizeFrameHandle !== null) {
+      cancelScheduledAnimationFrame(resizeFrameHandle);
+      resizeFrameHandle = null;
+    }
+    setResizing(null);
+    clearResizeCursorClasses(cursorOwner);
+    window.removeEventListener("mousemove", handleWindowMouseMove);
+    window.removeEventListener("mouseup", handleWindowMouseUp);
   };
 
   const handleWindowMouseUp = (event: MouseEvent): void => {
@@ -212,15 +264,13 @@ export function createEditorTableResize(deps: {
       });
     }
 
-    setResizing(null);
-    clearResizeCursorClasses();
-    window.removeEventListener("mousemove", handleWindowMouseMove);
-    window.removeEventListener("mouseup", handleWindowMouseUp);
+    stop();
   };
 
   return {
     resizing,
     handleMouseMove,
     handleMouseDown,
+    stop,
   };
 }

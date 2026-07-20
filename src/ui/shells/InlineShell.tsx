@@ -47,8 +47,6 @@ export function InlineShell(props: ShellProps): JSX.Element {
                 ...props.overlays,
                 toolbarHost: props.toolbarHost,
                 persistenceStatus: (): string => props.persistenceStatus(),
-                showFloatingTableToolbar: (): boolean =>
-                  props.showFloatingTableToolbar(),
               }}
               refs={props.refs}
               surfaceHandlers={props.surfaceHandlers}

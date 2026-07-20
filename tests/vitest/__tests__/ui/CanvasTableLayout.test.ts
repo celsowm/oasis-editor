@@ -11,6 +11,8 @@ import {
   buildCanvasTableLayout,
   resolveCanvasTableWidth,
 } from "@/ui/canvas/CanvasTableLayout.js";
+import { resolveBorder } from "@/ui/canvas/table/tableCellGeometry.js";
+import { NO_TABLE_BORDER } from "@/core/commands/table.js";
 
 function lineWidth(line: { slots: Array<{ left: number }> }): number {
   const first = line.slots[0]?.left ?? 0;
@@ -19,6 +21,18 @@ function lineWidth(line: { slots: Array<{ left: number }> }): number {
 }
 
 describe("buildCanvasTableLayout", () => {
+  it("distinguishes an absent default border from an explicit no-border value", () => {
+    expect(resolveBorder(undefined).width).toBeGreaterThan(0);
+    expect(resolveBorder(NO_TABLE_BORDER)).toEqual({
+      width: 0,
+      color: "transparent",
+      type: "none",
+    });
+    expect(
+      resolveBorder({ width: 2, color: "#000000", type: "none" }).width,
+    ).toBe(0);
+  });
+
   it("wraps text inside a narrowed final column instead of letting it overflow", () => {
     const row = createEditorTableRow([
       createEditorTableCell([createEditorParagraph("Linha 1 Col 1")]),

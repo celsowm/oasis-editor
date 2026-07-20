@@ -158,16 +158,132 @@ export interface EditorDropCap {
  * A block-level structured document tag (`w:sdt`, a content control) enclosing
  * one or more blocks, preserved for round-trip. Its content is unwrapped into the
  * normal block flow (so it still renders and edits); this carries the wrapper's
- * properties verbatim so export can re-wrap. `groupId` ties together the
- * consecutive blocks that came from the same `w:sdt`; the array on a block lists
- * its enclosing wrappers outermost-first (nested content controls).
+ * properties so export can re-wrap. `groupId` ties together the consecutive blocks
+ * that came from the same `w:sdt`; the array on a block lists its enclosing
+ * wrappers outermost-first (nested content controls).
+ *
+ * Recognized `w:sdtPr` children are parsed into the typed `sdtPr` object so the
+ * editor can read the control's alias/tag/id/lock/subtype/etc. Unknown children
+ * (extension namespaces, future-schema elements) are preserved verbatim in
+ * `sdtPr.unknownXml` so export re-emits them byte-for-byte. Likewise `sdtEndPr`
+ * is preserved as raw XML; structured-document end properties rarely carry
+ * editor-meaningful data beyond run formatting that the content already supplies.
  */
 export interface EditorSdtBlockWrapper {
   groupId: string;
-  /** Raw `<w:sdtPr>…</w:sdtPr>` XML, or empty when the tag had no properties. */
-  sdtPrXml: string;
+  /** Parsed `<w:sdtPr>` properties (alias, tag, id, lock, subtype, etc.). */
+  sdtPr: EditorSdtPr;
   /** Raw `<w:sdtEndPr>…</w:sdtEndPr>` XML, when present. */
   sdtEndPrXml?: string;
+}
+
+/**
+ * Recognized `<w:sdtPr>` children. Every field is optional; a property is only
+ * present if the matching element was in the source markup. Property order in
+ * OOXML is significant (CT_SdtPr schema sequence: `rPr`, `alias`, `tag`, `id`,
+ * `lock`, `placeholder`, `dataBinding`,
+ * `temporary`, `equation`/`citation`/`bibliography`/`group`/`picture`/`text`/
+ * `richText`/`comboBox`/`dropDownList`/`date`/`repeatingSection`/
+ * `repeatingSectionItem`, extension elements). The exporter emits them in this
+ * sequence to keep documents schema-valid.
+ */
+export interface EditorSdtPr {
+  /** `<w:alias w:val="…"/>` — friendly display name. */
+  alias?: string;
+  /** `<w:tag w:val="…"/>` — programmatic tag for template automation. */
+  tag?: string;
+  /** `<w:id w:val="…"/>` — stable content-control id (stored as a string for fidelity). */
+  id?: string;
+  /** `<w:lock w:val="…"/>` — sdtLocked/contentLocked/sdtContentLocked combinations. */
+  lock?: string;
+  /**
+   * `<w:appearance w:val="…"/>` — boundingBox|tags|hidden. Editor-UI hint, not layout.
+   */
+  appearance?: "boundingBox" | "tags" | "hidden" | string;
+  /** `<w:showingPlcHdr w:val="…"/>` — true when the control currently shows its placeholder text. */
+  showingPlcHdr?: boolean;
+  /** `<w:temporary w:val="…"/>` — remove the control after the first edit. */
+  temporary?: boolean;
+  /** `<w:color w:val="…"/>` — UI color of the content-control chrome. */
+  color?: string;
+  /** `<w:placeholder><w:docPart w:val="…"/></w:placeholder>` — glossary entry name. */
+  placeholderDocPart?: string;
+  /** `<w:dataBinding>` — custom-XML store binding. */
+  dataBinding?: EditorSdtDataBinding;
+  /** Recognized content-control subtype element (`<w:text>`, `<w:dropDownList>`, …). */
+  subtype?: EditorSdtSubtype;
+  /**
+   * Serialized XML of every `w:sdtPr` child the parser did not recognize, in
+   * document order, so a future-proof round-trip re-emits extension/future-schema
+   * elements (e.g. `w15:storeItem`, `w14:*` extension attributes) without loss.
+   */
+  unknownXml?: string;
+}
+
+/** Recognized content-control subtypes (the single typed child of `w:sdtPr`). */
+export type EditorSdtSubtype =
+  | { kind: "text"; multiline?: boolean }
+  | { kind: "richText" }
+  | { kind: "picture" }
+  | { kind: "group" }
+  | { kind: "equation" }
+  | { kind: "citation" }
+  | { kind: "bibliography" }
+  | {
+      kind: "comboBox";
+      /** Display/value pairs from `<w:listItem>` children. */
+      listItems?: EditorSdtListItem[];
+      /** `<w:lastSelectedValue w:val="…"/>` if a value was chosen on last save. */
+      lastSelectedValue?: string;
+    }
+  | {
+      kind: "dropDownList";
+      listItems?: EditorSdtListItem[];
+      lastSelectedValue?: string;
+    }
+  | {
+      kind: "date";
+      /** `<w:date w:fullDate="…"/>` — the chosen date-time (ISO 8601). */
+      fullDate?: string;
+      /** `<w:dateFormat w:val="…"/>` — display format string (e.g. `M/d/yyyy`). */
+      dateFormat?: string;
+      /** `<w:lid w:val="…"/>` — locale id for calendar formatting. */
+      lid?: string;
+      /** `<w:calendar w:val="…"/>` — gregorian|gregorianUs|gregorianUsFrench|… */
+      calendar?: string;
+      /** `<w:storeMappedDataAs w:val="…"/>` — storage format for data binding. */
+      storeMappedDataAs?: string;
+    }
+  | {
+      kind: "checkbox";
+      /** `<w14:checked w14:val="…"/>` — current boolean state (default false). */
+      checked?: boolean;
+      /** `<w14:checkedState w14:font="…" w14:char="…"/>` — checked-glyph spec. */
+      checkedStateFont?: string;
+      checkedStateChar?: string;
+      /** `<w14:uncheckedState w14:font="…" w14:char="…"/>` — unchecked-glyph spec. */
+      uncheckedStateFont?: string;
+      uncheckedStateChar?: string;
+    }
+  | { kind: "repeatingSection" }
+  | { kind: "repeatingSectionItem" };
+
+/** Single item in a `<w:comboBox>` or `<w:dropDownList>`. */
+export interface EditorSdtListItem {
+  /** `<w:listItem w:displayText="…"/>` — what the user sees. */
+  displayText?: string;
+  /** `<w:listItem w:value="…"/>` — the stored value. */
+  value?: string;
+}
+
+/** `<w:dataBinding>` — XPath binding into a custom-XML storage part. */
+export interface EditorSdtDataBinding {
+  /** `<w:prefixMappings w:val="…"/>` — namespace prefixes for the XPath. */
+  prefixMappings?: string;
+  /** `<w:xpath w:val="…"/>` — the XPath expression selecting the bound node. */
+  xpath?: string;
+  /** `<w:storeItemID w:val="…"/>` — id of the `customXml/itemN.xml` part. */
+  storeItemID?: string;
 }
 
 export interface EditorParagraphNode {

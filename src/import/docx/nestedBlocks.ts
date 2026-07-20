@@ -3,6 +3,7 @@ import { type Element as XmlElement, XMLSerializer } from "@xmldom/xmldom";
 import type { EditorBlockNode, EditorSdtBlockWrapper } from "@/core/model.js";
 import { createEditorNodeId } from "@/core/editorState.js";
 import { WORD_NS, getFirstChildByTagNameNS } from "./xmlHelpers.js";
+import { parseSdtPr } from "./contentControls.js";
 import { type AssetRegistry } from "./assetRegistry.js";
 import { type DocxImportTheme } from "./theme.js";
 import { type NumberingMaps } from "./numbering.js";
@@ -86,7 +87,7 @@ export async function parseSdtBlockNode(
   const sdtEndPr = getFirstChildByTagNameNS(sdtElement, WORD_NS, "sdtEndPr");
   const wrapper: EditorSdtBlockWrapper = {
     groupId: createEditorNodeId("sdt"),
-    sdtPrXml: sdtPr ? new XMLSerializer().serializeToString(sdtPr) : "",
+    sdtPr: parseSdtPr(sdtPr),
     ...(sdtEndPr
       ? { sdtEndPrXml: new XMLSerializer().serializeToString(sdtEndPr) }
       : {}),

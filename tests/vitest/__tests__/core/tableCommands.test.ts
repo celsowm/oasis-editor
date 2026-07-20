@@ -8,14 +8,136 @@ import {
   createEditorTableRow,
 } from "@/core/editorState.js";
 import {
+  applyTableBorderPreset,
+  NO_TABLE_BORDER,
   setActiveTableStyleValue,
   setTableCellStyleValue,
   setTableColumnWidths,
+  setTableRowHeights,
 } from "@/core/commands/table.js";
 import { acceptRevision, rejectRevision } from "@/core/commands/history.js";
-import { getDocumentSectionsCanonical } from "@/core/model.js";
+import {
+  getDocumentSectionsCanonical,
+  type EditorState,
+  type EditorTableNode,
+} from "@/core/model.js";
+
+function selectTableCells(
+  state: EditorState,
+  firstParagraph: ReturnType<typeof createEditorParagraph>,
+  lastParagraph: ReturnType<typeof createEditorParagraph>,
+): EditorState {
+  return {
+    ...state,
+    selection: {
+      anchor: {
+        paragraphId: firstParagraph.id,
+        runId: firstParagraph.runs[0]!.id,
+        offset: 0,
+      },
+      focus: {
+        paragraphId: lastParagraph.id,
+        runId: lastParagraph.runs[0]!.id,
+        offset: 0,
+      },
+    },
+  };
+}
+
+function firstTable(state: EditorState): EditorTableNode {
+  const table = getDocumentSectionsCanonical(state.document)[0]!.blocks[0]!;
+  expect(table.type).toBe("table");
+  return table as EditorTableNode;
+}
 
 describe("table commands", () => {
+  it("applies outside and inside border presets to their true 2x2 edges", () => {
+    const paragraphs = ["a", "b", "c", "d"].map(createEditorParagraph);
+    const table = createEditorTable(
+      [
+        createEditorTableRow([
+          createEditorTableCell([paragraphs[0]!]),
+          createEditorTableCell([paragraphs[1]!]),
+        ]),
+        createEditorTableRow([
+          createEditorTableCell([paragraphs[2]!]),
+          createEditorTableCell([paragraphs[3]!]),
+        ]),
+      ],
+      [120, 120],
+    );
+    const selected = selectTableCells(
+      createEditorStateFromDocument(createEditorDocument([table])),
+      paragraphs[0]!,
+      paragraphs[3]!,
+    );
+
+    const outside = firstTable(applyTableBorderPreset(selected, "outside"));
+    expect(outside.rows[0]!.cells[0]!.style?.borderTop).toBeDefined();
+    expect(outside.rows[0]!.cells[0]!.style?.borderLeft).toBeDefined();
+    expect(outside.rows[0]!.cells[0]!.style?.borderRight).toBeUndefined();
+    expect(outside.rows[0]!.cells[0]!.style?.borderBottom).toBeUndefined();
+    expect(outside.rows[1]!.cells[1]!.style?.borderRight).toBeDefined();
+    expect(outside.rows[1]!.cells[1]!.style?.borderBottom).toBeDefined();
+
+    const inside = firstTable(applyTableBorderPreset(selected, "inside"));
+    expect(inside.rows[0]!.cells[0]!.style?.borderTop).toBeUndefined();
+    expect(inside.rows[0]!.cells[0]!.style?.borderLeft).toBeUndefined();
+    expect(inside.rows[0]!.cells[0]!.style?.borderRight).toBeDefined();
+    expect(inside.rows[0]!.cells[0]!.style?.borderBottom).toBeDefined();
+    expect(inside.rows[0]!.cells[1]!.style?.borderLeft).toBeDefined();
+    expect(inside.rows[1]!.cells[0]!.style?.borderTop).toBeDefined();
+  });
+
+  it("uses explicit no-border values and suppresses neighboring shared edges", () => {
+    const paragraphs = ["a", "b", "c", "d"].map(createEditorParagraph);
+    const table = createEditorTable(
+      [
+        createEditorTableRow([
+          createEditorTableCell([paragraphs[0]!]),
+          createEditorTableCell([paragraphs[1]!]),
+        ]),
+        createEditorTableRow([
+          createEditorTableCell([paragraphs[2]!]),
+          createEditorTableCell([paragraphs[3]!]),
+        ]),
+      ],
+      [120, 120],
+    );
+    const selected = selectTableCells(
+      createEditorStateFromDocument(createEditorDocument([table])),
+      paragraphs[0]!,
+      paragraphs[0]!,
+    );
+
+    const next = firstTable(applyTableBorderPreset(selected, "none"));
+    const selectedStyle = next.rows[0]!.cells[0]!.style;
+    expect(selectedStyle?.borderTop).toEqual(NO_TABLE_BORDER);
+    expect(selectedStyle?.borderRight).toEqual(NO_TABLE_BORDER);
+    expect(selectedStyle?.borderBottom).toEqual(NO_TABLE_BORDER);
+    expect(selectedStyle?.borderLeft).toEqual(NO_TABLE_BORDER);
+    expect(selectedStyle?.borderTopLeftToBottomRight).toEqual(NO_TABLE_BORDER);
+    expect(next.rows[0]!.cells[1]!.style?.borderLeft).toEqual(NO_TABLE_BORDER);
+    expect(next.rows[1]!.cells[0]!.style?.borderTop).toEqual(NO_TABLE_BORDER);
+  });
+
+  it("does not create internal borders for one selected cell", () => {
+    const paragraph = createEditorParagraph("cell");
+    const table = createEditorTable(
+      [createEditorTableRow([createEditorTableCell([paragraph])])],
+      [120],
+    );
+    const selected = selectTableCells(
+      createEditorStateFromDocument(createEditorDocument([table])),
+      paragraph,
+      paragraph,
+    );
+
+    expect(applyTableBorderPreset(selected, "inside")).toBe(selected);
+    expect(applyTableBorderPreset(selected, "insideHorizontal")).toBe(selected);
+    expect(applyTableBorderPreset(selected, "insideVertical")).toBe(selected);
+  });
+
   it("persists left indent when resizing the table left edge", () => {
     const table = createEditorTable(
       [
@@ -43,6 +165,36 @@ describe("table commands", () => {
     expect(nextTable.style?.width).toBe(210);
     expect(nextTable.style?.indentLeft).toBe(30);
     expect(nextTable.rows[0]!.cells[0]!.style?.width).toBe(90);
+  });
+
+  it("sets multiple tracked row heights with independent original snapshots", () => {
+    const first = createEditorTableRow([
+      createEditorTableCell([createEditorParagraph("first")]),
+    ]);
+    first.style = { height: 20 };
+    const second = createEditorTableRow([
+      createEditorTableCell([createEditorParagraph("second")]),
+    ]);
+    second.style = { height: 30 };
+    const table = createEditorTable([first, second], [120]);
+    const base = createEditorStateFromDocument(createEditorDocument([table]));
+
+    const next = setTableRowHeights(
+      { ...base, trackChangesEnabled: true },
+      table.id,
+      { 0: 40, 1: 50 },
+    );
+    const nextTable = getDocumentSectionsCanonical(next.document)[0]!
+      .blocks[0]!;
+    expect(nextTable.type).toBe("table");
+    if (nextTable.type !== "table") return;
+    expect(nextTable.rows.map((row) => row.style?.height)).toEqual([40, 50]);
+    expect(
+      nextTable.rows.map((row) => row.style?.propertyRevision?.previous.height),
+    ).toEqual([20, 30]);
+    expect(nextTable.rows[0]!.style?.propertyRevision?.id).not.toBe(
+      nextTable.rows[1]!.style?.propertyRevision?.id,
+    );
   });
 
   it("authors and accepts a typed table property revision", () => {

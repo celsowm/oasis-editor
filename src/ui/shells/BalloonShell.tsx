@@ -24,8 +24,6 @@ export function BalloonShell(props: ShellProps): JSX.Element {
                 ...props.overlays,
                 toolbarHost: props.toolbarHost,
                 persistenceStatus: () => props.persistenceStatus(),
-                showFloatingTableToolbar: () =>
-                  props.showFloatingTableToolbar(),
               }}
               refs={props.refs}
               surfaceHandlers={props.surfaceHandlers}

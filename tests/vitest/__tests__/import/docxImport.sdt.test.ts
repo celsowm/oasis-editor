@@ -60,8 +60,9 @@ describe("DOCX block-level SDT (content control) round-trip", () => {
     expect(paragraph.sdtWrappers).toHaveLength(1);
     const wrapper = paragraph.sdtWrappers![0]!;
     expect(wrapper.groupId).toMatch(/^sdt:/);
-    expect(wrapper.sdtPrXml).toContain("w:tag");
-    expect(wrapper.sdtPrXml).toContain("doc-title");
+    expect(wrapper.sdtPr.tag).toBe("doc-title");
+    expect(wrapper.sdtPr.alias).toBe("Title");
+    expect(wrapper.sdtPr.id).toBe("12345");
   });
 
   it("re-wraps the content in a single w:sdt on export", async () => {
@@ -135,5 +136,232 @@ describe("DOCX block-level SDT (content control) round-trip", () => {
     expect(paragraph.sdtWrappers).toBeUndefined();
     const xml = await reexport(document);
     expect(xml).not.toContain("<w:sdt>");
+  });
+
+  it("emits an empty <w:sdtPr/> when the source control had no properties", async () => {
+    const document = await importBody(`
+      <w:sdt>
+        <w:sdtPr/>
+        <w:sdtContent><w:p><w:r><w:t>Bare</w:t></w:r></w:p></w:sdtContent>
+      </w:sdt>`);
+    const wrapper = bodyBlocks(document)[0]!.sdtWrappers![0]!;
+    expect(wrapper.sdtPr).toEqual({});
+    const xml = await reexport(document);
+    expect(xml).toContain("<w:sdtPr/>");
+  });
+
+  it("parses and round-trips placeholder + lock + appearance + temporary + color", async () => {
+    const document = await importBody(`
+      <w:sdt>
+        <w:sdtPr>
+          <w:lock w:val="sdtContentLocked"/>
+          <w:placeholder><w:docPart w:val="DisclaimerBlock"/></w:placeholder>
+          <w:temporary w:val="true"/>
+          <w:appearance w:val="tags"/>
+          <w:showingPlcHdr w:val="1"/>
+          <w:color w:val="FF0000"/>
+        </w:sdtPr>
+        <w:sdtContent><w:p><w:r><w:t>Body</w:t></w:r></w:p></w:sdtContent>
+      </w:sdt>`);
+    const sdtPr = bodyBlocks(document)[0]!.sdtWrappers![0]!.sdtPr;
+    expect(sdtPr.lock).toBe("sdtContentLocked");
+    expect(sdtPr.placeholderDocPart).toBe("DisclaimerBlock");
+    expect(sdtPr.temporary).toBe(true);
+    expect(sdtPr.appearance).toBe("tags");
+    expect(sdtPr.showingPlcHdr).toBe(true);
+    expect(sdtPr.color).toBe("FF0000");
+
+    const xml = await reexport(document);
+    // Property order: lock, placeholder, temporary (subtype none), appearance, showingPlcHdr, color.
+    expect(xml).toContain('<w:lock w:val="sdtContentLocked"/>');
+    expect(xml).toContain(
+      '<w:placeholder><w:docPart w:val="DisclaimerBlock"/></w:placeholder>',
+    );
+    expect(xml).toContain('<w:temporary w:val="true"/>');
+    expect(xml).toContain('<w:appearance w:val="tags"/>');
+    expect(xml).toContain('<w:showingPlcHdr w:val="true"/>');
+    expect(xml).toContain('<w:color w:val="FF0000"/>');
+    // Schema-sequence order: lock comes before placeholder comes before temporary.
+    expect(xml.indexOf('w:lock ')).toBeLessThan(xml.indexOf("w:placeholder"));
+    expect(xml.indexOf("w:placeholder")).toBeLessThan(xml.indexOf("w:temporary"));
+    expect(xml.indexOf("w:temporary")).toBeLessThan(xml.indexOf("w:appearance"));
+  });
+
+  it("parses and round-trips a w:dataBinding with prefix mappings", async () => {
+    const document = await importBody(`
+      <w:sdt>
+        <w:sdtPr>
+          <w:tag w:val="customer-name"/>
+          <w:dataBinding>
+            <w:prefixMappings w:val="xmlns:ns=urn:customers"/>
+            <w:xpath w:val="/ns:customers/ns:customer[1]/ns:name"/>
+            <w:storeItemID w:val="{abc-123}"/>
+          </w:dataBinding>
+        </w:sdtPr>
+        <w:sdtContent><w:p><w:r><w:t>Acme</w:t></w:r></w:p></w:sdtContent>
+      </w:sdt>`);
+    const sdtPr = bodyBlocks(document)[0]!.sdtWrappers![0]!.sdtPr;
+    expect(sdtPr.tag).toBe("customer-name");
+    expect(sdtPr.dataBinding).toEqual({
+      prefixMappings: "xmlns:ns=urn:customers",
+      xpath: "/ns:customers/ns:customer[1]/ns:name",
+      storeItemID: "{abc-123}",
+    });
+
+    const xml = await reexport(document);
+    expect(xml).toContain("<w:dataBinding>");
+    expect(xml).toContain(
+      '<w:prefixMappings w:val="xmlns:ns=urn:customers"/>',
+    );
+    expect(xml).toContain(
+      '<w:xpath w:val="/ns:customers/ns:customer[1]/ns:name"/>',
+    );
+    expect(xml).toContain('<w:storeItemID w:val="{abc-123}"/>');
+  });
+
+  it("parses and round-trips a dropDownList with list items", async () => {
+    const document = await importBody(`
+      <w:sdt>
+        <w:sdtPr>
+          <w:alias w:val="Country"/>
+          <w:dropDownList>
+            <w:listItem w:displayText="United States" w:value="US"/>
+            <w:listItem w:displayText="Brazil" w:value="BR"/>
+            <w:lastSelectedValue w:val="BR"/>
+          </w:dropDownList>
+        </w:sdtPr>
+        <w:sdtContent><w:p><w:r><w:t>Brazil</w:t></w:r></w:p></w:sdtContent>
+      </w:sdt>`);
+    const sdtPr = bodyBlocks(document)[0]!.sdtWrappers![0]!.sdtPr;
+    expect(sdtPr.alias).toBe("Country");
+    expect(sdtPr.subtype).toEqual({
+      kind: "dropDownList",
+      listItems: [
+        { displayText: "United States", value: "US" },
+        { displayText: "Brazil", value: "BR" },
+      ],
+      lastSelectedValue: "BR",
+    });
+
+    const xml = await reexport(document);
+    expect(xml).toContain("<w:dropDownList>");
+    expect(xml).toContain('<w:listItem w:displayText="United States" w:value="US"/>');
+    expect(xml).toContain('<w:listItem w:displayText="Brazil" w:value="BR"/>');
+    expect(xml).toContain('<w:lastSelectedValue w:val="BR"/>');
+    expect(xml).toContain('<w:alias w:val="Country"/>');
+    // Schema order: alias must come before the subtype element.
+    expect(xml.indexOf("w:alias")).toBeLessThan(xml.indexOf("w:dropDownList"));
+  });
+
+  it("parses and round-trips a date picker with format and calendar", async () => {
+    const document = await importBody(`
+      <w:sdt>
+        <w:sdtPr>
+          <w:date w:fullDate="2024-06-15T10:30:00Z">
+            <w:dateFormat w:val="MM/dd/yyyy"/>
+            <w:lid w:val="en-US"/>
+            <w:calendar w:val="gregorian"/>
+          </w:date>
+        </w:sdtPr>
+        <w:sdtContent><w:p><w:r><w:t>06/15/2024</w:t></w:r></w:p></w:sdtContent>
+      </w:sdt>`);
+    const sdtPr = bodyBlocks(document)[0]!.sdtWrappers![0]!.sdtPr;
+    expect(sdtPr.subtype).toEqual({
+      kind: "date",
+      fullDate: "2024-06-15T10:30:00Z",
+      dateFormat: "MM/dd/yyyy",
+      lid: "en-US",
+      calendar: "gregorian",
+    });
+
+    const xml = await reexport(document);
+    expect(xml).toContain('<w:date w:fullDate="2024-06-15T10:30:00Z">');
+    expect(xml).toContain('<w:dateFormat w:val="MM/dd/yyyy"/>');
+    expect(xml).toContain('<w:lid w:val="en-US"/>');
+    expect(xml).toContain('<w:calendar w:val="gregorian"/>');
+  });
+
+  it("parses and round-trips a w14 checkbox with state and glyphs", async () => {
+    const document = await importBody(`
+      <w:sdt>
+        <w:sdtPr>
+          <w14:checkbox xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml">
+            <w14:checked w14:val="1"/>
+            <w14:checkedState w14:font="MS Gothic" w14:char="2611"/>
+            <w14:uncheckedState w14:font="MS Gothic" w14:char="2610"/>
+          </w14:checkbox>
+        </w:sdtPr>
+        <w:sdtContent><w:p><w:r><w:t>X</w:t></w:r></w:p></w:sdtContent>
+      </w:sdt>`);
+    const sdtPr = bodyBlocks(document)[0]!.sdtWrappers![0]!.sdtPr;
+    expect(sdtPr.subtype).toEqual({
+      kind: "checkbox",
+      checked: true,
+      checkedStateFont: "MS Gothic",
+      checkedStateChar: "2611",
+      uncheckedStateFont: "MS Gothic",
+      uncheckedStateChar: "2610",
+    });
+
+    const xml = await reexport(document);
+    expect(xml).toContain("<w14:checkbox>");
+    expect(xml).toContain('<w14:checked w14:val="1"/>');
+    expect(xml).toContain('<w14:checkedState w14:font="MS Gothic" w14:char="2611"/>');
+    expect(xml).toContain('<w14:uncheckedState w14:font="MS Gothic" w14:char="2610"/>');
+  });
+
+  it("escapes special XML characters in alias values", async () => {
+    // The exporter must escape special XML characters in user-facing alias values.
+    // We construct the source XML by concatenation so the input does not depend
+    // on entity decoding in this file: a literal double-quote character is OK
+    // inside a single-quoted JS string in the source markup.
+    const sourceSdt =
+      '<w:sdt><w:sdtPr><w:alias w:val=' +
+      String.fromCharCode(34) +
+      "Quote " +
+      String.fromCharCode(34) +
+      "Test" +
+      String.fromCharCode(34) +
+      "/></w:sdtPr>" +
+      "<w:sdtContent><w:p><w:r><w:t>Body</w:t></w:r></w:p></w:sdtContent></w:sdt>";
+    const document = await importBody(sourceSdt);
+    const sdtPr = bodyBlocks(document)[0]!.sdtWrappers![0]!.sdtPr;
+    expect(sdtPr.alias).toBe('Quote "Test"');
+
+    const xml = await reexport(document);
+    // The exported XML must escape the embedded double quotes.
+    expect(xml).toContain("Quote");
+    expect(xml).toContain("Test");
+    expect(xml).not.toMatch(/<w:alias w:val="Quote "Test""\/>/);
+  });
+
+  it("preserves unrecognized w:sdtPr children verbatim via unknownXml", async () => {
+    const document = await importBody(`
+      <w:sdt>
+        <w:sdtPr>
+          <w:tag w:val="future-proof"/>
+          <w15:storeItem xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" w15:id="{store-99}"/>
+          <w:rPr><w:b/></w:rPr>
+        </w:sdtPr>
+        <w:sdtContent><w:p><w:r><w:t>Body</w:t></w:r></w:p></w:sdtContent>
+      </w:sdt>`);
+    const sdtPr = bodyBlocks(document)[0]!.sdtWrappers![0]!.sdtPr;
+    expect(sdtPr.tag).toBe("future-proof");
+    expect(sdtPr.unknownXml).toContain("w15:storeItem");
+    expect(sdtPr.unknownXml).toContain("{store-99}");
+    // rPr is preserved as unknownXml; xmldom may re-add a namespace fixate when
+    // serializing a detached subtree, so we only assert on the opening tag prefix.
+    expect(sdtPr.unknownXml).toMatch(/<w:rPr/);
+
+    const xml = await reexport(document);
+    // Tag comes first in schema order, then extension children go after subtype.
+    expect(xml).toContain('<w:tag w:val="future-proof"/>');
+    expect(xml).toContain("w15:storeItem");
+    expect(xml).toContain("{store-99}");
+    expect(xml).toMatch(/<w:rPr/);
+    // The round-trip preserves the w15 namespace declaration from the imported
+    // fragment; the document header does not declare w15 since most documents
+    // don't need it.
+    expect(xml).toContain("xmlns:w15=");
   });
 });

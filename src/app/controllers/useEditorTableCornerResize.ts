@@ -4,7 +4,7 @@ import type { EditorLayoutDocument, EditorState } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import {
   setTableColumnWidths,
-  setTableRowHeight,
+  setTableRowHeights,
 } from "@/core/commands/table.js";
 import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 import {
@@ -20,8 +20,13 @@ import {
   ptToPx,
   pxToPt,
 } from "./tableResize/tableResizeUnits.js";
+import {
+  cancelScheduledAnimationFrame,
+  scheduleAnimationFrame,
+} from "./animationFrame.js";
 
 const DRAG_THRESHOLD_PX = 2;
+let tableCornerResizeCursorOwner: object | null = null;
 
 /** Live state of a bottom-right corner drag on a single table. */
 export interface TableCornerResizeState {
@@ -49,6 +54,7 @@ export interface TableCornerResizeOps {
     height: number;
   } | null>;
   handleMouseDown: (tableId: string, event: MouseEvent) => void;
+  stop: () => void;
 }
 
 /**
@@ -105,17 +111,20 @@ export function applyTableCornerResize(
     (sum, value): number => sum + value,
     0,
   );
-  let next = setTableColumnWidths(
+  const next = setTableColumnWidths(
     state,
     resize.tableId,
     nextWidths,
     nextTotalPt,
   );
+  const nextRowHeights: Record<number, number> = {};
   resize.rowHeightsPx.forEach((heightPx, index): void => {
-    const nextHeightPt = Math.max(MIN_TABLE_SIZE_PT, pxToPt(heightPx * scaleY));
-    next = setTableRowHeight(next, resize.tableId, index, nextHeightPt);
+    nextRowHeights[index] = Math.max(
+      MIN_TABLE_SIZE_PT,
+      pxToPt(heightPx * scaleY),
+    );
   });
-  return next;
+  return setTableRowHeights(next, resize.tableId, nextRowHeights);
 }
 
 export function createEditorTableCornerResize(deps: {
@@ -131,6 +140,9 @@ export function createEditorTableCornerResize(deps: {
   const [resizing, setResizing] = createSignal<TableCornerResizeState | null>(
     null,
   );
+  let resizeFrameHandle: number | null = null;
+  let resizePendingPoint: { clientX: number; clientY: number } | null = null;
+  const cursorOwner = {};
 
   const previewRect = (): {
     left: number;
@@ -150,22 +162,44 @@ export function createEditorTableCornerResize(deps: {
   };
 
   const handleWindowMouseMove = (event: MouseEvent): void => {
+    if (!resizing()) return;
+    resizePendingPoint = { clientX: event.clientX, clientY: event.clientY };
+    if (resizeFrameHandle === null) {
+      resizeFrameHandle = scheduleAnimationFrame(processResizeFrame);
+    }
+  };
+
+  const processResizeFrame = (): void => {
+    resizeFrameHandle = null;
+    const point = resizePendingPoint;
+    resizePendingPoint = null;
+    if (!point) return;
     setResizing((current): TableCornerResizeState | null =>
       current
         ? {
             ...current,
-            currentClientX: event.clientX,
-            currentClientY: event.clientY,
+            currentClientX: point.clientX,
+            currentClientY: point.clientY,
           }
         : null,
     );
   };
 
   const stop = (): void => {
+    resizePendingPoint = null;
+    if (resizeFrameHandle !== null) {
+      cancelScheduledAnimationFrame(resizeFrameHandle);
+      resizeFrameHandle = null;
+    }
     setResizing(null);
     window.removeEventListener("mousemove", handleWindowMouseMove);
     window.removeEventListener("mouseup", handleWindowMouseUp);
-    document.body.style.cursor = "";
+    if (tableCornerResizeCursorOwner === cursorOwner) {
+      tableCornerResizeCursorOwner = null;
+      if (document.body.style.cursor === "nwse-resize") {
+        document.body.style.cursor = "";
+      }
+    }
   };
 
   const handleWindowMouseUp = (event: MouseEvent): void => {
@@ -235,6 +269,7 @@ export function createEditorTableCornerResize(deps: {
       rowHeightsPx,
     });
 
+    tableCornerResizeCursorOwner = cursorOwner;
     document.body.style.cursor = "nwse-resize";
     window.addEventListener("mousemove", handleWindowMouseMove);
     window.addEventListener("mouseup", handleWindowMouseUp);
@@ -242,5 +277,5 @@ export function createEditorTableCornerResize(deps: {
     event.stopPropagation();
   };
 
-  return { resizing, previewRect, handleMouseDown };
+  return { resizing, previewRect, handleMouseDown, stop };
 }

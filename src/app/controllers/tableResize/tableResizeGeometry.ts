@@ -6,7 +6,10 @@ import {
   EditorBlockNode,
 } from "@/core/model.js";
 import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
+import type { CanvasLayoutSnapshot } from "@/ui/canvas/canvasSnapshotTypes.js";
 import type { SnapshotCellRect, TableGeometry } from "./tableResizeTypes.js";
+
+const geometryCache = new WeakMap<CanvasLayoutSnapshot, TableGeometry[]>();
 
 function getAllBlocks(state: EditorState): EditorBlockNode[] {
   return getDocumentSectionsCanonical(state.document).flatMap(
@@ -44,6 +47,11 @@ export function buildTableGeometries(
   });
   if (!snapshot) {
     return [];
+  }
+
+  const cached = geometryCache.get(snapshot);
+  if (cached) {
+    return cached;
   }
 
   const byTable = new Map<string, Map<string, SnapshotCellRect>>();
@@ -147,5 +155,6 @@ export function buildTableGeometries(
     });
   }
 
+  geometryCache.set(snapshot, result);
   return result;
 }

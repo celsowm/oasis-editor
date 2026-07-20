@@ -11,12 +11,12 @@ export interface SurfaceRectApi {
 
 /**
  * Tracks the bounding rect of a scroll/resize-affected surface element so that
- * surface-relative overlays (floating table toolbar, layout-options anchor) can
+ * surface-relative overlays (such as the layout-options anchor) can
  * position themselves in viewport space.
  *
  * Consolidates the identical `surfaceRect` + rAF `scheduleRefresh` +
  * scroll(capture)/resize listener block that used to be copy-pasted across
- * `FloatingTableToolbar` and `FloatingLayoutOptions`.
+ * `FloatingLayoutOptions`.
  */
 export function useSurfaceRect(
   surfaceRef: () => HTMLElement | undefined,

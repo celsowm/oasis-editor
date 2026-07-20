@@ -33,7 +33,6 @@ export interface EditorWorkspaceRuntime {
   persistenceStatus: () => string;
   toolbarRegistry: ToolbarRegistry;
   menuRegistry: MenuRegistry;
-  showFloatingTableToolbar: Accessor<boolean>;
 }
 
 /** Chrome visibility / toolbar-mode flags. */
@@ -101,7 +100,6 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
         measuredParagraphLayouts={view.measuredParagraphLayouts}
         documentLayout={view.documentLayout}
         viewportHeight={view.viewportHeight}
-        showFloatingTableToolbar={runtime.showFloatingTableToolbar}
         layout={view.layout}
         overlays={view.overlays}
         refs={view.refs}
@@ -133,8 +131,6 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
                   ...props.view.overlays,
                   toolbarHost: props.runtime.toolbarHost,
                   persistenceStatus: props.runtime.persistenceStatus,
-                  showFloatingTableToolbar:
-                    props.runtime.showFloatingTableToolbar,
                 }}
                 refs={props.view.refs}
                 surfaceHandlers={props.view.surfaceHandlers}
