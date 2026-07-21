@@ -241,14 +241,18 @@
 .oasis-editor-toolbar-view-ribbon
   .oasis-editor-toolbar-item-ribbon-large
   .oasis-editor-tool-button
-  span,
-.oasis-editor-toolbar-view-ribbon .oasis-editor-tool-button-ribbon-large span {
-  display: block;
+  > span,
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-tool-button-ribbon-large
+  > span {
+  display: -webkit-box;
   max-width: 100%;
   overflow: hidden;
   text-align: center;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   line-height: 11px;
 }
 
@@ -270,7 +274,9 @@
   height: 63px;
 }
 
-.oasis-editor-toolbar-view-ribbon .oasis-editor-color-split-ribbon-large .oasis-editor-color-split-main {
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-color-split-ribbon-large
+  .oasis-editor-color-split-main {
   flex: 1;
   flex-direction: column;
   justify-content: center;
@@ -279,18 +285,25 @@
   padding: 5px 4px 3px;
 }
 
-.oasis-editor-toolbar-view-ribbon .oasis-editor-color-split-ribbon-large .oasis-editor-color-split-menu-button {
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-color-split-ribbon-large
+  .oasis-editor-color-split-menu-button {
   align-self: stretch;
   height: auto;
 }
 
-.oasis-editor-toolbar-view-ribbon .oasis-editor-color-split-ribbon-large span:not(.oasis-editor-color-split-icon):not(.oasis-editor-color-split-indicator) {
-  display: block;
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-color-split-ribbon-large
+  .oasis-editor-color-split-main
+  > span:not(.oasis-editor-color-split-icon) {
+  display: -webkit-box;
   max-width: 100%;
   overflow: hidden;
   text-align: center;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   line-height: 11px;
   font-size: 10px;
   font-weight: 400;
@@ -507,6 +520,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.oasis-editor-tool-button > svg {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.oasis-editor-toolbar-view-ribbon .oasis-editor-tool-button-ribbon-large > svg {
+  flex-basis: 24px;
+  width: 24px;
+  height: 24px;
 }
 
 /*

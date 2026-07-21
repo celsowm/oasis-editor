@@ -223,16 +223,48 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
     footnotes: { priority: 10, collapsedIcon: "footnote" },
   },
   tableDesign: {
-    tableStyleOptions: { priority: 20, collapsedIcon: "list-checks" },
-    tableStyles: { priority: 10, collapsedIcon: "table" },
-    borders: { priority: 30, collapsedIcon: "frame" },
+    tableStyleOptions: {
+      priority: 20,
+      states: ["full", "collapsed"],
+      collapsedIcon: "list-checks",
+    },
+    tableStyles: {
+      priority: 10,
+      states: ["full", "collapsed"],
+      collapsedIcon: "table",
+    },
+    borders: {
+      priority: 30,
+      states: ["full", "collapsed"],
+      collapsedIcon: "frame",
+    },
   },
   tableLayout: {
-    table: { priority: 15, collapsedIcon: "table-properties" },
-    rowsColumns: { priority: 20, collapsedIcon: "rows" },
-    merge: { priority: 30, collapsedIcon: "combine" },
-    cellSize: { priority: 40, collapsedIcon: "move-horizontal" },
-    alignment: { priority: 50, collapsedIcon: "align-left" },
+    table: {
+      priority: 15,
+      states: ["full", "collapsed"],
+      collapsedIcon: "table-properties",
+    },
+    rowsColumns: {
+      priority: 20,
+      states: ["full", "collapsed"],
+      collapsedIcon: "rows",
+    },
+    merge: {
+      priority: 30,
+      states: ["full", "collapsed"],
+      collapsedIcon: "combine",
+    },
+    cellSize: {
+      priority: 40,
+      states: ["full", "collapsed"],
+      collapsedIcon: "move-horizontal",
+    },
+    alignment: {
+      priority: 50,
+      states: ["full", "collapsed"],
+      collapsedIcon: "align-left",
+    },
   },
   imageFormat: {
     imageStyles: { priority: 30, collapsedIcon: "square" },

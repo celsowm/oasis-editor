@@ -171,13 +171,13 @@ describe("UI registries", () => {
       "editor-toolbar-tbl-insert-row-below",
       "editor-toolbar-tbl-insert-col-left",
       "editor-toolbar-tbl-insert-col-right",
-      "editor-toolbar-tbl-merge",
     ]) {
       expect(byId(id)).toMatchObject({ ribbonSize: "large" });
     }
     for (const id of [
       "editor-toolbar-tbl-delete-row",
       "editor-toolbar-tbl-delete-col",
+      "editor-toolbar-tbl-merge",
       "editor-toolbar-tbl-split",
       "editor-toolbar-tbl-autofit",
     ]) {
@@ -186,6 +186,25 @@ describe("UI registries", () => {
     expect(byId("editor-toolbar-tbl-style-options")).toMatchObject({
       ribbonSize: "large",
     });
+    expect(byId("editor-toolbar-tbl-shading")).toMatchObject({
+      ribbonSize: "large",
+    });
+    expect(byId("editor-toolbar-tbl-insert-row-above")).toMatchObject({
+      labelKey: "table.insertAbove",
+      tooltipKey: "table.insertRowAbove",
+    });
+  });
+
+  it("skips ineffective compact sizing for contextual table groups", () => {
+    const items = createDefaultToolbarPreset(t);
+
+    for (const tab of ["tableDesign", "tableLayout"] as const) {
+      const groups = buildRibbonGroups(items, tab, t);
+      expect(groups.length).toBeGreaterThan(0);
+      for (const group of groups) {
+        expect(group.resizePolicy.states).toEqual(["full", "collapsed"]);
+      }
+    }
   });
 
   it("separates large ribbon items from normal two-row items", () => {

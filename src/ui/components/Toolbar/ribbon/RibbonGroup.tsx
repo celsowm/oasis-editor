@@ -50,7 +50,6 @@ export function RibbonGroup(props: RibbonGroupProps): JSX.Element {
             <div class="oasis-editor-ribbon-group-rows">
               <Menu
                 icon={props.group.resizePolicy.collapsedIcon}
-                label={props.group.label}
                 tooltip={props.group.label}
                 testId={`editor-ribbon-group-${props.group.id}`}
                 ribbonSize="large"

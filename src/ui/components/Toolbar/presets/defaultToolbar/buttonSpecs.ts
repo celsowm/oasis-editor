@@ -61,6 +61,7 @@ export const TABLE_LAYOUT_BUTTONS: Array<{
   id: string;
   command: string;
   icon: string;
+  labelKey: TranslationKey;
   tooltipKey: TranslationKey;
   ribbonSize?: "large";
 }> = [
@@ -68,6 +69,7 @@ export const TABLE_LAYOUT_BUTTONS: Array<{
     id: "editor-toolbar-tbl-insert-row-above",
     command: "tableInsertRowBefore",
     icon: "tableInsertRowAbove",
+    labelKey: "table.insertAbove",
     tooltipKey: "table.insertRowAbove",
     ribbonSize: "large",
   },
@@ -75,6 +77,7 @@ export const TABLE_LAYOUT_BUTTONS: Array<{
     id: "editor-toolbar-tbl-insert-row-below",
     command: "tableInsertRowAfter",
     icon: "tableInsertRowBelow",
+    labelKey: "table.insertBelow",
     tooltipKey: "table.insertRowBelow",
     ribbonSize: "large",
   },
@@ -82,12 +85,14 @@ export const TABLE_LAYOUT_BUTTONS: Array<{
     id: "editor-toolbar-tbl-delete-row",
     command: "tableDeleteRow",
     icon: "tableDeleteRow",
+    labelKey: "table.deleteRow",
     tooltipKey: "table.deleteRow",
   },
   {
     id: "editor-toolbar-tbl-insert-col-left",
     command: "tableInsertColumnBefore",
     icon: "tableInsertColumnLeft",
+    labelKey: "table.insertLeft",
     tooltipKey: "table.insertColumnLeft",
     ribbonSize: "large",
   },
@@ -95,6 +100,7 @@ export const TABLE_LAYOUT_BUTTONS: Array<{
     id: "editor-toolbar-tbl-insert-col-right",
     command: "tableInsertColumnAfter",
     icon: "tableInsertColumnRight",
+    labelKey: "table.insertRight",
     tooltipKey: "table.insertColumnRight",
     ribbonSize: "large",
   },
@@ -102,43 +108,49 @@ export const TABLE_LAYOUT_BUTTONS: Array<{
     id: "editor-toolbar-tbl-delete-col",
     command: "tableDeleteColumn",
     icon: "tableDeleteColumn",
+    labelKey: "table.deleteColumn",
     tooltipKey: "table.deleteColumn",
   },
   {
     id: "editor-toolbar-tbl-merge",
     command: "tableMerge",
     icon: "tableMerge",
+    labelKey: "table.merge",
     tooltipKey: "table.mergeTooltip",
-    ribbonSize: "large",
   },
   {
     id: "editor-toolbar-tbl-split",
     command: "tableSplit",
     icon: "tableSplit",
+    labelKey: "table.split",
     tooltipKey: "table.splitTooltip",
   },
   {
     id: "editor-toolbar-tbl-width-100",
     command: "tableWidth100",
     icon: "tableWidth",
+    labelKey: "table.width100",
     tooltipKey: "table.width100Tooltip",
   },
   {
     id: "editor-toolbar-tbl-align-left",
     command: "tableAlignLeft",
     icon: "tableAlignLeft",
+    labelKey: "table.alignLeft",
     tooltipKey: "table.alignLeft",
   },
   {
     id: "editor-toolbar-tbl-align-center",
     command: "tableAlignCenter",
     icon: "tableAlignCenter",
+    labelKey: "table.alignCenter",
     tooltipKey: "table.alignCenter",
   },
   {
     id: "editor-toolbar-tbl-align-right",
     command: "tableAlignRight",
     icon: "tableAlignRight",
+    labelKey: "table.alignRight",
     tooltipKey: "table.alignRight",
   },
 ];

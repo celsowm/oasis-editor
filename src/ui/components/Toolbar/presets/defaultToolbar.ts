@@ -525,7 +525,7 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
       iconName: spec.icon,
       command: spec.command,
       tooltipKey: spec.tooltipKey,
-      labelKey: spec.tooltipKey,
+      labelKey: spec.labelKey,
       ribbonSize: spec.ribbonSize,
     });
   }
@@ -551,6 +551,7 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     defaultValue: "#f1f5f9",
     tooltipKey: "table.cellColor",
     labelKey: "table.cellColor",
+    ribbonSize: "large",
   });
   items.push({
     type: "custom",
