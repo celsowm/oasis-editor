@@ -13,7 +13,19 @@ import {
   normalizePageSettings,
 } from "../model.js";
 import { createEditorNodeId } from "./nodeFactories.js";
-import { DEFAULT_EDITOR_STYLES } from "./defaultStyles.js";
+import {
+  DEFAULT_EDITOR_STYLES,
+  DEFAULT_TABLE_STYLES,
+} from "./defaultStyles.js";
+
+function withDefaultTableStyles(
+  styles: Record<string, EditorNamedStyle>,
+): Record<string, EditorNamedStyle> {
+  const defaults = Object.fromEntries(
+    Object.entries(DEFAULT_TABLE_STYLES).filter(([id]) => !(id in styles)),
+  );
+  return { ...styles, ...defaults };
+}
 
 export function createEditorDocument(
   blocks: EditorBlockNode[],
@@ -49,7 +61,9 @@ export function createEditorDocument(
         pageSettings: normalizedPageSettings,
       },
     ],
-    styles: styles ?? { ...DEFAULT_EDITOR_STYLES },
+    styles: styles
+      ? withDefaultTableStyles(styles)
+      : { ...DEFAULT_EDITOR_STYLES },
     metadata: metadata ?? { title: "Untitled document" },
     // The asset registry holds out-of-band image payloads (data URLs).
     // It must be carried through any document-rebuild path or `asset:<id>`

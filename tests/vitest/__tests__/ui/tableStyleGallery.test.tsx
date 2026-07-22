@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
+import { createEditorDocument } from "@/core/editorState/documentFactories.js";
+import { DEFAULT_TABLE_STYLES } from "@/core/editorState/defaultStyles.js";
+import { createEditorParagraph } from "@/core/editorState/nodeFactories.js";
+import { buildEssentialsDocument } from "@/ui/app/essentials/document.js";
 import { TableStyleGallery } from "@/ui/components/Toolbar/TableStyleGallery.js";
 import type {
   ToolbarActionApi,
@@ -28,6 +32,29 @@ afterEach(() => {
 });
 
 describe("TableStyleGallery", () => {
+  it("offers Word-like table presets for new documents", () => {
+    const document = createEditorDocument([createEditorParagraph("")]);
+    const capability = buildEssentialsDocument({
+      state: () => ({ document }),
+    } as never);
+    const tableStyles = capability
+      .documentStyles()
+      .filter((style) => style.type === "table");
+
+    expect(tableStyles).toHaveLength(Object.keys(DEFAULT_TABLE_STYLES).length);
+    expect(tableStyles[0]).toMatchObject({ id: "TableNormal" });
+    expect(
+      tableStyles.find((style) => style.id === "LightShading-Accent1"),
+    ).toMatchObject({
+      tablePreview: {
+        headerFill: "#4472c4",
+        bandFill: "#d9e2f3",
+        borderColor: "#4472c4",
+        headerColor: "#ffffff",
+      },
+    });
+  });
+
   it("filters table styles, highlights the active preview, expands and applies", () => {
     const execute = vi.fn();
     const api = {

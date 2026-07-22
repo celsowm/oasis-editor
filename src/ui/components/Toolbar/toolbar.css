@@ -1958,8 +1958,7 @@
 }
 
 .oasis-editor-table-style-card {
-  display: grid;
-  grid-template-rows: 39px 16px;
+  display: block;
   flex: 0 0 72px;
   width: 72px;
   min-width: 0;
@@ -1978,6 +1977,8 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   border: 1px solid var(--table-border);
   background: var(--table-fill);
@@ -1997,16 +1998,6 @@
 .oasis-editor-table-style-preview i:nth-child(n + 7) { background: var(--table-band-fill); }
 .oasis-editor-table-style-preview i:nth-child(3n) { border-right: 0; }
 .oasis-editor-table-style-preview i:nth-child(n + 7) { border-bottom: 0; }
-
-.oasis-editor-table-style-card-label {
-  overflow: hidden;
-  padding-top: 2px;
-  font-size: 9px;
-  line-height: 12px;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .oasis-editor-table-style-card:hover,
 .oasis-editor-table-style-card:focus-visible,

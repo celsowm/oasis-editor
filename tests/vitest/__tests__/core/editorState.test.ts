@@ -8,6 +8,7 @@ import {
   createInitialEditorState,
   DEFAULT_EDITOR_STYLES,
 } from "@/core/editorState.js";
+import { DEFAULT_TABLE_STYLES } from "@/core/editorState/defaultStyles.js";
 import { DEFAULT_EDITOR_PAGE_SETTINGS } from "@/core/model.js";
 import { getParagraphs } from "@/core/model.js";
 
@@ -45,6 +46,42 @@ describe("createEditorDocument", () => {
     const p = createEditorParagraph("");
     const doc = createEditorDocument([p]);
     expect(doc.styles).toEqual(DEFAULT_EDITOR_STYLES);
+  });
+
+  it("keeps built-in table styles available alongside imported styles", () => {
+    const paragraph = createEditorParagraph("Imported");
+    const importedStyles = {
+      ImportedNormal: {
+        id: "ImportedNormal",
+        name: "Imported Normal",
+        type: "paragraph" as const,
+      },
+      ImportedTable: {
+        id: "ImportedTable",
+        name: "Imported Table",
+        type: "table" as const,
+        isDefault: true,
+      },
+    };
+
+    const doc = createEditorDocument(
+      [paragraph],
+      undefined,
+      undefined,
+      importedStyles,
+    );
+
+    expect(doc.styles!.ImportedNormal).toEqual(importedStyles.ImportedNormal);
+    expect(doc.styles!.ImportedTable).toEqual(importedStyles.ImportedTable);
+    expect(doc.styles!.TableNormal).toEqual(DEFAULT_TABLE_STYLES.TableNormal);
+    expect(
+      Object.values(doc.styles!).filter((style) => style.type === "table"),
+    ).toHaveLength(15);
+    expect(
+      Object.values(doc.styles!).find(
+        (style) => style.type === "table" && style.isDefault,
+      )?.id,
+    ).toBe("ImportedTable");
   });
 
   it("applies default page settings", () => {

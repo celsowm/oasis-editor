@@ -10,6 +10,7 @@ import {
 import { setActiveTableStyleValue } from "@/core/commands/table.js";
 import { getDocumentSectionsCanonical } from "@/core/model.js";
 import type { EditorState, EditorTableNode } from "@/core/model.js";
+import { buildEssentialsTable } from "@/ui/app/essentials/table.js";
 
 function makeTableState(): { table: EditorTableNode; state: EditorState } {
   const table = createEditorTable(
@@ -81,6 +82,28 @@ describe("table style options (tblLook / styleId / layout)", () => {
       "GridTable4",
     );
     expect(readTable(next.document).style?.styleId).toBe("GridTable4");
+  });
+
+  it("reports the effective look inherited from a named table style", () => {
+    const { table, state } = makeTableState();
+    const styled = setActiveTableStyleValue(
+      state,
+      table.id,
+      "styleId",
+      "LightShading-Accent1",
+    );
+    const capability = buildEssentialsTable({
+      state: () => styled,
+    } as never);
+
+    expect(capability.getTblLook()).toEqual({
+      firstRow: true,
+      lastRow: false,
+      firstCol: false,
+      lastCol: false,
+      bandedRows: true,
+      bandedCols: false,
+    });
   });
 
   it("switches the table sizing layout", () => {

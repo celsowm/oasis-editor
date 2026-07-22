@@ -12,6 +12,7 @@ import {
   findParagraphTableLocation,
   getActiveSectionIndex,
   getDocumentSections,
+  resolveEffectiveTableStyle,
   type EditorState,
   type EditorTableNode,
 } from "@/core/model.js";
@@ -74,7 +75,8 @@ export function buildEssentialsTable(
   ): typeof RAW_TBL_LOOK_DEFAULTS | null => {
     const table = selectedTableIn(state);
     if (!table) return null;
-    return { ...RAW_TBL_LOOK_DEFAULTS, ...(table.style?.tblLook ?? {}) };
+    const effective = resolveEffectiveTableStyle(table, state.document.styles);
+    return { ...RAW_TBL_LOOK_DEFAULTS, ...(effective.tblLook ?? {}) };
   };
   const selectionLabel = (): string | null => {
     const normalized = normalizeSelection(options.state());

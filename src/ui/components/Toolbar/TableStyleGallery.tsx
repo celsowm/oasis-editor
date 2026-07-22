@@ -111,10 +111,10 @@ export function TableStyleGallery(props: TableStyleGalleryProps): JSX.Element {
               style={{
                 "--table-fill": preview().wholeFill ?? "#ffffff",
                 "--table-header-fill":
-                  preview().headerFill ?? preview().wholeFill ?? "#d9eaf7",
+                  preview().headerFill ?? preview().wholeFill ?? "#ffffff",
                 "--table-band-fill":
-                  preview().bandFill ?? preview().wholeFill ?? "#f4f8fb",
-                "--table-border": preview().borderColor ?? "#91a5b5",
+                  preview().bandFill ?? preview().wholeFill ?? "#ffffff",
+                "--table-border": preview().borderColor ?? "#d1d5db",
                 "--table-header-color": preview().headerColor ?? "#17212b",
               }}
             >
@@ -127,9 +127,6 @@ export function TableStyleGallery(props: TableStyleGalleryProps): JSX.Element {
               <i />
               <i />
               <i />
-            </Text>
-            <Text class="oasis-editor-table-style-card-label">
-              {style.name}
             </Text>
           </SurfaceButton>
         );
