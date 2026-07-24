@@ -1,4 +1,4 @@
- yimport type { EditorDocument, EditorImageRunData } from "@/core/model.js";
+import type { EditorDocument, EditorImageRunData } from "@/core/model.js";
 import { lineDashPatternPt } from "@/core/lineDash.js";
 import { registerPdfImageRun } from "@/export/pdf/images.js";
 import type { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
