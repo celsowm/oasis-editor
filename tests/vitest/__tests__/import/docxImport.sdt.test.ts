@@ -316,13 +316,7 @@ describe("DOCX block-level SDT (content control) round-trip", () => {
     // on entity decoding in this file: a literal double-quote character is OK
     // inside a single-quoted JS string in the source markup.
     const sourceSdt =
-      '<w:sdt><w:sdtPr><w:alias w:val=' +
-      String.fromCharCode(34) +
-      "Quote " +
-      String.fromCharCode(34) +
-      "Test" +
-      String.fromCharCode(34) +
-      "/></w:sdtPr>" +
+      '<w:sdt><w:sdtPr><w:alias w:val="Quote &quot;Test&quot;"/></w:sdtPr>' +
       "<w:sdtContent><w:p><w:r><w:t>Body</w:t></w:r></w:p></w:sdtContent></w:sdt>";
     const document = await importBody(sourceSdt);
     const sdtPr = bodyBlocks(document)[0]!.sdtWrappers![0]!.sdtPr;
