@@ -312,27 +312,17 @@ describe("DOCX block-level SDT (content control) round-trip", () => {
 
   it("escapes special XML characters in alias values", async () => {
     // The exporter must escape special XML characters in user-facing alias values.
-    // We construct the source XML by concatenation so the input does not depend
-    // on entity decoding in this file: a literal double-quote character is OK
-    // inside a single-quoted JS string in the source markup.
+    // The source must itself be valid XML; the parser decodes &quot; into quotes
+    // before the exporter encodes those quotes again.
     const sourceSdt =
-      '<w:sdt><w:sdtPr><w:alias w:val=' +
-      String.fromCharCode(34) +
-      "Quote " +
-      String.fromCharCode(34) +
-      "Test" +
-      String.fromCharCode(34) +
-      "/></w:sdtPr>" +
+      '<w:sdt><w:sdtPr><w:alias w:val="Quote &quot;Test&quot;"/></w:sdtPr>' +
       "<w:sdtContent><w:p><w:r><w:t>Body</w:t></w:r></w:p></w:sdtContent></w:sdt>";
     const document = await importBody(sourceSdt);
     const sdtPr = bodyBlocks(document)[0]!.sdtWrappers![0]!.sdtPr;
     expect(sdtPr.alias).toBe('Quote "Test"');
 
     const xml = await reexport(document);
-    // The exported XML must escape the embedded double quotes.
-    expect(xml).toContain("Quote");
-    expect(xml).toContain("Test");
-    expect(xml).not.toMatch(/<w:alias w:val="Quote "Test""\/>/);
+    expect(xml).toContain('<w:alias w:val="Quote &quot;Test&quot;"/>');
   });
 
   it("preserves unrecognized w:sdtPr children verbatim via unknownXml", async () => {

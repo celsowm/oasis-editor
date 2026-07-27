@@ -6,7 +6,10 @@ import type {
 import type { ITextMeasurer } from "@/core/engine.js";
 import { domTextMeasurer } from "@/ui/textMeasurement.js";
 import { resolveTableColumnWidthsPx } from "@/ui/tableGeometry.js";
-import { buildTableCellLayout } from "@/core/tableLayout.js";
+import {
+  buildTableCellLayout,
+  type TableCellLayoutEntry,
+} from "@/core/tableLayout.js";
 import { resolveEffectiveTableCellFormatting } from "@/core/model.js";
 import { estimateParagraphBlockHeight } from "./paragraphPagination.js";
 import { resolveCachedTableCellParagraph } from "./tableCellParagraphCache.js";
@@ -137,8 +140,43 @@ function parseTableRowHeightToPx(
 }
 
 interface TableColumnGeometry {
-  columnWidths: number[];
   cellColumnWidth: Map<string, number>;
+}
+
+interface TableLayoutIndex {
+  entries: TableCellLayoutEntry[];
+  columnCount: number;
+  firstEntryByRow: Array<TableCellLayoutEntry | undefined>;
+  entryByRowAndCell: Array<Array<TableCellLayoutEntry | undefined>>;
+}
+
+const tableLayoutIndexCache = new WeakMap<EditorTableNode, TableLayoutIndex>();
+
+function getCachedTableLayoutIndex(table: EditorTableNode): TableLayoutIndex {
+  const cached = tableLayoutIndexCache.get(table);
+  if (cached) return cached;
+
+  const entries = buildTableCellLayout(table);
+  const firstEntryByRow: Array<TableCellLayoutEntry | undefined> = [];
+  const entryByRowAndCell: Array<Array<TableCellLayoutEntry | undefined>> = [];
+  let columnCount = 1;
+  for (const entry of entries) {
+    firstEntryByRow[entry.rowIndex] ??= entry;
+    (entryByRowAndCell[entry.rowIndex] ??= [])[entry.cellIndex] = entry;
+    columnCount = Math.max(
+      columnCount,
+      entry.visualColumnIndex + Math.max(1, entry.colSpan),
+    );
+  }
+
+  const index = {
+    entries,
+    columnCount,
+    firstEntryByRow,
+    entryByRowAndCell,
+  };
+  tableLayoutIndexCache.set(table, index);
+  return index;
 }
 
 const tableColumnGeometryCache = new WeakMap<
@@ -160,7 +198,7 @@ function getCachedTableColumnGeometry(
   if (geometry) return geometry;
 
   const columnWidths = resolveTableColumnWidthsPx(table, contentWidthPx);
-  const entries = buildTableCellLayout(table);
+  const entries = getCachedTableLayoutIndex(table).entries;
   const cellColumnWidth = new Map<string, number>();
   for (const entry of entries) {
     let total = 0;
@@ -175,7 +213,7 @@ function getCachedTableColumnGeometry(
     cellColumnWidth.set(`${entry.rowIndex}:${entry.cellIndex}`, total);
   }
 
-  geometry = { columnWidths, cellColumnWidth };
+  geometry = { cellColumnWidth };
   perTable.set(key, geometry);
   return geometry;
 }
@@ -189,19 +227,12 @@ export function estimateTableRowHeight(
   table?: EditorTableNode,
   rowIndex?: number,
 ): number {
-  const tableEntries = table ? buildTableCellLayout(table) : [];
-  const columnCount = Math.max(
-    1,
-    ...tableEntries.map(
-      (entry): number => entry.visualColumnIndex + Math.max(1, entry.colSpan),
-    ),
-  );
+  const tableLayoutIndex = table ? getCachedTableLayoutIndex(table) : null;
+  const columnCount = tableLayoutIndex?.columnCount ?? 1;
   const rowFormatting =
     table && rowIndex !== undefined
       ? ((): ResolvedTableCellFormatting | undefined => {
-          const entry = tableEntries.find(
-            (candidate): boolean => candidate.rowIndex === rowIndex,
-          );
+          const entry = tableLayoutIndex?.firstEntryByRow[rowIndex];
           return entry
             ? resolveEffectiveTableCellFormatting({
                 table,
@@ -225,11 +256,7 @@ export function estimateTableRowHeight(
   const cellHeights = row.cells.map((sourceCell, cellIndex): number => {
     const entry =
       rowIndex !== undefined
-        ? tableEntries.find(
-            (candidate): boolean =>
-              candidate.rowIndex === rowIndex &&
-              candidate.cellIndex === cellIndex,
-          )
+        ? tableLayoutIndex?.entryByRowAndCell[rowIndex]?.[cellIndex]
         : undefined;
     const formatting =
       table && rowIndex !== undefined && entry

@@ -14,7 +14,10 @@ import {
 } from "@/ui/cropGeometry.js";
 import type { ResizeHandleDirection } from "@/ui/resizeGeometry.js";
 import type { EditorImageCrop } from "@/core/model.js";
-import type { EditorHistoryState } from "@/ui/editorHistory.js";
+import {
+  appendEditorHistoryEntry,
+  type EditorHistoryState,
+} from "@/ui/editorHistory.js";
 import type { EditorLogger } from "@/utils/logger.js";
 
 export interface CropSessionDeps {
@@ -119,7 +122,10 @@ export function createCropSession(deps: CropSessionDeps): {
     if (crop) {
       deps.updateHistoryState((current) => ({
         ...current,
-        undoStack: [...current.undoStack, deps.cloneState(crop.initialState)],
+        undoStack: appendEditorHistoryEntry(
+          current.undoStack,
+          deps.cloneState(crop.initialState),
+        ),
         redoStack: [],
       }));
     }

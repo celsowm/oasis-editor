@@ -3,7 +3,10 @@ import {
   paragraphOffsetToPosition,
   type EditorState,
 } from "@/core/model.js";
-import type { EditorHistoryState } from "@/ui/editorHistory.js";
+import {
+  appendEditorHistoryEntry,
+  type EditorHistoryState,
+} from "@/ui/editorHistory.js";
 import type { EditorLogger } from "@/utils/logger.js";
 
 /** Snap increment (degrees) applied while the Shift key is held. */
@@ -131,7 +134,10 @@ export function createRotateSession(
     if (rotate) {
       deps.updateHistoryState((current) => ({
         ...current,
-        undoStack: [...current.undoStack, deps.cloneState(rotate.initialState)],
+        undoStack: appendEditorHistoryEntry(
+          current.undoStack,
+          deps.cloneState(rotate.initialState),
+        ),
         redoStack: [],
       }));
     }

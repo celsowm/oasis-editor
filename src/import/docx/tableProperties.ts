@@ -3,7 +3,6 @@ import { roundTo } from "@/utils/round.js";
 import type {
   EditorBorderStyle,
   EditorDocxWidthValue,
-  EditorParagraphNode,
   EditorTableCellStyle,
   EditorTableFloatingLayout,
   EditorTableLayout,
@@ -12,7 +11,6 @@ import type {
   EditorTableStyle,
   EditorRevisionMetadata,
   EditorTableConditionalFlags,
-  EditorParagraphStyle,
 } from "@/core/model.js";
 import { TABLE_CONDITIONAL_FLAG_ATTRIBUTES } from "@/core/docxTableMaps.js";
 import {
@@ -29,7 +27,6 @@ import {
 } from "./borders.js";
 import { twipsToPoints } from "./units.js";
 import { emptyOrUndefined, parseShdFill } from "./styleUtils.js";
-import { type ParagraphAutospacingFlags } from "./paragraphStyle.js";
 import { type ThemeColorMap } from "./themeColors.js";
 
 // DOCX table/row/cell property parsers (w:tblPr / w:trPr / w:tcPr): widths,
@@ -690,53 +687,6 @@ export function isTableHeaderRow(rowNode: XmlElement): boolean {
   return rowProperties
     ? parseOnOffProperty(rowProperties, "tblHeader") === true
     : false;
-}
-
-/**
- * Reproduces Word's HTML-style margin collapsing for paragraphs that use "auto
- * spacing" (`w:beforeAutospacing` / `w:afterAutospacing`) inside a table cell.
- * Word ignores the literal before/after values for these margins and collapses
- * them: the first paragraph's auto before-space and the last paragraph's auto
- * after-space collapse to 0 against the cell edge, and two adjacent auto margins
- * collapse to their max instead of summing. Without this, oasis renders cells
- * taller than Word because every paragraph's spacing is summed in full.
- *
- * The flags array is parallel to `paragraphs` (one entry per `<w:p>` in the cell).
- */
-export function collapseCellAutospacing(
-  paragraphs: EditorParagraphNode[],
-  flags: ParagraphAutospacingFlags[],
-): void {
-  const styleOf = (paragraph: EditorParagraphNode): EditorParagraphStyle =>
-    (paragraph.style ??= {});
-
-  const lastIndex = paragraphs.length - 1;
-  for (let index = 0; index < paragraphs.length; index += 1) {
-    const flag = flags[index];
-    if (!flag) {
-      continue;
-    }
-    if (index === 0 && flag.before) {
-      styleOf(paragraphs[index]!).spacingBefore = 0;
-    }
-    if (index === lastIndex && flag.after) {
-      styleOf(paragraphs[index]!).spacingAfter = 0;
-    }
-  }
-
-  for (let index = 0; index < lastIndex; index += 1) {
-    if (!flags[index]?.after || !flags[index + 1]?.before) {
-      continue;
-    }
-    const prev = styleOf(paragraphs[index]!);
-    const next = styleOf(paragraphs[index + 1]!);
-    // Collapse the adjacent auto margins into a single gap = max(after, before).
-    if ((prev.spacingAfter ?? 0) >= (next.spacingBefore ?? 0)) {
-      next.spacingBefore = 0;
-    } else {
-      prev.spacingAfter = 0;
-    }
-  }
 }
 
 type CellBorderKey =

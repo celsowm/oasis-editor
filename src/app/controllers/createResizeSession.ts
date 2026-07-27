@@ -7,7 +7,10 @@ import {
   resolveResizedDimensions,
   type ResizeHandleDirection,
 } from "@/ui/resizeGeometry.js";
-import type { EditorHistoryState } from "@/ui/editorHistory.js";
+import {
+  appendEditorHistoryEntry,
+  type EditorHistoryState,
+} from "@/ui/editorHistory.js";
 import type { EditorLogger } from "@/utils/logger.js";
 
 export interface ResizeSessionSelection {
@@ -154,7 +157,10 @@ export function createResizeSession(
     if (resize) {
       deps.updateHistoryState((current) => ({
         ...current,
-        undoStack: [...current.undoStack, deps.cloneState(resize.initialState)],
+        undoStack: appendEditorHistoryEntry(
+          current.undoStack,
+          deps.cloneState(resize.initialState),
+        ),
         redoStack: [],
       }));
     }

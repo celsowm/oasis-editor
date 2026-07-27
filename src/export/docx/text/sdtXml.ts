@@ -102,9 +102,7 @@ function serializeSdtDataBindingXml(dataBinding: EditorSdtDataBinding): string {
     inner += `<w:xpath w:val="${escapeXml(dataBinding.xpath)}"/>`;
   }
   if (dataBinding.storeItemID !== undefined) {
-    inner += `<w:storeItemID w:val="${escapeXml(
-      dataBinding.storeItemID,
-    )}"/>`;
+    inner += `<w:storeItemID w:val="${escapeXml(dataBinding.storeItemID)}"/>`;
   }
   return inner ? `<w:dataBinding>${inner}</w:dataBinding>` : "";
 }
@@ -159,9 +157,7 @@ function serializeSdtSubtypeXml(subtype: EditorSdtSubtype): string {
           : "";
       let children = "";
       if (subtype.dateFormat !== undefined) {
-        children += `<w:dateFormat w:val="${escapeXml(
-          subtype.dateFormat,
-        )}"/>`;
+        children += `<w:dateFormat w:val="${escapeXml(subtype.dateFormat)}"/>`;
       }
       if (subtype.lid !== undefined) {
         children += `<w:lid w:val="${escapeXml(subtype.lid)}"/>`;
@@ -179,11 +175,12 @@ function serializeSdtSubtypeXml(subtype: EditorSdtSubtype): string {
     case "checkbox": {
       let children = "";
       if (subtype.checked !== undefined) {
-        children += `<w14:checked w14:val="${
-          subtype.checked ? "1" : "0"
-        }"/>`;
+        children += `<w14:checked w14:val="${subtype.checked ? "1" : "0"}"/>`;
       }
-      if (subtype.checkedStateFont !== undefined || subtype.checkedStateChar !== undefined) {
+      if (
+        subtype.checkedStateFont !== undefined ||
+        subtype.checkedStateChar !== undefined
+      ) {
         const fontAttr =
           subtype.checkedStateFont !== undefined
             ? ` w14:font="${escapeXml(subtype.checkedStateFont)}"`
@@ -194,7 +191,10 @@ function serializeSdtSubtypeXml(subtype: EditorSdtSubtype): string {
             : "";
         children += `<w14:checkedState${fontAttr}${charAttr}/>`;
       }
-      if (subtype.uncheckedStateFont !== undefined || subtype.uncheckedStateChar !== undefined) {
+      if (
+        subtype.uncheckedStateFont !== undefined ||
+        subtype.uncheckedStateChar !== undefined
+      ) {
         const fontAttr =
           subtype.uncheckedStateFont !== undefined
             ? ` w14:font="${escapeXml(subtype.uncheckedStateFont)}"`

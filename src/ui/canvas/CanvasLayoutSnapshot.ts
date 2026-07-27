@@ -86,6 +86,12 @@ export function buildCanvasLayoutSnapshot(
   if (documentLayout.pages.length === 0 || canvasPages.length === 0) {
     return null;
   }
+  const canvasPageByIndex = new Map(
+    canvasPages.map(
+      (page): readonly [number, HTMLElement] =>
+        [Number(page.dataset.pageIndex ?? "-1"), page] as const,
+    ),
+  );
 
   const paragraphs = getDocumentParagraphs(state.document);
   const paragraphIndexById = new Map(
@@ -105,11 +111,7 @@ export function buildCanvasLayoutSnapshot(
   const unsupportedRegions: CanvasLayoutSnapshot["unsupportedRegions"] = [];
 
   for (const page of documentLayout.pages) {
-    const pageElement =
-      canvasPages.find(
-        (candidate): boolean =>
-          Number(candidate.dataset.pageIndex ?? "-1") === page.index,
-      ) ?? null;
+    const pageElement = canvasPageByIndex.get(page.index) ?? null;
     if (!pageElement) {
       continue;
     }

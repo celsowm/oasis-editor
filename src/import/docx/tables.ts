@@ -1,6 +1,11 @@
 import JSZip from "jszip";
 import { type Element as XmlElement, XMLSerializer } from "@xmldom/xmldom";
-import type { EditorNamedStyle, EditorTableNode } from "@/core/model.js";
+import type {
+  EditorNamedStyle,
+  EditorParagraphNode,
+  EditorParagraphStyle,
+  EditorTableNode,
+} from "@/core/model.js";
 import {
   createEditorParagraphFromRuns,
   createEditorTable,
@@ -33,9 +38,47 @@ import {
   getTableCellVMerge,
   parseTableCellStyle,
   isTableHeaderRow,
-  collapseCellAutospacing,
   parseTableConditionalFlags,
 } from "./tableProperties.js";
+
+/**
+ * Reproduces Word's HTML-style margin collapsing for paragraphs that use "auto
+ * spacing" (`w:beforeAutospacing` / `w:afterAutospacing`) inside a table cell.
+ * Word ignores the literal before/after values for these margins and collapses
+ * them: the first paragraph's auto before-space and the last paragraph's auto
+ * after-space collapse to 0 against the cell edge, and two adjacent auto margins
+ * collapse to their max instead of summing.
+ */
+function collapseCellAutospacing(
+  paragraphs: EditorParagraphNode[],
+  flags: ParagraphAutospacingFlags[],
+): void {
+  const styleOf = (paragraph: EditorParagraphNode): EditorParagraphStyle =>
+    (paragraph.style ??= {});
+
+  const lastIndex = paragraphs.length - 1;
+  for (let index = 0; index < paragraphs.length; index += 1) {
+    const flag = flags[index];
+    if (!flag) continue;
+    if (index === 0 && flag.before) {
+      styleOf(paragraphs[index]!).spacingBefore = 0;
+    }
+    if (index === lastIndex && flag.after) {
+      styleOf(paragraphs[index]!).spacingAfter = 0;
+    }
+  }
+
+  for (let index = 0; index < lastIndex; index += 1) {
+    if (!flags[index]?.after || !flags[index + 1]?.before) continue;
+    const previous = styleOf(paragraphs[index]!);
+    const next = styleOf(paragraphs[index + 1]!);
+    if ((previous.spacingAfter ?? 0) >= (next.spacingBefore ?? 0)) {
+      next.spacingBefore = 0;
+    } else {
+      previous.spacingAfter = 0;
+    }
+  }
+}
 
 export async function parseTableNode(
   tableNode: XmlElement,

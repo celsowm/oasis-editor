@@ -113,7 +113,9 @@ export function parseSdtPr(sdtPr: XmlElement | null): EditorSdtPr {
     "showingPlcHdr",
   );
   if (showingPlcHdrEl) {
-    result.showingPlcHdr = isWordTrue(getAttributeValue(showingPlcHdrEl, "val"));
+    result.showingPlcHdr = isWordTrue(
+      getAttributeValue(showingPlcHdrEl, "val"),
+    );
   }
 
   const temporaryEl = getFirstChildByTagNameNS(sdtPr, WORD_NS, "temporary");
@@ -140,11 +142,7 @@ export function parseSdtPr(sdtPr: XmlElement | null): EditorSdtPr {
     }
   }
 
-  const dataBindingEl = getFirstChildByTagNameNS(
-    sdtPr,
-    WORD_NS,
-    "dataBinding",
-  );
+  const dataBindingEl = getFirstChildByTagNameNS(sdtPr, WORD_NS, "dataBinding");
   if (dataBindingEl) {
     const dataBinding = parseSdtDataBinding(dataBindingEl);
     if (dataBinding) {
@@ -204,7 +202,9 @@ function parseSdtDataBinding(el: XmlElement): EditorSdtDataBinding | null {
 }
 
 /** Parse `<w:listItem>` children of a `<w:comboBox>` or `<w:dropDownList>`. */
-function parseSdtListItems(parent: XmlElement): EditorSdtListItem[] | undefined {
+function parseSdtListItems(
+  parent: XmlElement,
+): EditorSdtListItem[] | undefined {
   const items = getChildrenByTagNameNS(parent, WORD_NS, "listItem");
   if (items.length === 0) {
     return undefined;
@@ -260,7 +260,11 @@ function parseSdtSubtype(parent: XmlElement): EditorSdtSubtype | undefined {
   const dateEl = getFirstChildByTagNameNS(parent, WORD_NS, "date");
   if (dateEl) {
     const fullDate = getAttributeValue(dateEl, "fullDate") ?? undefined;
-    const dateFormatEl = getFirstChildByTagNameNS(dateEl, WORD_NS, "dateFormat");
+    const dateFormatEl = getFirstChildByTagNameNS(
+      dateEl,
+      WORD_NS,
+      "dateFormat",
+    );
     const lidEl = getFirstChildByTagNameNS(dateEl, WORD_NS, "lid");
     const calendarEl = getFirstChildByTagNameNS(dateEl, WORD_NS, "calendar");
     const storeMappedDataAsEl = getFirstChildByTagNameNS(
@@ -271,19 +275,16 @@ function parseSdtSubtype(parent: XmlElement): EditorSdtSubtype | undefined {
     return {
       kind: "date",
       fullDate,
-      dateFormat:
-        dateFormatEl
-          ? (getAttributeValue(dateFormatEl, "val") ?? undefined)
-          : undefined,
+      dateFormat: dateFormatEl
+        ? (getAttributeValue(dateFormatEl, "val") ?? undefined)
+        : undefined,
       lid: lidEl ? (getAttributeValue(lidEl, "val") ?? undefined) : undefined,
-      calendar:
-        calendarEl
-          ? (getAttributeValue(calendarEl, "val") ?? undefined)
-          : undefined,
-      storeMappedDataAs:
-        storeMappedDataAsEl
-          ? (getAttributeValue(storeMappedDataAsEl, "val") ?? undefined)
-          : undefined,
+      calendar: calendarEl
+        ? (getAttributeValue(calendarEl, "val") ?? undefined)
+        : undefined,
+      storeMappedDataAs: storeMappedDataAsEl
+        ? (getAttributeValue(storeMappedDataAsEl, "val") ?? undefined)
+        : undefined,
     };
   }
 
@@ -310,7 +311,11 @@ function parseSdtSubtype(parent: XmlElement): EditorSdtSubtype | undefined {
   // Modern checkbox lives under w14 (or wrapped in `mc:AlternateContent`).
   const w14CheckboxEl = getFirstW14Child(parent, "checkbox");
   if (w14CheckboxEl) {
-    const checkedEl = getFirstChildByTagNameNS(w14CheckboxEl, WORD14_NS, "checked");
+    const checkedEl = getFirstChildByTagNameNS(
+      w14CheckboxEl,
+      WORD14_NS,
+      "checked",
+    );
     const checkedStateEl = getFirstChildByTagNameNS(
       w14CheckboxEl,
       WORD14_NS,
@@ -364,7 +369,11 @@ function serializeUnknownSdtPrChildren(sdtPr: XmlElement): string {
       continue;
     }
     const el = node as XmlElement;
-    if (el.localName && el.namespaceURI === WORD_NS && RECOGNIZED_SDT_PR_CHILDREN.has(el.localName)) {
+    if (
+      el.localName &&
+      el.namespaceURI === WORD_NS &&
+      RECOGNIZED_SDT_PR_CHILDREN.has(el.localName)
+    ) {
       continue;
     }
     out += new XMLSerializer().serializeToString(el);
