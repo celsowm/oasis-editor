@@ -71,10 +71,9 @@ export const applyTableAwareParagraphEdit = (
   if (!clonedTable || clonedTable.type !== "table") {
     return edit(current);
   }
-  const nextBlocks = currentBlocks.map(
-    (block, i): EditorBlockNode =>
-      i === location.blockIndex ? clonedTable : block,
-  );
+
+  const nextBlocks = [...currentBlocks];
+  nextBlocks[location.blockIndex] = clonedTable;
   const tableBlock = clonedTable;
 
   const targetCell =
@@ -134,8 +133,11 @@ export function resolveLocationTableMutation(
     getActiveSectionIndex(current),
   );
   if (!location) return null;
-  const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
-  const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
+  const targetBlocks = [...getTargetBlocks(current, location.zone)];
+  const tableBlock = cloneBlock(
+    targetBlocks[location.blockIndex],
+  ) as EditorTableNode;
+  targetBlocks[location.blockIndex] = tableBlock;
   if (!tableBlock || tableBlock.type !== "table") return null;
   return { tableBlock, location, targetBlocks };
 }

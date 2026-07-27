@@ -122,9 +122,11 @@ function createTableSelectionAwareCommandsImpl(
       if (!clonedTable) {
         return current;
       }
-      const targetBlocks = currentBlocks.map(
-        (block, i): EditorBlockNode => (i === blockIndex ? clonedTable : block),
-      );
+
+      // Use targeted shallow clone pattern to maintain structural sharing
+      const targetBlocks = [...currentBlocks];
+      targetBlocks[blockIndex] = clonedTable;
+
       const tableBlock = clonedTable;
 
       let paragraphIndex = 0;
