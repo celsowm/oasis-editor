@@ -39,6 +39,7 @@ import { createEditorInteractionRuntime } from "./app/createEditorInteractionRun
 import { createEditorCommandRuntime } from "./app/createEditorCommandRuntime.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
+import type { OasisEditorUiState } from "@/app/client/OasisEditorClient.js";
 import type {
   OasisEditorAppUiProps,
   OasisEditorAppDocumentProps,
@@ -58,9 +59,11 @@ export type {
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   const runtimeClient = props.runtime?.client ?? createOasisEditorClient();
-  const ui = (): OasisEditorAppUiProps => props.ui ?? {};
-  const documentOptions = (): OasisEditorAppDocumentProps =>
-    props.document ?? {};
+  const [uiOverrides, setUiOverrides] = createSignal<OasisEditorUiState>({});
+  const ui = (): OasisEditorAppUiProps => ({ ...(props.ui ?? {}), ...uiOverrides(), toolbar: { ...(props.ui?.toolbar ?? {}), ...(uiOverrides().toolbar ?? {}) } });
+  const documentOptions = (): OasisEditorAppDocumentProps => ({ ...(props.document ?? {}), ...(uiOverrides().readOnly === undefined ? {} : { readOnly: uiOverrides().readOnly }) });
+  const getUiState = (): OasisEditorUiState => ({ ...ui(), readOnly: documentOptions().readOnly });
+  const updateUiState = (patch: OasisEditorUiState): OasisEditorUiState => { setUiOverrides((current) => ({ ...current, ...patch, toolbar: { ...(current.toolbar ?? {}), ...(patch.toolbar ?? {}) } })); return { ...getUiState(), ...patch }; };
   const runtimeOptions = (): OasisEditorAppRuntimeProps => props.runtime ?? {};
   syncCanvasDebugApiVisibility();
   // Per-instance translator: reads this editor's locale signal, so two editors
@@ -141,6 +144,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     documentOptions,
     logger,
     runtimeClient,
+    getUiState,
+    updateUiState,
+    zoom,
     state,
     commitState,
     getStateSnapshot,

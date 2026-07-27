@@ -155,6 +155,8 @@ export interface EditorEndnotes {
 }
 
 export interface EditorDocument {
+  /** Serialized document schema revision. Missing values are treated as v1. */
+  schemaVersion?: number;
   id: string;
   pageSettings?: EditorPageSettings;
   sections?: EditorSection[];

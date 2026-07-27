@@ -52,6 +52,7 @@ export function createEditorDocument(
         },
   );
   const document: EditorDocument = {
+    schemaVersion: 1,
     id: createEditorNodeId("document"),
     pageSettings: normalizedPageSettings,
     sections: sections ?? [

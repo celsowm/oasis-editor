@@ -16,12 +16,33 @@ import type {
   SetFontSizePayload,
   TypedCommandBus,
 } from "@/core/commands/publicCommandTypes.js";
+import {
+  applyDocumentOperations,
+  normalizeDocument,
+  queryDocument,
+  type ApplyEditRequest,
+  type ApplyEditValue,
+  type DocumentRange,
+  type DocumentSelector,
+  type OasisResult,
+  type SemanticDocumentSnapshot,
+} from "./publicDocumentApi.js";
+import type { ToolbarRegistry } from "@/ui/components/Toolbar/registry/ToolbarRegistry.js";
+import type { MenuRegistry } from "@/ui/components/Menubar/menuRegistry.js";
+
+export interface OasisEditorUiState {
+  showChrome?: boolean; showTitleBar?: boolean; showMenubar?: boolean; showToolbar?: boolean; showOutline?: boolean;
+  shell?: "document" | "inline" | "balloon"; locale?: "pt-BR" | "en";
+  toolbar?: { view?: "ribbon" | "compact"; layout?: "overflow" | "wrap" };
+  viewportHeight?: number | string; readOnly?: boolean;
+}
 
 export type OasisEditorClientEvent =
   | "ready"
   | "change"
   | "documentChange"
   | "selectionChange"
+  | "uiChange"
   | "error";
 
 export interface OasisEditorClientEvents {
@@ -29,6 +50,7 @@ export interface OasisEditorClientEvents {
   change: EditorState;
   documentChange: EditorDocument;
   selectionChange: EditorSelection;
+  uiChange: OasisEditorUiState;
   error: unknown;
 }
 
@@ -45,6 +67,19 @@ export interface OasisEditorDocumentApi {
   save(): Promise<void>;
   isDirty(): boolean;
   markClean(): void;
+  version(): number;
+}
+
+export interface OasisEditorQueryApi {
+  snapshot(): SemanticDocumentSnapshot;
+  getText(target?: DocumentSelector | DocumentRange): string;
+  getNode(selector: DocumentSelector): ReturnType<ReturnType<typeof queryDocument>["getNode"]>;
+  find(text: string): ReturnType<ReturnType<typeof queryDocument>["find"]>;
+  outline(): ReturnType<ReturnType<typeof queryDocument>["outline"]>;
+}
+
+export interface OasisEditorEditApi {
+  apply(request: ApplyEditRequest): Promise<OasisResult<ApplyEditValue>>;
 }
 
 export interface OasisEditorSelectionApi {
@@ -74,6 +109,24 @@ export interface OasisEditorExportApi {
   pdf(): Promise<unknown>;
 }
 
+export interface OasisEditorDataIoApi {
+  import(request: { format: "docx"; data: Blob | ArrayBuffer | Uint8Array; filename?: string; signal?: AbortSignal; onProgress?: (progress: unknown) => void }): Promise<OasisResult<{ format: "docx" }>>;
+  export(request: { format: "docx" | "pdf"; filename?: string }): Promise<OasisResult<{ format: "docx" | "pdf"; blob: Blob; arrayBuffer: () => Promise<ArrayBuffer> }>>;
+}
+export interface OasisEditorUiApi {
+  state(): OasisEditorUiState;
+  update(patch: OasisEditorUiState): OasisEditorUiState;
+  setReadOnly(value: boolean): void;
+  zoom: { get(): number; set(value: number): void; adjust(delta: number): void };
+  chrome: { setVisible(value: boolean): void };
+  titleBar: { setVisible(value: boolean): void };
+  menubar: { setVisible(value: boolean): void; items: MenuRegistry };
+  toolbar: { setVisible(value: boolean): void; items: ToolbarRegistry };
+  outline: { setVisible(value: boolean): void };
+  shell: { set(value: "document" | "inline" | "balloon"): void };
+  locale: { set(value: "pt-BR" | "en"): void };
+}
+
 export interface OasisEditorClient {
   readonly ready: Promise<Editor>;
   readonly commands: TypedCommandBus<ToolbarCommandState>;
@@ -83,6 +136,10 @@ export interface OasisEditorClient {
   readonly history: OasisEditorHistoryApi;
   readonly import: OasisEditorImportApi;
   readonly export: OasisEditorExportApi;
+  readonly query: OasisEditorQueryApi;
+  readonly edit: OasisEditorEditApi;
+  readonly io: OasisEditorDataIoApi;
+  readonly ui: OasisEditorUiApi;
   dispose(): void | Promise<void>;
   getState(): EditorState;
   getDocument(): EditorDocument;
@@ -116,6 +173,7 @@ export interface OasisEditorClientHost {
   getState(): EditorState;
   getDocument(): EditorDocument;
   setDocument(document: EditorDocument): void;
+  applyTransactionalState?(producer: (state: EditorState) => EditorState): void;
   resetDocument(): void;
   saveDocument(): Promise<void>;
   getSelection(): EditorSelection;
@@ -126,6 +184,15 @@ export interface OasisEditorClientHost {
   importDocx(file: File): Promise<void>;
   exportDocx(): Promise<unknown>;
   exportPdf(): Promise<unknown>;
+  exportDocxBlob(): Promise<Blob>;
+  exportPdfBlob(): Promise<Blob>;
+  getUiState?(): OasisEditorUiState;
+  updateUiState?(patch: OasisEditorUiState): OasisEditorUiState;
+  getZoom?(): number;
+  setZoom?(value: number): void;
+  adjustZoom?(delta: number): void;
+  toolbarRegistry?: ToolbarRegistry;
+  menuRegistry?: MenuRegistry;
 }
 
 export interface OasisEditorClientController extends OasisEditorClient {
@@ -154,6 +221,8 @@ export function createOasisEditorClient(): OasisEditorClientController {
   let disposed = false;
   let disposeHost: (() => void | Promise<void>) | undefined;
   let dirty = false;
+  let version = 0;
+  const idempotent = new Map<string, OasisResult<ApplyEditValue>>();
 
   const ready = new Promise<Editor>((resolve, reject): void => {
     resolveReady = resolve;
@@ -291,17 +360,22 @@ export function createOasisEditorClient(): OasisEditorClientController {
     },
     setDocument(document): void {
       requireHost().setDocument(document);
+      version += 1;
     },
     loadDocument(document): void {
       requireHost().setDocument(document);
+      version += 1;
       dirty = false;
     },
     updateDocument(updater): void {
-      const current = requireHost().getDocument();
-      requireHost().setDocument(updater(current));
+      const currentHost = requireHost();
+      if (currentHost.applyTransactionalState) currentHost.applyTransactionalState((state) => ({ ...state, document: updater(state.document) }));
+      else currentHost.setDocument(updater(currentHost.getDocument()));
+      version += 1;
     },
     resetDocument(): void {
       requireHost().resetDocument();
+      version += 1;
       dirty = false;
     },
     async save(): Promise<void> {
@@ -328,17 +402,21 @@ export function createOasisEditorClient(): OasisEditorClientController {
     },
     document: {
       get: (): EditorDocument => requireHost().getDocument(),
-      set: (document): void => requireHost().setDocument(document),
+      set: (document): void => { requireHost().setDocument(document); version += 1; },
       load: (document): void => {
         requireHost().setDocument(document);
+        version += 1;
         dirty = false;
       },
       update: (updater): void => {
-        const current = requireHost().getDocument();
-        requireHost().setDocument(updater(current));
+        const currentHost = requireHost();
+        if (currentHost.applyTransactionalState) currentHost.applyTransactionalState((state) => ({ ...state, document: updater(state.document) }));
+        else currentHost.setDocument(updater(currentHost.getDocument()));
+        version += 1;
       },
       reset: (): void => {
         requireHost().resetDocument();
+        version += 1;
         dirty = false;
       },
       save: async (): Promise<void> => {
@@ -349,6 +427,7 @@ export function createOasisEditorClient(): OasisEditorClientController {
       markClean: (): void => {
         dirty = false;
       },
+      version: (): number => version,
     },
     selection: {
       get: (): EditorSelection => requireHost().getSelection(),
@@ -371,6 +450,71 @@ export function createOasisEditorClient(): OasisEditorClientController {
     export: {
       docx: (): Promise<unknown> => requireHost().exportDocx(),
       pdf: (): Promise<unknown> => requireHost().exportPdf(),
+    },
+    query: {
+      snapshot: (): SemanticDocumentSnapshot => queryDocument(requireHost().getDocument()).snapshot(),
+      getText: (target?: DocumentSelector | DocumentRange): string => queryDocument(requireHost().getDocument()).getText(target),
+      getNode: (selector: DocumentSelector) => queryDocument(requireHost().getDocument()).getNode(selector),
+      find: (text: string) => queryDocument(requireHost().getDocument()).find(text),
+      outline: () => queryDocument(requireHost().getDocument()).outline(),
+    },
+    edit: {
+      async apply(request: ApplyEditRequest): Promise<OasisResult<ApplyEditValue>> {
+        if (request.expectedVersion !== undefined && request.expectedVersion !== version) {
+          return { ok: false, error: { code: "DOCUMENT_VERSION_CONFLICT", message: "Document version does not match expectedVersion", expectedVersion: request.expectedVersion, actualVersion: version } };
+        }
+        if (request.idempotencyKey && idempotent.has(request.idempotencyKey)) return idempotent.get(request.idempotencyKey)!;
+        const host = requireHost();
+        try {
+          const applied = applyDocumentOperations(host.getDocument(), request.operations);
+          if (host.applyTransactionalState) host.applyTransactionalState((state) => ({ ...state, document: applied.document }));
+          else host.setDocument(applied.document);
+          version += 1;
+          const result: OasisResult<ApplyEditValue> = { ok: true, value: applied.value, version, warnings: [] };
+          if (request.idempotencyKey) idempotent.set(request.idempotencyKey, result);
+          return result;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Edit failed";
+          const code = message === "AMBIGUOUS_SELECTOR" ? "AMBIGUOUS_SELECTOR" : message === "INVALID_RANGE" ? "INVALID_RANGE" : message === "VALIDATION_FAILED" ? "VALIDATION_FAILED" : message === "UNSUPPORTED_OPERATION" ? "UNSUPPORTED_OPERATION" : "NODE_NOT_FOUND";
+          return { ok: false, error: { code, message } };
+        }
+      },
+    },
+    io: {
+      async import(request): Promise<OasisResult<{ format: "docx" }>> {
+        if (request.signal?.aborted) return { ok: false, error: { code: "ABORTED", message: "Import aborted" } };
+        try {
+          const data = request.data instanceof Blob ? request.data : new Blob([request.data]);
+          const file = new File([data], request.filename ?? "document.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+          await requireHost().importDocx(file);
+          version += 1;
+          request.onProgress?.({ phase: "done", progress: 100 });
+          return { ok: true, value: { format: "docx" }, version, warnings: [] };
+        } catch (error) {
+          return { ok: false, error: { code: "IMPORT_FAILED", message: error instanceof Error ? error.message : "Import failed" } };
+        }
+      },
+      async export(request): Promise<OasisResult<{ format: "docx" | "pdf"; blob: Blob; arrayBuffer: () => Promise<ArrayBuffer> }>> {
+        try {
+          const value = request.format === "docx" ? await requireHost().exportDocxBlob() : await requireHost().exportPdfBlob();
+          return { ok: true, value: { format: request.format, blob: value, arrayBuffer: () => value.arrayBuffer() }, version, warnings: [] };
+        } catch (error) {
+          return { ok: false, error: { code: "EXPORT_FAILED", message: error instanceof Error ? error.message : "Export failed" } };
+        }
+      },
+    },
+    ui: {
+      state: (): OasisEditorUiState => requireHost().getUiState?.() ?? {},
+      update: (patch: OasisEditorUiState): OasisEditorUiState => { const next = requireHost().updateUiState?.(patch) ?? {}; emit("uiChange", next); return next; },
+      setReadOnly: (value): void => { requireHost().updateUiState?.({ readOnly: value }); },
+      zoom: { get: (): number => requireHost().getZoom?.() ?? 100, set: (value): void => requireHost().setZoom?.(value), adjust: (delta): void => requireHost().adjustZoom?.(delta) },
+      chrome: { setVisible: (value): void => { requireHost().updateUiState?.({ showChrome: value }); } },
+      titleBar: { setVisible: (value): void => { requireHost().updateUiState?.({ showTitleBar: value }); } },
+      menubar: { setVisible: (value): void => { requireHost().updateUiState?.({ showMenubar: value }); }, items: { register: (...args) => requireHost().menuRegistry?.register(...args), unregister: (id) => requireHost().menuRegistry?.unregister(id), getItems: () => requireHost().menuRegistry?.getItems() ?? [] } as MenuRegistry },
+      toolbar: { setVisible: (value): void => { requireHost().updateUiState?.({ showToolbar: value }); }, items: { register: (...args) => requireHost().toolbarRegistry?.register(...args), insertBefore: (...args) => requireHost().toolbarRegistry?.insertBefore(...args), insertAfter: (...args) => requireHost().toolbarRegistry?.insertAfter(...args), replace: (...args) => requireHost().toolbarRegistry?.replace(...args), remove: (id) => requireHost().toolbarRegistry?.remove(id), move: (...args) => requireHost().toolbarRegistry?.move(...args), get: (id) => requireHost().toolbarRegistry?.get(id), getOrdered: () => requireHost().toolbarRegistry?.getOrdered() ?? [], getItems: () => requireHost().toolbarRegistry?.getItems() ?? [], clear: () => requireHost().toolbarRegistry?.clear(), onChange: (cb) => requireHost().toolbarRegistry?.onChange(cb) ?? (() => undefined) } as ToolbarRegistry },
+      outline: { setVisible: (value): void => { requireHost().updateUiState?.({ showOutline: value }); } },
+      shell: { set: (shell): void => { requireHost().updateUiState?.({ shell }); } },
+      locale: { set: (locale): void => { requireHost().updateUiState?.({ locale }); } },
     },
     on: addListener,
     once(event, callback) {

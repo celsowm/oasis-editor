@@ -12,7 +12,12 @@ export type {
   OasisEditorFocusApi,
   OasisEditorHistoryApi,
   OasisEditorImportApi,
+  OasisEditorDataIoApi,
+  OasisEditorEditApi,
+  OasisEditorQueryApi,
   OasisEditorSelectionApi,
+  OasisEditorUiApi,
+  OasisEditorUiState,
 } from "./app/client/OasisEditorClient.js";
 
 export { createOasisEditorContainer } from "./app/bootstrap/createOasisEditorContainer.js";
@@ -134,6 +139,32 @@ export type {
   Unsubscribe,
 } from "./core/plugin.js";
 export type { EditorDocument, EditorState } from "./core/model.js";
+export {
+  EDITOR_SCHEMA_VERSION,
+  createDocument,
+  createParagraph,
+  createHeading,
+  createTable,
+  cloneDocument,
+  normalizeDocument,
+  validateDocument,
+} from "./app/client/publicDocumentApi.js";
+export type {
+  ApplyEditRequest,
+  ApplyEditValue,
+  DocumentMatch,
+  DocumentOutlineItem,
+  DocumentRange,
+  DocumentSelector,
+  EditActor,
+  EditOperation,
+  OasisError,
+  OasisErrorCode,
+  OasisResult,
+  OasisWarning,
+  SemanticDocumentSnapshot,
+  SemanticNode,
+} from "./app/client/publicDocumentApi.js";
 export type { DocumentPersistence } from "./app/controllers/useEditorPersistence.js";
 export type { ImportProgressState } from "./app/controllers/useEditorDocumentIO.js";
 export type {

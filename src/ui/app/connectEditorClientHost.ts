@@ -11,6 +11,9 @@ import type { OasisEditorClientController } from "@/app/client/OasisEditorClient
 import type { createEditorDocumentIO } from "@/app/controllers/useEditorDocumentIO.js";
 import type { useEditorRuntimeBootstrap } from "./useEditorRuntimeBootstrap.js";
 import type { Editor } from "@/core/Editor.js";
+import type { OasisEditorUiState } from "@/app/client/OasisEditorClient.js";
+import type { ToolbarRegistry } from "@/ui/components/Toolbar/registry/ToolbarRegistry.js";
+import type { MenuRegistry } from "@/ui/components/Menubar/menuRegistry.js";
 
 type RuntimeEditorAccessor = ReturnType<
   typeof useEditorRuntimeBootstrap
@@ -24,16 +27,24 @@ export interface ConnectEditorClientHostDeps {
   getStateSnapshot: () => EditorState;
   cloneState: (state: EditorState) => EditorState;
   applyState: (next: EditorState) => void;
+  applyTransactionalState?: (producer: (state: EditorState) => EditorState) => void;
   resetEditorChromeState: () => void;
   focusInput: () => void;
   setFocused: (focused: boolean) => void;
   clearHistory: () => void;
+  getUiState?: () => OasisEditorUiState;
+  updateUiState?: (patch: OasisEditorUiState) => OasisEditorUiState;
+  getZoom?: () => number;
+  setZoom?: (value: number) => void;
+  adjustZoom?: (delta: number) => void;
+  toolbarRegistry?: ToolbarRegistry;
+  menuRegistry?: MenuRegistry;
   getPersistence: () => {
     saveDocument: (document: EditorDocument) => Promise<void> | void;
   };
   docIO: Pick<
     EditorDocumentIO,
-    "handleImportFile" | "handleExportDocx" | "handleExportPdf"
+    "handleImportFile" | "handleExportDocx" | "handleExportPdf" | "exportDocxBlob" | "exportPdfBlob"
   >;
 }
 
@@ -60,6 +71,7 @@ export function connectEditorClientHost(
       deps.resetEditorChromeState();
       deps.focusInput();
     },
+    applyTransactionalState: deps.applyTransactionalState,
     resetDocument: (): void => {
       deps.applyState(createInitialEditorState());
       deps.resetEditorChromeState();
@@ -89,5 +101,14 @@ export function connectEditorClientHost(
       Promise.resolve(deps.docIO.handleExportDocx()),
     exportPdf: (): Promise<unknown> =>
       Promise.resolve(deps.docIO.handleExportPdf()),
+    exportDocxBlob: (): Promise<Blob> => deps.docIO.exportDocxBlob(),
+    exportPdfBlob: (): Promise<Blob> => deps.docIO.exportPdfBlob(),
+    getUiState: deps.getUiState,
+    updateUiState: deps.updateUiState,
+    getZoom: deps.getZoom,
+    setZoom: deps.setZoom,
+    adjustZoom: deps.adjustZoom,
+    toolbarRegistry: deps.toolbarRegistry,
+    menuRegistry: deps.menuRegistry,
   });
 }

@@ -140,12 +140,12 @@ function createEditorDocumentIOImpl(deps: UseEditorDocumentIOProps) {
     deps.focusInput();
   };
 
-  const handleExportDocx = async (): Promise<void> => {
-    await exporter.handleExportDocx();
+  const handleExportDocx = async (): Promise<Blob> => {
+    return exporter.handleExportDocx();
   };
 
-  const handleExportPdf = async (): Promise<void> => {
-    await exporter.handleExportPdf();
+  const handleExportPdf = async (): Promise<Blob> => {
+    return exporter.handleExportPdf();
   };
 
   return {
@@ -153,6 +153,8 @@ function createEditorDocumentIOImpl(deps: UseEditorDocumentIOProps) {
     handleImportFile,
     handleExportDocx,
     handleExportPdf,
+    exportDocxBlob: exporter.exportDocxBlob,
+    exportPdfBlob: exporter.exportPdfBlob,
     insertImageFromFile,
     handleInsertImage,
   };

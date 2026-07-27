@@ -15,6 +15,7 @@ import type {
   OasisEditorAppRuntimeProps,
 } from "../OasisEditorAppProps.js";
 import type { DocumentPersistence } from "@/app/controllers/useEditorPersistence.js";
+import type { OasisEditorUiState } from "@/app/client/OasisEditorClient.js";
 
 type DocumentRuntime = ReturnType<typeof createEditorDocumentRuntime>;
 type InteractionRuntime = ReturnType<typeof createEditorInteractionRuntime>;
@@ -50,6 +51,9 @@ export interface EditorCommandRuntimeDeps {
     isOpen: boolean;
     initialCaption: string;
   }) => void;
+  getUiState: () => OasisEditorUiState;
+  updateUiState: (patch: OasisEditorUiState) => OasisEditorUiState;
+  zoom: { zoomPercent: () => number; setZoomPercent: (value: number) => void; adjustZoom: (delta: number) => void };
 }
 
 /**
@@ -151,6 +155,7 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
     getStateSnapshot: deps.getStateSnapshot,
     cloneState: deps.cloneState,
     applyState: deps.applyState,
+    applyTransactionalState: doc.applyTransactionalState,
     resetEditorChromeState: doc.resetEditorChromeState,
     focusInput: deps.focusInput,
     setFocused: deps.setFocused,
@@ -158,6 +163,13 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
     getPersistence: (): DocumentPersistence =>
       deps.documentOptions().persistence ?? doc.fallbackPersistence,
     docIO: doc.docIO,
+    getUiState: deps.getUiState,
+    updateUiState: deps.updateUiState,
+    getZoom: deps.zoom.zoomPercent,
+    setZoom: deps.zoom.setZoomPercent,
+    adjustZoom: deps.zoom.adjustZoom,
+    toolbarRegistry,
+    menuRegistry,
   });
 
   createEffect((): void => {
