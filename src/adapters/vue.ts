@@ -12,6 +12,16 @@ import {
 import type { OasisEditorAppProps, OasisEditorClient } from "oasis-editor";
 import { createOasisMountController } from "./mountController.js";
 
+/**
+ * Vue 3 component that mounts the Oasis editor. Mount-only — remount to
+ * apply a new configuration.
+ *
+ * @component
+ * @param props.config - Editor configuration props.
+ * @param props.class - CSS class for the container.
+ * @param props.style - CSS style for the container.
+ * @param props.onClient - Callback receiving the mounted client.
+ */
 export const OasisEditor = defineComponent({
   name: "OasisEditor",
   props: {

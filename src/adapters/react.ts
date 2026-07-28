@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import type { OasisEditorAppProps, OasisEditorClient } from "oasis-editor";
 import { createOasisMountController } from "./mountController.js";
 
+/** Props for the React adapter component, extending the standard editor app props. */
 export type ReactOasisEditorProps = OasisEditorAppProps & {
   /**
    * Receives the mounted Oasis client. Props are mount-only for this adapter;
@@ -10,6 +11,13 @@ export type ReactOasisEditorProps = OasisEditorAppProps & {
   onClient?: (client: OasisEditorClient) => void;
 };
 
+/**
+ * React component that mounts the Oasis editor. Mount-only — remount to
+ * apply a new configuration.
+ *
+ * @param props - The editor configuration props.
+ * @returns A React element wrapping the editor.
+ */
 export const OasisEditor: React.FC<ReactOasisEditorProps> = (props) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -21,7 +29,7 @@ export const OasisEditor: React.FC<ReactOasisEditorProps> = (props) => {
     return (): void => {
       controller.unmount();
     };
-  }, []); // mount-only — remount component to apply new config
+  }, []);
 
   return React.createElement("div", {
     ref: containerRef,

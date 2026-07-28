@@ -9,17 +9,21 @@ import type {
   OasisEditorClientController,
 } from "@/app/client/OasisEditorClient.js";
 
+/** Toolbar display mode. */
 export type ToolbarViewMode = "ribbon" | "compact";
+
+/** Toolbar overflow behavior. */
 export type ToolbarLayoutMode = "overflow" | "wrap";
 
+/** Options for the loading overlay shown during editor startup. */
 export interface OasisEditorLoadingOptions {
   label?: string;
   class?: string;
   style?: JSX.CSSProperties;
 }
 
+/** UI configuration properties for the editor app. */
 export interface OasisEditorAppUiProps {
-  /** Visual chrome palette. Defaults to light to preserve existing embeds. */
   theme?: "light" | "dark";
   showChrome?: boolean;
   shell?: "document" | "inline" | "balloon";
@@ -39,10 +43,10 @@ export interface OasisEditorAppUiProps {
   loading?: boolean | OasisEditorLoadingOptions;
 }
 
+/** Document-related configuration properties for the editor app. */
 export interface OasisEditorAppDocumentProps {
   initialDocument?: EditorDocument;
   initialState?: EditorState;
-  /** Load otherwise unavailable document fonts from Google Fonts/CDNFonts. */
   remoteWebFonts?: boolean;
   onStateChange?: (state: EditorState) => void;
   readOnly?: boolean;
@@ -56,6 +60,7 @@ export interface OasisEditorAppDocumentProps {
   persistenceKey?: string;
 }
 
+/** Runtime configuration properties for the editor app (plugins, customization). */
 export interface OasisEditorAppRuntimeProps {
   onReady?: (client: OasisEditorClient) => void;
   plugins?: OasisPlugin[];
@@ -63,13 +68,13 @@ export interface OasisEditorAppRuntimeProps {
   client?: OasisEditorClientController;
   /**
    * Customize the toolbar after the built-in preset and plugin contributions
-   * load. Use the registry to add/insert/replace/remove/move items. Clients can
-   * tailor the toolbar without forking.
+   * load. Use the registry to add/insert/replace/remove/move items.
    */
   customizeToolbar?: (registry: ToolbarRegistry) => void;
   customizeMenubar?: (registry: MenuRegistry) => void;
 }
 
+/** Top-level configuration props for the Oasis editor application. */
 export interface OasisEditorAppProps {
   ui?: OasisEditorAppUiProps;
   document?: OasisEditorAppDocumentProps;

@@ -92,6 +92,7 @@ function buildImportedDocumentDiagnosticsImpl(
   };
 }
 
+/** Dependencies required by {@link createDocumentImporter}. */
 export interface DocumentImporterDeps {
   applyState: (state: EditorState) => void;
   stabilizeLayoutAfterImport: () => Promise<void>;
@@ -107,6 +108,11 @@ export interface DocumentImporterDeps {
   logger: EditorLogger;
 }
 
+/**
+ * Creates a document importer that handles file import with progress tracking.
+ * @param deps - The dependencies required for importing.
+ * @returns An object with the `handleImportFile` method.
+ */
 export function createDocumentImporter(deps: DocumentImporterDeps): {
   handleImportFile: (file: File | null) => Promise<void>;
 } {
@@ -131,10 +137,6 @@ export function createDocumentImporter(deps: DocumentImporterDeps): {
       size: file.size,
     });
     deps.setImportPhase("reading-file");
-    // Start the browser permission request while the file-input change event
-    // still has user activation. The parsed family set is only available later,
-    // but delaying queryLocalFonts until then can make browsers reject the
-    // permission prompt.
     const localFontAccess =
       importer.id === "docx"
         ? deps.requestLocalFontAccess().catch((): false => false)

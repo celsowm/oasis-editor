@@ -3,12 +3,18 @@ import { exportEditorDocumentToDocxBlob } from "@/export/docx/exportEditorDocume
 import { exportEditorDocumentToPdfBlob } from "@/export/pdf/exportEditorDocumentToPdf.js";
 import { downloadBlob } from "./downloadBlob.js";
 
+/** Dependencies required by {@link createDocumentExporter}. */
 export interface DocumentExporterDeps {
   document: () => EditorDocument;
   focusInput: () => void;
   download?: (blob: Blob, filename: string) => void;
 }
 
+/**
+ * Creates a document exporter with support for .docx and .pdf output.
+ * @param deps - The dependencies required for exporting.
+ * @returns An object with export methods.
+ */
 export function createDocumentExporter(deps: DocumentExporterDeps): {
   handleExportDocx: () => Promise<Blob>;
   handleExportPdf: () => Promise<Blob>;

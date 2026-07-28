@@ -16,8 +16,13 @@ import {
 } from "@/core/editorState.js";
 import { getDocumentParagraphsCanonical, getParagraphText } from "@/core/model.js";
 
+/** Current version of the editor document schema. */
 export const EDITOR_SCHEMA_VERSION = 1;
 
+/**
+ * Selects a specific node in the document tree. Used as a targeting mechanism
+ * for edit operations and queries.
+ */
 export type DocumentSelector =
   | { nodeId: string }
   | { text: string; occurrence?: number }
@@ -26,11 +31,13 @@ export type DocumentSelector =
   | { bookmark: string }
   | { contentControlTag: string };
 
+/** A range between two positions in the document. */
 export interface DocumentRange {
   start: EditorPosition;
   end: EditorPosition;
 }
 
+/** Descriptor for a node in a semantic document snapshot. */
 export interface SemanticNode {
   id: string;
   type: string;
@@ -38,6 +45,7 @@ export interface SemanticNode {
   node: unknown;
 }
 
+/** Descriptor for a text match found by the find API. */
 export interface DocumentMatch {
   selector: { nodeId: string };
   paragraphId: string;
@@ -46,6 +54,7 @@ export interface DocumentMatch {
   end: number;
 }
 
+/** An item in the document outline (heading hierarchy). */
 export interface DocumentOutlineItem {
   id: string;
   level: number;
@@ -53,6 +62,7 @@ export interface DocumentOutlineItem {
   path: string[];
 }
 
+/** Immutable snapshot of the document's semantic structure. */
 export interface SemanticDocumentSnapshot {
   schemaVersion: number;
   documentId: string;
@@ -61,7 +71,10 @@ export interface SemanticDocumentSnapshot {
   nodes: SemanticNode[];
 }
 
+/** Non-fatal warning produced during an operation. */
 export type OasisWarning = { code: string; message: string; nodeId?: string };
+
+/** Error codes for operation failures. */
 export type OasisErrorCode =
   | "NODE_NOT_FOUND"
   | "AMBIGUOUS_SELECTOR"
@@ -74,6 +87,7 @@ export type OasisErrorCode =
   | "EXPORT_FAILED"
   | "ABORTED";
 
+/** Structured error information returned on operation failure. */
 export interface OasisError {
   code: OasisErrorCode;
   message: string;
@@ -82,10 +96,15 @@ export interface OasisError {
   details?: unknown;
 }
 
+/**
+ * Wraps a successful value or an error with its metadata.
+ * @typeParam T - The type of the success value.
+ */
 export type OasisResult<T> =
   | { ok: true; value: T; version: number; warnings: OasisWarning[] }
   | { ok: false; error: OasisError };
 
+/** A single edit operation to be applied to the document. */
 export type EditOperation =
   | { op: "insertText"; target: DocumentSelector; text: string; offset?: number }
   | { op: "replaceText"; target: DocumentSelector; text: string }
@@ -98,7 +117,10 @@ export type EditOperation =
   | { op: "insertTable"; rows: string[][]; after?: DocumentSelector }
   | { op: "updateTableCell"; target: { tableId: string; row: number; column: number }; text: string };
 
+/** Describes the origin/actor of an edit request. */
 export interface EditActor { type: string; actorId?: string; label?: string }
+
+/** Request to apply one or more edit operations to the document. */
 export interface ApplyEditRequest {
   operations: EditOperation[];
   expectedVersion?: number;
@@ -106,12 +128,24 @@ export interface ApplyEditRequest {
   idempotencyKey?: string;
   origin?: EditActor;
 }
+
+/** Result value returned after applying edit operations. */
 export interface ApplyEditValue { changedNodeIds: string[]; createdNodeIds: string[] }
 
+/**
+ * Deep-clones a document.
+ * @param document - The document to clone.
+ * @returns A deep copy of the document.
+ */
 export function cloneDocument<T extends EditorDocument>(document: T): T {
   return structuredClone(document);
 }
 
+/**
+ * Ensures the document has a schemaVersion property set.
+ * @param document - The document to normalize.
+ * @returns The normalized document.
+ */
 export function normalizeDocument(document: EditorDocument): EditorDocument {
   const next = cloneDocument(document);
   (next as EditorDocument & { schemaVersion?: number }).schemaVersion =
@@ -119,6 +153,11 @@ export function normalizeDocument(document: EditorDocument): EditorDocument {
   return next;
 }
 
+/**
+ * Validates document structure, returning errors if any.
+ * @param document - The document to validate.
+ * @returns An OasisResult indicating success or listing validation errors.
+ */
 export function validateDocument(document: EditorDocument): OasisResult<true> {
   const errors: string[] = [];
   if (!document || !document.id || !document.sections?.length) errors.push("Document must have an id and section");
@@ -137,17 +176,37 @@ export function validateDocument(document: EditorDocument): OasisResult<true> {
     : { ok: true, value: true, version: 0, warnings: [] };
 }
 
+/**
+ * Creates a new empty editor document.
+ * @param options - Optional initial blocks and title.
+ * @returns A new EditorDocument.
+ */
 export function createDocument(options: { blocks?: EditorBlockNode[]; title?: string } = {}): EditorDocument {
   return createEditorDocument(options.blocks ?? [createEditorParagraph("")], undefined, undefined, undefined, {
     title: options.title ?? "Untitled document",
   });
 }
+
+/** Creates an empty paragraph node. Alias for {@link createEditorParagraph}. */
 export const createParagraph = createEditorParagraph;
+
+/**
+ * Creates a heading paragraph.
+ * @param text - The heading text.
+ * @param options - Options including the heading level.
+ * @returns A new heading paragraph node.
+ */
 export function createHeading(text: string, options: { level?: number } = {}): EditorParagraphNode {
   const paragraph = createEditorParagraph(text);
   paragraph.style = { styleId: `heading${options.level ?? 1}` };
   return paragraph;
 }
+
+/**
+ * Creates a table node from a 2D array of string cell values.
+ * @param rows - A 2D array where each inner array represents a row of cell values.
+ * @returns A new table node.
+ */
 export function createTable(rows: string[][]): ReturnType<typeof createEditorTable> {
   return createEditorTable(rows.map((row) => createEditorTableRow(row.map((text) => createEditorTableCell([createEditorParagraph(text)])))));
 }
@@ -200,6 +259,11 @@ function replaceParagraph(document: EditorDocument, id: string, update: (paragra
   document.sections.some((section) => visit(section.blocks));
 }
 
+/**
+ * Creates a query object for read-only document inspection.
+ * @param document - The document to query against.
+ * @returns An object with snapshot, getText, getNode, find, and outline methods.
+ */
 export function queryDocument(document: EditorDocument): {
   snapshot: () => SemanticDocumentSnapshot;
   getText: (target?: DocumentSelector | DocumentRange) => string;
@@ -217,6 +281,12 @@ export function queryDocument(document: EditorDocument): {
   };
 }
 
+/**
+ * Applies an array of edit operations to a document.
+ * @param document - The document to mutate.
+ * @param operations - The operations to apply.
+ * @returns The mutated document along with metadata about changed and created nodes.
+ */
 export function applyDocumentOperations(document: EditorDocument, operations: EditOperation[]): { document: EditorDocument; value: ApplyEditValue } {
   const next = normalizeDocument(document); const changedNodeIds: string[] = []; const createdNodeIds: string[] = [];
   for (const operation of operations) {

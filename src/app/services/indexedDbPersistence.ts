@@ -6,6 +6,7 @@ const DEFAULT_STORE_NAME = "documents";
 const DEFAULT_DOCUMENT_KEY = "current-document";
 const DB_VERSION = 1;
 
+/** Options for configuring an IndexedDB persistence instance. */
 export interface IndexedDbPersistenceOptions {
   /** Key under which the document is stored. Distinct keys isolate editors. */
   key?: string;
@@ -13,17 +14,25 @@ export interface IndexedDbPersistenceOptions {
   storeName?: string;
 }
 
+/** IndexedDB-backed persistence contract for saving and loading documents. */
 export interface IndexedDbPersistence {
+  /** Persists the document to IndexedDB. */
   saveDocument(doc: EditorDocument): Promise<void>;
+  /** Loads the document from IndexedDB, or null if none exists. */
   loadDocument(): Promise<EditorDocument | null>;
+  /** Removes the stored document from IndexedDB. */
   clearDocument(): Promise<void>;
+  /** Closes the database connection. */
   close(): void;
 }
 
 /**
- * Create an IndexedDB-backed persistence instance. Each call owns its own
+ * Creates an IndexedDB-backed persistence instance. Each call owns its own
  * connection and storage key, so two editors on the same page never share a
  * document slot. There is intentionally no module-level singleton.
+ *
+ * @param options - Configuration options for the persistence instance.
+ * @returns A new IndexedDbPersistence instance.
  */
 export function createIndexedDbPersistence(
   options: IndexedDbPersistenceOptions = {},

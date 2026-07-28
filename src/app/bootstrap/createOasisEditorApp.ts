@@ -6,8 +6,17 @@ import {
   type OasisEditorClient,
 } from "@/app/client/OasisEditorClient.js";
 
+/** An Oasis editor instance created via {@link createOasisEditor}. */
 export type OasisEditorInstance = OasisEditorClient;
 
+/**
+ * Mounts the full Oasis editor application (document shell) into a container
+ * element and returns the public editor client API.
+ *
+ * @param container - The DOM element to mount the editor into.
+ * @param props - Optional editor configuration props.
+ * @returns The editor client API.
+ */
 export function createOasisEditor(
   container: HTMLElement,
   props: OasisEditorAppProps = {},

@@ -4,17 +4,27 @@ import { debounce } from "@/utils/throttle.js";
 import type { EditorDocument, EditorState } from "@/core/model.js";
 import type { EditorLogger } from "@/utils/logger.js";
 
+/** Current persistence status indicator. */
 export type PersistenceStatus = "Saved" | "Saving..." | "Error" | "Initial";
 
+/** Return value of the {@link useEditorPersistence} hook. */
 export interface UseEditorPersistenceResult {
   status: () => PersistenceStatus;
 }
 
+/** Minimal persistence interface for saving and loading documents. */
 export interface DocumentPersistence {
   saveDocument(doc: EditorDocument): Promise<void>;
   loadDocument(): Promise<EditorDocument | null>;
 }
 
+/**
+ * SolidJS hook that manages auto-saving the editor document via a persistence backend.
+ * @param state - The editor state to watch for changes.
+ * @param onLoaded - Callback invoked when a previously saved document is loaded.
+ * @param options - Configuration including the persistence backend and logger.
+ * @returns The persistence status.
+ */
 export function useEditorPersistence(
   state: EditorState,
   onLoaded: (doc: EditorDocument) => void,
@@ -35,9 +45,6 @@ export function useEditorPersistence(
 
     setStatus("Saving...");
     try {
-      // unwrap is essential to convert Solid Proxies to plain objects for IndexedDB
-      // We also use a deep clone via JSON to be absolutely sure no reactive artifacts or non-serializable
-      // properties remain in the object tree.
       const rawDoc = JSON.parse(JSON.stringify(unwrap(doc)));
       await persistence.saveDocument(rawDoc);
       setStatus("Saved");
@@ -47,8 +54,6 @@ export function useEditorPersistence(
     }
   }, 1000);
 
-  // Watch for document changes. We place this at the top level to ensure proper Solid ownership.
-  // The check for isInitialized() ensures we don't save during the initial load phase.
   createEffect(
     on(
       (): EditorDocument => state.document,

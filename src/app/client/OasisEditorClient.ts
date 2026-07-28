@@ -30,6 +30,7 @@ import {
 import type { ToolbarRegistry } from "@/ui/components/Toolbar/registry/ToolbarRegistry.js";
 import type { MenuRegistry } from "@/ui/components/Menubar/menuRegistry.js";
 
+/** UI-related editor state that can be toggled or configured at runtime. */
 export interface OasisEditorUiState {
   showChrome?: boolean; showTitleBar?: boolean; showMenubar?: boolean; showToolbar?: boolean; showOutline?: boolean;
   shell?: "document" | "inline" | "balloon"; locale?: "pt-BR" | "en";
@@ -37,6 +38,7 @@ export interface OasisEditorUiState {
   viewportHeight?: number | string; readOnly?: boolean;
 }
 
+/** Events emitted by the editor client lifecycle. */
 export type OasisEditorClientEvent =
   | "ready"
   | "change"
@@ -45,6 +47,7 @@ export type OasisEditorClientEvent =
   | "uiChange"
   | "error";
 
+/** Payload types associated with each client event. */
 export interface OasisEditorClientEvents {
   ready: Editor;
   change: EditorState;
@@ -54,120 +57,256 @@ export interface OasisEditorClientEvents {
   error: unknown;
 }
 
+/**
+ * Handler signature for subscribing to client events.
+ * @typeParam TEvent - The specific event type being handled.
+ */
 export type OasisEditorClientEventHandler<
   TEvent extends OasisEditorClientEvent = OasisEditorClientEvent,
 > = (payload: OasisEditorClientEvents[TEvent]) => void;
 
+/** Low-level document CRUD API exposed through the editor client. */
 export interface OasisEditorDocumentApi {
+  /** Returns the current document. */
   get(): EditorDocument;
+  /** @param document - The new document to set. Marks the editor dirty. */
   set(document: EditorDocument): void;
+  /** @param document - The document to load. Does NOT mark the editor dirty. */
   load(document: EditorDocument): void;
+  /** @param updater - Function that receives the current document and returns the new one. */
   update(updater: (document: EditorDocument) => EditorDocument): void;
+  /** Resets the document to its initial empty state. */
   reset(): void;
+  /** @returns A promise that resolves once the document is persisted. */
   save(): Promise<void>;
+  /** @returns `true` if the document has unsaved changes. */
   isDirty(): boolean;
+  /** Marks the document as clean (no unsaved changes). */
   markClean(): void;
+  /** @returns A monotonically increasing version counter, incremented on every mutation. */
   version(): number;
 }
 
+/** Query API for reading the document without mutation. */
 export interface OasisEditorQueryApi {
+  /** @returns A snapshot of the entire document (text, outline, nodes). */
   snapshot(): SemanticDocumentSnapshot;
+  /**
+   * @param target - Optional selector or range to scope the text to.
+   * @returns Plain text for the whole document or a specific target/range.
+   */
   getText(target?: DocumentSelector | DocumentRange): string;
+  /**
+   * @param selector - The selector identifying the node.
+   * @returns A semantic node descriptor, or `null` if not found.
+   */
   getNode(selector: DocumentSelector): ReturnType<ReturnType<typeof queryDocument>["getNode"]>;
+  /**
+   * @param text - The text to search for.
+   * @returns An array of match descriptors.
+   */
   find(text: string): ReturnType<ReturnType<typeof queryDocument>["find"]>;
+  /** @returns The document outline (heading-based hierarchy). */
   outline(): ReturnType<ReturnType<typeof queryDocument>["outline"]>;
 }
 
+/** Edit API for applying structured operations to the document. */
 export interface OasisEditorEditApi {
+  /**
+   * Applies one or more edit operations.
+   * @param request - The edit request containing operations and optional version checks.
+   * @returns A result indicating success or failure with error details.
+   */
   apply(request: ApplyEditRequest): Promise<OasisResult<ApplyEditValue>>;
 }
 
+/** Selection read/write API. */
 export interface OasisEditorSelectionApi {
+  /** @returns The current selection. */
   get(): EditorSelection;
+  /** @param selection - The new selection to set. */
   set(selection: EditorSelection): void;
 }
 
+/** Focus management API. */
 export interface OasisEditorFocusApi {
+  /** Focuses the editor input area. */
   focus(): void;
+  /** Blurs the editor input area. */
   blur(): void;
 }
 
+/** History (undo/redo) API. */
 export interface OasisEditorHistoryApi {
+  /** @returns The result of undoing the last operation. */
   undo(): unknown;
+  /** @returns The result of reapplying the last undone operation. */
   redo(): unknown;
+  /** @returns `true` if undo is available. */
   canUndo(): boolean;
+  /** @returns `true` if redo is available. */
   canRedo(): boolean;
+  /** Clears the entire undo/redo history. */
   clear(): void;
 }
 
+/** File import API. */
 export interface OasisEditorImportApi {
+  /**
+   * Imports a .docx file from a browser File object.
+   * @param file - The .docx file to import.
+   */
   docx(file: File): Promise<void>;
 }
 
+/** File export API. */
 export interface OasisEditorExportApi {
+  /** @returns A promise resolving to the exported .docx data. */
   docx(): Promise<unknown>;
+  /** @returns A promise resolving to the exported .pdf data. */
   pdf(): Promise<unknown>;
 }
 
+/** Data input/output API with progress reporting and result wrapping. */
 export interface OasisEditorDataIoApi {
+  /**
+   * Imports a document from raw data.
+   * @param request - Import configuration including format, data, and optional progress callback.
+   * @returns A wrapped result indicating success or failure.
+   */
   import(request: { format: "docx"; data: Blob | ArrayBuffer | Uint8Array; filename?: string; signal?: AbortSignal; onProgress?: (progress: unknown) => void }): Promise<OasisResult<{ format: "docx" }>>;
+  /**
+   * Exports the document as a Blob in the requested format.
+   * @param request - Export configuration including format and optional filename.
+   * @returns A wrapped result containing the blob.
+   */
   export(request: { format: "docx" | "pdf"; filename?: string }): Promise<OasisResult<{ format: "docx" | "pdf"; blob: Blob; arrayBuffer: () => Promise<ArrayBuffer> }>>;
 }
+
+/** UI configuration and chrome API. */
 export interface OasisEditorUiApi {
+  /** @returns The current UI state. */
   state(): OasisEditorUiState;
+  /**
+   * Applies a partial UI state patch.
+   * @param patch - The partial state to apply.
+   * @returns The new UI state after applying the patch.
+   */
   update(patch: OasisEditorUiState): OasisEditorUiState;
+  /** @param value - Whether the editor should be read-only. */
   setReadOnly(value: boolean): void;
+  /** Zoom controls. */
   zoom: { get(): number; set(value: number): void; adjust(delta: number): void };
+  /** Chrome visibility controls. */
   chrome: { setVisible(value: boolean): void };
+  /** Title bar visibility control. */
   titleBar: { setVisible(value: boolean): void };
+  /** Menubar visibility and item registry. */
   menubar: { setVisible(value: boolean): void; items: MenuRegistry };
+  /** Toolbar visibility and item registry. */
   toolbar: { setVisible(value: boolean): void; items: ToolbarRegistry };
+  /** Outline panel visibility control. */
   outline: { setVisible(value: boolean): void };
+  /** @param value - The shell mode to set. */
   shell: { set(value: "document" | "inline" | "balloon"): void };
+  /** @param value - The locale to set. */
   locale: { set(value: "pt-BR" | "en"): void };
 }
 
+/**
+ * The main public API surface of an Oasis Editor instance. Returned by
+ * {@link createOasisEditor} and {@link createOasisEditorContainer}.
+ */
 export interface OasisEditorClient {
+  /** Resolves once the editor runtime is fully initialized. */
   readonly ready: Promise<Editor>;
+  /** Typed command bus for dispatching editor commands. */
   readonly commands: TypedCommandBus<ToolbarCommandState>;
+  /** Document CRUD API. */
   readonly document: OasisEditorDocumentApi;
+  /** Selection API. */
   readonly selection: OasisEditorSelectionApi;
+  /** Focus API. */
   readonly focus: OasisEditorFocusApi;
+  /** History (undo/redo) API. */
   readonly history: OasisEditorHistoryApi;
+  /** File import API. */
   readonly import: OasisEditorImportApi;
+  /** File export API. */
   readonly export: OasisEditorExportApi;
+  /** Document query API. */
   readonly query: OasisEditorQueryApi;
+  /** Document edit API. */
   readonly edit: OasisEditorEditApi;
+  /** Data import/export API with result wrapping. */
   readonly io: OasisEditorDataIoApi;
+  /** UI configuration API. */
   readonly ui: OasisEditorUiApi;
+  /** Disposes the editor, releasing resources. */
   dispose(): void | Promise<void>;
+  /** @returns The current editor state. */
   getState(): EditorState;
+  /** @returns The current document. */
   getDocument(): EditorDocument;
+  /** @param document - The new document to set. Marks the editor dirty. */
   setDocument(document: EditorDocument): void;
+  /** @param document - The document to load. Does NOT mark the editor dirty. */
   loadDocument(document: EditorDocument): void;
+  /**
+   * @param updater - Function that receives the current document and returns the new one.
+   */
   updateDocument(updater: (document: EditorDocument) => EditorDocument): void;
+  /** Resets the document to its initial state. */
   resetDocument(): void;
+  /** @returns A promise that resolves once the document is persisted. */
   save(): Promise<void>;
+  /** @returns `true` if the document has unsaved changes. */
   isDirty(): boolean;
+  /** Marks the document as clean. */
   markClean(): void;
+  /** @returns The current selection. */
   getSelection(): EditorSelection;
+  /** @param selection - The new selection to set. */
   setSelection(selection: EditorSelection): void;
+  /** Focuses the editor. */
   focusEditor(): void;
+  /** Blurs the editor. */
   blurEditor(): void;
+  /**
+   * Subscribes to a client event.
+   * @param event - The event name.
+   * @param callback - The handler to invoke when the event fires.
+   * @returns An unsubscribe function.
+   */
   on<TEvent extends OasisEditorClientEvent>(
     event: TEvent,
     callback: OasisEditorClientEventHandler<TEvent>,
   ): () => void;
+  /**
+   * Subscribes to a single emission of a client event.
+   * @param event - The event name.
+   * @param callback - The handler to invoke once.
+   * @returns An unsubscribe function.
+   */
   once<TEvent extends OasisEditorClientEvent>(
     event: TEvent,
     callback: OasisEditorClientEventHandler<TEvent>,
   ): () => void;
+  /**
+   * Removes a previously subscribed event handler.
+   * @param event - The event name.
+   * @param callback - The handler to remove.
+   */
   off<TEvent extends OasisEditorClientEvent>(
     event: TEvent,
     callback: OasisEditorClientEventHandler<TEvent>,
   ): void;
 }
 
+/**
+ * Internal contract used by the host (editor UI shell) to drive the client.
+ * Extends the public {@link OasisEditorClient} with connection lifecycle methods.
+ */
 export interface OasisEditorClientHost {
   getRuntimeEditor(): Editor | null;
   getState(): EditorState;
@@ -195,11 +334,24 @@ export interface OasisEditorClientHost {
   menuRegistry?: MenuRegistry;
 }
 
+/**
+ * Combined interface for the internal client-controller, extending the public
+ * API with host connection, disposal, ready resolution, and event emission.
+ */
 export interface OasisEditorClientController extends OasisEditorClient {
+  /** @param host - The host to connect. */
   connectHost(host: OasisEditorClientHost): void;
+  /** @param dispose - The dispose function to call on cleanup. */
   setDispose(dispose: () => void | Promise<void>): void;
+  /** @param editor - The editor instance that is now ready. */
   resolveReady(editor: Editor): void;
+  /** @param error - The error that prevented initialization. */
   rejectReady(error: unknown): void;
+  /**
+   * Emits a client event.
+   * @param event - The event name.
+   * @param payload - The event payload.
+   */
   emit<TEvent extends OasisEditorClientEvent>(
     event: TEvent,
     payload: OasisEditorClientEvents[TEvent],
@@ -210,6 +362,12 @@ function disabledCommandState(): ToolbarCommandState {
   return { isEnabled: false, isActive: false, value: undefined };
 }
 
+/**
+ * Creates a new editor client controller. The client is a lightweight broker
+ * that connects the public API surface to the host runtime once mounted.
+ *
+ * @returns A new {@link OasisEditorClientController} instance.
+ */
 export function createOasisEditorClient(): OasisEditorClientController {
   let host: OasisEditorClientHost | null = null;
   let resolveReady!: (editor: Editor) => void;

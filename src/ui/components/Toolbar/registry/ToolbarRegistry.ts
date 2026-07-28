@@ -1,25 +1,60 @@
 import type { ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
 
+/** Target for moving a toolbar item: an absolute index or relative to another item. */
 export type ToolbarMoveTarget = number | { before: string } | { after: string };
 
+/** Registry for managing toolbar items with positional insertion and mutation subscriptions. */
 export interface ToolbarRegistry {
-  /** Add or update by id (last-write-wins). New items append, then sort by `order`. */
+  /**
+   * Add or update by id (last-write-wins). New items append, then sort by `order`.
+   * @param item - The toolbar item to register.
+   */
   register(item: ToolbarItem): void;
-  /** Insert positionally before an existing item. */
+  /**
+   * Insert positionally before an existing item.
+   * @param targetId - The id of the existing item.
+   * @param item - The item to insert.
+   */
   insertBefore(targetId: string, item: ToolbarItem): void;
-  /** Insert positionally after an existing item. */
+  /**
+   * Insert positionally after an existing item.
+   * @param targetId - The id of the existing item.
+   * @param item - The item to insert.
+   */
   insertAfter(targetId: string, item: ToolbarItem): void;
-  /** Replace an existing item in place, preserving its position. */
+  /**
+   * Replace an existing item in place, preserving its position.
+   * @param targetId - The id of the item to replace.
+   * @param item - The replacement item.
+   */
   replace(targetId: string, item: ToolbarItem): void;
+  /**
+   * Removes an item by id.
+   * @param id - The id of the item to remove.
+   */
   remove(id: string): void;
-  /** Move an existing item to an absolute index or relative to another item. */
+  /**
+   * Move an existing item to an absolute index or relative to another item.
+   * @param id - The id of the item to move.
+   * @param target - The target position.
+   */
   move(id: string, target: ToolbarMoveTarget): void;
+  /**
+   * @param id - The item id.
+   * @returns The item, or undefined.
+   */
   get(id: string): ToolbarItem | undefined;
+  /** @returns All items in display order. */
   getOrdered(): ToolbarItem[];
-  /** Backward-friendly alias for getOrdered. */
+  /** Backward-friendly alias for {@link getOrdered}. */
   getItems(): ToolbarItem[];
+  /** Removes all items. */
   clear(): void;
-  /** Subscribe to mutations; returns an unsubscribe function. */
+  /**
+   * Subscribe to mutations.
+   * @param callback - The callback invoked on mutation.
+   * @returns An unsubscribe function.
+   */
   onChange(callback: () => void): () => void;
 }
 
@@ -116,7 +151,6 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
     item: ToolbarItem,
     offset: 0 | 1,
   ): void {
-    // Drop any pre-existing item with the same id so position is unambiguous.
     this.entries = this.entries.filter(
       (entry): boolean => entry.id !== item.id,
     );
@@ -148,7 +182,6 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
   }
 
   private sortByOrder(): void {
-    // Stable sort by `order` (undefined sinks to the end, keeping insertion order).
     this.entries = this.entries
       .map((item, index): { item: ToolbarItem; index: number } => ({
         item,
@@ -169,6 +202,7 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
   }
 }
 
+/** Creates a new, empty toolbar registry. */
 export function createToolbarRegistry(): ToolbarRegistry {
   return new ToolbarRegistryImpl();
 }

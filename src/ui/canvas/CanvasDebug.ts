@@ -9,6 +9,7 @@ import type {
 } from "./CanvasLayoutSnapshot.js";
 import type { EditorEditingZone, EditorState } from "@/core/model.js";
 
+/** Records a canvas hit-test miss for debugging purposes. */
 export interface CanvasDebugMissEvent {
   timestamp: number;
   reason: string;
@@ -16,6 +17,7 @@ export interface CanvasDebugMissEvent {
   clientY: number;
 }
 
+/** Snapshot of a single canvas hit-test result. */
 export interface CanvasDebugHitSnapshot {
   timestamp: number;
   zone: SurfaceHit["zone"];
@@ -26,6 +28,7 @@ export interface CanvasDebugHitSnapshot {
   resolvedFromParagraph: boolean;
 }
 
+/** Debug snapshot of the full canvas layout. */
 export interface CanvasDebugLayoutSnapshot {
   surfaceRect: { left: number; top: number; width: number; height: number };
   pages: Array<{
@@ -70,7 +73,6 @@ export interface CanvasDebugLayoutSnapshot {
       width: number;
       height: number;
     };
-    /** Set when the paragraph/cell is painted with a vertical-text transform. */
     verticalMode?: CanvasSnapshotParagraph["verticalMode"];
   }>;
   inlineImages: Array<{
@@ -109,11 +111,17 @@ export interface CanvasDebugLayoutSnapshot {
   }>;
 }
 
+/** Debug API for inspecting canvas hit-testing and layout, exposed on `window.__oasisCanvasDebug`. */
 export interface OasisCanvasDebugApi {
+  /** @returns The most recent hit-test result, or null. */
   getLastHit: () => CanvasDebugHitSnapshot | null;
+  /** @returns A snapshot of the current layout, or null. */
   getLayoutSnapshot: () => CanvasDebugLayoutSnapshot | null;
+  /** @returns A snapshot of the current selection, or null. */
   getSelection: () => CanvasDebugSelectionSnapshot | null;
+  /** @returns All recorded miss events. */
   getMissEvents: () => CanvasDebugMissEvent[];
+  /** Clears all recorded miss events. */
   clearMissEvents: () => void;
 }
 
@@ -129,6 +137,7 @@ let lastLayoutSnapshot: CanvasDebugLayoutSnapshot | null = null;
 let lastSelectionSnapshot: CanvasDebugSelectionSnapshot | null = null;
 let missEvents: CanvasDebugMissEvent[] = [];
 
+/** Debug snapshot of the editor selection state. */
 export interface CanvasDebugSelectionSnapshot {
   anchor: {
     paragraphId: string;
@@ -340,6 +349,7 @@ function buildApi(): OasisCanvasDebugApi {
   };
 }
 
+/** Synchronizes visibility of the canvas debug API on `window.__oasisCanvasDebug`. */
 export function syncCanvasDebugApiVisibility(): void {
   if (typeof window === "undefined") {
     return;
@@ -357,6 +367,7 @@ export function syncCanvasDebugApiVisibility(): void {
   }
 }
 
+/** Records a canvas hit-test result for debugging. */
 export function recordCanvasDebugHit(hit: SurfaceHit | null): void {
   if (!installed || !hit) {
     return;
@@ -372,6 +383,7 @@ export function recordCanvasDebugHit(hit: SurfaceHit | null): void {
   };
 }
 
+/** Records a layout snapshot for canvas debugging. */
 export function recordCanvasDebugLayoutSnapshot(
   snapshot: CanvasLayoutSnapshot | null,
 ): void {
@@ -381,6 +393,7 @@ export function recordCanvasDebugLayoutSnapshot(
   lastLayoutSnapshot = snapshot ? cloneLayoutSnapshot(snapshot) : null;
 }
 
+/** Records the current selection state for canvas debugging. */
 export function recordCanvasDebugSelection(state: EditorState): void {
   if (!installed) {
     return;
@@ -401,6 +414,7 @@ export function recordCanvasDebugSelection(state: EditorState): void {
   };
 }
 
+/** Records a canvas hit-test miss event for debugging. */
 export function recordCanvasDebugMissEvent(
   reason: string,
   details: { clientX: number; clientY: number },

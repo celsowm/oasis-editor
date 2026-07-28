@@ -6,17 +6,26 @@ import {
   type EditorPosition,
 } from "@/core/model.js";
 
+/** Describes a single match found by the find service. */
 export interface FindReplaceMatch {
   anchor: EditorPosition;
   focus: EditorPosition;
   paragraphIndex: number;
 }
 
+/** Options that control how find searches operate. */
 export interface FindOptions {
   matchCase?: boolean;
   wholeWord?: boolean;
 }
 
+/**
+ * Searches a document for the given term and returns all matches.
+ * @param doc - The document to search.
+ * @param searchTerm - The text to search for.
+ * @param options - Search options (case sensitivity, whole word).
+ * @returns An array of match descriptors.
+ */
 export function findMatchesInDocument(
   doc: EditorDocument,
   searchTerm: string,
@@ -29,7 +38,7 @@ export function findMatchesInDocument(
   const { matchCase = false, wholeWord = false } = options;
 
   const flags = matchCase ? "g" : "gi";
-  let searchPattern = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // Escape regex chars
+  let searchPattern = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
   if (wholeWord) {
     searchPattern = `\\b${searchPattern}\\b`;
@@ -41,7 +50,6 @@ export function findMatchesInDocument(
     const text = getParagraphText(paragraph);
     let match: RegExpExecArray | null;
 
-    // Reset regex state for each paragraph
     regex.lastIndex = 0;
 
     while ((match = regex.exec(text)) !== null) {
@@ -54,7 +62,6 @@ export function findMatchesInDocument(
         paragraphIndex,
       });
 
-      // Avoid infinite loop on empty matches
       if (match.index === regex.lastIndex) {
         regex.lastIndex++;
       }

@@ -3,22 +3,30 @@ import type { EditorPageMargins } from "@/core/model.js";
 import type { TextCaseMode } from "./text.js";
 import type { TableBorderPreset } from "./table.js";
 
+/** Payload for the `insertTable` command. */
 export interface InsertTablePayload {
   rows: number;
   columns: number;
 }
 
+/** Payload for the `setFontSize` command. */
 export interface SetFontSizePayload {
   size: number | string | null;
 }
 
+/** Payload for the `setPageMargins` command. */
 export interface SetPageMarginsPayload extends Partial<EditorPageMargins> {}
 
+/** Payload for the `setSpecialIndent` command. */
 export interface SetSpecialIndentPayload {
   kind: "none" | "firstLine" | "hanging";
   value?: number | null;
 }
 
+/**
+ * Maps every built-in command name to its expected payload type.
+ * Commands with `undefined` payload accept no arguments.
+ */
 export interface OasisCommandPayloads {
   selectAll: undefined;
   insertFootnote: undefined;
@@ -130,31 +138,76 @@ export interface OasisCommandPayloads {
   insertTable: InsertTablePayload;
 }
 
+/** Maps commands to their typed return values. Commands not listed return `unknown`. */
 export interface OasisCommandResults {
   documentStyles: unknown;
   [command: string]: unknown;
 }
 
+/** A valid built-in command name. */
 export type OasisCommandName = keyof OasisCommandPayloads & string;
 
+/**
+ * Infers the argument tuple for a typed command based on its payload type.
+ * @typeParam TCommand - The command name.
+ */
 export type CommandPayloadArgs<TCommand extends OasisCommandName> =
   OasisCommandPayloads[TCommand] extends undefined
     ? [payload?: undefined]
     : [payload: OasisCommandPayloads[TCommand]];
 
+/**
+ * Typed command bus that provides type-safe execute/canExecute/state methods
+ * for built-in commands, while also accepting runtime {@link CommandRef} overloads.
+ * @typeParam TState - The command state type.
+ */
 export interface TypedCommandBus<TState> {
+  /**
+   * Type-safe execute for known commands.
+   * @param command - The command name.
+   * @param args - The command payload.
+   * @returns The command result.
+   */
   execute<TCommand extends OasisCommandName>(
     command: TCommand,
     ...args: CommandPayloadArgs<TCommand>
   ): TCommand extends keyof OasisCommandResults
     ? OasisCommandResults[TCommand]
     : unknown;
+  /**
+   * Runtime execute via CommandRef.
+   * @param command - The command reference.
+   * @param payloadOverride - Optional payload override.
+   * @returns The command result.
+   */
   execute(command: CommandRef, payloadOverride?: unknown): unknown;
+  /**
+   * Type-safe canExecute for known commands.
+   * @param command - The command name.
+   * @param args - The command payload.
+   * @returns Whether the command can execute.
+   */
   canExecute<TCommand extends OasisCommandName>(
     command: TCommand,
     ...args: CommandPayloadArgs<TCommand>
   ): boolean;
+  /**
+   * Runtime canExecute via CommandRef.
+   * @param command - The command reference.
+   * @param payloadOverride - Optional payload override.
+   * @returns Whether the command can execute.
+   */
   canExecute(command: CommandRef, payloadOverride?: unknown): boolean;
+  /**
+   * Type-safe state for known commands.
+   * @param command - The command name.
+   * @returns The command state.
+   */
   state<TCommand extends OasisCommandName>(command: TCommand): TState;
+  /**
+   * Runtime state via CommandRef.
+   * @param command - The command reference.
+   * @returns The command state.
+   */
   state(command: CommandRef): TState;
 }

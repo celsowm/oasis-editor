@@ -1,5 +1,5 @@
+// Re-exports of all UI component types and rendering primitives.
 export {
-  ActionRow,
   Button,
   Checkbox,
   ColorField,

@@ -9,6 +9,7 @@ import type { EditorState, EditorDocument } from "@/core/model.js";
 import { setSelection } from "@/core/commands/selection.js";
 import { insertTextAtSelection } from "@/core/commands/text.js";
 
+/** Result of the {@link useEditorFindReplace} hook. */
 export interface UseEditorFindReplaceResult {
   searchTerm: () => string;
   setSearchTerm: (term: string) => void;
@@ -26,6 +27,7 @@ export interface UseEditorFindReplaceResult {
   setIsOpen: (open: boolean) => void;
 }
 
+/** Dependencies required by {@link useEditorFindReplace}. */
 export interface FindReplaceDeps {
   state: EditorState;
   applyState: (next: EditorState) => void;
@@ -36,6 +38,11 @@ export interface FindReplaceDeps {
   focusInput: () => void;
 }
 
+/**
+ * SolidJS hook that drives find-and-replace state and actions.
+ * @param deps - The dependencies required by the hook.
+ * @returns The find/replace state and action methods.
+ */
 export function useEditorFindReplace(
   deps: FindReplaceDeps,
 ): UseEditorFindReplaceResult {
@@ -49,7 +56,6 @@ export function useEditorFindReplace(
   const [currentIndex, setCurrentIndex] = createSignal(-1);
   const [isOpen, setIsOpen] = createSignal(false);
 
-  // Update matches when search term, options or document changes
   createEffect(
     on(
       [(): EditorDocument => deps.state.document, searchTerm, findOptions],
@@ -57,13 +63,11 @@ export function useEditorFindReplace(
         const newMatches = findMatchesInDocument(doc, term, options);
         setMatches(newMatches);
 
-        // Try to preserve current match or reset to -1 if no matches
         if (newMatches.length === 0) {
           setCurrentIndex(-1);
         } else if (currentIndex() >= newMatches.length) {
           setCurrentIndex(0);
         } else if (currentIndex() === -1) {
-          // Default to first match if we just started searching
           setCurrentIndex(0);
         }
       },
@@ -80,7 +84,6 @@ export function useEditorFindReplace(
         focus: match.focus,
       }),
     );
-    // We don't focus the main input here because we want to stay in the Find dialog
   };
 
   const findNext = (): void => {
@@ -105,10 +108,6 @@ export function useEditorFindReplace(
 
     const match = matches()[currentIndex()];
 
-    // Ensure the current match is indeed selected before replacing
-    // If user moved cursor, we might be replacing wrong thing.
-    // Standard behavior: replace selected match and move to next.
-
     deps.applyTransactionalState(
       (current): EditorState => {
         const stateWithSelection = setSelection(current, {
@@ -119,10 +118,6 @@ export function useEditorFindReplace(
       },
       { mergeKey: MERGE_KEYS.findReplace },
     );
-
-    // After replacement, the matches will be updated by the effect.
-    // The effect should handle index adjustment.
-    // If we were at the last match, we might go to 0 or stay at same index (which is now a NEW match)
   };
 
   const replaceAll = (): void => {
@@ -132,7 +127,6 @@ export function useEditorFindReplace(
     deps.applyTransactionalState(
       (current): EditorState => {
         let workingState = current;
-        // Replace backwards to avoid shifting offsets of subsequent matches
         for (let i = currentMatches.length - 1; i >= 0; i--) {
           const m = currentMatches[i];
           workingState = setSelection(workingState, {

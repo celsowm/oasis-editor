@@ -19,22 +19,25 @@ function safeSet(key: string, value: string): void {
   try {
     globalThis.localStorage?.setItem(key, value);
   } catch {
-    // Storage unavailable (private mode, quota, SSR) — preference is best-effort.
   }
 }
 
+/** @returns Whether the welcome overlay has been seen. */
 export function getWelcomeSeen(): boolean {
   return safeGet(WELCOME_SEEN_KEY) === "1";
 }
 
+/** Marks the welcome overlay as seen. */
 export function setWelcomeSeen(): void {
   safeSet(WELCOME_SEEN_KEY, "1");
 }
 
+/** @returns Whether the user prefers precise font rendering. */
 export function getPreciseFontPreference(): boolean {
   return safeGet(PRECISE_FONT_KEY) === "on";
 }
 
+/** @param on - Whether precise font rendering should be enabled. */
 export function setPreciseFontPreference(on: boolean): void {
   safeSet(PRECISE_FONT_KEY, on ? "on" : "off");
 }

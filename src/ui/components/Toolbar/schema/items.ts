@@ -57,23 +57,40 @@ export interface ToolbarDocumentStyle {
   };
 }
 
-/**
- * Narrow surface every toolbar item depends on (DIP/ISP). Items only dispatch
- * and observe commands — they never touch editor internals or `EditorState`.
- * Even option-list data (e.g. document styles) arrives via `commandState`.
- */
+/** Narrow surface every toolbar item depends on. Items only dispatch and observe commands. */
 export interface ToolbarActionApi {
   commands: CommandBus<ToolbarCommandState>;
+  /**
+   * @param key - The translation key.
+   * @param params - Optional interpolation parameters.
+   * @returns The translated string.
+   */
   t(key: TranslationKey, params?: unknown[]): string;
   focusEditor(): void;
 }
 
 /** Per-item reactive overrides. All optional; default to command-derived. */
 export interface ItemReactiveOverrides {
+  /**
+   * @param api - The toolbar action API.
+   * @returns Whether the item is active.
+   */
   isActive?: (api: ToolbarActionApi) => boolean;
+  /**
+   * @param api - The toolbar action API.
+   * @returns Whether the item is disabled.
+   */
   isDisabled?: (api: ToolbarActionApi) => boolean;
+  /**
+   * @param api - The toolbar action API.
+   * @returns The reactive value override.
+   */
   value?: (api: ToolbarActionApi) => unknown;
-  /** Contextual visibility — item stays mounted; the renderer toggles display. */
+  /**
+   * Contextual visibility — item stays mounted; the renderer toggles display.
+   * @param api - The toolbar action API.
+   * @returns Whether the item should be visible.
+   */
   isVisible?: (api: ToolbarActionApi) => boolean;
 }
 
@@ -148,6 +165,10 @@ export interface SelectItem extends ToolbarItemBase {
   type: "select";
   /** Command dispatched with the chosen value as payload. */
   command: CommandRef;
+  /**
+   * @param api - The toolbar action API.
+   * @returns The list of selectable options.
+   */
   options: (api: ToolbarActionApi) => SelectOption[];
   /** Leading "empty" option label, if any (e.g. font placeholder). */
   placeholder?: string;
@@ -159,7 +180,10 @@ export interface SelectItem extends ToolbarItemBase {
 
 export interface StyleGalleryItem extends ToolbarItemBase {
   type: "styleGallery";
-  /** Reactive descriptors supplied through the command-state boundary. */
+  /**
+   * @param api - The toolbar action API.
+   * @returns Reactive descriptors supplied through the command-state boundary.
+   */
   styles: (api: ToolbarActionApi) => ToolbarDocumentStyle[];
   paragraphCommand: CommandRef;
   characterCommand: CommandRef;
@@ -211,6 +235,10 @@ export interface SeparatorItem {
   group?: string;
   row?: RibbonRow;
   ribbonGroupResize?: RibbonGroupResizePolicy;
+  /**
+   * @param api - The toolbar action API.
+   * @returns Whether the separator should be visible.
+   */
   isVisible?: (api: ToolbarActionApi) => boolean;
 }
 
@@ -221,6 +249,10 @@ export interface GroupItem extends ToolbarItemBase {
 
 export interface CustomItem extends ToolbarItemBase {
   type: "custom";
+  /**
+   * @param api - The toolbar action API.
+   * @returns The rendered JSX element.
+   */
   render: (api: ToolbarActionApi) => JSX.Element;
 }
 

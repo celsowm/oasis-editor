@@ -27,7 +27,7 @@ import type {
  * Application service that maps between the editor table model and the table
  * properties dialog DTOs. Extracted from `useTablePropertiesDialogBridge` so the
  * UI bridge only handles open/close/focus while the model knowledge (active
- * table resolution, value (de)serialization and mutation) lives here (F1).
+ * table resolution, value (de)serialization and mutation) lives here.
  */
 
 interface ActiveTableContext {
@@ -260,14 +260,19 @@ function setCellStyle<K extends keyof EditorTableCellStyle>(
   return setTableCellStyleValue(state, key, value);
 }
 
-/** Whether the current selection sits inside a table. */
+/**
+ * @param state - The current editor state.
+ * @returns Whether the current selection sits inside a table.
+ */
 export function hasActiveTable(state: EditorState): boolean {
   return Boolean(resolveActiveTableContext(state));
 }
 
 /**
- * Reads the active table/cell into the dialog's initial values, or `null` when
- * the selection is not inside a table.
+ * Reads the active table/cell into the dialog's initial values.
+ * @param state - The current editor state.
+ * @param activeTab - The default active tab in the dialog.
+ * @returns The dialog initial values, or `null` when the selection is not inside a table.
  */
 export function readTableProperties(
   state: EditorState,
@@ -281,6 +286,10 @@ export function readTableProperties(
 /**
  * Applies the dialog's submitted values to the active table/cell, returning the
  * next state. A no-op when the selection is no longer inside a table.
+ *
+ * @param state - The current editor state.
+ * @param values - The dialog values to apply.
+ * @returns The next editor state.
  */
 export function applyTableProperties(
   state: EditorState,

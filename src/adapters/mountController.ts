@@ -7,14 +7,25 @@ import type { OasisEditorAppProps, OasisEditorClient } from "oasis-editor";
  * around their own reactivity hooks.
  */
 export interface OasisMountController {
+  /**
+   * Mounts the editor into the given container.
+   * @param container - The DOM element to mount into.
+   * @param props - Editor configuration props.
+   * @param onClient - Optional callback receiving the mounted client.
+   */
   mount(
     container: HTMLElement,
     props: OasisEditorAppProps,
     onClient?: (client: OasisEditorClient) => void,
   ): void;
+  /** Unmounts the editor and releases resources. */
   unmount(): void;
 }
 
+/**
+ * Creates a framework-agnostic mount controller.
+ * @returns A new OasisMountController.
+ */
 export function createOasisMountController(): OasisMountController {
   let instance: ReturnType<typeof mount> | null = null;
 

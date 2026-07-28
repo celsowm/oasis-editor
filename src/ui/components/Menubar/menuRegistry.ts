@@ -8,11 +8,12 @@ export interface MenubarHost {
   commands: CommandBus<ToolbarCommandState>;
 }
 
+/** Descriptor for a single menu item in the menubar. */
 export interface MenuItem {
   id: string;
-  path: string; // e.g., "File/New"
+  path: string;
   command?: CommandRef;
-  labelKey?: TranslationKey; // e.g., "menu.file.new"
+  labelKey?: TranslationKey;
   icon?: string | ((host: MenubarHost) => string);
   shortcut?: string;
   order?: number;
@@ -21,9 +22,14 @@ export interface MenuItem {
   hidden?: boolean;
 }
 
+/** Registry for managing menubar items with registration, update, and query. */
 export class MenuRegistry {
   private items: MenuItem[] = [];
 
+  /**
+   * Registers or updates a menu item by id.
+   * @param item - The menu item to register.
+   */
   register(item: MenuItem): void {
     const existingIndex = this.items.findIndex(
       (entry): boolean => entry.id === item.id,
@@ -40,10 +46,15 @@ export class MenuRegistry {
     );
   }
 
+  /**
+   * Removes a menu item by id.
+   * @param id - The id of the item to remove.
+   */
   unregister(id: string): void {
     this.items = this.items.filter((i): boolean => i.id !== id);
   }
 
+  /** @returns A copy of all registered menu items. */
   getItems(): MenuItem[] {
     return [...this.items];
   }
