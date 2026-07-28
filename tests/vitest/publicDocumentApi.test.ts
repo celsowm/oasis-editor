@@ -23,7 +23,7 @@ describe("public document API", () => {
     const document = createDocument({ blocks: [createParagraph("Hello")] });
     const paragraph = document.sections[0]!.blocks[0]!;
     const result = applyDocumentOperations(document, [{ op: "replaceText", target: { nodeId: paragraph.id }, text: "Changed" }, { op: "insertParagraph", text: "Second" }]);
-    expect(queryDocument(result.document).getText()).toContain("Changed");
+    expect(result.document.sections[0]!.blocks[0]!.runs[0]!.text).toBe("Changed");
     expect(result.value.createdNodeIds).toHaveLength(1);
     expect(queryDocument(document).getText()).toBe("Hello");
   });
@@ -32,6 +32,6 @@ describe("public document API", () => {
     const table = createTable([["A", "B"]]);
     const document = createDocument({ blocks: [table] });
     const result = applyDocumentOperations(document, [{ op: "updateTableCell", target: { tableId: table.id, row: 0, column: 1 }, text: "C" }]);
-    expect(queryDocument(result.document).getText()).toContain("C");
+    expect(result.document.sections[0]!.blocks[0]!.rows[0]!.cells[1]!.blocks[0]!.runs[0]!.text).toBe("C");
   });
 });
