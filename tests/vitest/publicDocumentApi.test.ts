@@ -21,9 +21,12 @@ describe("public document API", () => {
 
   it("applies multiple operations atomically to cloned document data", () => {
     const document = createDocument({ blocks: [createParagraph("Hello")] });
-    const paragraph = document.sections[0]!.blocks[0]!;
+    const paragraph = document.sections?.[0]!.blocks[0]!;
     const result = applyDocumentOperations(document, [{ op: "replaceText", target: { nodeId: paragraph.id }, text: "Changed" }, { op: "insertParagraph", text: "Second" }]);
-    expect(result.document.sections[0]!.blocks[0]!.runs[0]!.text).toBe("Changed");
+    const changedParagraph = result.document.sections?.[0]!.blocks[0]!;
+    expect(changedParagraph.type).toBe("paragraph");
+    if (changedParagraph.type !== "paragraph") throw new Error("Expected paragraph");
+    expect(changedParagraph.runs[0]!.text).toBe("Changed");
     expect(result.value.createdNodeIds).toHaveLength(1);
     expect(queryDocument(document).getText()).toBe("Hello");
   });
@@ -32,6 +35,12 @@ describe("public document API", () => {
     const table = createTable([["A", "B"]]);
     const document = createDocument({ blocks: [table] });
     const result = applyDocumentOperations(document, [{ op: "updateTableCell", target: { tableId: table.id, row: 0, column: 1 }, text: "C" }]);
-    expect(result.document.sections[0]!.blocks[0]!.rows[0]!.cells[1]!.blocks[0]!.runs[0]!.text).toBe("C");
+    const changedTable = result.document.sections?.[0]!.blocks[0]!;
+    expect(changedTable.type).toBe("table");
+    if (changedTable.type !== "table") throw new Error("Expected table");
+    const changedCellParagraph = changedTable.rows[0]!.cells[1]!.blocks[0]!;
+    expect(changedCellParagraph.type).toBe("paragraph");
+    if (changedCellParagraph.type !== "paragraph") throw new Error("Expected paragraph");
+    expect(changedCellParagraph.runs[0]!.text).toBe("C");
   });
 });

@@ -27,6 +27,8 @@ describe("OasisEditorClient", () => {
     const importDocx = vi.fn(async () => {});
     const exportDocx = vi.fn(async () => "docx");
     const exportPdf = vi.fn(async () => "pdf");
+    const exportDocxBlob = vi.fn(async () => new Blob());
+    const exportPdfBlob = vi.fn(async () => new Blob());
     const focus = vi.fn();
     const blur = vi.fn();
     const clearHistory = vi.fn();
@@ -52,6 +54,8 @@ describe("OasisEditorClient", () => {
       importDocx,
       exportDocx,
       exportPdf,
+      exportDocxBlob,
+      exportPdfBlob,
     });
     client.setDispose(dispose);
     client.on("ready", onReady);

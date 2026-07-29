@@ -26,7 +26,8 @@ describe("OasisEditorClient public editing", () => {
       exportDocxBlob: async () => new Blob(),
       exportPdfBlob: async () => new Blob(),
     });
-    const paragraph = state.document.sections[0]!.blocks[0]!;
+    const paragraph = state.document.sections?.[0]?.blocks[0];
+    if (!paragraph) throw new Error("Expected paragraph");
     const applied = await client.edit.apply({ expectedVersion: 0, operations: [{ op: "replaceText", target: { nodeId: paragraph.id }, text: "after" }] });
     expect(applied.ok).toBe(true);
     expect(client.document.version()).toBe(1);
@@ -38,7 +39,8 @@ describe("OasisEditorClient public editing", () => {
     let state = createEditorStateFromDocument(createDocument({ blocks: [createParagraph("stable")] }));
     const client = createOasisEditorClient();
     client.connectHost({ getRuntimeEditor: () => null, getState: () => state, getDocument: () => state.document, setDocument: (document) => { state = createEditorStateFromDocument(document); }, applyTransactionalState: (producer) => { state = producer(state); }, resetDocument: () => undefined, saveDocument: async () => undefined, getSelection: () => state.selection, setSelection: () => undefined, focus: () => undefined, blur: () => undefined, clearHistory: () => undefined, importDocx: async () => undefined, exportDocx: async () => undefined, exportPdf: async () => undefined, exportDocxBlob: async () => new Blob(), exportPdfBlob: async () => new Blob() });
-    const id = state.document.sections[0]!.blocks[0]!.id;
+    const id = state.document.sections?.[0]?.blocks[0]?.id;
+    if (!id) throw new Error("Expected document block");
     const result = await client.edit.apply({ operations: [{ op: "replaceText", target: { nodeId: id }, text: "changed" }, { op: "replaceText", target: { nodeId: "missing" }, text: "boom" }] });
     expect(result.ok).toBe(false);
     expect(client.query.getText()).toBe("stable");

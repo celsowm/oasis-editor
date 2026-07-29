@@ -2,7 +2,7 @@ name: Build and Deploy Demo
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 permissions:
   contents: write
@@ -18,16 +18,25 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Run Tests
         run: npm test
 
       - name: Build App
         run: npm run build:app
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke Test Production Build
+        run: npm run test:smoke
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4

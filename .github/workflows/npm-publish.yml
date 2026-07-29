@@ -34,6 +34,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build app
+        run: npm run build:app
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke test production build
+        run: npm run test:smoke
+
       - name: Configure Git author
         run: |
           git config user.name "github-actions[bot]"
@@ -71,9 +86,6 @@ jobs:
             echo "publish_version=${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
             echo "release_mode=initial" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Run tests
-        run: npm test
 
       - name: Build package
         run: npm run build:lib

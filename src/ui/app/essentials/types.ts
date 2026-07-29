@@ -27,8 +27,8 @@ export interface CreateEditorEssentialsPluginOptions {
   styleController: ReturnType<typeof createEditorStyleController>;
   tableOps: ReturnType<typeof createEditorTableOperations>;
   docIO: {
-    handleExportDocx: () => Promise<void>;
-    handleExportPdf: () => Promise<void>;
+    handleExportDocx: () => Promise<Blob>;
+    handleExportPdf: () => Promise<Blob>;
   };
   importInputRef: () => HTMLInputElement | undefined;
   imageInputRef: () => HTMLInputElement | undefined;

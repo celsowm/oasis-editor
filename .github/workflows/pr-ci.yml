@@ -2,7 +2,7 @@ name: PR CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   ci:
@@ -13,10 +13,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
-      - run: npm install
+      - run: npm ci
+
+      - run: npm run typecheck
 
       - run: npm test
 
       - run: npm run build:app
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run test:smoke

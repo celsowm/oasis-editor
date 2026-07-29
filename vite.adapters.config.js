@@ -30,12 +30,17 @@ export default defineConfig({
     dts({
       outDir: 'dist',
       entryRoot: 'src/adapters',
-      include: ['src/adapters'],
+      include: ['src/adapters', 'src/types'],
       compilerOptions: {
         paths: {
           '@/*': ['src/*'],
           'oasis-editor': ['./src/index.ts'],
         },
+      },
+      afterDiagnostic(diagnostics) {
+        if (diagnostics.length > 0) {
+          throw new Error(`Declaration generation failed with ${diagnostics.length} TypeScript diagnostic(s)`);
+        }
       },
     }),
   ],

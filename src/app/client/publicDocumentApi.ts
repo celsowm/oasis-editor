@@ -14,7 +14,11 @@ import {
   createEditorTableCell,
   createEditorTableRow,
 } from "@/core/editorState.js";
-import { getDocumentParagraphsCanonical, getParagraphText } from "@/core/model.js";
+import {
+  getDocumentParagraphsCanonical,
+  getDocumentSectionsCanonical,
+  getParagraphText,
+} from "@/core/model.js";
 
 /** Current version of the editor document schema. */
 export const EDITOR_SCHEMA_VERSION = 1;
@@ -150,6 +154,9 @@ export function normalizeDocument(document: EditorDocument): EditorDocument {
   const next = cloneDocument(document);
   (next as EditorDocument & { schemaVersion?: number }).schemaVersion =
     (next as EditorDocument & { schemaVersion?: number }).schemaVersion ?? EDITOR_SCHEMA_VERSION;
+  if (!next.sections?.length) {
+    next.sections = getDocumentSectionsCanonical(next);
+  }
   return next;
 }
 
@@ -218,7 +225,9 @@ function allNodes(document: EditorDocument): SemanticNode[] {
     if (block.type === "paragraph") block.runs.forEach((run) => result.push({ id: run.id, type: "run", text: run.text, node: run }));
     else block.rows.forEach((row) => { result.push({ id: row.id, type: "table-row", node: row }); row.cells.forEach((cell) => { result.push({ id: cell.id, type: "table-cell", node: cell }); visitBlocks(cell.blocks); }); });
   });
-  document.sections.forEach((section) => visitBlocks(section.blocks));
+  getDocumentSectionsCanonical(document).forEach((section) =>
+    visitBlocks(section.blocks),
+  );
   return result;
 }
 
@@ -256,7 +265,7 @@ function resolveParagraph(document: EditorDocument, selector: DocumentSelector):
 
 function replaceParagraph(document: EditorDocument, id: string, update: (paragraph: EditorParagraphNode) => EditorParagraphNode): void {
   const visit = (blocks: EditorBlockNode[]): boolean => { for (let i = 0; i < blocks.length; i++) { const block = blocks[i]!; if (block.type === "paragraph" && block.id === id) { blocks[i] = update(block); return true; } if (block.type === "table" && block.rows.some((r) => r.cells.some((c) => visit(c.blocks)))) return true; } return false; };
-  document.sections.some((section) => visit(section.blocks));
+  getDocumentSectionsCanonical(document).some((section) => visit(section.blocks));
 }
 
 /**
@@ -289,6 +298,7 @@ export function queryDocument(document: EditorDocument): {
  */
 export function applyDocumentOperations(document: EditorDocument, operations: EditOperation[]): { document: EditorDocument; value: ApplyEditValue } {
   const next = normalizeDocument(document); const changedNodeIds: string[] = []; const createdNodeIds: string[] = [];
+  const sections = next.sections!;
   for (const operation of operations) {
     if (operation.op === "insertText" || operation.op === "replaceText") {
       const paragraph = resolveParagraph(next, operation.target); if (!paragraph) throw new Error("NODE_NOT_FOUND");
@@ -302,13 +312,13 @@ export function applyDocumentOperations(document: EditorDocument, operations: Ed
       replaceParagraph(next, paragraph.id, (p) => ({ ...p, runs: [{ ...p.runs[0]!, text: text.slice(0, start) + text.slice(end) }] })); changedNodeIds.push(paragraph.id);
     } else if (operation.op === "setParagraphStyle") { const paragraph = resolveParagraph(next, operation.target); if (!paragraph) throw new Error("NODE_NOT_FOUND"); replaceParagraph(next, paragraph.id, (p) => ({ ...p, style: operation.style })); changedNodeIds.push(paragraph.id);
     } else if (operation.op === "setTextStyle") { const paragraph = resolveParagraph(next, operation.target); if (!paragraph) throw new Error("NODE_NOT_FOUND"); replaceParagraph(next, paragraph.id, (p) => ({ ...p, runs: p.runs.map((r) => ({ ...r, styles: { ...r.styles, ...operation.style } })) })); changedNodeIds.push(paragraph.id);
-    } else if (operation.op === "insertParagraph" || operation.op === "insertBlocks" || operation.op === "insertTable") { const blocks = operation.op === "insertParagraph" ? [createEditorParagraph(operation.text ?? "")] : operation.op === "insertTable" ? [createTable(operation.rows)] : operation.blocks; next.sections[0]!.blocks.push(...blocks); blocks.forEach((b) => { createdNodeIds.push(b.id); changedNodeIds.push(b.id); });
+    } else if (operation.op === "insertParagraph" || operation.op === "insertBlocks" || operation.op === "insertTable") { const blocks = operation.op === "insertParagraph" ? [createEditorParagraph(operation.text ?? "")] : operation.op === "insertTable" ? [createTable(operation.rows)] : operation.blocks; sections[0]!.blocks.push(...blocks); blocks.forEach((b) => { createdNodeIds.push(b.id); changedNodeIds.push(b.id); });
     } else if (operation.op === "updateTableCell") { const table = allNodes(next).find((n) => n.id === operation.target.tableId && n.type === "table")?.node as any; const paragraph = table?.rows[operation.target.row]?.cells[operation.target.column]?.blocks.find((b: any) => b.type === "paragraph") as EditorParagraphNode | undefined; if (!paragraph) throw new Error("NODE_NOT_FOUND"); replaceParagraph(next, paragraph.id, (p) => ({ ...p, runs: [{ ...p.runs[0]!, text: operation.text }] })); changedNodeIds.push(paragraph.id, operation.target.tableId);
     } else if (operation.op === "deleteNode") {
       const target = "nodeId" in operation.target ? operation.target.nodeId : resolveParagraph(next, operation.target)?.id;
       if (!target) throw new Error("NODE_NOT_FOUND");
       const remove = (blocks: EditorBlockNode[]): boolean => { const index = blocks.findIndex((b) => b.id === target); if (index >= 0) { blocks.splice(index, 1); return true; } return blocks.some((b) => b.type === "table" && b.rows.some((r) => r.cells.some((c) => remove(c.blocks)))); };
-      if (!next.sections.some((section) => remove(section.blocks))) throw new Error("NODE_NOT_FOUND");
+      if (!sections.some((section) => remove(section.blocks))) throw new Error("NODE_NOT_FOUND");
       changedNodeIds.push(target);
     } else throw new Error("UNSUPPORTED_OPERATION");
   }

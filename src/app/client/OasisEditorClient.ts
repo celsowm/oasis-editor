@@ -642,7 +642,13 @@ export function createOasisEditorClient(): OasisEditorClientController {
       async import(request): Promise<OasisResult<{ format: "docx" }>> {
         if (request.signal?.aborted) return { ok: false, error: { code: "ABORTED", message: "Import aborted" } };
         try {
-          const data = request.data instanceof Blob ? request.data : new Blob([request.data]);
+          const data = request.data instanceof Blob
+            ? request.data
+            : new Blob([
+                request.data instanceof Uint8Array
+                  ? Uint8Array.from(request.data).buffer
+                  : request.data,
+              ]);
           const file = new File([data], request.filename ?? "document.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
           await requireHost().importDocx(file);
           version += 1;
