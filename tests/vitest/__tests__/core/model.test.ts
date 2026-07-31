@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { createEditorParagraphFromRuns } from "@/core/editorState.js";
 import {
   resolveEffectiveTextStyle,
   resolveEffectiveParagraphStyle,
@@ -14,6 +15,7 @@ import {
   getActiveSectionBlocks,
   getDocumentSections,
   getBlockParagraphs,
+  getParagraphLength,
   EFFECTIVE_TEXT_STYLE_DEFAULTS,
   EFFECTIVE_PARAGRAPH_STYLE_DEFAULTS,
 } from "@/core/model.js";
@@ -277,6 +279,15 @@ describe("getDocumentSections", () => {
 });
 
 describe("canonical block/paragraph helpers", () => {
+  it("computes paragraph length without changing UTF-16 semantics", () => {
+    const paragraph = createEditorParagraphFromRuns([
+      { text: "ab" },
+      { text: "😀c" },
+    ]);
+
+    expect(getParagraphLength(paragraph)).toBe(5);
+  });
+
   it("returns canonical paragraphs from sections when blocks is empty", () => {
     const sectionParagraph = {
       id: "p:1",

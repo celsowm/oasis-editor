@@ -103,10 +103,9 @@ function sliceFragmentToRange(
     return null;
   }
 
-  const chars = fragment.chars.filter(
-    (char): boolean =>
-      char.paragraphOffset >= start && char.paragraphOffset < end,
-  );
+  const firstCharIndex = findFirstCharAtOrAfter(fragment.chars, start);
+  const lastCharIndex = findFirstCharAtOrAfter(fragment.chars, end);
+  const chars = fragment.chars.slice(firstCharIndex, lastCharIndex);
 
   return {
     paragraphId: fragment.paragraphId,
@@ -120,6 +119,82 @@ function sliceFragmentToRange(
     revision: fragment.revision ? { ...fragment.revision } : undefined,
     chars,
   };
+}
+
+function findFirstCharAtOrAfter(
+  chars: EditorLayoutFragmentChar[],
+  offset: number,
+): number {
+  let low = 0;
+  let high = chars.length;
+  while (low < high) {
+    const middle = low + Math.floor((high - low) / 2);
+    if (chars[middle]!.paragraphOffset < offset) {
+      low = middle + 1;
+    } else {
+      high = middle;
+    }
+  }
+  return low;
+}
+
+interface FragmentRange {
+  startOffset: number;
+  endOffset: number;
+}
+
+function sliceFragmentsToRanges(
+  fragments: EditorLayoutFragment[],
+  ranges: FragmentRange[],
+): EditorLayoutFragment[][] {
+  const rangesAreOrdered = ranges.every(
+    (range, index): boolean =>
+      index === 0 || range.startOffset >= ranges[index - 1]!.startOffset,
+  );
+  const fragmentsAreOrdered = fragments.every(
+    (fragment, index): boolean =>
+      index === 0 || fragment.startOffset >= fragments[index - 1]!.startOffset,
+  );
+
+  if (!rangesAreOrdered || !fragmentsAreOrdered) {
+    return ranges.map((range) =>
+      fragments
+        .map((fragment): EditorLayoutFragment | null =>
+          sliceFragmentToRange(fragment, range.startOffset, range.endOffset),
+        )
+        .filter(
+          (fragment): fragment is EditorLayoutFragment => fragment !== null,
+        ),
+    );
+  }
+
+  let firstCandidateIndex = 0;
+  return ranges.map((range): EditorLayoutFragment[] => {
+    while (
+      firstCandidateIndex < fragments.length &&
+      fragments[firstCandidateIndex]!.endOffset <= range.startOffset
+    ) {
+      firstCandidateIndex += 1;
+    }
+
+    const sliced: EditorLayoutFragment[] = [];
+    for (
+      let index = firstCandidateIndex;
+      index < fragments.length &&
+      fragments[index]!.startOffset < range.endOffset;
+      index += 1
+    ) {
+      const fragment = sliceFragmentToRange(
+        fragments[index]!,
+        range.startOffset,
+        range.endOffset,
+      );
+      if (fragment) {
+        sliced.push(fragment);
+      }
+    }
+    return sliced;
+  });
 }
 
 let paragraphLayoutCache = new WeakMap<
@@ -241,26 +316,20 @@ export function projectParagraphLayout(
         fontSize,
         styles,
       );
-      const lines = measurer
-        .composeMeasuredParagraphLines({
-          paragraph,
-          fragments,
-          styles,
-          contentWidth,
-          defaultTabStop,
-          hyphenation: context.hyphenation,
-        })
-        .map((line) => ({
-          ...line,
-          height: line.height || lineHeight,
-          fragments: fragments
-            .map((fragment): EditorLayoutFragment | null =>
-              sliceFragmentToRange(fragment, line.startOffset, line.endOffset),
-            )
-            .filter(
-              (fragment): fragment is EditorLayoutFragment => fragment !== null,
-            ),
-        }));
+      const composedLines = measurer.composeMeasuredParagraphLines({
+        paragraph,
+        fragments,
+        styles,
+        contentWidth,
+        defaultTabStop,
+        hyphenation: context.hyphenation,
+      });
+      const fragmentsByLine = sliceFragmentsToRanges(fragments, composedLines);
+      const lines = composedLines.map((line, index) => ({
+        ...line,
+        height: line.height || lineHeight,
+        fragments: fragmentsByLine[index]!,
+      }));
 
       return {
         paragraphId: paragraph.id,
@@ -350,26 +419,23 @@ export function projectParagraphLayoutWithExclusions(
   if (exclusions.length === 0) {
     return preliminary;
   }
-  const lines = measurer
-    .composeMeasuredParagraphLines({
-      paragraph,
-      fragments: preliminary.fragments,
-      styles,
-      contentWidth,
-      defaultTabStop,
-      exclusions,
-    })
-    .map((line) => ({
-      ...line,
-      height: line.height || lineHeight,
-      fragments: preliminary.fragments
-        .map((fragment): EditorLayoutFragment | null =>
-          sliceFragmentToRange(fragment, line.startOffset, line.endOffset),
-        )
-        .filter(
-          (fragment): fragment is EditorLayoutFragment => fragment !== null,
-        ),
-    }));
+  const composedLines = measurer.composeMeasuredParagraphLines({
+    paragraph,
+    fragments: preliminary.fragments,
+    styles,
+    contentWidth,
+    defaultTabStop,
+    exclusions,
+  });
+  const fragmentsByLine = sliceFragmentsToRanges(
+    preliminary.fragments,
+    composedLines,
+  );
+  const lines = composedLines.map((line, index) => ({
+    ...line,
+    height: line.height || lineHeight,
+    fragments: fragmentsByLine[index]!,
+  }));
 
   return {
     paragraphId: paragraph.id,
@@ -395,10 +461,14 @@ export function measureParagraphLayoutFromRects(
     undefined,
   );
   const measuredLines = measureLinesFromRects(charRects);
+  const fragmentsByLine = sliceFragmentsToRanges(
+    projected.fragments,
+    measuredLines,
+  );
 
   return {
     ...projected,
-    lines: measuredLines.map((line) => {
+    lines: measuredLines.map((line, index) => {
       const slots: EditorCaretSlot[] = line.slots.map(
         (
           slot,
@@ -425,13 +495,7 @@ export function measureParagraphLayoutFromRects(
         top: line.top,
         height: line.height,
         slots,
-        fragments: projected.fragments
-          .map((fragment): EditorLayoutFragment | null =>
-            sliceFragmentToRange(fragment, line.startOffset, line.endOffset),
-          )
-          .filter(
-            (fragment): fragment is EditorLayoutFragment => fragment !== null,
-          ),
+        fragments: fragmentsByLine[index]!,
       };
     }),
     contentWidth: projected.contentWidth,
@@ -442,11 +506,15 @@ export function applyMeasuredLineGeometry(
   projected: EditorLayoutParagraph,
   measured: EditorLayoutParagraph,
 ): EditorLayoutParagraph {
+  const fragmentsByLine = sliceFragmentsToRanges(
+    projected.fragments,
+    measured.lines,
+  );
   return {
     ...projected,
     startOffset: measured.startOffset ?? projected.startOffset,
     endOffset: measured.endOffset ?? projected.endOffset,
-    lines: measured.lines.map((line) => ({
+    lines: measured.lines.map((line, index) => ({
       paragraphId: projected.paragraphId,
       index: line.index,
       startOffset: line.startOffset,
@@ -470,13 +538,7 @@ export function applyMeasuredLineGeometry(
           height: slot.height,
         }),
       ),
-      fragments: projected.fragments
-        .map((fragment): EditorLayoutFragment | null =>
-          sliceFragmentToRange(fragment, line.startOffset, line.endOffset),
-        )
-        .filter(
-          (fragment): fragment is EditorLayoutFragment => fragment !== null,
-        ),
+      fragments: fragmentsByLine[index]!,
     })),
   };
 }

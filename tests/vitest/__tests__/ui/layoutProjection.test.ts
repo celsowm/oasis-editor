@@ -87,6 +87,82 @@ describe("layout projection", () => {
       expect(layout.lines.length).toBeGreaterThan(1);
     });
 
+    it("slices ordered fragments across line ranges", () => {
+      const paragraph = createEditorParagraphFromRuns([
+        { text: "ab😀", styles: { bold: true } },
+        { text: "cd", styles: { italic: true } },
+      ]);
+      const ranges = [
+        { startOffset: 0, endOffset: 2 },
+        { startOffset: 2, endOffset: 4 },
+        { startOffset: 4, endOffset: 6 },
+      ];
+      const measurer: ITextMeasurer = {
+        composeMeasuredParagraphLines: (options) =>
+          ranges.map((range, index) => ({
+            paragraphId: options.paragraph.id,
+            index,
+            ...range,
+            top: index * 16,
+            height: 16,
+            slots: [],
+            fragments: [],
+          })),
+        resolveRenderedLineHeightPx: () => 16,
+      };
+
+      const layout = projectParagraphLayout(
+        paragraph,
+        0,
+        1,
+        undefined,
+        600,
+        measurer,
+      );
+
+      expect(
+        layout.lines.map((line) => line.fragments.map((f) => f.text)),
+      ).toEqual([["ab"], ["😀"], ["cd"]]);
+      expect(layout.lines[1]!.fragments[0]!.styles?.bold).toBe(true);
+      expect(layout.lines[2]!.fragments[0]!.styles?.italic).toBe(true);
+    });
+
+    it("preserves slicing for decreasing measured ranges", () => {
+      const paragraph = createEditorParagraphFromRuns([
+        { text: "ab" },
+        { text: "cd" },
+      ]);
+      const measurer: ITextMeasurer = {
+        composeMeasuredParagraphLines: (options) =>
+          [
+            { startOffset: 2, endOffset: 4 },
+            { startOffset: 0, endOffset: 2 },
+          ].map((range, index) => ({
+            paragraphId: options.paragraph.id,
+            index,
+            ...range,
+            top: index * 16,
+            height: 16,
+            slots: [],
+            fragments: [],
+          })),
+        resolveRenderedLineHeightPx: () => 16,
+      };
+
+      const layout = projectParagraphLayout(
+        paragraph,
+        0,
+        1,
+        undefined,
+        600,
+        measurer,
+      );
+
+      expect(
+        layout.lines.map((line) => line.fragments.map((f) => f.text)),
+      ).toEqual([["cd"], ["ab"]]);
+    });
+
     it("can clear cached paragraph geometry after async font metrics load", () => {
       const p = createEditorParagraph("font");
       const wide = projectParagraphLayout(

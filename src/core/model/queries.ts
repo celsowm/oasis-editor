@@ -10,7 +10,10 @@ export function getParagraphText(paragraph: EditorParagraphNode): string {
 }
 
 export function getParagraphLength(paragraph: EditorParagraphNode): number {
-  return getParagraphText(paragraph).length;
+  return paragraph.runs.reduce(
+    (length, run): number => length + run.text.length,
+    0,
+  );
 }
 
 export function getRunIndex(

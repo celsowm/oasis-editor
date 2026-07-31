@@ -12,7 +12,6 @@ import {
   positionToParagraphOffset,
 } from "@/core/model.js";
 import {
-  clampPosition,
   createCollapsedSelection,
   findParagraphIndex,
   normalizeSelection,
@@ -30,27 +29,34 @@ export function withSelection(position: EditorPosition): EditorSelection {
 
 export function getFocusParagraph(state: EditorState): {
   paragraph: EditorParagraphNode;
+  paragraphs: EditorParagraphNode[];
   index: number;
   offset: number;
 } {
   const paragraphs = getParagraphs(state);
-  const focus = clampPosition(state, state.selection.focus);
-  const index = findParagraphIndex(paragraphs, focus.paragraphId);
+  const index = findParagraphIndex(
+    paragraphs,
+    state.selection.focus.paragraphId,
+  );
   const paragraph = paragraphs[index];
+  const focus = paragraphOffsetToPosition(
+    paragraph,
+    positionToParagraphOffset(paragraph, state.selection.focus),
+  );
   return {
     paragraph,
+    paragraphs,
     index,
     offset: positionToParagraphOffset(paragraph, focus),
   };
 }
 
 export function deleteSelectionRange(state: EditorState): EditorState {
-  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+  const normalized = normalizeSelection(state, paragraphs);
   if (normalized.isCollapsed) {
     return state;
   }
-
-  const paragraphs = getParagraphs(state);
 
   if (state.trackChangesEnabled) {
     const revisionId = `rev:${Math.random().toString(36).slice(2, 9)}`;
