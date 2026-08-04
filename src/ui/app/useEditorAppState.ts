@@ -4,8 +4,6 @@ import {
   createEditorStateFromDocument,
   createInitialEditorState,
 } from "@/core/editorState.js";
-import { cloneEditorState } from "@/core/cloneState.js";
-
 export function createEditorAppState(options: {
   initialDocument?: EditorDocument;
   initialState?: EditorState;
@@ -16,7 +14,7 @@ export function createEditorAppState(options: {
   getStateSnapshot: () => EditorState;
 } {
   const initialEditorState = options.initialState
-    ? cloneEditorState(options.initialState)
+    ? options.initialState
     : options.initialDocument
       ? createEditorStateFromDocument(options.initialDocument)
       : createInitialEditorState();
