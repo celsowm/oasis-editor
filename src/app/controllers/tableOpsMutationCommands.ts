@@ -1,24 +1,128 @@
 import { cloneBlock } from "@/core/cloneState.js";
 import { createEditorDocument } from "@/core/editorState.js";
 import {
+  findParagraphLocation,
   findParagraphTablePathLocation,
   getActiveSectionIndex,
+  getBlockParagraphs,
   getDocumentSectionsCanonical,
   paragraphOffsetToPosition,
   resolveTablePath,
   type EditorBlockNode,
   type EditorEditingZone,
   type EditorParagraphNode,
+  type EditorSection,
   type EditorState,
   type EditorTableCellNode,
   type EditorTableNode,
 } from "@/core/model.js";
+
+type HeaderStoryKey = "header" | "firstPageHeader" | "evenPageHeader";
+type FooterStoryKey = "footer" | "firstPageFooter" | "evenPageFooter";
+type SectionStoryKey = HeaderStoryKey | FooterStoryKey | "blocks";
+
+function storyContainsParagraph(
+  blocks: readonly EditorBlockNode[] | undefined,
+  paragraphId: string,
+): boolean {
+  return Boolean(
+    blocks?.some((block): boolean =>
+      getBlockParagraphs(block).some(
+        (paragraph): boolean => paragraph.id === paragraphId,
+      ),
+    ),
+  );
+}
+
+function resolveSectionStoryKey(
+  current: EditorState,
+  section: EditorSection,
+  zone: EditorEditingZone,
+): SectionStoryKey {
+  if (zone === "main") return "blocks";
+  const paragraphId = current.selection.focus.paragraphId;
+  if (zone === "header") {
+    const candidates: Array<readonly [HeaderStoryKey, EditorBlockNode[] | undefined]> = [
+      ["header", section.header],
+      ["firstPageHeader", section.firstPageHeader],
+      ["evenPageHeader", section.evenPageHeader],
+    ];
+    return (
+      candidates.find(([, blocks]): boolean =>
+        storyContainsParagraph(blocks, paragraphId),
+      )?.[0] ?? "header"
+    );
+  }
+  if (zone === "footer") {
+    const candidates: Array<readonly [FooterStoryKey, EditorBlockNode[] | undefined]> = [
+      ["footer", section.footer],
+      ["firstPageFooter", section.firstPageFooter],
+      ["evenPageFooter", section.evenPageFooter],
+    ];
+    return (
+      candidates.find(([, blocks]): boolean =>
+        storyContainsParagraph(blocks, paragraphId),
+      )?.[0] ?? "footer"
+    );
+  }
+  return "blocks";
+}
+
+function resolveActiveFootnoteId(current: EditorState): string | undefined {
+  const location = findParagraphLocation(
+    current.document,
+    current.selection.focus.paragraphId,
+  );
+  return location?.zone === "footnote"
+    ? location.footnoteId
+    : current.activeFootnoteId;
+}
+
+export function getTableOperationTargetBlocks(
+  current: EditorState,
+  zone: EditorEditingZone,
+): EditorBlockNode[] {
+  if (zone === "footnote") {
+    const footnoteId = resolveActiveFootnoteId(current);
+    return footnoteId
+      ? (current.document.footnotes?.items[footnoteId]?.blocks ?? [])
+      : [];
+  }
+
+  const sections = getDocumentSectionsCanonical(current.document);
+  const activeSectionIndex = getActiveSectionIndex(current);
+  const section =
+    sections[Math.max(0, Math.min(activeSectionIndex, sections.length - 1))];
+  if (!section) return [];
+  const storyKey = resolveSectionStoryKey(current, section, zone);
+  return storyKey === "blocks" ? section.blocks : (section[storyKey] ?? []);
+}
 
 export const updateBlocksInCurrentSection = (
   current: EditorState,
   blocks: EditorBlockNode[],
   zone: EditorEditingZone = "main",
 ): EditorState => {
+  if (zone === "footnote") {
+    const footnoteId = resolveActiveFootnoteId(current);
+    const footnotes = current.document.footnotes;
+    const footnote = footnoteId ? footnotes?.items[footnoteId] : undefined;
+    if (!footnoteId || !footnotes || !footnote) return current;
+    return {
+      ...current,
+      document: {
+        ...current.document,
+        footnotes: {
+          ...footnotes,
+          items: {
+            ...footnotes.items,
+            [footnoteId]: { ...footnote, blocks },
+          },
+        },
+      },
+    };
+  }
+
   const activeSectionIndex = getActiveSectionIndex(current);
   const sections = getDocumentSectionsCanonical(current.document);
   const boundedSectionIndex = Math.max(
@@ -28,12 +132,12 @@ export const updateBlocksInCurrentSection = (
   const section = sections[boundedSectionIndex];
   if (!section) return current;
 
+  const storyKey = resolveSectionStoryKey(current, section, zone);
   const nextSections = [...sections];
-  if (zone === "header")
-    nextSections[boundedSectionIndex] = { ...section, header: blocks };
-  else if (zone === "footer")
-    nextSections[boundedSectionIndex] = { ...section, footer: blocks };
-  else nextSections[boundedSectionIndex] = { ...section, blocks };
+  nextSections[boundedSectionIndex] =
+    storyKey === "blocks"
+      ? { ...section, blocks }
+      : { ...section, [storyKey]: blocks };
 
   return {
     ...current,
