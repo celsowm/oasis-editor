@@ -12,8 +12,7 @@ import type {
   ExportBuildState,
   NumberingContext,
 } from "./docxTypes.js";
-import { serializeParagraphXml } from "./textXml.js";
-import { serializeTableXml } from "./tableXml.js";
+import { serializeBlocksXml } from "./textXml.js";
 import { OFFICE_REL_NS, WORD14_NS, WORD_NS } from "./xmlUtils.js";
 
 /**
@@ -173,20 +172,11 @@ export function buildFootnotesXml(
   const footnoteEntries = referenced
     .map((entry): string => {
       const augmentedBlocks = withInjectedFootnoteRef(entry.footnote.blocks);
-      const innerXml = augmentedBlocks
-        .map((block): string => {
-          if (block.type === "paragraph") {
-            // serializeParagraphXml passes each run through serializeRun,
-            // which recognizes the synthetic `__isFootnoteRefMarker` flag.
-            return serializeParagraphXml(block, partContext, styles);
-          }
-          return serializeTableXml(block, (paragraph, cell): string =>
-            serializeParagraphXml(paragraph, partContext, styles, {
-              align: cell.style?.horizontalAlign,
-            }),
-          );
-        })
-        .join("");
+      const innerXml = serializeBlocksXml(
+        augmentedBlocks,
+        partContext,
+        styles,
+      );
       return `<w:footnote w:id="${entry.docxId}">${innerXml}</w:footnote>`;
     })
     .join("");
@@ -220,3 +210,6 @@ export type { DocContext, NumberingContext, ExportBuildState };
 // Avoid an unused-import warning for getDocumentSections when tree-shaking
 // keeps the file as-is.
 void getDocumentSections;
+// These parameters remain part of the stable builder contract.
+void numberingContext;
+void state;
