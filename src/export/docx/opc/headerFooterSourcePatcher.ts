@@ -10,7 +10,6 @@ import type {
   EditorOpcRelationship,
 } from "@/core/model.js";
 import {
-  normalizeOpcPartPath,
   OPC_CONTENT_TYPES_PATH,
   parseOpcContentTypes,
   parseOpcRelationships,
@@ -19,6 +18,7 @@ import {
   serializeOpcRelationships,
 } from "@/ooxml/opc/packageXml.js";
 import { hashDocxPartBytes } from "./rebuiltPartHashes.js";
+import { patchRebuiltDocxWithSourcePackage } from "./sourcePackagePatcher.js";
 
 const CONVENTIONAL_MAIN_DOCUMENT_PATH = "word/document.xml";
 const HEADER_RELATIONSHIP_SUFFIX = "/header";
@@ -34,6 +34,11 @@ interface HeaderFooterReference {
   type: string;
   occurrence: number;
   relationshipId: string;
+}
+
+interface ParsedHeaderFooterReferences {
+  references: HeaderFooterReference[];
+  sectionCount: number;
 }
 
 interface ResolvedHeaderFooterReference extends HeaderFooterReference {
@@ -146,10 +151,14 @@ function replaceAttributeByLocalName(
   return false;
 }
 
-function collectHeaderFooterReferences(xml: string): HeaderFooterReference[] {
+function collectHeaderFooterReferences(
+  xml: string,
+): ParsedHeaderFooterReferences {
   const document = new DOMParser().parseFromString(xml, "application/xml");
   const references: HeaderFooterReference[] = [];
-  const sectionProperties = collectElementsByLocalName(document, "sectPr");
+  const sectionProperties = collectElementsByLocalName(document, "sectPr").filter(
+    (element): boolean => element.parentNode?.localName !== "sectPrChange",
+  );
 
   sectionProperties.forEach((section, sectionIndex): void => {
     const occurrenceByKindAndType = new Map<string, number>();
@@ -182,7 +191,7 @@ function collectHeaderFooterReferences(xml: string): HeaderFooterReference[] {
     }
   });
 
-  return references;
+  return { references, sectionCount: sectionProperties.length };
 }
 
 function assignBaselinePaths(
@@ -313,13 +322,15 @@ async function buildPreservationPlan(
     };
   }
 
+  const parsedSource = collectHeaderFooterReferences(sourceMainXml);
+  const parsedCurrent = collectHeaderFooterReferences(rebuiltMainXml);
   const sourceReferences = resolveReferences(
-    collectHeaderFooterReferences(sourceMainXml),
+    parsedSource.references,
     sourceRelationshipsForOwner(sourcePackage, sourcePackage.mainDocumentPart),
   );
   assignBaselinePaths(sourceReferences);
   const currentReferences = resolveReferences(
-    collectHeaderFooterReferences(rebuiltMainXml),
+    parsedCurrent.references,
     await zipRelationshipsForOwner(rebuilt, CONVENTIONAL_MAIN_DOCUMENT_PATH),
   );
 
@@ -351,11 +362,18 @@ async function buildPreservationPlan(
     );
   }
 
-  const deletedSourcePartPaths = new Set(
-    sourceReferences
-      .map((reference): string => reference.partPath)
-      .filter((path): boolean => !retainedSourcePartPaths.has(path)),
-  );
+  // Section insertion/removal shifts every later section index. In that case
+  // exact-key matches are still safe, but deleting unmatched source parts is
+  // not: retain them opaquely rather than guessing that they were removed.
+  const canDeleteUnmatchedSourceParts =
+    parsedSource.sectionCount === parsedCurrent.sectionCount;
+  const deletedSourcePartPaths = canDeleteUnmatchedSourceParts
+    ? new Set(
+        sourceReferences
+          .map((reference): string => reference.partPath)
+          .filter((path): boolean => !retainedSourcePartPaths.has(path)),
+      )
+    : new Set<string>();
 
   return {
     matches,
@@ -364,37 +382,26 @@ async function buildPreservationPlan(
   };
 }
 
-function relationshipKey(relationship: EditorOpcRelationship): string {
-  return [
-    relationship.type,
-    relationship.target,
-    relationship.targetMode ?? "Internal",
-  ].join("\u0000");
-}
-
-function mergeRelationships(
-  source: EditorOpcRelationship[],
-  current: EditorOpcRelationship[],
-  relationshipPartPathValue: string,
-): EditorOpcRelationship[] {
-  const result: EditorOpcRelationship[] = [];
-  const byId = new Map<string, EditorOpcRelationship>();
-
-  for (const relationship of [...current, ...source]) {
-    const existing = byId.get(relationship.id);
-    if (existing) {
-      if (relationshipKey(existing) === relationshipKey(relationship)) {
-        continue;
+function rewriteHeaderFooterReferenceIds(
+  xml: string,
+  relationshipIdMap: ReadonlyMap<string, EditorOpcRelationship>,
+): string | undefined {
+  const document = new DOMParser().parseFromString(xml, "application/xml");
+  let changed = false;
+  for (const localName of ["headerReference", "footerReference"]) {
+    for (const element of collectElementsByLocalName(document, localName)) {
+      const currentId = getAttributeByLocalName(element, "id");
+      const sourceRelationship = currentId
+        ? relationshipIdMap.get(currentId)
+        : undefined;
+      if (sourceRelationship) {
+        changed =
+          replaceAttributeByLocalName(element, "id", sourceRelationship.id) ||
+          changed;
       }
-      throw new Error(
-        `Cannot safely preserve ${relationshipPartPathValue}: relationship id ${relationship.id} is used for different targets.`,
-      );
     }
-    byId.set(relationship.id, relationship);
-    result.push(relationship);
   }
-
-  return result;
+  return changed ? new XMLSerializer().serializeToString(document) : undefined;
 }
 
 function transformRelationshipsForOwner(
@@ -420,105 +427,107 @@ function transformRelationshipsForOwner(
   });
 }
 
-function rewriteHeaderFooterReferenceIds(
-  xml: string,
-  relationshipIdMap: ReadonlyMap<string, EditorOpcRelationship>,
-): string | undefined {
-  const document = new DOMParser().parseFromString(xml, "application/xml");
-  let changed = false;
-  for (const localName of ["headerReference", "footerReference"]) {
-    for (const element of collectElementsByLocalName(document, localName)) {
-      const currentId = getAttributeByLocalName(element, "id");
-      const sourceRelationship = currentId
-        ? relationshipIdMap.get(currentId)
-        : undefined;
-      if (sourceRelationship) {
-        changed =
-          replaceAttributeByLocalName(element, "id", sourceRelationship.id) ||
-          changed;
-      }
-    }
-  }
-  return changed ? new XMLSerializer().serializeToString(document) : undefined;
+function relationshipKey(relationship: EditorOpcRelationship): string {
+  return [
+    relationship.type,
+    relationship.target,
+    relationship.targetMode ?? "Internal",
+  ].join("\u0000");
 }
 
-async function patchMainDocumentAndRelationships(
-  output: JSZip,
+function deduplicateRelationships(
+  relationships: EditorOpcRelationship[],
+  relationshipPartPathValue: string,
+): EditorOpcRelationship[] {
+  const result: EditorOpcRelationship[] = [];
+  const byId = new Map<string, EditorOpcRelationship>();
+  for (const relationship of relationships) {
+    const existing = byId.get(relationship.id);
+    if (existing) {
+      if (relationshipKey(existing) === relationshipKey(relationship)) {
+        continue;
+      }
+      throw new Error(
+        `Cannot safely preserve ${relationshipPartPathValue}: relationship id ${relationship.id} is used for different targets.`,
+      );
+    }
+    byId.set(relationship.id, relationship);
+    result.push(relationship);
+  }
+  return result;
+}
+
+async function rebuiltPartMatchesBaseline(
+  rebuilt: JSZip,
   sourcePackage: EditorDocxSourcePackage,
-  plan: HeaderFooterPreservationPlan,
-): Promise<void> {
-  const mainDocumentXml = await output
-    .file(sourcePackage.mainDocumentPart)
-    ?.async("string");
-  if (mainDocumentXml) {
-    const rewritten = rewriteHeaderFooterReferenceIds(
-      mainDocumentXml,
-      plan.sourceRelationshipByCurrentId,
-    );
-    if (rewritten) {
-      output.file(sourcePackage.mainDocumentPart, rewritten);
-    }
+  currentPath: string,
+  baselinePath: string | undefined,
+): Promise<boolean> {
+  if (!baselinePath) {
+    return false;
   }
-
-  const relationshipPath = relationshipPartPath(sourcePackage.mainDocumentPart);
-  const relationshipXml = await output.file(relationshipPath)?.async("string");
-  const currentRelationships = resolveOpcRelationships(
-    sourcePackage.mainDocumentPart,
-    parseOpcRelationships(relationshipXml),
+  const baselineHash = sourcePackage.rebuiltPartHashes?.[baselinePath];
+  const entry = rebuilt.file(currentPath);
+  if (!entry) {
+    return baselineHash === undefined;
+  }
+  if (!baselineHash) {
+    return false;
+  }
+  return (
+    baselineHash === hashDocxPartBytes(await entry.async("uint8array"))
   );
-  const transformed: EditorOpcRelationship[] = [];
+}
 
-  for (const relationship of currentRelationships) {
+async function groupMatchesBaseline(
+  rebuilt: JSZip,
+  sourcePackage: EditorDocxSourcePackage,
+  matches: HeaderFooterMatch[],
+  relationshipPart: boolean,
+): Promise<boolean> {
+  for (const match of matches) {
+    const currentPath = relationshipPart
+      ? relationshipPartPath(match.current.partPath)
+      : match.current.partPath;
+    const baselinePath = match.source.baselinePath
+      ? relationshipPart
+        ? relationshipPartPath(match.source.baselinePath)
+        : match.source.baselinePath
+      : undefined;
     if (
-      relationship.targetMode !== "External" &&
-      relationship.resolvedTarget &&
-      plan.deletedSourcePartPaths.has(relationship.resolvedTarget)
+      !(await rebuiltPartMatchesBaseline(
+        rebuilt,
+        sourcePackage,
+        currentPath,
+        baselinePath,
+      ))
     ) {
-      continue;
+      return false;
     }
-    const sourceEquivalent = plan.sourceRelationshipByCurrentId.get(
-      relationship.id,
+  }
+  return true;
+}
+
+async function ensureSharedCurrentPartsAreEquivalent(
+  rebuilt: JSZip,
+  matches: HeaderFooterMatch[],
+  relationshipPart: boolean,
+): Promise<void> {
+  if (matches.length < 2) {
+    return;
+  }
+  const signatures = new Set<string>();
+  for (const match of matches) {
+    const path = relationshipPart
+      ? relationshipPartPath(match.current.partPath)
+      : match.current.partPath;
+    const bytes = await rebuilt.file(path)?.async("uint8array");
+    signatures.add(bytes ? hashDocxPartBytes(bytes) : "<missing>");
+  }
+  if (signatures.size > 1) {
+    throw new Error(
+      `Cannot safely preserve shared header/footer part ${matches[0]!.source.partPath}: its section projections diverged after editing.`,
     );
-    if (!sourceEquivalent || !sourceEquivalent.resolvedTarget) {
-      transformed.push(relationship);
-      continue;
-    }
-    transformed.push({
-      ...sourceEquivalent,
-      target: relativeRelationshipTarget(
-        sourcePackage.mainDocumentPart,
-        sourceEquivalent.resolvedTarget,
-      ),
-      targetMode: "Internal",
-    });
-  }
-
-  for (const sourceEquivalent of plan.sourceRelationshipByCurrentId.values()) {
-    if (
-      transformed.some(
-        (relationship): boolean => relationship.id === sourceEquivalent.id,
-      )
-    ) {
-      continue;
-    }
-    if (!sourceEquivalent.resolvedTarget) {
-      continue;
-    }
-    transformed.push({
-      ...sourceEquivalent,
-      target: relativeRelationshipTarget(
-        sourcePackage.mainDocumentPart,
-        sourceEquivalent.resolvedTarget,
-      ),
-      targetMode: "Internal",
-    });
-  }
-
-  const deduplicated = mergeRelationships([], transformed, relationshipPath);
-  if (deduplicated.length > 0) {
-    output.file(relationshipPath, serializeOpcRelationships(deduplicated));
-  } else {
-    output.remove(relationshipPath);
   }
 }
 
@@ -534,197 +543,264 @@ function groupMatchesBySourcePart(
   return groups;
 }
 
-async function ensureSharedCurrentPartsAreEquivalent(
+async function prepareMainDocumentAndRelationships(
   rebuilt: JSZip,
-  matches: HeaderFooterMatch[],
+  sourcePackage: EditorDocxSourcePackage,
+  plan: HeaderFooterPreservationPlan,
 ): Promise<void> {
-  if (matches.length < 2) {
-    return;
-  }
-  const hashes = new Set<string>();
-  for (const match of matches) {
-    const bytes = await rebuilt
-      .file(match.current.partPath)
-      ?.async("uint8array");
-    if (bytes) {
-      hashes.add(hashDocxPartBytes(bytes));
+  const mainEntry = rebuilt.file(CONVENTIONAL_MAIN_DOCUMENT_PATH);
+  const mainXml = await mainEntry?.async("string");
+  if (mainXml) {
+    const baselineHash =
+      sourcePackage.rebuiltPartHashes?.[CONVENTIONAL_MAIN_DOCUMENT_PATH];
+    const currentHash = hashDocxPartBytes(new TextEncoder().encode(mainXml));
+    if (!baselineHash || baselineHash !== currentHash) {
+      const rewritten = rewriteHeaderFooterReferenceIds(
+        mainXml,
+        plan.sourceRelationshipByCurrentId,
+      );
+      if (rewritten) {
+        rebuilt.file(CONVENTIONAL_MAIN_DOCUMENT_PATH, rewritten);
+      }
     }
   }
-  if (hashes.size > 1) {
-    throw new Error(
-      `Cannot safely preserve shared header/footer part ${matches[0]!.source.partPath}: its section projections diverged after editing.`,
-    );
-  }
+
+  const relationshipPath = relationshipPartPath(
+    CONVENTIONAL_MAIN_DOCUMENT_PATH,
+  );
+  const currentRelationships = parseOpcRelationships(
+    await rebuilt.file(relationshipPath)?.async("string"),
+  );
+  const transformed = currentRelationships.map(
+    (relationship): EditorOpcRelationship => {
+      const sourceEquivalent = plan.sourceRelationshipByCurrentId.get(
+        relationship.id,
+      );
+      if (!sourceEquivalent?.resolvedTarget) {
+        return relationship;
+      }
+      return {
+        ...sourceEquivalent,
+        target: relativeRelationshipTarget(
+          CONVENTIONAL_MAIN_DOCUMENT_PATH,
+          sourceEquivalent.resolvedTarget,
+        ),
+        targetMode: "Internal",
+      };
+    },
+  );
+  rebuilt.file(
+    relationshipPath,
+    serializeOpcRelationships(
+      deduplicateRelationships(transformed, relationshipPath),
+    ),
+  );
 }
 
-async function patchOneHeaderFooterPart(
+async function prepareOneHeaderFooterPart(
   rebuilt: JSZip,
-  output: JSZip,
   sourcePackage: EditorDocxSourcePackage,
   matches: HeaderFooterMatch[],
 ): Promise<void> {
-  await ensureSharedCurrentPartsAreEquivalent(rebuilt, matches);
   const representative = matches[0]!;
-  const currentPath = representative.current.partPath;
   const actualPath = representative.source.partPath;
-  const baselinePath = representative.source.baselinePath;
-  const currentBytes = await rebuilt.file(currentPath)?.async("uint8array");
-  const baselineHash = baselinePath
-    ? sourcePackage.rebuiltPartHashes?.[baselinePath]
-    : undefined;
-  const canKeepSourcePart = Boolean(
-    currentBytes &&
-      baselineHash &&
-      sourcePackage.parts[actualPath] &&
-      baselineHash === hashDocxPartBytes(currentBytes),
+  const keepSourcePart = await groupMatchesBaseline(
+    rebuilt,
+    sourcePackage,
+    matches,
+    false,
   );
-
-  if (currentBytes && !canKeepSourcePart) {
-    output.file(actualPath, currentBytes);
+  if (!keepSourcePart) {
+    await ensureSharedCurrentPartsAreEquivalent(rebuilt, matches, false);
+    const currentBytes = await rebuilt
+      .file(representative.current.partPath)
+      ?.async("uint8array");
+    if (!currentBytes) {
+      throw new Error(
+        `Cannot preserve ${actualPath}: rebuilt header/footer part is missing.`,
+      );
+    }
+    rebuilt.file(actualPath, currentBytes);
   }
   for (const match of matches) {
     if (match.current.partPath !== actualPath) {
-      output.remove(match.current.partPath);
+      rebuilt.remove(match.current.partPath);
     }
   }
 
-  const currentRelationshipPath = relationshipPartPath(currentPath);
   const actualRelationshipPath = relationshipPartPath(actualPath);
-  const currentRelationshipXml = await rebuilt
-    .file(currentRelationshipPath)
-    ?.async("string");
-  if (!currentRelationshipXml) {
-    for (const match of matches) {
-      const path = relationshipPartPath(match.current.partPath);
-      if (path !== actualRelationshipPath) {
-        output.remove(path);
-      }
-    }
-    return;
-  }
-
-  const baselineRelationshipPath = baselinePath
-    ? relationshipPartPath(baselinePath)
-    : undefined;
-  const currentRelationshipBytes = await rebuilt
-    .file(currentRelationshipPath)
-    ?.async("uint8array");
-  const baselineRelationshipHash = baselineRelationshipPath
-    ? sourcePackage.rebuiltPartHashes?.[baselineRelationshipPath]
-    : undefined;
-  const canKeepSourceRelationships = Boolean(
-    currentRelationshipBytes &&
-      baselineRelationshipHash &&
-      sourcePackage.parts[actualRelationshipPath] &&
-      baselineRelationshipHash === hashDocxPartBytes(currentRelationshipBytes),
+  const keepSourceRelationships = await groupMatchesBaseline(
+    rebuilt,
+    sourcePackage,
+    matches,
+    true,
   );
-
-  if (!canKeepSourceRelationships) {
-    const transformedCurrent = transformRelationshipsForOwner(
-      parseOpcRelationships(currentRelationshipXml),
-      currentPath,
-      actualPath,
+  if (!keepSourceRelationships) {
+    await ensureSharedCurrentPartsAreEquivalent(rebuilt, matches, true);
+    const currentRelationshipPath = relationshipPartPath(
+      representative.current.partPath,
     );
-    const sourceRelationships = sourceRelationshipsForOwner(
-      sourcePackage,
-      actualPath,
-    );
-    const merged = mergeRelationships(
-      sourceRelationships,
-      transformedCurrent,
-      actualRelationshipPath,
-    );
-    output.file(
-      actualRelationshipPath,
-      serializeOpcRelationships(merged),
-    );
+    const currentRelationshipXml = await rebuilt
+      .file(currentRelationshipPath)
+      ?.async("string");
+    if (currentRelationshipXml) {
+      rebuilt.file(
+        actualRelationshipPath,
+        serializeOpcRelationships(
+          transformRelationshipsForOwner(
+            parseOpcRelationships(currentRelationshipXml),
+            representative.current.partPath,
+            actualPath,
+          ),
+        ),
+      );
+    }
   }
-
   for (const match of matches) {
-    const path = relationshipPartPath(match.current.partPath);
-    if (path !== actualRelationshipPath) {
-      output.remove(path);
+    const currentRelationshipPath = relationshipPartPath(
+      match.current.partPath,
+    );
+    if (currentRelationshipPath !== actualRelationshipPath) {
+      rebuilt.remove(currentRelationshipPath);
     }
   }
 }
 
-async function patchHeaderFooterParts(
+async function prepareHeaderFooterParts(
   rebuilt: JSZip,
-  output: JSZip,
   sourcePackage: EditorDocxSourcePackage,
   plan: HeaderFooterPreservationPlan,
 ): Promise<void> {
-  for (const sourcePath of plan.deletedSourcePartPaths) {
-    output.remove(sourcePath);
-    output.remove(relationshipPartPath(sourcePath));
-  }
   for (const matches of groupMatchesBySourcePart(plan.matches).values()) {
-    await patchOneHeaderFooterPart(
-      rebuilt,
-      output,
-      sourcePackage,
-      matches,
-    );
+    await prepareOneHeaderFooterPart(rebuilt, sourcePackage, matches);
   }
 }
 
-async function patchContentTypes(
+async function prepareContentTypes(
   rebuilt: JSZip,
-  output: JSZip,
   plan: HeaderFooterPreservationPlan,
 ): Promise<void> {
-  const outputXml = await output.file(OPC_CONTENT_TYPES_PATH)?.async("string");
-  if (!outputXml) {
+  const xml = await rebuilt.file(OPC_CONTENT_TYPES_PATH)?.async("string");
+  if (!xml) {
     return;
   }
-  const outputContentTypes = parseOpcContentTypes(outputXml);
-  const rebuiltXml = await rebuilt.file(OPC_CONTENT_TYPES_PATH)?.async("string");
-  const rebuiltContentTypes = parseOpcContentTypes(rebuiltXml);
-
-  for (const deletedPath of plan.deletedSourcePartPaths) {
-    delete outputContentTypes.overrides[deletedPath];
-  }
+  const contentTypes = parseOpcContentTypes(xml);
   for (const match of plan.matches) {
-    const contentType = rebuiltContentTypes.overrides[match.current.partPath];
+    const contentType = contentTypes.overrides[match.current.partPath];
     if (contentType) {
-      outputContentTypes.overrides[match.source.partPath] = contentType;
+      contentTypes.overrides[match.source.partPath] = contentType;
     }
     if (match.current.partPath !== match.source.partPath) {
-      delete outputContentTypes.overrides[match.current.partPath];
+      delete contentTypes.overrides[match.current.partPath];
     }
   }
-
-  output.file(
+  rebuilt.file(
     OPC_CONTENT_TYPES_PATH,
-    serializeOpcContentTypes(outputContentTypes),
+    serializeOpcContentTypes(contentTypes),
   );
 }
 
+function sourceDocumentWithoutDeletedHeaderFooterParts(
+  document: EditorDocument,
+  deletedPartPaths: ReadonlySet<string>,
+): EditorDocument {
+  const sourcePackage = document.sourcePackage;
+  if (!sourcePackage || deletedPartPaths.size === 0) {
+    return document;
+  }
+
+  const contentTypes = {
+    defaults: { ...sourcePackage.contentTypes.defaults },
+    overrides: Object.fromEntries(
+      Object.entries(sourcePackage.contentTypes.overrides).filter(
+        ([path]): boolean => !deletedPartPaths.has(path),
+      ),
+    ),
+  };
+  const parts = { ...sourcePackage.parts };
+  for (const path of deletedPartPaths) {
+    delete parts[path];
+    delete parts[relationshipPartPath(path)];
+  }
+
+  const mainPart = parts[sourcePackage.mainDocumentPart];
+  const filteredMainRelationships = sourceRelationshipsForOwner(
+    sourcePackage,
+    sourcePackage.mainDocumentPart,
+  ).filter(
+    (relationship): boolean =>
+      relationship.targetMode === "External" ||
+      !relationship.resolvedTarget ||
+      !deletedPartPaths.has(relationship.resolvedTarget),
+  );
+  if (mainPart) {
+    parts[sourcePackage.mainDocumentPart] = {
+      ...mainPart,
+      relationships: filteredMainRelationships,
+    };
+  }
+
+  const mainRelationshipPath = relationshipPartPath(
+    sourcePackage.mainDocumentPart,
+  );
+  const mainRelationshipPart = parts[mainRelationshipPath];
+  if (mainRelationshipPart) {
+    parts[mainRelationshipPath] = {
+      ...mainRelationshipPart,
+      data: serializeOpcRelationships(filteredMainRelationships),
+    };
+  }
+
+  const contentTypesPart = parts[OPC_CONTENT_TYPES_PATH];
+  if (contentTypesPart) {
+    parts[OPC_CONTENT_TYPES_PATH] = {
+      ...contentTypesPart,
+      data: serializeOpcContentTypes(contentTypes),
+    };
+  }
+
+  return {
+    ...document,
+    sourcePackage: {
+      ...sourcePackage,
+      contentTypes,
+      parts,
+    },
+  };
+}
+
 /**
- * Final source-backed export pass for the relationship collections that cannot
- * be treated as singleton parts. Header/footer parts are paired by section and
- * reference type, moved back to their source paths, and their source r:ids are
- * restored in sectPr. Deletions and path reindexing are handled explicitly.
+ * Prepares collection-valued header/footer relationships before the general
+ * source-package merge. Pairing uses section index and reference type, source
+ * paths and r:ids are restored, unchanged parts are omitted so their original
+ * bytes survive, and explicit removals are filtered from the source snapshot.
  */
-export async function patchHeaderFooterSourceParts(
+export async function patchRebuiltDocxWithHeaderFooterSourcePaths(
   document: EditorDocument,
   rebuiltBuffer: ArrayBuffer,
-  sourcePatchedBuffer: ArrayBuffer,
 ): Promise<ArrayBuffer> {
   const sourcePackage = document.sourcePackage;
   if (!sourcePackage) {
-    return sourcePatchedBuffer;
+    return rebuiltBuffer;
   }
 
   const rebuilt = await JSZip.loadAsync(rebuiltBuffer);
   const plan = await buildPreservationPlan(sourcePackage, rebuilt);
-  if (plan.matches.length === 0 && plan.deletedSourcePartPaths.size === 0) {
-    return sourcePatchedBuffer;
+  if (plan.matches.length > 0) {
+    await prepareMainDocumentAndRelationships(rebuilt, sourcePackage, plan);
+    await prepareHeaderFooterParts(rebuilt, sourcePackage, plan);
+    await prepareContentTypes(rebuilt, plan);
   }
 
-  const output = await JSZip.loadAsync(sourcePatchedBuffer);
-  await patchHeaderFooterParts(rebuilt, output, sourcePackage, plan);
-  await patchMainDocumentAndRelationships(output, sourcePackage, plan);
-  await patchContentTypes(rebuilt, output, plan);
-  return output.generateAsync({ type: "arraybuffer" });
+  const preparedBuffer =
+    plan.matches.length > 0
+      ? await rebuilt.generateAsync({ type: "arraybuffer" })
+      : rebuiltBuffer;
+  return patchRebuiltDocxWithSourcePackage(
+    sourceDocumentWithoutDeletedHeaderFooterParts(
+      document,
+      plan.deletedSourcePartPaths,
+    ),
+    preparedBuffer,
+  );
 }
