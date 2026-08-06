@@ -7,6 +7,7 @@ import type {
   EditorOpcPart,
   EditorOpcRelationship,
 } from "@/core/model.js";
+import { captureRebuiltDocxPartHashes } from "@/export/docx/opc/rebuiltPartHashes.js";
 import {
   getOpcRelationshipOwnerPath,
   normalizeOpcPartPath,
@@ -164,6 +165,8 @@ export async function attachDocxSourcePackage(
   document: EditorDocument,
   buffer: ArrayBuffer,
 ): Promise<EditorDocument> {
-  document.sourcePackage = await captureDocxSourcePackage(buffer);
+  const sourcePackage = await captureDocxSourcePackage(buffer);
+  sourcePackage.rebuiltPartHashes = await captureRebuiltDocxPartHashes(document);
+  document.sourcePackage = sourcePackage;
   return document;
 }
