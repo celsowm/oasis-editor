@@ -81,7 +81,7 @@ export function createEditorRunSemanticSignature(
 export function createEditorRunStructureSignature(
   run: EditorTextRun,
 ): string {
-  const semanticRun = { ...run, text: undefined } as EditorTextRun;
+  const semanticRun = { ...run, text: undefined };
   return stableSemanticString(semanticRun);
 }
 
