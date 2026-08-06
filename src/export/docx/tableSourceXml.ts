@@ -74,6 +74,14 @@ function hasRelationshipReference(xml: string): boolean {
   return /\br:(?:id|embed|link)\s*=/.test(xml);
 }
 
+function normalizeKnownRowAlignmentAliases(xml: string): string {
+  return xml.replace(
+    /(<w:jc\b[^>]*\bw:val=")(?<value>start|end)("[^>]*\/?>)/g,
+    (_match, prefix: string, value: string, suffix: string): string =>
+      `${prefix}${value === "start" ? "left" : "right"}${suffix}`,
+  );
+}
+
 function copySourceAttributes(
   source: XmlElement,
   generated: XmlElement,
@@ -254,13 +262,14 @@ function overlayRowAndCellProperties(
     );
 
     const refreshedProperties = firstDirectWordChild(rowElement, "trPr");
+    const mergedRowProperties = mergeTableRowPropertiesOoxmlSource(
+      row,
+      serializeElement(refreshedProperties),
+    );
     insertPropertyElement(
       rowElement,
       refreshedProperties,
-      mergeTableRowPropertiesOoxmlSource(
-        row,
-        serializeElement(refreshedProperties),
-      ),
+      normalizeKnownRowAlignmentAliases(mergedRowProperties),
       "trPr",
       firstDirectWordChild(rowElement, "tc") ?? null,
     );
