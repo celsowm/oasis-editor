@@ -1,5 +1,5 @@
 import type { EditorDocument } from "@/core/model.js";
-import { exportEditorDocumentToDocxBlob } from "@/export/docx/exportEditorDocumentToDocx.js";
+import { exportEditorDocumentToDocxBlobPreservingSource } from "@/export/docx/exportEditorDocumentToDocxPreservingSource.js";
 import { exportEditorDocumentToPdfBlob } from "@/export/pdf/exportEditorDocumentToPdf.js";
 import { downloadBlob } from "./downloadBlob.js";
 
@@ -24,7 +24,9 @@ export function createDocumentExporter(deps: DocumentExporterDeps): {
   const download = deps.download ?? downloadBlob;
 
   const handleExportDocx = async (): Promise<Blob> => {
-    const blob = await exportEditorDocumentToDocxBlob(deps.document());
+    const blob = await exportEditorDocumentToDocxBlobPreservingSource(
+      deps.document(),
+    );
     download(blob, "oasis-editor.docx");
     deps.focusInput();
     return blob;
@@ -37,8 +39,10 @@ export function createDocumentExporter(deps: DocumentExporterDeps): {
     return blob;
   };
 
-  const exportDocxBlob = (): Promise<Blob> => exportEditorDocumentToDocxBlob(deps.document());
-  const exportPdfBlob = (): Promise<Blob> => exportEditorDocumentToPdfBlob(deps.document());
+  const exportDocxBlob = (): Promise<Blob> =>
+    exportEditorDocumentToDocxBlobPreservingSource(deps.document());
+  const exportPdfBlob = (): Promise<Blob> =>
+    exportEditorDocumentToPdfBlob(deps.document());
 
   return {
     handleExportDocx,
