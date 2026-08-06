@@ -3,6 +3,7 @@ import type {
   EditorNamedStyle,
   EditorParagraphNode,
   EditorParagraphStyle,
+  EditorTableCellNode,
   EditorTextRun,
 } from "@/core/model.js";
 import type { DocContext } from "@/export/docx/docxTypes.js";
@@ -124,23 +125,48 @@ function serializeRunsWithBoundaries(
   return out;
 }
 
+function blockHasGeneratedBoundaryTokens(
+  block: EditorBlockNode,
+  context: DocContext,
+): boolean {
+  switch (block.type) {
+    case "paragraph":
+      return Boolean(
+        context.bookmarkEventsByParagraph?.has(block.id) ||
+          context.commentEventsByParagraph?.has(block.id),
+      );
+    case "table":
+      return tableHasGeneratedBoundaryTokens(block, context);
+    default:
+      return assertNever(block, "block");
+  }
+}
+
 function tableHasGeneratedBoundaryTokens(
   table: Extract<EditorBlockNode, { type: "table" }>,
   context: DocContext,
 ): boolean {
-  for (const row of table.rows) {
-    for (const cell of row.cells) {
-      for (const paragraph of cell.blocks) {
-        if (
-          context.bookmarkEventsByParagraph?.has(paragraph.id) ||
-          context.commentEventsByParagraph?.has(paragraph.id)
-        ) {
-          return true;
-        }
-      }
-    }
+  return table.rows.some((row): boolean =>
+    row.cells.some((cell): boolean =>
+      cell.blocks.some((block): boolean =>
+        blockHasGeneratedBoundaryTokens(block, context),
+      ),
+    ),
+  );
+}
+
+function serializeTableCellBlockXml(
+  block: EditorBlockNode,
+  cell: EditorTableCellNode,
+  context: DocContext,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): string {
+  if (block.type === "paragraph") {
+    return serializeParagraphXml(block, context, styles, {
+      align: cell.style?.horizontalAlign,
+    });
   }
-  return false;
+  return serializeSingleBlockXml(block, context, styles);
 }
 
 function serializeSingleBlockXml(
@@ -163,10 +189,13 @@ function serializeSingleBlockXml(
         (reusableTableXml ??
           serializeTableXmlPreservingSource(
             block,
-            (paragraph, cell): string =>
-              serializeParagraphXml(paragraph, context, styles, {
-                align: cell.style?.horizontalAlign,
-              }),
+            (cellBlock, cell): string =>
+              serializeTableCellBlockXml(
+                cellBlock,
+                cell,
+                context,
+                styles,
+              ),
           ))
       );
     }
