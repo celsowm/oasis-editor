@@ -306,5 +306,6 @@ export function serializeTableXmlPreservingSource(
   overlayTableContainerSource(table, tableElement);
   overlayTableProperties(table, tableElement);
   overlayRowAndCellProperties(table, tableElement);
-  return new XMLSerializer().serializeToString(tableElement);
+  const serialized = new XMLSerializer().serializeToString(tableElement);
+  return serialized.replace(`<w:tbl xmlns:w="${WORD_NS}"`, "<w:tbl");
 }
