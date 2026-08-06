@@ -1,11 +1,5 @@
 import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
-import {
-  getActiveSectionIndex,
-  getDocumentSectionsCanonical,
-  type EditorBlockNode,
-  type EditorState,
-  type EditorEditingZone,
-} from "@/core/model.js";
+import { type EditorState } from "@/core/model.js";
 import { insertTableAtSelection } from "@/core/commands/table.js";
 import type { EditorLogger } from "@/utils/logger.js";
 import {
@@ -17,6 +11,7 @@ import {
 } from "./tableOpsSelectionNavigation.js";
 import {
   applyTableAwareParagraphEdit as applyTableAwareParagraphEditInternal,
+  getTableOperationTargetBlocks,
   updateBlocksInCurrentSection,
 } from "./tableOpsMutationCommands.js";
 import { createTableOpsGuards } from "./tableOpsGuards.js";
@@ -46,21 +41,7 @@ export function createEditorTableOperations(
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function createEditorTableOperationsImpl(deps: EditorTableOperationsDeps) {
-  const getTargetBlocks = (
-    state: EditorState,
-    zone: EditorEditingZone,
-  ): EditorBlockNode[] => {
-    const sections = getDocumentSectionsCanonical(state.document);
-    const activeSectionIndex = getActiveSectionIndex(state);
-    const section =
-      sections[Math.max(0, Math.min(activeSectionIndex, sections.length - 1))];
-    if (!section) {
-      return [];
-    }
-    if (zone === "header") return section.header || [];
-    if (zone === "footer") return section.footer || [];
-    return section.blocks;
-  };
+  const getTargetBlocks = getTableOperationTargetBlocks;
 
   const {
     resolveTableCellRangeSelection,
