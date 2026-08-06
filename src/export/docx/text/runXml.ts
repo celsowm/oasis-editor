@@ -24,6 +24,7 @@ import {
   serializeEndnoteReference,
 } from "./endnoteRunXml.js";
 import { wrapRunWithHyperlink } from "./hyperlinkXml.js";
+import { serializeRunFromOoxmlSource } from "./sourceRunXml.js";
 
 export function serializeRun(
   run: EditorTextRun,
@@ -37,6 +38,11 @@ export function serializeRun(
   }
   if ((run as { __isEndnoteRefMarker?: boolean }).__isEndnoteRefMarker) {
     return serializeEndnoteRefMarker();
+  }
+
+  const preservedSourceXml = serializeRunFromOoxmlSource(run);
+  if (preservedSourceXml) {
+    return preservedSourceXml;
   }
 
   const materializedRunStyle = materializeRunStyle(

@@ -1,5 +1,8 @@
 import JSZip from "jszip";
-import { type Element as XmlElement } from "@xmldom/xmldom";
+import {
+  XMLSerializer,
+  type Element as XmlElement,
+} from "@xmldom/xmldom";
 import type {
   EditorDropCap,
   EditorParagraphListStyle,
@@ -31,6 +34,105 @@ import type {
   ParseNestedBlocks,
 } from "./runs/types.js";
 import { parseDropCapFrame } from "./dropCap.js";
+import {
+  setEditorParagraphOoxmlSource,
+  setEditorRunOoxmlSource,
+} from "@/ooxml/word/sourceFragments.js";
+
+interface ImportedParagraphSource {
+  attributes?: string;
+  paragraphPropertiesXml?: string;
+  runXml?: string[];
+}
+
+function serializeShallowElementAttributes(
+  element: XmlElement,
+  serializer: XMLSerializer,
+): string | undefined {
+  const shallowXml = serializer.serializeToString(element.cloneNode(false));
+  const openTagEnd = shallowXml.indexOf(">");
+  if (openTagEnd < 0) {
+    return undefined;
+  }
+  const openTag = shallowXml.slice(0, openTagEnd + 1);
+  const elementName = element.tagName;
+  const rawAttributes = openTag
+    .slice(`<${elementName}`.length, openTag.endsWith("/>") ? -2 : -1)
+    .trim();
+  return rawAttributes || undefined;
+}
+
+/**
+ * Collects run subtrees that belong to this paragraph's inline flow. A run is
+ * treated as an atomic source fragment, so drawings/text boxes nested inside it
+ * are never traversed as separate paragraph runs.
+ */
+function collectParagraphRunXml(
+  paragraphNode: XmlElement,
+  serializer: XMLSerializer,
+): string[] {
+  const result: string[] = [];
+
+  const visit = (container: XmlElement): void => {
+    for (let index = 0; index < container.childNodes.length; index += 1) {
+      const node = container.childNodes[index];
+      if (node?.nodeType !== node.ELEMENT_NODE) {
+        continue;
+      }
+      const element = node as XmlElement;
+      if (element.namespaceURI === WORD_NS && element.localName === "r") {
+        result.push(serializer.serializeToString(element));
+        continue;
+      }
+      if (
+        element.namespaceURI === WORD_NS &&
+        (element.localName === "pPr" ||
+          element.localName === "p" ||
+          element.localName === "tbl" ||
+          element.localName === "txbxContent")
+      ) {
+        continue;
+      }
+      visit(element);
+    }
+  };
+
+  visit(paragraphNode);
+  return result;
+}
+
+function captureImportedParagraphSource(
+  paragraphNode: XmlElement,
+  paragraphProperties: XmlElement | null,
+  importedRuns: ImportedRun[],
+): ImportedParagraphSource | undefined {
+  const serializer = new XMLSerializer();
+  const attributes = serializeShallowElementAttributes(
+    paragraphNode,
+    serializer,
+  );
+  const inlineSectionProperties = paragraphProperties
+    ? getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "sectPr")
+    : null;
+  const paragraphPropertiesXml =
+    paragraphProperties && !inlineSectionProperties
+      ? serializer.serializeToString(paragraphProperties)
+      : undefined;
+  const collectedRunXml = collectParagraphRunXml(paragraphNode, serializer);
+  const runXml =
+    collectedRunXml.length === importedRuns.length
+      ? collectedRunXml
+      : undefined;
+
+  if (!attributes && !paragraphPropertiesXml && !runXml) {
+    return undefined;
+  }
+  return {
+    ...(attributes ? { attributes } : {}),
+    ...(paragraphPropertiesXml ? { paragraphPropertiesXml } : {}),
+    ...(runXml ? { runXml } : {}),
+  };
+}
 
 /**
  * Converts an {@link ImportedRun} (the import-only optional bag) into the final
@@ -96,6 +198,7 @@ function createImportedParagraph(
   paragraphStyle: EditorParagraphStyle | undefined,
   list: EditorParagraphListStyle | undefined,
   markRunStyle?: EditorTextStyle,
+  source?: ImportedParagraphSource,
 ): EditorParagraphNode {
   const editorRuns: EditorTextRun[] =
     runs.length > 0
@@ -124,6 +227,15 @@ function createImportedParagraph(
     );
   }
   paragraph.list = list ? { ...list } : undefined;
+
+  if (source?.runXml?.length === paragraph.runs.length) {
+    for (let index = 0; index < paragraph.runs.length; index += 1) {
+      setEditorRunOoxmlSource(paragraph.runs[index]!, source.runXml[index]!);
+    }
+  }
+  if (source) {
+    setEditorParagraphOoxmlSource(paragraph, source);
+  }
   return paragraph;
 }
 
@@ -262,9 +374,20 @@ export async function parseParagraphNodes(
   const { segments, hasPageBreak } = splitRunsAtPageBreaks(runs);
 
   if (!hasPageBreak) {
+    const source = captureImportedParagraphSource(
+      paragraphNode,
+      paragraphProperties,
+      runs,
+    );
     return {
       paragraphs: [
-        createImportedParagraph(runs, paragraphStyle, list, markRunStyle),
+        createImportedParagraph(
+          runs,
+          paragraphStyle,
+          list,
+          markRunStyle,
+          source,
+        ),
       ],
       pageBreakAfter: false,
     };

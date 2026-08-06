@@ -9,6 +9,7 @@ import type {
 import { visitRun } from "@/core/model.js";
 import { cloneStyle } from "@/core/textStyle/textStyleMutations.js";
 import { assertNever } from "@/core/assertNever.js";
+import { copyEditorRunOoxmlSource } from "@/ooxml/word/sourceFragments.js";
 
 export function cloneTextBox(textBox: EditorTextBoxData): EditorTextBoxData {
   return {
@@ -37,7 +38,7 @@ export function cloneRun(run: EditorTextRun): EditorTextRun {
     styles: cloneStyle(run.styles),
     revision: run.revision ? { ...run.revision } : undefined,
   };
-  return visitRun<EditorTextRun>(run, {
+  const cloned = visitRun<EditorTextRun>(run, {
     text: () => ({ ...base, kind: "text" }),
     image: (r) => ({ ...base, kind: "image", image: { ...r.image } }),
     textBox: (r) => ({
@@ -68,6 +69,7 @@ export function cloneRun(run: EditorTextRun): EditorTextRun {
     }),
     sym: (r) => ({ ...base, kind: "sym", sym: { ...r.sym } }),
   });
+  return copyEditorRunOoxmlSource(run, cloned);
 }
 
 export function cloneParagraph(
