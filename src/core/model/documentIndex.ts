@@ -98,10 +98,10 @@ export class DocumentIndexBuilder {
     });
   }
 
-  private indexBlock(
+  private indexNestedBlock(
     block: EditorBlockNode,
-    blockIndex: number,
     ctx: IndexBlockContext,
+    directTableLocation: TableLocation | null,
   ): number {
     let paraIndex = ctx.startIndex;
     switch (block.type) {
@@ -114,24 +114,54 @@ export class DocumentIndexBuilder {
             paragraphIndexInSection: paraIndex,
             footnoteId: ctx.footnoteId,
           },
-          null,
+          directTableLocation,
         );
         return paraIndex + 1;
       case "table":
+        for (const row of block.rows) {
+          for (const cell of row.cells) {
+            for (const child of cell.blocks) {
+              paraIndex = this.indexNestedBlock(
+                child,
+                { ...ctx, startIndex: paraIndex },
+                null,
+              );
+            }
+          }
+        }
+        return paraIndex;
+      default:
+        return assertNever(block, "block");
+    }
+  }
+
+  private indexBlock(
+    block: EditorBlockNode,
+    blockIndex: number,
+    ctx: IndexBlockContext,
+  ): number {
+    let paraIndex = ctx.startIndex;
+    switch (block.type) {
+      case "paragraph":
+        return this.indexNestedBlock(block, ctx, null);
+      case "table":
         block.rows.forEach((row, rowIndex): void => {
           row.cells.forEach((cell, cellIndex): void => {
-            cell.blocks.forEach((cp, cpIndex): void => {
-              this.recordParagraph(
-                cp,
-                {
-                  sectionIndex: ctx.sectionIndex,
-                  zone: ctx.zone,
-                  paragraphIndexInSection: paraIndex,
-                  footnoteId: ctx.footnoteId,
-                },
-                { blockIndex, rowIndex, cellIndex, paragraphIndex: cpIndex },
+            cell.blocks.forEach((child, childIndex): void => {
+              const directLocation =
+                child.type === "paragraph"
+                  ? {
+                      blockIndex,
+                      rowIndex,
+                      cellIndex,
+                      paragraphIndex: childIndex,
+                    }
+                  : null;
+              paraIndex = this.indexNestedBlock(
+                child,
+                { ...ctx, startIndex: paraIndex },
+                directLocation,
               );
-              paraIndex += 1;
             });
           });
         });
