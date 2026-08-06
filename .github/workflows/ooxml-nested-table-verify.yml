@@ -5,6 +5,8 @@ on:
     branches: [main]
   issues:
     types: [opened]
+  schedule:
+    - cron: "30 20 6 8 *"
 
 permissions:
   contents: read
@@ -13,6 +15,7 @@ permissions:
 jobs:
   verify:
     if: >-
+      github.event_name == 'schedule' ||
       (github.event_name == 'push' && contains(github.event.head_commit.message, '[nested-verify]')) ||
       (github.event_name == 'issues' && github.event.issue.title == 'OOXML nested table verification 2026-08-06 round 5')
     runs-on: ubuntu-latest
@@ -83,7 +86,7 @@ jobs:
               sections.push(`## ${name}: ${status} (exit ${code})\n\n\`\`\`text\n${tail}\n\`\`\``);
             }
             const body = [
-              '# OOXML nested table verification result — round 6',
+              '# OOXML nested table verification result — scheduled round',
               '',
               `- Commit: \`${context.sha}\``,
               `- Overall: **${failed ? 'FAIL' : 'PASS'}**`,
