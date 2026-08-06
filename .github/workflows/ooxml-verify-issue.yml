@@ -3,6 +3,8 @@ name: Temporary OOXML verification round 3
 on:
   issues:
     types: [opened]
+  push:
+    branches: [main]
 
 permissions:
   contents: read
@@ -10,7 +12,9 @@ permissions:
 
 jobs:
   verify:
-    if: github.event.issue.title == 'OOXML verification trigger 2026-08-06 round 3'
+    if: >-
+      (github.event_name == 'issues' && github.event.issue.title == 'OOXML verification trigger 2026-08-06 round 3') ||
+      (github.event_name == 'push' && contains(github.event.head_commit.message, '[ooxml-verify]'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main
@@ -95,7 +99,7 @@ jobs:
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              issue_number: 81,
               body: body.slice(0, 65000),
             });
 
