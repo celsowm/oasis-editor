@@ -26,8 +26,8 @@ type EditorParagraphWithOoxmlSource = EditorParagraphNode & {
   ooxmlSource?: EditorOoxmlParagraphSource;
 };
 
-const CANONICALIZED_WORD14_RUN_PROPERTY_PATTERN =
-  /<w14:(?:ligatures|numSpacing|numForm|stylisticSets|cntxtAlts|textFill|textOutline|shadow|glow|reflection|scene3d|props3d)(?:\s|\/|>)/;
+const RUN_PROPERTIES_PATTERN = /<w:rPr(?:\s|\/|>)/;
+const PARAGRAPH_PROPERTIES_PATTERN = /<w:pPr(?:\s|\/|>)/;
 
 function ownsEditorNodeIdentity(value: Record<string, unknown>): boolean {
   return (
@@ -75,10 +75,16 @@ function hasRelationshipReference(xml: string): boolean {
   return /\br:(?:id|embed|link)\s*=/.test(xml);
 }
 
+/**
+ * Imported run properties are parsed into the editor model and must be emitted
+ * by the canonical serializer. This restores derived complex-script twins,
+ * resolved theme colors and compatibility wrappers while source-only children
+ * are retained by the structural merge layer.
+ */
 export function ooxmlSourceNeedsCanonicalRunSerialization(
   xml: string,
 ): boolean {
-  return CANONICALIZED_WORD14_RUN_PROPERTY_PATTERN.test(xml);
+  return RUN_PROPERTIES_PATTERN.test(xml);
 }
 
 export function createEditorRunSemanticSignature(
@@ -191,7 +197,8 @@ export function getReusableEditorParagraphXml(
     options.hasOverrides ||
     options.hasBoundaryTokens ||
     hasRelationshipReference(source.xml) ||
-    ooxmlSourceNeedsCanonicalRunSerialization(source.xml)
+    RUN_PROPERTIES_PATTERN.test(source.xml) ||
+    PARAGRAPH_PROPERTIES_PATTERN.test(source.xml)
   ) {
     return undefined;
   }
