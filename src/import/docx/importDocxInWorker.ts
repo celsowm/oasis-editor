@@ -3,7 +3,10 @@ import {
   importDocxToEditorDocument,
   type DocxImportStage,
 } from "./importDocxToEditorDocument.js";
-import { attachDocxSourcePackage } from "./opc/sourcePackage.js";
+import {
+  captureDocxSourcePackage,
+} from "./opc/sourcePackage.js";
+import { prepareDocxForCurrentImporter } from "./opc/legacyCompatibilityPackage.js";
 
 interface ImportDocxInWorkerOptions {
   onProgress?: (stage: DocxImportStage, progress?: number) => void;
@@ -38,8 +41,14 @@ export async function importDocxInWorker(
   options: ImportDocxInWorkerOptions = {},
 ): Promise<EditorDocument> {
   if (!canUseDocxWorker()) {
-    const document = await importDocxToEditorDocument(buffer, options);
-    return attachDocxSourcePackage(document, buffer);
+    const sourcePackage = await captureDocxSourcePackage(buffer);
+    const importerBuffer = await prepareDocxForCurrentImporter(
+      buffer,
+      sourcePackage,
+    );
+    const document = await importDocxToEditorDocument(importerBuffer, options);
+    document.sourcePackage = sourcePackage;
+    return document;
   }
 
   const requestId = nextRequestId;

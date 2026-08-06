@@ -2,7 +2,8 @@ import {
   importDocxToEditorDocument,
   type DocxImportStage,
 } from "./importDocxToEditorDocument.js";
-import { attachDocxSourcePackage } from "./opc/sourcePackage.js";
+import { captureDocxSourcePackage } from "./opc/sourcePackage.js";
+import { prepareDocxForCurrentImporter } from "./opc/legacyCompatibilityPackage.js";
 
 type ImportWorkerRequest = {
   type: "import-docx";
@@ -47,12 +48,17 @@ globalThis.addEventListener(
     }
 
     try {
-      const document = await importDocxToEditorDocument(message.buffer, {
+      const sourcePackage = await captureDocxSourcePackage(message.buffer);
+      const importerBuffer = await prepareDocxForCurrentImporter(
+        message.buffer,
+        sourcePackage,
+      );
+      const document = await importDocxToEditorDocument(importerBuffer, {
         onProgress: (stage, progress): void => {
           post({ type: "progress", id: message.id, stage, progress });
         },
       });
-      await attachDocxSourcePackage(document, message.buffer);
+      document.sourcePackage = sourcePackage;
       post({ type: "done", id: message.id, document });
     } catch (error) {
       post({
