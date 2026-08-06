@@ -71,25 +71,41 @@ describe("granular table OOXML source preservation", () => {
     expect(xml).toContain("w14:cellExtension");
   });
 
-  it("overlays edited known properties without dropping source-only extensions", async () => {
+  it("overlays every edited known property without dropping source-only extensions", async () => {
     const document = await importDocxToEditorDocument(
       await granularTablePackage(),
     );
     const table = importedTable(document);
     table.style = { ...(table.style ?? {}), align: "center" };
-    const cell = table.rows[0]!.cells[0]!;
+    table.gridCols = [180];
+    const row = table.rows[0]!;
+    row.style = { ...(row.style ?? {}), height: 30 };
+    row.propertyExceptions = {
+      ...(row.propertyExceptions ?? {}),
+      align: "right",
+    };
+    const cell = row.cells[0]!;
     cell.style = { ...(cell.style ?? {}), verticalAlign: "bottom" };
     cell.blocks[0]!.runs[0]!.text = "Edited properties";
 
     const xml = await exportedDocumentXml(document);
     expect(xml).toContain('<w:jc w:val="center"');
     expect(xml).not.toContain('<w:jc w:val="left"');
+    expect(xml).toContain('<w:gridCol w:w="3600"');
+    expect(xml).toContain('<w:trHeight w:val="600"');
+    expect(xml).toContain('<w:jc w:val="right"');
     expect(xml).toContain('<w:vAlign w:val="bottom"');
     expect(xml).not.toContain('<w:vAlign w:val="top"');
     expect(xml).toContain("w14:beforeTable");
     expect(xml).toContain("w14:afterTable");
+    expect(xml).toContain("w14:gridExtension");
+    expect(xml).toContain("w14:exceptionExtension");
+    expect(xml).toContain("w14:rowExtension");
     expect(xml).toContain("w14:cellExtension");
     expect(xml).toContain('w14:tblAttr="keep"');
+    expect(xml).toContain('w14:gridAttr="keep"');
+    expect(xml).toContain('w14:exceptionAttr="keep"');
+    expect(xml).toContain('w14:rowAttr="keep"');
     expect(xml).toContain('w14:cellAttr="keep"');
   });
 });
