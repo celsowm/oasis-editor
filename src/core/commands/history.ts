@@ -291,6 +291,22 @@ export function rejectRevision(
   return transformTableRevision(textState, revisionId, false);
 }
 
+function blockContainsSelectedParagraph(
+  block: EditorBlockNode,
+  selectedParagraphIds: ReadonlySet<string>,
+): boolean {
+  if (block.type === "paragraph") {
+    return selectedParagraphIds.has(block.id);
+  }
+  return block.rows.some((row): boolean =>
+    row.cells.some((cell): boolean =>
+      cell.blocks.some((child): boolean =>
+        blockContainsSelectedParagraph(child, selectedParagraphIds),
+      ),
+    ),
+  );
+}
+
 function collectTableRevisionIds(
   blocks: EditorBlockNode[],
   selectedParagraphIds: Set<string>,
@@ -298,12 +314,9 @@ function collectTableRevisionIds(
 ): void {
   for (const block of blocks) {
     if (block.type === "paragraph") continue;
-    const tableSelected = block.rows.some((row): boolean =>
-      row.cells.some((cell): boolean =>
-        cell.blocks.some((paragraph): boolean =>
-          selectedParagraphIds.has(paragraph.id),
-        ),
-      ),
+    const tableSelected = blockContainsSelectedParagraph(
+      block,
+      selectedParagraphIds,
     );
     if (tableSelected) {
       if (block.style?.revision) revisionIds.add(block.style.revision.id);
@@ -311,8 +324,8 @@ function collectTableRevisionIds(
     }
     for (const row of block.rows) {
       const selectedCells = row.cells.filter((cell): boolean =>
-        cell.blocks.some((paragraph): boolean =>
-          selectedParagraphIds.has(paragraph.id),
+        cell.blocks.some((child): boolean =>
+          blockContainsSelectedParagraph(child, selectedParagraphIds),
         ),
       );
       if (selectedCells.length > 0) {
