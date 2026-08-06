@@ -118,6 +118,18 @@ function remapRebuiltPartPath(
   return relationshipPartPath(actualOwner);
 }
 
+function conventionalOwnerPath(
+  actualOwnerPath: string,
+  aliases: ReadonlyMap<string, string>,
+): string {
+  for (const [rebuiltPath, actualPath] of aliases) {
+    if (actualPath === actualOwnerPath) {
+      return rebuiltPath;
+    }
+  }
+  return actualOwnerPath;
+}
+
 function partDirectory(path: string): string[] {
   const slashIndex = path.lastIndexOf("/");
   return slashIndex < 0 ? [] : path.slice(0, slashIndex).split("/");
@@ -156,10 +168,9 @@ function parseStoredRelationships(
   return part?.kind === "xml" ? parseOpcRelationships(part.data) : [];
 }
 
-function sourceRelationshipsForOwner(
+function unfilteredSourceRelationshipsForOwner(
   sourcePackage: EditorDocxSourcePackage,
   ownerPartPath: string | null,
-  deletedPartPaths: ReadonlySet<string>,
 ): EditorOpcRelationship[] {
   const relationships =
     ownerPartPath === null
@@ -171,8 +182,18 @@ function sourceRelationshipsForOwner(
           sourcePackage,
           relationshipPartPath(ownerPartPath),
         ));
+  return resolveOpcRelationships(ownerPartPath, relationships);
+}
 
-  return resolveOpcRelationships(ownerPartPath, relationships).filter(
+function sourceRelationshipsForOwner(
+  sourcePackage: EditorDocxSourcePackage,
+  ownerPartPath: string | null,
+  deletedPartPaths: ReadonlySet<string>,
+): EditorOpcRelationship[] {
+  return unfilteredSourceRelationshipsForOwner(
+    sourcePackage,
+    ownerPartPath,
+  ).filter(
     (relationship): boolean =>
       relationship.targetMode === "External" ||
       !relationship.resolvedTarget ||
@@ -183,7 +204,7 @@ function sourceRelationshipsForOwner(
 function transformRebuiltRelationships(
   relationships: EditorOpcRelationship[],
   sourceRelationships: EditorOpcRelationship[],
-  conventionalOwnerPath: string | null,
+  conventionalOwnerPathValue: string | null,
   actualOwnerPath: string | null,
   aliases: ReadonlyMap<string, string>,
 ): EditorOpcRelationship[] {
@@ -202,7 +223,7 @@ function transformRebuiltRelationships(
       : undefined;
 
     const resolvedRebuilt = resolveOpcRelationships(
-      conventionalOwnerPath,
+      conventionalOwnerPathValue,
       [relationship],
     )[0]?.resolvedTarget;
     const actualTarget =
@@ -340,6 +361,55 @@ function findDeletedModeledPartPaths(
   return deleted;
 }
 
+function cleanRelationshipPartsForDeletedTargets(
+  output: JSZip,
+  sourcePackage: EditorDocxSourcePackage,
+  aliases: ReadonlyMap<string, string>,
+  rebuiltPaths: ReadonlySet<string>,
+  deletedPartPaths: ReadonlySet<string>,
+): void {
+  if (deletedPartPaths.size === 0) {
+    return;
+  }
+
+  for (const sourceRelationshipPartPath of Object.keys(sourcePackage.parts)) {
+    const actualOwnerPath = getOpcRelationshipOwnerPath(
+      sourceRelationshipPartPath,
+    );
+    if (actualOwnerPath === undefined || actualOwnerPath === null) {
+      continue;
+    }
+
+    const original = unfilteredSourceRelationshipsForOwner(
+      sourcePackage,
+      actualOwnerPath,
+    );
+    const filtered = original.filter(
+      (relationship): boolean =>
+        relationship.targetMode === "External" ||
+        !relationship.resolvedTarget ||
+        !deletedPartPaths.has(relationship.resolvedTarget),
+    );
+    if (filtered.length === original.length) {
+      continue;
+    }
+
+    const rebuiltOwner = conventionalOwnerPath(actualOwnerPath, aliases);
+    if (rebuiltPaths.has(relationshipPartPath(rebuiltOwner))) {
+      continue;
+    }
+
+    if (filtered.length === 0) {
+      output.remove(sourceRelationshipPartPath);
+    } else {
+      output.file(
+        sourceRelationshipPartPath,
+        serializeOpcRelationships(filtered),
+      );
+    }
+  }
+}
+
 /**
  * Clones the imported package and overlays only changed freshly rebuilt Oasis
  * parts. Unknown source parts remain untouched. Content types and relationship
@@ -379,6 +449,13 @@ export async function patchRebuiltDocxWithSourcePackage(
     output.remove(path);
     output.remove(relationshipPartPath(path));
   }
+  cleanRelationshipPartsForDeletedTargets(
+    output,
+    sourcePackage,
+    aliases,
+    rebuiltPaths,
+    deletedPartPaths,
+  );
 
   let rebuiltContentTypesXml: string | null = null;
 
@@ -396,11 +473,11 @@ export async function patchRebuiltDocxWithSourcePackage(
     const actualPath = remapRebuiltPartPath(path, aliases);
     const relationshipOwner = getOpcRelationshipOwnerPath(path);
     if (relationshipOwner !== undefined) {
-      const conventionalOwner = relationshipOwner;
+      const rebuiltOwner = relationshipOwner;
       const actualOwner =
-        conventionalOwner === null
+        rebuiltOwner === null
           ? null
-          : aliases.get(conventionalOwner) ?? conventionalOwner;
+          : aliases.get(rebuiltOwner) ?? rebuiltOwner;
       const sourceRelationships = sourceRelationshipsForOwner(
         sourcePackage,
         actualOwner,
@@ -409,7 +486,7 @@ export async function patchRebuiltDocxWithSourcePackage(
       const rebuiltRelationships = transformRebuiltRelationships(
         parseOpcRelationships(await entry.async("string")),
         sourceRelationships,
-        conventionalOwner,
+        rebuiltOwner,
         actualOwner,
         aliases,
       );
