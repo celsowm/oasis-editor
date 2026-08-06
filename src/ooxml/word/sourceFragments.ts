@@ -26,6 +26,9 @@ type EditorParagraphWithOoxmlSource = EditorParagraphNode & {
   ooxmlSource?: EditorOoxmlParagraphSource;
 };
 
+const CANONICALIZED_WORD14_RUN_PROPERTY_PATTERN =
+  /<w14:(?:ligatures|numSpacing|numForm|stylisticSets|cntxtAlts|textFill|textOutline|shadow|glow|reflection|scene3d|props3d)(?:\s|\/|>)/;
+
 function ownsEditorNodeIdentity(value: Record<string, unknown>): boolean {
   return (
     typeof value.kind === "string" ||
@@ -70,6 +73,12 @@ function stableSemanticString(value: unknown): string {
 
 function hasRelationshipReference(xml: string): boolean {
   return /\br:(?:id|embed|link)\s*=/.test(xml);
+}
+
+export function ooxmlSourceNeedsCanonicalRunSerialization(
+  xml: string,
+): boolean {
+  return CANONICALIZED_WORD14_RUN_PROPERTY_PATTERN.test(xml);
 }
 
 export function createEditorRunSemanticSignature(
@@ -181,7 +190,8 @@ export function getReusableEditorParagraphXml(
     !source.semanticSignature ||
     options.hasOverrides ||
     options.hasBoundaryTokens ||
-    hasRelationshipReference(source.xml)
+    hasRelationshipReference(source.xml) ||
+    ooxmlSourceNeedsCanonicalRunSerialization(source.xml)
   ) {
     return undefined;
   }
