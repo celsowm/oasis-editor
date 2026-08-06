@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
+import type { EditorParagraphNode, EditorTableNode } from "@/core/model.js";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
 
@@ -39,12 +40,28 @@ async function exportedDocumentXml(
 
 function importedTable(
   document: Awaited<ReturnType<typeof importDocxToEditorDocument>>,
-) {
+): EditorTableNode {
   const table = document.sections?.[0]?.blocks[0];
   if (!table || table.type !== "table") {
     throw new Error("Expected an imported table.");
   }
   return table;
+}
+
+function firstCellParagraph(table: EditorTableNode): EditorParagraphNode {
+  const block = table.rows[0]?.cells[0]?.blocks[0];
+  if (!block || block.type !== "paragraph") {
+    throw new Error("Expected a first-cell paragraph.");
+  }
+  return block;
+}
+
+function firstElementXml(xml: string, localName: string): string {
+  return (
+    xml.match(
+      new RegExp(`<w:${localName}(?:\\s[^>]*)?>[\\s\\S]*?</w:${localName}>`),
+    )?.[0] ?? ""
+  );
 }
 
 describe("granular table OOXML source preservation", () => {
@@ -53,7 +70,7 @@ describe("granular table OOXML source preservation", () => {
       await granularTablePackage(),
     );
     const table = importedTable(document);
-    table.rows[0]!.cells[0]!.blocks[0]!.runs[0]!.text = "Edited cell";
+    firstCellParagraph(table).runs[0]!.text = "Edited cell";
 
     const xml = await exportedDocumentXml(document);
     expect(xml).toContain("Edited cell");
@@ -86,11 +103,12 @@ describe("granular table OOXML source preservation", () => {
     };
     const cell = row.cells[0]!;
     cell.style = { ...(cell.style ?? {}), verticalAlign: "bottom" };
-    cell.blocks[0]!.runs[0]!.text = "Edited properties";
+    firstCellParagraph(table).runs[0]!.text = "Edited properties";
 
     const xml = await exportedDocumentXml(document);
-    expect(xml).toContain('<w:jc w:val="center"');
-    expect(xml).not.toContain('<w:jc w:val="left"');
+    const tableProperties = firstElementXml(xml, "tblPr");
+    expect(tableProperties).toContain('<w:jc w:val="center"');
+    expect(tableProperties).not.toContain('<w:jc w:val="left"');
     expect(xml).toContain('<w:gridCol w:w="3600"');
     expect(xml).toContain('<w:trHeight w:val="600"');
     expect(xml).toContain('<w:jc w:val="right"');
