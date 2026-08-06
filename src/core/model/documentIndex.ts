@@ -83,7 +83,7 @@ interface IndexBlockContext {
 }
 
 interface TableIndexContext {
-  topLevelBlockIndex: number;
+  currentTableBlockIndex: number;
   tablePath: TablePathSegment[];
 }
 
@@ -140,16 +140,13 @@ export class DocumentIndexBuilder {
     let paraIndex = ctx.startIndex;
     table.rows.forEach((row, rowIndex): void => {
       row.cells.forEach((cell, cellIndex): void => {
+        const segment: TablePathSegment = {
+          tableBlockIndex: tableCtx.currentTableBlockIndex,
+          rowIndex,
+          cellIndex,
+        };
+        const currentPath = [...tableCtx.tablePath, segment];
         cell.blocks.forEach((child, childIndex): void => {
-          const segment: TablePathSegment = {
-            tableBlockIndex:
-              tableCtx.tablePath.length === 0
-                ? tableCtx.topLevelBlockIndex
-                : childIndex,
-            rowIndex,
-            cellIndex,
-          };
-          const currentPath = [...tableCtx.tablePath, segment];
           if (child.type === "paragraph") {
             const first = currentPath[0]!;
             this.recordParagraph(
@@ -176,7 +173,7 @@ export class DocumentIndexBuilder {
             child,
             { ...ctx, startIndex: paraIndex },
             {
-              topLevelBlockIndex: tableCtx.topLevelBlockIndex,
+              currentTableBlockIndex: childIndex,
               tablePath: currentPath,
             },
           );
@@ -206,7 +203,7 @@ export class DocumentIndexBuilder {
         return ctx.startIndex + 1;
       case "table":
         return this.indexTable(block, ctx, {
-          topLevelBlockIndex: blockIndex,
+          currentTableBlockIndex: blockIndex,
           tablePath: [],
         });
       default:
