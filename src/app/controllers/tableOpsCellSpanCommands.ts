@@ -4,6 +4,7 @@ import {
   createEditorTableCell,
 } from "@/core/editorState.js";
 import {
+  getBlockParagraphs,
   type EditorBlockNode,
   type EditorEditingZone,
   type EditorParagraphNode,
@@ -38,6 +39,17 @@ interface TableCellSpanOperationsDeps {
   canSplitSelectedTableCellVertically: (current: EditorState) => boolean;
 }
 
+function firstParagraphInCell(
+  cell: EditorTableCellNode | undefined,
+): EditorParagraphNode | undefined {
+  if (!cell) return undefined;
+  for (const block of cell.blocks) {
+    const paragraph = getBlockParagraphs(block)[0];
+    if (paragraph) return paragraph;
+  }
+  return undefined;
+}
+
 export function createTableCellSpanOperations(
   deps: TableCellSpanOperationsDeps,
 ): ReturnType<typeof createTableCellSpanOperationsImpl> {
@@ -55,9 +67,7 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
       ? { ...cell.conditionalStyle }
       : undefined,
     mergeRevisionState: undefined,
-    blocks: cell.blocks.map(
-      (block): EditorBlockNode => cloneBlock(block),
-    ) as EditorParagraphNode[],
+    blocks: cell.blocks.map((block): EditorBlockNode => cloneBlock(block)),
   });
 
   const mergeSelectedTableCells = (current: EditorState): EditorState => {
@@ -90,15 +100,15 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
     const revision = current.trackChangesEnabled
       ? createTableRevisionMetadata()
       : undefined;
-    const mergedCell = {
+    const mergedCell: EditorTableCellNode = {
       ...selectedCells[0]!,
       colSpan: selectedCells.reduce(
         (sum, cell): number => sum + Math.max(1, cell.colSpan ?? 1),
         0,
       ),
       blocks: selectedCells.flatMap((cell): EditorBlockNode[] =>
-        cell.blocks.map((paragraph): EditorBlockNode => cloneBlock(paragraph)),
-      ) as EditorParagraphNode[],
+        cell.blocks.map((block): EditorBlockNode => cloneBlock(block)),
+      ),
       ...(revision
         ? {
             style: {
@@ -125,7 +135,7 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
 
     row.cells.splice(range.startCellIndex, selectedCells.length, mergedCell);
 
-    const nextParagraph = mergedCell.blocks[0];
+    const nextParagraph = firstParagraphInCell(mergedCell);
     if (!nextParagraph) {
       return current;
     }
@@ -166,7 +176,8 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
         !row ||
         !cell ||
         cell.vMerge === "continue" ||
-        cell.blocks.length !== 1
+        cell.blocks.length !== 1 ||
+        cell.blocks[0]?.type !== "paragraph"
       ) {
         return current;
       }
@@ -189,13 +200,13 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
     const revision = current.trackChangesEnabled
       ? createTableRevisionMetadata()
       : undefined;
-    const mergedCell = {
+    const mergedCell: EditorTableCellNode = {
       ...selectedCells[0]!,
       rowSpan: selectedCells.length,
       vMerge: "restart" as const,
       blocks: selectedCells.flatMap((cell): EditorBlockNode[] =>
-        cell.blocks.map((paragraph): EditorBlockNode => cloneBlock(paragraph)),
-      ) as EditorParagraphNode[],
+        cell.blocks.map((block): EditorBlockNode => cloneBlock(block)),
+      ),
       ...(revision
         ? {
             style: {
@@ -235,7 +246,7 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
       tableBlock.rows[rowIndex]!.cells[range.cellIndex] = placeholder;
     }
 
-    const nextParagraph = mergedCell.blocks[0];
+    const nextParagraph = firstParagraphInCell(mergedCell);
     if (!nextParagraph) {
       return current;
     }
@@ -327,7 +338,7 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
       row.cells[location.cellIndex] = replacement;
     }
 
-    const nextParagraph = cell.blocks[0];
+    const nextParagraph = firstParagraphInCell(cell);
     if (!nextParagraph) {
       return current;
     }
@@ -356,13 +367,13 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
     const revision = current.trackChangesEnabled
       ? createTableRevisionMetadata()
       : undefined;
-    const nextCells = [
+    const nextCells: EditorTableCellNode[] = [
       {
         ...cell,
         colSpan: 1,
         blocks: cell.blocks.map(
-          (paragraph): EditorBlockNode => cloneBlock(paragraph),
-        ) as EditorParagraphNode[],
+          (block): EditorBlockNode => cloneBlock(block),
+        ),
         ...(revision
           ? {
               style: {
@@ -395,7 +406,7 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
 
     row.cells.splice(location.cellIndex, 1, ...nextCells);
 
-    const nextParagraph = nextCells[0]?.blocks[0];
+    const nextParagraph = firstParagraphInCell(nextCells[0]);
     if (!nextParagraph) {
       return current;
     }
