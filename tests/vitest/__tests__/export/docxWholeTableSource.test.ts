@@ -47,7 +47,7 @@ describe("whole-table OOXML source preservation", () => {
     expect(xml).toContain('w14:val="preserve-me"');
   });
 
-  it("invalidates the source subtree after a semantic cell edit", async () => {
+  it("regenerates edited content while retaining source-only table extensions", async () => {
     const document = await importDocxToEditorDocument(await tablePackage());
     const table = document.sections?.[0]?.blocks[0];
     if (!table || table.type !== "table") {
@@ -58,6 +58,8 @@ describe("whole-table OOXML source preservation", () => {
     const xml = await exportedDocumentXml(document);
     expect(xml).toContain("Edited cell");
     expect(xml).not.toContain("Original cell");
-    expect(xml).not.toContain("w14:customMarker");
+    expect(xml).toContain('w14:paraId="7A7A7A7A"');
+    expect(xml).toContain("w14:customMarker");
+    expect(xml).toContain('w14:val="preserve-me"');
   });
 });
