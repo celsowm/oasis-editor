@@ -134,9 +134,9 @@ export function collectExtAttributes(
     // Skip namespace declarations. Markup Compatibility control attributes are
     // consumed by the MC processor and are not editor semantic properties.
     if (attr.prefix === "xmlns" || attr.localName === "xmlns") continue;
-    const name = attr.prefix
-      ? `${attr.prefix}:${attr.localName}`
-      : attr.localName;
+    const localName = attr.localName ?? attr.name;
+    if (!localName) continue;
+    const name = attr.prefix ? `${attr.prefix}:${localName}` : localName;
     result[name] = attr.value;
   }
   return Object.keys(result).length > 0 ? result : undefined;
