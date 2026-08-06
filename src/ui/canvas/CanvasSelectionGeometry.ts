@@ -2,10 +2,11 @@ import { normalizeSelection } from "@/core/selection.js";
 import {
   getParagraphs,
   positionToParagraphOffset,
-  type EditorState,
-  findParagraphTableLocation,
-  getActiveSectionIndex,
   getDocumentSections,
+  type EditorBlockNode,
+  type EditorDocument,
+  type EditorState,
+  type EditorTableNode,
 } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import type { CaretBox, InputBox, SelectionBox } from "@/ui/editorUiTypes.js";
@@ -174,6 +175,49 @@ function resolveCaretSlot(
   };
 }
 
+function findTableByIdInBlocks(
+  blocks: readonly EditorBlockNode[] | undefined,
+  tableId: string,
+): EditorTableNode | null {
+  if (!blocks) return null;
+  for (const block of blocks) {
+    if (block.type !== "table") continue;
+    if (block.id === tableId) return block;
+    for (const row of block.rows) {
+      for (const cell of row.cells) {
+        const nested = findTableByIdInBlocks(cell.blocks, tableId);
+        if (nested) return nested;
+      }
+    }
+  }
+  return null;
+}
+
+function findTableById(
+  document: EditorDocument,
+  tableId: string,
+): EditorTableNode | null {
+  for (const section of getDocumentSections(document)) {
+    for (const blocks of [
+      section.blocks,
+      section.header,
+      section.firstPageHeader,
+      section.evenPageHeader,
+      section.footer,
+      section.firstPageFooter,
+      section.evenPageFooter,
+    ]) {
+      const table = findTableByIdInBlocks(blocks, tableId);
+      if (table) return table;
+    }
+  }
+  for (const footnote of Object.values(document.footnotes?.items ?? {})) {
+    const table = findTableByIdInBlocks(footnote.blocks, tableId);
+    if (table) return table;
+  }
+  return null;
+}
+
 export function computeCanvasSelectionGeometry(
   snapshot: CanvasLayoutSnapshot,
   state: EditorState,
@@ -252,55 +296,43 @@ export function computeCanvasSelectionGeometry(
     }
   }
 
-  // Check if we have a table-cell selection across multiple cells
-  const activeSectionIndex = getActiveSectionIndex(state);
-  const anchorLoc = findParagraphTableLocation(
-    state.document,
-    state.selection.anchor.paragraphId,
-    activeSectionIndex,
-  );
-  const focusLoc = findParagraphTableLocation(
-    state.document,
-    state.selection.focus.paragraphId,
-    activeSectionIndex,
-  );
+  // Multi-cell selection is resolved from canvas snapshot metadata so nested
+  // tables naturally identify their own table id and geometry.
+  const anchorTableCell = (
+    snapshot.paragraphsById.get(state.selection.anchor.paragraphId) ?? []
+  ).find((paragraph) => paragraph.tableCell)?.tableCell;
+  const focusTableCell = (
+    snapshot.paragraphsById.get(state.selection.focus.paragraphId) ?? []
+  ).find((paragraph) => paragraph.tableCell)?.tableCell;
 
   let isMultiCellSelection = false;
 
   if (
-    anchorLoc &&
-    focusLoc &&
-    anchorLoc.blockIndex === focusLoc.blockIndex &&
-    anchorLoc.zone === focusLoc.zone &&
-    (anchorLoc.rowIndex !== focusLoc.rowIndex ||
-      anchorLoc.cellIndex !== focusLoc.cellIndex)
+    anchorTableCell &&
+    focusTableCell &&
+    anchorTableCell.tableId === focusTableCell.tableId &&
+    (anchorTableCell.rowIndex !== focusTableCell.rowIndex ||
+      anchorTableCell.cellIndex !== focusTableCell.cellIndex)
   ) {
-    const sections = getDocumentSections(state.document);
-    const section = sections[activeSectionIndex];
-    let tableBlock;
-    if (anchorLoc.zone === "header") {
-      tableBlock = section?.header?.[anchorLoc.blockIndex];
-    } else if (anchorLoc.zone === "footer") {
-      tableBlock = section?.footer?.[anchorLoc.blockIndex];
-    } else {
-      tableBlock = section?.blocks?.[anchorLoc.blockIndex];
-    }
-
-    if (tableBlock && tableBlock.type === "table") {
-      isMultiCellSelection = true;
+    const tableBlock = findTableById(
+      state.document,
+      anchorTableCell.tableId,
+    );
+    if (tableBlock) {
       const tableLayout = buildTableCellLayout(tableBlock);
       const anchorCell = tableLayout.find(
         (entry): boolean =>
-          entry.rowIndex === anchorLoc.rowIndex &&
-          entry.cellIndex === anchorLoc.cellIndex,
+          entry.rowIndex === anchorTableCell.rowIndex &&
+          entry.cellIndex === anchorTableCell.cellIndex,
       );
       const focusCell = tableLayout.find(
         (entry): boolean =>
-          entry.rowIndex === focusLoc.rowIndex &&
-          entry.cellIndex === focusLoc.cellIndex,
+          entry.rowIndex === focusTableCell.rowIndex &&
+          entry.cellIndex === focusTableCell.cellIndex,
       );
 
       if (anchorCell && focusCell) {
+        isMultiCellSelection = true;
         const startRow = Math.min(
           anchorCell.visualRowIndex,
           focusCell.visualRowIndex,
@@ -326,9 +358,9 @@ export function computeCanvasSelectionGeometry(
             paragraph.tableCell.tableId === tableBlock.id
           ) {
             const cell = tableLayout.find(
-              (c): boolean =>
-                c.rowIndex === paragraph.tableCell!.rowIndex &&
-                c.cellIndex === paragraph.tableCell!.cellIndex,
+              (candidate): boolean =>
+                candidate.rowIndex === paragraph.tableCell!.rowIndex &&
+                candidate.cellIndex === paragraph.tableCell!.cellIndex,
             );
             if (cell) {
               const inRow =
