@@ -111,4 +111,32 @@ describe("inline OOXML source preservation", () => {
       xml.indexOf("<cx:runTail"),
     );
   });
+
+  it("keeps unknown run XML while modelled formatting is changed", async () => {
+    const document = await importDocxInWorker(
+      await buildDocxWithUnknownInlineXml(),
+    );
+    const firstBlock = document.sections?.[0]?.blocks[0];
+    if (!firstBlock || firstBlock.type !== "paragraph") {
+      throw new Error("Expected an imported paragraph.");
+    }
+
+    const editedRun = cloneRun(firstBlock.runs[0]!);
+    editedRun.styles = {
+      ...(editedRun.styles ?? {}),
+      bold: false,
+      italic: true,
+    };
+    firstBlock.runs = [editedRun];
+
+    const xml = await exportedDocumentXml(document);
+    expect(xml).toContain("<w:i/>");
+    expect(xml).not.toContain("<w:b/>");
+    expect(xml).toContain('cx:runAttr="keep"');
+    expect(xml).toContain('<cx:runProperty cx:value="keep"/>');
+    expect(xml).toContain('<cx:runTail cx:value="keep"/>');
+    expect(xml.indexOf("<w:i/>")).toBeLessThan(
+      xml.indexOf("<cx:runProperty"),
+    );
+  });
 });
