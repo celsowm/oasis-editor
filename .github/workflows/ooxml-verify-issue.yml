@@ -1,0 +1,104 @@
+name: Temporary OOXML verification round 3
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  verify:
+    if: github.event.issue.title == 'OOXML verification trigger 2026-08-06 round 3'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Run checks and capture logs
+        shell: bash
+        run: |
+          set +e
+          mkdir -p .ci-logs
+
+          run_check() {
+            local name="$1"
+            shift
+            "$@" > ".ci-logs/${name}.log" 2>&1
+            echo "$?" > ".ci-logs/${name}.code"
+          }
+
+          run_check install npm ci
+          if [ "$(cat .ci-logs/install.code)" -eq 0 ]; then
+            run_check typecheck npm run typecheck
+            run_check import-graph npm run check:imports
+            run_check focused-tests npx vitest run \
+              tests/vitest/__tests__/export/docxRelationshipDiscoveredPathPreservation.test.ts \
+              tests/vitest/__tests__/export/docxUnchangedModeledPartPreservation.test.ts \
+              tests/vitest/__tests__/export/docxStrictRelationshipPreservation.test.ts \
+              tests/vitest/__tests__/export/docxModeledPartDeletion.test.ts \
+              tests/vitest/__tests__/export/docxWholeTableSource.test.ts \
+              tests/vitest/__tests__/export/docxSourcePackagePreservation.test.ts \
+              tests/vitest/__tests__/export/docxSourcePackageRelationshipSafety.test.ts \
+              tests/vitest/__tests__/export/docxWholeParagraphSource.test.ts \
+              tests/vitest/__tests__/export/docxInlineOoxmlPreservation.test.ts \
+              tests/vitest/__tests__/import/docxSourcePackage.test.ts \
+              tests/vitest/__tests__/import/docxRelationshipDiscovery.test.ts \
+              tests/vitest/__tests__/import/markupCompatibility.test.ts \
+              tests/vitest/__tests__/ooxml/sourceFragments.test.ts
+            run_check full-tests npm test
+            run_check build-app npm run build:app
+            run_check build-lib npm run build:lib
+          else
+            for name in typecheck import-graph focused-tests full-tests build-app build-lib; do
+              echo 125 > ".ci-logs/${name}.code"
+              echo "Skipped because npm ci failed." > ".ci-logs/${name}.log"
+            done
+          fi
+
+      - name: Comment verification result
+        if: always()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const checks = ['install', 'typecheck', 'import-graph', 'focused-tests', 'full-tests', 'build-app', 'build-lib'];
+            const sections = [];
+            let failed = false;
+            for (const name of checks) {
+              const codePath = `.ci-logs/${name}.code`;
+              const logPath = `.ci-logs/${name}.log`;
+              const code = fs.existsSync(codePath) ? Number(fs.readFileSync(codePath, 'utf8').trim()) : 999;
+              const status = code === 0 ? 'PASS' : code === 125 ? 'SKIPPED' : 'FAIL';
+              if (status === 'FAIL') failed = true;
+              const raw = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : 'Log unavailable.';
+              const tail = raw.split('\n').slice(-160).join('\n');
+              sections.push(`## ${name}: ${status} (exit ${code})\n\n\`\`\`text\n${tail}\n\`\`\``);
+            }
+            const body = [
+              '# OOXML verification result — round 3',
+              '',
+              `- Commit: \`${context.sha}\``,
+              `- Overall: **${failed ? 'FAIL' : 'PASS'}**`,
+              '',
+              ...sections,
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body.slice(0, 65000),
+            });
+
+            if (failed) {
+              core.setFailed('One or more verification checks failed.');
+            }
