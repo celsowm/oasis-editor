@@ -1,7 +1,9 @@
 import type { MergeKey } from "@/core/transactionMergeKeys.js";
 import { cloneBlock } from "@/core/cloneState.js";
 import { createEditorDocument } from "@/core/editorState.js";
+import { replaceParagraphsInBlocks } from "@/core/document/blockReplacement.js";
 import {
+  getBlockParagraphs,
   getParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
@@ -86,8 +88,9 @@ function createTableSelectionAwareCommandsImpl(
       const allParagraphs: EditorParagraphNode[] = [];
       const cellParagraphCounts: number[] = [];
       for (const entry of cells) {
-        allParagraphs.push(...entry.cell.blocks);
-        cellParagraphCounts.push(entry.cell.blocks.length);
+        const paragraphs = entry.cell.blocks.flatMap(getBlockParagraphs);
+        allParagraphs.push(...paragraphs);
+        cellParagraphCounts.push(paragraphs.length);
       }
 
       if (allParagraphs.length === 0) {
@@ -119,7 +122,7 @@ function createTableSelectionAwareCommandsImpl(
       const clonedTable = cloneBlock(
         currentBlocks[blockIndex],
       ) as EditorTableNode;
-      if (!clonedTable) {
+      if (!clonedTable || clonedTable.type !== "table") {
         return current;
       }
       const targetBlocks = currentBlocks.map(
@@ -140,7 +143,10 @@ function createTableSelectionAwareCommandsImpl(
         const targetCell =
           tableBlock.rows[entry.rowIndex]?.cells[entry.cellIndex];
         if (targetCell) {
-          targetCell.blocks = cellParagraphs;
+          targetCell.blocks = replaceParagraphsInBlocks(
+            targetCell.blocks,
+            cellParagraphs,
+          );
         }
       }
 
