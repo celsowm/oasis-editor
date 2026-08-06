@@ -3,12 +3,15 @@ import type {
   EditorState,
   EditorTableCellNode,
   EditorTableCellStyle,
+  TablePathSegment,
 } from "@/core/model.js";
 import {
-  findParagraphTableLocation,
+  findParagraphTablePathLocation,
   getActiveSectionIndex,
+  getBlockParagraphs,
   getDocumentSections,
   getParagraphs,
+  resolveTablePath,
 } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import {
@@ -60,16 +63,38 @@ interface TableBorderSelection {
   endCol: number;
 }
 
+function pathsIdentifySameTable(
+  left: readonly TablePathSegment[],
+  right: readonly TablePathSegment[],
+): boolean {
+  if (left.length === 0 || left.length !== right.length) return false;
+  for (let index = 0; index < left.length; index += 1) {
+    const leftSegment = left[index]!;
+    const rightSegment = right[index]!;
+    if (leftSegment.tableBlockIndex !== rightSegment.tableBlockIndex) {
+      return false;
+    }
+    if (
+      index < left.length - 1 &&
+      (leftSegment.rowIndex !== rightSegment.rowIndex ||
+        leftSegment.cellIndex !== rightSegment.cellIndex)
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function resolveTableBorderSelection(
   state: EditorState,
 ): TableBorderSelection | null {
   const activeSectionIndex = getActiveSectionIndex(state);
-  const anchorLoc = findParagraphTableLocation(
+  const anchorLoc = findParagraphTablePathLocation(
     state.document,
     state.selection.anchor.paragraphId,
     activeSectionIndex,
   );
-  const focusLoc = findParagraphTableLocation(
+  const focusLoc = findParagraphTablePathLocation(
     state.document,
     state.selection.focus.paragraphId,
     activeSectionIndex,
@@ -77,8 +102,8 @@ function resolveTableBorderSelection(
   if (
     !anchorLoc ||
     !focusLoc ||
-    anchorLoc.blockIndex !== focusLoc.blockIndex ||
-    anchorLoc.zone !== focusLoc.zone
+    anchorLoc.zone !== focusLoc.zone ||
+    !pathsIdentifySameTable(anchorLoc.tablePath, focusLoc.tablePath)
   ) {
     return null;
   }
@@ -88,19 +113,29 @@ function resolveTableBorderSelection(
     activeSectionIndex,
     anchorLoc.zone,
   );
-  const table = blocks?.[anchorLoc.blockIndex];
-  if (!table || table.type !== "table") return null;
+  if (!blocks) return null;
+  const anchorResolved = resolveTablePath(blocks, anchorLoc.tablePath);
+  const focusResolved = resolveTablePath(blocks, focusLoc.tablePath);
+  const anchorTarget = anchorResolved?.[anchorResolved.length - 1];
+  const focusTarget = focusResolved?.[focusResolved.length - 1];
+  if (!anchorTarget || !focusTarget || anchorTarget.table !== focusTarget.table) {
+    return null;
+  }
 
-  const entries = buildTableCellLayout(table);
+  const anchorSegment = anchorLoc.tablePath[anchorLoc.tablePath.length - 1];
+  const focusSegment = focusLoc.tablePath[focusLoc.tablePath.length - 1];
+  if (!anchorSegment || !focusSegment) return null;
+
+  const entries = buildTableCellLayout(anchorTarget.table);
   const anchorCell = entries.find(
     (entry): boolean =>
-      entry.rowIndex === anchorLoc.rowIndex &&
-      entry.cellIndex === anchorLoc.cellIndex,
+      entry.rowIndex === anchorSegment.rowIndex &&
+      entry.cellIndex === anchorSegment.cellIndex,
   );
   const focusCell = entries.find(
     (entry): boolean =>
-      entry.rowIndex === focusLoc.rowIndex &&
-      entry.cellIndex === focusLoc.cellIndex,
+      entry.rowIndex === focusSegment.rowIndex &&
+      entry.cellIndex === focusSegment.cellIndex,
   );
   if (!anchorCell || !focusCell) return null;
 
@@ -135,8 +170,10 @@ function collectTableSelectedParagraphIds(state: EditorState): Set<string> {
   const selection = resolveTableBorderSelection(state);
   if (!selection) return selectedParagraphIds;
   for (const entry of selection.selectedEntries) {
-    for (const paragraph of entry.cell.blocks) {
-      selectedParagraphIds.add(paragraph.id);
+    for (const block of entry.cell.blocks) {
+      for (const paragraph of getBlockParagraphs(block)) {
+        selectedParagraphIds.add(paragraph.id);
+      }
     }
   }
   return selectedParagraphIds;
@@ -439,8 +476,11 @@ export function applyTableBorderPreset(
   const touchedParagraphIds = new Set<string>();
   for (const entry of selection.entries) {
     if (!patches.has(entry.cell.id)) continue;
-    for (const paragraph of entry.cell.blocks)
-      touchedParagraphIds.add(paragraph.id);
+    for (const block of entry.cell.blocks) {
+      for (const paragraph of getBlockParagraphs(block)) {
+        touchedParagraphIds.add(paragraph.id);
+      }
+    }
   }
   const updateCell = (cell: EditorTableCellNode): EditorTableCellNode => {
     const patch = patches.get(cell.id);
