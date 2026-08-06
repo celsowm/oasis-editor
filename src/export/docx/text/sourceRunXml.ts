@@ -14,6 +14,7 @@ import {
   createEditorRunSemanticSignature,
   createEditorRunStructureSignature,
   getEditorRunOoxmlSource,
+  ooxmlSourceNeedsCanonicalRunSerialization,
 } from "@/ooxml/word/sourceFragments.js";
 
 const MARKUP_COMPATIBILITY_NS =
@@ -114,6 +115,10 @@ function directElementChildren(element: XmlElement): XmlElement[] {
   return children;
 }
 
+function elementLocalName(element: XmlElement): string {
+  return element.localName ?? element.tagName;
+}
+
 function directChild(
   element: XmlElement,
   namespaceUri: string,
@@ -121,18 +126,19 @@ function directChild(
 ): XmlElement | undefined {
   return directElementChildren(element).find(
     (child): boolean =>
-      child.namespaceURI === namespaceUri && child.localName === localName,
+      child.namespaceURI === namespaceUri &&
+      elementLocalName(child) === localName,
   );
 }
 
 function elementKey(element: XmlElement): string {
-  return `${element.namespaceURI ?? ""}\u0000${element.localName}`;
+  return `${element.namespaceURI ?? ""}\u0000${elementLocalName(element)}`;
 }
 
 function parseSingleRunXml(xml: string): XmlElement | undefined {
   const document = new DOMParser().parseFromString(xml, "application/xml");
   const root = document.documentElement as XmlElement | undefined;
-  return root?.localName === "r" ? root : undefined;
+  return root && elementLocalName(root) === "r" ? root : undefined;
 }
 
 function parseGeneratedSingleRunXml(xml: string): XmlElement | undefined {
@@ -144,7 +150,7 @@ function parseGeneratedSingleRunXml(xml: string): XmlElement | undefined {
     return undefined;
   }
   const children = directElementChildren(wrapper);
-  return children.length === 1 && children[0]!.localName === "r"
+  return children.length === 1 && elementLocalName(children[0]!) === "r"
     ? children[0]
     : undefined;
 }
@@ -165,13 +171,17 @@ function patchTextRunSourceXml(
   const sourceChildren = directElementChildren(sourceRun);
   const oldTextChildren = sourceChildren.filter(
     (child): boolean =>
-      child.namespaceURI === WORD_NS && TEXT_CONTENT_NAMES.has(child.localName),
+      child.namespaceURI === WORD_NS &&
+      TEXT_CONTENT_NAMES.has(elementLocalName(child)),
   );
   const insertionPoint =
     oldTextChildren[0] ??
     sourceChildren.find(
       (child): boolean =>
-        !(child.namespaceURI === WORD_NS && child.localName === "rPr"),
+        !(
+          child.namespaceURI === WORD_NS &&
+          elementLocalName(child) === "rPr"
+        ),
     ) ??
     null;
 
@@ -202,8 +212,9 @@ function copySourceRunAttributes(
     if (!attribute || attribute.namespaceURI === OFFICE_REL_NS) {
       continue;
     }
+    const localName = attribute.localName ?? attribute.name;
     const hasAttribute = attribute.namespaceURI
-      ? generatedRun.hasAttributeNS(attribute.namespaceURI, attribute.localName)
+      ? generatedRun.hasAttributeNS(attribute.namespaceURI, localName)
       : generatedRun.hasAttribute(attribute.name);
     if (hasAttribute) {
       continue;
@@ -221,15 +232,16 @@ function copySourceRunAttributes(
 }
 
 function isModeledRunProperty(element: XmlElement): boolean {
+  const localName = elementLocalName(element);
   if (element.namespaceURI === WORD_NS) {
-    return MODELED_WORD_RUN_PROPERTY_NAMES.has(element.localName);
+    return MODELED_WORD_RUN_PROPERTY_NAMES.has(localName);
   }
   if (element.namespaceURI === WORD14_NS) {
-    return MODELED_WORD14_RUN_PROPERTY_NAMES.has(element.localName);
+    return MODELED_WORD14_RUN_PROPERTY_NAMES.has(localName);
   }
   return (
     element.namespaceURI === MARKUP_COMPATIBILITY_NS &&
-    element.localName === "AlternateContent"
+    localName === "AlternateContent"
   );
 }
 
@@ -240,7 +252,10 @@ function ensureGeneratedRunProperties(
   if (existing) {
     return existing;
   }
-  const properties = generatedRun.ownerDocument.createElementNS(WORD_NS, "w:rPr");
+  const properties = generatedRun.ownerDocument!.createElementNS(
+    WORD_NS,
+    "w:rPr",
+  );
   generatedRun.insertBefore(properties, generatedRun.firstChild);
   return properties;
 }
@@ -285,10 +300,10 @@ function mergeSourceRunProperties(
 }
 
 function isGeneratedRunContent(element: XmlElement): boolean {
+  const localName = elementLocalName(element);
   return (
     element.namespaceURI === WORD_NS &&
-    (element.localName === "rPr" ||
-      GENERATED_RUN_CONTENT_NAMES.has(element.localName))
+    (localName === "rPr" || GENERATED_RUN_CONTENT_NAMES.has(localName))
   );
 }
 
@@ -328,7 +343,11 @@ export function serializeRunFromOoxmlSource(
   run: EditorTextRun,
 ): string | undefined {
   const source = getEditorRunOoxmlSource(run);
-  if (!source || hasRelationshipReference(source.xml)) {
+  if (
+    !source ||
+    hasRelationshipReference(source.xml) ||
+    ooxmlSourceNeedsCanonicalRunSerialization(source.xml)
+  ) {
     return undefined;
   }
 
@@ -367,9 +386,6 @@ export function mergeRunOoxmlSourceIntoGeneratedXml(
   mergeSourceRunProperties(sourceRun, generatedRun);
   mergeSourceRunChildren(sourceRun, generatedRun);
 
-  // Namespace declarations copied from the source run are ordinary xmlns
-  // attributes in xmldom. Keep this explicit reference so minifiers do not
-  // treat the XMLNS namespace handling as dead compatibility code.
   void XMLNS_NS;
   return new XMLSerializer().serializeToString(generatedRun);
 }
