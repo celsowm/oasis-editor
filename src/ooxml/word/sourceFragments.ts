@@ -127,18 +127,23 @@ export function setEditorParagraphOoxmlSource(
   }
 }
 
+export function getEditorParagraphOoxmlSource(
+  paragraph: EditorParagraphNode,
+): EditorOoxmlParagraphSource | undefined {
+  return (paragraph as EditorParagraphWithOoxmlSource).ooxmlSource;
+}
+
 export function getEditorParagraphOoxmlAttributes(
   paragraph: EditorParagraphNode,
 ): string | undefined {
-  return (paragraph as EditorParagraphWithOoxmlSource).ooxmlSource?.attributes;
+  return getEditorParagraphOoxmlSource(paragraph)?.attributes;
 }
 
 export function getReusableEditorParagraphPropertiesXml(
   paragraph: EditorParagraphNode,
   hasOverrides: boolean,
 ): string | undefined {
-  const source = (paragraph as EditorParagraphWithOoxmlSource).ooxmlSource
-    ?.paragraphProperties;
+  const source = getEditorParagraphOoxmlSource(paragraph)?.paragraphProperties;
   if (
     !source ||
     hasOverrides ||
