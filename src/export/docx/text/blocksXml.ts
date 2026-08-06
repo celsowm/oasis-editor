@@ -10,7 +10,7 @@ import type { BookmarkBoundaryEvent } from "@/export/docx/bookmarksXml.js";
 import { serializeBookmarkEvent } from "@/export/docx/bookmarksXml.js";
 import type { CommentBoundaryEvent } from "@/export/docx/commentsXml.js";
 import { serializeCommentRangeEvent } from "@/export/docx/commentsXml.js";
-import { serializeTableXml } from "@/export/docx/tableXml.js";
+import { serializeTableXmlPreservingSource } from "@/export/docx/tableSourceXml.js";
 import { assertNever } from "@/core/assertNever.js";
 import { serializeParagraphProperties } from "./paragraphPropertiesXml.js";
 import { serializeRunWithRelationships } from "./runXml.js";
@@ -161,10 +161,12 @@ function serializeSingleBlockXml(
       return (
         pageBreakXml +
         (reusableTableXml ??
-          serializeTableXml(block, (paragraph, cell): string =>
-            serializeParagraphXml(paragraph, context, styles, {
-              align: cell.style?.horizontalAlign,
-            }),
+          serializeTableXmlPreservingSource(
+            block,
+            (paragraph, cell): string =>
+              serializeParagraphXml(paragraph, context, styles, {
+                align: cell.style?.horizontalAlign,
+              }),
           ))
       );
     }
