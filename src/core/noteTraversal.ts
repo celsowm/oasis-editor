@@ -26,11 +26,6 @@ import type {
 } from "./model.js";
 import { getBlockParagraphs, getDocumentSectionsCanonical } from "./model.js";
 import { assertNever } from "./assertNever.js";
-import type {
-  EditorTableNode,
-  EditorTableRowNode,
-  EditorTableCellNode,
-} from "@/core/model.js";
 
 /** Discriminant of a note reference run. */
 export type NoteReferenceRunKind = "footnoteReference" | "endnoteReference";
@@ -187,6 +182,45 @@ export interface NoteRenumberResult<TNote extends NoteBody> {
   itemsChanged: boolean;
 }
 
+function rewriteBlocks(
+  blocks: EditorBlockNode[] | undefined,
+  traversal: NoteTraversal,
+  markerById: Map<string, string>,
+): { blocks: EditorBlockNode[] | undefined; changed: boolean } {
+  if (!blocks) return { blocks, changed: false };
+  let changed = false;
+  const nextBlocks = blocks.map((block): EditorBlockNode => {
+    switch (block.type) {
+      case "paragraph": {
+        const updated = rewriteParagraphMarkers(block, traversal, markerById);
+        if (updated !== block) changed = true;
+        return updated;
+      }
+      case "table": {
+        let tableChanged = false;
+        const rows = block.rows.map((row) => {
+          let rowChanged = false;
+          const cells = row.cells.map((cell) => {
+            const nested = rewriteBlocks(cell.blocks, traversal, markerById);
+            if (!nested.changed || !nested.blocks) return cell;
+            rowChanged = true;
+            return { ...cell, blocks: nested.blocks };
+          });
+          if (!rowChanged) return row;
+          tableChanged = true;
+          return { ...row, cells };
+        });
+        if (!tableChanged) return block;
+        changed = true;
+        return { ...block, rows };
+      }
+      default:
+        return assertNever(block, "block");
+    }
+  });
+  return { blocks: changed ? nextBlocks : blocks, changed };
+}
+
 /**
  * Compute the renumbering of a note family: assign a marker per referenced note
  * in reading order, rewrite reference run text where it differs, and prune note
@@ -222,71 +256,48 @@ export function computeNoteRenumber<TNote extends NoteBody>(
   // Second pass: rewrite run.text for reference markers when they differ.
   let sectionsChanged = false;
   const sections = getDocumentSectionsCanonical(document).map((section) => {
-    const rewriteBlocks = (
-      blocks: EditorBlockNode[] | undefined,
-    ): EditorBlockNode[] | undefined => {
-      if (!blocks) return blocks;
-      let blockChanged = false;
-      const nextBlocks = blocks.map(
-        (block): EditorParagraphNode | EditorTableNode => {
-          switch (block.type) {
-            case "paragraph": {
-              const updated = rewriteParagraphMarkers(
-                block,
-                traversal,
-                markerById,
-              );
-              if (updated !== block) blockChanged = true;
-              return updated;
-            }
-            case "table": {
-              let tableChanged = false;
-              const nextRows = block.rows.map((row): EditorTableRowNode => {
-                let rowChanged = false;
-                const nextCells = row.cells.map((cell): EditorTableCellNode => {
-                  let cellChanged = false;
-                  const nextCellBlocks = cell.blocks.map(
-                    (p): EditorParagraphNode => {
-                      const updated = rewriteParagraphMarkers(
-                        p,
-                        traversal,
-                        markerById,
-                      );
-                      if (updated !== p) cellChanged = true;
-                      return updated;
-                    },
-                  );
-                  if (!cellChanged) return cell;
-                  rowChanged = true;
-                  return { ...cell, blocks: nextCellBlocks };
-                });
-                if (!rowChanged) return row;
-                tableChanged = true;
-                return { ...row, cells: nextCells };
-              });
-              if (!tableChanged) return block;
-              blockChanged = true;
-              return { ...block, rows: nextRows };
-            }
-            default:
-              return assertNever(block, "block");
-          }
-        },
-      );
-      if (!blockChanged) return blocks;
-      sectionsChanged = true;
-      return nextBlocks;
-    };
-
+    const body = rewriteBlocks(section.blocks, traversal, markerById);
+    const header = rewriteBlocks(section.header, traversal, markerById);
+    const firstPageHeader = rewriteBlocks(
+      section.firstPageHeader,
+      traversal,
+      markerById,
+    );
+    const evenPageHeader = rewriteBlocks(
+      section.evenPageHeader,
+      traversal,
+      markerById,
+    );
+    const footer = rewriteBlocks(section.footer, traversal, markerById);
+    const firstPageFooter = rewriteBlocks(
+      section.firstPageFooter,
+      traversal,
+      markerById,
+    );
+    const evenPageFooter = rewriteBlocks(
+      section.evenPageFooter,
+      traversal,
+      markerById,
+    );
+    const changed =
+      body.changed ||
+      header.changed ||
+      firstPageHeader.changed ||
+      evenPageHeader.changed ||
+      footer.changed ||
+      firstPageFooter.changed ||
+      evenPageFooter.changed;
+    if (!changed) return section;
+    sectionsChanged = true;
     return {
       ...section,
-      blocks: rewriteBlocks(section.blocks) ?? section.blocks,
-      header: rewriteBlocks(section.header),
-      firstPageHeader: rewriteBlocks(section.firstPageHeader),
-      evenPageHeader: rewriteBlocks(section.evenPageHeader),
-      footer: rewriteBlocks(section.footer),
-      firstPageFooter: rewriteBlocks(section.firstPageFooter),
-      evenPageFooter: rewriteBlocks(section.evenPageFooter),
+      blocks: body.blocks ?? section.blocks,
+      header: header.blocks,
+      firstPageHeader: firstPageHeader.blocks,
+      evenPageHeader: evenPageHeader.blocks,
+      footer: footer.blocks,
+      firstPageFooter: firstPageFooter.blocks,
+      evenPageFooter: evenPageFooter.blocks,
     };
   });
 
