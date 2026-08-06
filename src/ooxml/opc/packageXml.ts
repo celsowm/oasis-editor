@@ -197,7 +197,7 @@ export function resolveOpcRelationships(
 ): EditorOpcRelationship[] {
   return relationships.map((relationship): EditorOpcRelationship => {
     if (relationship.targetMode === "External") {
-      return relationship;
+      return { ...relationship, resolvedTarget: undefined };
     }
     const resolvedTarget = resolveOpcRelationshipTarget(
       ownerPartPath,
