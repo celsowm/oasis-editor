@@ -11,7 +11,7 @@ import {
   createTableRevisionMetadata,
   updateActiveTableBlocks,
   updateStateSections,
-  updateTablesInBlocks,
+  updateNestedTablesInBlocks,
 } from "./tableCommandUtils.js";
 
 /** Fallback per-column width (pt) when a table has no resolvable grid. */
@@ -90,7 +90,7 @@ export function setTableColumnWidths(
               ...cell,
               style: {
                 ...(cell.style ?? {}),
-                width: typeof newWidth === "number" ? newWidth : newWidth,
+                width: newWidth,
                 ...(propertyRevision ? { propertyRevision } : {}),
               },
             };
@@ -147,7 +147,7 @@ export function setTableColumnWidths(
   return updateStateSections(
     state,
     (blocks: EditorBlockNode[]): EditorBlockNode[] =>
-      updateTablesInBlocks(blocks, updateTable),
+      updateNestedTablesInBlocks(blocks, updateTable),
   );
 }
 
