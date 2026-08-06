@@ -1,14 +1,17 @@
 import {
-  findParagraphTableLocation,
+  findParagraphTablePathLocation,
   getActiveSectionIndex,
   getBlockParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
+  resolveTablePath,
   type EditorBlockNode,
   type EditorEditingZone,
   type EditorParagraphNode,
   type EditorState,
   type EditorTableCellNode,
+  type TableLocation,
+  type TablePathSegment,
 } from "@/core/model.js";
 import {
   buildTableCellLayout,
@@ -18,6 +21,7 @@ import type { EditorLogger } from "@/utils/logger.js";
 
 export interface HorizontalTableCellRange {
   blockIndex: number;
+  tablePath: TablePathSegment[];
   rowIndex: number;
   startCellIndex: number;
   endCellIndex: number;
@@ -26,6 +30,7 @@ export interface HorizontalTableCellRange {
 
 export interface VerticalTableCellRange {
   blockIndex: number;
+  tablePath: TablePathSegment[];
   startRowIndex: number;
   endRowIndex: number;
   cellIndex: number;
@@ -34,6 +39,7 @@ export interface VerticalTableCellRange {
 
 export interface SelectedTableCells {
   blockIndex: number;
+  tablePath: TablePathSegment[];
   cells: TableCellLayoutEntry[];
   zone: EditorEditingZone;
 }
@@ -45,6 +51,8 @@ interface TableSelectionResolversDeps {
   ) => EditorBlockNode[];
   logger?: EditorLogger;
 }
+
+type LocatedTableParagraph = TableLocation & { zone: EditorEditingZone };
 
 function compareCellLocations(
   left: TableCellLayoutEntry,
@@ -63,6 +71,46 @@ function getCellParagraphs(cell: EditorTableCellNode): EditorParagraphNode[] {
   return cell.blocks.flatMap(getBlockParagraphs);
 }
 
+function normalizeInnermostLocation(
+  location: LocatedTableParagraph,
+): LocatedTableParagraph {
+  const segment = location.tablePath[location.tablePath.length - 1];
+  return segment
+    ? {
+        ...location,
+        rowIndex: segment.rowIndex,
+        cellIndex: segment.cellIndex,
+      }
+    : location;
+}
+
+/**
+ * Two paragraph paths identify the same table when every ancestor table/cell
+ * hop matches and the final table occupies the same block in the innermost
+ * parent story. The final row/cell deliberately differs for multi-cell ranges.
+ */
+function pathsIdentifySameTable(
+  left: readonly TablePathSegment[],
+  right: readonly TablePathSegment[],
+): boolean {
+  if (left.length === 0 || left.length !== right.length) return false;
+  for (let index = 0; index < left.length; index += 1) {
+    const leftSegment = left[index]!;
+    const rightSegment = right[index]!;
+    if (leftSegment.tableBlockIndex !== rightSegment.tableBlockIndex) {
+      return false;
+    }
+    if (
+      index < left.length - 1 &&
+      (leftSegment.rowIndex !== rightSegment.rowIndex ||
+        leftSegment.cellIndex !== rightSegment.cellIndex)
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function getSelectionTableContext(
   current: EditorState,
   deps: TableSelectionResolversDeps,
@@ -77,32 +125,41 @@ function getSelectionTableContextImpl(
 ) {
   const selection = current.selection;
   const activeSectionIndex = getActiveSectionIndex(current);
-  const anchorLocation = findParagraphTableLocation(
+  const rawAnchorLocation = findParagraphTablePathLocation(
     current.document,
     selection.anchor.paragraphId,
     activeSectionIndex,
   );
-  const focusLocation = findParagraphTableLocation(
+  const rawFocusLocation = findParagraphTablePathLocation(
     current.document,
     selection.focus.paragraphId,
     activeSectionIndex,
   );
 
   if (
-    !anchorLocation ||
-    !focusLocation ||
-    anchorLocation.blockIndex !== focusLocation.blockIndex ||
-    anchorLocation.zone !== focusLocation.zone
+    !rawAnchorLocation ||
+    !rawFocusLocation ||
+    rawAnchorLocation.zone !== rawFocusLocation.zone ||
+    !pathsIdentifySameTable(
+      rawAnchorLocation.tablePath,
+      rawFocusLocation.tablePath,
+    )
   ) {
     return null;
   }
 
-  const blocks = deps.getTargetBlocks(current, anchorLocation.zone);
-  const tableBlock = blocks[anchorLocation.blockIndex];
-  if (!tableBlock || tableBlock.type !== "table") {
+  const blocks = deps.getTargetBlocks(current, rawAnchorLocation.zone);
+  const anchorPath = resolveTablePath(blocks, rawAnchorLocation.tablePath);
+  const focusPath = resolveTablePath(blocks, rawFocusLocation.tablePath);
+  const anchorTarget = anchorPath?.[anchorPath.length - 1];
+  const focusTarget = focusPath?.[focusPath.length - 1];
+  if (!anchorTarget || !focusTarget || anchorTarget.table !== focusTarget.table) {
     return null;
   }
 
+  const anchorLocation = normalizeInnermostLocation(rawAnchorLocation);
+  const focusLocation = normalizeInnermostLocation(rawFocusLocation);
+  const tableBlock = anchorTarget.table;
   const tableLayout = buildTableCellLayout(tableBlock);
   const anchorCell = tableLayout.find(
     (entry): boolean =>
@@ -241,6 +298,9 @@ function createTableSelectionResolversImpl(deps: TableSelectionResolversDeps) {
 
     return {
       blockIndex: context.anchorLocation.blockIndex,
+      tablePath: context.anchorLocation.tablePath.map((segment) => ({
+        ...segment,
+      })),
       cells,
       zone: context.anchorLocation.zone,
     };
@@ -272,6 +332,9 @@ function createTableSelectionResolversImpl(deps: TableSelectionResolversDeps) {
 
     return {
       blockIndex: context.anchorLocation.blockIndex,
+      tablePath: context.anchorLocation.tablePath.map((segment) => ({
+        ...segment,
+      })),
       rowIndex: startLocation.rowIndex,
       startCellIndex: startLocation.cellIndex,
       endCellIndex: endLocation.cellIndex,
@@ -304,6 +367,9 @@ function createTableSelectionResolversImpl(deps: TableSelectionResolversDeps) {
 
     return {
       blockIndex: context.anchorLocation.blockIndex,
+      tablePath: context.anchorLocation.tablePath.map((segment) => ({
+        ...segment,
+      })),
       startRowIndex,
       endRowIndex,
       cellIndex: context.anchorLocation.cellIndex,
