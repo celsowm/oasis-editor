@@ -31,8 +31,14 @@ function mergeRelationships(
   relationshipPartPath: string,
 ): EditorOpcRelationship[] {
   const result = [...rebuilt];
-  const usedIds = new Set(rebuilt.map((relationship): string => relationship.id));
-  const semanticKeys = new Set(rebuilt.map(relationshipKey));
+  const rebuiltById = new Map(
+    rebuilt.map(
+      (relationship): readonly [string, EditorOpcRelationship] => [
+        relationship.id,
+        relationship,
+      ],
+    ),
+  );
   const replacesOfficeDocument =
     relationshipPartPath === OPC_ROOT_RELATIONSHIPS_PATH &&
     rebuilt.some((relationship): boolean =>
@@ -46,15 +52,20 @@ function mergeRelationships(
     ) {
       continue;
     }
-    if (
-      usedIds.has(relationship.id) ||
-      semanticKeys.has(relationshipKey(relationship))
-    ) {
-      continue;
+
+    const rebuiltWithSameId = rebuiltById.get(relationship.id);
+    if (rebuiltWithSameId) {
+      if (relationshipKey(rebuiltWithSameId) === relationshipKey(relationship)) {
+        continue;
+      }
+      throw new Error(
+        `Cannot safely preserve ${relationshipPartPath}: relationship id ${relationship.id} is used by both the source package and rebuilt document for different targets.`,
+      );
     }
+
+    // Keep the original id even when another relationship has the same target.
+    // Unknown source markup may still reference this exact r:id.
     result.push(relationship);
-    usedIds.add(relationship.id);
-    semanticKeys.add(relationshipKey(relationship));
   }
 
   return result;
