@@ -5,7 +5,7 @@ import type {
   EditorTableNode,
   EditorTableStyle,
 } from "@/core/model.js";
-import { getBlockParagraphs, getParagraphs } from "@/core/model.js";
+import { getParagraphs } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import {
   patchStyleValue,
@@ -22,6 +22,20 @@ function collectLinearSelectedParagraphIds(state: EditorState): Set<string> {
     selectedParagraphIds.add(paragraphs[i]!.id);
   }
   return selectedParagraphIds;
+}
+
+function tableHasDirectSelectedParagraph(
+  table: EditorTableNode,
+  selectedParagraphIds: ReadonlySet<string>,
+): boolean {
+  return table.rows.some((row): boolean =>
+    row.cells.some((cell): boolean =>
+      cell.blocks.some(
+        (block): boolean =>
+          block.type === "paragraph" && selectedParagraphIds.has(block.id),
+      ),
+    ),
+  );
 }
 
 export function setTableStyleValue<K extends keyof EditorTableStyle>(
@@ -46,27 +60,22 @@ export function setTableStyleValue<K extends keyof EditorTableStyle>(
     return { ...table, style: patchStyleValue(style, key, value) };
   };
 
-  const updateBlocks = (blocks: EditorBlockNode[]): EditorBlockNode[] => {
-    return blocks.map((block): EditorParagraphNode | EditorTableNode => {
+  const updateBlocks = (blocks: EditorBlockNode[]): EditorBlockNode[] =>
+    blocks.map((block): EditorParagraphNode | EditorTableNode => {
       if (block.type === "paragraph") return block;
-
-      const paragraphsInTable = getBlockParagraphs(block);
-      const isSelected = paragraphsInTable.some((paragraph): boolean =>
-        selectedParagraphIds.has(paragraph.id),
-      );
 
       const updatedRows = block.rows.map((row) => ({
         ...row,
         cells: row.cells.map((cell) => ({
           ...cell,
-          blocks: updateBlocks(cell.blocks) as EditorParagraphNode[],
+          blocks: updateBlocks(cell.blocks),
         })),
       }));
-
       const nextTable = { ...block, rows: updatedRows };
-      return isSelected ? updateTable(nextTable) : nextTable;
+      return tableHasDirectSelectedParagraph(block, selectedParagraphIds)
+        ? updateTable(nextTable)
+        : nextTable;
     });
-  };
 
   return updateStateSections(state, updateBlocks);
 }
