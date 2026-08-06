@@ -139,4 +139,29 @@ describe("inline OOXML source preservation", () => {
       xml.indexOf("<cx:runProperty"),
     );
   });
+
+  it("keeps unknown pPr XML while modelled paragraph formatting is changed", async () => {
+    const document = await importDocxInWorker(
+      await buildDocxWithUnknownInlineXml(),
+    );
+    const firstBlock = document.sections?.[0]?.blocks[0];
+    if (!firstBlock || firstBlock.type !== "paragraph") {
+      throw new Error("Expected an imported paragraph.");
+    }
+
+    firstBlock.style = {
+      ...(firstBlock.style ?? {}),
+      align: "right",
+    };
+
+    const xml = await exportedDocumentXml(document);
+    expect(xml).toContain('<w:jc w:val="right"/>');
+    expect(xml).not.toContain('<w:jc w:val="center"/>');
+    expect(xml).toContain('<cx:paragraphProperty cx:value="keep"/>');
+    expect(xml).toContain('w14:paraId="A1B2C3D4"');
+    expect(xml).toContain('cx:paragraphAttr="keep"');
+    expect(xml.indexOf('<w:jc w:val="right"/>')).toBeLessThan(
+      xml.indexOf("<cx:paragraphProperty"),
+    );
+  });
 });
