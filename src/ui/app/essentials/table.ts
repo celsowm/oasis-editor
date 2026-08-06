@@ -9,12 +9,15 @@ import {
   setTableStyleValue,
 } from "@/core/commands/table.js";
 import {
-  findParagraphTableLocation,
+  findParagraphTablePathLocation,
   getActiveSectionIndex,
   getDocumentSections,
   resolveEffectiveTableStyle,
+  resolveTablePath,
+  type EditorBlockNode,
   type EditorState,
   type EditorTableNode,
+  type TablePathSegment,
 } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import type {
@@ -23,6 +26,46 @@ import type {
 } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
 
+function pathsIdentifySameTable(
+  left: readonly TablePathSegment[],
+  right: readonly TablePathSegment[],
+): boolean {
+  if (left.length === 0 || left.length !== right.length) return false;
+  for (let index = 0; index < left.length; index += 1) {
+    const leftSegment = left[index]!;
+    const rightSegment = right[index]!;
+    if (leftSegment.tableBlockIndex !== rightSegment.tableBlockIndex) {
+      return false;
+    }
+    if (
+      index < left.length - 1 &&
+      (leftSegment.rowIndex !== rightSegment.rowIndex ||
+        leftSegment.cellIndex !== rightSegment.cellIndex)
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function zoneBlocks(
+  state: EditorState,
+  sectionIndex: number,
+  zone: "main" | "header" | "footer" | "footnote",
+): EditorBlockNode[] | null {
+  if (zone === "footnote") {
+    const footnoteId = state.activeFootnoteId;
+    return footnoteId
+      ? (state.document.footnotes?.items[footnoteId]?.blocks ?? null)
+      : null;
+  }
+  const section = getDocumentSections(state.document)[sectionIndex];
+  if (!section) return null;
+  if (zone === "header") return section.header ?? [];
+  if (zone === "footer") return section.footer ?? [];
+  return section.blocks;
+}
+
 export function buildEssentialsTable(
   options: CreateEditorEssentialsPluginOptions,
 ): EssentialsTableCapability {
@@ -30,7 +73,7 @@ export function buildEssentialsTable(
   let showingGridlines = false;
   const insideTable = (): boolean =>
     Boolean(
-      findParagraphTableLocation(
+      findParagraphTablePathLocation(
         options.state().document,
         options.state().selection.focus.paragraphId,
         getActiveSectionIndex(options.state()),
@@ -52,23 +95,17 @@ export function buildEssentialsTable(
     noVBand: false,
   };
   const selectedTableIn = (state: EditorState): EditorTableNode | null => {
-    const secIdx = getActiveSectionIndex(state);
-    const loc = findParagraphTableLocation(
+    const sectionIndex = getActiveSectionIndex(state);
+    const location = findParagraphTablePathLocation(
       state.document,
       state.selection.focus.paragraphId,
-      secIdx,
+      sectionIndex,
     );
-    if (!loc) return null;
-    const section = getDocumentSections(state.document)[secIdx];
-    if (!section) return null;
-    const blocks =
-      loc.zone === "header"
-        ? (section.header ?? [])
-        : loc.zone === "footer"
-          ? (section.footer ?? [])
-          : section.blocks;
-    const table = blocks[loc.blockIndex];
-    return table && table.type === "table" ? table : null;
+    if (!location) return null;
+    const blocks = zoneBlocks(state, sectionIndex, location.zone);
+    if (!blocks) return null;
+    const resolved = resolveTablePath(blocks, location.tablePath);
+    return resolved?.[resolved.length - 1]?.table ?? null;
   };
   const rawTblLookIn = (
     state: EditorState,
@@ -79,25 +116,31 @@ export function buildEssentialsTable(
     return { ...RAW_TBL_LOOK_DEFAULTS, ...(effective.tblLook ?? {}) };
   };
   const selectionLabel = (): string | null => {
-    const normalized = normalizeSelection(options.state());
+    const state = options.state();
+    const normalized = normalizeSelection(state);
     if (normalized.isCollapsed) return null;
-    const secIdx = getActiveSectionIndex(options.state());
-    const anchorLoc = findParagraphTableLocation(
-      options.state().document,
-      options.state().selection.anchor.paragraphId,
-      secIdx,
+    const sectionIndex = getActiveSectionIndex(state);
+    const anchorLoc = findParagraphTablePathLocation(
+      state.document,
+      state.selection.anchor.paragraphId,
+      sectionIndex,
     );
-    const focusLoc = findParagraphTableLocation(
-      options.state().document,
-      options.state().selection.focus.paragraphId,
-      secIdx,
+    const focusLoc = findParagraphTablePathLocation(
+      state.document,
+      state.selection.focus.paragraphId,
+      sectionIndex,
     );
+    const anchorSegment = anchorLoc?.tablePath[anchorLoc.tablePath.length - 1];
+    const focusSegment = focusLoc?.tablePath[focusLoc.tablePath.length - 1];
     if (
       !anchorLoc ||
       !focusLoc ||
-      anchorLoc.blockIndex !== focusLoc.blockIndex ||
-      (anchorLoc.rowIndex === focusLoc.rowIndex &&
-        anchorLoc.cellIndex === focusLoc.cellIndex)
+      !anchorSegment ||
+      !focusSegment ||
+      anchorLoc.zone !== focusLoc.zone ||
+      !pathsIdentifySameTable(anchorLoc.tablePath, focusLoc.tablePath) ||
+      (anchorSegment.rowIndex === focusSegment.rowIndex &&
+        anchorSegment.cellIndex === focusSegment.cellIndex)
     ) {
       return null;
     }
@@ -116,7 +159,6 @@ export function buildEssentialsTable(
         lastRow: raw.lastRow,
         firstCol: raw.firstCol,
         lastCol: raw.lastCol,
-        // Banding is stored as the negated "no band" flags in OOXML.
         bandedRows: !raw.noHBand,
         bandedCols: !raw.noVBand,
       };
