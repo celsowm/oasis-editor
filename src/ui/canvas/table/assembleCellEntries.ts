@@ -67,7 +67,9 @@ export function assembleCellEntries(options: {
         padding.bottom,
     );
 
-    const firstParagraph = cell.blocks[0];
+    const firstParagraph = cell.blocks.find(
+      (block) => block.type === "paragraph",
+    );
     const anchorPosition = firstParagraph
       ? paragraphOffsetToPosition(firstParagraph, 0)
       : paragraphOffsetToPosition(
