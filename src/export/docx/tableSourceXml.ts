@@ -297,6 +297,24 @@ function overlayRowAndCellProperties(
   });
 }
 
+function ensureTerminalCellParagraphs(tableElement: XmlElement): void {
+  for (const row of directWordChildren(tableElement, "tr")) {
+    for (const cell of directWordChildren(row, "tc")) {
+      for (const nestedTable of directWordChildren(cell, "tbl")) {
+        ensureTerminalCellParagraphs(nestedTable);
+      }
+      const children = directElementChildren(cell);
+      const last = children[children.length - 1];
+      if (last?.namespaceURI === WORD_NS && last.localName === "tbl") {
+        const ownerDocument = cell.ownerDocument;
+        if (ownerDocument) {
+          cell.appendChild(ownerDocument.createElementNS(WORD_NS, "w:p"));
+        }
+      }
+    }
+  }
+}
+
 /**
  * Serializes a table canonically and then overlays source-backed table, row and
  * cell property containers. Text/content stays authoritative from the editor;
@@ -315,6 +333,7 @@ export function serializeTableXmlPreservingSource(
   overlayTableContainerSource(table, tableElement);
   overlayTableProperties(table, tableElement);
   overlayRowAndCellProperties(table, tableElement);
+  ensureTerminalCellParagraphs(tableElement);
   const serialized = new XMLSerializer().serializeToString(tableElement);
   return serialized.replace(`<w:tbl xmlns:w="${WORD_NS}"`, "<w:tbl");
 }
