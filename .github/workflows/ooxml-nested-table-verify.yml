@@ -1,6 +1,8 @@
 name: Temporary nested table verification
 
 on:
+  push:
+    branches: [main]
   issues:
     types: [opened]
 
@@ -10,7 +12,9 @@ permissions:
 
 jobs:
   verify:
-    if: github.event.issue.title == 'OOXML nested table verification 2026-08-06 round 5'
+    if: >-
+      (github.event_name == 'push' && contains(github.event.head_commit.message, '[nested-verify]')) ||
+      (github.event_name == 'issues' && github.event.issue.title == 'OOXML nested table verification 2026-08-06 round 5')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main
@@ -89,7 +93,7 @@ jobs:
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              issue_number: 83,
               body: body.slice(0, 65000),
             });
             if (failed) core.setFailed('One or more verification checks failed.');
