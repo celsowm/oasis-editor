@@ -26,6 +26,12 @@ const STANDARD_PARAGRAPH_CHILD_NAMES = new Set([
   "commentRangeEnd",
 ]);
 
+interface XmlAttributeLike {
+  namespaceURI: string | null;
+  prefix: string | null;
+  name: string;
+}
+
 function hasRelationshipReference(xml: string): boolean {
   return /\br:(?:id|embed|link)\s*=/.test(xml);
 }
@@ -108,7 +114,7 @@ function parseGeneratedElement(
     : undefined;
 }
 
-function isNamespaceDeclaration(attribute: Attr): boolean {
+function isNamespaceDeclaration(attribute: XmlAttributeLike): boolean {
   return (
     attribute.namespaceURI === XMLNS_NS ||
     attribute.prefix === "xmlns" ||
