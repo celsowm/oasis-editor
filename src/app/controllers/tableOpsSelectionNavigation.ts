@@ -1,13 +1,18 @@
 import {
+  findParagraphLocation,
+  findParagraphTablePathLocation,
   getBlockParagraphs,
   getDocumentSections,
   paragraphOffsetToPosition,
+  resolveTablePath,
+  type EditorBlockNode,
   type EditorDocument,
   type EditorPosition,
   type EditorParagraphNode,
   type EditorTableCellNode,
   type EditorTableNode,
   type EditorTableRowNode,
+  type TablePathSegment,
 } from "@/core/model.js";
 
 export const getRowVisualWidth = (row: EditorTableRowNode): number =>
@@ -72,35 +77,93 @@ export const findFirstNavigableParagraphInTable = (
   return null;
 };
 
+function storyContainsParagraph(
+  blocks: readonly EditorBlockNode[],
+  paragraphId: string,
+): boolean {
+  return blocks.some((block): boolean =>
+    getBlockParagraphs(block).some(
+      (paragraph): boolean => paragraph.id === paragraphId,
+    ),
+  );
+}
+
+function getCandidateStories(
+  document: EditorDocument,
+  paragraphId: string,
+): EditorBlockNode[][] {
+  const location = findParagraphLocation(document, paragraphId);
+  if (!location) return [];
+  if (location.zone === "footnote") {
+    const footnote = location.footnoteId
+      ? document.footnotes?.items[location.footnoteId]
+      : undefined;
+    return footnote ? [footnote.blocks] : [];
+  }
+
+  const section = getDocumentSections(document)[location.sectionIndex];
+  if (!section) return [];
+  if (location.zone === "main") return [section.blocks];
+  if (location.zone === "header") {
+    return [
+      section.header,
+      section.firstPageHeader,
+      section.evenPageHeader,
+    ].filter((blocks): blocks is EditorBlockNode[] => Boolean(blocks));
+  }
+  return [
+    section.footer,
+    section.firstPageFooter,
+    section.evenPageFooter,
+  ].filter((blocks): blocks is EditorBlockNode[] => Boolean(blocks));
+}
+
+function resolveInnermostTable(
+  stories: readonly EditorBlockNode[][],
+  tablePath: readonly TablePathSegment[],
+  paragraphId: string,
+): EditorTableNode | null {
+  for (const blocks of stories) {
+    if (!storyContainsParagraph(blocks, paragraphId)) continue;
+    const resolved = resolveTablePath(blocks, tablePath);
+    const table = resolved?.[resolved.length - 1]?.table;
+    if (table) return table;
+  }
+  return null;
+}
+
 export const resolveAdjacentTableCellPosition = (
   document: EditorDocument,
   paragraphId: string,
   delta: -1 | 1,
 ): EditorPosition | null => {
-  const sections = getDocumentSections(document);
-  for (const section of sections) {
-    const allBlocks = [
-      ...(section.header || []),
-      ...section.blocks,
-      ...(section.footer || []),
-    ];
-    for (const block of allBlocks) {
-      if (block.type !== "table") continue;
-      const cells = block.rows.flatMap((row): EditorTableCellNode[] =>
-        row.cells.filter(
-          (cell): boolean =>
-            cell.vMerge !== "continue" && cell.blocks.length > 0,
-        ),
-      );
-      const currentCellIndex = cells.findIndex((cell): boolean =>
-        cellContainsParagraph(cell, paragraphId),
-      );
-      if (currentCellIndex === -1) continue;
-      const targetParagraph = firstParagraphInCell(cells[currentCellIndex + delta]);
-      return targetParagraph
-        ? paragraphOffsetToPosition(targetParagraph, 0)
-        : null;
-    }
-  }
-  return null;
+  const paragraphLocation = findParagraphLocation(document, paragraphId);
+  if (!paragraphLocation) return null;
+  const tableLocation = findParagraphTablePathLocation(
+    document,
+    paragraphId,
+    paragraphLocation.sectionIndex,
+  );
+  if (!tableLocation) return null;
+
+  const table = resolveInnermostTable(
+    getCandidateStories(document, paragraphId),
+    tableLocation.tablePath,
+    paragraphId,
+  );
+  if (!table) return null;
+
+  const cells = table.rows.flatMap((row): EditorTableCellNode[] =>
+    row.cells.filter(
+      (cell): boolean =>
+        cell.vMerge !== "continue" && cell.blocks.length > 0,
+    ),
+  );
+  const currentCellIndex = cells.findIndex((cell): boolean =>
+    cellContainsParagraph(cell, paragraphId),
+  );
+  if (currentCellIndex === -1) return null;
+
+  const targetParagraph = firstParagraphInCell(cells[currentCellIndex + delta]);
+  return targetParagraph ? paragraphOffsetToPosition(targetParagraph, 0) : null;
 };
