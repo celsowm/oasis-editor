@@ -1,11 +1,10 @@
 import type { EditorDocument } from "@/core/model.js";
+import { captureRebuiltDocxPartHashes } from "@/export/docx/opc/rebuiltPartHashes.js";
 import {
   importDocxToEditorDocument,
   type DocxImportStage,
 } from "./importDocxToEditorDocument.js";
-import {
-  captureDocxSourcePackage,
-} from "./opc/sourcePackage.js";
+import { captureDocxSourcePackage } from "./opc/sourcePackage.js";
 import { prepareDocxForCurrentImporter } from "./opc/legacyCompatibilityPackage.js";
 
 interface ImportDocxInWorkerOptions {
@@ -47,6 +46,8 @@ export async function importDocxInWorker(
       sourcePackage,
     );
     const document = await importDocxToEditorDocument(importerBuffer, options);
+    sourcePackage.rebuiltPartHashes =
+      await captureRebuiltDocxPartHashes(document);
     document.sourcePackage = sourcePackage;
     return document;
   }
