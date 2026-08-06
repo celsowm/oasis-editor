@@ -45,6 +45,7 @@ jobs:
             run_check import-graph npm run check:imports
             run_check focused-tests npx vitest run \
               tests/vitest/__tests__/app/nestedTableOperations.test.ts \
+              tests/vitest/__tests__/app/nestedTablePropertiesService.test.ts \
               tests/vitest/__tests__/core/nestedTableCoreCommands.test.ts \
               tests/vitest/__tests__/export/docxNestedTableRoundTrip.test.ts \
               tests/vitest/__tests__/ui/canvasNestedTableLayout.test.ts
