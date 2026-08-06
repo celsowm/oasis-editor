@@ -11,8 +11,10 @@ import type {
   EditorSection,
 } from "@/core/model.js";
 import {
+  findParagraphLocation,
   findParagraphTablePathLocation,
   getActiveSectionIndex,
+  getBlockParagraphs,
   getDocumentSections,
 } from "@/core/model.js";
 
@@ -54,13 +56,49 @@ export function updateStateSections(
     ...section,
     blocks: updateBlocks(section.blocks),
     header: section.header ? updateBlocks(section.header) : undefined,
+    firstPageHeader: section.firstPageHeader
+      ? updateBlocks(section.firstPageHeader)
+      : undefined,
+    evenPageHeader: section.evenPageHeader
+      ? updateBlocks(section.evenPageHeader)
+      : undefined,
     footer: section.footer ? updateBlocks(section.footer) : undefined,
+    firstPageFooter: section.firstPageFooter
+      ? updateBlocks(section.firstPageFooter)
+      : undefined,
+    evenPageFooter: section.evenPageFooter
+      ? updateBlocks(section.evenPageFooter)
+      : undefined,
   }));
+  const footnotes = state.document.footnotes
+    ? {
+        ...state.document.footnotes,
+        items: Object.fromEntries(
+          Object.entries(state.document.footnotes.items).map(([id, note]) => [
+            id,
+            { ...note, blocks: updateBlocks(note.blocks) },
+          ]),
+        ),
+      }
+    : undefined;
+  const endnotes = state.document.endnotes
+    ? {
+        ...state.document.endnotes,
+        items: Object.fromEntries(
+          Object.entries(state.document.endnotes.items).map(([id, note]) => [
+            id,
+            { ...note, blocks: updateBlocks(note.blocks) },
+          ]),
+        ),
+      }
+    : undefined;
   return {
     ...state,
     document: {
       ...state.document,
       sections: nextSections,
+      footnotes,
+      endnotes,
     },
   };
 }
@@ -180,6 +218,61 @@ export function updateTableAtPath(
   return nextBlocks;
 }
 
+function storyContainsParagraph(
+  blocks: readonly EditorBlockNode[] | undefined,
+  paragraphId: string,
+): boolean {
+  return Boolean(
+    blocks?.some((block): boolean =>
+      getBlockParagraphs(block).some(
+        (paragraph): boolean => paragraph.id === paragraphId,
+      ),
+    ),
+  );
+}
+
+function updateSelectedSectionStory(
+  section: EditorSection,
+  loc: TableLocation & { zone: EditorEditingZone },
+  paragraphId: string,
+  updateBlocks: (blocks: EditorBlockNode[]) => EditorBlockNode[],
+): EditorSection {
+  if (loc.zone === "main") {
+    return { ...section, blocks: updateBlocks(section.blocks) };
+  }
+  if (loc.zone === "header") {
+    if (storyContainsParagraph(section.firstPageHeader, paragraphId)) {
+      return {
+        ...section,
+        firstPageHeader: updateBlocks(section.firstPageHeader!),
+      };
+    }
+    if (storyContainsParagraph(section.evenPageHeader, paragraphId)) {
+      return { ...section, evenPageHeader: updateBlocks(section.evenPageHeader!) };
+    }
+    return {
+      ...section,
+      header: section.header ? updateBlocks(section.header) : section.header,
+    };
+  }
+  if (loc.zone === "footer") {
+    if (storyContainsParagraph(section.firstPageFooter, paragraphId)) {
+      return {
+        ...section,
+        firstPageFooter: updateBlocks(section.firstPageFooter!),
+      };
+    }
+    if (storyContainsParagraph(section.evenPageFooter, paragraphId)) {
+      return { ...section, evenPageFooter: updateBlocks(section.evenPageFooter!) };
+    }
+    return {
+      ...section,
+      footer: section.footer ? updateBlocks(section.footer) : section.footer,
+    };
+  }
+  return section;
+}
+
 export function updateActiveTableBlocks(
   state: EditorState,
   updateTable: (table: EditorTableNode) => EditorTableNode,
@@ -188,25 +281,36 @@ export function updateActiveTableBlocks(
   if (!target) return state;
 
   const { activeSectionIndex, loc } = target;
+  const paragraphId = state.selection.focus.paragraphId;
   const updateBlocks = (blocks: EditorBlockNode[]): EditorBlockNode[] =>
     updateTableAtPath(blocks, loc.tablePath, updateTable);
 
+  if (loc.zone === "footnote") {
+    const paragraphLocation = findParagraphLocation(state.document, paragraphId);
+    const footnoteId = paragraphLocation?.footnoteId ?? state.activeFootnoteId;
+    const footnotes = state.document.footnotes;
+    const footnote = footnoteId ? footnotes?.items[footnoteId] : undefined;
+    if (!footnoteId || !footnotes || !footnote) return state;
+    return {
+      ...state,
+      document: {
+        ...state.document,
+        footnotes: {
+          ...footnotes,
+          items: {
+            ...footnotes.items,
+            [footnoteId]: { ...footnote, blocks: updateBlocks(footnote.blocks) },
+          },
+        },
+      },
+    };
+  }
+
   const nextSections = getDocumentSections(state.document).map(
-    (section, sectionIndex): EditorSection => {
-      if (sectionIndex !== activeSectionIndex) return section;
-      return {
-        ...section,
-        blocks: loc.zone === "main" ? updateBlocks(section.blocks) : section.blocks,
-        header:
-          loc.zone === "header" && section.header
-            ? updateBlocks(section.header)
-            : section.header,
-        footer:
-          loc.zone === "footer" && section.footer
-            ? updateBlocks(section.footer)
-            : section.footer,
-      };
-    },
+    (section, sectionIndex): EditorSection =>
+      sectionIndex === activeSectionIndex
+        ? updateSelectedSectionStory(section, loc, paragraphId, updateBlocks)
+        : section,
   );
 
   return {
