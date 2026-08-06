@@ -1,6 +1,8 @@
 import type {
   EditorParagraphNode,
+  EditorTableCellNode,
   EditorTableNode,
+  EditorTableRowNode,
   EditorTextRun,
 } from "@/core/model.js";
 
@@ -10,7 +12,7 @@ export interface EditorOoxmlRunSource {
   structureSignature: string;
 }
 
-export interface EditorOoxmlParagraphPropertiesSource {
+export interface EditorOoxmlPropertiesSource {
   xml: string;
   semanticSignature: string;
 }
@@ -19,12 +21,23 @@ export interface EditorOoxmlParagraphSource {
   xml?: string;
   semanticSignature?: string;
   attributes?: string;
-  paragraphProperties?: EditorOoxmlParagraphPropertiesSource;
+  paragraphProperties?: EditorOoxmlPropertiesSource;
 }
 
 export interface EditorOoxmlTableSource {
   xml: string;
   semanticSignature: string;
+  tableProperties?: EditorOoxmlPropertiesSource;
+  tableGrid?: EditorOoxmlPropertiesSource;
+}
+
+export interface EditorOoxmlTableRowSource {
+  rowProperties?: EditorOoxmlPropertiesSource;
+  propertyExceptions?: EditorOoxmlPropertiesSource;
+}
+
+export interface EditorOoxmlTableCellSource {
+  cellProperties?: EditorOoxmlPropertiesSource;
 }
 
 type EditorRunWithOoxmlSource = EditorTextRun & {
@@ -37,6 +50,14 @@ type EditorParagraphWithOoxmlSource = EditorParagraphNode & {
 
 type EditorTableWithOoxmlSource = EditorTableNode & {
   ooxmlSource?: EditorOoxmlTableSource;
+};
+
+type EditorTableRowWithOoxmlSource = EditorTableRowNode & {
+  ooxmlSource?: EditorOoxmlTableRowSource;
+};
+
+type EditorTableCellWithOoxmlSource = EditorTableCellNode & {
+  ooxmlSource?: EditorOoxmlTableCellSource;
 };
 
 const RUN_PROPERTIES_PATTERN = /<w:rPr(?:\s|\/|>)/;
@@ -252,14 +273,47 @@ export function createEditorTableSemanticSignature(
   return stableSemanticString(table);
 }
 
+export function createEditorTablePropertiesSignature(
+  table: EditorTableNode,
+): string {
+  return stableSemanticString({ style: table.style });
+}
+
+export function createEditorTableGridSignature(table: EditorTableNode): string {
+  return stableSemanticString({
+    gridCols: table.gridCols,
+    gridRevision: table.gridRevision,
+  });
+}
+
 export function setEditorTableOoxmlSource(
   table: EditorTableNode,
-  xml: string,
+  source:
+    | string
+    | {
+        xml: string;
+        tablePropertiesXml?: string;
+        tableGridXml?: string;
+      },
 ): void {
-  (table as EditorTableWithOoxmlSource).ooxmlSource = {
-    xml,
+  const normalized = typeof source === "string" ? { xml: source } : source;
+  const tableSource: EditorOoxmlTableSource = {
+    xml: normalized.xml,
     semanticSignature: createEditorTableSemanticSignature(table),
   };
+  if (normalized.tablePropertiesXml) {
+    tableSource.tableProperties = {
+      xml: normalized.tablePropertiesXml,
+      semanticSignature: createEditorTablePropertiesSignature(table),
+    };
+  }
+  if (normalized.tableGridXml) {
+    tableSource.tableGrid = {
+      xml: normalized.tableGridXml,
+      semanticSignature: createEditorTableGridSignature(table),
+    };
+  }
+  (table as EditorTableWithOoxmlSource).ooxmlSource = tableSource;
 }
 
 export function getEditorTableOoxmlSource(
@@ -283,4 +337,91 @@ export function getReusableEditorTableXml(
   return source.semanticSignature === createEditorTableSemanticSignature(table)
     ? source.xml
     : undefined;
+}
+
+export function createEditorTableRowPropertiesSignature(
+  row: EditorTableRowNode,
+): string {
+  return stableSemanticString({
+    isHeader: row.isHeader,
+    style: row.style,
+    conditionalStyle: row.conditionalStyle,
+  });
+}
+
+export function createEditorTableRowPropertyExceptionsSignature(
+  row: EditorTableRowNode,
+): string {
+  return stableSemanticString({
+    propertyExceptions: row.propertyExceptions,
+    tblPrExChangeXml: row.tblPrExChangeXml,
+  });
+}
+
+export function setEditorTableRowOoxmlSource(
+  row: EditorTableRowNode,
+  source: {
+    rowPropertiesXml?: string;
+    propertyExceptionsXml?: string;
+  },
+): void {
+  const rowSource: EditorOoxmlTableRowSource = {};
+  if (source.rowPropertiesXml) {
+    rowSource.rowProperties = {
+      xml: source.rowPropertiesXml,
+      semanticSignature: createEditorTableRowPropertiesSignature(row),
+    };
+  }
+  if (source.propertyExceptionsXml) {
+    rowSource.propertyExceptions = {
+      xml: source.propertyExceptionsXml,
+      semanticSignature: createEditorTableRowPropertyExceptionsSignature(row),
+    };
+  }
+  if (rowSource.rowProperties || rowSource.propertyExceptions) {
+    (row as EditorTableRowWithOoxmlSource).ooxmlSource = rowSource;
+  }
+}
+
+export function getEditorTableRowOoxmlSource(
+  row: EditorTableRowNode,
+): EditorOoxmlTableRowSource | undefined {
+  return (row as EditorTableRowWithOoxmlSource).ooxmlSource;
+}
+
+export function createEditorTableCellPropertiesSignature(
+  cell: EditorTableCellNode,
+): string {
+  return stableSemanticString({
+    colSpan: cell.colSpan,
+    rowSpan: cell.rowSpan,
+    vMerge: cell.vMerge,
+    style: cell.style,
+    conditionalStyle: cell.conditionalStyle,
+    mergeRevisionState: cell.mergeRevisionState,
+  });
+}
+
+export function setEditorTableCellOoxmlSource(
+  cell: EditorTableCellNode,
+  cellPropertiesXml: string,
+): void {
+  (cell as EditorTableCellWithOoxmlSource).ooxmlSource = {
+    cellProperties: {
+      xml: cellPropertiesXml,
+      semanticSignature: createEditorTableCellPropertiesSignature(cell),
+    },
+  };
+}
+
+export function getEditorTableCellOoxmlSource(
+  cell: EditorTableCellNode,
+): EditorOoxmlTableCellSource | undefined {
+  return (cell as EditorTableCellWithOoxmlSource).ooxmlSource;
+}
+
+export function ooxmlPropertiesSourceHasRelationships(
+  source: EditorOoxmlPropertiesSource | undefined,
+): boolean {
+  return Boolean(source && hasRelationshipReference(source.xml));
 }
