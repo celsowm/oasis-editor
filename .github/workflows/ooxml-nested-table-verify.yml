@@ -83,7 +83,7 @@ jobs:
               sections.push(`## ${name}: ${status} (exit ${code})\n\n\`\`\`text\n${tail}\n\`\`\``);
             }
             const body = [
-              '# OOXML nested table verification result — round 5',
+              '# OOXML nested table verification result — round 6',
               '',
               `- Commit: \`${context.sha}\``,
               `- Overall: **${failed ? 'FAIL' : 'PASS'}**`,
