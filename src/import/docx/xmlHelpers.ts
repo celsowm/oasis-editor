@@ -1,4 +1,10 @@
 import { type Element as XmlElement } from "@xmldom/xmldom";
+import {
+  DEFAULT_MARKUP_COMPATIBILITY_CAPABILITIES,
+  MARKUP_COMPATIBILITY_NS,
+  extendMarkupCompatibilityCapabilities,
+  getMarkupCompatibleChildren,
+} from "./markupCompatibility.js";
 
 export const WORD_NS =
   "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -7,8 +13,12 @@ export const DRAWINGML_NS =
 export const OFFICE_REL_NS =
   "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 export const WORD14_NS = "http://schemas.microsoft.com/office/word/2010/wordml";
-const MARKUP_COMPAT_NS =
-  "http://schemas.openxmlformats.org/markup-compatibility/2006";
+
+const WORD14_MARKUP_COMPATIBILITY_CAPABILITIES =
+  extendMarkupCompatibilityCapabilities(
+    DEFAULT_MARKUP_COMPATIBILITY_CAPABILITIES,
+    WORD14_NS,
+  );
 
 export function getChildrenByTagNameNS(
   element: XmlElement | null | undefined,
@@ -19,38 +29,10 @@ export function getChildrenByTagNameNS(
     return [];
   }
 
-  const result: XmlElement[] = [];
-  for (let index = 0; index < element.childNodes.length; index += 1) {
-    const node = element.childNodes[index];
-    if (node?.nodeType !== node.ELEMENT_NODE) continue;
-    const el = node as XmlElement;
-
-    // mc:AlternateContent: select the mc:Fallback child so that versioned
-    // extension blocks degrade transparently to their standard fallback.
-    if (
-      el.namespaceURI === MARKUP_COMPAT_NS &&
-      el.localName === "AlternateContent"
-    ) {
-      for (let j = 0; j < el.childNodes.length; j += 1) {
-        const child = el.childNodes[j];
-        if (child?.nodeType !== child.ELEMENT_NODE) continue;
-        const childEl = child as XmlElement;
-        if (
-          childEl.namespaceURI === MARKUP_COMPAT_NS &&
-          childEl.localName === "Fallback"
-        ) {
-          result.push(...getChildrenByTagNameNS(childEl, namespace, localName));
-          break;
-        }
-      }
-      continue;
-    }
-
-    if (el.namespaceURI === namespace && el.localName === localName) {
-      result.push(el);
-    }
-  }
-  return result;
+  return getMarkupCompatibleChildren(element).filter(
+    (child): boolean =>
+      child.namespaceURI === namespace && child.localName === localName,
+  );
 }
 
 export type DocxTextDirection = "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV";
@@ -81,52 +63,26 @@ export function getFirstChildByTagNameNS(
 }
 
 /**
- * Finds a direct `w14:localName` child of `element`, also searching inside
- * `mc:AlternateContent/mc:Choice` branches (which carry w14 markup in files
- * produced by modern Word). The `mc:Fallback` branch used by
- * `getChildrenByTagNameNS` would not contain w14 elements, so a separate
- * helper is needed for these extension elements.
+ * Finds a direct `w14:localName` child using a Markup Compatibility capability
+ * profile that explicitly understands the w14 namespace. The generic child
+ * helpers remain conservative and continue to consume mc:Fallback instead.
  */
 export function getFirstW14Child(
   element: XmlElement | null | undefined,
   localName: string,
 ): XmlElement | null {
-  if (!element) return null;
-  for (let i = 0; i < element.childNodes.length; i++) {
-    const node = element.childNodes[i];
-    if (node?.nodeType !== node.ELEMENT_NODE) continue;
-    const el = node as XmlElement;
-    if (el.namespaceURI === WORD14_NS && el.localName === localName) {
-      return el;
-    }
-    if (
-      el.namespaceURI === MARKUP_COMPAT_NS &&
-      el.localName === "AlternateContent"
-    ) {
-      for (let j = 0; j < el.childNodes.length; j++) {
-        const child = el.childNodes[j];
-        if (child?.nodeType !== child.ELEMENT_NODE) continue;
-        const choiceEl = child as XmlElement;
-        if (
-          choiceEl.namespaceURI === MARKUP_COMPAT_NS &&
-          choiceEl.localName === "Choice"
-        ) {
-          for (let k = 0; k < choiceEl.childNodes.length; k++) {
-            const gc = choiceEl.childNodes[k];
-            if (gc?.nodeType !== gc.ELEMENT_NODE) continue;
-            const gcEl = gc as XmlElement;
-            if (
-              gcEl.namespaceURI === WORD14_NS &&
-              gcEl.localName === localName
-            ) {
-              return gcEl;
-            }
-          }
-        }
-      }
-    }
+  if (!element) {
+    return null;
   }
-  return null;
+  return (
+    getMarkupCompatibleChildren(
+      element,
+      WORD14_MARKUP_COMPATIBILITY_CAPABILITIES,
+    ).find(
+      (child): boolean =>
+        child.namespaceURI === WORD14_NS && child.localName === localName,
+    ) ?? null
+  );
 }
 
 export function getAttributeValue(
@@ -174,10 +130,14 @@ export function collectExtAttributes(
     const attr = attrs[i];
     if (!attr) continue;
     const ns = attr.namespaceURI;
-    if (!ns || ns === WORD_NS) continue;
-    // Skip namespace declarations and markup-compat attributes
+    if (!ns || ns === WORD_NS || ns === MARKUP_COMPATIBILITY_NS) continue;
+    // Skip namespace declarations. Markup Compatibility control attributes are
+    // consumed by the MC processor and are not editor semantic properties.
     if (attr.prefix === "xmlns" || attr.localName === "xmlns") continue;
-    result[`${attr.prefix}:${attr.localName}`] = attr.value;
+    const name = attr.prefix
+      ? `${attr.prefix}:${attr.localName}`
+      : attr.localName;
+    result[name] = attr.value;
   }
   return Object.keys(result).length > 0 ? result : undefined;
 }
