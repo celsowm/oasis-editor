@@ -3,6 +3,10 @@ import { getDocumentSections } from "@/core/model.js";
 import type { NumberingContext, NumberingDefinition } from "./docxTypes.js";
 import { escapeXml, WORD_NS } from "./xmlUtils.js";
 import { visitBlocks } from "./docxBlockVisitor.js";
+import {
+  getEditorListOoxmlNumberingMetadata,
+  getEffectiveEditorListOoxmlFormat,
+} from "@/ooxml/word/numberingMetadata.js";
 
 /**
  * Walks the document (including headers/footers and nested content) collecting
@@ -43,6 +47,8 @@ export function buildNumberingContext(
     if (
       !definition.levels.some((candidate): boolean => candidate.level === level)
     ) {
+      const sourceMetadata = getEditorListOoxmlNumberingMetadata(paragraph.list);
+      const sourceFormat = getEffectiveEditorListOoxmlFormat(paragraph.list);
       definition.levels.push({
         kind: paragraph.list.kind,
         level,
@@ -54,6 +60,14 @@ export function buildNumberingContext(
         legal: paragraph.list.legal,
         bulletGlyph: paragraph.list.bulletGlyph,
         bulletFont: paragraph.list.bulletFont,
+        ...(sourceMetadata
+          ? {
+              ooxml: {
+                ...sourceMetadata,
+                ...(sourceFormat ? { format: sourceFormat } : { format: undefined }),
+              },
+            }
+          : {}),
       });
     }
     numberingInfo.set(paragraph.id, { numId: definition.numId, level });
@@ -101,9 +115,12 @@ export function buildNumberingXml(definitions: NumberingDefinition[]): string {
             legal,
             bulletGlyph,
             bulletFont,
+            ooxml,
           }): string => {
             const numFmtVal =
-              kind === "bullet" ? "bullet" : (format ?? "decimal");
+              kind === "bullet"
+                ? "bullet"
+                : (ooxml?.format ?? format ?? "decimal");
             const effectiveLevelText =
               levelText ??
               (kind === "bullet" ? (bulletGlyph ?? "") : `%${level + 1}.`);
@@ -117,7 +134,14 @@ export function buildNumberingXml(definitions: NumberingDefinition[]): string {
             const suffixXml =
               suffix && suffix !== "tab" ? `<w:suff w:val="${suffix}"/>` : "";
             const legalXml = legal ? "<w:isLgl/>" : "";
-            return `<w:lvl w:ilvl="${level}"><w:start w:val="${startVal}"/><w:numFmt w:val="${numFmtVal}"/><w:lvlText w:val="${escapeXml(effectiveLevelText)}"/><w:lvlJc w:val="${alignment ?? "left"}"/>${suffixXml}${legalXml}${runFonts}</w:lvl>`;
+            const restartXml =
+              ooxml?.restartAfterLevel !== undefined
+                ? `<w:lvlRestart w:val="${ooxml.restartAfterLevel}"/>`
+                : "";
+            const paragraphStyleXml = ooxml?.paragraphStyleId
+              ? `<w:pStyle w:val="${escapeXml(ooxml.paragraphStyleId)}"/>`
+              : "";
+            return `<w:lvl w:ilvl="${level}"><w:start w:val="${startVal}"/><w:numFmt w:val="${escapeXml(numFmtVal)}"/>${restartXml}${paragraphStyleXml}<w:lvlText w:val="${escapeXml(effectiveLevelText)}"/><w:lvlJc w:val="${alignment ?? "left"}"/>${suffixXml}${legalXml}${runFonts}</w:lvl>`;
           },
         )
         .join("");

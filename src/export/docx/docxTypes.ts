@@ -7,6 +7,7 @@ import type {
   EditorParagraphListStyle,
   EditorWrapPolygonPoint,
 } from "@/core/model.js";
+import type { EditorListOoxmlNumberingMetadata } from "@/ooxml/word/numberingMetadata.js";
 import type { BookmarkEventsByParagraph } from "./bookmarksXml.js";
 import type { CommentEventsByParagraph } from "./commentsXml.js";
 
@@ -21,6 +22,7 @@ export interface NumberingLevelDefinition {
   legal?: boolean;
   bulletGlyph?: string;
   bulletFont?: string;
+  ooxml?: EditorListOoxmlNumberingMetadata;
 }
 
 export interface NumberingDefinition {

@@ -7,12 +7,14 @@ import {
   getAttributeValue,
 } from "./xmlHelpers.js";
 import { twipsToPx } from "./units.js";
+import { setEditorListOoxmlNumberingMetadata } from "@/ooxml/word/numberingMetadata.js";
 
 type ListFormat = NonNullable<EditorParagraphListStyle["format"]>;
 
 interface NumberingLevel {
   kind?: EditorParagraphListStyle["kind"];
   format?: ListFormat;
+  rawFormat?: string;
   suffix?: EditorParagraphListStyle["suffix"];
   startAt?: number;
   levelText?: string;
@@ -20,6 +22,8 @@ interface NumberingLevel {
   legal?: boolean;
   bulletGlyph?: string;
   bulletFont?: string;
+  restartAfterLevel?: number;
+  paragraphStyleId?: string;
   indent?: { left?: number; hanging?: number };
 }
 
@@ -44,6 +48,17 @@ function isXmlTrue(value: string | null | undefined): boolean {
   return value == null || value === "1" || value === "true" || value === "on";
 }
 
+function parseOptionalInteger(
+  element: XmlElement | null,
+): number | undefined {
+  const raw = getAttributeValue(element, "val");
+  if (raw == null) {
+    return undefined;
+  }
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) ? value : undefined;
+}
+
 function parseLevel(level: XmlElement): NumberingLevel {
   const result: NumberingLevel = {};
   const formatRaw = getAttributeValue(
@@ -53,6 +68,7 @@ function parseLevel(level: XmlElement): NumberingLevel {
   if (formatRaw) {
     result.kind = formatRaw === "bullet" ? "bullet" : "ordered";
     result.format = FORMAT_MAP[formatRaw];
+    result.rawFormat = formatRaw;
   }
   const suffix = getAttributeValue(
     getFirstChildByTagNameNS(level, WORD_NS, "suff"),
@@ -61,13 +77,11 @@ function parseLevel(level: XmlElement): NumberingLevel {
   if (suffix === "tab" || suffix === "space" || suffix === "nothing") {
     result.suffix = suffix;
   }
-  const startRaw = getAttributeValue(
+  const startAt = parseOptionalInteger(
     getFirstChildByTagNameNS(level, WORD_NS, "start"),
-    "val",
   );
-  if (startRaw != null) {
-    const startAt = Number.parseInt(startRaw, 10);
-    if (Number.isFinite(startAt)) result.startAt = startAt;
+  if (startAt !== undefined) {
+    result.startAt = startAt;
   }
   result.levelText =
     getAttributeValue(
@@ -83,6 +97,18 @@ function parseLevel(level: XmlElement): NumberingLevel {
   }
   const legal = getFirstChildByTagNameNS(level, WORD_NS, "isLgl");
   if (legal) result.legal = isXmlTrue(getAttributeValue(legal, "val"));
+
+  const restartAfterLevel = parseOptionalInteger(
+    getFirstChildByTagNameNS(level, WORD_NS, "lvlRestart"),
+  );
+  if (restartAfterLevel !== undefined) {
+    result.restartAfterLevel = restartAfterLevel;
+  }
+  result.paragraphStyleId =
+    getAttributeValue(
+      getFirstChildByTagNameNS(level, WORD_NS, "pStyle"),
+      "val",
+    ) ?? undefined;
 
   if (result.kind === "bullet" && result.levelText) {
     result.bulletGlyph = result.levelText;
@@ -159,15 +185,11 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
           parseLevel(overrideLevel),
         );
       }
-      const startRaw = getAttributeValue(
+      const startAt = parseOptionalInteger(
         getFirstChildByTagNameNS(override, WORD_NS, "startOverride"),
-        "val",
       );
-      if (startRaw != null) {
-        const startAt = Number.parseInt(startRaw, 10);
-        if (Number.isFinite(startAt)) {
-          maps.numStartOverrides.set(`${numId}:${ilvl}`, startAt);
-        }
+      if (startAt !== undefined) {
+        maps.numStartOverrides.set(`${numId}:${ilvl}`, startAt);
       }
     }
   }
@@ -224,21 +246,38 @@ export function parseParagraphList(
     ? (numberingMaps.numStartOverrides.get(instanceKey) ?? effective.startAt)
     : undefined;
 
+  const list: EditorParagraphListStyle = {
+    kind: effective.kind ?? "ordered",
+    level: safeLevel,
+    instanceId: numId,
+    suffix: effective.suffix ?? "tab",
+    ...(effective.format ? { format: effective.format } : {}),
+    ...(levelFormats.length ? { levelFormats } : {}),
+    ...(effective.levelText ? { levelText: effective.levelText } : {}),
+    ...(effective.alignment ? { alignment: effective.alignment } : {}),
+    ...(effective.legal !== undefined ? { legal: effective.legal } : {}),
+    ...(startAt !== undefined && startAt !== 1 ? { startAt } : {}),
+    ...(effective.bulletGlyph ? { bulletGlyph: effective.bulletGlyph } : {}),
+    ...(effective.bulletFont ? { bulletFont: effective.bulletFont } : {}),
+  };
+  if (
+    effective.rawFormat ||
+    effective.restartAfterLevel !== undefined ||
+    effective.paragraphStyleId
+  ) {
+    setEditorListOoxmlNumberingMetadata(list, {
+      ...(effective.rawFormat ? { format: effective.rawFormat } : {}),
+      ...(effective.restartAfterLevel !== undefined
+        ? { restartAfterLevel: effective.restartAfterLevel }
+        : {}),
+      ...(effective.paragraphStyleId
+        ? { paragraphStyleId: effective.paragraphStyleId }
+        : {}),
+    });
+  }
+
   return {
-    list: {
-      kind: effective.kind ?? "ordered",
-      level: safeLevel,
-      instanceId: numId,
-      suffix: effective.suffix ?? "tab",
-      ...(effective.format ? { format: effective.format } : {}),
-      ...(levelFormats.length ? { levelFormats } : {}),
-      ...(effective.levelText ? { levelText: effective.levelText } : {}),
-      ...(effective.alignment ? { alignment: effective.alignment } : {}),
-      ...(effective.legal !== undefined ? { legal: effective.legal } : {}),
-      ...(startAt !== undefined && startAt !== 1 ? { startAt } : {}),
-      ...(effective.bulletGlyph ? { bulletGlyph: effective.bulletGlyph } : {}),
-      ...(effective.bulletFont ? { bulletFont: effective.bulletFont } : {}),
-    },
+    list,
     indent: effective.indent,
   };
 }
