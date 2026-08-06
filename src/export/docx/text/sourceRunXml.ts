@@ -100,6 +100,12 @@ const MODELED_WORD14_RUN_PROPERTY_NAMES = new Set([
   "props3d",
 ]);
 
+interface XmlAttributeLike {
+  namespaceURI: string | null;
+  prefix: string | null;
+  name: string;
+}
+
 function hasRelationshipReference(xml: string): boolean {
   return /\br:(?:id|embed|link)\s*=/.test(xml);
 }
@@ -203,7 +209,7 @@ function patchTextRunSourceXml(
   return new XMLSerializer().serializeToString(sourceRun);
 }
 
-function isNamespaceDeclaration(attribute: Attr): boolean {
+function isNamespaceDeclaration(attribute: XmlAttributeLike): boolean {
   return (
     attribute.namespaceURI === XMLNS_NS ||
     attribute.prefix === "xmlns" ||
@@ -321,8 +327,31 @@ function mergeSourceRunProperties(
   }
 }
 
+function alternateContentContainsGeneratedRunContent(
+  alternateContent: XmlElement,
+): boolean {
+  const visit = (element: XmlElement): boolean =>
+    directElementChildren(element).some((child): boolean => {
+      const localName = elementLocalName(child);
+      if (
+        child.namespaceURI === WORD_NS &&
+        GENERATED_RUN_CONTENT_NAMES.has(localName)
+      ) {
+        return true;
+      }
+      return visit(child);
+    });
+  return visit(alternateContent);
+}
+
 function isGeneratedRunContent(element: XmlElement): boolean {
   const localName = elementLocalName(element);
+  if (
+    element.namespaceURI === MARKUP_COMPATIBILITY_NS &&
+    localName === "AlternateContent"
+  ) {
+    return alternateContentContainsGeneratedRunContent(element);
+  }
   return (
     element.namespaceURI === WORD_NS &&
     (localName === "rPr" || GENERATED_RUN_CONTENT_NAMES.has(localName))
