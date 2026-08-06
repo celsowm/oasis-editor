@@ -3,6 +3,7 @@ import {
   DOMParser,
   XMLSerializer,
   type Element as XmlElement,
+  type Node as XmlNode,
 } from "@xmldom/xmldom";
 import type {
   EditorDocument,
@@ -94,7 +95,7 @@ function relativeRelationshipTarget(
   ].join("/");
 }
 
-function elementChildren(node: Node): XmlElement[] {
+function elementChildren(node: XmlNode): XmlElement[] {
   const result: XmlElement[] = [];
   for (let index = 0; index < node.childNodes.length; index += 1) {
     const child = node.childNodes[index];
@@ -105,9 +106,12 @@ function elementChildren(node: Node): XmlElement[] {
   return result;
 }
 
-function collectElementsByLocalName(node: Node, localName: string): XmlElement[] {
+function collectElementsByLocalName(
+  node: XmlNode,
+  localName: string,
+): XmlElement[] {
   const result: XmlElement[] = [];
-  const visit = (current: Node): void => {
+  const visit = (current: XmlNode): void => {
     for (const child of elementChildren(current)) {
       if (child.localName === localName) {
         result.push(child);
@@ -157,7 +161,8 @@ function collectHeaderFooterReferences(
   const document = new DOMParser().parseFromString(xml, "application/xml");
   const references: HeaderFooterReference[] = [];
   const sectionProperties = collectElementsByLocalName(document, "sectPr").filter(
-    (element): boolean => element.parentNode?.localName !== "sectPrChange",
+    (element): boolean =>
+      (element.parentNode as XmlElement | null)?.localName !== "sectPrChange",
   );
 
   sectionProperties.forEach((section, sectionIndex): void => {
@@ -474,9 +479,7 @@ async function rebuiltPartMatchesBaseline(
   if (!baselineHash) {
     return false;
   }
-  return (
-    baselineHash === hashDocxPartBytes(await entry.async("uint8array"))
-  );
+  return baselineHash === hashDocxPartBytes(await entry.async("uint8array"));
 }
 
 async function groupMatchesBaseline(
