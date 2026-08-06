@@ -50,7 +50,7 @@ function normalizeSemanticValue(value: unknown): unknown {
 }
 
 function stableSemanticString(value: unknown): string {
-  return JSON.stringify(normalizeSemanticValue(value));
+  return JSON.stringify(normalizeSemanticValue(value)) ?? "undefined";
 }
 
 export function createEditorRunSemanticSignature(
