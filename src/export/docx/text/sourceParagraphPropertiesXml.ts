@@ -64,14 +64,18 @@ function directElementChildren(element: XmlElement): XmlElement[] {
   return children;
 }
 
+function elementLocalName(element: XmlElement): string {
+  return element.localName ?? element.tagName;
+}
+
 function elementKey(element: XmlElement): string {
-  return `${element.namespaceURI ?? ""}\u0000${element.localName}`;
+  return `${element.namespaceURI ?? ""}\u0000${elementLocalName(element)}`;
 }
 
 function parseParagraphPropertiesXml(xml: string): XmlElement | undefined {
   const document = new DOMParser().parseFromString(xml, "application/xml");
   const root = document.documentElement as XmlElement | undefined;
-  return root?.namespaceURI === WORD_NS && root.localName === "pPr"
+  return root?.namespaceURI === WORD_NS && elementLocalName(root) === "pPr"
     ? root
     : undefined;
 }
@@ -86,7 +90,7 @@ function createGeneratedParagraphProperties(xml: string): XmlElement | undefined
     if (
       children.length === 1 &&
       children[0]!.namespaceURI === WORD_NS &&
-      children[0]!.localName === "pPr"
+      elementLocalName(children[0]!) === "pPr"
     ) {
       return children[0];
     }
@@ -107,8 +111,9 @@ function copySourceAttributes(
     if (!attribute || attribute.namespaceURI === OFFICE_REL_NS) {
       continue;
     }
+    const localName = attribute.localName ?? attribute.name;
     const hasAttribute = attribute.namespaceURI
-      ? generated.hasAttributeNS(attribute.namespaceURI, attribute.localName)
+      ? generated.hasAttributeNS(attribute.namespaceURI, localName)
       : generated.hasAttribute(attribute.name);
     if (hasAttribute) {
       continue;
@@ -128,7 +133,7 @@ function copySourceAttributes(
 function isModeledParagraphProperty(element: XmlElement): boolean {
   return (
     element.namespaceURI === WORD_NS &&
-    MODELED_PARAGRAPH_PROPERTY_NAMES.has(element.localName)
+    MODELED_PARAGRAPH_PROPERTY_NAMES.has(elementLocalName(element))
   );
 }
 
