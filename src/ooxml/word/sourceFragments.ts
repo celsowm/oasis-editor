@@ -1,4 +1,8 @@
-import type { EditorParagraphNode, EditorTextRun } from "@/core/model.js";
+import type {
+  EditorParagraphNode,
+  EditorTableNode,
+  EditorTextRun,
+} from "@/core/model.js";
 
 export interface EditorOoxmlRunSource {
   xml: string;
@@ -18,12 +22,21 @@ export interface EditorOoxmlParagraphSource {
   paragraphProperties?: EditorOoxmlParagraphPropertiesSource;
 }
 
+export interface EditorOoxmlTableSource {
+  xml: string;
+  semanticSignature: string;
+}
+
 type EditorRunWithOoxmlSource = EditorTextRun & {
   ooxmlSource?: EditorOoxmlRunSource;
 };
 
 type EditorParagraphWithOoxmlSource = EditorParagraphNode & {
   ooxmlSource?: EditorOoxmlParagraphSource;
+};
+
+type EditorTableWithOoxmlSource = EditorTableNode & {
+  ooxmlSource?: EditorOoxmlTableSource;
 };
 
 const RUN_PROPERTIES_PATTERN = /<w:rPr(?:\s|\/|>)/;
@@ -229,6 +242,45 @@ export function getReusableEditorParagraphPropertiesXml(
   }
   return source.semanticSignature ===
     createEditorParagraphPropertiesSignature(paragraph)
+    ? source.xml
+    : undefined;
+}
+
+export function createEditorTableSemanticSignature(
+  table: EditorTableNode,
+): string {
+  return stableSemanticString(table);
+}
+
+export function setEditorTableOoxmlSource(
+  table: EditorTableNode,
+  xml: string,
+): void {
+  (table as EditorTableWithOoxmlSource).ooxmlSource = {
+    xml,
+    semanticSignature: createEditorTableSemanticSignature(table),
+  };
+}
+
+export function getEditorTableOoxmlSource(
+  table: EditorTableNode,
+): EditorOoxmlTableSource | undefined {
+  return (table as EditorTableWithOoxmlSource).ooxmlSource;
+}
+
+export function getReusableEditorTableXml(
+  table: EditorTableNode,
+  options: { hasBoundaryTokens: boolean },
+): string | undefined {
+  const source = getEditorTableOoxmlSource(table);
+  if (
+    !source ||
+    options.hasBoundaryTokens ||
+    hasRelationshipReference(source.xml)
+  ) {
+    return undefined;
+  }
+  return source.semanticSignature === createEditorTableSemanticSignature(table)
     ? source.xml
     : undefined;
 }
