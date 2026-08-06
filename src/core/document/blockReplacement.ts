@@ -48,7 +48,7 @@ export function replaceParagraphsInBlocks(
       const newRows = node.rows.map((row): EditorTableRowNode => {
         let rowChanged = false;
         const newCells = row.cells.map((cell): EditorTableCellNode => {
-          const newBlocks = processBlocks(cell.blocks) as EditorParagraphNode[];
+          const newBlocks = processBlocks(cell.blocks);
           if (newBlocks === cell.blocks) return cell;
           rowChanged = true;
           return { ...cell, blocks: newBlocks };
@@ -173,13 +173,22 @@ export function updateTableCellsInBlocks(
     const newRows = block.rows.map((row): EditorTableRowNode => {
       let rowChanged = false;
       const newCells = row.cells.map((cell): EditorTableCellNode => {
-        const isSelected = cell.blocks.some((paragraph): boolean =>
-          selectedParagraphIds.has(paragraph.id),
+        const nestedBlocks = updateTableCellsInBlocks(
+          cell.blocks,
+          selectedParagraphIds,
+          updateCell,
         );
-        if (!isSelected) return cell;
-        const newCell = updateCell(cell);
-        if (newCell !== cell) rowChanged = true;
-        return newCell;
+        const directlySelected = cell.blocks.some(
+          (child): boolean =>
+            child.type === "paragraph" && selectedParagraphIds.has(child.id),
+        );
+        let nextCell =
+          nestedBlocks === cell.blocks ? cell : { ...cell, blocks: nestedBlocks };
+        if (directlySelected) {
+          nextCell = updateCell(nextCell);
+        }
+        if (nextCell !== cell) rowChanged = true;
+        return nextCell;
       });
       if (!rowChanged) return row;
       tableChanged = true;
