@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { type Element as XmlElement, XMLSerializer } from "@xmldom/xmldom";
 import type {
+  EditorBlockNode,
   EditorNamedStyle,
   EditorParagraphNode,
   EditorParagraphStyle,
@@ -24,7 +25,6 @@ import { twipsToPoints } from "./units.js";
 import { type AssetRegistry } from "./assetRegistry.js";
 import { type DocxImportTheme } from "./theme.js";
 import { type NumberingMaps } from "./numbering.js";
-import { parseParagraphNode } from "./paragraphs.js";
 import type { ParseNestedBlocks } from "./runs/types.js";
 import {
   parseAutospacingFlags,
@@ -81,6 +81,30 @@ function collapseCellAutospacing(
   }
 }
 
+function applyCellParagraphAutospacing(
+  cellNode: XmlElement,
+  blocks: EditorBlockNode[],
+): void {
+  // A nested table or block SDT interrupts paragraph margin collapsing. Only
+  // apply the old paragraph-only rule when the complete direct cell story is a
+  // one-to-one paragraph sequence.
+  if (!blocks.every((block): block is EditorParagraphNode => block.type === "paragraph")) {
+    return;
+  }
+  const paragraphNodes = getChildrenByTagNameNS(cellNode, WORD_NS, "p");
+  if (paragraphNodes.length !== blocks.length) {
+    return;
+  }
+  collapseCellAutospacing(
+    blocks,
+    paragraphNodes.map((paragraphNode): ParagraphAutospacingFlags =>
+      parseAutospacingFlags(
+        getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr"),
+      ),
+    ),
+  );
+}
+
 export async function parseTableNode(
   tableNode: XmlElement,
   numberingMaps: NumberingMaps,
@@ -132,41 +156,14 @@ export async function parseTableNode(
     const cells = [];
     for (let colIndex = 0; colIndex < cellNodes.length; colIndex += 1) {
       const cellNode = cellNodes[colIndex]!;
-      const paragraphs = [];
-      const autospacingFlags: ParagraphAutospacingFlags[] = [];
       const cellProperties = getFirstChildByTagNameNS(
         cellNode,
         WORD_NS,
         "tcPr",
       );
-      for (const paragraphNode of getChildrenByTagNameNS(
-        cellNode,
-        WORD_NS,
-        "p",
-      )) {
-        // The table style's paragraph properties are the lowest layer above
-        // docDefaults; the paragraph's own style outranks them. Strip the keys
-        // its style defines so e.g. Normal's after-spacing isn't lost to the
-        // table style's `after="0"` (which would collapse cell row height).
-        paragraphs.push(
-          await parseParagraphNode(
-            paragraphNode,
-            numberingMaps,
-            zip,
-            relsMap,
-            assets,
-            theme,
-            parseNestedBlocks,
-            undefined,
-          ),
-        );
-        autospacingFlags.push(
-          parseAutospacingFlags(
-            getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr"),
-          ),
-        );
-      }
-      collapseCellAutospacing(paragraphs, autospacingFlags);
+      const blocks = await parseNestedBlocks(cellNode);
+      applyCellParagraphAutospacing(cellNode, blocks);
+
       const colSpan = getTableCellColSpan(cellProperties);
       const hMerge = getTableCellHMerge(cellProperties);
       // Legacy horizontal merge: a `continue` cell is absorbed into the
@@ -185,8 +182,8 @@ export async function parseTableNode(
       );
 
       const cell = createEditorTableCell(
-        paragraphs.length > 0
-          ? paragraphs
+        blocks.length > 0
+          ? blocks
           : [createEditorParagraphFromRuns([{ text: "" }])],
         colSpan,
         vMerge === "restart"
