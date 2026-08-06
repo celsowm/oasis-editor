@@ -37,6 +37,11 @@ function directElementChildren(element: XmlElement): XmlElement[] {
   return children;
 }
 
+function getParentElement(element: XmlElement): XmlElement | null {
+  const parentNode: XmlElement["parentNode"] = element.parentNode;
+  return parentNode?.nodeType === 1 ? (parentNode as XmlElement) : null;
+}
+
 function lookupNamespaceUri(
   element: XmlElement,
   prefix: string,
@@ -48,11 +53,7 @@ function lookupNamespaceUri(
     if (value) {
       return value;
     }
-    const parent = current.parentNode;
-    current =
-      parent?.nodeType === parent.ELEMENT_NODE
-        ? (parent as XmlElement)
-        : null;
+    current = getParentElement(current);
   }
   return undefined;
 }
@@ -76,11 +77,7 @@ function inheritedMarkupCompatibilityTokens(
   let current: XmlElement | null = element;
   while (current) {
     chain.push(current);
-    const parent = current.parentNode;
-    current =
-      parent?.nodeType === parent.ELEMENT_NODE
-        ? (parent as XmlElement)
-        : null;
+    current = getParentElement(current);
   }
 
   const result: Array<{ element: XmlElement; token: string }> = [];
@@ -210,7 +207,7 @@ export function getMarkupCompatibleChildren(
       ignorableNamespaces.has(namespace) &&
       !capabilities.supportedNamespaces.has(namespace);
     if (isUnsupportedIgnorable) {
-      const name = `${namespace}\u0000${child.localName}`;
+      const name = `${namespace}\u0000${child.localName ?? child.tagName}`;
       if (processContentNames.has(name)) {
         result.push(...getMarkupCompatibleChildren(child, capabilities));
       }
