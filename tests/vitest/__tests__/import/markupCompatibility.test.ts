@@ -73,10 +73,9 @@ describe("DOCX Markup Compatibility", () => {
     `);
 
     const children = getMarkupCompatibleChildren(root);
-    expect(children.map((child): string => child.localName)).toEqual([
-      "kept",
-      "ordinary",
-    ]);
+    expect(
+      children.map((child): string => child.localName ?? child.tagName),
+    ).toEqual(["kept", "ordinary"]);
     expect(getChildrenByTagNameNS(root, WORD_NS, "kept")).toHaveLength(1);
     expect(getChildrenByTagNameNS(root, WORD_NS, "dropped")).toHaveLength(0);
   });
