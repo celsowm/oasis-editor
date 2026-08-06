@@ -1,11 +1,14 @@
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
+  getBlockParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
   type EditorBlockNode,
   type EditorEditingZone,
+  type EditorParagraphNode,
   type EditorState,
+  type EditorTableCellNode,
 } from "@/core/model.js";
 import {
   buildTableCellLayout,
@@ -54,6 +57,10 @@ function compareCellLocations(
     return left.visualColumnIndex - right.visualColumnIndex;
   }
   return 0;
+}
+
+function getCellParagraphs(cell: EditorTableCellNode): EditorParagraphNode[] {
+  return cell.blocks.flatMap(getBlockParagraphs);
 }
 
 function getSelectionTableContext(
@@ -174,15 +181,17 @@ function createTableSelectionResolversImpl(deps: TableSelectionResolversDeps) {
         ? context.focusLocation
         : context.anchorLocation;
 
-    const startParagraph =
+    const startCell =
       context.tableBlock.rows[startLocation.rowIndex]?.cells[
         startLocation.cellIndex
-      ]?.blocks[0];
+      ];
     const endCell =
       context.tableBlock.rows[endLocation.rowIndex]?.cells[
         endLocation.cellIndex
       ];
-    const endParagraph = endCell?.blocks[endCell.blocks.length - 1];
+    const startParagraph = startCell ? getCellParagraphs(startCell)[0] : undefined;
+    const endParagraphs = endCell ? getCellParagraphs(endCell) : [];
+    const endParagraph = endParagraphs[endParagraphs.length - 1];
     if (!startParagraph || !endParagraph) {
       return null;
     }
