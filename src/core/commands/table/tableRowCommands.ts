@@ -11,7 +11,7 @@ import {
   resolveActiveTableLocation,
   updateActiveTableBlocks,
   updateStateSections,
-  updateTablesInBlocks,
+  updateNestedTablesInBlocks,
 } from "./tableCommandUtils.js";
 
 export function setSelectedTableRowStyleValue<
@@ -128,7 +128,7 @@ export function setTableRowHeights(
   };
 
   return updateStateSections(state, (blocks): EditorBlockNode[] =>
-    updateTablesInBlocks(blocks, updateTable),
+    updateNestedTablesInBlocks(blocks, updateTable),
   );
 }
 
