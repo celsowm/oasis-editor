@@ -207,4 +207,84 @@ describe("nested table structural operations", () => {
     ).toBe("edited");
     expect(before.runs[0]?.text).toBe("before");
   });
+
+  it("navigates adjacent cells within the innermost table", () => {
+    const { state, before, p00, p01, p10 } = fixture();
+    const operations = createOperations();
+
+    expect(
+      operations.resolveAdjacentTableCellPosition(state.document, p00.id, 1)
+        ?.paragraphId,
+    ).toBe(p01.id);
+    expect(
+      operations.resolveAdjacentTableCellPosition(state.document, p10.id, -1)
+        ?.paragraphId,
+    ).toBe(p01.id);
+    expect(
+      operations.resolveAdjacentTableCellPosition(state.document, before.id, 1),
+    ).toBeNull();
+  });
+
+  it("applies multi-cell commands to the innermost table only", () => {
+    const { state, before, after, p00, p01 } = fixture();
+    let committed = selectParagraphs(state, p00, p01);
+    const operations = createEditorTableOperations({
+      applyTransactionalState: (producer): void => {
+        committed = producer(committed);
+      },
+      applySelectionToStatePreservingStructure: (current, selection) => ({
+        ...current,
+        selection,
+      }),
+      focusInput: (): void => undefined,
+    });
+
+    operations.applySelectionAwareTextCommand((temporary) => {
+      const sections = getDocumentSectionsCanonical(temporary.document);
+      const section = sections[0];
+      if (!section) throw new Error("Expected temporary section.");
+      return {
+        ...temporary,
+        document: {
+          ...temporary.document,
+          sections: [
+            {
+              ...section,
+              blocks: section.blocks.map((block) =>
+                block.type === "paragraph"
+                  ? {
+                      ...block,
+                      runs: block.runs.map((run) => ({
+                        ...run,
+                        styles: { ...(run.styles ?? {}), bold: true },
+                      })),
+                    }
+                  : block,
+              ),
+            },
+          ],
+        },
+      };
+    });
+
+    const inner = getInnerTable(committed);
+    expect(inner.rows[0]?.cells[0]?.blocks[0]?.type).toBe("paragraph");
+    expect(
+      inner.rows[0]?.cells[0]?.blocks[0]?.type === "paragraph"
+        ? inner.rows[0].cells[0].blocks[0].runs[0]?.styles?.bold
+        : false,
+    ).toBe(true);
+    expect(
+      inner.rows[0]?.cells[1]?.blocks[0]?.type === "paragraph"
+        ? inner.rows[0].cells[1].blocks[0].runs[0]?.styles?.bold
+        : false,
+    ).toBe(true);
+    expect(before.runs[0]?.styles?.bold).toBeUndefined();
+    expect(after.runs[0]?.styles?.bold).toBeUndefined();
+    expect(outerStoryTypes(committed)).toEqual([
+      "paragraph",
+      "table",
+      "paragraph",
+    ]);
+  });
 });
