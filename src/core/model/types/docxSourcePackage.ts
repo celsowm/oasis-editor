@@ -49,4 +49,11 @@ export interface EditorDocxSourcePackage {
   rootRelationships: EditorOpcRelationship[];
   parts: Record<string, EditorOpcPart>;
   diagnostics?: EditorDocxDiagnostic[];
+  /**
+   * Hashes of the canonical Oasis rebuild immediately after import, keyed by
+   * conventional rebuilt part path. During source-backed export an equal hash
+   * proves that the modeled semantic domain did not change, allowing the exact
+   * source part bytes to remain untouched instead of being reserialized.
+   */
+  rebuiltPartHashes?: Record<string, string>;
 }
