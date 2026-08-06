@@ -4,7 +4,6 @@ import type {
   EditorEndnotes,
   EditorFootnote,
   EditorFootnotes,
-  EditorParagraphNode,
   EditorSection,
   EditorState,
 } from "./model.js";
@@ -80,9 +79,7 @@ export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
                       style: previousCell.style
                         ? { ...previousCell.style }
                         : undefined,
-                      blocks: previousCell.blocks.map(
-                        (paragraph): EditorBlockNode => cloneBlock(paragraph),
-                      ) as EditorParagraphNode[],
+                      blocks: previousCell.blocks.map(cloneBlock),
                     }),
                   ),
                 }
@@ -106,12 +103,7 @@ export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
                     : undefined,
                 }
               : undefined,
-            blocks: cell.blocks.map((paragraph) => ({
-              ...paragraph,
-              runs: paragraph.runs.map(cloneRun),
-              style: paragraph.style ? { ...paragraph.style } : undefined,
-              list: paragraph.list ? { ...paragraph.list } : undefined,
-            })),
+            blocks: cell.blocks.map(cloneBlock),
           })),
         })),
       };
