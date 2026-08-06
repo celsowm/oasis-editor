@@ -1,4 +1,5 @@
 import {
+  getBlockParagraphs,
   getDocumentSections,
   paragraphOffsetToPosition,
   type EditorDocument,
@@ -36,13 +37,35 @@ export const findCellAtVisualColumn = (
   return null;
 };
 
+function firstParagraphInCell(
+  cell: EditorTableCellNode | undefined,
+): EditorParagraphNode | null {
+  if (!cell) return null;
+  for (const block of cell.blocks) {
+    const paragraph = getBlockParagraphs(block)[0];
+    if (paragraph) return paragraph;
+  }
+  return null;
+}
+
+function cellContainsParagraph(
+  cell: EditorTableCellNode,
+  paragraphId: string,
+): boolean {
+  return cell.blocks.some((block): boolean =>
+    getBlockParagraphs(block).some(
+      (paragraph): boolean => paragraph.id === paragraphId,
+    ),
+  );
+}
+
 export const findFirstNavigableParagraphInTable = (
   table: EditorTableNode,
 ): EditorParagraphNode | null => {
   for (const row of table.rows) {
     for (const cell of row.cells) {
       if (cell.vMerge === "continue") continue;
-      const paragraph = cell.blocks[0];
+      const paragraph = firstParagraphInCell(cell);
       if (paragraph) return paragraph;
     }
   }
@@ -70,11 +93,10 @@ export const resolveAdjacentTableCellPosition = (
         ),
       );
       const currentCellIndex = cells.findIndex((cell): boolean =>
-        cell.blocks.some((paragraph): boolean => paragraph.id === paragraphId),
+        cellContainsParagraph(cell, paragraphId),
       );
       if (currentCellIndex === -1) continue;
-      const nextCell = cells[currentCellIndex + delta];
-      const targetParagraph = nextCell?.blocks[0];
+      const targetParagraph = firstParagraphInCell(cells[currentCellIndex + delta]);
       return targetParagraph
         ? paragraphOffsetToPosition(targetParagraph, 0)
         : null;
