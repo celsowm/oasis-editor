@@ -104,7 +104,7 @@ export function getDocumentTables(
   const blocks = document.sections?.flatMap((section) => section.blocks) ?? [];
   return blocks.filter(
     (block): block is EditorTableNode => block.type === "table",
-  ) as ParagraphOnlyTable[];
+  ) as unknown as ParagraphOnlyTable[];
 }
 
 export async function importComplexDocument(): Promise<EditorDocument> {
