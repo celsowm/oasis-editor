@@ -9,7 +9,12 @@
  * matching the previous behaviour. The cache is exposed as an interface so
  * tests can swap in an in-memory variant.
  */
-import type { EditorBlockNode, EditorParagraphNode } from "./types/nodes.js";
+import type {
+  EditorBlockNode,
+  EditorParagraphNode,
+  EditorTableCellNode,
+  EditorTableNode,
+} from "./types/nodes.js";
 import type { EditorDocument } from "./types/document.js";
 import type { EditorEditingZone } from "./types/selection.js";
 import { getDocumentSections } from "./documentSections.js";
@@ -27,11 +32,35 @@ export interface EditorParagraphLocation {
   footnoteId?: string;
 }
 
-export interface TableLocation {
-  blockIndex: number;
+/**
+ * One table hop from a block story into a cell. `tableBlockIndex` is relative
+ * to the story that contains that table: a section/header/footer story for the
+ * first hop, then the parent cell's `blocks` array for every nested hop.
+ */
+export interface TablePathSegment {
+  tableBlockIndex: number;
   rowIndex: number;
   cellIndex: number;
+}
+
+export interface TableLocation {
+  /** Top-level table block index. Retained for legacy one-level consumers. */
+  blockIndex: number;
+  /** Top-level row index. Retained for legacy one-level consumers. */
+  rowIndex: number;
+  /** Top-level cell index. Retained for legacy one-level consumers. */
+  cellIndex: number;
+  /** Paragraph block index inside the innermost cell story. */
   paragraphIndex: number;
+  /** Complete outer-to-inner path. One entry means a legacy direct table. */
+  tablePath: TablePathSegment[];
+}
+
+export interface ResolvedTablePath {
+  table: EditorTableNode;
+  cell: EditorTableCellNode;
+  segment: TablePathSegment;
+  depth: number;
 }
 
 export interface DocumentParagraphIndexEntry {
@@ -51,6 +80,11 @@ interface IndexBlockContext {
   zone: EditorEditingZone;
   footnoteId?: string;
   startIndex: number;
+}
+
+interface TableIndexContext {
+  topLevelBlockIndex: number;
+  tablePath: TablePathSegment[];
 }
 
 export class DocumentIndexBuilder {
@@ -89,7 +123,7 @@ export class DocumentIndexBuilder {
     if (!src.blocks) return;
     let paraIndex = 0;
     src.blocks.forEach((block, blockIndex): void => {
-      paraIndex = this.indexBlock(block, blockIndex, {
+      paraIndex = this.indexTopLevelBlock(block, blockIndex, {
         sectionIndex,
         zone: src.zone,
         footnoteId: src.footnoteId,
@@ -98,12 +132,65 @@ export class DocumentIndexBuilder {
     });
   }
 
-  private indexNestedBlock(
-    block: EditorBlockNode,
+  private indexTable(
+    table: EditorTableNode,
     ctx: IndexBlockContext,
-    directTableLocation: TableLocation | null,
+    tableCtx: TableIndexContext,
   ): number {
     let paraIndex = ctx.startIndex;
+    table.rows.forEach((row, rowIndex): void => {
+      row.cells.forEach((cell, cellIndex): void => {
+        cell.blocks.forEach((child, childIndex): void => {
+          const segment: TablePathSegment = {
+            tableBlockIndex:
+              tableCtx.tablePath.length === 0
+                ? tableCtx.topLevelBlockIndex
+                : childIndex,
+            rowIndex,
+            cellIndex,
+          };
+          const currentPath = [...tableCtx.tablePath, segment];
+          if (child.type === "paragraph") {
+            const first = currentPath[0]!;
+            this.recordParagraph(
+              child,
+              {
+                sectionIndex: ctx.sectionIndex,
+                zone: ctx.zone,
+                paragraphIndexInSection: paraIndex,
+                footnoteId: ctx.footnoteId,
+              },
+              {
+                blockIndex: first.tableBlockIndex,
+                rowIndex: first.rowIndex,
+                cellIndex: first.cellIndex,
+                paragraphIndex: childIndex,
+                tablePath: currentPath,
+              },
+            );
+            paraIndex += 1;
+            return;
+          }
+
+          paraIndex = this.indexTable(
+            child,
+            { ...ctx, startIndex: paraIndex },
+            {
+              topLevelBlockIndex: tableCtx.topLevelBlockIndex,
+              tablePath: currentPath,
+            },
+          );
+        });
+      });
+    });
+    return paraIndex;
+  }
+
+  private indexTopLevelBlock(
+    block: EditorBlockNode,
+    blockIndex: number,
+    ctx: IndexBlockContext,
+  ): number {
     switch (block.type) {
       case "paragraph":
         this.recordParagraph(
@@ -111,61 +198,17 @@ export class DocumentIndexBuilder {
           {
             sectionIndex: ctx.sectionIndex,
             zone: ctx.zone,
-            paragraphIndexInSection: paraIndex,
+            paragraphIndexInSection: ctx.startIndex,
             footnoteId: ctx.footnoteId,
           },
-          directTableLocation,
+          null,
         );
-        return paraIndex + 1;
+        return ctx.startIndex + 1;
       case "table":
-        for (const row of block.rows) {
-          for (const cell of row.cells) {
-            for (const child of cell.blocks) {
-              paraIndex = this.indexNestedBlock(
-                child,
-                { ...ctx, startIndex: paraIndex },
-                null,
-              );
-            }
-          }
-        }
-        return paraIndex;
-      default:
-        return assertNever(block, "block");
-    }
-  }
-
-  private indexBlock(
-    block: EditorBlockNode,
-    blockIndex: number,
-    ctx: IndexBlockContext,
-  ): number {
-    let paraIndex = ctx.startIndex;
-    switch (block.type) {
-      case "paragraph":
-        return this.indexNestedBlock(block, ctx, null);
-      case "table":
-        block.rows.forEach((row, rowIndex): void => {
-          row.cells.forEach((cell, cellIndex): void => {
-            cell.blocks.forEach((child, childIndex): void => {
-              const directLocation =
-                child.type === "paragraph"
-                  ? {
-                      blockIndex,
-                      rowIndex,
-                      cellIndex,
-                      paragraphIndex: childIndex,
-                    }
-                  : null;
-              paraIndex = this.indexNestedBlock(
-                child,
-                { ...ctx, startIndex: paraIndex },
-                directLocation,
-              );
-            });
-          });
+        return this.indexTable(block, ctx, {
+          topLevelBlockIndex: blockIndex,
+          tablePath: [],
         });
-        return paraIndex;
       default:
         return assertNever(block, "block");
     }
@@ -305,7 +348,8 @@ export function findParagraphLocation(
   return entry ? entry.location : null;
 }
 
-export function findParagraphTableLocation(
+/** Returns the complete path, including nested tables. */
+export function findParagraphTablePathLocation(
   document: EditorDocument,
   paragraphId: string,
   activeSectionIndex: number = 0,
@@ -318,4 +362,40 @@ export function findParagraphTableLocation(
   }
 
   return { ...entry.tableLocation, zone: entry.location.zone };
+}
+
+/**
+ * Legacy one-level lookup. Nested table paragraphs intentionally return null so
+ * older merge/split callers cannot accidentally mutate the outer table.
+ */
+export function findParagraphTableLocation(
+  document: EditorDocument,
+  paragraphId: string,
+  activeSectionIndex: number = 0,
+): (TableLocation & { zone: EditorEditingZone }) | null {
+  const location = findParagraphTablePathLocation(
+    document,
+    paragraphId,
+    activeSectionIndex,
+  );
+  return location?.tablePath.length === 1 ? location : null;
+}
+
+/** Resolve every table/cell hop from a zone block story. */
+export function resolveTablePath(
+  blocks: EditorBlockNode[],
+  tablePath: readonly TablePathSegment[],
+): ResolvedTablePath[] | null {
+  const resolved: ResolvedTablePath[] = [];
+  let story = blocks;
+  for (let depth = 0; depth < tablePath.length; depth += 1) {
+    const segment = tablePath[depth]!;
+    const table = story[segment.tableBlockIndex];
+    if (!table || table.type !== "table") return null;
+    const cell = table.rows[segment.rowIndex]?.cells[segment.cellIndex];
+    if (!cell) return null;
+    resolved.push({ table, cell, segment, depth });
+    story = cell.blocks;
+  }
+  return resolved;
 }
