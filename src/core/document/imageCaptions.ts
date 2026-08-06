@@ -188,10 +188,7 @@ function renumberBlocks(
             ...row,
             cells: row.cells.map((cell) => ({
               ...cell,
-              blocks: renumberBlocks(
-                cell.blocks,
-                sequence,
-              ) as EditorParagraphNode[],
+              blocks: renumberBlocks(cell.blocks, sequence),
             })),
           })),
         };
