@@ -65,9 +65,11 @@ describe("nested DOCX tables", () => {
       "table",
       "paragraph",
     ]);
-    expect(getDocumentParagraphsCanonical(document).map((paragraph) =>
-      paragraph.runs.map((run) => run.text).join(""),
-    )).toEqual([
+    expect(
+      getDocumentParagraphsCanonical(document).map((paragraph) =>
+        paragraph.runs.map((run) => run.text).join(""),
+      ),
+    ).toEqual([
       "Before nested table",
       "Inner original",
       "After nested table",
@@ -106,6 +108,21 @@ describe("nested DOCX tables", () => {
         ? reimportedParagraph.runs.map((run) => run.text).join("")
         : null,
     ).toBe("Inner edited");
+  });
+
+  it("adds the required terminal paragraph when a cell ends with a table", async () => {
+    const document = await importDocxToEditorDocument(
+      await nestedTablePackage(),
+    );
+    const outer = getOuterTable(document);
+    const inner = getInnerTable(document);
+    outer.rows[0]!.cells[0]!.blocks = [inner];
+
+    const exported = await exportEditorDocumentToDocx(document);
+    const zip = await JSZip.loadAsync(exported);
+    const xml = (await zip.file("word/document.xml")?.async("string")) ?? "";
+
+    expect(xml).toMatch(/<\/w:tbl><w:p\/><\/w:tc>/);
   });
 
   it("deep-clones nested tables independently", async () => {
