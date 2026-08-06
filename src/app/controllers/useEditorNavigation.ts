@@ -1,7 +1,9 @@
 import type {
   EditorBlockNode,
   EditorLayoutDocument,
+  EditorParagraphNode,
   EditorState,
+  EditorTableCellNode,
 } from "@/core/model.js";
 import {
   getEditableBlocksForZone,
@@ -11,6 +13,7 @@ import {
   positionToParagraphOffset,
   getActiveSectionIndex,
   findParagraphTableLocation,
+  getBlockParagraphs,
 } from "@/core/model.js";
 import {
   setSelection,
@@ -52,6 +55,19 @@ export interface UseEditorNavigationProps {
    * snapshot is built zoom-aware.
    */
   zoomFactor?: () => number;
+}
+
+function getCellParagraphs(cell: EditorTableCellNode): EditorParagraphNode[] {
+  return cell.blocks.flatMap(getBlockParagraphs);
+}
+
+function getBoundaryParagraphInCell(
+  cell: EditorTableCellNode | undefined,
+  boundary: "start" | "end",
+): EditorParagraphNode | undefined {
+  if (!cell) return undefined;
+  const paragraphs = getCellParagraphs(cell);
+  return boundary === "start" ? paragraphs[0] : paragraphs[paragraphs.length - 1];
 }
 
 export function createEditorNavigation(
@@ -251,7 +267,7 @@ function createEditorNavigationImpl(deps: UseEditorNavigationProps) {
             const rowCandidates = tableLayout.filter(
               (entry): boolean =>
                 entry.visualRowIndex === rowIndex &&
-                entry.cell.blocks.length > 0 &&
+                getCellParagraphs(entry.cell).length > 0 &&
                 entry.cell.vMerge !== "continue",
             );
             if (rowCandidates.length === 0) {
@@ -261,7 +277,10 @@ function createEditorNavigationImpl(deps: UseEditorNavigationProps) {
             const scoredCandidates = rowCandidates
               .map(
                 (entry): { entry: TableCellLayoutEntry; distance: number } => {
-                  const paragraphId = entry.cell.blocks[0]?.id;
+                  const paragraphId = getBoundaryParagraphInCell(
+                    entry.cell,
+                    "start",
+                  )?.id;
                   const cellRect = paragraphId
                     ? snapshot?.paragraphs.find(
                         (paragraph): boolean | undefined =>
@@ -290,29 +309,38 @@ function createEditorNavigationImpl(deps: UseEditorNavigationProps) {
               continue;
             }
 
-            const targetId =
-              direction < 0
-                ? candidate.cell.blocks[candidate.cell.blocks.length - 1]!.id
-                : candidate.cell.blocks[0]!.id;
-            targetIndex = paragraphs.findIndex(
-              (p): boolean => p.id === targetId,
+            const targetParagraph = getBoundaryParagraphInCell(
+              candidate.cell,
+              direction < 0 ? "end" : "start",
             );
+            targetIndex = targetParagraph
+              ? paragraphs.findIndex(
+                  (paragraph): boolean => paragraph.id === targetParagraph.id,
+                )
+              : -1;
             break;
           }
         } else {
           if (direction < 0) {
-            const firstParaId = block.rows[0]?.cells[0]?.blocks[0]?.id;
-            if (firstParaId) {
+            const firstParagraph = getBoundaryParagraphInCell(
+              block.rows[0]?.cells[0],
+              "start",
+            );
+            if (firstParagraph) {
               targetIndex =
-                paragraphs.findIndex((p): boolean => p.id === firstParaId) - 1;
+                paragraphs.findIndex(
+                  (paragraph): boolean => paragraph.id === firstParagraph.id,
+                ) - 1;
             }
           } else {
             const lastRow = block.rows[block.rows.length - 1];
             const lastCell = lastRow?.cells[lastRow.cells.length - 1];
-            const lastParaId = lastCell?.blocks[lastCell.blocks.length - 1]?.id;
-            if (lastParaId) {
+            const lastParagraph = getBoundaryParagraphInCell(lastCell, "end");
+            if (lastParagraph) {
               targetIndex =
-                paragraphs.findIndex((p): boolean => p.id === lastParaId) + 1;
+                paragraphs.findIndex(
+                  (paragraph): boolean => paragraph.id === lastParagraph.id,
+                ) + 1;
             }
           }
         }
