@@ -124,7 +124,7 @@ export type EditorTextRun =
     })
   /**
    * Inline marker of an endnote whose body lives in
-   * `EditorDocument.endnotes.items[endnoteReference.endnoteId]`.
+   * `EditorDocument.endnotes.items[endnoteReference.footnoteId]`.
    */
   | (EditorRunBase & {
       kind: "endnoteReference";
@@ -300,7 +300,8 @@ export interface EditorParagraphNode {
 
 export interface EditorTableCellNode {
   id: string;
-  blocks: EditorParagraphNode[];
+  /** Ordered block story inside the cell; Word permits paragraphs and tables. */
+  blocks: EditorBlockNode[];
   colSpan?: number;
   rowSpan?: number;
   vMerge?: "restart" | "continue";
