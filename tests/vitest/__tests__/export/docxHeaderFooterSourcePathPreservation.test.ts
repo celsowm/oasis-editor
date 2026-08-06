@@ -5,9 +5,8 @@ import type {
   EditorDocxSourcePackage,
   EditorOpcRelationship,
 } from "@/core/model.js";
-import { patchHeaderFooterSourceParts } from "@/export/docx/opc/headerFooterSourcePatcher.js";
+import { patchRebuiltDocxWithHeaderFooterSourcePaths } from "@/export/docx/opc/headerFooterSourcePatcher.js";
 import { hashDocxPartBytes } from "@/export/docx/opc/rebuiltPartHashes.js";
-import { patchRebuiltDocxWithSourcePackage } from "@/export/docx/opc/sourcePackagePatcher.js";
 
 const CONTENT_TYPES_NS =
   "http://schemas.openxmlformats.org/package/2006/content-types";
@@ -262,12 +261,8 @@ async function patchWithHeaderFooterPaths(
   document: EditorDocument,
   rebuilt: ArrayBuffer,
 ): Promise<JSZip> {
-  const sourcePatched = await patchRebuiltDocxWithSourcePackage(
-    document,
-    rebuilt,
-  );
   return JSZip.loadAsync(
-    await patchHeaderFooterSourceParts(document, rebuilt, sourcePatched),
+    await patchRebuiltDocxWithHeaderFooterSourcePaths(document, rebuilt),
   );
 }
 
