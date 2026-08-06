@@ -1,4 +1,5 @@
 import type {
+  EditorBlockNode,
   EditorNamedStyle,
   EditorParagraphNode,
   EditorTableNode,
@@ -79,28 +80,30 @@ function sliceParagraphForTableSegment(
 }
 
 function sliceCellBlocksForTableSegment(
-  blocks: EditorParagraphNode[],
+  blocks: EditorBlockNode[],
   start: TableCellBlockPosition,
   end: TableCellBlockPosition,
-): EditorParagraphNode[] {
-  const result: EditorParagraphNode[] = [];
+): EditorBlockNode[] {
+  const result: EditorBlockNode[] = [];
   const endExclusive =
     end.offset !== undefined ? end.blockIndex + 1 : end.blockIndex;
   for (let index = start.blockIndex; index < endExclusive; index += 1) {
-    const paragraph = blocks[index];
-    if (!paragraph) continue;
-    const paragraphLength = getParagraphTextLength(paragraph);
+    const block = blocks[index];
+    if (!block) continue;
+    if (block.type === "table") {
+      result.push(block);
+      continue;
+    }
+    const paragraphLength = getParagraphTextLength(block);
     const startOffset = index === start.blockIndex ? (start.offset ?? 0) : 0;
     const endOffset =
       index === end.blockIndex
         ? (end.offset ?? paragraphLength)
         : paragraphLength;
     if (startOffset <= 0 && endOffset >= paragraphLength) {
-      result.push(paragraph);
+      result.push(block);
     } else if (endOffset > startOffset) {
-      result.push(
-        sliceParagraphForTableSegment(paragraph, startOffset, endOffset),
-      );
+      result.push(sliceParagraphForTableSegment(block, startOffset, endOffset));
     }
   }
   return result;
@@ -202,12 +205,12 @@ export function findCellSplitEndPosition(
     return best;
   }
 
-  const paragraph = cell.blocks[start.blockIndex];
-  if (!paragraph) return best;
-  const paragraphLength = getParagraphTextLength(paragraph);
+  const block = cell.blocks[start.blockIndex];
+  if (!block || block.type === "table") return best;
+  const paragraphLength = getParagraphTextLength(block);
   const startOffset = start.offset ?? 0;
   const layout = projectParagraphLayout(
-    paragraph,
+    block,
     undefined,
     undefined,
     styles,
@@ -249,9 +252,10 @@ export function canSplitTableRow(row: EditorTableRowNode | undefined): boolean {
   return row.cells.some((cell): boolean => {
     if (cell.vMerge || (cell.rowSpan ?? 1) > 1) return false;
     if (cell.style?.textDirection) return false;
-    return cell.blocks.some((paragraph): boolean => {
-      if (paragraph.style?.textDirection) return false;
-      return getParagraphTextLength(paragraph) > 0;
+    return cell.blocks.some((block): boolean => {
+      if (block.type === "table") return false;
+      if (block.style?.textDirection) return false;
+      return getParagraphTextLength(block) > 0;
     });
   });
 }
