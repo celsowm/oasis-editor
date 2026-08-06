@@ -6,10 +6,11 @@ import {
   setTableColumnWidths,
 } from "@/core/commands/table.js";
 import {
-  findParagraphTableLocation,
+  findParagraphTablePathLocation,
   getActiveSectionIndex,
   getActiveZone,
   getDocumentSections,
+  resolveTablePath,
   type EditorBorderStyle,
   type EditorDocxWidthValue,
   type EditorState,
@@ -106,25 +107,32 @@ function resolveActiveTableContext(
   state: EditorState,
 ): ActiveTableContext | null {
   const activeSectionIndex = getActiveSectionIndex(state);
-  const loc = findParagraphTableLocation(
+  const loc = findParagraphTablePathLocation(
     state.document,
     state.selection.focus.paragraphId,
     activeSectionIndex,
   );
-  if (!loc) return null;
-  const table = getZoneBlocks(state, loc.zone)[loc.blockIndex];
-  if (!table || table.type !== "table") return null;
+  const innermost = loc?.tablePath[loc.tablePath.length - 1];
+  if (!loc || !innermost) return null;
+
+  const resolved = resolveTablePath(
+    getZoneBlocks(state, loc.zone),
+    loc.tablePath,
+  );
+  const table = resolved?.[resolved.length - 1]?.table;
+  if (!table) return null;
+
   const entry = buildTableCellLayout(table).find(
     (candidate): boolean =>
-      candidate.rowIndex === loc.rowIndex &&
-      candidate.cellIndex === loc.cellIndex,
+      candidate.rowIndex === innermost.rowIndex &&
+      candidate.cellIndex === innermost.cellIndex,
   );
   return {
     table,
     tableId: table.id,
-    rowIndex: loc.rowIndex,
-    cellIndex: loc.cellIndex,
-    visualColumnIndex: entry?.visualColumnIndex ?? loc.cellIndex,
+    rowIndex: innermost.rowIndex,
+    cellIndex: innermost.cellIndex,
+    visualColumnIndex: entry?.visualColumnIndex ?? innermost.cellIndex,
   };
 }
 
