@@ -1,19 +1,18 @@
 import type {
-  EditorBlockNode,
   EditorLayoutDocument,
   EditorParagraphNode,
   EditorState,
   EditorTableCellNode,
 } from "@/core/model.js";
 import {
-  getEditableBlocksForZone,
   getParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
   positionToParagraphOffset,
   getActiveSectionIndex,
-  findParagraphTableLocation,
+  findParagraphTablePathLocation,
   getBlockParagraphs,
+  resolveTablePath,
 } from "@/core/model.js";
 import {
   setSelection,
@@ -27,12 +26,13 @@ import {
 } from "@/core/wordBoundaries.js";
 import {
   buildTableCellLayout,
-  TableCellLayoutEntry,
+  type TableCellLayoutEntry,
 } from "@/core/tableLayout.js";
 import { getParagraphEntries } from "@/ui/canvas/CanvasGeometry.js";
 import type { CaretBox } from "@/ui/editorUiTypes.js";
 import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 import type { CanvasSnapshotSlot } from "@/ui/canvas/canvasSnapshotTypes.js";
+import { getTableOperationTargetBlocks } from "./tableOpsMutationCommands.js";
 
 export interface UseEditorNavigationProps {
   state: () => EditorState;
@@ -234,30 +234,32 @@ function createEditorNavigationImpl(deps: UseEditorNavigationProps) {
         })
       : null;
     let targetIndex = currentIndex + direction;
-    const tableLocation = findParagraphTableLocation(
+    const tableLocation = findParagraphTablePathLocation(
       state.document,
       state.selection.focus.paragraphId,
       getActiveSectionIndex(state),
     );
-    if (tableLocation) {
-      const targetBlocks: EditorBlockNode[] = getEditableBlocksForZone(
+    const innermost = tableLocation?.tablePath[tableLocation.tablePath.length - 1];
+    if (tableLocation && innermost) {
+      const targetBlocks = getTableOperationTargetBlocks(
         state,
         tableLocation.zone,
       );
+      const resolved = resolveTablePath(targetBlocks, tableLocation.tablePath);
+      const table = resolved?.[resolved.length - 1]?.table;
 
-      const block = targetBlocks[tableLocation.blockIndex];
-      if (block && block.type === "table") {
-        const tableLayout = buildTableCellLayout(block);
+      if (table) {
+        const tableLayout = buildTableCellLayout(table);
         const currentCell = tableLayout.find(
           (entry): boolean =>
-            entry.rowIndex === tableLocation.rowIndex &&
-            entry.cellIndex === tableLocation.cellIndex,
+            entry.rowIndex === innermost.rowIndex &&
+            entry.cellIndex === innermost.cellIndex,
         );
         if (currentCell) {
           const candidateRows: number[] = [];
           for (
             let rowIndex = currentCell.visualRowIndex + direction;
-            rowIndex >= 0 && rowIndex < block.rows.length;
+            rowIndex >= 0 && rowIndex < table.rows.length;
             rowIndex += direction
           ) {
             candidateRows.push(rowIndex);
@@ -286,7 +288,7 @@ function createEditorNavigationImpl(deps: UseEditorNavigationProps) {
                         (paragraph): boolean | undefined =>
                           paragraph.paragraphId === paragraphId &&
                           paragraph.tableCell &&
-                          paragraph.tableCell.tableId === block.id,
+                          paragraph.tableCell.tableId === table.id,
                       )?.tableCell
                     : null;
                   const left = cellRect?.left ?? desiredX;
@@ -320,28 +322,26 @@ function createEditorNavigationImpl(deps: UseEditorNavigationProps) {
               : -1;
             break;
           }
+        } else if (direction < 0) {
+          const firstParagraph = getBoundaryParagraphInCell(
+            table.rows[0]?.cells[0],
+            "start",
+          );
+          if (firstParagraph) {
+            targetIndex =
+              paragraphs.findIndex(
+                (paragraph): boolean => paragraph.id === firstParagraph.id,
+              ) - 1;
+          }
         } else {
-          if (direction < 0) {
-            const firstParagraph = getBoundaryParagraphInCell(
-              block.rows[0]?.cells[0],
-              "start",
-            );
-            if (firstParagraph) {
-              targetIndex =
-                paragraphs.findIndex(
-                  (paragraph): boolean => paragraph.id === firstParagraph.id,
-                ) - 1;
-            }
-          } else {
-            const lastRow = block.rows[block.rows.length - 1];
-            const lastCell = lastRow?.cells[lastRow.cells.length - 1];
-            const lastParagraph = getBoundaryParagraphInCell(lastCell, "end");
-            if (lastParagraph) {
-              targetIndex =
-                paragraphs.findIndex(
-                  (paragraph): boolean => paragraph.id === lastParagraph.id,
-                ) + 1;
-            }
+          const lastRow = table.rows[table.rows.length - 1];
+          const lastCell = lastRow?.cells[lastRow.cells.length - 1];
+          const lastParagraph = getBoundaryParagraphInCell(lastCell, "end");
+          if (lastParagraph) {
+            targetIndex =
+              paragraphs.findIndex(
+                (paragraph): boolean => paragraph.id === lastParagraph.id,
+              ) + 1;
           }
         }
       }
