@@ -2,8 +2,10 @@ import {
   importDocxToEditorDocument,
   type DocxImportStage,
 } from "./importDocxToEditorDocument.js";
-import { captureRebuiltDocxPartHashes } from "@/export/docx/opc/rebuiltPartHashes.js";
-import { captureDocxSourcePackage } from "./opc/sourcePackage.js";
+import {
+  attachDocxRebuiltPartBaseline,
+  captureDocxSourcePackage,
+} from "./opc/sourcePackage.js";
 import { prepareDocxForCurrentImporter } from "./opc/legacyCompatibilityPackage.js";
 
 type ImportWorkerRequest = {
@@ -59,8 +61,7 @@ globalThis.addEventListener(
           post({ type: "progress", id: message.id, stage, progress });
         },
       });
-      sourcePackage.rebuiltPartHashes =
-        await captureRebuiltDocxPartHashes(document);
+      await attachDocxRebuiltPartBaseline(document, sourcePackage);
       document.sourcePackage = sourcePackage;
       post({ type: "done", id: message.id, document });
     } catch (error) {
