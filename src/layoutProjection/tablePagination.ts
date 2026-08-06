@@ -1,7 +1,7 @@
 import type {
+  EditorBlockNode,
   EditorNamedStyle,
   EditorTableNode,
-  EditorParagraphNode,
 } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
 import { domTextMeasurer } from "@/ui/textMeasurement.js";
@@ -218,6 +218,32 @@ function getCachedTableColumnGeometry(
   return geometry;
 }
 
+function estimateCellBlockHeight(
+  block: EditorBlockNode,
+  styles: Record<string, EditorNamedStyle> | undefined,
+  contentWidth: number | undefined,
+  measurer: ITextMeasurer,
+  defaultTabStop: number | undefined,
+): number {
+  if (block.type === "table") {
+    return estimateTableBlockHeight(
+      block,
+      styles,
+      contentWidth,
+      measurer,
+      defaultTabStop,
+    );
+  }
+  return estimateParagraphBlockHeight(
+    block,
+    styles,
+    contentWidth,
+    measurer,
+    {},
+    defaultTabStop,
+  );
+}
+
 export function estimateTableRowHeight(
   row: EditorTableNode["rows"][number],
   styles: Record<string, EditorNamedStyle> | undefined,
@@ -272,9 +298,10 @@ export function estimateTableRowHeight(
     const cell = {
       ...sourceCell,
       style: formatting?.cellStyle ?? sourceCell.style,
-      blocks: sourceCell.blocks.map(
-        (paragraph): EditorParagraphNode =>
-          resolveCachedTableCellParagraph(paragraph, formatting, styles),
+      blocks: sourceCell.blocks.map((block) =>
+        block.type === "paragraph"
+          ? resolveCachedTableCellParagraph(block, formatting, styles)
+          : block,
       ),
     };
     if (cell.vMerge === "continue") return 0;
@@ -292,22 +319,19 @@ export function estimateTableRowHeight(
       ? NO_WRAP_MEASURE_WIDTH_PX
       : cellContentWidth;
     let blockHeights = 0;
-    for (let blockIndex = 0; blockIndex < cell.blocks.length; blockIndex += 1) {
-      const paragraph = cell.blocks[blockIndex]!;
-      // Contextual spacing does not apply inside table cells by OOXML default;
-      // it only applies when w:allowSpaceOfSameStyleInTable is enabled.
-      blockHeights += estimateParagraphBlockHeight(
-        paragraph,
+    for (const block of cell.blocks) {
+      blockHeights += estimateCellBlockHeight(
+        block,
         styles,
         paragraphContentWidth,
         measurer,
-        {},
         defaultTabStop,
       );
     }
     let largestImageHeight = 0;
-    for (const paragraph of cell.blocks) {
-      for (const run of paragraph.runs) {
+    for (const block of cell.blocks) {
+      if (block.type !== "paragraph") continue;
+      for (const run of block.runs) {
         if (run.kind === "image" && run.image.height > largestImageHeight) {
           const fitted =
             cellContentWidth !== undefined && run.image.width > cellContentWidth
