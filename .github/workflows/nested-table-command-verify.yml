@@ -43,7 +43,7 @@ jobs:
               tests/vitest/__tests__/app/nestedTableOperations.test.ts \
               tests/vitest/__tests__/core/nestedTableCoreCommands.test.ts \
               tests/vitest/__tests__/export/docxNestedTableRoundTrip.test.ts \
-              tests/vitest/__tests__/ui/CanvasNestedTableLayout.test.ts
+              tests/vitest/__tests__/ui/canvasNestedTableLayout.test.ts
             run_check full-tests npm test
             run_check build-app npm run build:app
             run_check build-lib npm run build:lib
