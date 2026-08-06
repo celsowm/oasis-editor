@@ -1,6 +1,6 @@
 import type {
+  EditorBlockNode,
   EditorBorderStyle,
-  EditorParagraphNode,
   EditorTableCellNode,
   EditorTableNode,
   EditorTableRowStyle,
@@ -64,10 +64,13 @@ function serializeConditionalFlags(
   return xml ? `<w:cnfStyle ${xml}/>` : "";
 }
 
-export type SerializeTableParagraphXml = (
-  paragraph: EditorParagraphNode,
+export type SerializeTableBlockXml = (
+  block: EditorBlockNode,
   cell: EditorTableCellNode,
 ) => string;
+
+/** @deprecated Use {@link SerializeTableBlockXml}; retained for source compatibility. */
+export type SerializeTableParagraphXml = SerializeTableBlockXml;
 
 type DocxWidthTag =
   | "tblW"
@@ -609,7 +612,7 @@ function serializeTablePropertyExceptions(
 
 export function serializeTableXml(
   table: EditorTableNode,
-  serializeParagraphXml: SerializeTableParagraphXml,
+  serializeBlockXml: SerializeTableBlockXml,
 ): string {
   const tableLayout = buildTableCellLayout(table);
   const tableEntriesByKey = new Map(
@@ -632,7 +635,7 @@ export function serializeTableXml(
                   )
                   .reduce((sum, width): number => sum + width, 0)
               : undefined;
-          const paragraphs =
+          const blocks: EditorBlockNode[] =
             cell.blocks.length > 0
               ? cell.blocks
               : [
@@ -642,11 +645,11 @@ export function serializeTableXml(
                     runs: [{ id: "", text: "", kind: "text" as const }],
                   },
                 ];
-          const paragraphsXml = paragraphs
-            .map((paragraph): string => serializeParagraphXml(paragraph, cell))
+          const blocksXml = blocks
+            .map((block): string => serializeBlockXml(block, cell))
             .join("");
           const contentXml =
-            cell.vMerge === "continue" ? "<w:p/>" : paragraphsXml;
+            cell.vMerge === "continue" ? "<w:p/>" : blocksXml;
           return `<w:tc${serializeExtAttributes(cell.extAttributes)}>${serializeTableCellProperties(cell, fallbackWidthPt)}${contentXml}</w:tc>`;
         })
         .join("");
