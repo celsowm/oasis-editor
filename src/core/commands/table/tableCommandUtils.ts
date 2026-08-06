@@ -6,13 +6,13 @@ import type {
   EditorState,
   EditorTableNode,
   TableLocation,
+  TablePathSegment,
   EditorRevisionMetadata,
   EditorSection,
 } from "@/core/model.js";
 import {
-  findParagraphTableLocation,
+  findParagraphTablePathLocation,
   getActiveSectionIndex,
-  getActiveZone,
   getDocumentSections,
 } from "@/core/model.js";
 
@@ -109,16 +109,75 @@ export function getBlocksForZone(
   return section.blocks;
 }
 
+function normalizeInnermostTableLocation(
+  loc: TableLocation & { zone: EditorEditingZone },
+): TableLocation & { zone: EditorEditingZone } {
+  const innermost = loc.tablePath[loc.tablePath.length - 1];
+  return innermost
+    ? {
+        ...loc,
+        rowIndex: innermost.rowIndex,
+        cellIndex: innermost.cellIndex,
+      }
+    : loc;
+}
+
 export function resolveActiveTableLocation(
   state: EditorState,
 ): ActiveTableLocation | null {
   const activeSectionIndex = getActiveSectionIndex(state);
-  const loc = findParagraphTableLocation(
+  const loc = findParagraphTablePathLocation(
     state.document,
     state.selection.focus.paragraphId,
     activeSectionIndex,
   );
-  return loc ? { activeSectionIndex, loc } : null;
+  return loc
+    ? { activeSectionIndex, loc: normalizeInnermostTableLocation(loc) }
+    : null;
+}
+
+/**
+ * Applies `updateTable` to exactly the table identified by `tablePath`.
+ * Ancestor tables/cells are copied only along the target path, preserving
+ * structural sharing for every unrelated block and cell.
+ */
+export function updateTableAtPath(
+  blocks: EditorBlockNode[],
+  tablePath: readonly TablePathSegment[],
+  updateTable: (table: EditorTableNode) => EditorTableNode,
+): EditorBlockNode[] {
+  const segment = tablePath[0];
+  if (!segment) return blocks;
+
+  const target = blocks[segment.tableBlockIndex];
+  if (!target || target.type !== "table") return blocks;
+
+  if (tablePath.length === 1) {
+    const updated = updateTable(target);
+    if (updated === target) return blocks;
+    const nextBlocks = [...blocks];
+    nextBlocks[segment.tableBlockIndex] = updated;
+    return nextBlocks;
+  }
+
+  const row = target.rows[segment.rowIndex];
+  const cell = row?.cells[segment.cellIndex];
+  if (!row || !cell) return blocks;
+
+  const nextCellBlocks = updateTableAtPath(
+    cell.blocks,
+    tablePath.slice(1),
+    updateTable,
+  );
+  if (nextCellBlocks === cell.blocks) return blocks;
+
+  const nextCells = [...row.cells];
+  nextCells[segment.cellIndex] = { ...cell, blocks: nextCellBlocks };
+  const nextRows = [...target.rows];
+  nextRows[segment.rowIndex] = { ...row, cells: nextCells };
+  const nextBlocks = [...blocks];
+  nextBlocks[segment.tableBlockIndex] = { ...target, rows: nextRows };
+  return nextBlocks;
 }
 
 export function updateActiveTableBlocks(
@@ -129,38 +188,22 @@ export function updateActiveTableBlocks(
   if (!target) return state;
 
   const { activeSectionIndex, loc } = target;
-  const activeZone = getActiveZone(state);
-  const updateBlocks = (
-    blocks: EditorBlockNode[],
-    zone: EditorEditingZone,
-  ): EditorBlockNode[] =>
-    blocks.map((block, blockIndex): EditorBlockNode => {
-      if (
-        block.type === "table" &&
-        blockIndex === loc.blockIndex &&
-        zone === loc.zone
-      ) {
-        return updateTable(block);
-      }
-      return block;
-    });
+  const updateBlocks = (blocks: EditorBlockNode[]): EditorBlockNode[] =>
+    updateTableAtPath(blocks, loc.tablePath, updateTable);
 
   const nextSections = getDocumentSections(state.document).map(
     (section, sectionIndex): EditorSection => {
       if (sectionIndex !== activeSectionIndex) return section;
       return {
         ...section,
-        blocks:
-          activeZone === "main"
-            ? updateBlocks(section.blocks, "main")
-            : section.blocks,
+        blocks: loc.zone === "main" ? updateBlocks(section.blocks) : section.blocks,
         header:
-          activeZone === "header" && section.header
-            ? updateBlocks(section.header, "header")
+          loc.zone === "header" && section.header
+            ? updateBlocks(section.header)
             : section.header,
         footer:
-          activeZone === "footer" && section.footer
-            ? updateBlocks(section.footer, "footer")
+          loc.zone === "footer" && section.footer
+            ? updateBlocks(section.footer)
             : section.footer,
       };
     },
