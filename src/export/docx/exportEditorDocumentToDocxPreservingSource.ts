@@ -3,6 +3,7 @@ import {
   exportEditorDocumentToDocx,
   exportEditorDocumentToDocxBlob,
 } from "./exportEditorDocumentToDocx.js";
+import { patchHeaderFooterSourceParts } from "./opc/headerFooterSourcePatcher.js";
 import { patchRebuiltDocxWithSourcePackage } from "./opc/sourcePackagePatcher.js";
 
 export async function exportEditorDocumentToDocxPreservingSource(
@@ -12,7 +13,11 @@ export async function exportEditorDocumentToDocxPreservingSource(
     return exportEditorDocumentToDocx(document);
   }
   const rebuilt = await exportEditorDocumentToDocx(document);
-  return patchRebuiltDocxWithSourcePackage(document, rebuilt);
+  const sourcePatched = await patchRebuiltDocxWithSourcePackage(
+    document,
+    rebuilt,
+  );
+  return patchHeaderFooterSourceParts(document, rebuilt, sourcePatched);
 }
 
 export async function exportEditorDocumentToDocxBlobPreservingSource(
