@@ -13,6 +13,18 @@ import { getEditorParagraphOoxmlSource } from "@/ooxml/word/sourceFragments.js";
 
 const MARKUP_COMPATIBILITY_NS =
   "http://schemas.openxmlformats.org/markup-compatibility/2006";
+const XMLNS_NS = "http://www.w3.org/2000/xmlns/";
+
+const STANDARD_PARAGRAPH_CHILD_NAMES = new Set([
+  "pPr",
+  "r",
+  "hyperlink",
+  "fldSimple",
+  "bookmarkStart",
+  "bookmarkEnd",
+  "commentRangeStart",
+  "commentRangeEnd",
+]);
 
 function hasRelationshipReference(xml: string): boolean {
   return /\br:(?:id|embed|link)\s*=/.test(xml);
@@ -29,13 +41,18 @@ function directElementChildren(element: XmlElement): XmlElement[] {
   return children;
 }
 
+function elementLocalName(element: XmlElement): string {
+  return element.localName ?? element.tagName;
+}
+
 function directWordChild(
   element: XmlElement,
   localName: string,
 ): XmlElement | undefined {
   return directElementChildren(element).find(
     (child): boolean =>
-      child.namespaceURI === WORD_NS && child.localName === localName,
+      child.namespaceURI === WORD_NS &&
+      elementLocalName(child) === localName,
   );
 }
 
@@ -43,16 +60,17 @@ function collectInlineRuns(paragraph: XmlElement): XmlElement[] {
   const runs: XmlElement[] = [];
   const visit = (container: XmlElement): void => {
     for (const child of directElementChildren(container)) {
-      if (child.namespaceURI === WORD_NS && child.localName === "r") {
+      const localName = elementLocalName(child);
+      if (child.namespaceURI === WORD_NS && localName === "r") {
         runs.push(child);
         continue;
       }
       if (
         child.namespaceURI === WORD_NS &&
-        (child.localName === "pPr" ||
-          child.localName === "p" ||
-          child.localName === "tbl" ||
-          child.localName === "txbxContent")
+        (localName === "pPr" ||
+          localName === "p" ||
+          localName === "tbl" ||
+          localName === "txbxContent")
       ) {
         continue;
       }
@@ -66,7 +84,7 @@ function collectInlineRuns(paragraph: XmlElement): XmlElement[] {
 function parseSourceParagraph(xml: string): XmlElement | undefined {
   const root = new DOMParser().parseFromString(xml, "application/xml")
     .documentElement as XmlElement | undefined;
-  return root?.namespaceURI === WORD_NS && root.localName === "p"
+  return root?.namespaceURI === WORD_NS && elementLocalName(root) === "p"
     ? root
     : undefined;
 }
@@ -85,9 +103,38 @@ function parseGeneratedElement(
   const children = directElementChildren(wrapper);
   return children.length === 1 &&
     children[0]!.namespaceURI === WORD_NS &&
-    children[0]!.localName === expectedLocalName
+    elementLocalName(children[0]!) === expectedLocalName
     ? children[0]
     : undefined;
+}
+
+function isNamespaceDeclaration(attribute: Attr): boolean {
+  return (
+    attribute.namespaceURI === XMLNS_NS ||
+    attribute.prefix === "xmlns" ||
+    attribute.name === "xmlns"
+  );
+}
+
+function sourceParagraphNeedsOverlay(paragraph: XmlElement): boolean {
+  for (let index = 0; index < paragraph.attributes.length; index += 1) {
+    const attribute = paragraph.attributes[index];
+    if (
+      attribute &&
+      !isNamespaceDeclaration(attribute) &&
+      attribute.namespaceURI !== OFFICE_REL_NS
+    ) {
+      return true;
+    }
+  }
+
+  return directElementChildren(paragraph).some((child): boolean => {
+    const localName = elementLocalName(child);
+    return (
+      child.namespaceURI !== WORD_NS ||
+      !STANDARD_PARAGRAPH_CHILD_NAMES.has(localName)
+    );
+  });
 }
 
 function replaceParagraphProperties(
@@ -121,10 +168,9 @@ function replaceParagraphProperties(
 
 /**
  * Overlays edited paragraph properties and one-to-one generated runs onto the
- * original source paragraph. Every unmodelled direct child or wrapper remains
- * in place. The operation declines unsafe cases (relationships, regenerated
- * boundaries, table-cell overrides, drop caps, run-count changes, or generated
- * wrappers that are not a single w:r), letting the normal serializer take over.
+ * original source paragraph only when the paragraph envelope contains source-
+ * only attributes, children or wrappers. Ordinary paragraphs use the canonical
+ * serializer directly, avoiding unnecessary DOM normalization.
  */
 export function overlayEditorParagraphOnOoxmlSource(
   paragraph: EditorParagraphNode,
@@ -147,7 +193,7 @@ export function overlayEditorParagraphOnOoxmlSource(
   }
 
   const sourceParagraph = parseSourceParagraph(sourceXml);
-  if (!sourceParagraph) {
+  if (!sourceParagraph || !sourceParagraphNeedsOverlay(sourceParagraph)) {
     return undefined;
   }
 
