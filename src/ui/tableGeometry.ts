@@ -1,9 +1,11 @@
 import {
-  findParagraphTableLocation,
-  getActiveSectionIndex,
+  findParagraphLocation,
+  findParagraphTablePathLocation,
+  getBlockParagraphs,
   getDocumentPageSettings,
   getDocumentSections,
   getPageContentWidth,
+  type EditorBlockNode,
   type EditorDocument,
   type EditorState,
   type EditorTableCellNode,
@@ -93,23 +95,30 @@ export function resolveTableColumnWidthsPx(
   return Array(visualColumnCount).fill(baseCellWidth);
 }
 
-/**
- * Returns the inner content width (in CSS pixels) of the cell that contains the
- * paragraph with the given id, or null if the paragraph is not inside a table
- * in the active section. The returned width is what's actually available for
- * inline content (subtracts borders and horizontal padding).
- */
-export function getTableCellContentWidthForParagraph(
+function storyContainsParagraph(
+  blocks: readonly EditorBlockNode[],
+  paragraphId: string,
+): boolean {
+  return blocks.some((block): boolean =>
+    getBlockParagraphs(block).some(
+      (paragraph): boolean => paragraph.id === paragraphId,
+    ),
+  );
+}
+
+function resolveParagraphStory(
   document: EditorDocument,
   paragraphId: string,
   activeSectionIndex: number,
-): number | null {
-  const tableLocation = findParagraphTableLocation(
-    document,
-    paragraphId,
-    activeSectionIndex,
-  );
-  if (!tableLocation) return null;
+): EditorBlockNode[] | null {
+  const paragraphLocation = findParagraphLocation(document, paragraphId);
+  if (!paragraphLocation) return null;
+  if (paragraphLocation.zone === "footnote") {
+    const footnoteId = paragraphLocation.footnoteId;
+    return footnoteId
+      ? (document.footnotes?.items[footnoteId]?.blocks ?? null)
+      : null;
+  }
 
   const sections = getDocumentSections(document);
   const sectionIndex = Math.max(
@@ -118,53 +127,102 @@ export function getTableCellContentWidthForParagraph(
   );
   const section = sections[sectionIndex];
   if (!section) return null;
+  if (paragraphLocation.zone === "main") return section.blocks;
 
-  const zoneBlocks =
-    tableLocation.zone === "header"
-      ? (section.header ?? [])
-      : tableLocation.zone === "footer"
-        ? (section.footer ?? [])
-        : section.blocks;
-  const table = zoneBlocks[tableLocation.blockIndex];
-  if (!table || table.type !== "table") return null;
-
-  const row = table.rows[tableLocation.rowIndex];
-  if (!row) return null;
-  const cell = row.cells[tableLocation.cellIndex];
-  if (!cell) return null;
-  if (cell.style?.noWrap) return NO_WRAP_MEASURE_WIDTH_PX;
-
-  const pageContentWidthPx = getPageContentWidth(
-    getDocumentPageSettings(document),
+  const candidates =
+    paragraphLocation.zone === "header"
+      ? [section.header, section.firstPageHeader, section.evenPageHeader]
+      : [section.footer, section.firstPageFooter, section.evenPageFooter];
+  return (
+    candidates.find(
+      (blocks): blocks is EditorBlockNode[] =>
+        Boolean(blocks && storyContainsParagraph(blocks, paragraphId)),
+    ) ?? null
   );
-  const columnWidths = resolveTableColumnWidthsPx(table, pageContentWidthPx);
+}
 
-  const entries = buildTableCellLayout(table);
-  const matched = entries.find(
+function resolveCellContentWidthPx(
+  table: EditorTableNode,
+  rowIndex: number,
+  cellIndex: number,
+  parentContentWidthPx: number,
+): { cell: EditorTableCellNode; width: number } | null {
+  const row = table.rows[rowIndex];
+  const cell = row?.cells[cellIndex];
+  if (!cell) return null;
+  if (cell.style?.noWrap) {
+    return { cell, width: NO_WRAP_MEASURE_WIDTH_PX };
+  }
+
+  const columnWidths = resolveTableColumnWidthsPx(table, parentContentWidthPx);
+  const matched = buildTableCellLayout(table).find(
     (entry): boolean =>
-      entry.rowIndex === tableLocation.rowIndex &&
-      entry.cellIndex === tableLocation.cellIndex,
+      entry.rowIndex === rowIndex && entry.cellIndex === cellIndex,
   );
   const visualCol = matched?.visualColumnIndex ?? 0;
   const colSpan = Math.max(1, matched?.colSpan ?? cell.colSpan ?? 1);
 
   let cellWidth = 0;
   for (
-    let i = visualCol;
-    i < Math.min(visualCol + colSpan, columnWidths.length);
-    i += 1
+    let index = visualCol;
+    index < Math.min(visualCol + colSpan, columnWidths.length);
+    index += 1
   ) {
-    cellWidth += columnWidths[i] ?? 0;
+    cellWidth += columnWidths[index] ?? 0;
   }
   if (cellWidth <= 0) return null;
 
   const horizontalChrome =
     resolveHorizontalCellBordersPx(cell) + resolveHorizontalCellPaddingPx(cell);
+  return {
+    cell,
+    width: Math.max(
+      MIN_TABLE_CELL_CONTENT_WIDTH_PX,
+      cellWidth - horizontalChrome,
+    ),
+  };
+}
 
-  return Math.max(
-    MIN_TABLE_CELL_CONTENT_WIDTH_PX,
-    cellWidth - horizontalChrome,
+/**
+ * Returns the inner content width (in CSS pixels) of the cell that contains the
+ * paragraph with the given id. For nested tables, each table is resolved
+ * relative to the content width of its parent cell rather than the page.
+ */
+export function getTableCellContentWidthForParagraph(
+  document: EditorDocument,
+  paragraphId: string,
+  activeSectionIndex: number,
+): number | null {
+  const tableLocation = findParagraphTablePathLocation(
+    document,
+    paragraphId,
+    activeSectionIndex,
   );
+  if (!tableLocation) return null;
+
+  let blocks = resolveParagraphStory(
+    document,
+    paragraphId,
+    activeSectionIndex,
+  );
+  if (!blocks) return null;
+
+  let availableWidth = getPageContentWidth(getDocumentPageSettings(document));
+  for (const segment of tableLocation.tablePath) {
+    const table = blocks[segment.tableBlockIndex];
+    if (!table || table.type !== "table") return null;
+    const resolved = resolveCellContentWidthPx(
+      table,
+      segment.rowIndex,
+      segment.cellIndex,
+      availableWidth,
+    );
+    if (!resolved) return null;
+    availableWidth = resolved.width;
+    blocks = resolved.cell.blocks;
+  }
+
+  return availableWidth;
 }
 
 export function getTableCellContentWidthForParagraphInState(
