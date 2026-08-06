@@ -1,12 +1,16 @@
 import { createSignal } from "solid-js";
-import type { EditorState } from "@/core/model.js";
+import type {
+  EditorBlockNode,
+  EditorDocument,
+  EditorState,
+  EditorTableNode,
+} from "@/core/model.js";
 import { moveBlockToPosition } from "@/core/commands/block.js";
 import { setActiveTableStyleValue } from "@/core/commands/table.js";
 import { PT_PER_PX } from "@/core/units.js";
 import {
-  findParagraphTableLocation,
-  getActiveSectionIndex,
-  getEditableBlocksForZone,
+  getBlockParagraphs,
+  getDocumentSections,
   type EditorPosition,
 } from "@/core/model.js";
 import {
@@ -15,6 +19,83 @@ import {
 } from "./animationFrame.js";
 
 let tableDragCursorOwner: object | null = null;
+
+interface LocatedTable {
+  table: EditorTableNode;
+  nested: boolean;
+  movableTopLevelStory: boolean;
+}
+
+function findTableInBlocks(
+  blocks: readonly EditorBlockNode[] | undefined,
+  tableId: string,
+  nested: boolean,
+  movableTopLevelStory: boolean,
+): LocatedTable | null {
+  if (!blocks) return null;
+  for (const block of blocks) {
+    if (block.type !== "table") continue;
+    if (block.id === tableId) {
+      return { table: block, nested, movableTopLevelStory };
+    }
+    for (const row of block.rows) {
+      for (const cell of row.cells) {
+        const found = findTableInBlocks(
+          cell.blocks,
+          tableId,
+          true,
+          false,
+        );
+        if (found) return found;
+      }
+    }
+  }
+  return null;
+}
+
+function findTableInDocument(
+  document: EditorDocument,
+  tableId: string,
+): LocatedTable | null {
+  for (const section of getDocumentSections(document)) {
+    for (const blocks of [section.blocks, section.header, section.footer]) {
+      const found = findTableInBlocks(blocks, tableId, false, true);
+      if (found) return found;
+    }
+    for (const blocks of [
+      section.firstPageHeader,
+      section.evenPageHeader,
+      section.firstPageFooter,
+      section.evenPageFooter,
+    ]) {
+      const found = findTableInBlocks(blocks, tableId, false, false);
+      if (found) return found;
+    }
+  }
+  for (const note of Object.values(document.footnotes?.items ?? {})) {
+    const found = findTableInBlocks(note.blocks, tableId, false, false);
+    if (found) return found;
+  }
+  for (const note of Object.values(document.endnotes?.items ?? {})) {
+    const found = findTableInBlocks(note.blocks, tableId, false, false);
+    if (found) return found;
+  }
+  return null;
+}
+
+function paragraphIsInsideTable(
+  document: EditorDocument,
+  paragraphId: string,
+  tableId: string,
+): boolean {
+  const located = findTableInDocument(document, tableId);
+  return Boolean(
+    located?.table &&
+      getBlockParagraphs(located.table).some(
+        (paragraph): boolean => paragraph.id === paragraphId,
+      ),
+  );
+}
 
 export interface TableDragOps {
   dragging: () => boolean;
@@ -115,27 +196,14 @@ function createEditorTableDragImpl(deps: {
       point.clientY,
     );
 
-    // Check if target is inside the dragged table
     const tableId = draggedTableInfo()?.tableId;
-    if (pos && tableId) {
-      const state = deps.state();
-      const location = findParagraphTableLocation(
-        state.document,
-        pos.paragraphId,
-        getActiveSectionIndex(state),
-      );
-      if (location) {
-        const blocks = getEditableBlocksForZone(state, location.zone);
-        const tableBlock = blocks[location.blockIndex];
-        if (
-          tableBlock &&
-          tableBlock.type === "table" &&
-          tableBlock.id === tableId
-        ) {
-          updateDropTarget(null);
-          return;
-        }
-      }
+    if (
+      pos &&
+      tableId &&
+      paragraphIsInsideTable(deps.state().document, pos.paragraphId, tableId)
+    ) {
+      updateDropTarget(null);
+      return;
     }
 
     updateDropTarget(pos);
@@ -167,21 +235,9 @@ function createEditorTableDragImpl(deps: {
 
       if (tableId) {
         deps.applyTransactionalState((current): EditorState => {
-          const findTable = ():
-            | ReturnType<typeof getEditableBlocksForZone>[number]
-            | undefined => {
-            for (const zone of ["main", "header", "footer"] as const) {
-              const blocks = getEditableBlocksForZone(current, zone);
-              const table = blocks.find(
-                (block): boolean =>
-                  block.type === "table" && block.id === tableId,
-              );
-              if (table) return table;
-            }
-            return undefined;
-          };
-          const table = findTable();
-          if (table?.type === "table" && table.style?.floating) {
+          const located = findTableInDocument(current.document, tableId);
+          const table = located?.table;
+          if (table?.style?.floating) {
             const floating = table.style.floating;
             return setActiveTableStyleValue(current, tableId, "floating", {
               ...floating,
@@ -194,6 +250,9 @@ function createEditorTableDragImpl(deps: {
               xAlign: undefined,
               yAlign: undefined,
             });
+          }
+          if (!located || located.nested || !located.movableTopLevelStory) {
+            return current;
           }
           return pos ? moveBlockToPosition(current, tableId, pos) : current;
         });
