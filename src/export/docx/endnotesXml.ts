@@ -12,8 +12,7 @@ import type {
   ExportBuildState,
   NumberingContext,
 } from "./docxTypes.js";
-import { serializeParagraphXml } from "./textXml.js";
-import { serializeTableXml } from "./tableXml.js";
+import { serializeBlocksXml } from "./textXml.js";
 import { OFFICE_REL_NS, WORD14_NS, WORD_NS } from "./xmlUtils.js";
 
 /**
@@ -152,18 +151,11 @@ export function buildEndnotesXml(
   const endnoteEntries = referenced
     .map((entry): string => {
       const augmentedBlocks = withInjectedEndnoteRef(entry.endnote.blocks);
-      const innerXml = augmentedBlocks
-        .map((block): string => {
-          if (block.type === "paragraph") {
-            return serializeParagraphXml(block, partContext, styles);
-          }
-          return serializeTableXml(block, (paragraph, cell): string =>
-            serializeParagraphXml(paragraph, partContext, styles, {
-              align: cell.style?.horizontalAlign,
-            }),
-          );
-        })
-        .join("");
+      const innerXml = serializeBlocksXml(
+        augmentedBlocks,
+        partContext,
+        styles,
+      );
       return `<w:endnote w:id="${entry.docxId}">${innerXml}</w:endnote>`;
     })
     .join("");
