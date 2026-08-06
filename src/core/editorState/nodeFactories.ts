@@ -109,7 +109,7 @@ export function createEditorParagraphFromRuns(
 }
 
 export function createEditorTableCell(
-  paragraphs: EditorParagraphNode[],
+  blocks: EditorBlockNode[],
   colSpan = 1,
   options?: {
     rowSpan?: number;
@@ -118,7 +118,7 @@ export function createEditorTableCell(
 ): EditorTableCellNode {
   const cell: EditorTableCellNode = {
     id: createEditorNodeId("table-cell"),
-    blocks: paragraphs.length > 0 ? paragraphs : [createEditorParagraph("")],
+    blocks: blocks.length > 0 ? blocks : [createEditorParagraph("")],
   };
   if (colSpan > 1) {
     cell.colSpan = colSpan;
