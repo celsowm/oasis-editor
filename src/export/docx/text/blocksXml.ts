@@ -19,6 +19,7 @@ import { serializeSdtPrXml } from "./sdtXml.js";
 import { serializeDropCapFrameParagraph } from "./dropCapXml.js";
 import {
   getEditorParagraphOoxmlAttributes,
+  getEditorTableOoxmlSource,
   getReusableEditorParagraphXml,
   getReusableEditorTableXml,
 } from "@/ooxml/word/sourceFragments.js";
@@ -155,6 +156,18 @@ function tableHasGeneratedBoundaryTokens(
   );
 }
 
+function tableSourceNeedsCanonicalRowAlignment(
+  table: Extract<EditorBlockNode, { type: "table" }>,
+): boolean {
+  const sourceXml = getEditorTableOoxmlSource(table)?.xml;
+  return Boolean(
+    sourceXml &&
+      /<w:trPr(?:\s|>)[\s\S]*?<w:jc\b[^>]*\bw:val="(?:start|end)"/.test(
+        sourceXml,
+      ),
+  );
+}
+
 function serializeTableCellBlockXml(
   block: EditorBlockNode,
   cell: EditorTableCellNode,
@@ -181,9 +194,11 @@ function serializeSingleBlockXml(
       const pageBreakXml = block.style?.pageBreakBefore
         ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
         : "";
-      const reusableTableXml = getReusableEditorTableXml(block, {
-        hasBoundaryTokens: tableHasGeneratedBoundaryTokens(block, context),
-      });
+      const reusableTableXml = tableSourceNeedsCanonicalRowAlignment(block)
+        ? undefined
+        : getReusableEditorTableXml(block, {
+            hasBoundaryTokens: tableHasGeneratedBoundaryTokens(block, context),
+          });
       return (
         pageBreakXml +
         (reusableTableXml ??
