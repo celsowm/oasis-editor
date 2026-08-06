@@ -81,18 +81,16 @@ export function updateNestedTablesInBlocks(
   blocks: EditorBlockNode[],
   updateTable: (table: EditorTableNode) => EditorTableNode,
 ): EditorBlockNode[] {
-  return blocks.map((block) => {
+  return blocks.map((block): EditorBlockNode => {
     if (block.type === "paragraph") return block;
+    const updatedTable = updateTable(block);
     return {
-      ...updateTable(block),
-      rows: block.rows.map((row) => ({
+      ...updatedTable,
+      rows: updatedTable.rows.map((row) => ({
         ...row,
         cells: row.cells.map((cell) => ({
           ...cell,
-          blocks: updateNestedTablesInBlocks(
-            cell.blocks,
-            updateTable,
-          ) as EditorParagraphNode[],
+          blocks: updateNestedTablesInBlocks(cell.blocks, updateTable),
         })),
       })),
     };
