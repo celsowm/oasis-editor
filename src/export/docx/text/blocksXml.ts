@@ -21,6 +21,7 @@ import {
   getReusableEditorParagraphXml,
 } from "@/ooxml/word/sourceFragments.js";
 import { mergeParagraphPropertiesOoxmlSource } from "./sourceParagraphPropertiesXml.js";
+import { overlayEditorParagraphOnOoxmlSource } from "./sourceParagraphXml.js";
 
 /**
  * A run whose text can be safely sliced when a bookmark boundary falls inside
@@ -242,26 +243,27 @@ export function serializeParagraphXml(
     return reusableParagraphXml;
   }
 
-  const runsXml =
-    boundaryTokens.length > 0
-      ? serializeRunsWithBoundaries(
-          runs as EditorTextRun[],
-          boundaryTokens,
-          context,
-          paragraph.style?.styleId,
-          styles,
+  const serializedRunXml =
+    boundaryTokens.length === 0
+      ? runs.map((run): string =>
+          serializeRunWithRelationships(
+            run,
+            context,
+            paragraph.style?.styleId,
+            styles,
+            serializeBlocksXml,
+          ),
         )
-      : runs
-          .map((run): string =>
-            serializeRunWithRelationships(
-              run,
-              context,
-              paragraph.style?.styleId,
-              styles,
-              serializeBlocksXml,
-            ),
-          )
-          .join("");
+      : undefined;
+  const runsXml = serializedRunXml
+    ? serializedRunXml.join("")
+    : serializeRunsWithBoundaries(
+        runs as EditorTextRun[],
+        boundaryTokens,
+        context,
+        paragraph.style?.styleId,
+        styles,
+      );
   const sourceAttributes = getEditorParagraphOoxmlAttributes(paragraph);
   const paragraphAttributes = sourceAttributes ? ` ${sourceAttributes}` : "";
   const generatedParagraphProperties = serializeParagraphProperties(
@@ -275,5 +277,21 @@ export function serializeParagraphXml(
     generatedParagraphProperties,
     Boolean(overrides),
   );
+
+  if (serializedRunXml) {
+    const overlaidParagraphXml = overlayEditorParagraphOnOoxmlSource(
+      paragraph,
+      paragraphProperties,
+      serializedRunXml,
+      {
+        hasOverrides: Boolean(overrides),
+        hasBoundaryTokens: false,
+      },
+    );
+    if (overlaidParagraphXml) {
+      return overlaidParagraphXml;
+    }
+  }
+
   return `${dropCapFrame}<w:p${paragraphAttributes}>${paragraphProperties}${runsXml}</w:p>`;
 }
