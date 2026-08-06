@@ -12,6 +12,7 @@ import {
   createEditorTableCell,
   createEditorTableRow,
 } from "@/core/editorState.js";
+import { setEditorTableOoxmlSource } from "@/ooxml/word/sourceFragments.js";
 import {
   WORD_NS,
   getChildrenByTagNameNS,
@@ -296,5 +297,9 @@ export async function parseTableNode(
       previous,
     };
   }
+  setEditorTableOoxmlSource(
+    table,
+    new XMLSerializer().serializeToString(tableNode),
+  );
   return table;
 }
