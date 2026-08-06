@@ -124,7 +124,7 @@ export type EditorTextRun =
     })
   /**
    * Inline marker of an endnote whose body lives in
-   * `EditorDocument.endnotes.items[endnoteReference.footnoteId]`.
+   * `EditorDocument.endnotes.items[endnoteReference.endnoteId]`.
    */
   | (EditorRunBase & {
       kind: "endnoteReference";
