@@ -2,6 +2,7 @@ import {
   importDocxToEditorDocument,
   type DocxImportStage,
 } from "./importDocxToEditorDocument.js";
+import { attachDocxSourcePackage } from "./opc/sourcePackage.js";
 
 type ImportWorkerRequest = {
   type: "import-docx";
@@ -51,6 +52,7 @@ globalThis.addEventListener(
           post({ type: "progress", id: message.id, stage, progress });
         },
       });
+      await attachDocxSourcePackage(document, message.buffer);
       post({ type: "done", id: message.id, document });
     } catch (error) {
       post({

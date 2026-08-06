@@ -108,6 +108,15 @@ export type {
   EditorCommentAnchor,
   EditorComments,
 } from "./types/documentComments.js";
+export type {
+  EditorOpcPartKind,
+  EditorOpcPartEncoding,
+  EditorOpcRelationship,
+  EditorOpcContentTypes,
+  EditorOpcPart,
+  EditorDocxDiagnostic,
+  EditorDocxSourcePackage,
+} from "./types/docxSourcePackage.js";
 
 export type {
   EditorPageMargins,

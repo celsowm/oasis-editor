@@ -3,6 +3,7 @@ import {
   importDocxToEditorDocument,
   type DocxImportStage,
 } from "./importDocxToEditorDocument.js";
+import { attachDocxSourcePackage } from "./opc/sourcePackage.js";
 
 interface ImportDocxInWorkerOptions {
   onProgress?: (stage: DocxImportStage, progress?: number) => void;
@@ -32,12 +33,13 @@ function canUseDocxWorker(): boolean {
   return typeof Worker !== "undefined" && typeof URL !== "undefined";
 }
 
-export function importDocxInWorker(
+export async function importDocxInWorker(
   buffer: ArrayBuffer,
   options: ImportDocxInWorkerOptions = {},
 ): Promise<EditorDocument> {
   if (!canUseDocxWorker()) {
-    return importDocxToEditorDocument(buffer, options);
+    const document = await importDocxToEditorDocument(buffer, options);
+    return attachDocxSourcePackage(document, buffer);
   }
 
   const requestId = nextRequestId;

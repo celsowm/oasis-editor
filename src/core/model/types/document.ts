@@ -14,6 +14,7 @@ import type { EditorEndnote } from "./documentEndnotes.js";
 import type { EditorBookmarks } from "./documentBookmarks.js";
 import type { EditorComments } from "./documentComments.js";
 import type { EditorNamedStyle } from "./styles.js";
+import type { EditorDocxSourcePackage } from "./docxSourcePackage.js";
 
 export interface EditorPageMargins {
   top: number;
@@ -174,6 +175,12 @@ export interface EditorDocument {
     /** `w:doNotHyphenateCaps`: do not hyphenate all-caps words. */
     doNotHyphenateCaps?: boolean;
   };
+  /**
+   * Original OPC package snapshot for an imported DOCX. The object is shared
+   * across editor-state clones and is not traversed by layout or hot mutation
+   * paths. It is the preservation source for unsupported package parts.
+   */
+  sourcePackage?: EditorDocxSourcePackage;
   /**
    * Out-of-band asset registry. Image runs reference entries here using
    * `src = "asset:<id>"`. The map itself is treated as append-only and is
