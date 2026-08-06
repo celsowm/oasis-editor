@@ -210,6 +210,3 @@ export type { DocContext, NumberingContext, ExportBuildState };
 // Avoid an unused-import warning for getDocumentSections when tree-shaking
 // keeps the file as-is.
 void getDocumentSections;
-// These parameters remain part of the stable builder contract.
-void numberingContext;
-void state;
