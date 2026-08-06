@@ -1,0 +1,100 @@
+name: Temporary OOXML verification round 2
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  verify:
+    if: github.event.issue.title == 'OOXML verification trigger 2026-08-06 round 2'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Run checks and capture logs
+        shell: bash
+        run: |
+          set +e
+          mkdir -p .ci-logs
+
+          run_check() {
+            local name="$1"
+            shift
+            "$@" > ".ci-logs/${name}.log" 2>&1
+            echo "$?" > ".ci-logs/${name}.code"
+          }
+
+          run_check install npm ci
+          if [ "$(cat .ci-logs/install.code)" -eq 0 ]; then
+            run_check typecheck npm run typecheck
+            run_check focused-tests npx vitest run \
+              tests/vitest/__tests__/export/docxInlineOoxmlPreservation.test.ts \
+              tests/vitest/__tests__/export/docxNumberingOoxmlMetadata.test.ts \
+              tests/vitest/__tests__/export/docxWholeParagraphSource.test.ts \
+              tests/vitest/__tests__/import/markupCompatibility.test.ts \
+              tests/vitest/__tests__/ooxml/sourceFragments.test.ts \
+              tests/vitest/__tests__/import/docxImport.runStyles.test.ts \
+              tests/vitest/__tests__/import/docxSourcePackage.test.ts
+            run_check full-tests npm test
+            run_check build-app npm run build:app
+            run_check build-lib npm run build:lib
+            run_check playwright-install npx playwright install --with-deps chromium
+            if [ "$(cat .ci-logs/playwright-install.code)" -eq 0 ]; then
+              run_check smoke npm run test:smoke
+            else
+              echo 125 > .ci-logs/smoke.code
+              echo "Skipped because Chromium installation failed." > .ci-logs/smoke.log
+            fi
+          else
+            for name in typecheck focused-tests full-tests build-app build-lib playwright-install smoke; do
+              echo 125 > ".ci-logs/${name}.code"
+              echo "Skipped because npm ci failed." > ".ci-logs/${name}.log"
+            done
+          fi
+
+      - name: Comment verification result
+        if: always()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const checks = ['install', 'typecheck', 'focused-tests', 'full-tests', 'build-app', 'build-lib', 'playwright-install', 'smoke'];
+            const sections = [];
+            let failed = false;
+            for (const name of checks) {
+              const codePath = `.ci-logs/${name}.code`;
+              const logPath = `.ci-logs/${name}.log`;
+              const code = fs.existsSync(codePath) ? Number(fs.readFileSync(codePath, 'utf8').trim()) : 999;
+              const status = code === 0 ? 'PASS' : code === 125 ? 'SKIPPED' : 'FAIL';
+              if (status === 'FAIL') failed = true;
+              const raw = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : 'Log unavailable.';
+              const tail = raw.split('\n').slice(-120).join('\n');
+              sections.push(`## ${name}: ${status} (exit ${code})\n\n\`\`\`text\n${tail}\n\`\`\``);
+            }
+            const body = [
+              '# OOXML verification result — round 2',
+              '',
+              `- Commit: \`${context.sha}\``,
+              `- Overall: **${failed ? 'FAIL' : 'PASS'}**`,
+              '',
+              ...sections,
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body.slice(0, 65000),
+            });
