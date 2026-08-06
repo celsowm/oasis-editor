@@ -160,7 +160,7 @@ export function cloneBlocks(blocks: EditorBlockNode[]): EditorBlockNode[] {
                         style: previousCell.style
                           ? { ...previousCell.style }
                           : undefined,
-                        blocks: cloneParagraphs(previousCell.blocks),
+                        blocks: cloneBlocks(previousCell.blocks),
                       }),
                     ),
                   }
@@ -181,7 +181,7 @@ export function cloneBlocks(blocks: EditorBlockNode[]): EditorBlockNode[] {
                       : undefined,
                   }
                 : undefined,
-              blocks: cloneParagraphs(cell.blocks),
+              blocks: cloneBlocks(cell.blocks),
             })),
           })),
         };
