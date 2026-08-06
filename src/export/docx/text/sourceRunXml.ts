@@ -203,6 +203,28 @@ function patchTextRunSourceXml(
   return new XMLSerializer().serializeToString(sourceRun);
 }
 
+function isNamespaceDeclaration(attribute: Attr): boolean {
+  return (
+    attribute.namespaceURI === XMLNS_NS ||
+    attribute.prefix === "xmlns" ||
+    attribute.name === "xmlns"
+  );
+}
+
+function hasPreservableAttributes(element: XmlElement): boolean {
+  for (let index = 0; index < element.attributes.length; index += 1) {
+    const attribute = element.attributes[index];
+    if (
+      attribute &&
+      !isNamespaceDeclaration(attribute) &&
+      attribute.namespaceURI !== OFFICE_REL_NS
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function copySourceRunAttributes(
   sourceRun: XmlElement,
   generatedRun: XmlElement,
@@ -307,6 +329,27 @@ function isGeneratedRunContent(element: XmlElement): boolean {
   );
 }
 
+function hasPreservableSourceRunContent(sourceRun: XmlElement): boolean {
+  if (hasPreservableAttributes(sourceRun)) {
+    return true;
+  }
+
+  const sourceProperties = directChild(sourceRun, WORD_NS, "rPr");
+  if (
+    sourceProperties &&
+    (hasPreservableAttributes(sourceProperties) ||
+      directElementChildren(sourceProperties).some(
+        (child): boolean => !isModeledRunProperty(child),
+      ))
+  ) {
+    return true;
+  }
+
+  return directElementChildren(sourceRun).some(
+    (child): boolean => !isGeneratedRunContent(child),
+  );
+}
+
 function mergeSourceRunChildren(
   sourceRun: XmlElement,
   generatedRun: XmlElement,
@@ -377,8 +420,12 @@ export function mergeRunOoxmlSourceIntoGeneratedXml(
   }
 
   const sourceRun = parseSingleRunXml(source.xml);
+  if (!sourceRun || !hasPreservableSourceRunContent(sourceRun)) {
+    return generatedXml;
+  }
+
   const generatedRun = parseGeneratedSingleRunXml(generatedXml);
-  if (!sourceRun || !generatedRun) {
+  if (!generatedRun) {
     return generatedXml;
   }
 
@@ -386,6 +433,5 @@ export function mergeRunOoxmlSourceIntoGeneratedXml(
   mergeSourceRunProperties(sourceRun, generatedRun);
   mergeSourceRunChildren(sourceRun, generatedRun);
 
-  void XMLNS_NS;
   return new XMLSerializer().serializeToString(generatedRun);
 }
