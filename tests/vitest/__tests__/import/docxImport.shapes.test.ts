@@ -87,7 +87,7 @@ describe("DOCX import: DrawingML preset shapes (wps:wsp)", () => {
     const xml =
       (await archive.file("word/document.xml")?.async("string")) ?? "";
 
-    expect((xml.match(/<wps:wsp>/g) ?? []).length).toBe(187);
+    expect((xml.match(/<wps:wsp(?:\s|>)/g) ?? []).length).toBe(187);
     expect(xml).not.toContain("<w:txbxContent>");
     expect(xml).toContain('prst="line"');
     expect(xml).toContain('prst="wedgeRoundRectCallout"');
