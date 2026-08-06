@@ -35,17 +35,44 @@ import {
 } from "./tableCellGeometry.js";
 
 const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
+const NESTED_TABLE_PARAGRAPH_ESTIMATE_PX = 20;
+const NESTED_TABLE_CELL_PADDING_ESTIMATE_PX = 8;
+
+function firstCellParagraph(
+  cell: EditorTableCellNode,
+): EditorParagraphNode | undefined {
+  return cell.blocks.find(
+    (block): block is EditorParagraphNode => block.type === "paragraph",
+  );
+}
 
 function resolveCellVerticalMode(
   cell: EditorTableCellNode,
 ): VerticalRenderMode {
   const direction =
-    cell.style?.textDirection ?? cell.blocks[0]?.style?.textDirection ?? null;
+    cell.style?.textDirection ?? firstCellParagraph(cell)?.style?.textDirection ?? null;
   return resolveVerticalMode(direction);
 }
 
-function hasNestedTable(_cell: EditorTableCellNode): boolean {
-  return false;
+function hasNestedTable(cell: EditorTableCellNode): boolean {
+  return cell.blocks.some((block): boolean => block.type === "table");
+}
+
+function estimateNestedTableHeight(table: EditorTableNode): number {
+  return table.rows.reduce((tableHeight, row): number => {
+    const rowHeight = Math.max(
+      NESTED_TABLE_PARAGRAPH_ESTIMATE_PX,
+      ...row.cells.map((cell): number =>
+        cell.blocks.reduce((height, block): number => {
+          if (block.type === "table") {
+            return height + estimateNestedTableHeight(block);
+          }
+          return height + NESTED_TABLE_PARAGRAPH_ESTIMATE_PX;
+        }, NESTED_TABLE_CELL_PADDING_ESTIMATE_PX),
+      ),
+    );
+    return tableHeight + rowHeight;
+  }, NESTED_TABLE_CELL_PADDING_ESTIMATE_PX);
 }
 
 /** Horizontal extent of a single laid-out line, from its first to last caret. */
@@ -140,13 +167,14 @@ export function prepareCells(options: {
       const cell: EditorTableCellNode = {
         ...sourceCell,
         style: formatting.cellStyle,
-        blocks: sourceCell.blocks.map(
-          (paragraph): EditorParagraphNode =>
-            resolveCachedTableCellParagraph(
-              paragraph,
-              formatting,
-              state.document.styles,
-            ),
+        blocks: sourceCell.blocks.map((block) =>
+          block.type === "paragraph"
+            ? resolveCachedTableCellParagraph(
+                block,
+                formatting,
+                state.document.styles,
+              )
+            : block,
         ),
       };
       const effectiveRow = formatting.rowStyle;
@@ -229,6 +257,10 @@ export function prepareCells(options: {
       let contentNaturalHeightPx = 0;
 
       for (const original of cell.blocks) {
+        if (original.type === "table") {
+          contentNaturalHeightPx += estimateNestedTableHeight(original);
+          continue;
+        }
         let paragraph = fitImagesToCellWidth(original, contentWidthPx);
 
         if (isFitText) {
@@ -367,12 +399,14 @@ export function prepareCells(options: {
       }
 
       if (cell.style?.hideMark) {
-        const allEmpty = cell.blocks.every((para): boolean =>
-          para.runs.every(
-            (run): boolean =>
-              (run.kind === "text" || run.kind === undefined) &&
-              (!run.text || run.text.length === 0),
-          ),
+        const allEmpty = cell.blocks.every(
+          (block): boolean =>
+            block.type === "paragraph" &&
+            block.runs.every(
+              (run): boolean =>
+                (run.kind === "text" || run.kind === undefined) &&
+                (!run.text || run.text.length === 0),
+            ),
         );
         if (allEmpty) contentNaturalHeightPx = 0;
       }
