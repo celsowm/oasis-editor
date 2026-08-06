@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   verify:
-    if: github.event.issue.title == 'OOXML nested table verification 2026-08-06 round 4'
+    if: github.event.issue.title == 'OOXML nested table verification 2026-08-06 round 5'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main
@@ -79,7 +79,7 @@ jobs:
               sections.push(`## ${name}: ${status} (exit ${code})\n\n\`\`\`text\n${tail}\n\`\`\``);
             }
             const body = [
-              '# OOXML nested table verification result — round 4',
+              '# OOXML nested table verification result — round 5',
               '',
               `- Commit: \`${context.sha}\``,
               `- Overall: **${failed ? 'FAIL' : 'PASS'}**`,
