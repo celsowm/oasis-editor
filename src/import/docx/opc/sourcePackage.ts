@@ -161,12 +161,30 @@ export async function captureDocxSourcePackage(
   };
 }
 
+export async function attachDocxRebuiltPartBaseline(
+  document: EditorDocument,
+  sourcePackage: EditorDocxSourcePackage,
+): Promise<void> {
+  try {
+    sourcePackage.rebuiltPartHashes =
+      await captureRebuiltDocxPartHashes(document);
+  } catch (error) {
+    (sourcePackage.diagnostics ??= []).push({
+      level: "warning",
+      code: "rebuilt-baseline-unavailable",
+      message: `The imported document could not be fingerprinted for granular source-part preservation: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    });
+  }
+}
+
 export async function attachDocxSourcePackage(
   document: EditorDocument,
   buffer: ArrayBuffer,
 ): Promise<EditorDocument> {
   const sourcePackage = await captureDocxSourcePackage(buffer);
-  sourcePackage.rebuiltPartHashes = await captureRebuiltDocxPartHashes(document);
+  await attachDocxRebuiltPartBaseline(document, sourcePackage);
   document.sourcePackage = sourcePackage;
   return document;
 }
