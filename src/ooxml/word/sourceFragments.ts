@@ -26,6 +26,17 @@ type EditorParagraphWithOoxmlSource = EditorParagraphNode & {
   ooxmlSource?: EditorOoxmlParagraphSource;
 };
 
+function ownsEditorNodeIdentity(value: Record<string, unknown>): boolean {
+  return (
+    typeof value.kind === "string" ||
+    typeof value.type === "string" ||
+    Array.isArray(value.runs) ||
+    Array.isArray(value.rows) ||
+    Array.isArray(value.cells) ||
+    Array.isArray(value.blocks)
+  );
+}
+
 function normalizeSemanticValue(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(normalizeSemanticValue);
@@ -34,13 +45,15 @@ function normalizeSemanticValue(value: unknown): unknown {
     return value;
   }
 
+  const record = value as Record<string, unknown>;
+  const omitNodeId = ownsEditorNodeIdentity(record);
   const normalized: Record<string, unknown> = {};
-  for (const [key, child] of Object.entries(value).sort(([left], [right]) =>
+  for (const [key, child] of Object.entries(record).sort(([left], [right]) =>
     left.localeCompare(right),
   )) {
     if (
       child === undefined ||
-      key === "id" ||
+      (key === "id" && omitNodeId) ||
       key === "ooxmlSource" ||
       key.startsWith("__")
     ) {
