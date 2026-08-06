@@ -61,7 +61,10 @@ function sourcePackage(
     "custom/main.xml",
   );
   const firstSection = `<w:p><w:pPr><w:sectPr><w:headerReference w:type="default" r:id="${headerRelationshipId}"/></w:sectPr></w:pPr></w:p>`;
-  const finalSection = `<w:sectPr${sectionCount === 1 ? `><w:headerReference w:type="default" r:id="${headerRelationshipId}"/></w:sectPr>` : "/>"}`;
+  const finalSection =
+    sectionCount === 1
+      ? `<w:sectPr><w:headerReference w:type="default" r:id="${headerRelationshipId}"/></w:sectPr>`
+      : "<w:sectPr/>";
   const mainXml = `<w:document xmlns:w="${WORD_NS}" xmlns:r="${OFFICE_REL_NS}"><w:body>${sectionCount === 2 ? firstSection : ""}${finalSection}</w:body></w:document>`;
   const contentTypesXml = `<Types xmlns="${CONTENT_TYPES_NS}"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/custom/main.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/custom/parts/source-header.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/></Types>`;
   const mainRelationshipsXml = relationshipsXml([
