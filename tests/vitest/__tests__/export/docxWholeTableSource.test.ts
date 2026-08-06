@@ -53,7 +53,11 @@ describe("whole-table OOXML source preservation", () => {
     if (!table || table.type !== "table") {
       throw new Error("Expected an imported table.");
     }
-    table.rows[0]!.cells[0]!.blocks[0]!.runs[0]!.text = "Edited cell";
+    const paragraph = table.rows[0]?.cells[0]?.blocks[0];
+    if (!paragraph || paragraph.type !== "paragraph") {
+      throw new Error("Expected an imported cell paragraph.");
+    }
+    paragraph.runs[0]!.text = "Edited cell";
 
     const xml = await exportedDocumentXml(document);
     expect(xml).toContain("Edited cell");
