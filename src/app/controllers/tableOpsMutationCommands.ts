@@ -1,15 +1,16 @@
 import { cloneBlock } from "@/core/cloneState.js";
 import { createEditorDocument } from "@/core/editorState.js";
 import {
-  findParagraphTableLocation,
+  findParagraphTablePathLocation,
   getActiveSectionIndex,
-  getDocumentParagraphs,
   getDocumentSectionsCanonical,
   paragraphOffsetToPosition,
+  resolveTablePath,
   type EditorBlockNode,
   type EditorEditingZone,
   type EditorParagraphNode,
   type EditorState,
+  type EditorTableCellNode,
   type EditorTableNode,
 } from "@/core/model.js";
 
@@ -43,6 +44,66 @@ export const updateBlocksInCurrentSection = (
   };
 };
 
+type TablePathLocation = NonNullable<
+  ReturnType<typeof findParagraphTablePathLocation>
+>;
+
+function normalizeInnermostLocation(
+  location: TablePathLocation,
+): TablePathLocation {
+  const innermost = location.tablePath[location.tablePath.length - 1];
+  return innermost
+    ? {
+        ...location,
+        rowIndex: innermost.rowIndex,
+        cellIndex: innermost.cellIndex,
+      }
+    : location;
+}
+
+export interface TableLocationMutation {
+  tableBlock: EditorTableNode;
+  targetCell: EditorTableCellNode;
+  location: TablePathLocation;
+  targetBlocks: EditorBlockNode[];
+}
+
+/**
+ * Clones only the top-level table that owns `location.tablePath`, then resolves
+ * the cloned path to the innermost table and active cell. All mutation callers
+ * therefore operate on the intended nested table while unrelated document
+ * blocks retain structural sharing.
+ */
+export function resolveTablePathMutation(
+  current: EditorState,
+  getTargetBlocks: (
+    state: EditorState,
+    zone: EditorEditingZone,
+  ) => EditorBlockNode[],
+  location: TablePathLocation,
+): TableLocationMutation | null {
+  const rootSegment = location.tablePath[0];
+  if (!rootSegment) return null;
+
+  const sourceBlocks = getTargetBlocks(current, location.zone);
+  const sourceRoot = sourceBlocks[rootSegment.tableBlockIndex];
+  if (!sourceRoot || sourceRoot.type !== "table") return null;
+
+  const targetBlocks = [...sourceBlocks];
+  targetBlocks[rootSegment.tableBlockIndex] = cloneBlock(sourceRoot);
+
+  const resolvedPath = resolveTablePath(targetBlocks, location.tablePath);
+  const resolvedTarget = resolvedPath?.[resolvedPath.length - 1];
+  if (!resolvedTarget) return null;
+
+  return {
+    tableBlock: resolvedTarget.table,
+    targetCell: resolvedTarget.cell,
+    location: normalizeInnermostLocation(location),
+    targetBlocks,
+  };
+}
+
 export const applyTableAwareParagraphEdit = (
   current: EditorState,
   getTargetBlocks: (
@@ -51,7 +112,7 @@ export const applyTableAwareParagraphEdit = (
   ) => EditorBlockNode[],
   edit: (tempState: EditorState) => EditorState,
 ): EditorState => {
-  const location = findParagraphTableLocation(
+  const location = findParagraphTablePathLocation(
     current.document,
     current.selection.focus.paragraphId,
     getActiveSectionIndex(current),
@@ -63,30 +124,17 @@ export const applyTableAwareParagraphEdit = (
     return edit(current);
   }
 
-  const zone = location.zone;
-  const currentBlocks = getTargetBlocks(current, zone);
-  const clonedTable = cloneBlock(
-    currentBlocks[location.blockIndex],
-  ) as EditorTableNode;
-  if (!clonedTable || clonedTable.type !== "table") {
-    return edit(current);
-  }
-  const nextBlocks = currentBlocks.map(
-    (block, i): EditorBlockNode =>
-      i === location.blockIndex ? clonedTable : block,
+  const mutation = resolveTablePathMutation(
+    current,
+    getTargetBlocks,
+    location,
   );
-  const tableBlock = clonedTable;
-
-  const targetCell =
-    tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
-  if (!targetCell) {
-    return edit(current);
-  }
+  if (!mutation) return edit(current);
 
   const tempState: EditorState = {
     ...current,
     document: createEditorDocument(
-      targetCell.blocks,
+      mutation.targetCell.blocks,
       undefined,
       undefined,
       undefined,
@@ -99,27 +147,24 @@ export const applyTableAwareParagraphEdit = (
     },
   };
   const tempResult = edit(tempState);
-  const replacementParagraphs = getDocumentParagraphs(
-    tempResult.document,
-  ).filter((block): block is EditorParagraphNode => block.type === "paragraph");
+  const replacementBlocks =
+    getDocumentSectionsCanonical(tempResult.document)[0]?.blocks ?? [];
 
-  targetCell.blocks.splice(
+  mutation.targetCell.blocks.splice(
     0,
-    targetCell.blocks.length,
-    ...replacementParagraphs,
+    mutation.targetCell.blocks.length,
+    ...replacementBlocks,
   );
-  const nextState = updateBlocksInCurrentSection(current, nextBlocks, zone);
+  const nextState = updateBlocksInCurrentSection(
+    current,
+    mutation.targetBlocks,
+    location.zone,
+  );
   return {
     ...nextState,
     selection: tempResult.selection,
   };
 };
-
-export interface TableLocationMutation {
-  tableBlock: EditorTableNode;
-  location: NonNullable<ReturnType<typeof findParagraphTableLocation>>;
-  targetBlocks: EditorBlockNode[];
-}
 
 export function resolveLocationTableMutation(
   current: EditorState,
@@ -128,16 +173,14 @@ export function resolveLocationTableMutation(
     zone: EditorEditingZone,
   ) => EditorBlockNode[],
 ): TableLocationMutation | null {
-  const location = findParagraphTableLocation(
+  const location = findParagraphTablePathLocation(
     current.document,
     current.selection.focus.paragraphId,
     getActiveSectionIndex(current),
   );
-  if (!location) return null;
-  const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
-  const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-  if (!tableBlock || tableBlock.type !== "table") return null;
-  return { tableBlock, location, targetBlocks };
+  return location
+    ? resolveTablePathMutation(current, getTargetBlocks, location)
+    : null;
 }
 
 export function commitTableMutation(
