@@ -19,6 +19,7 @@ import { serializeDropCapFrameParagraph } from "./dropCapXml.js";
 import {
   getEditorParagraphOoxmlAttributes,
   getReusableEditorParagraphXml,
+  getReusableEditorTableXml,
 } from "@/ooxml/word/sourceFragments.js";
 import { mergeParagraphPropertiesOoxmlSource } from "./sourceParagraphPropertiesXml.js";
 import { overlayEditorParagraphOnOoxmlSource } from "./sourceParagraphXml.js";
@@ -123,6 +124,25 @@ function serializeRunsWithBoundaries(
   return out;
 }
 
+function tableHasGeneratedBoundaryTokens(
+  table: Extract<EditorBlockNode, { type: "table" }>,
+  context: DocContext,
+): boolean {
+  for (const row of table.rows) {
+    for (const cell of row.cells) {
+      for (const paragraph of cell.blocks) {
+        if (
+          context.bookmarkEventsByParagraph?.has(paragraph.id) ||
+          context.commentEventsByParagraph?.has(paragraph.id)
+        ) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 function serializeSingleBlockXml(
   block: EditorBlockNode,
   context: DocContext,
@@ -135,13 +155,17 @@ function serializeSingleBlockXml(
       const pageBreakXml = block.style?.pageBreakBefore
         ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
         : "";
+      const reusableTableXml = getReusableEditorTableXml(block, {
+        hasBoundaryTokens: tableHasGeneratedBoundaryTokens(block, context),
+      });
       return (
         pageBreakXml +
-        serializeTableXml(block, (paragraph, cell): string =>
-          serializeParagraphXml(paragraph, context, styles, {
-            align: cell.style?.horizontalAlign,
-          }),
-        )
+        (reusableTableXml ??
+          serializeTableXml(block, (paragraph, cell): string =>
+            serializeParagraphXml(paragraph, context, styles, {
+              align: cell.style?.horizontalAlign,
+            }),
+          ))
       );
     }
     default:
