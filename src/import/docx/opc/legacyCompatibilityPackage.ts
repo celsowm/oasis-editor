@@ -43,10 +43,6 @@ function aliasPath(sourcePath: string): string {
   return `${ALIAS_ROOT}/${sourcePath}`;
 }
 
-function importerTarget(sourcePath: string): string {
-  return `__oasis_source__/${sourcePath}`;
-}
-
 function rewriteRelationshipsForImporter(
   relationships: EditorOpcRelationship[] | undefined,
 ): EditorOpcRelationship[] {
@@ -62,7 +58,9 @@ function rewriteRelationshipsForImporter(
     }
     return {
       ...relationship,
-      target: importerTarget(relationship.resolvedTarget),
+      // Absolute package paths prevent a nested alias (header, note, text box,
+      // etc.) from resolving the temporary prefix relative to itself twice.
+      target: `/${aliasPath(relationship.resolvedTarget)}`,
       resolvedTarget: undefined,
     };
   });
