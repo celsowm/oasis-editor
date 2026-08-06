@@ -16,6 +16,7 @@ import {
   serializeOpcContentTypes,
   serializeOpcRelationships,
 } from "@/ooxml/opc/packageXml.js";
+import { hashDocxPartBytes } from "./rebuiltPartHashes.js";
 
 const OFFICE_DOCUMENT_RELATIONSHIP_SUFFIX = "/officeDocument";
 
@@ -294,12 +295,26 @@ function writeSourcePart(
   }
 }
 
+function canKeepSourcePartUntouched(
+  sourcePackage: EditorDocxSourcePackage,
+  rebuiltPath: string,
+  actualPath: string,
+  rebuiltBytes: Uint8Array,
+): boolean {
+  const baselineHash = sourcePackage.rebuiltPartHashes?.[rebuiltPath];
+  return Boolean(
+    baselineHash &&
+      sourcePackage.parts[actualPath] &&
+      baselineHash === hashDocxPartBytes(rebuiltBytes),
+  );
+}
+
 /**
- * Clones the imported package and overlays the freshly rebuilt Oasis parts.
- * Unknown source parts remain untouched. Content types and relationship parts
- * are merged instead of blindly replaced so unrelated package features survive.
- * Relationship-discovered source paths remain authoritative: rebuilt parts are
- * relocated to those paths and their internal targets are rebased accordingly.
+ * Clones the imported package and overlays only changed freshly rebuilt Oasis
+ * parts. Unknown source parts remain untouched. Content types and relationship
+ * parts are merged instead of blindly replaced so unrelated package features
+ * survive. Relationship-discovered source paths remain authoritative: rebuilt
+ * parts are relocated to those paths and their internal targets are rebased.
  */
 export async function patchRebuiltDocxWithSourcePackage(
   document: EditorDocument,
@@ -358,7 +373,18 @@ export async function patchRebuiltDocxWithSourcePackage(
       continue;
     }
 
-    output.file(actualPath, await entry.async("uint8array"));
+    const rebuiltBytes = await entry.async("uint8array");
+    if (
+      canKeepSourcePartUntouched(
+        sourcePackage,
+        path,
+        actualPath,
+        rebuiltBytes,
+      )
+    ) {
+      continue;
+    }
+    output.file(actualPath, rebuiltBytes);
   }
 
   if (rebuiltContentTypesXml) {
