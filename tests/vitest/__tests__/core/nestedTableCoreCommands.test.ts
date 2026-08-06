@@ -7,10 +7,14 @@ import {
   createEditorTableCell,
   createEditorTableRow,
 } from "@/core/editorState.js";
-import { distributeSelectedTableColumns } from "@/core/commands/table/tableColumnCommands.js";
+import {
+  distributeSelectedTableColumns,
+  setTableColumnWidths,
+} from "@/core/commands/table/tableColumnCommands.js";
 import {
   setSelectedTableRowHeader,
   setSelectedTableRowStyleValue,
+  setTableRowHeight,
 } from "@/core/commands/table/tableRowCommands.js";
 import {
   getDocumentSectionsCanonical,
@@ -103,5 +107,26 @@ describe("nested core table commands", () => {
     expect(inner.rows[0]?.cells[1]?.style?.width).toBe(120);
     expect(outer.gridCols).toBeUndefined();
     expect(outer.rows[0]?.cells[0]?.style?.width).toBeUndefined();
+  });
+
+  it("resizes rows and columns by the nested table id", () => {
+    const { state, innerId } = fixture();
+    const resizedRow = setTableRowHeight(state, innerId, 1, 48);
+    const resized = setTableColumnWidths(
+      resizedRow,
+      innerId,
+      { 0: 90, 1: 150 },
+      240,
+    );
+    const { outer, inner } = tables(resized);
+
+    expect(inner.rows[1]?.style?.height).toBe(48);
+    expect(inner.gridCols).toEqual([90, 150]);
+    expect(inner.rows[0]?.cells[0]?.style?.width).toBe(90);
+    expect(inner.rows[0]?.cells[1]?.style?.width).toBe(150);
+    expect(inner.style?.width).toBe(240);
+    expect(outer.rows[0]?.style?.height).toBeUndefined();
+    expect(outer.gridCols).toBeUndefined();
+    expect(outer.style?.width).toBeUndefined();
   });
 });
