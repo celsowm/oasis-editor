@@ -15,7 +15,9 @@ export function getBlockParagraphs(
       return [block];
     case "table":
       return block.rows.flatMap((row): EditorParagraphNode[] =>
-        row.cells.flatMap((cell): EditorParagraphNode[] => cell.blocks),
+        row.cells.flatMap((cell): EditorParagraphNode[] =>
+          cell.blocks.flatMap(getBlockParagraphs),
+        ),
       );
     default:
       return assertNever(block, "block");
