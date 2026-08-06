@@ -5,7 +5,9 @@ import { unzlibSync } from "fflate";
 import type {
   EditorDocument,
   EditorParagraphNode,
+  EditorTableCellNode,
   EditorTableNode,
+  EditorTableRowNode,
 } from "@/core/model.js";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
 
@@ -48,9 +50,9 @@ export function decodePdf(buffer: ArrayBuffer): string {
       compressed[i] = raw.charCodeAt(dataStart + i) & 0xff;
     }
     try {
-      out += raw.slice(copiedTo, dataStart) + new TextDecoder().decode(
-        unzlibSync(compressed),
-      );
+      out +=
+        raw.slice(copiedTo, dataStart) +
+        new TextDecoder().decode(unzlibSync(compressed));
       copiedTo = dataEnd;
     } catch {
       // Not a real inflate match; leave bytes untouched.
@@ -78,11 +80,31 @@ export function getDocumentParagraphs(
   );
 }
 
-export function getDocumentTables(document: EditorDocument): EditorTableNode[] {
+type ParagraphOnlyTableCell = Omit<EditorTableCellNode, "blocks"> & {
+  blocks: EditorParagraphNode[];
+};
+
+type ParagraphOnlyTableRow = Omit<EditorTableRowNode, "cells"> & {
+  cells: ParagraphOnlyTableCell[];
+};
+
+export type ParagraphOnlyTable = Omit<EditorTableNode, "rows"> & {
+  rows: ParagraphOnlyTableRow[];
+};
+
+/**
+ * Legacy Word-parity fixtures addressed through this helper contain only
+ * paragraph cell stories. Nested-table tests intentionally use the full model
+ * instead, so old assertions can remain concise without weakening production
+ * types.
+ */
+export function getDocumentTables(
+  document: EditorDocument,
+): ParagraphOnlyTable[] {
   const blocks = document.sections?.flatMap((section) => section.blocks) ?? [];
   return blocks.filter(
     (block): block is EditorTableNode => block.type === "table",
-  );
+  ) as ParagraphOnlyTable[];
 }
 
 export async function importComplexDocument(): Promise<EditorDocument> {
