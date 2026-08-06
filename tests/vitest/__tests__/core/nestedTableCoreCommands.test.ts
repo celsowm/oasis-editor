@@ -17,13 +17,23 @@ import {
   setTableRowHeight,
 } from "@/core/commands/table/tableRowCommands.js";
 import {
+  applyTableBorderPreset,
+  setTableCellStyleValue,
+} from "@/core/commands/table/tableCellStyleCommands.js";
+import {
   getDocumentSectionsCanonical,
   paragraphOffsetToPosition,
+  type EditorParagraphNode,
   type EditorState,
   type EditorTableNode,
 } from "@/core/model.js";
 
-function fixture(): { state: EditorState; innerId: string } {
+function fixture(): {
+  state: EditorState;
+  innerId: string;
+  active: EditorParagraphNode;
+  sibling: EditorParagraphNode;
+} {
   const active = createEditorParagraph("active");
   const sibling = createEditorParagraph("sibling");
   const inner = createEditorTable(
@@ -52,6 +62,8 @@ function fixture(): { state: EditorState; innerId: string } {
   const position = paragraphOffsetToPosition(active, 0);
   return {
     innerId: inner.id,
+    active,
+    sibling,
     state: {
       ...base,
       activeSectionIndex: 0,
@@ -128,5 +140,42 @@ describe("nested core table commands", () => {
     expect(outer.rows[0]?.style?.height).toBeUndefined();
     expect(outer.gridCols).toBeUndefined();
     expect(outer.style?.width).toBeUndefined();
+  });
+
+  it("styles a nested multi-cell selection without styling its parent cell", () => {
+    const { state, active, sibling } = fixture();
+    const selected = {
+      ...state,
+      selection: {
+        anchor: paragraphOffsetToPosition(active, 0),
+        focus: paragraphOffsetToPosition(sibling, 0),
+      },
+    };
+    const styled = setTableCellStyleValue(selected, "shading", "#123456");
+    const { outer, inner } = tables(styled);
+
+    expect(inner.rows[0]?.cells[0]?.style?.shading).toBe("#123456");
+    expect(inner.rows[0]?.cells[1]?.style?.shading).toBe("#123456");
+    expect(outer.rows[0]?.cells[0]?.style?.shading).toBeUndefined();
+  });
+
+  it("applies border presets to nested selected cells only", () => {
+    const { state, active, sibling } = fixture();
+    const selected = {
+      ...state,
+      selection: {
+        anchor: paragraphOffsetToPosition(active, 0),
+        focus: paragraphOffsetToPosition(sibling, 0),
+      },
+    };
+    const bordered = applyTableBorderPreset(selected, "outside");
+    const { outer, inner } = tables(bordered);
+
+    expect(inner.rows[0]?.cells[0]?.style?.borderTop?.type).toBe("solid");
+    expect(inner.rows[0]?.cells[0]?.style?.borderLeft?.type).toBe("solid");
+    expect(inner.rows[0]?.cells[1]?.style?.borderTop?.type).toBe("solid");
+    expect(inner.rows[0]?.cells[1]?.style?.borderRight?.type).toBe("solid");
+    expect(outer.rows[0]?.cells[0]?.style?.borderTop).toBeUndefined();
+    expect(outer.rows[0]?.cells[0]?.style?.borderRight).toBeUndefined();
   });
 });
