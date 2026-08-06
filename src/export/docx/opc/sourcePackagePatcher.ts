@@ -149,14 +149,34 @@ function relativeRelationshipTarget(
   ].join("/");
 }
 
+function parseStoredRelationships(
+  sourcePackage: EditorDocxSourcePackage,
+  path: string,
+): EditorOpcRelationship[] {
+  const part = sourcePackage.parts[path];
+  return part?.kind === "xml" ? parseOpcRelationships(part.data) : [];
+}
+
 function sourceRelationshipsForOwner(
   sourcePackage: EditorDocxSourcePackage,
   ownerPartPath: string | null,
 ): EditorOpcRelationship[] {
   if (ownerPartPath === null) {
-    return sourcePackage.rootRelationships;
+    return sourcePackage.rootRelationships.length > 0
+      ? sourcePackage.rootRelationships
+      : parseStoredRelationships(
+          sourcePackage,
+          OPC_ROOT_RELATIONSHIPS_PATH,
+        );
   }
-  return sourcePackage.parts[ownerPartPath]?.relationships ?? [];
+
+  return (
+    sourcePackage.parts[ownerPartPath]?.relationships ??
+    parseStoredRelationships(
+      sourcePackage,
+      relationshipPartPath(ownerPartPath),
+    )
+  );
 }
 
 function transformRebuiltRelationships(
