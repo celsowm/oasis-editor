@@ -16,10 +16,8 @@ import { serializeParagraphProperties } from "./paragraphPropertiesXml.js";
 import { serializeRunWithRelationships } from "./runXml.js";
 import { serializeSdtPrXml } from "./sdtXml.js";
 import { serializeDropCapFrameParagraph } from "./dropCapXml.js";
-import {
-  getEditorParagraphOoxmlAttributes,
-  getReusableEditorParagraphPropertiesXml,
-} from "@/ooxml/word/sourceFragments.js";
+import { getEditorParagraphOoxmlAttributes } from "@/ooxml/word/sourceFragments.js";
+import { mergeParagraphPropertiesOoxmlSource } from "./sourceParagraphPropertiesXml.js";
 
 /**
  * A run whose text can be safely sliced when a bookmark boundary falls inside
@@ -250,17 +248,16 @@ export function serializeParagraphXml(
           .join("");
   const sourceAttributes = getEditorParagraphOoxmlAttributes(paragraph);
   const paragraphAttributes = sourceAttributes ? ` ${sourceAttributes}` : "";
-  const sourceParagraphProperties = getReusableEditorParagraphPropertiesXml(
+  const generatedParagraphProperties = serializeParagraphProperties(
     paragraph,
+    context.numberingInfo,
+    styles,
+    overrides,
+  );
+  const paragraphProperties = mergeParagraphPropertiesOoxmlSource(
+    paragraph,
+    generatedParagraphProperties,
     Boolean(overrides),
   );
-  const paragraphProperties =
-    sourceParagraphProperties ??
-    serializeParagraphProperties(
-      paragraph,
-      context.numberingInfo,
-      styles,
-      overrides,
-    );
   return `${dropCapFrame}<w:p${paragraphAttributes}>${paragraphProperties}${runsXml}</w:p>`;
 }
