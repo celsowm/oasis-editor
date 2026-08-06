@@ -40,6 +40,7 @@ import {
 } from "@/ooxml/word/sourceFragments.js";
 
 interface ImportedParagraphSource {
+  xml?: string;
   attributes?: string;
   paragraphPropertiesXml?: string;
   runXml?: string[];
@@ -114,6 +115,11 @@ function captureImportedParagraphSource(
   const inlineSectionProperties = paragraphProperties
     ? getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "sectPr")
     : null;
+  // Intermediate section breaks are rebuilt from the section model. Reusing a
+  // whole source paragraph that still owns w:sectPr would duplicate the break.
+  const xml = !inlineSectionProperties
+    ? serializer.serializeToString(paragraphNode)
+    : undefined;
   const paragraphPropertiesXml =
     paragraphProperties && !inlineSectionProperties
       ? serializer.serializeToString(paragraphProperties)
@@ -124,10 +130,11 @@ function captureImportedParagraphSource(
       ? collectedRunXml
       : undefined;
 
-  if (!attributes && !paragraphPropertiesXml && !runXml) {
+  if (!xml && !attributes && !paragraphPropertiesXml && !runXml) {
     return undefined;
   }
   return {
+    ...(xml ? { xml } : {}),
     ...(attributes ? { attributes } : {}),
     ...(paragraphPropertiesXml ? { paragraphPropertiesXml } : {}),
     ...(runXml ? { runXml } : {}),

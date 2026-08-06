@@ -16,7 +16,10 @@ import { serializeParagraphProperties } from "./paragraphPropertiesXml.js";
 import { serializeRunWithRelationships } from "./runXml.js";
 import { serializeSdtPrXml } from "./sdtXml.js";
 import { serializeDropCapFrameParagraph } from "./dropCapXml.js";
-import { getEditorParagraphOoxmlAttributes } from "@/ooxml/word/sourceFragments.js";
+import {
+  getEditorParagraphOoxmlAttributes,
+  getReusableEditorParagraphXml,
+} from "@/ooxml/word/sourceFragments.js";
 import { mergeParagraphPropertiesOoxmlSource } from "./sourceParagraphPropertiesXml.js";
 
 /**
@@ -226,6 +229,19 @@ export function serializeParagraphXml(
       }),
     ),
   ];
+
+  // Whole-paragraph reuse is the safest preservation mode: every unknown
+  // direct child, wrapper and relative position survives exactly. It is allowed
+  // only while editor semantics are unchanged and no regenerated boundary or
+  // table-cell override must be injected.
+  const reusableParagraphXml = getReusableEditorParagraphXml(paragraph, {
+    hasOverrides: Boolean(overrides),
+    hasBoundaryTokens: boundaryTokens.length > 0,
+  });
+  if (reusableParagraphXml) {
+    return reusableParagraphXml;
+  }
+
   const runsXml =
     boundaryTokens.length > 0
       ? serializeRunsWithBoundaries(

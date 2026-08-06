@@ -12,6 +12,8 @@ export interface EditorOoxmlParagraphPropertiesSource {
 }
 
 export interface EditorOoxmlParagraphSource {
+  xml?: string;
+  semanticSignature?: string;
   attributes?: string;
   paragraphProperties?: EditorOoxmlParagraphPropertiesSource;
 }
@@ -51,6 +53,10 @@ function normalizeSemanticValue(value: unknown): unknown {
 
 function stableSemanticString(value: unknown): string {
   return JSON.stringify(normalizeSemanticValue(value)) ?? "undefined";
+}
+
+function hasRelationshipReference(xml: string): boolean {
+  return /\br:(?:id|embed|link)\s*=/.test(xml);
 }
 
 export function createEditorRunSemanticSignature(
@@ -96,6 +102,12 @@ export function copyEditorRunOoxmlSource<T extends EditorTextRun>(
   return target;
 }
 
+export function createEditorParagraphSemanticSignature(
+  paragraph: EditorParagraphNode,
+): string {
+  return stableSemanticString(paragraph);
+}
+
 export function createEditorParagraphPropertiesSignature(
   paragraph: EditorParagraphNode,
 ): string {
@@ -108,11 +120,17 @@ export function createEditorParagraphPropertiesSignature(
 export function setEditorParagraphOoxmlSource(
   paragraph: EditorParagraphNode,
   source: {
+    xml?: string;
     attributes?: string;
     paragraphPropertiesXml?: string;
   },
 ): void {
   const paragraphSource: EditorOoxmlParagraphSource = {};
+  if (source.xml) {
+    paragraphSource.xml = source.xml;
+    paragraphSource.semanticSignature =
+      createEditorParagraphSemanticSignature(paragraph);
+  }
   if (source.attributes) {
     paragraphSource.attributes = source.attributes;
   }
@@ -122,7 +140,11 @@ export function setEditorParagraphOoxmlSource(
       semanticSignature: createEditorParagraphPropertiesSignature(paragraph),
     };
   }
-  if (paragraphSource.attributes || paragraphSource.paragraphProperties) {
+  if (
+    paragraphSource.xml ||
+    paragraphSource.attributes ||
+    paragraphSource.paragraphProperties
+  ) {
     (paragraph as EditorParagraphWithOoxmlSource).ooxmlSource = paragraphSource;
   }
 }
@@ -131,6 +153,29 @@ export function getEditorParagraphOoxmlSource(
   paragraph: EditorParagraphNode,
 ): EditorOoxmlParagraphSource | undefined {
   return (paragraph as EditorParagraphWithOoxmlSource).ooxmlSource;
+}
+
+export function getReusableEditorParagraphXml(
+  paragraph: EditorParagraphNode,
+  options: {
+    hasOverrides: boolean;
+    hasBoundaryTokens: boolean;
+  },
+): string | undefined {
+  const source = getEditorParagraphOoxmlSource(paragraph);
+  if (
+    !source?.xml ||
+    !source.semanticSignature ||
+    options.hasOverrides ||
+    options.hasBoundaryTokens ||
+    hasRelationshipReference(source.xml)
+  ) {
+    return undefined;
+  }
+  return source.semanticSignature ===
+    createEditorParagraphSemanticSignature(paragraph)
+    ? source.xml
+    : undefined;
 }
 
 export function getEditorParagraphOoxmlAttributes(
@@ -148,7 +193,7 @@ export function getReusableEditorParagraphPropertiesXml(
     !source ||
     hasOverrides ||
     paragraph.list ||
-    /\br:(?:id|embed|link)\s*=/.test(source.xml)
+    hasRelationshipReference(source.xml)
   ) {
     return undefined;
   }
