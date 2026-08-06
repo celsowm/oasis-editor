@@ -31,9 +31,7 @@ export function visitBlocks(
       case "table":
         for (const row of block.rows) {
           for (const cell of row.cells) {
-            for (const paragraph of cell.blocks) {
-              visitParagraphDeep(paragraph, callback);
-            }
+            visitBlocks(cell.blocks, callback);
           }
         }
         break;
