@@ -24,7 +24,10 @@ import {
   serializeEndnoteReference,
 } from "./endnoteRunXml.js";
 import { wrapRunWithHyperlink } from "./hyperlinkXml.js";
-import { serializeRunFromOoxmlSource } from "./sourceRunXml.js";
+import {
+  mergeRunOoxmlSourceIntoGeneratedXml,
+  serializeRunFromOoxmlSource,
+} from "./sourceRunXml.js";
 
 export function serializeRun(
   run: EditorTextRun,
@@ -59,7 +62,7 @@ export function serializeRun(
   // drop a new inline object. The object serializers may still decline (return
   // null) — e.g. an image with no relationship — in which case the run falls
   // back to plain text, preserving the previous behaviour.
-  return visitRun(run, {
+  const generatedXml = visitRun(run, {
     footnoteReference: (r): string =>
       serializeFootnoteReference(r, materializedRunStyle, context) ?? asText(),
     endnoteReference: (r): string =>
@@ -91,6 +94,8 @@ export function serializeRun(
       `<w:r>${runProps()}<w:sym w:font="${escapeXml(r.sym!.font)}" w:char="${r.sym!.char}"/></w:r>`,
     text: (): string => asText(),
   });
+
+  return mergeRunOoxmlSourceIntoGeneratedXml(run, generatedXml);
 }
 
 export function serializeRunWithRelationships(
