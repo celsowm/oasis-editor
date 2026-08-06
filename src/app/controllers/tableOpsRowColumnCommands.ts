@@ -4,6 +4,7 @@ import {
   createEditorTableRow,
 } from "@/core/editorState.js";
 import {
+  getBlockParagraphs,
   type EditorBlockNode,
   type EditorEditingZone,
   type EditorState,
@@ -36,25 +37,37 @@ function markTableRevision<TStyle extends { revision?: unknown }>(
   } as TStyle;
 }
 
+function firstParagraphInCell(
+  cell: EditorTableCellNode | null | undefined,
+): EditorParagraphNode | null {
+  if (!cell) return null;
+  for (const block of cell.blocks) {
+    const paragraph = getBlockParagraphs(block)[0];
+    if (paragraph) return paragraph;
+  }
+  return null;
+}
+
 /**
- * Resolves the paragraph to move the caret into after a row/column mutation:
- * the target cell's first block, else (when a fallback row is given) the
- * first non-continuation cell's first block in that row, else the table's
- * first navigable paragraph.
+ * Resolves the paragraph to move the caret into after a row/column mutation.
+ * Cell stories are recursive, so this deliberately searches through nested
+ * tables instead of assuming `blocks[0]` is a paragraph.
  */
 function resolveNextTableParagraph(
   tableBlock: EditorTableNode,
   targetCell: EditorTableCellNode | null | undefined,
   fallbackRow?: EditorTableRowNode,
 ): EditorParagraphNode | null {
-  return (
-    targetCell?.blocks[0] ??
-    fallbackRow?.cells.find(
-      (cell): false | EditorParagraphNode =>
-        cell.vMerge !== "continue" && cell.blocks[0],
-    )?.blocks[0] ??
-    findFirstNavigableParagraphInTable(tableBlock)
-  );
+  const targetParagraph = firstParagraphInCell(targetCell);
+  if (targetParagraph) return targetParagraph;
+  if (fallbackRow) {
+    for (const cell of fallbackRow.cells) {
+      if (cell.vMerge === "continue") continue;
+      const paragraph = firstParagraphInCell(cell);
+      if (paragraph) return paragraph;
+    }
+  }
+  return findFirstNavigableParagraphInTable(tableBlock);
 }
 
 interface TableRowColumnOperationsDeps {
