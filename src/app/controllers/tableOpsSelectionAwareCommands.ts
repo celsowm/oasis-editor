@@ -1,5 +1,4 @@
 import type { MergeKey } from "@/core/transactionMergeKeys.js";
-import { cloneBlock } from "@/core/cloneState.js";
 import { createEditorDocument } from "@/core/editorState.js";
 import { replaceParagraphsInBlocks } from "@/core/document/blockReplacement.js";
 import {
@@ -11,10 +10,12 @@ import {
   type EditorEditingZone,
   type EditorParagraphNode,
   type EditorState,
-  type EditorTableNode,
 } from "@/core/model.js";
 import type { EditorLogger } from "@/utils/logger.js";
-import { updateBlocksInCurrentSection } from "./tableOpsMutationCommands.js";
+import {
+  resolveTablePathMutation,
+  updateBlocksInCurrentSection,
+} from "./tableOpsMutationCommands.js";
 import type { SelectedTableCells } from "./tableOpsSelectionRanges.js";
 
 interface TableSelectionAwareCommandsDeps {
@@ -79,10 +80,10 @@ function createTableSelectionAwareCommandsImpl(
         return command(expanded);
       }
 
-      const { blockIndex, cells, zone } = selection;
+      const { blockIndex, tablePath, cells, zone } = selection;
 
       deps.logger?.info(
-        `${logPrefix}: multi-cell selection in table block ${blockIndex} (${cells.length} cells) in zone ${zone}`,
+        `${logPrefix}: multi-cell selection in table block ${blockIndex} at depth ${tablePath.length} (${cells.length} cells) in zone ${zone}`,
       );
 
       const allParagraphs: EditorParagraphNode[] = [];
@@ -118,22 +119,27 @@ function createTableSelectionAwareCommandsImpl(
 
       const tempResult = command(tempState);
       const resultParagraphs = getParagraphs(tempResult);
-      const currentBlocks = deps.getTargetBlocks(current, zone);
-      const clonedTable = cloneBlock(
-        currentBlocks[blockIndex],
-      ) as EditorTableNode;
-      if (!clonedTable || clonedTable.type !== "table") {
-        return current;
-      }
-      const targetBlocks = currentBlocks.map(
-        (block, i): EditorBlockNode => (i === blockIndex ? clonedTable : block),
+      const lastSegment = tablePath[tablePath.length - 1];
+      if (!lastSegment) return current;
+
+      const mutation = resolveTablePathMutation(
+        current,
+        deps.getTargetBlocks,
+        {
+          blockIndex,
+          rowIndex: lastSegment.rowIndex,
+          cellIndex: lastSegment.cellIndex,
+          paragraphIndex: 0,
+          tablePath,
+          zone,
+        },
       );
-      const tableBlock = clonedTable;
+      if (!mutation) return current;
 
       let paragraphIndex = 0;
       for (let index = 0; index < cells.length; index += 1) {
-        const entry = cells[index];
-        const count = cellParagraphCounts[index];
+        const entry = cells[index]!;
+        const count = cellParagraphCounts[index] ?? 0;
         const cellParagraphs = resultParagraphs.slice(
           paragraphIndex,
           paragraphIndex + count,
@@ -141,7 +147,7 @@ function createTableSelectionAwareCommandsImpl(
         paragraphIndex += count;
 
         const targetCell =
-          tableBlock.rows[entry.rowIndex]?.cells[entry.cellIndex];
+          mutation.tableBlock.rows[entry.rowIndex]?.cells[entry.cellIndex];
         if (targetCell) {
           targetCell.blocks = replaceParagraphsInBlocks(
             targetCell.blocks,
@@ -150,7 +156,11 @@ function createTableSelectionAwareCommandsImpl(
         }
       }
 
-      return updateBlocksInCurrentSection(current, targetBlocks, zone);
+      return updateBlocksInCurrentSection(
+        current,
+        mutation.targetBlocks,
+        zone,
+      );
     });
   };
 
