@@ -1,4 +1,5 @@
 import type {
+  EditorBlockNode,
   EditorLayoutBlock,
   EditorParagraphNode,
   EditorTableCellNode,
@@ -156,22 +157,29 @@ function sliceCellBlocks(
   start: TableCellBlockPosition | undefined,
   endIndex: number,
   end: TableCellBlockPosition | undefined,
-): EditorParagraphNode[] {
-  const blocks: EditorParagraphNode[] = [];
+): EditorBlockNode[] {
+  const blocks: EditorBlockNode[] = [];
   const endExclusive = end?.offset !== undefined ? endIndex + 1 : endIndex;
   for (let index = startIndex; index < endExclusive; index += 1) {
-    const paragraph = cell.blocks[index];
-    if (!paragraph) continue;
+    const block = cell.blocks[index];
+    if (!block) continue;
+    if (block.type === "table") {
+      // Nested tables are atomic in row pagination. Offset-based positions only
+      // describe paragraph text, so a table at an included block index survives
+      // whole rather than being sliced into an invalid structure.
+      blocks.push(block);
+      continue;
+    }
     const startOffset =
       start && start.blockIndex === index ? (start.offset ?? 0) : 0;
     const endOffset =
       end && end.blockIndex === index
-        ? (end.offset ?? getParagraphTextLength(paragraph))
-        : getParagraphTextLength(paragraph);
-    if (startOffset <= 0 && endOffset >= getParagraphTextLength(paragraph)) {
-      blocks.push(paragraph);
+        ? (end.offset ?? getParagraphTextLength(block))
+        : getParagraphTextLength(block);
+    if (startOffset <= 0 && endOffset >= getParagraphTextLength(block)) {
+      blocks.push(block);
     } else if (endOffset > startOffset) {
-      blocks.push(sliceParagraph(paragraph, startOffset, endOffset));
+      blocks.push(sliceParagraph(block, startOffset, endOffset));
     }
   }
   return blocks;
