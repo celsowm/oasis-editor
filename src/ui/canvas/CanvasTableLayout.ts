@@ -87,10 +87,11 @@ export function buildCanvasTableLayout(options: {
       if (Math.max(1, entry.colSpan) !== 1) continue;
       const cell = table.rows[entry.rowIndex]?.cells[entry.cellIndex];
       if (!cell) continue;
+      const firstParagraph = cell.blocks.find(
+        (block) => block.type === "paragraph",
+      );
       const direction =
-        cell.style?.textDirection ??
-        cell.blocks[0]?.style?.textDirection ??
-        null;
+        cell.style?.textDirection ?? firstParagraph?.style?.textDirection ?? null;
       if (
         direction !== "tbRl" &&
         direction !== "btLr" &&
