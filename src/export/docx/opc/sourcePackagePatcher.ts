@@ -18,6 +18,7 @@ import {
 } from "@/ooxml/opc/packageXml.js";
 import { hashDocxPartBytes } from "./rebuiltPartHashes.js";
 
+const CONVENTIONAL_MAIN_DOCUMENT_PATH = "word/document.xml";
 const OFFICE_DOCUMENT_RELATIONSHIP_SUFFIX = "/officeDocument";
 
 const CONVENTIONAL_PART_BY_RELATIONSHIP_SUFFIX: Record<string, string> = {
@@ -78,7 +79,7 @@ function buildRebuiltPathAliases(
   sourcePackage: EditorDocxSourcePackage,
 ): Map<string, string> {
   const aliases = new Map<string, string>();
-  aliases.set("word/document.xml", sourcePackage.mainDocumentPart);
+  aliases.set(CONVENTIONAL_MAIN_DOCUMENT_PATH, sourcePackage.mainDocumentPart);
 
   const mainPart = sourcePackage.parts[sourcePackage.mainDocumentPart];
   for (const relationship of mainPart?.relationships ?? []) {
@@ -158,22 +159,24 @@ function parseStoredRelationships(
 function sourceRelationshipsForOwner(
   sourcePackage: EditorDocxSourcePackage,
   ownerPartPath: string | null,
+  deletedPartPaths: ReadonlySet<string>,
 ): EditorOpcRelationship[] {
-  if (ownerPartPath === null) {
-    return sourcePackage.rootRelationships.length > 0
-      ? sourcePackage.rootRelationships
-      : parseStoredRelationships(
+  const relationships =
+    ownerPartPath === null
+      ? sourcePackage.rootRelationships.length > 0
+        ? sourcePackage.rootRelationships
+        : parseStoredRelationships(sourcePackage, OPC_ROOT_RELATIONSHIPS_PATH)
+      : (sourcePackage.parts[ownerPartPath]?.relationships ??
+        parseStoredRelationships(
           sourcePackage,
-          OPC_ROOT_RELATIONSHIPS_PATH,
-        );
-  }
+          relationshipPartPath(ownerPartPath),
+        ));
 
-  return (
-    sourcePackage.parts[ownerPartPath]?.relationships ??
-    parseStoredRelationships(
-      sourcePackage,
-      relationshipPartPath(ownerPartPath),
-    )
+  return resolveOpcRelationships(ownerPartPath, relationships).filter(
+    (relationship): boolean =>
+      relationship.targetMode === "External" ||
+      !relationship.resolvedTarget ||
+      !deletedPartPaths.has(relationship.resolvedTarget),
   );
 }
 
@@ -266,6 +269,7 @@ function mergeContentTypes(
   source: EditorOpcContentTypes,
   rebuiltXml: string,
   aliases: ReadonlyMap<string, string>,
+  deletedPartPaths: ReadonlySet<string>,
 ): string {
   const rebuilt = parseOpcContentTypes(rebuiltXml);
   const remappedOverrides: Record<string, string> = {};
@@ -273,9 +277,15 @@ function mergeContentTypes(
     remappedOverrides[aliases.get(path) ?? path] = contentType;
   }
 
+  const preservedSourceOverrides = Object.fromEntries(
+    Object.entries(source.overrides).filter(
+      ([path]): boolean => !deletedPartPaths.has(path),
+    ),
+  );
+
   return serializeOpcContentTypes({
     defaults: { ...source.defaults, ...rebuilt.defaults },
-    overrides: { ...source.overrides, ...remappedOverrides },
+    overrides: { ...preservedSourceOverrides, ...remappedOverrides },
   });
 }
 
@@ -309,12 +319,35 @@ function canKeepSourcePartUntouched(
   );
 }
 
+function findDeletedModeledPartPaths(
+  sourcePackage: EditorDocxSourcePackage,
+  aliases: ReadonlyMap<string, string>,
+  rebuiltPaths: ReadonlySet<string>,
+): Set<string> {
+  const deleted = new Set<string>();
+  for (const [rebuiltPath, actualPath] of aliases) {
+    if (rebuiltPath === CONVENTIONAL_MAIN_DOCUMENT_PATH) {
+      continue;
+    }
+    if (
+      sourcePackage.rebuiltPartHashes?.[rebuiltPath] &&
+      !rebuiltPaths.has(rebuiltPath) &&
+      sourcePackage.parts[actualPath]
+    ) {
+      deleted.add(actualPath);
+    }
+  }
+  return deleted;
+}
+
 /**
  * Clones the imported package and overlays only changed freshly rebuilt Oasis
  * parts. Unknown source parts remain untouched. Content types and relationship
  * parts are merged instead of blindly replaced so unrelated package features
  * survive. Relationship-discovered source paths remain authoritative: rebuilt
  * parts are relocated to those paths and their internal targets are rebased.
+ * Modeled singleton parts present in the import baseline but absent from the
+ * current rebuild are treated as explicit deletions rather than resurrected.
  */
 export async function patchRebuiltDocxWithSourcePackage(
   document: EditorDocument,
@@ -325,13 +358,28 @@ export async function patchRebuiltDocxWithSourcePackage(
     return rebuiltBuffer;
   }
 
+  const rebuilt = await JSZip.loadAsync(rebuiltBuffer);
+  const rebuiltPaths = new Set(
+    Object.entries(rebuilt.files)
+      .filter(([, entry]): boolean => !entry.dir)
+      .map(([rawPath]): string => normalizeOpcPartPath(rawPath)),
+  );
   const aliases = buildRebuiltPathAliases(sourcePackage);
+  const deletedPartPaths = findDeletedModeledPartPaths(
+    sourcePackage,
+    aliases,
+    rebuiltPaths,
+  );
+
   const output = new JSZip();
   for (const path of Object.keys(sourcePackage.parts)) {
     writeSourcePart(output, sourcePackage, path);
   }
+  for (const path of deletedPartPaths) {
+    output.remove(path);
+    output.remove(relationshipPartPath(path));
+  }
 
-  const rebuilt = await JSZip.loadAsync(rebuiltBuffer);
   let rebuiltContentTypesXml: string | null = null;
 
   for (const [rawPath, entry] of Object.entries(rebuilt.files)) {
@@ -356,6 +404,7 @@ export async function patchRebuiltDocxWithSourcePackage(
       const sourceRelationships = sourceRelationshipsForOwner(
         sourcePackage,
         actualOwner,
+        deletedPartPaths,
       );
       const rebuiltRelationships = transformRebuiltRelationships(
         parseOpcRelationships(await entry.async("string")),
@@ -394,6 +443,7 @@ export async function patchRebuiltDocxWithSourcePackage(
         sourcePackage.contentTypes,
         rebuiltContentTypesXml,
         aliases,
+        deletedPartPaths,
       ),
     );
   }
