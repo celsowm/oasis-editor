@@ -32,10 +32,10 @@ const CONVENTIONAL_PART_BY_RELATIONSHIP_SUFFIX: Record<string, string> = {
   "/commentsExtended": "word/commentsExtended.xml",
 };
 
-const SINGLETON_RELATIONSHIP_SUFFIXES = new Set([
+const SINGLETON_RELATIONSHIP_SUFFIXES = [
   OFFICE_DOCUMENT_RELATIONSHIP_SUFFIX,
   ...Object.keys(CONVENTIONAL_PART_BY_RELATIONSHIP_SUFFIX),
-]);
+] as const;
 
 function relationshipKey(relationship: EditorOpcRelationship): string {
   return [
@@ -55,13 +55,10 @@ function relationshipPartPath(ownerPartPath: string): string {
     : `_rels/${fileName}.rels`;
 }
 
-function isSingletonRelationship(type: string): boolean {
-  for (const suffix of SINGLETON_RELATIONSHIP_SUFFIXES) {
-    if (type.endsWith(suffix)) {
-      return true;
-    }
-  }
-  return false;
+function singletonRelationshipSuffix(type: string): string | undefined {
+  return SINGLETON_RELATIONSHIP_SUFFIXES.find((suffix): boolean =>
+    type.endsWith(suffix),
+  );
 }
 
 function conventionalPathForRelationship(
@@ -192,11 +189,12 @@ function transformRebuiltRelationships(
       return relationship;
     }
 
-    const sourceEquivalent = isSingletonRelationship(relationship.type)
+    const semanticSuffix = singletonRelationshipSuffix(relationship.type);
+    const sourceEquivalent = semanticSuffix
       ? sourceRelationships.find(
           (candidate): boolean =>
             candidate.targetMode !== "External" &&
-            candidate.type === relationship.type,
+            candidate.type.endsWith(semanticSuffix),
         )
       : undefined;
 
@@ -218,9 +216,11 @@ function transformRebuiltRelationships(
       ...relationship,
       // Singleton relationships such as styles/settings do not have r:id
       // references inside document markup, so retaining their source id avoids
-      // needless duplicate relationships. Header/footer/image/link ids remain
-      // generated because the rebuilt XML directly references them.
-      ...(sourceEquivalent ? { id: sourceEquivalent.id } : {}),
+      // needless duplicates. The original relationship type is also retained
+      // so ISO/IEC 29500 Strict packages do not silently become Transitional.
+      ...(sourceEquivalent
+        ? { id: sourceEquivalent.id, type: sourceEquivalent.type }
+        : {}),
       target: relativeRelationshipTarget(actualOwnerPath, actualTarget),
       targetMode: "Internal",
       resolvedTarget: actualTarget,
