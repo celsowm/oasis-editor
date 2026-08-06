@@ -24,12 +24,12 @@ describe("OOXML semantic source signatures", () => {
       id: "run:first",
       kind: "footnoteReference",
       text: "",
-      footnoteReference: { id: "footnote:first" },
+      footnoteReference: { footnoteId: "footnote:first" },
     };
     const second: EditorTextRun = {
       ...first,
       id: "run:second",
-      footnoteReference: { id: "footnote:second" },
+      footnoteReference: { footnoteId: "footnote:second" },
     };
 
     expect(createEditorRunSemanticSignature(first)).not.toBe(
