@@ -15,6 +15,7 @@ import {
 import {
   commitTableMutation,
   resolveLocationTableMutation,
+  resolveTablePathMutation,
 } from "./tableOpsMutationCommands.js";
 import { createTableRevisionMetadata } from "@/core/commands/table/tableCommandUtils.js";
 import type {
@@ -50,6 +51,23 @@ function firstParagraphInCell(
   return undefined;
 }
 
+function resolveRangeMutation(
+  current: EditorState,
+  deps: TableCellSpanOperationsDeps,
+  range: HorizontalTableCellRange | VerticalTableCellRange,
+) {
+  const lastSegment = range.tablePath[range.tablePath.length - 1];
+  if (!lastSegment) return null;
+  return resolveTablePathMutation(current, deps.getTargetBlocks, {
+    blockIndex: range.blockIndex,
+    rowIndex: lastSegment.rowIndex,
+    cellIndex: lastSegment.cellIndex,
+    paragraphIndex: 0,
+    tablePath: range.tablePath,
+    zone: range.zone,
+  });
+}
+
 export function createTableCellSpanOperations(
   deps: TableCellSpanOperationsDeps,
 ): ReturnType<typeof createTableCellSpanOperationsImpl> {
@@ -76,13 +94,9 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, range.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[range.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
+    const mutation = resolveRangeMutation(current, deps, range);
+    if (!mutation) return current;
+    const { tableBlock, targetBlocks } = mutation;
 
     const row = tableBlock.rows[range.rowIndex];
     if (!row) {
@@ -154,13 +168,9 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, range.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[range.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
+    const mutation = resolveRangeMutation(current, deps, range);
+    if (!mutation) return current;
+    const { tableBlock, targetBlocks } = mutation;
 
     const selectedCells: Array<
       NonNullable<(typeof tableBlock.rows)[number]["cells"][number]>
