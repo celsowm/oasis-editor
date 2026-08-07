@@ -1,6 +1,10 @@
 import type { EditorParagraphListStyle } from "@/core/model.js";
 
 export interface EditorListOoxmlNumberingMetadata {
+  /** Original `w:num/@w:numId` for an imported list instance. */
+  sourceNumId?: number;
+  /** Original `w:abstractNum/@w:abstractNumId` referenced by that instance. */
+  sourceAbstractNumId?: number;
   /** Original ST_NumberFormat token, including formats Oasis cannot render. */
   format?: string;
   /** Modelled format/kind at import time, used to detect an explicit edit. */
