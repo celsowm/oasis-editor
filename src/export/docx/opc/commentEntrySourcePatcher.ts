@@ -6,8 +6,8 @@ import {
   type Node as XmlNode,
 } from "@xmldom/xmldom";
 import type { EditorDocxSourcePackage } from "@/core/model.js";
+import { WORD14_NS, WORD_NS } from "@/export/docx/xmlUtils.js";
 import { mergeNestedExtensionMarkup } from "./extensionMarkupMerge.js";
-import { WORD_NS } from "@/export/docx/xmlUtils.js";
 
 const REBUILT_COMMENTS_PATH = "word/comments.xml";
 
@@ -71,12 +71,14 @@ function flattenText(element: XmlElement): string {
   return out;
 }
 
+function commentParagraphs(comment: XmlElement): XmlElement[] {
+  return children(comment).filter(
+    (child): boolean => child.namespaceURI === WORD_NS && name(child) === "p",
+  );
+}
+
 function commentText(comment: XmlElement): string {
-  return children(comment)
-    .filter((child): boolean => child.namespaceURI === WORD_NS && name(child) === "p")
-    .map(flattenText)
-    .join("\n")
-    .trim();
+  return commentParagraphs(comment).map(flattenText).join("\n").trim();
 }
 
 function parseCommentsRoot(xml: string): XmlElement | undefined {
@@ -100,20 +102,29 @@ function sourceCommentsXml(sourcePackage: EditorDocxSourcePackage): string | und
 }
 
 function replaceBodyChildren(source: XmlElement, target: XmlElement): void {
+  // `commentsExtended.xml` is generated against the target comment's paraId.
+  // Preserve that identity even when the richer source body is otherwise reused.
+  const generatedParaId = attr(commentParagraphs(target)[0] ?? target, "paraId");
+
   while (target.firstChild) target.removeChild(target.firstChild);
   for (let index = 0; index < source.childNodes.length; index += 1) {
     const child = source.childNodes[index];
     if (child) target.appendChild(child.cloneNode(true));
   }
+
+  const firstRestoredParagraph = commentParagraphs(target)[0];
+  if (generatedParaId && firstRestoredParagraph) {
+    firstRestoredParagraph.setAttributeNS(
+      WORD14_NS,
+      "w14:paraId",
+      generatedParaId,
+    );
+  }
 }
 
 function mergeChangedBodyExtensions(source: XmlElement, target: XmlElement): void {
-  const sourceParagraphs = children(source).filter(
-    (child): boolean => child.namespaceURI === WORD_NS && name(child) === "p",
-  );
-  const targetParagraphs = children(target).filter(
-    (child): boolean => child.namespaceURI === WORD_NS && name(child) === "p",
-  );
+  const sourceParagraphs = commentParagraphs(source);
+  const targetParagraphs = commentParagraphs(target);
   if (sourceParagraphs[0] && targetParagraphs[0]) {
     mergeNestedExtensionMarkup(sourceParagraphs[0], targetParagraphs[0]);
   }
@@ -158,8 +169,6 @@ export function mergeCommentEntriesOoxmlSource(
     const before = new XMLSerializer().serializeToString(target);
     copyMissingAttributes(sourceEntry, target);
     if (commentText(sourceEntry) === commentText(target)) {
-      // The plain-text projection did not change, so the richer source body is
-      // semantically equivalent and is the best preservation representation.
       replaceBodyChildren(sourceEntry, target);
     } else {
       mergeChangedBodyExtensions(sourceEntry, target);
