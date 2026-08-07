@@ -30,12 +30,6 @@ export interface EditorComment {
   id: string;
   /** Original DOCX `w:id`, used only as a hint for export id stability. */
   docxIdHint?: number;
-  /**
-   * Original `w14:paraId` of the comment body paragraph. This is the stable
-   * identity used by `commentsExtended.xml` (`w15:commentEx/@w15:paraId`) and
-   * modern threaded-comment metadata such as `w15:paraIdParent`.
-   */
-  docxParaIdHint?: string;
   /** `w:comment/@w:author`. */
   author: string;
   /** `w:comment/@w:initials`. */
