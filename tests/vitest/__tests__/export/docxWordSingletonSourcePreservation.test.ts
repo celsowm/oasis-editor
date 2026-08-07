@@ -117,11 +117,22 @@ async function buildSourcePackage(): Promise<ArrayBuffer> {
   return zip.generateAsync({ type: "arraybuffer" });
 }
 
+async function importSourceBackedDocument() {
+  const buffer = await buildSourcePackage();
+  const document = await importDocxToEditorDocument(buffer);
+  await attachDocxSourcePackage(document, buffer);
+  return document;
+}
+
+async function exportSourceBackedDocument(
+  document: Awaited<ReturnType<typeof importSourceBackedDocument>>,
+): Promise<JSZip> {
+  return JSZip.loadAsync(await exportEditorDocumentToDocxPreservingSource(document));
+}
+
 describe("source-backed Word singleton preservation", () => {
   it("keeps unknown singleton markup while generated modeled values change", async () => {
-    const buffer = await buildSourcePackage();
-    const document = await importDocxToEditorDocument(buffer);
-    await attachDocxSourcePackage(document, buffer);
+    const document = await importSourceBackedDocument();
 
     if (!document.settings) {
       throw new Error("Expected imported document settings.");
@@ -146,9 +157,7 @@ describe("source-backed Word singleton preservation", () => {
     }
     firstBlock.list = undefined;
 
-    const output = await JSZip.loadAsync(
-      await exportEditorDocumentToDocxPreservingSource(document),
-    );
+    const output = await exportSourceBackedDocument(document);
 
     const settingsXml = await output.file("word/settings.xml")?.async("string");
     expect(settingsXml).toContain('w:defaultTabStop w:val="960"');
@@ -182,5 +191,43 @@ describe("source-backed Word singleton preservation", () => {
       ?.async("string");
     expect(fontRelationships).toContain('Id="rIdFont1"');
     expect(fontRelationships).toContain('Target="fonts/font1.odttf"');
+  });
+
+  it("does not resurrect modeled singleton values after their last semantic entry is removed", async () => {
+    const document = await importSourceBackedDocument();
+
+    if (!document.settings) {
+      throw new Error("Expected imported document settings.");
+    }
+    document.settings.defaultTabStop = undefined;
+    document.settings.allowSpaceOfSameStyleInTable = undefined;
+    document.styles = {};
+    document.fontTable = [];
+
+    const output = await exportSourceBackedDocument(document);
+
+    const settingsXml = await output.file("word/settings.xml")?.async("string");
+    expect(settingsXml).toBeDefined();
+    expect(settingsXml).not.toContain("w:defaultTabStop");
+    expect(settingsXml).not.toContain("w:allowSpaceOfSameStyleInTable");
+    expect(settingsXml).toContain('w:zoom w:percent="125"');
+    expect(settingsXml).toContain("w:doNotUseHTMLParagraphAutoSpacing");
+    expect(settingsXml).toContain("w15:opaqueSetting");
+
+    const stylesXml = await output.file("word/styles.xml")?.async("string");
+    expect(stylesXml).toBeDefined();
+    expect(stylesXml).toContain("w:latentStyles");
+    expect(stylesXml).not.toContain("<w:style ");
+    expect(stylesXml).not.toContain('w:styleId="Custom"');
+
+    expect(output.file("word/fontTable.xml")).toBeNull();
+    expect(output.file("word/_rels/fontTable.xml.rels")).toBeNull();
+
+    // Opaque binary preservation is package-level: deleting the semantic font
+    // declaration removes its relationship but does not silently discard an
+    // unrelated binary source entry.
+    expect(
+      await output.file("word/fonts/font1.odttf")?.async("base64"),
+    ).toBe("AQMDBw==");
   });
 });
