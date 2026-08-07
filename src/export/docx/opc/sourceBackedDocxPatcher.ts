@@ -4,6 +4,7 @@ import type { EditorDocument } from "@/core/model.js";
 import { patchRebuiltDocxWithHeaderFooterSourcePaths } from "./headerFooterSourcePatcher.js";
 import { mergeRebuiltDocumentSectionPropertiesFromSource } from "./sectionPropertiesSourcePatcher.js";
 import { patchRebuiltDocxWithSourcePackage } from "./sourcePackagePatcher.js";
+import { patchRebuiltWordSingletonsFromSource } from "./wordSingletonSourcePatcher.js";
 
 const CONVENTIONAL_MAIN_DOCUMENT_PATH = "word/document.xml";
 
@@ -42,6 +43,10 @@ export async function patchRebuiltDocxPreservingSource(
   }
 
   const rebuilt = await JSZip.loadAsync(rebuiltBuffer);
+  let rebuiltChanged = await patchRebuiltWordSingletonsFromSource(
+    sourcePackage,
+    rebuilt,
+  );
   const rebuiltMainXml = await rebuilt
     .file(CONVENTIONAL_MAIN_DOCUMENT_PATH)
     ?.async("string");
@@ -50,18 +55,24 @@ export async function patchRebuiltDocxPreservingSource(
     countActiveSectionProperties(sourceMainPart.data) !==
       countActiveSectionProperties(rebuiltMainXml)
   ) {
-    return patchRebuiltDocxWithSourcePackage(document, rebuiltBuffer);
+    const preparedBuffer = rebuiltChanged
+      ? await rebuilt.generateAsync({ type: "arraybuffer" })
+      : rebuiltBuffer;
+    return patchRebuiltDocxWithSourcePackage(document, preparedBuffer);
   }
 
   const sourceAwareMainXml = mergeRebuiltDocumentSectionPropertiesFromSource(
     sourceMainPart.data,
     rebuiltMainXml,
   );
-  let sourceAwareRebuiltBuffer = rebuiltBuffer;
   if (sourceAwareMainXml !== rebuiltMainXml) {
     rebuilt.file(CONVENTIONAL_MAIN_DOCUMENT_PATH, sourceAwareMainXml);
-    sourceAwareRebuiltBuffer = await rebuilt.generateAsync({ type: "arraybuffer" });
+    rebuiltChanged = true;
   }
+
+  const sourceAwareRebuiltBuffer = rebuiltChanged
+    ? await rebuilt.generateAsync({ type: "arraybuffer" })
+    : rebuiltBuffer;
 
   return patchRebuiltDocxWithHeaderFooterSourcePaths(
     document,
