@@ -12,28 +12,20 @@ import type {
   ExportBuildState,
   NumberingContext,
 } from "./docxTypes.js";
+import { createSourceAwareNoteDocxIdAllocator } from "./noteDocxIds.js";
 import { serializeBlocksXml } from "./textXml.js";
 import { OFFICE_REL_NS, WORD14_NS, WORD_NS } from "./xmlUtils.js";
 
-/**
- * The DOCX `w:id` value to use when materializing endnotes. Real endnote ids
- * start at 1; -1 / 0 are reserved for `separator` / `continuationSeparator`.
- */
-const FIRST_ENDNOTE_DOCX_ID = 1;
-
 export interface ReferencedEndnote {
-  /** Local editor id. */
   endnoteId: string;
-  /** DOCX numeric id used in `w:endnoteReference w:id="N"` and `w:endnote w:id="N"`. */
   docxId: number;
-  /** Endnote body. */
   endnote: EditorEndnote;
 }
 
 /**
  * Walks the document in reading order and returns one entry per distinct
- * endnote id that is actually referenced by an inline run. Unreferenced
- * endnotes in the registry are skipped.
+ * referenced endnote. Imported positive `w:id` values are retained when
+ * unique; new/conflicting notes are allocated above every imported id.
  */
 export function collectReferencedEndnotesForExport(
   document: EditorDocument,
@@ -42,19 +34,17 @@ export function collectReferencedEndnotesForExport(
   if (!items) return [];
 
   const seen = new Map<string, ReferencedEndnote>();
-  let nextDocxId = FIRST_ENDNOTE_DOCX_ID;
+  const allocateDocxId = createSourceAwareNoteDocxIdAllocator(items);
   for (const { run } of iterateEndnoteReferenceRuns(document)) {
     const ref = getRunEndnoteReference(run);
-    if (!ref) continue;
-    if (seen.has(ref.endnoteId)) continue;
+    if (!ref || seen.has(ref.endnoteId)) continue;
     const endnote = items[ref.endnoteId];
     if (!endnote) continue;
     seen.set(ref.endnoteId, {
       endnoteId: ref.endnoteId,
-      docxId: nextDocxId,
+      docxId: allocateDocxId(endnote),
       endnote,
     });
-    nextDocxId += 1;
   }
   return Array.from(seen.values());
 }
@@ -63,21 +53,12 @@ export function buildEndnoteIdMap(
   referenced: ReferencedEndnote[],
 ): Map<string, number> {
   const map = new Map<string, number>();
-  for (const entry of referenced) {
-    map.set(entry.endnoteId, entry.docxId);
-  }
+  for (const entry of referenced) map.set(entry.endnoteId, entry.docxId);
   return map;
 }
 
-/**
- * Inject a `<w:endnoteRef/>` marker at the start of the first paragraph of the
- * body. Reinjected at serialization time only — the in-memory model never
- * stores it.
- */
 function withInjectedEndnoteRef(blocks: EditorBlockNode[]): EditorBlockNode[] {
-  if (blocks.length === 0) {
-    return [createEmptyEndnoteBodyParagraph()];
-  }
+  if (blocks.length === 0) return [createEmptyEndnoteBodyParagraph()];
   const [first, ...rest] = blocks;
   if (first.type !== "paragraph") {
     return [createEmptyEndnoteBodyParagraph(true), first, ...rest];
@@ -111,9 +92,6 @@ function prependEndnoteRefMarker(
   };
 }
 
-/**
- * Synthetic run serialized as `<w:endnoteRef/>` by `serializeEndnoteRefMarker`.
- */
 function makeEndnoteRefMarkerRun(): EditorParagraphNode["runs"][number] {
   return {
     id: "synthetic:endnoteRef",
@@ -150,9 +128,8 @@ export function buildEndnotesXml(
 
   const endnoteEntries = referenced
     .map((entry): string => {
-      const augmentedBlocks = withInjectedEndnoteRef(entry.endnote.blocks);
       const innerXml = serializeBlocksXml(
-        augmentedBlocks,
+        withInjectedEndnoteRef(entry.endnote.blocks),
         partContext,
         styles,
       );
@@ -163,8 +140,7 @@ export function buildEndnotesXml(
   const xml =
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
     `<w:endnotes xmlns:w="${WORD_NS}" xmlns:w14="${WORD14_NS}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="${OFFICE_REL_NS}">` +
-    `${specials}${endnoteEntries}` +
-    `</w:endnotes>`;
+    `${specials}${endnoteEntries}</w:endnotes>`;
 
   return { xml, partContext };
 }
@@ -173,9 +149,7 @@ export function hasReferencedEndnotes(document: EditorDocument): boolean {
   if (!document.endnotes?.items) return false;
   for (const { run } of iterateEndnoteReferenceRuns(document)) {
     const ref = getRunEndnoteReference(run);
-    if (ref && document.endnotes.items[ref.endnoteId]) {
-      return true;
-    }
+    if (ref && document.endnotes.items[ref.endnoteId]) return true;
   }
   return false;
 }
