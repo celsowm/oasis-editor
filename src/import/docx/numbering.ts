@@ -59,6 +59,17 @@ function parseOptionalInteger(
   return Number.isFinite(value) ? value : undefined;
 }
 
+function parseSourceNumberingId(
+  raw: string | undefined,
+  minimum: number,
+): number | undefined {
+  if (!raw || !/^\d+$/.test(raw)) {
+    return undefined;
+  }
+  const value = Number.parseInt(raw, 10);
+  return Number.isSafeInteger(value) && value >= minimum ? value : undefined;
+}
+
 function parseLevel(level: XmlElement): NumberingLevel {
   const result: NumberingLevel = {};
   const formatRaw = getAttributeValue(
@@ -260,12 +271,22 @@ export function parseParagraphList(
     ...(effective.bulletGlyph ? { bulletGlyph: effective.bulletGlyph } : {}),
     ...(effective.bulletFont ? { bulletFont: effective.bulletFont } : {}),
   };
+
+  const sourceNumId = parseSourceNumberingId(numId, 1);
+  const sourceAbstractNumId = parseSourceNumberingId(
+    numberingMaps.numToAbstractId.get(numId),
+    0,
+  );
   if (
+    sourceNumId !== undefined ||
+    sourceAbstractNumId !== undefined ||
     effective.rawFormat ||
     effective.restartAfterLevel !== undefined ||
     effective.paragraphStyleId
   ) {
     setEditorListOoxmlNumberingMetadata(list, {
+      ...(sourceNumId !== undefined ? { sourceNumId } : {}),
+      ...(sourceAbstractNumId !== undefined ? { sourceAbstractNumId } : {}),
       ...(effective.rawFormat ? { format: effective.rawFormat } : {}),
       ...(effective.restartAfterLevel !== undefined
         ? { restartAfterLevel: effective.restartAfterLevel }
