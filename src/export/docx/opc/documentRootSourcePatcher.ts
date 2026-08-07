@@ -263,17 +263,23 @@ function mergeBodyExtensions(
       return;
     }
 
+    // Stable source identity is stronger than positional topology. Prefer it
+    // even when block counts/types still happen to match (for example after a
+    // delete+insert replacement). Ordinal pairing is only the fallback for
+    // source blocks without an identity such as legacy paragraphs/tables.
+    const identityAnchor = identityAnchorForSourceGap(
+      sourceChildren,
+      sourceIndex,
+      rebuiltChildren,
+    );
     const ordinalAnchor = stableTopology
       ? ordinalAnchorForSourceGap(sourceChildren, sourceIndex, rebuiltChildren)
       : undefined;
-    const identityAnchor = !stableTopology
-      ? identityAnchorForSourceGap(sourceChildren, sourceIndex, rebuiltChildren)
-      : undefined;
-    const gapAnchor = ordinalAnchor ?? identityAnchor;
+    const gapAnchor = identityAnchor ?? ordinalAnchor;
 
-    if (sourceChild.namespaceURI === WORD_NS && !stableTopology && !gapAnchor) {
-      // A Word flow wrapper needs either unchanged topology or a stable identity
-      // on the next original block. Without one, moving it would be heuristic.
+    if (sourceChild.namespaceURI === WORD_NS && !gapAnchor) {
+      // A Word flow wrapper needs either stable block identity or unchanged
+      // modeled topology. Without an anchor, moving it would be heuristic.
       return;
     }
 
