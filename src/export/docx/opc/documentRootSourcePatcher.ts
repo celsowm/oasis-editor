@@ -31,6 +31,19 @@ function elementKey(element: XmlElement): string {
   return `${element.namespaceURI ?? ""}\u0000${elementLocalName(element)}`;
 }
 
+function getAttributeByLocalName(
+  element: XmlElement,
+  localName: string,
+): string | undefined {
+  for (let index = 0; index < element.attributes.length; index += 1) {
+    const attribute = element.attributes.item(index);
+    if (attribute?.localName === localName) {
+      return attribute.value;
+    }
+  }
+  return undefined;
+}
+
 function directWordChild(
   element: XmlElement,
   localName: string,
@@ -73,6 +86,28 @@ function modeledBodyChildren(elements: XmlElement[]): XmlElement[] {
   return elements.filter(isModeledBodyWordChild);
 }
 
+function bodyAnchorIdentity(element: XmlElement): string | undefined {
+  if (element.namespaceURI !== WORD_NS) {
+    return undefined;
+  }
+  const localName = elementLocalName(element);
+  if (localName === "p") {
+    const paraId = getAttributeByLocalName(element, "paraId");
+    return paraId ? `p:${paraId}` : undefined;
+  }
+  if (localName === "sdt") {
+    const properties = directWordChild(element, "sdtPr");
+    const id = properties
+      ? getAttributeByLocalName(directWordChild(properties, "id") ?? properties, "val")
+      : undefined;
+    return id ? `sdt:${id}` : undefined;
+  }
+  if (localName === "sectPr") {
+    return "sectPr:final";
+  }
+  return undefined;
+}
+
 function bodyTopologyIsStable(
   sourceChildren: XmlElement[],
   rebuiltChildren: XmlElement[],
@@ -89,7 +124,7 @@ function bodyTopologyIsStable(
   );
 }
 
-function anchorForSourceGap(
+function ordinalAnchorForSourceGap(
   sourceChildren: XmlElement[],
   sourceIndex: number,
   rebuiltChildren: XmlElement[],
@@ -105,10 +140,32 @@ function anchorForSourceGap(
       return rebuiltAnchors[anchorIndex];
     }
   }
+  return undefined;
+}
 
-  // `w:sectPr` must remain the last Word body child. If an opaque source node
-  // has no following modeled anchor, place it immediately before the final
-  // section properties rather than appending invalid markup after sectPr.
+function identityAnchorForSourceGap(
+  sourceChildren: XmlElement[],
+  sourceIndex: number,
+  rebuiltChildren: XmlElement[],
+): XmlElement | undefined {
+  const nextSourceAnchor = sourceChildren
+    .slice(sourceIndex + 1)
+    .find(isModeledBodyWordChild);
+  if (!nextSourceAnchor) {
+    return undefined;
+  }
+  const identity = bodyAnchorIdentity(nextSourceAnchor);
+  if (!identity) {
+    return undefined;
+  }
+  return modeledBodyChildren(rebuiltChildren).find(
+    (candidate): boolean => bodyAnchorIdentity(candidate) === identity,
+  );
+}
+
+function finalSectionAnchor(
+  rebuiltChildren: XmlElement[],
+): XmlElement | undefined {
   return [...rebuiltChildren].reverse().find(
     (candidate): boolean =>
       candidate.namespaceURI === WORD_NS &&
@@ -134,13 +191,19 @@ function mergeDocumentSiblings(
     (sourceChild): boolean =>
       !(sourceChild.namespaceURI === WORD_NS && elementLocalName(sourceChild) === "body"),
   );
+  const usedExisting = new Set<XmlElement>();
   for (let index = sourceSiblings.length - 1; index >= 0; index -= 1) {
     const sourceChild = sourceSiblings[index]!;
     const currentChildren = elementChildren(rebuiltRoot);
     const existing = currentChildren.find(
-      (candidate): boolean => elementKey(candidate) === elementKey(sourceChild),
+      (candidate): boolean =>
+        !usedExisting.has(candidate) &&
+        elementKey(candidate) === elementKey(sourceChild),
     );
     const node = existing ?? sourceChild.cloneNode(true);
+    if (existing) {
+      usedExisting.add(existing);
+    }
     rebuiltRoot.insertBefore(node, anchor);
     anchor = node;
   }
@@ -200,18 +263,23 @@ function mergeBodyExtensions(
       return;
     }
 
-    if (sourceChild.namespaceURI === WORD_NS && !stableTopology) {
-      // Word flow wrappers need stable block topology to determine their gap.
-      // Non-Word extension nodes remain safe to preserve even after structural
-      // edits because Oasis has no semantic editing surface for them.
+    const ordinalAnchor = stableTopology
+      ? ordinalAnchorForSourceGap(sourceChildren, sourceIndex, rebuiltChildren)
+      : undefined;
+    const identityAnchor = !stableTopology
+      ? identityAnchorForSourceGap(sourceChildren, sourceIndex, rebuiltChildren)
+      : undefined;
+    const gapAnchor = ordinalAnchor ?? identityAnchor;
+
+    if (sourceChild.namespaceURI === WORD_NS && !stableTopology && !gapAnchor) {
+      // A Word flow wrapper needs either unchanged topology or a stable identity
+      // on the next original block. Without one, moving it would be heuristic.
       return;
     }
 
     rebuiltBody.insertBefore(
       sourceChild.cloneNode(true),
-      stableTopology
-        ? (anchorForSourceGap(sourceChildren, sourceIndex, rebuiltChildren) ?? null)
-        : (anchorForSourceGap([], 0, rebuiltChildren) ?? null),
+      gapAnchor ?? finalSectionAnchor(rebuiltChildren) ?? null,
     );
   });
 
