@@ -2,6 +2,7 @@ import JSZip from "jszip";
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 import type { EditorDocument } from "@/core/model.js";
 import { patchRebuiltDocxWithHeaderFooterSourcePaths } from "./headerFooterSourcePatcher.js";
+import { mergeRebuiltDocumentSectionPropertiesFromSource } from "./sectionPropertiesSourcePatcher.js";
 import { patchRebuiltDocxWithSourcePackage } from "./sourcePackagePatcher.js";
 
 const CONVENTIONAL_MAIN_DOCUMENT_PATH = "word/document.xml";
@@ -52,8 +53,18 @@ export async function patchRebuiltDocxPreservingSource(
     return patchRebuiltDocxWithSourcePackage(document, rebuiltBuffer);
   }
 
+  const sourceAwareMainXml = mergeRebuiltDocumentSectionPropertiesFromSource(
+    sourceMainPart.data,
+    rebuiltMainXml,
+  );
+  let sourceAwareRebuiltBuffer = rebuiltBuffer;
+  if (sourceAwareMainXml !== rebuiltMainXml) {
+    rebuilt.file(CONVENTIONAL_MAIN_DOCUMENT_PATH, sourceAwareMainXml);
+    sourceAwareRebuiltBuffer = await rebuilt.generateAsync({ type: "arraybuffer" });
+  }
+
   return patchRebuiltDocxWithHeaderFooterSourcePaths(
     document,
-    rebuiltBuffer,
+    sourceAwareRebuiltBuffer,
   );
 }
