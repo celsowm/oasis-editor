@@ -138,30 +138,21 @@ function isModeledParagraphProperty(element: XmlElement): boolean {
 }
 
 /**
- * Preserves source-only `w:pPr` children while keeping the freshly generated
- * paragraph properties authoritative. Unknown children are inserted before the
- * next generated source sibling when possible, preserving source order.
+ * Generic source-aware merge for a standalone `w:pPr` container. Generated
+ * modeled properties remain authoritative while source-only attributes and
+ * children are retained in source-relative order. This is shared by paragraph
+ * nodes and style property containers so both paths use the same modeled
+ * vocabulary and deletion semantics.
  */
-export function mergeParagraphPropertiesOoxmlSource(
-  paragraph: EditorParagraphNode,
+export function mergeParagraphPropertiesXmlSource(
+  sourceXml: string,
   generatedXml: string,
-  hasOverrides: boolean,
 ): string {
-  const source = getEditorParagraphOoxmlSource(paragraph)?.paragraphProperties;
-  if (!source || hasRelationshipReference(source.xml)) {
+  if (!sourceXml || hasRelationshipReference(sourceXml)) {
     return generatedXml;
   }
 
-  if (
-    !hasOverrides &&
-    !paragraph.list &&
-    source.semanticSignature ===
-      createEditorParagraphPropertiesSignature(paragraph)
-  ) {
-    return source.xml;
-  }
-
-  const sourceProperties = parseParagraphPropertiesXml(source.xml);
+  const sourceProperties = parseParagraphPropertiesXml(sourceXml);
   const generatedProperties = createGeneratedParagraphProperties(generatedXml);
   if (!sourceProperties || !generatedProperties) {
     return generatedXml;
@@ -201,4 +192,31 @@ export function mergeParagraphPropertiesOoxmlSource(
   }
 
   return new XMLSerializer().serializeToString(generatedProperties);
+}
+
+/**
+ * Preserves source-only `w:pPr` children while keeping the freshly generated
+ * paragraph properties authoritative. Unknown children are inserted before the
+ * next generated source sibling when possible, preserving source order.
+ */
+export function mergeParagraphPropertiesOoxmlSource(
+  paragraph: EditorParagraphNode,
+  generatedXml: string,
+  hasOverrides: boolean,
+): string {
+  const source = getEditorParagraphOoxmlSource(paragraph)?.paragraphProperties;
+  if (!source || hasRelationshipReference(source.xml)) {
+    return generatedXml;
+  }
+
+  if (
+    !hasOverrides &&
+    !paragraph.list &&
+    source.semanticSignature ===
+      createEditorParagraphPropertiesSignature(paragraph)
+  ) {
+    return source.xml;
+  }
+
+  return mergeParagraphPropertiesXmlSource(source.xml, generatedXml);
 }
