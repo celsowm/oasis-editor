@@ -3,6 +3,7 @@ import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 import type { EditorDocument } from "@/core/model.js";
 import { patchRebuiltHeaderFooterRootsFromSource } from "./headerFooterRootSourcePatcher.js";
 import { patchRebuiltDocxWithHeaderFooterSourcePaths } from "./headerFooterSourcePatcher.js";
+import { patchRebuiltNumberingFromSource } from "./numberingSourcePatcher.js";
 import { mergeRebuiltDocumentSectionPropertiesFromSource } from "./sectionPropertiesSourcePatcher.js";
 import {
   filterSourceOnlyWordSingletons,
@@ -48,6 +49,7 @@ export async function patchRebuiltDocxPreservingSource(
   }
 
   const rebuilt = await JSZip.loadAsync(rebuiltBuffer);
+  const numberingWasRebuilt = Boolean(rebuilt.file("word/numbering.xml"));
   const originallyPresent: RebuiltSingletonPresence = {
     settings: Boolean(rebuilt.file("word/settings.xml")),
     styles: Boolean(rebuilt.file("word/styles.xml")),
@@ -57,6 +59,11 @@ export async function patchRebuiltDocxPreservingSource(
     sourcePackage,
     rebuilt,
   );
+  if (numberingWasRebuilt) {
+    rebuiltChanged =
+      (await patchRebuiltNumberingFromSource(sourcePackage, rebuilt)) ||
+      rebuiltChanged;
+  }
   rebuiltChanged =
     (await filterSourceOnlyWordSingletons(rebuilt, originallyPresent)) ||
     rebuiltChanged;
