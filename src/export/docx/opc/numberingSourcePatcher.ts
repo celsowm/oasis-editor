@@ -15,9 +15,7 @@ function elementChildren(node: XmlNode): XmlElement[] {
   const children: XmlElement[] = [];
   for (let index = 0; index < node.childNodes.length; index += 1) {
     const child = node.childNodes[index];
-    if (child?.nodeType === child.ELEMENT_NODE) {
-      children.push(child as XmlElement);
-    }
+    if (child?.nodeType === child.ELEMENT_NODE) children.push(child as XmlElement);
   }
   return children;
 }
@@ -36,26 +34,45 @@ function getAttributeByLocalName(
 ): string | undefined {
   for (let index = 0; index < element.attributes.length; index += 1) {
     const attribute = element.attributes.item(index);
-    if (attribute?.localName === localName) {
-      return attribute.value;
-    }
+    if (attribute?.localName === localName) return attribute.value;
   }
   return undefined;
+}
+
+function setWordAttributeByLocalName(
+  element: XmlElement,
+  localName: string,
+  value: string,
+): void {
+  for (let index = 0; index < element.attributes.length; index += 1) {
+    const attribute = element.attributes.item(index);
+    if (attribute?.localName === localName) {
+      element.setAttribute(attribute.name, value);
+      return;
+    }
+  }
+  element.setAttributeNS(WORD_NS, `w:${localName}`, value);
+}
+
+function directWordChild(
+  element: XmlElement,
+  localName: string,
+): XmlElement | undefined {
+  return elementChildren(element).find(
+    (child): boolean =>
+      child.namespaceURI === WORD_NS && elementLocalName(child) === localName,
+  );
 }
 
 function copyMissingAttributes(source: XmlElement, target: XmlElement): void {
   for (let index = 0; index < source.attributes.length; index += 1) {
     const attribute = source.attributes.item(index);
-    if (!attribute) {
-      continue;
-    }
+    if (!attribute) continue;
     const localName = attribute.localName ?? attribute.name;
     const exists = attribute.namespaceURI
       ? target.hasAttributeNS(attribute.namespaceURI, localName)
       : target.hasAttribute(attribute.name);
-    if (exists) {
-      continue;
-    }
+    if (exists) continue;
     if (attribute.namespaceURI) {
       target.setAttributeNS(attribute.namespaceURI, attribute.name, attribute.value);
     } else {
@@ -64,15 +81,10 @@ function copyMissingAttributes(source: XmlElement, target: XmlElement): void {
   }
 }
 
-function mergeExtensionChildrenOnly(
-  source: XmlElement,
-  target: XmlElement,
-): void {
+function mergeExtensionChildrenOnly(source: XmlElement, target: XmlElement): void {
   const targetKeys = new Set(elementChildren(target).map(elementKey));
   for (const child of elementChildren(source)) {
-    if (child.namespaceURI === WORD_NS || targetKeys.has(elementKey(child))) {
-      continue;
-    }
+    if (child.namespaceURI === WORD_NS || targetKeys.has(elementKey(child))) continue;
     target.appendChild(child.cloneNode(true));
   }
 }
@@ -95,16 +107,10 @@ function parseNumberingRoots(
   sourceXml: string,
   rebuiltXml: string,
 ): { sourceRoot: XmlElement; rebuiltRoot: XmlElement } | undefined {
-  const sourceDocument = new DOMParser().parseFromString(
-    sourceXml,
-    "application/xml",
-  );
-  const rebuiltDocument = new DOMParser().parseFromString(
-    rebuiltXml,
-    "application/xml",
-  );
-  const sourceRoot = sourceDocument.documentElement as XmlElement | undefined;
-  const rebuiltRoot = rebuiltDocument.documentElement as XmlElement | undefined;
+  const sourceRoot = new DOMParser().parseFromString(sourceXml, "application/xml")
+    .documentElement as XmlElement | undefined;
+  const rebuiltRoot = new DOMParser().parseFromString(rebuiltXml, "application/xml")
+    .documentElement as XmlElement | undefined;
   if (
     !sourceRoot ||
     !rebuiltRoot ||
@@ -140,12 +146,7 @@ function filteredSourceRunProperties(source: XmlElement): XmlElement | undefined
   const clone = source.cloneNode(false) as XmlElement;
   let preserved = false;
   for (const child of elementChildren(source)) {
-    if (
-      child.namespaceURI === WORD_NS &&
-      elementLocalName(child) === "rFonts"
-    ) {
-      continue;
-    }
+    if (child.namespaceURI === WORD_NS && elementLocalName(child) === "rFonts") continue;
     clone.appendChild(child.cloneNode(true));
     preserved = true;
   }
@@ -156,24 +157,17 @@ function mergeLevelRunProperties(source: XmlElement, target: XmlElement): void {
   copyMissingAttributes(source, target);
   const sourceChildren = elementChildren(source);
   const targetByKey = new Map<string, XmlElement>(
-    elementChildren(target).map(
-      (child): [string, XmlElement] => [elementKey(child), child],
-    ),
+    elementChildren(target).map((child): [string, XmlElement] => [elementKey(child), child]),
   );
   sourceChildren.forEach((sourceChild, sourceIndex): void => {
-    const key = elementKey(sourceChild);
-    const targetChild = targetByKey.get(key);
+    const childKey = elementKey(sourceChild);
+    const targetChild = targetByKey.get(childKey);
     if (targetChild) {
       copyMissingAttributes(sourceChild, targetChild);
       mergeExtensionChildrenOnly(sourceChild, targetChild);
       return;
     }
-    if (
-      sourceChild.namespaceURI === WORD_NS &&
-      elementLocalName(sourceChild) === "rFonts"
-    ) {
-      return;
-    }
+    if (sourceChild.namespaceURI === WORD_NS && elementLocalName(sourceChild) === "rFonts") return;
     insertSourceChildInOrder(
       sourceChildren,
       sourceIndex,
@@ -188,14 +182,12 @@ function mergeLevelElement(source: XmlElement, target: XmlElement): void {
   copyMissingAttributes(source, target);
   const sourceChildren = elementChildren(source);
   const targetByKey = new Map<string, XmlElement>(
-    elementChildren(target).map(
-      (child): [string, XmlElement] => [elementKey(child), child],
-    ),
+    elementChildren(target).map((child): [string, XmlElement] => [elementKey(child), child]),
   );
 
   sourceChildren.forEach((sourceChild, sourceIndex): void => {
-    const key = elementKey(sourceChild);
-    const targetChild = targetByKey.get(key);
+    const childKey = elementKey(sourceChild);
+    const targetChild = targetByKey.get(childKey);
     const localName = elementLocalName(sourceChild);
     if (targetChild) {
       copyMissingAttributes(sourceChild, targetChild);
@@ -207,24 +199,15 @@ function mergeLevelElement(source: XmlElement, target: XmlElement): void {
       return;
     }
 
-    if (
-      sourceChild.namespaceURI === WORD_NS &&
-      MODELED_LEVEL_CHILDREN.has(localName)
-    ) {
-      return;
-    }
+    if (sourceChild.namespaceURI === WORD_NS && MODELED_LEVEL_CHILDREN.has(localName)) return;
 
     if (sourceChild.namespaceURI === WORD_NS && localName === "rPr") {
       const filtered = filteredSourceRunProperties(sourceChild);
-      if (filtered) {
-        target.appendChild(filtered);
-      }
+      if (filtered) target.appendChild(filtered);
       return;
     }
 
-    // pPr and unrecognized Word children are currently not generated by the
-    // typed numbering serializer, so retaining them is preservation rather
-    // than overriding an editor-visible value.
+    // `pPr` and other unmodeled Word children are source preservation data.
     insertSourceChildInOrder(
       sourceChildren,
       sourceIndex,
@@ -249,14 +232,11 @@ function mergeAbstractNumElement(source: XmlElement, target: XmlElement): void {
   );
 
   sourceChildren.forEach((sourceChild, sourceIndex): void => {
-    const key = abstractChildKey(sourceChild);
-    const targetChild = targetByKey.get(key);
+    const childKey = abstractChildKey(sourceChild);
+    const targetChild = targetByKey.get(childKey);
     if (targetChild) {
       copyMissingAttributes(sourceChild, targetChild);
-      if (
-        sourceChild.namespaceURI === WORD_NS &&
-        elementLocalName(sourceChild) === "lvl"
-      ) {
+      if (sourceChild.namespaceURI === WORD_NS && elementLocalName(sourceChild) === "lvl") {
         mergeLevelElement(sourceChild, targetChild);
       } else {
         mergeExtensionChildrenOnly(sourceChild, targetChild);
@@ -264,28 +244,108 @@ function mergeAbstractNumElement(source: XmlElement, target: XmlElement): void {
       return;
     }
 
-    // Source-only levels and abstract numbering metadata are inert unless a
-    // paragraph references them. Keeping them avoids destroying valid template
-    // definitions while the generated active levels stay authoritative.
     insertSourceChildInOrder(
       sourceChildren,
       sourceIndex,
       sourceChild,
       target,
-      (candidate): XmlElement | undefined =>
-        targetByKey.get(abstractChildKey(candidate)),
+      (candidate): XmlElement | undefined => targetByKey.get(abstractChildKey(candidate)),
     );
   });
 }
 
-function mergeNumElement(source: XmlElement, target: XmlElement): void {
-  copyMissingAttributes(source, target);
-  const targetChildren = elementChildren(target);
-  const abstractNumIdTarget = targetChildren.find(
-    (child): boolean =>
-      child.namespaceURI === WORD_NS &&
-      elementLocalName(child) === "abstractNumId",
+function findAbstractLevelForNum(
+  numberingRoot: XmlElement,
+  num: XmlElement,
+  ilvl: string,
+): XmlElement | undefined {
+  const abstractRef = directWordChild(num, "abstractNumId");
+  const abstractId = abstractRef ? getAttributeByLocalName(abstractRef, "val") : undefined;
+  if (!abstractId) return undefined;
+
+  const abstractNum = elementChildren(numberingRoot).find(
+    (candidate): boolean =>
+      candidate.namespaceURI === WORD_NS &&
+      elementLocalName(candidate) === "abstractNum" &&
+      getAttributeByLocalName(candidate, "abstractNumId") === abstractId,
   );
+  return abstractNum
+    ? elementChildren(abstractNum).find(
+        (candidate): boolean =>
+          candidate.namespaceURI === WORD_NS &&
+          elementLocalName(candidate) === "lvl" &&
+          (getAttributeByLocalName(candidate, "ilvl") ?? "0") === ilvl,
+      )
+    : undefined;
+}
+
+function canonicalizeOverrideLevel(
+  sourceLevel: XmlElement,
+  effectiveLevel: XmlElement,
+): XmlElement {
+  const canonical = effectiveLevel.cloneNode(true) as XmlElement;
+  mergeLevelElement(sourceLevel, canonical);
+
+  // An override-level pPr belongs to the override itself and may intentionally
+  // differ from the base abstract level. It is not emitted by the canonical
+  // serializer today, so retain the source override pPr rather than inheriting
+  // a base pPr that happened to be preserved on the effective abstract level.
+  const sourcePPr = directWordChild(sourceLevel, "pPr");
+  const canonicalPPr = directWordChild(canonical, "pPr");
+  if (sourcePPr) {
+    if (canonicalPPr) {
+      canonical.replaceChild(sourcePPr.cloneNode(true), canonicalPPr);
+    } else {
+      canonical.appendChild(sourcePPr.cloneNode(true));
+    }
+  } else if (canonicalPPr) {
+    canonical.removeChild(canonicalPPr);
+  }
+  return canonical;
+}
+
+function canonicalizeLevelOverride(
+  sourceOverride: XmlElement,
+  effectiveLevel: XmlElement | undefined,
+): XmlElement {
+  if (!effectiveLevel) return sourceOverride.cloneNode(true) as XmlElement;
+
+  const result = sourceOverride.cloneNode(false) as XmlElement;
+  const currentStart = getAttributeByLocalName(
+    directWordChild(effectiveLevel, "start") ?? effectiveLevel,
+    "val",
+  ) ?? "1";
+
+  for (const sourceChild of elementChildren(sourceOverride)) {
+    const localName = elementLocalName(sourceChild);
+    if (sourceChild.namespaceURI === WORD_NS && localName === "startOverride") {
+      const start = sourceChild.cloneNode(true) as XmlElement;
+      setWordAttributeByLocalName(start, "val", currentStart);
+      result.appendChild(start);
+      continue;
+    }
+    if (sourceChild.namespaceURI === WORD_NS && localName === "lvl") {
+      result.appendChild(canonicalizeOverrideLevel(sourceChild, effectiveLevel));
+      continue;
+    }
+    result.appendChild(sourceChild.cloneNode(true));
+  }
+  return result;
+}
+
+function mergeNumElement(
+  source: XmlElement,
+  target: XmlElement,
+  numberingRoot: XmlElement,
+): void {
+  copyMissingAttributes(source, target);
+  const abstractNumIdTarget = directWordChild(target, "abstractNumId");
+  const existingOverrides = new Map<string, XmlElement>();
+  for (const child of elementChildren(target)) {
+    if (child.namespaceURI === WORD_NS && elementLocalName(child) === "lvlOverride") {
+      existingOverrides.set(getAttributeByLocalName(child, "ilvl") ?? "0", child);
+    }
+  }
 
   for (const sourceChild of elementChildren(source)) {
     const localName = elementLocalName(sourceChild);
@@ -296,15 +356,24 @@ function mergeNumElement(source: XmlElement, target: XmlElement): void {
       }
       continue;
     }
+
     if (sourceChild.namespaceURI === WORD_NS && localName === "lvlOverride") {
-      // Overrides are partially projected into the editor's list semantics.
-      // Restoring the original override here could silently win over an edit to
-      // start/format, so keep it out until override identity is modeled fully.
+      const ilvl = getAttributeByLocalName(sourceChild, "ilvl") ?? "0";
+      const effectiveLevel = findAbstractLevelForNum(numberingRoot, target, ilvl);
+      const canonical = canonicalizeLevelOverride(sourceChild, effectiveLevel);
+      const existing = existingOverrides.get(ilvl);
+      if (existing) {
+        target.replaceChild(canonical, existing);
+      } else {
+        target.appendChild(canonical);
+      }
+      existingOverrides.set(ilvl, canonical);
       continue;
     }
+
     if (
       sourceChild.namespaceURI !== WORD_NS &&
-      !targetChildren.some(
+      !elementChildren(target).some(
         (candidate): boolean => elementKey(candidate) === elementKey(sourceChild),
       )
     ) {
@@ -314,9 +383,7 @@ function mergeNumElement(source: XmlElement, target: XmlElement): void {
 }
 
 function rootChildKey(element: XmlElement): string {
-  if (element.namespaceURI !== WORD_NS) {
-    return elementKey(element);
-  }
+  if (element.namespaceURI !== WORD_NS) return elementKey(element);
   const localName = elementLocalName(element);
   if (localName === "abstractNum") {
     return `${elementKey(element)}\u0000${getAttributeByLocalName(element, "abstractNumId") ?? ""}`;
@@ -332,9 +399,7 @@ export function mergeNumberingOoxmlSource(
   rebuiltXml: string,
 ): string {
   const roots = parseNumberingRoots(sourceXml, rebuiltXml);
-  if (!roots) {
-    return rebuiltXml;
-  }
+  if (!roots) return rebuiltXml;
   const { sourceRoot, rebuiltRoot } = roots;
   copyMissingAttributes(sourceRoot, rebuiltRoot);
   const sourceChildren = elementChildren(sourceRoot);
@@ -345,23 +410,21 @@ export function mergeNumberingOoxmlSource(
   );
 
   sourceChildren.forEach((sourceChild, sourceIndex): void => {
-    const key = rootChildKey(sourceChild);
-    const targetChild = targetByKey.get(key);
+    const childKey = rootChildKey(sourceChild);
+    const targetChild = targetByKey.get(childKey);
     const localName = elementLocalName(sourceChild);
     if (targetChild) {
       copyMissingAttributes(sourceChild, targetChild);
       if (sourceChild.namespaceURI === WORD_NS && localName === "abstractNum") {
         mergeAbstractNumElement(sourceChild, targetChild);
       } else if (sourceChild.namespaceURI === WORD_NS && localName === "num") {
-        mergeNumElement(sourceChild, targetChild);
+        mergeNumElement(sourceChild, targetChild, rebuiltRoot);
       } else {
         mergeExtensionChildrenOnly(sourceChild, targetChild);
       }
       return;
     }
 
-    // New editor-created numbering ids are allocated above the source maximum,
-    // so a source-only definition cannot collide with a new active definition.
     insertSourceChildInOrder(
       sourceChildren,
       sourceIndex,
@@ -396,14 +459,10 @@ export async function patchRebuiltNumberingFromSource(
 ): Promise<boolean> {
   const sourceXml = sourceNumberingXml(sourcePackage);
   const rebuiltEntry = rebuilt.file(REBUILT_NUMBERING_PATH);
-  if (!sourceXml || !rebuiltEntry) {
-    return false;
-  }
+  if (!sourceXml || !rebuiltEntry) return false;
   const rebuiltXml = await rebuiltEntry.async("string");
   const mergedXml = mergeNumberingOoxmlSource(sourceXml, rebuiltXml);
-  if (mergedXml === rebuiltXml) {
-    return false;
-  }
+  if (mergedXml === rebuiltXml) return false;
   rebuilt.file(REBUILT_NUMBERING_PATH, mergedXml);
   return true;
 }
