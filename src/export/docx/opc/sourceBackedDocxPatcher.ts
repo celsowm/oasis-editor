@@ -5,6 +5,7 @@ import { patchRebuiltDocumentRootFromSource } from "./documentRootSourcePatcher.
 import { patchRebuiltHeaderFooterRootsFromSource } from "./headerFooterRootSourcePatcher.js";
 import { patchRebuiltDocxWithHeaderFooterSourcePaths } from "./headerFooterSourcePatcher.js";
 import { patchRebuiltNumberingFromSource } from "./numberingSourcePatcher.js";
+import { patchRebuiltRelatedStoryRootsFromSource } from "./relatedStoryRootSourcePatcher.js";
 import { mergeRebuiltDocumentSectionPropertiesFromSource } from "./sectionPropertiesSourcePatcher.js";
 import {
   filterSourceOnlyWordSingletons,
@@ -79,6 +80,9 @@ export async function patchRebuiltDocxPreservingSource(
   }
   rebuiltChanged =
     (await filterSourceOnlyWordSingletons(rebuilt, originallyPresent)) ||
+    rebuiltChanged;
+  rebuiltChanged =
+    (await patchRebuiltRelatedStoryRootsFromSource(sourcePackage, rebuilt)) ||
     rebuiltChanged;
   rebuiltChanged =
     (await patchRebuiltHeaderFooterRootsFromSource(sourcePackage, rebuilt)) ||
