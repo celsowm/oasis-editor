@@ -44,7 +44,6 @@ async function buildSourcePackage(): Promise<ArrayBuffer> {
   <w:style w:type="table" w:styleId="FancyTable">
     <w:name w:val="Fancy Table"/>
     <w:tblPr w15:directTblPrAttr="keep-direct-tblpr">
-      <w:tblW w:w="5000" w:type="pct" w15:directWidthAttr="keep-direct-width"/>
       <w15:directTblPrExtension w15:val="keep-direct-tblpr-extension"/>
     </w:tblPr>
     <w:tblStylePr w:type="firstRow" w15:conditionalAttr="keep-conditional-root">
@@ -112,7 +111,6 @@ describe("source-backed table style preservation", () => {
     // retain extension markup nested inside otherwise modeled Word children.
     for (const token of [
       'w15:directTblPrAttr="keep-direct-tblpr"',
-      'w15:directWidthAttr="keep-direct-width"',
       'w15:conditionalAttr="keep-conditional-root"',
       'w15:pPrAttr="keep-ppr-root"',
       'w15:spacingAttr="keep-spacing"',
@@ -135,6 +133,18 @@ describe("source-backed table style preservation", () => {
     ]) {
       expect(stylesXml).toContain(token);
     }
+
+    // The direct tblPr contains no modeled table style property, so the normal
+    // serializer omits it. Source preservation must restore it before the first
+    // conditional block, not append it after tblStylePr and violate CT_Style.
+    const directTblPrIndex = stylesXml!.indexOf(
+      'w15:directTblPrAttr="keep-direct-tblpr"',
+    );
+    const firstConditionalIndex = stylesXml!.indexOf(
+      'w:type="firstRow"',
+    );
+    expect(directTblPrIndex).toBeGreaterThan(-1);
+    expect(directTblPrIndex).toBeLessThan(firstConditionalIndex);
 
     // This conditional block contains no modeled formatting at all, so it is
     // absent from EditorTableStyle but must survive as an opaque source block.
