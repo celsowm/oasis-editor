@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 import type { EditorDocument } from "@/core/model.js";
+import { patchRebuiltHeaderFooterRootsFromSource } from "./headerFooterRootSourcePatcher.js";
 import { patchRebuiltDocxWithHeaderFooterSourcePaths } from "./headerFooterSourcePatcher.js";
 import { mergeRebuiltDocumentSectionPropertiesFromSource } from "./sectionPropertiesSourcePatcher.js";
 import { patchRebuiltDocxWithSourcePackage } from "./sourcePackagePatcher.js";
@@ -47,6 +48,10 @@ export async function patchRebuiltDocxPreservingSource(
     sourcePackage,
     rebuilt,
   );
+  rebuiltChanged =
+    (await patchRebuiltHeaderFooterRootsFromSource(sourcePackage, rebuilt)) ||
+    rebuiltChanged;
+
   const rebuiltMainXml = await rebuilt
     .file(CONVENTIONAL_MAIN_DOCUMENT_PATH)
     ?.async("string");
