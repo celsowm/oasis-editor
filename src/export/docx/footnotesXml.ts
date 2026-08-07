@@ -12,15 +12,9 @@ import type {
   ExportBuildState,
   NumberingContext,
 } from "./docxTypes.js";
+import { createSourceAwareNoteDocxIdAllocator } from "./noteDocxIds.js";
 import { serializeBlocksXml } from "./textXml.js";
 import { OFFICE_REL_NS, WORD14_NS, WORD_NS } from "./xmlUtils.js";
-
-/**
- * The DOCX `w:id` value to use when materializing footnotes. Real footnote
- * ids start at 1; -1 / 0 are reserved for `separator` /
- * `continuationSeparator`.
- */
-const FIRST_FOOTNOTE_DOCX_ID = 1;
 
 export interface ReferencedFootnote {
   /** Local editor id. */
@@ -33,10 +27,9 @@ export interface ReferencedFootnote {
 
 /**
  * Walks the document in reading order and returns one entry per distinct
- * footnote id that is actually referenced by an inline run. Unreferenced
- * footnotes in the registry are skipped.
- *
- * Returns an empty list when the document has no footnotes.
+ * footnote id that is actually referenced by an inline run. Imported footnotes
+ * retain their original positive `w:id` where it is unique; new/conflicting
+ * notes are allocated above every imported id in the registry.
  */
 export function collectReferencedFootnotesForExport(
   document: EditorDocument,
@@ -45,7 +38,7 @@ export function collectReferencedFootnotesForExport(
   if (!items) return [];
 
   const seen = new Map<string, ReferencedFootnote>();
-  let nextDocxId = FIRST_FOOTNOTE_DOCX_ID;
+  const allocateDocxId = createSourceAwareNoteDocxIdAllocator(items);
   for (const { run } of iterateFootnoteReferenceRuns(document)) {
     const ref = getRunFootnoteReference(run);
     if (!ref) continue;
@@ -54,10 +47,9 @@ export function collectReferencedFootnotesForExport(
     if (!footnote) continue;
     seen.set(ref.footnoteId, {
       footnoteId: ref.footnoteId,
-      docxId: nextDocxId,
+      docxId: allocateDocxId(footnote),
       footnote,
     });
-    nextDocxId += 1;
   }
   return Array.from(seen.values());
 }
@@ -72,22 +64,12 @@ export function buildFootnoteIdMap(
   return map;
 }
 
-/**
- * Inject a `<w:footnoteRef/>` marker at the start of the first run of the
- * first paragraph of the body. This is the convention Word uses to render
- * the visible marker (e.g. "1") inside the footnote body.
- *
- * The marker is reinjected at serialization time only — the in-memory model
- * never stores it (per MVP plan).
- */
 function withInjectedFootnoteRef(blocks: EditorBlockNode[]): EditorBlockNode[] {
   if (blocks.length === 0) {
     return [createEmptyFootnoteBodyParagraph()];
   }
   const [first, ...rest] = blocks;
   if (first.type !== "paragraph") {
-    // Tables in the first slot are rare; prepend an empty paragraph carrying
-    // the marker so Word still sees one.
     return [createEmptyFootnoteBodyParagraph(true), first, ...rest];
   }
   return [prependFootnoteRefMarker(first), ...rest];
@@ -119,30 +101,16 @@ function prependFootnoteRefMarker(
   };
 }
 
-/**
- * Synthetic run that will be serialized as `<w:footnoteRef/>` by
- * `serializeFootnoteRefRun` below. We use a sentinel property to recognize
- * it at serialization time.
- */
 function makeFootnoteRefMarkerRun(): EditorParagraphNode["runs"][number] {
   return {
     id: "synthetic:footnoteRef",
     text: "",
     kind: "text",
     styles: { styleId: "FootnoteReference", superscript: true },
-    // Tag the run so the special serializer below can intercept it.
     __isFootnoteRefMarker: true,
   } as EditorParagraphNode["runs"][number] & { __isFootnoteRefMarker: true };
 }
 
-/**
- * Serialize the footnote bodies into the `<w:footnotes>` part XML, including
- * the conventional special entries (`separator` and `continuationSeparator`).
- *
- * `bodyContext` is the parent `DocContext`. We need it only to share the
- * footnoteIdMap; image/hyperlink relationships specific to the footnotes
- * part are returned via `partContext` (separate rels file).
- */
 export interface FootnotesPartResult {
   xml: string;
   partContext: DocContext;
@@ -157,8 +125,6 @@ export function buildFootnotesXml(
   styles: Record<string, EditorNamedStyle> | undefined,
   footnoteIdMap: Map<string, number>,
 ): FootnotesPartResult {
-  // Aggregate every block from every referenced footnote so we can build a
-  // single DocContext (shared image/hyperlink registry for the part).
   const allBlocks = referenced.flatMap((entry): EditorBlockNode[] =>
     withInjectedFootnoteRef(entry.footnote.blocks),
   );
@@ -190,10 +156,6 @@ export function buildFootnotesXml(
   return { xml, partContext };
 }
 
-/**
- * Convenience: figure out if the document has at least one referenced
- * footnote — used by callers to decide whether to emit the part at all.
- */
 export function hasReferencedFootnotes(document: EditorDocument): boolean {
   if (!document.footnotes?.items) return false;
   for (const { run } of iterateFootnoteReferenceRuns(document)) {
@@ -205,8 +167,8 @@ export function hasReferencedFootnotes(document: EditorDocument): boolean {
   return false;
 }
 
-/** Re-export to keep the public surface small. */
 export type { DocContext, NumberingContext, ExportBuildState };
-// Avoid an unused-import warning for getDocumentSections when tree-shaking
-// keeps the file as-is.
 void getDocumentSections;
+void document;
+void numberingContext;
+void state;
