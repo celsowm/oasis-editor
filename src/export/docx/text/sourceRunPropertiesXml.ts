@@ -15,6 +15,7 @@ import {
 import { setEditorRunOoxmlSource } from "@/ooxml/word/sourceFragments.js";
 
 const STYLE_SOURCE_RUN_ID = "ooxml-style-rpr-source";
+const XMLNS_NS = "http://www.w3.org/2000/xmlns/";
 
 function directElementChildren(element: XmlElement): XmlElement[] {
   const children: XmlElement[] = [];
@@ -60,7 +61,13 @@ function directRunProperties(run: XmlElement): XmlElement | undefined {
 function hasExtensionAttribute(element: XmlElement): boolean {
   for (let index = 0; index < element.attributes.length; index += 1) {
     const attribute = element.attributes[index];
-    if (attribute && attribute.namespaceURI !== WORD_NS) {
+    if (
+      attribute &&
+      attribute.namespaceURI !== WORD_NS &&
+      attribute.namespaceURI !== XMLNS_NS &&
+      attribute.prefix !== "xmlns" &&
+      attribute.name !== "xmlns"
+    ) {
       return true;
     }
   }
