@@ -10,6 +10,7 @@ import { WORD_NS } from "@/export/docx/xmlUtils.js";
 import { mergeWordPartRootExtensionsFromSource } from "./wordPartRootSourcePatcher.js";
 
 const REBUILT_MAIN_DOCUMENT_PATH = "word/document.xml";
+const MODELED_BODY_WORD_CHILDREN = new Set(["p", "tbl", "sdt", "sectPr"]);
 
 function elementChildren(node: XmlNode): XmlElement[] {
   const result: XmlElement[] = [];
@@ -61,6 +62,75 @@ function copyMissingAttributes(source: XmlElement, target: XmlElement): void {
   }
 }
 
+function isModeledBodyWordChild(element: XmlElement): boolean {
+  return (
+    element.namespaceURI === WORD_NS &&
+    MODELED_BODY_WORD_CHILDREN.has(elementLocalName(element))
+  );
+}
+
+function bodyTopologyIsStable(
+  sourceChildren: XmlElement[],
+  rebuiltChildren: XmlElement[],
+): boolean {
+  const sourceAnchors = sourceChildren.filter(isModeledBodyWordChild);
+  const rebuiltAnchors = rebuiltChildren.filter(isModeledBodyWordChild);
+  return (
+    sourceAnchors.length === rebuiltAnchors.length &&
+    sourceAnchors.every(
+      (sourceAnchor, index): boolean =>
+        elementLocalName(sourceAnchor) ===
+        elementLocalName(rebuiltAnchors[index]!),
+    )
+  );
+}
+
+function anchorForSourceGap(
+  sourceChildren: XmlElement[],
+  sourceIndex: number,
+  rebuiltChildren: XmlElement[],
+): XmlElement | undefined {
+  const sourceAnchors = sourceChildren.filter(isModeledBodyWordChild);
+  const rebuiltAnchors = rebuiltChildren.filter(isModeledBodyWordChild);
+  const nextSourceAnchor = sourceChildren
+    .slice(sourceIndex + 1)
+    .find(isModeledBodyWordChild);
+  if (!nextSourceAnchor) {
+    return undefined;
+  }
+  const anchorIndex = sourceAnchors.indexOf(nextSourceAnchor);
+  return anchorIndex >= 0 ? rebuiltAnchors[anchorIndex] : undefined;
+}
+
+function mergeDocumentWordSiblings(
+  sourceRoot: XmlElement,
+  rebuiltRoot: XmlElement,
+): void {
+  const sourceChildren = elementChildren(sourceRoot);
+  const rebuiltChildren = elementChildren(rebuiltRoot);
+  const body = directWordChild(rebuiltRoot, "body");
+  if (!body) {
+    return;
+  }
+
+  for (const sourceChild of sourceChildren) {
+    if (
+      sourceChild.namespaceURI !== WORD_NS ||
+      elementLocalName(sourceChild) === "body"
+    ) {
+      continue;
+    }
+    const alreadyPresent = rebuiltChildren.some(
+      (candidate): boolean => elementKey(candidate) === elementKey(sourceChild),
+    );
+    if (!alreadyPresent) {
+      // `w:document` has one modeled structural child (`w:body`), so Word
+      // siblings such as `w:background` have an unambiguous source position.
+      rebuiltRoot.insertBefore(sourceChild.cloneNode(true), body);
+    }
+  }
+}
+
 function mergeBodyExtensions(
   sourceXml: string,
   rebuiltXml: string,
@@ -86,6 +156,8 @@ function mergeBodyExtensions(
     return rebuiltXml;
   }
 
+  mergeDocumentWordSiblings(sourceRoot, rebuiltRoot);
+
   const sourceBody = directWordChild(sourceRoot, "body");
   const rebuiltBody = directWordChild(rebuiltRoot, "body");
   if (!sourceBody || !rebuiltBody) {
@@ -96,16 +168,33 @@ function mergeBodyExtensions(
   const sourceChildren = elementChildren(sourceBody);
   const rebuiltChildren = elementChildren(rebuiltBody);
   const rebuiltKeys = new Set(rebuiltChildren.map(elementKey));
+  const stableTopology = bodyTopologyIsStable(sourceChildren, rebuiltChildren);
 
   sourceChildren.forEach((sourceChild, sourceIndex): void => {
-    // WordprocessingML flow children require semantic block identity. Do not
-    // restore them here: a missing paragraph/table could be an intentional
-    // deletion. Opaque extension-namespace children have no Oasis editing
-    // surface and are therefore safe to retain.
-    if (
-      sourceChild.namespaceURI === WORD_NS ||
-      rebuiltKeys.has(elementKey(sourceChild))
-    ) {
+    if (isModeledBodyWordChild(sourceChild)) {
+      return;
+    }
+
+    if (sourceChild.namespaceURI === WORD_NS) {
+      if (!stableTopology) {
+        return;
+      }
+      // Unsupported Word flow children (e.g. altChunk/customXml/revision
+      // wrappers) are restored only when the modeled p/tbl/sdt/sectPr sequence
+      // is unchanged. Their source gap is then unambiguous.
+      const alreadyPresent = rebuiltChildren.some(
+        (candidate): boolean => elementKey(candidate) === elementKey(sourceChild),
+      );
+      if (!alreadyPresent) {
+        rebuiltBody.insertBefore(
+          sourceChild.cloneNode(true),
+          anchorForSourceGap(sourceChildren, sourceIndex, rebuiltChildren) ?? null,
+        );
+      }
+      return;
+    }
+
+    if (rebuiltKeys.has(elementKey(sourceChild))) {
       return;
     }
     const anchor = sourceChildren
