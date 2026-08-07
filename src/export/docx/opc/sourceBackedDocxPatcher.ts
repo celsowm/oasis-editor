@@ -11,6 +11,7 @@ import {
 } from "./sourceOnlySingletonFilter.js";
 import { patchRebuiltDocxWithSourcePackage } from "./sourcePackagePatcher.js";
 import { patchRebuiltStyleParagraphPropertiesFromSource } from "./styleParagraphPropertiesSourcePatcher.js";
+import { patchRebuiltStyleRunPropertiesFromSource } from "./styleRunPropertiesSourcePatcher.js";
 import { patchRebuiltWordSingletonsFromSource } from "./wordSingletonSourcePatcher.js";
 
 const CONVENTIONAL_MAIN_DOCUMENT_PATH = "word/document.xml";
@@ -71,6 +72,9 @@ export async function patchRebuiltDocxPreservingSource(
         sourcePackage,
         rebuilt,
       )) || rebuiltChanged;
+    rebuiltChanged =
+      (await patchRebuiltStyleRunPropertiesFromSource(sourcePackage, rebuilt)) ||
+      rebuiltChanged;
   }
   rebuiltChanged =
     (await filterSourceOnlyWordSingletons(rebuilt, originallyPresent)) ||
