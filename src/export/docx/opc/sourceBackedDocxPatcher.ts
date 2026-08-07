@@ -5,6 +5,7 @@ import { patchRebuiltCommentsExtendedFromSource } from "./commentsExtendedSource
 import { patchRebuiltDocumentRootFromSource } from "./documentRootSourcePatcher.js";
 import { patchRebuiltHeaderFooterRootsFromSource } from "./headerFooterRootSourcePatcher.js";
 import { patchRebuiltDocxWithHeaderFooterSourcePaths } from "./headerFooterSourcePatcher.js";
+import { patchRebuiltNoteEntriesFromSource } from "./noteEntrySourcePatcher.js";
 import { patchRebuiltNumberingFromSource } from "./numberingSourcePatcher.js";
 import { patchRebuiltRelatedStoryRootsFromSource } from "./relatedStoryRootSourcePatcher.js";
 import { mergeRebuiltDocumentSectionPropertiesFromSource } from "./sectionPropertiesSourcePatcher.js";
@@ -34,20 +35,13 @@ function countActiveSectionProperties(xml: string): number {
   return count;
 }
 
-/**
- * Applies source-backed package preservation. Header/footer source-path pairing
- * is enabled only while the section topology remains stable. Inserting or
- * removing sections shifts positional identities, so that case falls back to
- * the generic OPC merge instead of risking a header from the wrong section.
- */
+/** Applies all source-aware prepatches before the generic OPC overlay. */
 export async function patchRebuiltDocxPreservingSource(
   document: EditorDocument,
   rebuiltBuffer: ArrayBuffer,
 ): Promise<ArrayBuffer> {
   const sourcePackage = document.sourcePackage;
-  if (!sourcePackage) {
-    return rebuiltBuffer;
-  }
+  if (!sourcePackage) return rebuiltBuffer;
 
   const sourceMainPart = sourcePackage.parts[sourcePackage.mainDocumentPart];
   if (sourceMainPart?.kind !== "xml") {
@@ -61,47 +55,33 @@ export async function patchRebuiltDocxPreservingSource(
     styles: Boolean(rebuilt.file("word/styles.xml")),
     fontTable: Boolean(rebuilt.file("word/fontTable.xml")),
   };
-  let rebuiltChanged = await patchRebuiltWordSingletonsFromSource(
-    sourcePackage,
-    rebuilt,
-  );
+
+  let rebuiltChanged = await patchRebuiltWordSingletonsFromSource(sourcePackage, rebuilt);
   if (numberingWasRebuilt) {
-    rebuiltChanged =
-      (await patchRebuiltNumberingFromSource(sourcePackage, rebuilt)) ||
-      rebuiltChanged;
+    rebuiltChanged = (await patchRebuiltNumberingFromSource(sourcePackage, rebuilt)) || rebuiltChanged;
   }
   if (originallyPresent.styles) {
     rebuiltChanged =
-      (await patchRebuiltStyleParagraphPropertiesFromSource(
-        sourcePackage,
-        rebuilt,
-      )) || rebuiltChanged;
+      (await patchRebuiltStyleParagraphPropertiesFromSource(sourcePackage, rebuilt)) || rebuiltChanged;
     rebuiltChanged =
-      (await patchRebuiltStyleRunPropertiesFromSource(sourcePackage, rebuilt)) ||
-      rebuiltChanged;
+      (await patchRebuiltStyleRunPropertiesFromSource(sourcePackage, rebuilt)) || rebuiltChanged;
     rebuiltChanged =
-      (await patchRebuiltTableStylePropertiesFromSource(sourcePackage, rebuilt)) ||
-      rebuiltChanged;
+      (await patchRebuiltTableStylePropertiesFromSource(sourcePackage, rebuilt)) || rebuiltChanged;
   }
   rebuiltChanged =
-    (await filterSourceOnlyWordSingletons(rebuilt, originallyPresent)) ||
-    rebuiltChanged;
+    (await filterSourceOnlyWordSingletons(rebuilt, originallyPresent)) || rebuiltChanged;
   rebuiltChanged =
-    (await patchRebuiltRelatedStoryRootsFromSource(sourcePackage, rebuilt)) ||
-    rebuiltChanged;
+    (await patchRebuiltRelatedStoryRootsFromSource(sourcePackage, rebuilt)) || rebuiltChanged;
   rebuiltChanged =
-    (await patchRebuiltCommentsExtendedFromSource(sourcePackage, rebuilt)) ||
-    rebuiltChanged;
+    (await patchRebuiltNoteEntriesFromSource(document, sourcePackage, rebuilt)) || rebuiltChanged;
   rebuiltChanged =
-    (await patchRebuiltHeaderFooterRootsFromSource(sourcePackage, rebuilt)) ||
-    rebuiltChanged;
+    (await patchRebuiltCommentsExtendedFromSource(sourcePackage, rebuilt)) || rebuiltChanged;
   rebuiltChanged =
-    (await patchRebuiltDocumentRootFromSource(sourcePackage, rebuilt)) ||
-    rebuiltChanged;
+    (await patchRebuiltHeaderFooterRootsFromSource(sourcePackage, rebuilt)) || rebuiltChanged;
+  rebuiltChanged =
+    (await patchRebuiltDocumentRootFromSource(sourcePackage, rebuilt)) || rebuiltChanged;
 
-  const rebuiltMainXml = await rebuilt
-    .file(CONVENTIONAL_MAIN_DOCUMENT_PATH)
-    ?.async("string");
+  const rebuiltMainXml = await rebuilt.file(CONVENTIONAL_MAIN_DOCUMENT_PATH)?.async("string");
   if (
     !rebuiltMainXml ||
     countActiveSectionProperties(sourceMainPart.data) !==
@@ -125,9 +105,5 @@ export async function patchRebuiltDocxPreservingSource(
   const sourceAwareRebuiltBuffer = rebuiltChanged
     ? await rebuilt.generateAsync({ type: "arraybuffer" })
     : rebuiltBuffer;
-
-  return patchRebuiltDocxWithHeaderFooterSourcePaths(
-    document,
-    sourceAwareRebuiltBuffer,
-  );
+  return patchRebuiltDocxWithHeaderFooterSourcePaths(document, sourceAwareRebuiltBuffer);
 }
