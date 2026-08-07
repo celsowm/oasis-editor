@@ -5,7 +5,7 @@ import type {
   EditorNamedStyle,
   EditorParagraphNode,
 } from "@/core/model.js";
-import { getDocumentSections, getRunFootnoteReference } from "@/core/model.js";
+import { getRunFootnoteReference } from "@/core/model.js";
 import { iterateFootnoteReferenceRuns } from "@/core/footnotes.js";
 import type {
   DocContext,
@@ -17,19 +17,15 @@ import { serializeBlocksXml } from "./textXml.js";
 import { OFFICE_REL_NS, WORD14_NS, WORD_NS } from "./xmlUtils.js";
 
 export interface ReferencedFootnote {
-  /** Local editor id. */
   footnoteId: string;
-  /** DOCX numeric id used in `w:footnoteReference w:id="N"` and `w:footnote w:id="N"`. */
   docxId: number;
-  /** Footnote body. */
   footnote: EditorFootnote;
 }
 
 /**
  * Walks the document in reading order and returns one entry per distinct
- * footnote id that is actually referenced by an inline run. Imported footnotes
- * retain their original positive `w:id` where it is unique; new/conflicting
- * notes are allocated above every imported id in the registry.
+ * referenced footnote. Imported positive `w:id` values are retained when
+ * unique; new/conflicting notes are allocated above every imported id.
  */
 export function collectReferencedFootnotesForExport(
   document: EditorDocument,
@@ -41,8 +37,7 @@ export function collectReferencedFootnotesForExport(
   const allocateDocxId = createSourceAwareNoteDocxIdAllocator(items);
   for (const { run } of iterateFootnoteReferenceRuns(document)) {
     const ref = getRunFootnoteReference(run);
-    if (!ref) continue;
-    if (seen.has(ref.footnoteId)) continue;
+    if (!ref || seen.has(ref.footnoteId)) continue;
     const footnote = items[ref.footnoteId];
     if (!footnote) continue;
     seen.set(ref.footnoteId, {
@@ -58,16 +53,12 @@ export function buildFootnoteIdMap(
   referenced: ReferencedFootnote[],
 ): Map<string, number> {
   const map = new Map<string, number>();
-  for (const entry of referenced) {
-    map.set(entry.footnoteId, entry.docxId);
-  }
+  for (const entry of referenced) map.set(entry.footnoteId, entry.docxId);
   return map;
 }
 
 function withInjectedFootnoteRef(blocks: EditorBlockNode[]): EditorBlockNode[] {
-  if (blocks.length === 0) {
-    return [createEmptyFootnoteBodyParagraph()];
-  }
+  if (blocks.length === 0) return [createEmptyFootnoteBodyParagraph()];
   const [first, ...rest] = blocks;
   if (first.type !== "paragraph") {
     return [createEmptyFootnoteBodyParagraph(true), first, ...rest];
@@ -117,10 +108,10 @@ export interface FootnotesPartResult {
 }
 
 export function buildFootnotesXml(
-  document: EditorDocument,
+  _document: EditorDocument,
   referenced: ReferencedFootnote[],
-  numberingContext: NumberingContext,
-  state: ExportBuildState,
+  _numberingContext: NumberingContext,
+  _state: ExportBuildState,
   buildContext: (blocks: EditorBlockNode[]) => DocContext,
   styles: Record<string, EditorNamedStyle> | undefined,
   footnoteIdMap: Map<string, number>,
@@ -137,9 +128,8 @@ export function buildFootnotesXml(
 
   const footnoteEntries = referenced
     .map((entry): string => {
-      const augmentedBlocks = withInjectedFootnoteRef(entry.footnote.blocks);
       const innerXml = serializeBlocksXml(
-        augmentedBlocks,
+        withInjectedFootnoteRef(entry.footnote.blocks),
         partContext,
         styles,
       );
@@ -150,8 +140,7 @@ export function buildFootnotesXml(
   const xml =
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
     `<w:footnotes xmlns:w="${WORD_NS}" xmlns:w14="${WORD14_NS}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="${OFFICE_REL_NS}">` +
-    `${specials}${footnoteEntries}` +
-    `</w:footnotes>`;
+    `${specials}${footnoteEntries}</w:footnotes>`;
 
   return { xml, partContext };
 }
@@ -160,15 +149,9 @@ export function hasReferencedFootnotes(document: EditorDocument): boolean {
   if (!document.footnotes?.items) return false;
   for (const { run } of iterateFootnoteReferenceRuns(document)) {
     const ref = getRunFootnoteReference(run);
-    if (ref && document.footnotes.items[ref.footnoteId]) {
-      return true;
-    }
+    if (ref && document.footnotes.items[ref.footnoteId]) return true;
   }
   return false;
 }
 
 export type { DocContext, NumberingContext, ExportBuildState };
-void getDocumentSections;
-void document;
-void numberingContext;
-void state;
