@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 import type { EditorDocument } from "@/core/model.js";
+import { patchRebuiltCommentEntriesFromSource } from "./commentEntrySourcePatcher.js";
 import { patchRebuiltCommentsExtendedFromSource } from "./commentsExtendedSourcePatcher.js";
 import { patchRebuiltDocumentRootFromSource } from "./documentRootSourcePatcher.js";
 import { patchRebuiltHeaderFooterRootsFromSource } from "./headerFooterRootSourcePatcher.js";
@@ -28,9 +29,7 @@ function countActiveSectionProperties(xml: string): number {
   for (let index = 0; index < elements.length; index += 1) {
     const element = elements.item(index) as XmlElement | null;
     const parent = element?.parentNode as XmlElement | null;
-    if (element && parent?.localName !== "sectPrChange") {
-      count += 1;
-    }
+    if (element && parent?.localName !== "sectPrChange") count += 1;
   }
   return count;
 }
@@ -75,6 +74,8 @@ export async function patchRebuiltDocxPreservingSource(
   rebuiltChanged =
     (await patchRebuiltNoteEntriesFromSource(document, sourcePackage, rebuilt)) || rebuiltChanged;
   rebuiltChanged =
+    (await patchRebuiltCommentEntriesFromSource(sourcePackage, rebuilt)) || rebuiltChanged;
+  rebuiltChanged =
     (await patchRebuiltCommentsExtendedFromSource(sourcePackage, rebuilt)) || rebuiltChanged;
   rebuiltChanged =
     (await patchRebuiltHeaderFooterRootsFromSource(sourcePackage, rebuilt)) || rebuiltChanged;
@@ -84,8 +85,7 @@ export async function patchRebuiltDocxPreservingSource(
   const rebuiltMainXml = await rebuilt.file(CONVENTIONAL_MAIN_DOCUMENT_PATH)?.async("string");
   if (
     !rebuiltMainXml ||
-    countActiveSectionProperties(sourceMainPart.data) !==
-      countActiveSectionProperties(rebuiltMainXml)
+    countActiveSectionProperties(sourceMainPart.data) !== countActiveSectionProperties(rebuiltMainXml)
   ) {
     const preparedBuffer = rebuiltChanged
       ? await rebuilt.generateAsync({ type: "arraybuffer" })
