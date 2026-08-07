@@ -182,9 +182,18 @@ export function buildNumberingContext(
     let definition = definitionMap.get(key);
     if (!definition) {
       const sourceMetadata = getEditorListOoxmlNumberingMetadata(list);
+      const canReuseSourceIdentity =
+        sourceMetadata?.sourceNumId !== undefined &&
+        list.instanceId === String(sourceMetadata.sourceNumId);
       definition = {
-        abstractNumId: claimAbstractNumId(sourceMetadata?.sourceAbstractNumId),
-        numId: claimNumId(sourceMetadata?.sourceNumId),
+        abstractNumId: claimAbstractNumId(
+          canReuseSourceIdentity
+            ? sourceMetadata.sourceAbstractNumId
+            : undefined,
+        ),
+        numId: claimNumId(
+          canReuseSourceIdentity ? sourceMetadata.sourceNumId : undefined,
+        ),
         levels: [],
       };
       definitionMap.set(key, definition);
