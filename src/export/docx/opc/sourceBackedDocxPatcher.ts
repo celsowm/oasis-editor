@@ -15,6 +15,7 @@ import {
 import { patchRebuiltDocxWithSourcePackage } from "./sourcePackagePatcher.js";
 import { patchRebuiltStyleParagraphPropertiesFromSource } from "./styleParagraphPropertiesSourcePatcher.js";
 import { patchRebuiltStyleRunPropertiesFromSource } from "./styleRunPropertiesSourcePatcher.js";
+import { patchRebuiltTableStylePropertiesFromSource } from "./styleTablePropertiesSourcePatcher.js";
 import { patchRebuiltWordSingletonsFromSource } from "./wordSingletonSourcePatcher.js";
 
 const CONVENTIONAL_MAIN_DOCUMENT_PATH = "word/document.xml";
@@ -77,6 +78,9 @@ export async function patchRebuiltDocxPreservingSource(
       )) || rebuiltChanged;
     rebuiltChanged =
       (await patchRebuiltStyleRunPropertiesFromSource(sourcePackage, rebuilt)) ||
+      rebuiltChanged;
+    rebuiltChanged =
+      (await patchRebuiltTableStylePropertiesFromSource(sourcePackage, rebuilt)) ||
       rebuiltChanged;
   }
   rebuiltChanged =
