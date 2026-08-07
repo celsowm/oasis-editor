@@ -130,6 +130,100 @@ function copySourceAttributes(
   }
 }
 
+function copyExtensionAttributes(
+  source: XmlElement,
+  generated: XmlElement,
+): void {
+  for (let index = 0; index < source.attributes.length; index += 1) {
+    const attribute = source.attributes[index];
+    if (
+      !attribute ||
+      attribute.namespaceURI === WORD_NS ||
+      attribute.namespaceURI === OFFICE_REL_NS
+    ) {
+      continue;
+    }
+    const localName = attribute.localName ?? attribute.name;
+    const hasAttribute = attribute.namespaceURI
+      ? generated.hasAttributeNS(attribute.namespaceURI, localName)
+      : generated.hasAttribute(attribute.name);
+    if (hasAttribute) {
+      continue;
+    }
+    if (attribute.namespaceURI) {
+      generated.setAttributeNS(
+        attribute.namespaceURI,
+        attribute.name,
+        attribute.value,
+      );
+    } else {
+      generated.setAttribute(attribute.name, attribute.value);
+    }
+  }
+}
+
+function matchingChildByOccurrence(
+  sourceChildren: XmlElement[],
+  sourceIndex: number,
+  generatedChildren: XmlElement[],
+): XmlElement | undefined {
+  const key = elementKey(sourceChildren[sourceIndex]!);
+  let occurrence = 0;
+  for (let index = 0; index < sourceIndex; index += 1) {
+    if (elementKey(sourceChildren[index]!) === key) {
+      occurrence += 1;
+    }
+  }
+  return generatedChildren.filter(
+    (candidate): boolean => elementKey(candidate) === key,
+  )[occurrence];
+}
+
+/**
+ * Recursively carries extension-namespace markup through a modeled Word
+ * subtree. Missing Word attributes/children are never copied here, so an edit
+ * that removes modeled semantics cannot be undone by preservation.
+ */
+function mergeNestedExtensionMarkup(
+  source: XmlElement,
+  generated: XmlElement,
+): void {
+  copyExtensionAttributes(source, generated);
+  const sourceChildren = directElementChildren(source);
+  const generatedChildren = directElementChildren(generated);
+
+  sourceChildren.forEach((sourceChild, sourceIndex): void => {
+    const generatedChild = matchingChildByOccurrence(
+      sourceChildren,
+      sourceIndex,
+      generatedChildren,
+    );
+    if (sourceChild.namespaceURI === WORD_NS) {
+      if (generatedChild) {
+        mergeNestedExtensionMarkup(sourceChild, generatedChild);
+      }
+      return;
+    }
+
+    if (generatedChild) {
+      mergeNestedExtensionMarkup(sourceChild, generatedChild);
+      return;
+    }
+
+    const anchor = sourceChildren
+      .slice(sourceIndex + 1)
+      .map((candidate, offset): XmlElement | undefined =>
+        matchingChildByOccurrence(
+          sourceChildren,
+          sourceIndex + offset + 1,
+          generatedChildren,
+        ),
+      )
+      .find((candidate): candidate is XmlElement => Boolean(candidate));
+    generated.insertBefore(sourceChild.cloneNode(true), anchor ?? null);
+  });
+}
+
 function isModeledParagraphProperty(element: XmlElement): boolean {
   return (
     element.namespaceURI === WORD_NS &&
@@ -162,6 +256,17 @@ export function mergeParagraphPropertiesXmlSource(
 
   const sourceChildren = directElementChildren(sourceProperties);
   const generatedChildren = directElementChildren(generatedProperties);
+  sourceChildren.forEach((sourceChild, sourceIndex): void => {
+    const generatedChild = matchingChildByOccurrence(
+      sourceChildren,
+      sourceIndex,
+      generatedChildren,
+    );
+    if (generatedChild) {
+      mergeNestedExtensionMarkup(sourceChild, generatedChild);
+    }
+  });
+
   const generatedKeys = new Set(generatedChildren.map(elementKey));
   const preserved = sourceChildren.filter(
     (child): boolean =>
