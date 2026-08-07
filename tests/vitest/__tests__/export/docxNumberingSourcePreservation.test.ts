@@ -71,7 +71,22 @@ async function buildSourcePackage(): Promise<ArrayBuffer> {
     <w:nsid w:val="99999999"/>
     <w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="upperRoman"/><w:lvlText w:val="%1."/><w:lvlJc w:val="left"/></w:lvl>
   </w:abstractNum>
-  <w:num w:numId="42"><w:abstractNumId w:val="7"/><w15:numExtension w15:val="keep-num-extension"/></w:num>
+  <w:num w:numId="42">
+    <w:abstractNumId w:val="7"/>
+    <w:lvlOverride w:ilvl="0" w15:overrideAttr="keep-override-root">
+      <w:startOverride w:val="3" w15:startOverrideAttr="keep-start-override"/>
+      <w:lvl w:ilvl="0" w15:overrideLevelAttr="keep-override-level">
+        <w:start w:val="3"/>
+        <w:numFmt w:val="lowerRoman" w15:overrideFormatAttr="keep-override-format"/>
+        <w:lvlText w:val="(%1)"/>
+        <w:lvlJc w:val="right"/>
+        <w:pPr><w:ind w:left="1440" w:hanging="720"/></w:pPr>
+        <w15:overrideLevelExtension w15:val="keep-override-level-extension"/>
+      </w:lvl>
+      <w15:overrideExtension w15:val="keep-override-extension"/>
+    </w:lvlOverride>
+    <w15:numExtension w15:val="keep-num-extension"/>
+  </w:num>
   <w:num w:numId="99"><w:abstractNumId w:val="99"/></w:num>
   <w15:rootExtension w15:val="keep-root-extension"/>
 </w:numbering>`,
@@ -89,7 +104,10 @@ describe("source-backed numbering preservation", () => {
     if (!imported || imported.type !== "paragraph" || !imported.list) {
       throw new Error("Expected imported list paragraph.");
     }
+    // The source instance is a lower-Roman override starting at 3. Both edits
+    // must win over the source override while its wrapper/opaque metadata stays.
     imported.list.startAt = 5;
+    imported.list.format = "upperLetter";
 
     const created = createEditorParagraphFromRuns([{ text: "New Oasis list" }]);
     created.list = {
@@ -124,8 +142,27 @@ describe("source-backed numbering preservation", () => {
     expect(numberingXml).toContain('w:abstractNumId="100"');
     expect(numberingXml).toContain('w:numId="100"');
 
-    // The editor-visible start edit wins over the source value.
+    // Canonical editor semantics win in both the generated abstract level and
+    // the preserved instance override. Old lowerRoman/start=3 semantics never
+    // get reapplied by the preservation layer.
     expect(numberingXml).toContain('<w:start w:val="5"/>');
+    expect(numberingXml).toContain('w:numFmt w:val="upperLetter"');
+    expect(numberingXml).toMatch(/w:startOverride[^>]*w:val="5"/);
+    expect(numberingXml).not.toMatch(/w:startOverride[^>]*w:val="3"/);
+    expect(numberingXml).not.toContain('w:val="lowerRoman"');
+
+    // The override itself remains first-class OOXML preservation data.
+    expect(numberingXml).toContain('<w:lvlOverride');
+    expect(numberingXml).toContain('w15:overrideAttr="keep-override-root"');
+    expect(numberingXml).toContain('w15:startOverrideAttr="keep-start-override"');
+    expect(numberingXml).toContain('w15:overrideLevelAttr="keep-override-level"');
+    expect(numberingXml).toContain('w15:overrideFormatAttr="keep-override-format"');
+    expect(numberingXml).toContain('w15:val="keep-override-level-extension"');
+    expect(numberingXml).toContain('w15:val="keep-override-extension"');
+    // Override-specific paragraph properties deliberately remain distinct from
+    // the abstract level's source pPr.
+    expect(numberingXml).toContain('w:left="1440"');
+    expect(numberingXml).toContain('w:hanging="720"');
 
     // Source-only metadata and extension markup survive inside the active
     // abstract definition and at the numbering root.
