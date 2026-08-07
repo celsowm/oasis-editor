@@ -96,6 +96,48 @@ function mergePropertyXml(name: string, sourceXml: string, generatedXml: string)
   }
 }
 
+function firstConditionalStyleBlock(container: XmlElement): XmlElement | undefined {
+  return elementChildren(container).find(
+    (child): boolean =>
+      child.namespaceURI === WORD_NS && localName(child) === "tblStylePr",
+  );
+}
+
+function propertyInsertionAnchor(
+  sourceContainer: XmlElement,
+  targetContainer: XmlElement,
+  source: XmlElement,
+  propertyName: string,
+): XmlElement | null {
+  const sourceChildren = elementChildren(sourceContainer);
+  const sourceIndex = sourceChildren.indexOf(source);
+  const nextSourceProperty = sourceChildren
+    .slice(sourceIndex + 1)
+    .find(
+      (candidate): boolean =>
+        candidate.namespaceURI === WORD_NS &&
+        CONDITIONAL_PROPERTY_NAMES.has(localName(candidate)),
+    );
+  if (nextSourceProperty) {
+    return directWordChild(targetContainer, localName(nextSourceProperty)) ?? null;
+  }
+
+  // CT_Style requires direct pPr/rPr/tblPr/trPr/tcPr properties before the
+  // repeating tblStylePr conditional blocks. A source-only opaque tblPr can be
+  // absent from the canonical rebuild, so appending it would produce the right
+  // data in the wrong schema position. Anchor the direct property before the
+  // first conditional block when the source container is a named style.
+  if (
+    sourceContainer.namespaceURI === WORD_NS &&
+    localName(sourceContainer) === "style" &&
+    CONDITIONAL_PROPERTY_NAMES.has(propertyName)
+  ) {
+    return firstConditionalStyleBlock(targetContainer) ?? null;
+  }
+
+  return null;
+}
+
 function replaceOrInsertProperty(
   sourceContainer: XmlElement,
   targetContainer: XmlElement,
@@ -123,19 +165,10 @@ function replaceOrInsertProperty(
     return true;
   }
 
-  const sourceChildren = elementChildren(sourceContainer);
-  const sourceIndex = sourceChildren.indexOf(source);
-  const nextSource = sourceChildren
-    .slice(sourceIndex + 1)
-    .find(
-      (candidate): boolean =>
-        candidate.namespaceURI === WORD_NS &&
-        CONDITIONAL_PROPERTY_NAMES.has(localName(candidate)),
-    );
-  const anchor = nextSource
-    ? directWordChild(targetContainer, localName(nextSource)) ?? null
-    : null;
-  targetContainer.insertBefore(clone, anchor);
+  targetContainer.insertBefore(
+    clone,
+    propertyInsertionAnchor(sourceContainer, targetContainer, source, name),
+  );
   return true;
 }
 
