@@ -4,6 +4,7 @@ import { createEditorParagraphFromRuns } from "@/core/editorState.js";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
 import { attachDocxSourcePackage } from "@/import/docx/opc/sourcePackage.js";
 import { exportEditorDocumentToDocxPreservingSource } from "@/export/docx/exportEditorDocumentToDocxPreservingSource.js";
+import { setEditorListOoxmlNumberingMetadata } from "@/ooxml/word/numberingMetadata.js";
 
 const WORD_NS =
   "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -96,7 +97,15 @@ describe("source-backed numbering preservation", () => {
       level: 0,
       format: "decimal",
       suffix: "tab",
+      instanceId: "copied-list-instance",
     };
+    // Simulate stale metadata surviving a duplicated/re-instantiated list. The
+    // changed instance identity must prevent it from stealing 42/7.
+    setEditorListOoxmlNumberingMetadata(created.list, {
+      sourceNumId: 42,
+      sourceAbstractNumId: 7,
+      format: "decimal",
+    });
     document.sections![0]!.blocks.push(created);
 
     const output = await JSZip.loadAsync(
@@ -108,7 +117,8 @@ describe("source-backed numbering preservation", () => {
     expect(numberingXml).toBeDefined();
 
     // Imported identities are stable, while the new list is allocated above
-    // every id in the source numbering graph (source max = 99).
+    // every id in the source numbering graph (source max = 99), even though it
+    // intentionally carries stale source identity metadata.
     expect(numberingXml).toContain('w:abstractNumId="7"');
     expect(numberingXml).toContain('w:numId="42"');
     expect(numberingXml).toContain('w:abstractNumId="100"');
