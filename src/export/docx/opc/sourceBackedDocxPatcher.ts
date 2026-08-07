@@ -4,6 +4,10 @@ import type { EditorDocument } from "@/core/model.js";
 import { patchRebuiltHeaderFooterRootsFromSource } from "./headerFooterRootSourcePatcher.js";
 import { patchRebuiltDocxWithHeaderFooterSourcePaths } from "./headerFooterSourcePatcher.js";
 import { mergeRebuiltDocumentSectionPropertiesFromSource } from "./sectionPropertiesSourcePatcher.js";
+import {
+  filterSourceOnlyWordSingletons,
+  type RebuiltSingletonPresence,
+} from "./sourceOnlySingletonFilter.js";
 import { patchRebuiltDocxWithSourcePackage } from "./sourcePackagePatcher.js";
 import { patchRebuiltWordSingletonsFromSource } from "./wordSingletonSourcePatcher.js";
 
@@ -44,10 +48,18 @@ export async function patchRebuiltDocxPreservingSource(
   }
 
   const rebuilt = await JSZip.loadAsync(rebuiltBuffer);
+  const originallyPresent: RebuiltSingletonPresence = {
+    settings: Boolean(rebuilt.file("word/settings.xml")),
+    styles: Boolean(rebuilt.file("word/styles.xml")),
+    fontTable: Boolean(rebuilt.file("word/fontTable.xml")),
+  };
   let rebuiltChanged = await patchRebuiltWordSingletonsFromSource(
     sourcePackage,
     rebuilt,
   );
+  rebuiltChanged =
+    (await filterSourceOnlyWordSingletons(rebuilt, originallyPresent)) ||
+    rebuiltChanged;
   rebuiltChanged =
     (await patchRebuiltHeaderFooterRootsFromSource(sourcePackage, rebuilt)) ||
     rebuiltChanged;
