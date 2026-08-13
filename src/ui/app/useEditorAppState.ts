@@ -16,7 +16,7 @@ export function createEditorAppState(options: {
   getStateSnapshot: () => EditorState;
 } {
   const initialEditorState = options.initialState
-    ? cloneEditorState(options.initialState)
+    ? options.initialState
     : options.initialDocument
       ? createEditorStateFromDocument(options.initialDocument)
       : createInitialEditorState();
