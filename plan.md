@@ -1,0 +1,5 @@
+1. **Analyze the performance issue**: The logs indicate a severe performance problem related to `input-to-layout` duration and subsequent drag selection events. The logs specifically mention a delay around input and backspace which also seems tied to structural changes or drag selection.
+2. **Examine `cloneEditorState` usage**: A key suspect for performance degradation in React state updates is deep cloning, specifically the `cloneEditorState` function. I will examine `createEditorInteractionRuntime.ts` where it is used.
+3. **Refactor `createEditorTableOperations`**: In `src/ui/app/createEditorInteractionRuntime.ts`, `applySelectionToStatePreservingStructure` currently uses `cloneEditorState(current).document`. This defeats structural sharing and causes a massive layout thrash by creating entirely new references for every document element. The solution is to remove `cloneEditorState(current).document` and just use `current.document`.
+4. **Pre-commit step**: Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.
+5. **Submit changes**: Submit the PR with changes to `src/ui/app/createEditorInteractionRuntime.ts`.
