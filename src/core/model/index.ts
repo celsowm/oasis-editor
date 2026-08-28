@@ -222,11 +222,15 @@ export {
   getParagraphById,
   findParagraphLocation,
   findParagraphTableLocation,
+  findParagraphTablePathLocation,
+  resolveTablePath,
   WeakMapDocumentIndexCache,
 } from "./documentIndex.js";
 export type {
   EditorParagraphLocation,
   TableLocation,
+  TablePathSegment,
+  ResolvedTablePath,
   DocumentParagraphIndexEntry,
   DocumentIndexCache,
 } from "./documentIndex.js";
