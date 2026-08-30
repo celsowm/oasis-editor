@@ -183,7 +183,9 @@ export function updateTableCellsInBlocks(
             child.type === "paragraph" && selectedParagraphIds.has(child.id),
         );
         let nextCell =
-          nestedBlocks === cell.blocks ? cell : { ...cell, blocks: nestedBlocks };
+          nestedBlocks === cell.blocks
+            ? cell
+            : { ...cell, blocks: nestedBlocks };
         if (directlySelected) {
           nextCell = updateCell(nextCell);
         }

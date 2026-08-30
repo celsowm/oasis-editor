@@ -305,7 +305,10 @@ export function computeNoteRenumber<TNote extends NoteBody>(
   const nextItems: Record<string, TNote> = {};
   let itemsChanged = false;
   for (const [id, body] of Object.entries(collection.items)) {
-    if (referenced.has(id) || (body as { docxId?: number }).docxId !== undefined) {
+    if (
+      referenced.has(id) ||
+      (body as { docxId?: number }).docxId !== undefined
+    ) {
       nextItems[id] = body;
     } else {
       itemsChanged = true;

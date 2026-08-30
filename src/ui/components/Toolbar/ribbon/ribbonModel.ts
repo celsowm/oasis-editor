@@ -98,8 +98,17 @@ export function isRibbonTabVisible(
 export function buildRibbonTabDefinitions(
   t: TranslateFn,
   api?: Pick<ToolbarActionApi, "commands">,
+  items?: ToolbarItem[],
 ): RibbonTabDefinition[] {
-  return RIBBON_TABS.filter((id) => isRibbonTabVisible(id, api)).map((id) => ({
+  return RIBBON_TABS.filter(
+    (id): boolean =>
+      isRibbonTabVisible(id, api) &&
+      (items === undefined ||
+        items.some(
+          (item): boolean =>
+            item.type !== "separator" && normalizeRibbonTab(item.tab) === id,
+        )),
+  ).map((id) => ({
     id,
     label: t(TAB_LABEL_KEYS[id]),
     contextual: CONTEXTUAL_TABS[id] !== undefined,

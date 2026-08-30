@@ -160,7 +160,10 @@ function collectHeaderFooterReferences(
 ): ParsedHeaderFooterReferences {
   const document = new DOMParser().parseFromString(xml, "application/xml");
   const references: HeaderFooterReference[] = [];
-  const sectionProperties = collectElementsByLocalName(document, "sectPr").filter(
+  const sectionProperties = collectElementsByLocalName(
+    document,
+    "sectPr",
+  ).filter(
     (element): boolean =>
       (element.parentNode as XmlElement | null)?.localName !== "sectPrChange",
   );
@@ -418,8 +421,9 @@ function transformRelationshipsForOwner(
     if (relationship.targetMode === "External") {
       return relationship;
     }
-    const resolved = resolveOpcRelationships(currentOwnerPath, [relationship])[0]
-      ?.resolvedTarget;
+    const resolved = resolveOpcRelationships(currentOwnerPath, [
+      relationship,
+    ])[0]?.resolvedTarget;
     if (!resolved) {
       return relationship;
     }
@@ -697,10 +701,7 @@ async function prepareContentTypes(
       delete contentTypes.overrides[match.current.partPath];
     }
   }
-  rebuilt.file(
-    OPC_CONTENT_TYPES_PATH,
-    serializeOpcContentTypes(contentTypes),
-  );
+  rebuilt.file(OPC_CONTENT_TYPES_PATH, serializeOpcContentTypes(contentTypes));
 }
 
 function sourceDocumentWithoutDeletedHeaderFooterParts(

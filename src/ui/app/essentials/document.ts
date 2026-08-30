@@ -63,6 +63,7 @@ export function buildEssentialsDocument(
         };
       });
     },
+    newDocument: (): void => options.newDocument(),
     exportDocx: (): undefined => void options.docIO.handleExportDocx(),
     exportPdf: (): undefined => void options.docIO.handleExportPdf(),
     importDocument: (): void | undefined => options.importInputRef()?.click(),

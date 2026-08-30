@@ -1,7 +1,4 @@
-import type {
-  Element as XmlElement,
-  Node as XmlNode,
-} from "@xmldom/xmldom";
+import type { Element as XmlElement, Node as XmlNode } from "@xmldom/xmldom";
 import { OFFICE_REL_NS, WORD_NS } from "@/export/docx/xmlUtils.js";
 
 function elementChildren(node: XmlNode): XmlElement[] {

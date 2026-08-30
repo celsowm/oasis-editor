@@ -48,9 +48,7 @@ function isXmlTrue(value: string | null | undefined): boolean {
   return value == null || value === "1" || value === "true" || value === "on";
 }
 
-function parseOptionalInteger(
-  element: XmlElement | null,
-): number | undefined {
+function parseOptionalInteger(element: XmlElement | null): number | undefined {
   const raw = getAttributeValue(element, "val");
   if (raw == null) {
     return undefined;

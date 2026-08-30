@@ -68,7 +68,11 @@ function copyMissingAttributes(source: XmlElement, target: XmlElement): void {
       continue;
     }
     if (attribute.namespaceURI) {
-      target.setAttributeNS(attribute.namespaceURI, attribute.name, attribute.value);
+      target.setAttributeNS(
+        attribute.namespaceURI,
+        attribute.name,
+        attribute.value,
+      );
     } else {
       target.setAttribute(attribute.name, attribute.value);
     }
@@ -98,7 +102,10 @@ function bodyAnchorIdentity(element: XmlElement): string | undefined {
   if (localName === "sdt") {
     const properties = directWordChild(element, "sdtPr");
     const id = properties
-      ? getAttributeByLocalName(directWordChild(properties, "id") ?? properties, "val")
+      ? getAttributeByLocalName(
+          directWordChild(properties, "id") ?? properties,
+          "val",
+        )
       : undefined;
     return id ? `sdt:${id}` : undefined;
   }
@@ -166,11 +173,13 @@ function identityAnchorForSourceGap(
 function finalSectionAnchor(
   rebuiltChildren: XmlElement[],
 ): XmlElement | undefined {
-  return [...rebuiltChildren].reverse().find(
-    (candidate): boolean =>
-      candidate.namespaceURI === WORD_NS &&
-      elementLocalName(candidate) === "sectPr",
-  );
+  return [...rebuiltChildren]
+    .reverse()
+    .find(
+      (candidate): boolean =>
+        candidate.namespaceURI === WORD_NS &&
+        elementLocalName(candidate) === "sectPr",
+    );
 }
 
 function mergeDocumentSiblings(
@@ -189,7 +198,10 @@ function mergeDocumentSiblings(
   let anchor: XmlNode = body;
   const sourceSiblings = sourceChildren.filter(
     (sourceChild): boolean =>
-      !(sourceChild.namespaceURI === WORD_NS && elementLocalName(sourceChild) === "body"),
+      !(
+        sourceChild.namespaceURI === WORD_NS &&
+        elementLocalName(sourceChild) === "body"
+      ),
   );
   const usedExisting = new Set<XmlElement>();
   for (let index = sourceSiblings.length - 1; index >= 0; index -= 1) {
@@ -209,10 +221,7 @@ function mergeDocumentSiblings(
   }
 }
 
-function mergeBodyExtensions(
-  sourceXml: string,
-  rebuiltXml: string,
-): string {
+function mergeBodyExtensions(sourceXml: string, rebuiltXml: string): string {
   const sourceDocument = new DOMParser().parseFromString(
     sourceXml,
     "application/xml",

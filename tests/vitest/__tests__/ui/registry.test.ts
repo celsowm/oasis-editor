@@ -159,6 +159,30 @@ describe("UI registries", () => {
     expect(
       items.find((item) => item.id === OASIS_TOOLBAR_ITEMS.section),
     ).toMatchObject({ tab: "layout", group: "section", ribbonSize: "large" });
+
+    const fileItems = items.filter(
+      (item) => item.tab === "file" && item.group === "document",
+    );
+    expect(fileItems.map((item) => item.id)).toEqual([
+      OASIS_TOOLBAR_ITEMS.newDocument,
+      OASIS_TOOLBAR_ITEMS.importDocument,
+      OASIS_TOOLBAR_ITEMS.exportDocx,
+      OASIS_TOOLBAR_ITEMS.exportPdf,
+    ]);
+    expect(
+      fileItems.map((item) =>
+        ("labelKey" in item ? item.labelKey : undefined)),
+    ).toEqual([
+      "toolbar.newDocument",
+      "toolbar.importDocx",
+      "toolbar.exportDocx",
+      "toolbar.exportPdf",
+    ]);
+    expect(
+      fileItems.every(
+        (item) => "ribbonSize" in item && item.ribbonSize === "large",
+      ),
+    ).toBe(true);
   });
 
   it("keeps table mutations prominent while secondary table actions stay compact", () => {

@@ -92,8 +92,8 @@ export function requiresDocxImporterCompatibilityPackage(
       const conventionalPath = conventionalPathForRelationship(relationship);
       return Boolean(
         conventionalPath &&
-          relationship.resolvedTarget &&
-          relationship.resolvedTarget !== conventionalPath,
+        relationship.resolvedTarget &&
+        relationship.resolvedTarget !== conventionalPath,
       );
     }),
   );

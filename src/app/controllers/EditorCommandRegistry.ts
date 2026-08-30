@@ -83,6 +83,13 @@ export class EditorCommandRegistry {
 
 export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   {
+    id: "newDocument",
+    command: "newDocument",
+    key: "n",
+    ctrlOrMeta: true,
+    execute: (): true => true,
+  },
+  {
     id: "selectAll",
     command: "selectAll",
     key: "a",

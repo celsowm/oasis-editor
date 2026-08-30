@@ -5,10 +5,7 @@ import {
   type Element as XmlElement,
   type Node as XmlNode,
 } from "@xmldom/xmldom";
-import type {
-  EditorDocument,
-  EditorDocxSourcePackage,
-} from "@/core/model.js";
+import type { EditorDocument, EditorDocxSourcePackage } from "@/core/model.js";
 import { WORD_NS } from "@/export/docx/xmlUtils.js";
 
 interface NotePartSpec {
@@ -47,7 +44,8 @@ function children(node: XmlNode): XmlElement[] {
   const result: XmlElement[] = [];
   for (let index = 0; index < node.childNodes.length; index += 1) {
     const child = node.childNodes[index];
-    if (child?.nodeType === child.ELEMENT_NODE) result.push(child as XmlElement);
+    if (child?.nodeType === child.ELEMENT_NODE)
+      result.push(child as XmlElement);
   }
   return result;
 }
@@ -78,7 +76,11 @@ function copyMissingAttributes(source: XmlElement, target: XmlElement): void {
       : target.hasAttribute(attribute.name);
     if (exists) continue;
     if (attribute.namespaceURI) {
-      target.setAttributeNS(attribute.namespaceURI, attribute.name, attribute.value);
+      target.setAttributeNS(
+        attribute.namespaceURI,
+        attribute.name,
+        attribute.value,
+      );
     } else {
       target.setAttribute(attribute.name, attribute.value);
     }
@@ -105,7 +107,9 @@ function sourcePartXml(
 function parseRoot(xml: string, rootName: string): XmlElement | undefined {
   const root = new DOMParser().parseFromString(xml, "application/xml")
     .documentElement as XmlElement | undefined;
-  return root?.namespaceURI === WORD_NS && name(root) === rootName ? root : undefined;
+  return root?.namespaceURI === WORD_NS && name(root) === rootName
+    ? root
+    : undefined;
 }
 
 function entryIdentity(element: XmlElement): string | undefined {
@@ -116,11 +120,14 @@ function entryIdentity(element: XmlElement): string | undefined {
 }
 
 function isModeledBlock(element: XmlElement): boolean {
-  return element.namespaceURI === WORD_NS && MODELED_BLOCK_NAMES.has(name(element));
+  return (
+    element.namespaceURI === WORD_NS && MODELED_BLOCK_NAMES.has(name(element))
+  );
 }
 
 function blockIdentity(element: XmlElement): string | undefined {
-  if (element.namespaceURI !== WORD_NS || name(element) !== "p") return undefined;
+  if (element.namespaceURI !== WORD_NS || name(element) !== "p")
+    return undefined;
   const paraId = attr(element, "paraId");
   return paraId ? `p:${paraId}` : undefined;
 }
@@ -130,7 +137,9 @@ function topologyStable(source: XmlElement[], target: XmlElement[]): boolean {
   const targetBlocks = target.filter(isModeledBlock);
   return (
     sourceBlocks.length === targetBlocks.length &&
-    sourceBlocks.every((block, index): boolean => name(block) === name(targetBlocks[index]!))
+    sourceBlocks.every(
+      (block, index): boolean => name(block) === name(targetBlocks[index]!),
+    )
   );
 }
 
@@ -172,7 +181,11 @@ function mergeRegularEntry(source: XmlElement, target: XmlElement): void {
     const childKey = key(sourceChild);
     const occurrence = occurrences.get(childKey) ?? 0;
     occurrences.set(childKey, occurrence + 1);
-    if (children(target).filter((candidate): boolean => key(candidate) === childKey)[occurrence]) {
+    if (
+      children(target).filter(
+        (candidate): boolean => key(candidate) === childKey,
+      )[occurrence]
+    ) {
       return;
     }
 
@@ -189,11 +202,19 @@ function mergeRegularEntry(source: XmlElement, target: XmlElement): void {
   });
 }
 
-function liveSourceIds(document: EditorDocument, kind: NotePartSpec["kind"]): Set<string> {
-  const items = kind === "footnote" ? document.footnotes?.items : document.endnotes?.items;
+function liveSourceIds(
+  document: EditorDocument,
+  kind: NotePartSpec["kind"],
+): Set<string> {
+  const items =
+    kind === "footnote" ? document.footnotes?.items : document.endnotes?.items;
   const result = new Set<string>();
   for (const note of Object.values(items ?? {})) {
-    if (note.docxId !== undefined && Number.isSafeInteger(note.docxId) && note.docxId >= 1) {
+    if (
+      note.docxId !== undefined &&
+      Number.isSafeInteger(note.docxId) &&
+      note.docxId >= 1
+    ) {
       result.add(String(note.docxId));
     }
   }
@@ -211,11 +232,13 @@ function mergeNotePart(
   if (!sourceRoot || !rebuiltRoot) return rebuiltXml;
 
   const sourceEntries = children(sourceRoot).filter(
-    (entry): boolean => entry.namespaceURI === WORD_NS && name(entry) === spec.entryName,
+    (entry): boolean =>
+      entry.namespaceURI === WORD_NS && name(entry) === spec.entryName,
   );
   const targetByIdentity = new Map<string, XmlElement>();
   for (const entry of children(rebuiltRoot)) {
-    if (entry.namespaceURI !== WORD_NS || name(entry) !== spec.entryName) continue;
+    if (entry.namespaceURI !== WORD_NS || name(entry) !== spec.entryName)
+      continue;
     const identity = entryIdentity(entry);
     if (identity) targetByIdentity.set(identity, entry);
   }

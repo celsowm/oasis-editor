@@ -1,8 +1,14 @@
-import { DOMParser, XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
+import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
 import { NamespaceRegistry } from "../../../ooxml/namespaceRegistry.js";
-import { extractMarkupCompatibilityMetadata, serializeMcAttributes } from "../../../ooxml/markupCompatibilityEngine.js";
+import {
+  extractMarkupCompatibilityMetadata,
+  serializeMcAttributes,
+} from "../../../ooxml/markupCompatibilityEngine.js";
 
-export function preserveNamespacesAndMc(sourceXml: string, rebuiltXml: string): string {
+export function preserveNamespacesAndMc(
+  sourceXml: string,
+  rebuiltXml: string,
+): string {
   const parser = new DOMParser();
   const sourceDoc = parser.parseFromString(sourceXml, "application/xml");
   const rebuiltDoc = parser.parseFromString(rebuiltXml, "application/xml");
@@ -27,10 +33,16 @@ export function preserveNamespacesAndMc(sourceXml: string, rebuiltXml: string): 
       rebuiltRoot.setAttribute("mc:Ignorable", mcMetadata.ignorable);
     }
     if (!existingMc.preserveElements && mcMetadata.preserveElements) {
-      rebuiltRoot.setAttribute("mc:PreserveElements", mcMetadata.preserveElements);
+      rebuiltRoot.setAttribute(
+        "mc:PreserveElements",
+        mcMetadata.preserveElements,
+      );
     }
     if (!existingMc.preserveAttributes && mcMetadata.preserveAttributes) {
-      rebuiltRoot.setAttribute("mc:PreserveAttributes", mcMetadata.preserveAttributes);
+      rebuiltRoot.setAttribute(
+        "mc:PreserveAttributes",
+        mcMetadata.preserveAttributes,
+      );
     }
   }
 

@@ -67,7 +67,9 @@ function getBoundaryParagraphInCell(
 ): EditorParagraphNode | undefined {
   if (!cell) return undefined;
   const paragraphs = getCellParagraphs(cell);
-  return boundary === "start" ? paragraphs[0] : paragraphs[paragraphs.length - 1];
+  return boundary === "start"
+    ? paragraphs[0]
+    : paragraphs[paragraphs.length - 1];
 }
 
 export function createEditorNavigation(
@@ -239,7 +241,8 @@ function createEditorNavigationImpl(deps: UseEditorNavigationProps) {
       state.selection.focus.paragraphId,
       getActiveSectionIndex(state),
     );
-    const innermost = tableLocation?.tablePath[tableLocation.tablePath.length - 1];
+    const innermost =
+      tableLocation?.tablePath[tableLocation.tablePath.length - 1];
     if (tableLocation && innermost) {
       const targetBlocks = getTableOperationTargetBlocks(
         state,

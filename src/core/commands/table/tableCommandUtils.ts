@@ -248,7 +248,10 @@ function updateSelectedSectionStory(
       };
     }
     if (storyContainsParagraph(section.evenPageHeader, paragraphId)) {
-      return { ...section, evenPageHeader: updateBlocks(section.evenPageHeader!) };
+      return {
+        ...section,
+        evenPageHeader: updateBlocks(section.evenPageHeader!),
+      };
     }
     return {
       ...section,
@@ -263,7 +266,10 @@ function updateSelectedSectionStory(
       };
     }
     if (storyContainsParagraph(section.evenPageFooter, paragraphId)) {
-      return { ...section, evenPageFooter: updateBlocks(section.evenPageFooter!) };
+      return {
+        ...section,
+        evenPageFooter: updateBlocks(section.evenPageFooter!),
+      };
     }
     return {
       ...section,
@@ -286,7 +292,10 @@ export function updateActiveTableBlocks(
     updateTableAtPath(blocks, loc.tablePath, updateTable);
 
   if (loc.zone === "footnote") {
-    const paragraphLocation = findParagraphLocation(state.document, paragraphId);
+    const paragraphLocation = findParagraphLocation(
+      state.document,
+      paragraphId,
+    );
     const footnoteId = paragraphLocation?.footnoteId ?? state.activeFootnoteId;
     const footnotes = state.document.footnotes;
     const footnote = footnoteId ? footnotes?.items[footnoteId] : undefined;
@@ -299,7 +308,10 @@ export function updateActiveTableBlocks(
           ...footnotes,
           items: {
             ...footnotes.items,
-            [footnoteId]: { ...footnote, blocks: updateBlocks(footnote.blocks) },
+            [footnoteId]: {
+              ...footnote,
+              blocks: updateBlocks(footnote.blocks),
+            },
           },
         },
       },

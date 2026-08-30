@@ -314,10 +314,7 @@ export function computeCanvasSelectionGeometry(
     (anchorTableCell.rowIndex !== focusTableCell.rowIndex ||
       anchorTableCell.cellIndex !== focusTableCell.cellIndex)
   ) {
-    const tableBlock = findTableById(
-      state.document,
-      anchorTableCell.tableId,
-    );
+    const tableBlock = findTableById(state.document, anchorTableCell.tableId);
     if (tableBlock) {
       const tableLayout = buildTableCellLayout(tableBlock);
       const anchorCell = tableLayout.find(

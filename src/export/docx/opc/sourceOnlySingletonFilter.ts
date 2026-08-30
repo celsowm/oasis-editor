@@ -6,8 +6,7 @@ import {
   type Node as XmlNode,
 } from "@xmldom/xmldom";
 
-const WORD_NS =
-  "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
 export interface RebuiltSingletonPresence {
   settings: boolean;
@@ -30,7 +29,10 @@ function elementLocalName(element: XmlElement): string {
   return element.localName ?? element.tagName;
 }
 
-function parseRoot(xml: string, expectedLocalName: string): XmlElement | undefined {
+function parseRoot(
+  xml: string,
+  expectedLocalName: string,
+): XmlElement | undefined {
   const document = new DOMParser().parseFromString(xml, "application/xml");
   const root = document.documentElement as XmlElement | undefined;
   return root?.namespaceURI === WORD_NS &&
@@ -107,10 +109,7 @@ function filterStylesXml(xml: string): string | undefined {
   // content the editor does not model as named styles (docDefaults,
   // latentStyles, producer extensions, future namespaces, ...).
   for (const child of [...elementChildren(root)]) {
-    if (
-      child.namespaceURI === WORD_NS &&
-      elementLocalName(child) === "style"
-    ) {
+    if (child.namespaceURI === WORD_NS && elementLocalName(child) === "style") {
       root.removeChild(child);
     }
   }
@@ -128,10 +127,7 @@ function filterFontTableXml(xml: string): string | undefined {
   // EditorFontInfo[] can represent an intentional deletion, so do not restore
   // those entries merely because their source XML carried unmodeled children.
   for (const child of [...elementChildren(root)]) {
-    if (
-      child.namespaceURI === WORD_NS &&
-      elementLocalName(child) === "font"
-    ) {
+    if (child.namespaceURI === WORD_NS && elementLocalName(child) === "font") {
       root.removeChild(child);
     }
   }
@@ -187,8 +183,11 @@ export async function filterSourceOnlyWordSingletons(
   }
   if (!originallyPresent.styles) {
     changed =
-      (await filterSourceOnlyPart(rebuilt, "word/styles.xml", filterStylesXml)) ||
-      changed;
+      (await filterSourceOnlyPart(
+        rebuilt,
+        "word/styles.xml",
+        filterStylesXml,
+      )) || changed;
   }
   if (!originallyPresent.fontTable) {
     changed =

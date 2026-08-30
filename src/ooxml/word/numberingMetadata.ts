@@ -22,7 +22,10 @@ type EditorListWithOoxmlMetadata = EditorParagraphListStyle & {
 
 export function setEditorListOoxmlNumberingMetadata(
   list: EditorParagraphListStyle,
-  metadata: Omit<EditorListOoxmlNumberingMetadata, "importedFormat" | "importedKind">,
+  metadata: Omit<
+    EditorListOoxmlNumberingMetadata,
+    "importedFormat" | "importedKind"
+  >,
 ): void {
   (list as EditorListWithOoxmlMetadata).ooxmlNumbering = {
     ...metadata,

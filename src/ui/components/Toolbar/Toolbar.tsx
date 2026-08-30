@@ -123,6 +123,7 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             api={api}
+            items={items}
           />
           <RibbonPanel activeTab={activeTab} items={items} api={api} />
         </>

@@ -4,11 +4,7 @@ import {
   type Element as XmlElement,
 } from "@xmldom/xmldom";
 import type { EditorParagraphNode } from "@/core/model.js";
-import {
-  OFFICE_REL_NS,
-  WORD14_NS,
-  WORD_NS,
-} from "@/export/docx/xmlUtils.js";
+import { OFFICE_REL_NS, WORD14_NS, WORD_NS } from "@/export/docx/xmlUtils.js";
 import { getEditorParagraphOoxmlSource } from "@/ooxml/word/sourceFragments.js";
 
 const MARKUP_COMPATIBILITY_NS =
@@ -57,8 +53,7 @@ function directWordChild(
 ): XmlElement | undefined {
   return directElementChildren(element).find(
     (child): boolean =>
-      child.namespaceURI === WORD_NS &&
-      elementLocalName(child) === localName,
+      child.namespaceURI === WORD_NS && elementLocalName(child) === localName,
   );
 }
 

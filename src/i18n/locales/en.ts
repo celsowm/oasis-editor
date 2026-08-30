@@ -3,6 +3,8 @@ export const en = {
   "toolbar.file": "File",
   "toolbar.export": "Export",
   "toolbar.import": "Import",
+  "toolbar.newDocument": "New Document",
+  "toolbar.importDocx": "Import DOCX",
   "toolbar.undo": "Undo last change",
   "toolbar.redo": "Redo last undone change",
   "toolbar.insert": "Insert",
@@ -347,6 +349,12 @@ export const en = {
   "generic.save": "Save",
   "generic.apply": "Apply",
   "generic.ok": "OK",
+
+  // New document confirmation
+  "dialog.newDocument.title": "New Document",
+  "dialog.newDocument.message":
+    "The current document has unsaved changes. Do you want to discard them and create a new document?",
+  "dialog.newDocument.discard": "Discard",
   "title.untitled": "Untitled document",
 
   // Dialogs
@@ -561,7 +569,7 @@ export const en = {
   // Menu
   "menu.file": "File",
   "menu.file.export": "Export",
-  "menu.file.new": "New",
+  "menu.file.new": "New Document",
   "menu.file.print": "Print",
   "menu.edit": "Edit",
   "menu.edit.cut": "Cut",

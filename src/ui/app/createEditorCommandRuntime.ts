@@ -5,6 +5,7 @@ import type { EditorLogger } from "@/utils/logger.js";
 import type { OasisEditorClientController } from "@/app/client/OasisEditorClient.js";
 import type { TranslateFn } from "@/i18n/index.js";
 import { createAppCommandsController } from "./createAppCommandsController.js";
+import { createNewDocumentAction } from "./newDocumentAction.js";
 import { createEditorKeyboardBinding } from "./createEditorKeyboardBinding.js";
 import { connectEditorClientHost } from "./connectEditorClientHost.js";
 import { useEditorRuntimeBootstrap } from "./useEditorRuntimeBootstrap.js";
@@ -51,9 +52,14 @@ export interface EditorCommandRuntimeDeps {
     isOpen: boolean;
     initialCaption: string;
   }) => void;
+  setNewDocumentDialog: (state: { isOpen: boolean }) => void;
   getUiState: () => OasisEditorUiState;
   updateUiState: (patch: OasisEditorUiState) => OasisEditorUiState;
-  zoom: { zoomPercent: () => number; setZoomPercent: (value: number) => void; adjustZoom: (delta: number) => void };
+  zoom: {
+    zoomPercent: () => number;
+    setZoomPercent: (value: number) => void;
+    adjustZoom: (delta: number) => void;
+  };
 }
 
 /**
@@ -131,6 +137,12 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
       findReplace: {
         setIsOpen: interaction.fr.setIsOpen,
       },
+      newDocument: createNewDocumentAction({
+        isDirty: (): boolean => runtimeClient.isDirty(),
+        resetDocument: (): void => runtimeClient.resetDocument(),
+        requestConfirmation: (): void =>
+          deps.setNewDocumentDialog({ isOpen: true }),
+      }),
     },
     externalPlugins: deps.runtimeOptions().plugins,
     t: deps.translator,

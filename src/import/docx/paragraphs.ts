@@ -1,8 +1,5 @@
 import JSZip from "jszip";
-import {
-  XMLSerializer,
-  type Element as XmlElement,
-} from "@xmldom/xmldom";
+import { XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
 import type {
   EditorDropCap,
   EditorParagraphListStyle,

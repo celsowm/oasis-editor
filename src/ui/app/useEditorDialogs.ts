@@ -4,6 +4,8 @@ import type { ParagraphDialogInitialValues } from "@/ui/components/Dialogs/Parag
 import type { TablePropertiesDialogInitialValues } from "@/ui/components/Dialogs/TablePropertiesDialog.js";
 
 export interface EditorDialogsState {
+  newDocumentDialog: Accessor<{ isOpen: boolean }>;
+  setNewDocumentDialog: Setter<{ isOpen: boolean }>;
   linkDialog: Accessor<{ isOpen: boolean; initialHref: string }>;
   setLinkDialog: Setter<{ isOpen: boolean; initialHref: string }>;
   imageAltDialog: Accessor<{ isOpen: boolean; initialAlt: string }>;
@@ -33,6 +35,9 @@ export interface EditorDialogsState {
 }
 
 export function createEditorDialogs(): EditorDialogsState {
+  const [newDocumentDialog, setNewDocumentDialog] = createSignal<{
+    isOpen: boolean;
+  }>({ isOpen: false });
   const [linkDialog, setLinkDialog] = createSignal<{
     isOpen: boolean;
     initialHref: string;
@@ -185,6 +190,8 @@ export function createEditorDialogs(): EditorDialogsState {
   });
 
   return {
+    newDocumentDialog,
+    setNewDocumentDialog,
     linkDialog,
     setLinkDialog,
     imageAltDialog,

@@ -1,7 +1,14 @@
-import { For, createMemo, type Accessor, type Setter } from "solid-js";
+import {
+  For,
+  createEffect,
+  createMemo,
+  type Accessor,
+  type Setter,
+} from "solid-js";
 import type {
   RibbonTabId,
   ToolbarActionApi,
+  ToolbarItem,
 } from "@/ui/components/Toolbar/schema/items.js";
 import {
   buildRibbonTabDefinitions,
@@ -13,14 +20,27 @@ export interface RibbonTabsProps {
   activeTab: Accessor<RibbonTabId>;
   setActiveTab: Setter<RibbonTabId>;
   api: ToolbarActionApi;
+  items: Accessor<ToolbarItem[]>;
 }
 
 export function RibbonTabs(props: RibbonTabsProps): JSX.Element {
   // Reactive: contextual tabs (e.g. table tools) enter/leave the strip as the
   // gating command state changes on selection.
   const tabs = createMemo<RibbonTabDefinition[]>(() =>
-    buildRibbonTabDefinitions(props.api.t, props.api),
+    buildRibbonTabDefinitions(props.api.t, props.api, props.items()),
   );
+
+  // A plugin can add/remove toolbar contributions at runtime. Keep the
+  // selected tab valid when its last item disappears.
+  createEffect((): void => {
+    const availableTabs = tabs();
+    if (
+      availableTabs.length > 0 &&
+      !availableTabs.some((tab): boolean => tab.id === props.activeTab())
+    ) {
+      props.setActiveTab(availableTabs[0]!.id);
+    }
+  });
 
   const moveTab = (current: RibbonTabId, delta: number): void => {
     const list = tabs();

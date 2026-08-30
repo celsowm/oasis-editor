@@ -30,6 +30,7 @@ export interface CreateEditorEssentialsPluginOptions {
     handleExportDocx: () => Promise<Blob>;
     handleExportPdf: () => Promise<Blob>;
   };
+  newDocument: () => void;
   importInputRef: () => HTMLInputElement | undefined;
   imageInputRef: () => HTMLInputElement | undefined;
   selectedImageRun: () => SelectedImageRun | null;

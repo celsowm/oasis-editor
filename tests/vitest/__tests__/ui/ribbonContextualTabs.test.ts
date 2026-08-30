@@ -3,7 +3,10 @@ import {
   buildRibbonTabDefinitions,
   isRibbonTabVisible,
 } from "@/ui/components/Toolbar/ribbon/ribbonModel.js";
-import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
+import type {
+  ToolbarActionApi,
+  ToolbarItem,
+} from "@/ui/components/Toolbar/schema/items.js";
 
 const t = ((key: string): string => String(key)) as ToolbarActionApi["t"];
 
@@ -17,6 +20,28 @@ function apiInsideTable(inside: boolean): Pick<ToolbarActionApi, "commands"> {
 }
 
 describe("contextual ribbon tabs", () => {
+  it("omits tabs that have no toolbar items", () => {
+    const items: ToolbarItem[] = [
+      {
+        type: "button",
+        id: "home-action",
+        tab: "home",
+        command: "bold",
+      },
+      {
+        type: "separator",
+        id: "empty-tab-separator",
+        tab: "ai",
+      },
+    ];
+
+    const ids = buildRibbonTabDefinitions(t, undefined, items).map(
+      (definition) => definition.id,
+    );
+    expect(ids).toEqual(["home"]);
+    expect(ids).not.toContain("ai");
+  });
+
   it("omits the table tabs when no api is supplied", () => {
     const ids = buildRibbonTabDefinitions(t).map((d) => d.id);
     expect(ids).toContain("home");

@@ -11,8 +11,7 @@ import {
 import { mergeWordStoryRootAndFlowFromSource } from "./wordPartRootSourcePatcher.js";
 
 const CONVENTIONAL_MAIN_DOCUMENT_PATH = "word/document.xml";
-const WORD_NS =
-  "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
 type HeaderFooterKind = "header" | "footer";
 
@@ -73,7 +72,8 @@ function collectReferences(xml: string): StoryReference[] {
       const kind: HeaderFooterKind | undefined =
         child.namespaceURI === WORD_NS && child.localName === "headerReference"
           ? "header"
-          : child.namespaceURI === WORD_NS && child.localName === "footerReference"
+          : child.namespaceURI === WORD_NS &&
+              child.localName === "footerReference"
             ? "footer"
             : undefined;
       if (!kind) {
@@ -150,9 +150,10 @@ export async function patchRebuiltHeaderFooterRootsFromSource(
   const sourceReferences = collectReferences(sourceMainPart.data);
   const rebuiltReferences = collectReferences(rebuiltMainXml);
   const sourceReferenceByKey = new Map(
-    sourceReferences.map(
-      (reference): readonly [string, StoryReference] => [reference.key, reference],
-    ),
+    sourceReferences.map((reference): readonly [string, StoryReference] => [
+      reference.key,
+      reference,
+    ]),
   );
   const sourceRelationships = relationshipById(
     sourceMainPart.relationships ?? [],

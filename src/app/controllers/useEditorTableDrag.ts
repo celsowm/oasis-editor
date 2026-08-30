@@ -40,12 +40,7 @@ function findTableInBlocks(
     }
     for (const row of block.rows) {
       for (const cell of row.cells) {
-        const found = findTableInBlocks(
-          cell.blocks,
-          tableId,
-          true,
-          false,
-        );
+        const found = findTableInBlocks(cell.blocks, tableId, true, false);
         if (found) return found;
       }
     }
@@ -91,9 +86,9 @@ function paragraphIsInsideTable(
   const located = findTableInDocument(document, tableId);
   return Boolean(
     located?.table &&
-      getBlockParagraphs(located.table).some(
-        (paragraph): boolean => paragraph.id === paragraphId,
-      ),
+    getBlockParagraphs(located.table).some(
+      (paragraph): boolean => paragraph.id === paragraphId,
+    ),
   );
 }
 

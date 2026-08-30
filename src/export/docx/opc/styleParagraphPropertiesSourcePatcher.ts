@@ -108,9 +108,10 @@ function insertParagraphPropertiesAtSourcePosition(
   const sourceIndex = sourceChildren.indexOf(sourceProperties);
   const targetChildren = elementChildren(targetStyle);
   const targetByKey = new Map<string, XmlElement>(
-    targetChildren.map(
-      (child): [string, XmlElement] => [styleChildKey(child), child],
-    ),
+    targetChildren.map((child): [string, XmlElement] => [
+      styleChildKey(child),
+      child,
+    ]),
   );
   const anchor = sourceChildren
     .slice(sourceIndex + 1)

@@ -4,11 +4,7 @@ import {
   type Element as XmlElement,
 } from "@xmldom/xmldom";
 import type { EditorTextRun } from "@/core/model.js";
-import {
-  OFFICE_REL_NS,
-  WORD14_NS,
-  WORD_NS,
-} from "@/export/docx/xmlUtils.js";
+import { OFFICE_REL_NS, WORD14_NS, WORD_NS } from "@/export/docx/xmlUtils.js";
 import { serializeRunText } from "./runTextXml.js";
 import {
   createEditorRunSemanticSignature,
@@ -184,10 +180,7 @@ function patchTextRunSourceXml(
     oldTextChildren[0] ??
     sourceChildren.find(
       (child): boolean =>
-        !(
-          child.namespaceURI === WORD_NS &&
-          elementLocalName(child) === "rPr"
-        ),
+        !(child.namespaceURI === WORD_NS && elementLocalName(child) === "rPr"),
     ) ??
     null;
 
@@ -273,9 +266,7 @@ function isModeledRunProperty(element: XmlElement): boolean {
   );
 }
 
-function ensureGeneratedRunProperties(
-  generatedRun: XmlElement,
-): XmlElement {
+function ensureGeneratedRunProperties(generatedRun: XmlElement): XmlElement {
   const existing = directChild(generatedRun, WORD_NS, "rPr");
   if (existing) {
     return existing;
@@ -318,10 +309,10 @@ function mergeSourceRunProperties(
       .slice(sourceIndex + 1)
       .find((candidate): boolean => generatedKeys.has(elementKey(candidate)));
     const anchor = nextKnownSourceChild
-      ? directElementChildren(targetProperties).find(
+      ? (directElementChildren(targetProperties).find(
           (candidate): boolean =>
             elementKey(candidate) === elementKey(nextKnownSourceChild),
-        ) ?? null
+        ) ?? null)
       : null;
     targetProperties.insertBefore(child.cloneNode(true), anchor);
   }
@@ -397,10 +388,10 @@ function mergeSourceRunChildren(
       .slice(sourceIndex + 1)
       .find((candidate): boolean => isGeneratedRunContent(candidate));
     const anchor = nextGeneratedSourceChild
-      ? directElementChildren(generatedRun).find(
+      ? (directElementChildren(generatedRun).find(
           (candidate): boolean =>
             elementKey(candidate) === elementKey(nextGeneratedSourceChild),
-        ) ?? null
+        ) ?? null)
       : null;
     generatedRun.insertBefore(child.cloneNode(true), anchor);
   }

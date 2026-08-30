@@ -1,20 +1,56 @@
 import { describe, it, expect } from "vitest";
-import { NamespaceRegistry } from "../../ooxml/namespaceRegistry.js";
 import { PreservationBag } from "../../ooxml/preservationBag.js";
-import { sortXmlNodesBySchemaOrder, P_PR_CHILD_ORDER, R_PR_CHILD_ORDER, SECT_PR_CHILD_ORDER } from "../../ooxml/schemaOrder.js";
-import { extractMarkupCompatibilityMetadata, serializeMcAttributes } from "../../ooxml/markupCompatibilityEngine.js";
+import {
+  sortXmlNodesBySchemaOrder,
+  P_PR_CHILD_ORDER,
+  SECT_PR_CHILD_ORDER,
+} from "../../ooxml/schemaOrder.js";
 import { preserveNamespacesAndMc } from "../../export/docx/opc/universalContainerPatcher.js";
 import { DOMParser } from "@xmldom/xmldom";
 
 describe("Milestone 2 Integration Suite: Universal Rewritten-Part Source & Extension Preservation", () => {
   it("maintains strict OOXML schema child element ordering across properties", () => {
-    const rawPPrChildren = ["w:sectPr", "w:jc", "w:pStyle", "w:ind", "w:keepNext", "w:rPr"];
-    const sortedPPr = sortXmlNodesBySchemaOrder(rawPPrChildren, (name) => name, P_PR_CHILD_ORDER);
-    expect(sortedPPr).toEqual(["w:pStyle", "w:keepNext", "w:rPr", "w:sectPr", "w:ind", "w:jc"]);
+    const rawPPrChildren = [
+      "w:sectPr",
+      "w:jc",
+      "w:pStyle",
+      "w:ind",
+      "w:keepNext",
+      "w:rPr",
+    ];
+    const sortedPPr = sortXmlNodesBySchemaOrder(
+      rawPPrChildren,
+      (name) => name,
+      P_PR_CHILD_ORDER,
+    );
+    expect(sortedPPr).toEqual([
+      "w:pStyle",
+      "w:keepNext",
+      "w:rPr",
+      "w:sectPr",
+      "w:ind",
+      "w:jc",
+    ]);
 
-    const rawSectPrChildren = ["w:cols", "w:pgSz", "w:headerReference", "w:pgMar", "w:vAlign"];
-    const sortedSectPr = sortXmlNodesBySchemaOrder(rawSectPrChildren, (name) => name, SECT_PR_CHILD_ORDER);
-    expect(sortedSectPr).toEqual(["w:headerReference", "w:pgSz", "w:pgMar", "w:cols", "w:vAlign"]);
+    const rawSectPrChildren = [
+      "w:cols",
+      "w:pgSz",
+      "w:headerReference",
+      "w:pgMar",
+      "w:vAlign",
+    ];
+    const sortedSectPr = sortXmlNodesBySchemaOrder(
+      rawSectPrChildren,
+      (name) => name,
+      SECT_PR_CHILD_ORDER,
+    );
+    expect(sortedSectPr).toEqual([
+      "w:headerReference",
+      "w:pgSz",
+      "w:pgMar",
+      "w:cols",
+      "w:vAlign",
+    ]);
   });
 
   it("captures and preserves unknown Microsoft extension elements (w14, w15, w16cid)", () => {
@@ -29,7 +65,11 @@ describe("Milestone 2 Integration Suite: Universal Rewritten-Part Source & Exten
     const element = doc.documentElement!;
 
     const bag = new PreservationBag();
-    bag.captureUnmappedChildren(element, new Set(["pStyle", "jc"]), P_PR_CHILD_ORDER);
+    bag.captureUnmappedChildren(
+      element,
+      new Set(["pStyle", "jc"]),
+      P_PR_CHILD_ORDER,
+    );
 
     expect(bag.children.length).toBe(2);
     expect(bag.children[0]!.localName).toBe("paraId");

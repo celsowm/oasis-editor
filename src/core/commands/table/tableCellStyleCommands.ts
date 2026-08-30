@@ -118,7 +118,11 @@ function resolveTableBorderSelection(
   const focusResolved = resolveTablePath(blocks, focusLoc.tablePath);
   const anchorTarget = anchorResolved?.[anchorResolved.length - 1];
   const focusTarget = focusResolved?.[focusResolved.length - 1];
-  if (!anchorTarget || !focusTarget || anchorTarget.table !== focusTarget.table) {
+  if (
+    !anchorTarget ||
+    !focusTarget ||
+    anchorTarget.table !== focusTarget.table
+  ) {
     return null;
   }
 

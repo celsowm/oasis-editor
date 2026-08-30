@@ -5,8 +5,7 @@ import {
   type Node as XmlNode,
 } from "@xmldom/xmldom";
 
-const WORD_NS =
-  "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
 const MODELED_SECTION_PROPERTY_NAMES = new Set([
   "headerReference",
@@ -71,7 +70,11 @@ function copyMissingAttributes(source: XmlElement, target: XmlElement): void {
       continue;
     }
     if (attribute.namespaceURI) {
-      target.setAttributeNS(attribute.namespaceURI, attribute.name, attribute.value);
+      target.setAttributeNS(
+        attribute.namespaceURI,
+        attribute.name,
+        attribute.value,
+      );
     } else {
       target.setAttribute(attribute.name, attribute.value);
     }
@@ -102,7 +105,11 @@ function mergeSectionProperties(source: XmlElement, target: XmlElement): void {
   }
 
   const seenSourceOccurrences = new Map<string, number>();
-  for (let sourceIndex = 0; sourceIndex < sourceChildren.length; sourceIndex += 1) {
+  for (
+    let sourceIndex = 0;
+    sourceIndex < sourceChildren.length;
+    sourceIndex += 1
+  ) {
     const sourceChild = sourceChildren[sourceIndex]!;
     const key = elementKey(sourceChild);
     const occurrence = seenSourceOccurrences.get(key) ?? 0;
@@ -129,7 +136,10 @@ function mergeSectionProperties(source: XmlElement, target: XmlElement): void {
     // before it; otherwise append at the end of sectPr.
     const nextTargetAnchor = sourceChildren
       .slice(sourceIndex + 1)
-      .map((candidate): XmlElement | undefined => targetByKey.get(elementKey(candidate))?.[0])
+      .map(
+        (candidate): XmlElement | undefined =>
+          targetByKey.get(elementKey(candidate))?.[0],
+      )
       .find((candidate): candidate is XmlElement => Boolean(candidate));
     target.insertBefore(sourceChild.cloneNode(true), nextTargetAnchor ?? null);
   }

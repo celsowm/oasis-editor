@@ -46,6 +46,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "documentStyles",
   "print",
   "copy",
+  "newDocument",
   "exportDocx",
   "exportPdf",
   "importDocument",

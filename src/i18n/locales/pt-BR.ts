@@ -3,6 +3,8 @@ export const ptBR = {
   "toolbar.file": "Arquivo",
   "toolbar.export": "Exportar",
   "toolbar.import": "Importar",
+  "toolbar.newDocument": "Novo Documento",
+  "toolbar.importDocx": "Importar DOCX",
   "toolbar.undo": "Desfazer última alteração",
   "toolbar.redo": "Refazer última alteração",
   "toolbar.insert": "Inserir",
@@ -348,6 +350,12 @@ export const ptBR = {
   "generic.save": "Salvar",
   "generic.apply": "Aplicar",
   "generic.ok": "OK",
+
+  // New document confirmation
+  "dialog.newDocument.title": "Novo Documento",
+  "dialog.newDocument.message":
+    "O documento atual tem alterações não salvas. Deseja descartá-las e criar um novo documento?",
+  "dialog.newDocument.discard": "Descartar",
   "title.untitled": "Documento sem título",
 
   // Dialogs
@@ -564,7 +572,7 @@ export const ptBR = {
   // Menu
   "menu.file": "Arquivo",
   "menu.file.export": "Exportar",
-  "menu.file.new": "Novo",
+  "menu.file.new": "Novo Documento",
   "menu.file.print": "Imprimir",
   "menu.edit": "Editar",
   "menu.edit.cut": "Recortar",

@@ -229,7 +229,7 @@ function transformRebuiltRelationships(
     const actualTarget =
       sourceEquivalent?.resolvedTarget ??
       (resolvedRebuilt
-        ? aliases.get(resolvedRebuilt) ?? resolvedRebuilt
+        ? (aliases.get(resolvedRebuilt) ?? resolvedRebuilt)
         : undefined);
 
     if (!actualTarget) {
@@ -259,18 +259,18 @@ function mergeRelationships(
 ): EditorOpcRelationship[] {
   const result = [...rebuilt];
   const rebuiltById = new Map(
-    rebuilt.map(
-      (relationship): readonly [string, EditorOpcRelationship] => [
-        relationship.id,
-        relationship,
-      ],
-    ),
+    rebuilt.map((relationship): readonly [string, EditorOpcRelationship] => [
+      relationship.id,
+      relationship,
+    ]),
   );
 
   for (const relationship of source) {
     const rebuiltWithSameId = rebuiltById.get(relationship.id);
     if (rebuiltWithSameId) {
-      if (relationshipKey(rebuiltWithSameId) === relationshipKey(relationship)) {
+      if (
+        relationshipKey(rebuiltWithSameId) === relationshipKey(relationship)
+      ) {
         continue;
       }
       throw new Error(
@@ -335,8 +335,8 @@ function canKeepSourcePartUntouched(
   const baselineHash = sourcePackage.rebuiltPartHashes?.[rebuiltPath];
   return Boolean(
     baselineHash &&
-      sourcePackage.parts[actualPath] &&
-      baselineHash === hashDocxPartBytes(rebuiltBytes),
+    sourcePackage.parts[actualPath] &&
+    baselineHash === hashDocxPartBytes(rebuiltBytes),
   );
 }
 
@@ -477,7 +477,7 @@ export async function patchRebuiltDocxWithSourcePackage(
       const actualOwner =
         rebuiltOwner === null
           ? null
-          : aliases.get(rebuiltOwner) ?? rebuiltOwner;
+          : (aliases.get(rebuiltOwner) ?? rebuiltOwner);
       const sourceRelationships = sourceRelationshipsForOwner(
         sourcePackage,
         actualOwner,
@@ -501,12 +501,7 @@ export async function patchRebuiltDocxWithSourcePackage(
 
     const rebuiltBytes = await entry.async("uint8array");
     if (
-      canKeepSourcePartUntouched(
-        sourcePackage,
-        path,
-        actualPath,
-        rebuiltBytes,
-      )
+      canKeepSourcePartUntouched(sourcePackage, path, actualPath, rebuiltBytes)
     ) {
       continue;
     }

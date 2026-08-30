@@ -153,7 +153,11 @@ function getSelectionTableContextImpl(
   const focusPath = resolveTablePath(blocks, rawFocusLocation.tablePath);
   const anchorTarget = anchorPath?.[anchorPath.length - 1];
   const focusTarget = focusPath?.[focusPath.length - 1];
-  if (!anchorTarget || !focusTarget || anchorTarget.table !== focusTarget.table) {
+  if (
+    !anchorTarget ||
+    !focusTarget ||
+    anchorTarget.table !== focusTarget.table
+  ) {
     return null;
   }
 
@@ -246,7 +250,9 @@ function createTableSelectionResolversImpl(deps: TableSelectionResolversDeps) {
       context.tableBlock.rows[endLocation.rowIndex]?.cells[
         endLocation.cellIndex
       ];
-    const startParagraph = startCell ? getCellParagraphs(startCell)[0] : undefined;
+    const startParagraph = startCell
+      ? getCellParagraphs(startCell)[0]
+      : undefined;
     const endParagraphs = endCell ? getCellParagraphs(endCell) : [];
     const endParagraph = endParagraphs[endParagraphs.length - 1];
     if (!startParagraph || !endParagraph) {

@@ -5,8 +5,7 @@ import {
   type Node as XmlNode,
 } from "@xmldom/xmldom";
 
-const WORD_NS =
-  "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
 function elementChildren(node: XmlNode): XmlElement[] {
   const result: XmlElement[] = [];
@@ -54,7 +53,11 @@ function copyMissingAttributes(source: XmlElement, target: XmlElement): void {
       continue;
     }
     if (attribute.namespaceURI) {
-      target.setAttributeNS(attribute.namespaceURI, attribute.name, attribute.value);
+      target.setAttributeNS(
+        attribute.namespaceURI,
+        attribute.name,
+        attribute.value,
+      );
     } else {
       target.setAttribute(attribute.name, attribute.value);
     }
@@ -67,8 +70,7 @@ function directWordChild(
 ): XmlElement | undefined {
   return elementChildren(element).find(
     (child): boolean =>
-      child.namespaceURI === WORD_NS &&
-      elementLocalName(child) === localName,
+      child.namespaceURI === WORD_NS && elementLocalName(child) === localName,
   );
 }
 
@@ -94,8 +96,12 @@ function storyAnchorIdentity(element: XmlElement): string | undefined {
   }
   if (localName === "sdt") {
     const properties = directWordChild(element, "sdtPr");
-    const idElement = properties ? directWordChild(properties, "id") : undefined;
-    const id = idElement ? getAttributeByLocalName(idElement, "val") : undefined;
+    const idElement = properties
+      ? directWordChild(properties, "id")
+      : undefined;
+    const id = idElement
+      ? getAttributeByLocalName(idElement, "val")
+      : undefined;
     return id ? `sdt:${id}` : undefined;
   }
   return undefined;
@@ -214,7 +220,10 @@ export function mergeWordPartRootExtensionsFromSource(
         ),
       )
       .find((candidate): candidate is XmlElement => Boolean(candidate));
-    rebuiltRoot.insertBefore(sourceChild.cloneNode(true), nextRebuiltAnchor ?? null);
+    rebuiltRoot.insertBefore(
+      sourceChild.cloneNode(true),
+      nextRebuiltAnchor ?? null,
+    );
   });
 
   return new XMLSerializer().serializeToString(rebuiltDocument);

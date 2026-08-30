@@ -73,6 +73,7 @@ export interface OasisCommandPayloads {
   documentStyles: undefined;
   print: undefined;
   copy: undefined;
+  newDocument: undefined;
   exportDocx: undefined;
   exportPdf: undefined;
   importDocument: undefined;

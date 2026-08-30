@@ -1,7 +1,8 @@
 export const OASIS_TOOLBAR_ITEMS = {
+  newDocument: "editor-toolbar-new-document",
+  importDocument: "editor-toolbar-import-document",
   exportDocx: "editor-toolbar-export-docx",
   exportPdf: "editor-toolbar-export-pdf",
-  importDocument: "editor-toolbar-import-document",
   undo: "editor-toolbar-undo",
   redo: "editor-toolbar-redo",
   style: "editor-toolbar-style",

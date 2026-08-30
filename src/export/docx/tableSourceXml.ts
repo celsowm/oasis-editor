@@ -9,9 +9,7 @@ import {
   type SerializeTableParagraphXml,
 } from "./tableXml.js";
 import { OFFICE_REL_NS, WORD_NS } from "./xmlUtils.js";
-import {
-  getEditorTableOoxmlSource,
-} from "@/ooxml/word/sourceFragments.js";
+import { getEditorTableOoxmlSource } from "@/ooxml/word/sourceFragments.js";
 import {
   mergeTableCellPropertiesOoxmlSource,
   mergeTableGridOoxmlSource,
@@ -82,10 +80,7 @@ function normalizeKnownRowAlignmentAliases(xml: string): string {
   );
 }
 
-function copySourceAttributes(
-  source: XmlElement,
-  generated: XmlElement,
-): void {
+function copySourceAttributes(source: XmlElement, generated: XmlElement): void {
   for (let index = 0; index < source.attributes.length; index += 1) {
     const attribute = source.attributes.item(index);
     if (!attribute || attribute.namespaceURI === OFFICE_REL_NS) {
@@ -176,7 +171,7 @@ function overlayTableContainerSource(
       .map((candidate): string | undefined => sourceAnchorKeys.get(candidate))
       .find((key): key is string => Boolean(key));
     const anchor = nextAnchorKey
-      ? generatedAnchorByKey.get(nextAnchorKey) ?? null
+      ? (generatedAnchorByKey.get(nextAnchorKey) ?? null)
       : null;
     generatedTable.insertBefore(child.cloneNode(true), anchor);
   }
@@ -217,10 +212,7 @@ function overlayTableProperties(
   insertPropertyElement(
     tableElement,
     currentProperties,
-    mergeTablePropertiesOoxmlSource(
-      table,
-      serializeElement(currentProperties),
-    ),
+    mergeTablePropertiesOoxmlSource(table, serializeElement(currentProperties)),
     "tblPr",
     currentGrid ?? firstRow,
   );

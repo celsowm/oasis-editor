@@ -19,6 +19,7 @@ function safeSet(key: string, value: string): void {
   try {
     globalThis.localStorage?.setItem(key, value);
   } catch {
+    // Storage is optional and may be unavailable in private browsing modes.
   }
 }
 

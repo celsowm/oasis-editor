@@ -16,7 +16,9 @@ describe("PreservationBag", () => {
       { name: "w14:paraId", value: "12345678" },
       { name: "w15:collapsed", value: "1" },
     ]);
-    expect(bag.serializeAttributes()).toBe('w14:paraId="12345678" w15:collapsed="1"');
+    expect(bag.serializeAttributes()).toBe(
+      'w14:paraId="12345678" w15:collapsed="1"',
+    );
   });
 
   it("captures unknown child elements with schema ordering indexes", () => {
@@ -29,12 +31,16 @@ describe("PreservationBag", () => {
     const element = doc.documentElement!;
 
     const bag = new PreservationBag();
-    bag.captureUnmappedChildren(element, new Set(["pStyle", "jc"]), P_PR_CHILD_ORDER);
+    bag.captureUnmappedChildren(
+      element,
+      new Set(["pStyle", "jc"]),
+      P_PR_CHILD_ORDER,
+    );
 
     expect(bag.children.length).toBe(1);
     expect(bag.children[0]!.localName).toBe("textId");
     expect(bag.children[0]!.prefix).toBe("w14");
-    expect(bag.children[0]!.xml).toContain('w14:textId');
+    expect(bag.children[0]!.xml).toContain("w14:textId");
     expect(bag.children[0]!.xml).toContain('w14:val="11223344"');
   });
 });

@@ -18,7 +18,8 @@ function elementChildren(node: XmlNode): XmlElement[] {
   const result: XmlElement[] = [];
   for (let index = 0; index < node.childNodes.length; index += 1) {
     const child = node.childNodes[index];
-    if (child?.nodeType === child.ELEMENT_NODE) result.push(child as XmlElement);
+    if (child?.nodeType === child.ELEMENT_NODE)
+      result.push(child as XmlElement);
   }
   return result;
 }

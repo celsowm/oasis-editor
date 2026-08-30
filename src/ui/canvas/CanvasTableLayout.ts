@@ -91,7 +91,9 @@ export function buildCanvasTableLayout(options: {
         (block) => block.type === "paragraph",
       );
       const direction =
-        cell.style?.textDirection ?? firstParagraph?.style?.textDirection ?? null;
+        cell.style?.textDirection ??
+        firstParagraph?.style?.textDirection ??
+        null;
       if (
         direction !== "tbRl" &&
         direction !== "btLr" &&

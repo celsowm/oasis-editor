@@ -46,7 +46,9 @@ export class NamespaceRegistry {
     return this.uriToPrefixMap.get(uri);
   }
 
-  public collectFromElement(element: { attributes?: ArrayLike<{ name: string; value: string }> | null }): void {
+  public collectFromElement(element: {
+    attributes?: ArrayLike<{ name: string; value: string }> | null;
+  }): void {
     if (!element.attributes) return;
     for (let i = 0; i < element.attributes.length; i++) {
       const attr = element.attributes[i];
@@ -60,7 +62,9 @@ export class NamespaceRegistry {
   }
 
   public serializeNamespaces(neededPrefixes?: Iterable<string>): string {
-    const prefixes = neededPrefixes ? Array.from(neededPrefixes) : Array.from(this.prefixToUriMap.keys());
+    const prefixes = neededPrefixes
+      ? Array.from(neededPrefixes)
+      : Array.from(this.prefixToUriMap.keys());
     const attributes: string[] = [];
     for (const prefix of prefixes) {
       const uri = this.prefixToUriMap.get(prefix);

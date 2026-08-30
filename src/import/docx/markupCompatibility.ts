@@ -7,22 +7,20 @@ export interface MarkupCompatibilityCapabilities {
   supportedNamespaces: ReadonlySet<string>;
 }
 
-export const DEFAULT_MARKUP_COMPATIBILITY_CAPABILITIES: MarkupCompatibilityCapabilities = {
-  // Oasis deliberately declares no extension namespace globally. A namespace
-  // is added only by a specialized parser that understands that extension's
-  // semantics; otherwise AlternateContent degrades through mc:Fallback.
-  supportedNamespaces: new Set<string>(),
-};
+export const DEFAULT_MARKUP_COMPATIBILITY_CAPABILITIES: MarkupCompatibilityCapabilities =
+  {
+    // Oasis deliberately declares no extension namespace globally. A namespace
+    // is added only by a specialized parser that understands that extension's
+    // semantics; otherwise AlternateContent degrades through mc:Fallback.
+    supportedNamespaces: new Set<string>(),
+  };
 
 export function extendMarkupCompatibilityCapabilities(
   base: MarkupCompatibilityCapabilities,
   ...namespaces: string[]
 ): MarkupCompatibilityCapabilities {
   return {
-    supportedNamespaces: new Set([
-      ...base.supportedNamespaces,
-      ...namespaces,
-    ]),
+    supportedNamespaces: new Set([...base.supportedNamespaces, ...namespaces]),
   };
 }
 
@@ -107,10 +105,7 @@ function getIgnorableNamespaces(element: XmlElement): Set<string> {
   return namespaces;
 }
 
-function expandedName(
-  element: XmlElement,
-  token: string,
-): string | undefined {
+function expandedName(element: XmlElement, token: string): string | undefined {
   const separator = token.indexOf(":");
   if (separator < 1 || separator === token.length - 1) {
     return undefined;
@@ -160,7 +155,10 @@ function resolveAlternateContentBranch(
     if (child.namespaceURI !== MARKUP_COMPATIBILITY_NS) {
       continue;
     }
-    if (child.localName === "Choice" && choiceIsSupported(child, capabilities)) {
+    if (
+      child.localName === "Choice" &&
+      choiceIsSupported(child, capabilities)
+    ) {
       return child;
     }
     if (child.localName === "Fallback") {
@@ -183,8 +181,7 @@ function resolveAlternateContentBranch(
  */
 export function getMarkupCompatibleChildren(
   element: XmlElement,
-  capabilities: MarkupCompatibilityCapabilities =
-    DEFAULT_MARKUP_COMPATIBILITY_CAPABILITIES,
+  capabilities: MarkupCompatibilityCapabilities = DEFAULT_MARKUP_COMPATIBILITY_CAPABILITIES,
 ): XmlElement[] {
   const result: XmlElement[] = [];
   const ignorableNamespaces = getIgnorableNamespaces(element);

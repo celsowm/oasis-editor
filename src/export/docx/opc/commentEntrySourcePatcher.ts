@@ -15,7 +15,8 @@ function children(node: XmlNode): XmlElement[] {
   const result: XmlElement[] = [];
   for (let index = 0; index < node.childNodes.length; index += 1) {
     const child = node.childNodes[index];
-    if (child?.nodeType === child.ELEMENT_NODE) result.push(child as XmlElement);
+    if (child?.nodeType === child.ELEMENT_NODE)
+      result.push(child as XmlElement);
   }
   return result;
 }
@@ -42,7 +43,11 @@ function copyMissingAttributes(source: XmlElement, target: XmlElement): void {
       : target.hasAttribute(attribute.name);
     if (exists) continue;
     if (attribute.namespaceURI) {
-      target.setAttributeNS(attribute.namespaceURI, attribute.name, attribute.value);
+      target.setAttributeNS(
+        attribute.namespaceURI,
+        attribute.name,
+        attribute.value,
+      );
     } else {
       target.setAttribute(attribute.name, attribute.value);
     }
@@ -84,10 +89,14 @@ function commentText(comment: XmlElement): string {
 function parseCommentsRoot(xml: string): XmlElement | undefined {
   const root = new DOMParser().parseFromString(xml, "application/xml")
     .documentElement as XmlElement | undefined;
-  return root?.namespaceURI === WORD_NS && name(root) === "comments" ? root : undefined;
+  return root?.namespaceURI === WORD_NS && name(root) === "comments"
+    ? root
+    : undefined;
 }
 
-function sourceCommentsXml(sourcePackage: EditorDocxSourcePackage): string | undefined {
+function sourceCommentsXml(
+  sourcePackage: EditorDocxSourcePackage,
+): string | undefined {
   const mainPart = sourcePackage.parts[sourcePackage.mainDocumentPart];
   const relationship = mainPart?.relationships?.find(
     (candidate): boolean =>
@@ -104,7 +113,10 @@ function sourceCommentsXml(sourcePackage: EditorDocxSourcePackage): string | und
 function replaceBodyChildren(source: XmlElement, target: XmlElement): void {
   // `commentsExtended.xml` is generated against the target comment's paraId.
   // Preserve that identity even when the richer source body is otherwise reused.
-  const generatedParaId = attr(commentParagraphs(target)[0] ?? target, "paraId");
+  const generatedParaId = attr(
+    commentParagraphs(target)[0] ?? target,
+    "paraId",
+  );
 
   while (target.firstChild) target.removeChild(target.firstChild);
   for (let index = 0; index < source.childNodes.length; index += 1) {
@@ -122,7 +134,10 @@ function replaceBodyChildren(source: XmlElement, target: XmlElement): void {
   }
 }
 
-function mergeChangedBodyExtensions(source: XmlElement, target: XmlElement): void {
+function mergeChangedBodyExtensions(
+  source: XmlElement,
+  target: XmlElement,
+): void {
   const sourceParagraphs = commentParagraphs(source);
   const targetParagraphs = commentParagraphs(target);
   if (sourceParagraphs[0] && targetParagraphs[0]) {
@@ -132,7 +147,9 @@ function mergeChangedBodyExtensions(source: XmlElement, target: XmlElement): voi
   const targetExtensionKeys = new Set(
     children(target)
       .filter((child): boolean => child.namespaceURI !== WORD_NS)
-      .map((child): string => `${child.namespaceURI ?? ""}\u0000${name(child)}`),
+      .map(
+        (child): string => `${child.namespaceURI ?? ""}\u0000${name(child)}`,
+      ),
   );
   for (const child of children(source)) {
     if (child.namespaceURI === WORD_NS) continue;
@@ -161,7 +178,8 @@ export function mergeCommentEntriesOoxmlSource(
 
   let changed = false;
   for (const sourceEntry of children(sourceRoot)) {
-    if (sourceEntry.namespaceURI !== WORD_NS || name(sourceEntry) !== "comment") continue;
+    if (sourceEntry.namespaceURI !== WORD_NS || name(sourceEntry) !== "comment")
+      continue;
     const id = attr(sourceEntry, "id");
     const target = id !== undefined ? targetById.get(id) : undefined;
     if (!target) continue;
@@ -173,7 +191,8 @@ export function mergeCommentEntriesOoxmlSource(
     } else {
       mergeChangedBodyExtensions(sourceEntry, target);
     }
-    if (new XMLSerializer().serializeToString(target) !== before) changed = true;
+    if (new XMLSerializer().serializeToString(target) !== before)
+      changed = true;
   }
 
   return changed

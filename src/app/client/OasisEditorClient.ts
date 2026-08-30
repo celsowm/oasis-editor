@@ -18,7 +18,6 @@ import type {
 } from "@/core/commands/publicCommandTypes.js";
 import {
   applyDocumentOperations,
-  normalizeDocument,
   queryDocument,
   type ApplyEditRequest,
   type ApplyEditValue,
@@ -32,10 +31,16 @@ import type { MenuRegistry } from "@/ui/components/Menubar/menuRegistry.js";
 
 /** UI-related editor state that can be toggled or configured at runtime. */
 export interface OasisEditorUiState {
-  showChrome?: boolean; showTitleBar?: boolean; showMenubar?: boolean; showToolbar?: boolean; showOutline?: boolean;
-  shell?: "document" | "inline" | "balloon"; locale?: "pt-BR" | "en";
+  showChrome?: boolean;
+  showTitleBar?: boolean;
+  showMenubar?: boolean;
+  showToolbar?: boolean;
+  showOutline?: boolean;
+  shell?: "document" | "inline" | "balloon";
+  locale?: "pt-BR" | "en";
   toolbar?: { view?: "ribbon" | "compact"; layout?: "overflow" | "wrap" };
-  viewportHeight?: number | string; readOnly?: boolean;
+  viewportHeight?: number | string;
+  readOnly?: boolean;
 }
 
 /** Events emitted by the editor client lifecycle. */
@@ -100,7 +105,9 @@ export interface OasisEditorQueryApi {
    * @param selector - The selector identifying the node.
    * @returns A semantic node descriptor, or `null` if not found.
    */
-  getNode(selector: DocumentSelector): ReturnType<ReturnType<typeof queryDocument>["getNode"]>;
+  getNode(
+    selector: DocumentSelector,
+  ): ReturnType<ReturnType<typeof queryDocument>["getNode"]>;
   /**
    * @param text - The text to search for.
    * @returns An array of match descriptors.
@@ -174,13 +181,25 @@ export interface OasisEditorDataIoApi {
    * @param request - Import configuration including format, data, and optional progress callback.
    * @returns A wrapped result indicating success or failure.
    */
-  import(request: { format: "docx"; data: Blob | ArrayBuffer | Uint8Array; filename?: string; signal?: AbortSignal; onProgress?: (progress: unknown) => void }): Promise<OasisResult<{ format: "docx" }>>;
+  import(request: {
+    format: "docx";
+    data: Blob | ArrayBuffer | Uint8Array;
+    filename?: string;
+    signal?: AbortSignal;
+    onProgress?: (progress: unknown) => void;
+  }): Promise<OasisResult<{ format: "docx" }>>;
   /**
    * Exports the document as a Blob in the requested format.
    * @param request - Export configuration including format and optional filename.
    * @returns A wrapped result containing the blob.
    */
-  export(request: { format: "docx" | "pdf"; filename?: string }): Promise<OasisResult<{ format: "docx" | "pdf"; blob: Blob; arrayBuffer: () => Promise<ArrayBuffer> }>>;
+  export(request: { format: "docx" | "pdf"; filename?: string }): Promise<
+    OasisResult<{
+      format: "docx" | "pdf";
+      blob: Blob;
+      arrayBuffer: () => Promise<ArrayBuffer>;
+    }>
+  >;
 }
 
 /** UI configuration and chrome API. */
@@ -196,7 +215,11 @@ export interface OasisEditorUiApi {
   /** @param value - Whether the editor should be read-only. */
   setReadOnly(value: boolean): void;
   /** Zoom controls. */
-  zoom: { get(): number; set(value: number): void; adjust(delta: number): void };
+  zoom: {
+    get(): number;
+    set(value: number): void;
+    adjust(delta: number): void;
+  };
   /** Chrome visibility controls. */
   chrome: { setVisible(value: boolean): void };
   /** Title bar visibility control. */
@@ -527,7 +550,11 @@ export function createOasisEditorClient(): OasisEditorClientController {
     },
     updateDocument(updater): void {
       const currentHost = requireHost();
-      if (currentHost.applyTransactionalState) currentHost.applyTransactionalState((state) => ({ ...state, document: updater(state.document) }));
+      if (currentHost.applyTransactionalState)
+        currentHost.applyTransactionalState((state) => ({
+          ...state,
+          document: updater(state.document),
+        }));
       else currentHost.setDocument(updater(currentHost.getDocument()));
       version += 1;
     },
@@ -560,7 +587,10 @@ export function createOasisEditorClient(): OasisEditorClientController {
     },
     document: {
       get: (): EditorDocument => requireHost().getDocument(),
-      set: (document): void => { requireHost().setDocument(document); version += 1; },
+      set: (document): void => {
+        requireHost().setDocument(document);
+        version += 1;
+      },
       load: (document): void => {
         requireHost().setDocument(document);
         version += 1;
@@ -568,7 +598,11 @@ export function createOasisEditorClient(): OasisEditorClientController {
       },
       update: (updater): void => {
         const currentHost = requireHost();
-        if (currentHost.applyTransactionalState) currentHost.applyTransactionalState((state) => ({ ...state, document: updater(state.document) }));
+        if (currentHost.applyTransactionalState)
+          currentHost.applyTransactionalState((state) => ({
+            ...state,
+            document: updater(state.document),
+          }));
         else currentHost.setDocument(updater(currentHost.getDocument()));
         version += 1;
       },
@@ -610,75 +644,214 @@ export function createOasisEditorClient(): OasisEditorClientController {
       pdf: (): Promise<unknown> => requireHost().exportPdf(),
     },
     query: {
-      snapshot: (): SemanticDocumentSnapshot => queryDocument(requireHost().getDocument()).snapshot(),
-      getText: (target?: DocumentSelector | DocumentRange): string => queryDocument(requireHost().getDocument()).getText(target),
-      getNode: (selector: DocumentSelector) => queryDocument(requireHost().getDocument()).getNode(selector),
-      find: (text: string) => queryDocument(requireHost().getDocument()).find(text),
+      snapshot: (): SemanticDocumentSnapshot =>
+        queryDocument(requireHost().getDocument()).snapshot(),
+      getText: (target?: DocumentSelector | DocumentRange): string =>
+        queryDocument(requireHost().getDocument()).getText(target),
+      getNode: (selector: DocumentSelector) =>
+        queryDocument(requireHost().getDocument()).getNode(selector),
+      find: (text: string) =>
+        queryDocument(requireHost().getDocument()).find(text),
       outline: () => queryDocument(requireHost().getDocument()).outline(),
     },
     edit: {
-      async apply(request: ApplyEditRequest): Promise<OasisResult<ApplyEditValue>> {
-        if (request.expectedVersion !== undefined && request.expectedVersion !== version) {
-          return { ok: false, error: { code: "DOCUMENT_VERSION_CONFLICT", message: "Document version does not match expectedVersion", expectedVersion: request.expectedVersion, actualVersion: version } };
+      async apply(
+        request: ApplyEditRequest,
+      ): Promise<OasisResult<ApplyEditValue>> {
+        if (
+          request.expectedVersion !== undefined &&
+          request.expectedVersion !== version
+        ) {
+          return {
+            ok: false,
+            error: {
+              code: "DOCUMENT_VERSION_CONFLICT",
+              message: "Document version does not match expectedVersion",
+              expectedVersion: request.expectedVersion,
+              actualVersion: version,
+            },
+          };
         }
-        if (request.idempotencyKey && idempotent.has(request.idempotencyKey)) return idempotent.get(request.idempotencyKey)!;
+        if (request.idempotencyKey && idempotent.has(request.idempotencyKey))
+          return idempotent.get(request.idempotencyKey)!;
         const host = requireHost();
         try {
-          const applied = applyDocumentOperations(host.getDocument(), request.operations);
-          if (host.applyTransactionalState) host.applyTransactionalState((state) => ({ ...state, document: applied.document }));
+          const applied = applyDocumentOperations(
+            host.getDocument(),
+            request.operations,
+          );
+          if (host.applyTransactionalState)
+            host.applyTransactionalState((state) => ({
+              ...state,
+              document: applied.document,
+            }));
           else host.setDocument(applied.document);
           version += 1;
-          const result: OasisResult<ApplyEditValue> = { ok: true, value: applied.value, version, warnings: [] };
-          if (request.idempotencyKey) idempotent.set(request.idempotencyKey, result);
+          const result: OasisResult<ApplyEditValue> = {
+            ok: true,
+            value: applied.value,
+            version,
+            warnings: [],
+          };
+          if (request.idempotencyKey)
+            idempotent.set(request.idempotencyKey, result);
           return result;
         } catch (error) {
-          const message = error instanceof Error ? error.message : "Edit failed";
-          const code = message === "AMBIGUOUS_SELECTOR" ? "AMBIGUOUS_SELECTOR" : message === "INVALID_RANGE" ? "INVALID_RANGE" : message === "VALIDATION_FAILED" ? "VALIDATION_FAILED" : message === "UNSUPPORTED_OPERATION" ? "UNSUPPORTED_OPERATION" : "NODE_NOT_FOUND";
+          const message =
+            error instanceof Error ? error.message : "Edit failed";
+          const code =
+            message === "AMBIGUOUS_SELECTOR"
+              ? "AMBIGUOUS_SELECTOR"
+              : message === "INVALID_RANGE"
+                ? "INVALID_RANGE"
+                : message === "VALIDATION_FAILED"
+                  ? "VALIDATION_FAILED"
+                  : message === "UNSUPPORTED_OPERATION"
+                    ? "UNSUPPORTED_OPERATION"
+                    : "NODE_NOT_FOUND";
           return { ok: false, error: { code, message } };
         }
       },
     },
     io: {
       async import(request): Promise<OasisResult<{ format: "docx" }>> {
-        if (request.signal?.aborted) return { ok: false, error: { code: "ABORTED", message: "Import aborted" } };
+        if (request.signal?.aborted)
+          return {
+            ok: false,
+            error: { code: "ABORTED", message: "Import aborted" },
+          };
         try {
-          const data = request.data instanceof Blob
-            ? request.data
-            : new Blob([
-                request.data instanceof Uint8Array
-                  ? Uint8Array.from(request.data).buffer
-                  : request.data,
-              ]);
-          const file = new File([data], request.filename ?? "document.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+          const data =
+            request.data instanceof Blob
+              ? request.data
+              : new Blob([
+                  request.data instanceof Uint8Array
+                    ? Uint8Array.from(request.data).buffer
+                    : request.data,
+                ]);
+          const file = new File([data], request.filename ?? "document.docx", {
+            type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          });
           await requireHost().importDocx(file);
           version += 1;
           request.onProgress?.({ phase: "done", progress: 100 });
           return { ok: true, value: { format: "docx" }, version, warnings: [] };
         } catch (error) {
-          return { ok: false, error: { code: "IMPORT_FAILED", message: error instanceof Error ? error.message : "Import failed" } };
+          return {
+            ok: false,
+            error: {
+              code: "IMPORT_FAILED",
+              message: error instanceof Error ? error.message : "Import failed",
+            },
+          };
         }
       },
-      async export(request): Promise<OasisResult<{ format: "docx" | "pdf"; blob: Blob; arrayBuffer: () => Promise<ArrayBuffer> }>> {
+      async export(request): Promise<
+        OasisResult<{
+          format: "docx" | "pdf";
+          blob: Blob;
+          arrayBuffer: () => Promise<ArrayBuffer>;
+        }>
+      > {
         try {
-          const value = request.format === "docx" ? await requireHost().exportDocxBlob() : await requireHost().exportPdfBlob();
-          return { ok: true, value: { format: request.format, blob: value, arrayBuffer: () => value.arrayBuffer() }, version, warnings: [] };
+          const value =
+            request.format === "docx"
+              ? await requireHost().exportDocxBlob()
+              : await requireHost().exportPdfBlob();
+          return {
+            ok: true,
+            value: {
+              format: request.format,
+              blob: value,
+              arrayBuffer: () => value.arrayBuffer(),
+            },
+            version,
+            warnings: [],
+          };
         } catch (error) {
-          return { ok: false, error: { code: "EXPORT_FAILED", message: error instanceof Error ? error.message : "Export failed" } };
+          return {
+            ok: false,
+            error: {
+              code: "EXPORT_FAILED",
+              message: error instanceof Error ? error.message : "Export failed",
+            },
+          };
         }
       },
     },
     ui: {
       state: (): OasisEditorUiState => requireHost().getUiState?.() ?? {},
-      update: (patch: OasisEditorUiState): OasisEditorUiState => { const next = requireHost().updateUiState?.(patch) ?? {}; emit("uiChange", next); return next; },
-      setReadOnly: (value): void => { requireHost().updateUiState?.({ readOnly: value }); },
-      zoom: { get: (): number => requireHost().getZoom?.() ?? 100, set: (value): void => requireHost().setZoom?.(value), adjust: (delta): void => requireHost().adjustZoom?.(delta) },
-      chrome: { setVisible: (value): void => { requireHost().updateUiState?.({ showChrome: value }); } },
-      titleBar: { setVisible: (value): void => { requireHost().updateUiState?.({ showTitleBar: value }); } },
-      menubar: { setVisible: (value): void => { requireHost().updateUiState?.({ showMenubar: value }); }, items: { register: (...args) => requireHost().menuRegistry?.register(...args), unregister: (id) => requireHost().menuRegistry?.unregister(id), getItems: () => requireHost().menuRegistry?.getItems() ?? [] } as MenuRegistry },
-      toolbar: { setVisible: (value): void => { requireHost().updateUiState?.({ showToolbar: value }); }, items: { register: (...args) => requireHost().toolbarRegistry?.register(...args), insertBefore: (...args) => requireHost().toolbarRegistry?.insertBefore(...args), insertAfter: (...args) => requireHost().toolbarRegistry?.insertAfter(...args), replace: (...args) => requireHost().toolbarRegistry?.replace(...args), remove: (id) => requireHost().toolbarRegistry?.remove(id), move: (...args) => requireHost().toolbarRegistry?.move(...args), get: (id) => requireHost().toolbarRegistry?.get(id), getOrdered: () => requireHost().toolbarRegistry?.getOrdered() ?? [], getItems: () => requireHost().toolbarRegistry?.getItems() ?? [], clear: () => requireHost().toolbarRegistry?.clear(), onChange: (cb) => requireHost().toolbarRegistry?.onChange(cb) ?? (() => undefined) } as ToolbarRegistry },
-      outline: { setVisible: (value): void => { requireHost().updateUiState?.({ showOutline: value }); } },
-      shell: { set: (shell): void => { requireHost().updateUiState?.({ shell }); } },
-      locale: { set: (locale): void => { requireHost().updateUiState?.({ locale }); } },
+      update: (patch: OasisEditorUiState): OasisEditorUiState => {
+        const next = requireHost().updateUiState?.(patch) ?? {};
+        emit("uiChange", next);
+        return next;
+      },
+      setReadOnly: (value): void => {
+        requireHost().updateUiState?.({ readOnly: value });
+      },
+      zoom: {
+        get: (): number => requireHost().getZoom?.() ?? 100,
+        set: (value): void => requireHost().setZoom?.(value),
+        adjust: (delta): void => requireHost().adjustZoom?.(delta),
+      },
+      chrome: {
+        setVisible: (value): void => {
+          requireHost().updateUiState?.({ showChrome: value });
+        },
+      },
+      titleBar: {
+        setVisible: (value): void => {
+          requireHost().updateUiState?.({ showTitleBar: value });
+        },
+      },
+      menubar: {
+        setVisible: (value): void => {
+          requireHost().updateUiState?.({ showMenubar: value });
+        },
+        items: {
+          register: (...args) => requireHost().menuRegistry?.register(...args),
+          unregister: (id) => requireHost().menuRegistry?.unregister(id),
+          getItems: () => requireHost().menuRegistry?.getItems() ?? [],
+        } as MenuRegistry,
+      },
+      toolbar: {
+        setVisible: (value): void => {
+          requireHost().updateUiState?.({ showToolbar: value });
+        },
+        items: {
+          register: (...args) =>
+            requireHost().toolbarRegistry?.register(...args),
+          insertBefore: (...args) =>
+            requireHost().toolbarRegistry?.insertBefore(...args),
+          insertAfter: (...args) =>
+            requireHost().toolbarRegistry?.insertAfter(...args),
+          replace: (...args) => requireHost().toolbarRegistry?.replace(...args),
+          remove: (id) => requireHost().toolbarRegistry?.remove(id),
+          move: (...args) => requireHost().toolbarRegistry?.move(...args),
+          get: (id) => requireHost().toolbarRegistry?.get(id),
+          getOrdered: () => requireHost().toolbarRegistry?.getOrdered() ?? [],
+          getItems: () => requireHost().toolbarRegistry?.getItems() ?? [],
+          clear: () => requireHost().toolbarRegistry?.clear(),
+          onChange: (cb: () => void): (() => void) =>
+            requireHost().toolbarRegistry?.onChange(cb) ??
+            ((): void => undefined),
+        } as ToolbarRegistry,
+      },
+      outline: {
+        setVisible: (value): void => {
+          requireHost().updateUiState?.({ showOutline: value });
+        },
+      },
+      shell: {
+        set: (shell): void => {
+          requireHost().updateUiState?.({ shell });
+        },
+      },
+      locale: {
+        set: (locale): void => {
+          requireHost().updateUiState?.({ locale });
+        },
+      },
     },
     on: addListener,
     once(event, callback) {

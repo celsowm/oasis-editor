@@ -180,9 +180,7 @@ export function serializeOpcRelationships(
   const body = relationships
     .map((relationship): string => {
       const targetMode =
-        relationship.targetMode === "External"
-          ? ' TargetMode="External"'
-          : "";
+        relationship.targetMode === "External" ? ' TargetMode="External"' : "";
       return `<Relationship Id="${escapeXml(relationship.id)}" Type="${escapeXml(relationship.type)}" Target="${escapeXml(relationship.target)}"${targetMode}/>`;
     })
     .join("");

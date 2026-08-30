@@ -16,13 +16,20 @@ import {
 import { WORD_NS } from "@/export/docx/xmlUtils.js";
 
 const REBUILT_STYLES_PATH = "word/styles.xml";
-const CONDITIONAL_PROPERTY_NAMES = new Set(["pPr", "rPr", "tblPr", "trPr", "tcPr"]);
+const CONDITIONAL_PROPERTY_NAMES = new Set([
+  "pPr",
+  "rPr",
+  "tblPr",
+  "trPr",
+  "tcPr",
+]);
 
 function elementChildren(node: XmlNode): XmlElement[] {
   const result: XmlElement[] = [];
   for (let index = 0; index < node.childNodes.length; index += 1) {
     const child = node.childNodes[index];
-    if (child?.nodeType === child.ELEMENT_NODE) result.push(child as XmlElement);
+    if (child?.nodeType === child.ELEMENT_NODE)
+      result.push(child as XmlElement);
   }
   return result;
 }
@@ -53,16 +60,24 @@ function copyMissingAttributes(source: XmlElement, target: XmlElement): void {
       : target.hasAttribute(attribute.name);
     if (exists) continue;
     if (attribute.namespaceURI) {
-      target.setAttributeNS(attribute.namespaceURI, attribute.name, attribute.value);
+      target.setAttributeNS(
+        attribute.namespaceURI,
+        attribute.name,
+        attribute.value,
+      );
     } else {
       target.setAttribute(attribute.name, attribute.value);
     }
   }
 }
 
-function directWordChild(parent: XmlElement, name: string): XmlElement | undefined {
+function directWordChild(
+  parent: XmlElement,
+  name: string,
+): XmlElement | undefined {
   return elementChildren(parent).find(
-    (child): boolean => child.namespaceURI === WORD_NS && localName(child) === name,
+    (child): boolean =>
+      child.namespaceURI === WORD_NS && localName(child) === name,
   );
 }
 
@@ -70,7 +85,10 @@ function serialize(element: XmlElement | undefined): string {
   return element ? new XMLSerializer().serializeToString(element) : "";
 }
 
-function parseWordElement(xml: string, expected: string): XmlElement | undefined {
+function parseWordElement(
+  xml: string,
+  expected: string,
+): XmlElement | undefined {
   if (!xml) return undefined;
   const root = new DOMParser().parseFromString(xml, "application/xml")
     .documentElement as XmlElement | undefined;
@@ -79,7 +97,11 @@ function parseWordElement(xml: string, expected: string): XmlElement | undefined
     : undefined;
 }
 
-function mergePropertyXml(name: string, sourceXml: string, generatedXml: string): string {
+function mergePropertyXml(
+  name: string,
+  sourceXml: string,
+  generatedXml: string,
+): string {
   switch (name) {
     case "pPr":
       return mergeParagraphPropertiesXmlSource(sourceXml, generatedXml);
@@ -96,7 +118,9 @@ function mergePropertyXml(name: string, sourceXml: string, generatedXml: string)
   }
 }
 
-function firstConditionalStyleBlock(container: XmlElement): XmlElement | undefined {
+function firstConditionalStyleBlock(
+  container: XmlElement,
+): XmlElement | undefined {
   return elementChildren(container).find(
     (child): boolean =>
       child.namespaceURI === WORD_NS && localName(child) === "tblStylePr",
@@ -119,7 +143,9 @@ function propertyInsertionAnchor(
         CONDITIONAL_PROPERTY_NAMES.has(localName(candidate)),
     );
   if (nextSourceProperty) {
-    return directWordChild(targetContainer, localName(nextSourceProperty)) ?? null;
+    return (
+      directWordChild(targetContainer, localName(nextSourceProperty)) ?? null
+    );
   }
 
   // CT_Style requires direct pPr/rPr/tblPr/trPr/tcPr properties before the
@@ -172,7 +198,10 @@ function replaceOrInsertProperty(
   return true;
 }
 
-function mergeConditionalContainer(source: XmlElement, target: XmlElement): boolean {
+function mergeConditionalContainer(
+  source: XmlElement,
+  target: XmlElement,
+): boolean {
   copyMissingAttributes(source, target);
   let changed = false;
   for (const name of CONDITIONAL_PROPERTY_NAMES) {
@@ -199,13 +228,19 @@ function mergeConditionalContainer(source: XmlElement, target: XmlElement): bool
 function filteredOpaqueConditional(source: XmlElement): XmlElement | undefined {
   const document = source.ownerDocument;
   if (!document) return undefined;
-  const result = document.createElementNS(WORD_NS, "w:tblStylePr") as XmlElement;
+  const result = document.createElementNS(
+    WORD_NS,
+    "w:tblStylePr",
+  ) as XmlElement;
   copyMissingAttributes(source, result);
   let preserved = false;
 
   for (const sourceChild of elementChildren(source)) {
     const name = localName(sourceChild);
-    if (sourceChild.namespaceURI === WORD_NS && CONDITIONAL_PROPERTY_NAMES.has(name)) {
+    if (
+      sourceChild.namespaceURI === WORD_NS &&
+      CONDITIONAL_PROPERTY_NAMES.has(name)
+    ) {
       const filteredXml = mergePropertyXml(name, serialize(sourceChild), "");
       const filtered = parseWordElement(filteredXml, name);
       if (filtered) {
@@ -231,11 +266,15 @@ function conditionalKey(element: XmlElement): string | undefined {
   return type ? `tblStylePr:${type}` : undefined;
 }
 
-function mergeOneTableStyle(sourceStyle: XmlElement, targetStyle: XmlElement): boolean {
+function mergeOneTableStyle(
+  sourceStyle: XmlElement,
+  targetStyle: XmlElement,
+): boolean {
   let changed = false;
 
   // Direct table properties on the named table style.
-  changed = replaceOrInsertProperty(sourceStyle, targetStyle, "tblPr") || changed;
+  changed =
+    replaceOrInsertProperty(sourceStyle, targetStyle, "tblPr") || changed;
 
   const sourceConditionals = elementChildren(sourceStyle).filter(
     (child): boolean => conditionalKey(child) !== undefined,
@@ -250,7 +289,9 @@ function mergeOneTableStyle(sourceStyle: XmlElement, targetStyle: XmlElement): b
     const sourceKey = conditionalKey(sourceConditional)!;
     const targetConditional = targetByKey.get(sourceKey);
     if (targetConditional) {
-      changed = mergeConditionalContainer(sourceConditional, targetConditional) || changed;
+      changed =
+        mergeConditionalContainer(sourceConditional, targetConditional) ||
+        changed;
       continue;
     }
 
@@ -262,7 +303,7 @@ function mergeOneTableStyle(sourceStyle: XmlElement, targetStyle: XmlElement): b
       .slice(sourceIndex + 1)
       .find((candidate): boolean => conditionalKey(candidate) !== undefined);
     const anchor = nextConditional
-      ? targetByKey.get(conditionalKey(nextConditional)!) ?? null
+      ? (targetByKey.get(conditionalKey(nextConditional)!) ?? null)
       : null;
     targetStyle.insertBefore(opaqueOnly.cloneNode(true), anchor);
     changed = true;
@@ -273,10 +314,14 @@ function mergeOneTableStyle(sourceStyle: XmlElement, targetStyle: XmlElement): b
 function stylesRoot(xml: string): XmlElement | undefined {
   const root = new DOMParser().parseFromString(xml, "application/xml")
     .documentElement as XmlElement | undefined;
-  return root?.namespaceURI === WORD_NS && localName(root) === "styles" ? root : undefined;
+  return root?.namespaceURI === WORD_NS && localName(root) === "styles"
+    ? root
+    : undefined;
 }
 
-function sourceStylesXml(sourcePackage: EditorDocxSourcePackage): string | undefined {
+function sourceStylesXml(
+  sourcePackage: EditorDocxSourcePackage,
+): string | undefined {
   const mainPart = sourcePackage.parts[sourcePackage.mainDocumentPart];
   const relationship = mainPart?.relationships?.find(
     (candidate): boolean =>
@@ -308,7 +353,11 @@ export function mergeTableStylePropertiesOoxmlSource(
 
   let changed = false;
   for (const sourceStyle of elementChildren(sourceRoot)) {
-    if (sourceStyle.namespaceURI !== WORD_NS || localName(sourceStyle) !== "style") continue;
+    if (
+      sourceStyle.namespaceURI !== WORD_NS ||
+      localName(sourceStyle) !== "style"
+    )
+      continue;
     if (attr(sourceStyle, "type") !== "table") continue;
     const id = attr(sourceStyle, "styleId");
     const target = id ? rebuiltStyles.get(id) : undefined;

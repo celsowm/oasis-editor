@@ -115,8 +115,6 @@ export function insertTableAtSelection(
       ...state.document,
       sections: nextSections,
     },
-    selection: withSelection(
-      paragraphOffsetToPosition(firstBlock, 0),
-    ),
+    selection: withSelection(paragraphOffsetToPosition(firstBlock, 0)),
   };
 }

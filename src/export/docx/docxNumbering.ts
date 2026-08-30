@@ -1,7 +1,4 @@
-import {
-  DOMParser,
-  type Element as XmlElement,
-} from "@xmldom/xmldom";
+import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 import type { EditorDocument, EditorParagraphNode } from "@/core/model.js";
 import { getDocumentSections } from "@/core/model.js";
 import type { NumberingContext, NumberingDefinition } from "./docxTypes.js";
@@ -72,11 +69,7 @@ function isValidSourceId(
   value: number | undefined,
   minimum: number,
 ): value is number {
-  return (
-    value !== undefined &&
-    Number.isSafeInteger(value) &&
-    value >= minimum
-  );
+  return value !== undefined && Number.isSafeInteger(value) && value >= minimum;
 }
 
 /**
@@ -99,11 +92,8 @@ export function buildNumberingContext(
   const originalNumberingXml = sourceNumberingXml(document);
   let nextAbstractNumId = Math.max(
     1,
-    maxSourceNumberingId(
-      originalNumberingXml,
-      "abstractNum",
-      "abstractNumId",
-    ) + 1,
+    maxSourceNumberingId(originalNumberingXml, "abstractNum", "abstractNumId") +
+      1,
   );
   let nextNumId = Math.max(
     1,
@@ -111,10 +101,7 @@ export function buildNumberingContext(
   );
 
   const claimAbstractNumId = (preferred: number | undefined): number => {
-    if (
-      isValidSourceId(preferred, 0) &&
-      !usedAbstractNumIds.has(preferred)
-    ) {
+    if (isValidSourceId(preferred, 0) && !usedAbstractNumIds.has(preferred)) {
       usedAbstractNumIds.add(preferred);
       return preferred;
     }
@@ -219,7 +206,9 @@ export function buildNumberingContext(
           ? {
               ooxml: {
                 ...sourceMetadata,
-                ...(sourceFormat ? { format: sourceFormat } : { format: undefined }),
+                ...(sourceFormat
+                  ? { format: sourceFormat }
+                  : { format: undefined }),
               },
             }
           : {}),

@@ -11,9 +11,9 @@ function isUsableNoteDocxId(value: number | undefined): value is number {
  * New or conflicting ids are placed above every imported id in the registry so
  * source-backed entry preservation cannot collide with a source-only note.
  */
-export function createSourceAwareNoteDocxIdAllocator<T extends NoteWithDocxIdHint>(
-  items: Record<string, T>,
-): (note: T) => number {
+export function createSourceAwareNoteDocxIdAllocator<
+  T extends NoteWithDocxIdHint,
+>(items: Record<string, T>): (note: T) => number {
   let nextId = 1;
   for (const note of Object.values(items)) {
     if (isUsableNoteDocxId(note.docxId)) {

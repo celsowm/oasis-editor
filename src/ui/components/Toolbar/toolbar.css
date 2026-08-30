@@ -256,6 +256,21 @@
   line-height: 11px;
 }
 
+/* Large dropdowns have a third child (the chevron) in addition to the icon
+ * and caption. Give the caption an explicit cross-axis size so it cannot
+ * collapse to the available intrinsic width of the flex item. This is
+ * especially important for short ribbon groups such as Insert > Illustrations
+ * where the Shapes caption otherwise renders as an empty/dash-like fragment.
+ */
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-tool-button-ribbon-large.oasis-editor-tool-button-dropdown
+  > .oasis-editor-tool-button-label {
+  display: -webkit-box;
+  width: 100%;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+}
+
 .oasis-editor-toolbar-view-ribbon
   .oasis-editor-toolbar-item-ribbon-large
   .oasis-editor-dropdown-chevron,
@@ -1688,9 +1703,54 @@
   height: 32px;
   border: 1px solid var(--oasis-toolbar-border);
   border-radius: 2px;
-  box-shadow: inset 0 0 0 4px var(--oasis-surface);
-  background: var(--oasis-text-muted);
+  background:
+    linear-gradient(
+      var(--oasis-paper, #ffffff),
+      var(--oasis-paper, #ffffff)
+    )
+    var(--oasis-margin-preview-x, 4px)
+    var(--oasis-margin-preview-y, 4px) /
+    var(--oasis-margin-preview-width, 18px)
+    var(--oasis-margin-preview-height, 24px) no-repeat,
+    var(--oasis-text-muted, #9ca3af);
   opacity: 0.45;
+}
+
+/* Keep the thumbnail useful instead of rendering the old solid placeholder:
+ * the white inner page reflects the relative content area of each preset. */
+.oasis-editor-margins-item[data-margin-preset="normal"]::before {
+  --oasis-margin-preview-x: 7px;
+  --oasis-margin-preview-y: 7px;
+  --oasis-margin-preview-width: 12px;
+  --oasis-margin-preview-height: 18px;
+}
+
+.oasis-editor-margins-item[data-margin-preset="narrow"]::before {
+  --oasis-margin-preview-x: 4px;
+  --oasis-margin-preview-y: 4px;
+  --oasis-margin-preview-width: 18px;
+  --oasis-margin-preview-height: 24px;
+}
+
+.oasis-editor-margins-item[data-margin-preset="moderate"]::before {
+  --oasis-margin-preview-x: 5px;
+  --oasis-margin-preview-y: 7px;
+  --oasis-margin-preview-width: 16px;
+  --oasis-margin-preview-height: 18px;
+}
+
+.oasis-editor-margins-item[data-margin-preset="wide"]::before {
+  --oasis-margin-preview-x: 11px;
+  --oasis-margin-preview-y: 7px;
+  --oasis-margin-preview-width: 4px;
+  --oasis-margin-preview-height: 18px;
+}
+
+.oasis-editor-margins-item[data-margin-preset="mirrored"]::before {
+  --oasis-margin-preview-x: 9px;
+  --oasis-margin-preview-y: 7px;
+  --oasis-margin-preview-width: 8px;
+  --oasis-margin-preview-height: 18px;
 }
 
 .oasis-editor-margins-item:hover,

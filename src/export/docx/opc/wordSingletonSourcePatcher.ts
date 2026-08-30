@@ -7,8 +7,7 @@ import {
 } from "@xmldom/xmldom";
 import type { EditorDocxSourcePackage } from "@/core/model.js";
 
-const WORD_NS =
-  "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
 interface SingletonSourceSpec {
   relationshipSuffix: string;
@@ -62,7 +61,11 @@ function copyMissingAttributes(source: XmlElement, target: XmlElement): void {
       continue;
     }
     if (attribute.namespaceURI) {
-      target.setAttributeNS(attribute.namespaceURI, attribute.name, attribute.value);
+      target.setAttributeNS(
+        attribute.namespaceURI,
+        attribute.name,
+        attribute.value,
+      );
     } else {
       target.setAttribute(attribute.name, attribute.value);
     }
@@ -140,7 +143,9 @@ function mergePartialSettingsContainer(
 ): void {
   copyMissingAttributes(source, target);
   const targetChildren = elementChildren(target);
-  const targetByKey = new Map(targetChildren.map((child) => [elementKey(child), child]));
+  const targetByKey = new Map(
+    targetChildren.map((child) => [elementKey(child), child]),
+  );
   const sourceChildren = elementChildren(source);
 
   sourceChildren.forEach((sourceChild, sourceIndex): void => {
@@ -162,7 +167,8 @@ function mergePartialSettingsContainer(
       sourceIndex,
       sourceChild,
       target,
-      (candidate): XmlElement | undefined => targetByKey.get(elementKey(candidate)),
+      (candidate): XmlElement | undefined =>
+        targetByKey.get(elementKey(candidate)),
     );
   });
 }
@@ -256,7 +262,8 @@ function mergeSettingsXml(sourceXml: string, rebuiltXml: string): string {
       sourceIndex,
       sourceChild,
       rebuiltRoot,
-      (candidate): XmlElement | undefined => targetByKey.get(elementKey(candidate)),
+      (candidate): XmlElement | undefined =>
+        targetByKey.get(elementKey(candidate)),
     );
   });
 
@@ -278,7 +285,10 @@ const STYLE_MODELED_CHILD_NAMES = new Set([
 ]);
 
 function styleChildKey(element: XmlElement): string {
-  if (element.namespaceURI === WORD_NS && elementLocalName(element) === "tblStylePr") {
+  if (
+    element.namespaceURI === WORD_NS &&
+    elementLocalName(element) === "tblStylePr"
+  ) {
     return `${elementKey(element)}\u0000${getAttributeByLocalName(element, "type") ?? ""}`;
   }
   return elementKey(element);
@@ -312,13 +322,17 @@ function mergeStyleElement(source: XmlElement, target: XmlElement): void {
       sourceIndex,
       sourceChild,
       target,
-      (candidate): XmlElement | undefined => targetByKey.get(styleChildKey(candidate)),
+      (candidate): XmlElement | undefined =>
+        targetByKey.get(styleChildKey(candidate)),
     );
   });
 }
 
 function styleRootChildKey(element: XmlElement): string {
-  if (element.namespaceURI === WORD_NS && elementLocalName(element) === "style") {
+  if (
+    element.namespaceURI === WORD_NS &&
+    elementLocalName(element) === "style"
+  ) {
     return `${elementKey(element)}\u0000${getAttributeByLocalName(element, "styleId") ?? ""}`;
   }
   return elementKey(element);
@@ -333,7 +347,10 @@ function mergeStylesXml(sourceXml: string, rebuiltXml: string): string {
   copyMissingAttributes(sourceRoot, rebuiltRoot);
   const sourceChildren = elementChildren(sourceRoot);
   const targetByKey = new Map(
-    elementChildren(rebuiltRoot).map((child) => [styleRootChildKey(child), child]),
+    elementChildren(rebuiltRoot).map((child) => [
+      styleRootChildKey(child),
+      child,
+    ]),
   );
 
   sourceChildren.forEach((sourceChild, sourceIndex): void => {
@@ -378,7 +395,10 @@ const FONT_MODELED_CHILD_NAMES = new Set([
 ]);
 
 function fontRootChildKey(element: XmlElement): string {
-  if (element.namespaceURI === WORD_NS && elementLocalName(element) === "font") {
+  if (
+    element.namespaceURI === WORD_NS &&
+    elementLocalName(element) === "font"
+  ) {
     return `${elementKey(element)}\u0000${getAttributeByLocalName(element, "name") ?? ""}`;
   }
   return elementKey(element);
@@ -409,7 +429,8 @@ function mergeFontElement(source: XmlElement, target: XmlElement): void {
       sourceIndex,
       sourceChild,
       target,
-      (candidate): XmlElement | undefined => targetByKey.get(elementKey(candidate)),
+      (candidate): XmlElement | undefined =>
+        targetByKey.get(elementKey(candidate)),
     );
   });
 }
@@ -423,7 +444,10 @@ function mergeFontTableXml(sourceXml: string, rebuiltXml: string): string {
   copyMissingAttributes(sourceRoot, rebuiltRoot);
   const sourceChildren = elementChildren(sourceRoot);
   const targetByKey = new Map(
-    elementChildren(rebuiltRoot).map((child) => [fontRootChildKey(child), child]),
+    elementChildren(rebuiltRoot).map((child) => [
+      fontRootChildKey(child),
+      child,
+    ]),
   );
 
   sourceChildren.forEach((sourceChild, sourceIndex): void => {

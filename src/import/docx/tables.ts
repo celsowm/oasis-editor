@@ -88,7 +88,11 @@ function applyCellParagraphAutospacing(
   // A nested table or block SDT interrupts paragraph margin collapsing. Only
   // apply the old paragraph-only rule when the complete direct cell story is a
   // one-to-one paragraph sequence.
-  if (!blocks.every((block): block is EditorParagraphNode => block.type === "paragraph")) {
+  if (
+    !blocks.every(
+      (block): block is EditorParagraphNode => block.type === "paragraph",
+    )
+  ) {
     return;
   }
   const paragraphNodes = getChildrenByTagNameNS(cellNode, WORD_NS, "p");
@@ -97,10 +101,11 @@ function applyCellParagraphAutospacing(
   }
   collapseCellAutospacing(
     blocks,
-    paragraphNodes.map((paragraphNode): ParagraphAutospacingFlags =>
-      parseAutospacingFlags(
-        getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr"),
-      ),
+    paragraphNodes.map(
+      (paragraphNode): ParagraphAutospacingFlags =>
+        parseAutospacingFlags(
+          getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr"),
+        ),
     ),
   );
 }

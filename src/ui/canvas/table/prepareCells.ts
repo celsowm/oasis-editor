@@ -50,7 +50,9 @@ function resolveCellVerticalMode(
   cell: EditorTableCellNode,
 ): VerticalRenderMode {
   const direction =
-    cell.style?.textDirection ?? firstCellParagraph(cell)?.style?.textDirection ?? null;
+    cell.style?.textDirection ??
+    firstCellParagraph(cell)?.style?.textDirection ??
+    null;
   return resolveVerticalMode(direction);
 }
 

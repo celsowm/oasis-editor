@@ -104,9 +104,9 @@ function commentParaIdsByWId(xml: string): Map<string, string> {
     root.getElementsByTagNameNS(WORD_NS, "comment"),
   )) {
     const wId = getAttributeByLocalName(comment, "id");
-    const paragraph = comment.getElementsByTagNameNS(WORD_NS, "p").item(0) as
-      | XmlElement
-      | null;
+    const paragraph = comment
+      .getElementsByTagNameNS(WORD_NS, "p")
+      .item(0) as XmlElement | null;
     const paraId = paragraph
       ? getAttributeByLocalName(paragraph, "paraId")
       : undefined;
@@ -120,7 +120,8 @@ function commentParaIdsByWId(xml: string): Map<string, string> {
 function parseCommentsExRoot(xml: string): XmlElement | undefined {
   const document = new DOMParser().parseFromString(xml, "application/xml");
   const root = document.documentElement as XmlElement | undefined;
-  return root?.namespaceURI === WORD15_NS && elementLocalName(root) === "commentsEx"
+  return root?.namespaceURI === WORD15_NS &&
+    elementLocalName(root) === "commentsEx"
     ? root
     : undefined;
 }

@@ -39,6 +39,26 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   // --- File ---
   items.push({
     type: "button",
+    id: "editor-toolbar-new-document",
+    testId: "editor-toolbar-new-document",
+    iconName: "file-plus",
+    labelKey: "toolbar.newDocument",
+    tooltipKey: "toolbar.newDocument",
+    command: "newDocument",
+    ribbonSize: "large",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-import-document",
+    testId: "editor-toolbar-import-document",
+    iconName: "upload",
+    labelKey: "toolbar.importDocx",
+    tooltipKey: "toolbar.importDocx",
+    command: "importDocument",
+    ribbonSize: "large",
+  });
+  items.push({
+    type: "button",
     id: "editor-toolbar-export-docx",
     testId: "editor-toolbar-export-docx",
     iconName: "file-text",
@@ -55,16 +75,6 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     labelKey: "toolbar.exportPdf",
     tooltipKey: "toolbar.exportPdf",
     command: "exportPdf",
-    ribbonSize: "large",
-  });
-  items.push({
-    type: "button",
-    id: "editor-toolbar-import-document",
-    testId: "editor-toolbar-import-document",
-    iconName: "upload",
-    labelKey: "toolbar.import",
-    tooltipKey: "toolbar.import",
-    command: "importDocument",
     ribbonSize: "large",
   });
 

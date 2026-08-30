@@ -96,6 +96,7 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
                 "oasis-editor-margins-item-active":
                   activePresetId() === preset.id,
               }}
+              data-margin-preset={preset.id}
               data-testid={`editor-toolbar-margins-${preset.id}`}
               onClick={(): void => applyPreset(preset)}
             >

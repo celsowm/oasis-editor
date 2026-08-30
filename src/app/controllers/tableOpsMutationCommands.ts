@@ -42,7 +42,9 @@ function resolveSectionStoryKey(
   if (zone === "main") return "blocks";
   const paragraphId = current.selection.focus.paragraphId;
   if (zone === "header") {
-    const candidates: Array<readonly [HeaderStoryKey, EditorBlockNode[] | undefined]> = [
+    const candidates: Array<
+      readonly [HeaderStoryKey, EditorBlockNode[] | undefined]
+    > = [
       ["header", section.header],
       ["firstPageHeader", section.firstPageHeader],
       ["evenPageHeader", section.evenPageHeader],
@@ -54,7 +56,9 @@ function resolveSectionStoryKey(
     );
   }
   if (zone === "footer") {
-    const candidates: Array<readonly [FooterStoryKey, EditorBlockNode[] | undefined]> = [
+    const candidates: Array<
+      readonly [FooterStoryKey, EditorBlockNode[] | undefined]
+    > = [
       ["footer", section.footer],
       ["firstPageFooter", section.firstPageFooter],
       ["evenPageFooter", section.evenPageFooter],
@@ -228,11 +232,7 @@ export const applyTableAwareParagraphEdit = (
     return edit(current);
   }
 
-  const mutation = resolveTablePathMutation(
-    current,
-    getTargetBlocks,
-    location,
-  );
+  const mutation = resolveTablePathMutation(current, getTargetBlocks, location);
   if (!mutation) return edit(current);
 
   const tempState: EditorState = {

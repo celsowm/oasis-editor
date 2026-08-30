@@ -134,7 +134,7 @@ function blockHasGeneratedBoundaryTokens(
     case "paragraph":
       return Boolean(
         context.bookmarkEventsByParagraph?.has(block.id) ||
-          context.commentEventsByParagraph?.has(block.id),
+        context.commentEventsByParagraph?.has(block.id),
       );
     case "table":
       return tableHasGeneratedBoundaryTokens(block, context);
@@ -162,9 +162,9 @@ function tableSourceNeedsCanonicalRowAlignment(
   const sourceXml = getEditorTableOoxmlSource(table)?.xml;
   return Boolean(
     sourceXml &&
-      /<w:trPr(?:\s|>)[\s\S]*?<w:jc\b[^>]*\bw:val="(?:start|end)"/.test(
-        sourceXml,
-      ),
+    /<w:trPr(?:\s|>)[\s\S]*?<w:jc\b[^>]*\bw:val="(?:start|end)"/.test(
+      sourceXml,
+    ),
   );
 }
 
@@ -202,15 +202,8 @@ function serializeSingleBlockXml(
       return (
         pageBreakXml +
         (reusableTableXml ??
-          serializeTableXmlPreservingSource(
-            block,
-            (cellBlock, cell): string =>
-              serializeTableCellBlockXml(
-                cellBlock,
-                cell,
-                context,
-                styles,
-              ),
+          serializeTableXmlPreservingSource(block, (cellBlock, cell): string =>
+            serializeTableCellBlockXml(cellBlock, cell, context, styles),
           ))
       );
     }

@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { DOMParser } from "@xmldom/xmldom";
-import { extractMarkupCompatibilityMetadata, serializeMcAttributes } from "../../ooxml/markupCompatibilityEngine.js";
+import {
+  extractMarkupCompatibilityMetadata,
+  serializeMcAttributes,
+} from "../../ooxml/markupCompatibilityEngine.js";
 
 describe("MarkupCompatibilityEngine", () => {
   it("extracts and serializes mc attributes accurately", () => {

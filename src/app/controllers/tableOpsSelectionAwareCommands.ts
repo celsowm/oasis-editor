@@ -122,18 +122,14 @@ function createTableSelectionAwareCommandsImpl(
       const lastSegment = tablePath[tablePath.length - 1];
       if (!lastSegment) return current;
 
-      const mutation = resolveTablePathMutation(
-        current,
-        deps.getTargetBlocks,
-        {
-          blockIndex,
-          rowIndex: lastSegment.rowIndex,
-          cellIndex: lastSegment.cellIndex,
-          paragraphIndex: 0,
-          tablePath,
-          zone,
-        },
-      );
+      const mutation = resolveTablePathMutation(current, deps.getTargetBlocks, {
+        blockIndex,
+        rowIndex: lastSegment.rowIndex,
+        cellIndex: lastSegment.cellIndex,
+        paragraphIndex: 0,
+        tablePath,
+        zone,
+      });
       if (!mutation) return current;
 
       let paragraphIndex = 0;
@@ -156,11 +152,7 @@ function createTableSelectionAwareCommandsImpl(
         }
       }
 
-      return updateBlocksInCurrentSection(
-        current,
-        mutation.targetBlocks,
-        zone,
-      );
+      return updateBlocksInCurrentSection(current, mutation.targetBlocks, zone);
     });
   };
 

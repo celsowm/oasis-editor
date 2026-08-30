@@ -119,10 +119,8 @@ function parsePropertyElement(
   xml: string,
   expectedLocalName: string,
 ): XmlElement | undefined {
-  const root = new DOMParser().parseFromString(
-    xml,
-    "application/xml",
-  ).documentElement as XmlElement | undefined;
+  const root = new DOMParser().parseFromString(xml, "application/xml")
+    .documentElement as XmlElement | undefined;
   return root?.namespaceURI === WORD_NS &&
     elementLocalName(root) === expectedLocalName
     ? root
@@ -145,10 +143,7 @@ function createGeneratedPropertyElement(
   ).documentElement as XmlElement | undefined;
 }
 
-function copySourceAttributes(
-  source: XmlElement,
-  generated: XmlElement,
-): void {
+function copySourceAttributes(source: XmlElement, generated: XmlElement): void {
   for (let index = 0; index < source.attributes.length; index += 1) {
     const attribute = source.attributes.item(index);
     if (!attribute || attribute.namespaceURI === OFFICE_REL_NS) {
@@ -242,10 +237,10 @@ function mergePropertyElement(
       .slice(sourceIndex + 1)
       .find((candidate): boolean => generatedKeys.has(elementKey(candidate)));
     const anchor = nextGeneratedSourceChild
-      ? directElementChildren(generatedElement).find(
+      ? (directElementChildren(generatedElement).find(
           (candidate): boolean =>
             elementKey(candidate) === elementKey(nextGeneratedSourceChild),
-        ) ?? null
+        ) ?? null)
       : null;
     generatedElement.insertBefore(child.cloneNode(true), anchor);
   }

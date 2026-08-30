@@ -81,7 +81,9 @@ function parseParagraphPropertiesXml(xml: string): XmlElement | undefined {
     : undefined;
 }
 
-function createGeneratedParagraphProperties(xml: string): XmlElement | undefined {
+function createGeneratedParagraphProperties(
+  xml: string,
+): XmlElement | undefined {
   if (xml) {
     const wrapper = new DOMParser().parseFromString(
       `<oasis:root xmlns:oasis="urn:oasis:docx" xmlns:w="${WORD_NS}">${xml}</oasis:root>`,
@@ -103,10 +105,7 @@ function createGeneratedParagraphProperties(xml: string): XmlElement | undefined
   ).documentElement as XmlElement | undefined;
 }
 
-function copySourceAttributes(
-  source: XmlElement,
-  generated: XmlElement,
-): void {
+function copySourceAttributes(source: XmlElement, generated: XmlElement): void {
   for (let index = 0; index < source.attributes.length; index += 1) {
     const attribute = source.attributes[index];
     if (!attribute || attribute.namespaceURI === OFFICE_REL_NS) {
@@ -194,10 +193,10 @@ export function mergeParagraphPropertiesXmlSource(
       .slice(sourceIndex + 1)
       .find((candidate): boolean => generatedKeys.has(elementKey(candidate)));
     const anchor = nextGeneratedSourceChild
-      ? directElementChildren(generatedProperties).find(
+      ? (directElementChildren(generatedProperties).find(
           (candidate): boolean =>
             elementKey(candidate) === elementKey(nextGeneratedSourceChild),
-        ) ?? null
+        ) ?? null)
       : null;
     generatedProperties.insertBefore(child.cloneNode(true), anchor);
   }

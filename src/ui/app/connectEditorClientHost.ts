@@ -27,7 +27,9 @@ export interface ConnectEditorClientHostDeps {
   getStateSnapshot: () => EditorState;
   cloneState: (state: EditorState) => EditorState;
   applyState: (next: EditorState) => void;
-  applyTransactionalState?: (producer: (state: EditorState) => EditorState) => void;
+  applyTransactionalState?: (
+    producer: (state: EditorState) => EditorState,
+  ) => void;
   resetEditorChromeState: () => void;
   focusInput: () => void;
   setFocused: (focused: boolean) => void;
@@ -44,7 +46,11 @@ export interface ConnectEditorClientHostDeps {
   };
   docIO: Pick<
     EditorDocumentIO,
-    "handleImportFile" | "handleExportDocx" | "handleExportPdf" | "exportDocxBlob" | "exportPdfBlob"
+    | "handleImportFile"
+    | "handleExportDocx"
+    | "handleExportPdf"
+    | "exportDocxBlob"
+    | "exportPdfBlob"
   >;
 }
 

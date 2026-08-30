@@ -51,6 +51,9 @@ export function buildDocumentAndBrowserCommands({
       (): void => browser.copy(),
       (): { isEnabled: true } => ({ isEnabled: true }),
     ),
+    newDocument: actionCommand("newDocument", (): void =>
+      document.newDocument(),
+    ),
     exportDocx: actionCommand("exportDocx", (): void => document.exportDocx()),
     exportPdf: actionCommand("exportPdf", (): void => document.exportPdf()),
     importDocument: actionCommand("importDocument", (): void =>

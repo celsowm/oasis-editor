@@ -135,9 +135,8 @@ function resolveParagraphStory(
       ? [section.header, section.firstPageHeader, section.evenPageHeader]
       : [section.footer, section.firstPageFooter, section.evenPageFooter];
   return (
-    candidates.find(
-      (blocks): blocks is EditorBlockNode[] =>
-        Boolean(blocks && storyContainsParagraph(blocks, paragraphId)),
+    candidates.find((blocks): blocks is EditorBlockNode[] =>
+      Boolean(blocks && storyContainsParagraph(blocks, paragraphId)),
     ) ?? null
   );
 }
@@ -201,11 +200,7 @@ export function getTableCellContentWidthForParagraph(
   );
   if (!tableLocation) return null;
 
-  let blocks = resolveParagraphStory(
-    document,
-    paragraphId,
-    activeSectionIndex,
-  );
+  let blocks = resolveParagraphStory(document, paragraphId, activeSectionIndex);
   if (!blocks) return null;
 
   let availableWidth = getPageContentWidth(getDocumentPageSettings(document));

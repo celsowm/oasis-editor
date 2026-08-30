@@ -5,13 +5,8 @@ import {
 } from "@xmldom/xmldom";
 import type { EditorTextRun } from "@/core/model.js";
 import { mergeNestedExtensionMarkup } from "@/export/docx/opc/extensionMarkupMerge.js";
-import {
-  WORD14_NS,
-  WORD_NS,
-} from "@/export/docx/xmlUtils.js";
-import {
-  mergeRunOoxmlSourceIntoGeneratedXml,
-} from "./sourceRunXml.js";
+import { WORD14_NS, WORD_NS } from "@/export/docx/xmlUtils.js";
+import { mergeRunOoxmlSourceIntoGeneratedXml } from "./sourceRunXml.js";
 import { setEditorRunOoxmlSource } from "@/ooxml/word/sourceFragments.js";
 
 const STYLE_SOURCE_RUN_ID = "ooxml-style-rpr-source";

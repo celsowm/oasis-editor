@@ -648,8 +648,7 @@ export function serializeTableXml(
           const blocksXml = blocks
             .map((block): string => serializeBlockXml(block, cell))
             .join("");
-          const contentXml =
-            cell.vMerge === "continue" ? "<w:p/>" : blocksXml;
+          const contentXml = cell.vMerge === "continue" ? "<w:p/>" : blocksXml;
           return `<w:tc${serializeExtAttributes(cell.extAttributes)}>${serializeTableCellProperties(cell, fallbackWidthPt)}${contentXml}</w:tc>`;
         })
         .join("");

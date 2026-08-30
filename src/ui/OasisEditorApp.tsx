@@ -60,10 +60,29 @@ export type {
 export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   const runtimeClient = props.runtime?.client ?? createOasisEditorClient();
   const [uiOverrides, setUiOverrides] = createSignal<OasisEditorUiState>({});
-  const ui = (): OasisEditorAppUiProps => ({ ...(props.ui ?? {}), ...uiOverrides(), toolbar: { ...(props.ui?.toolbar ?? {}), ...(uiOverrides().toolbar ?? {}) } });
-  const documentOptions = (): OasisEditorAppDocumentProps => ({ ...(props.document ?? {}), ...(uiOverrides().readOnly === undefined ? {} : { readOnly: uiOverrides().readOnly }) });
-  const getUiState = (): OasisEditorUiState => ({ ...ui(), readOnly: documentOptions().readOnly });
-  const updateUiState = (patch: OasisEditorUiState): OasisEditorUiState => { setUiOverrides((current) => ({ ...current, ...patch, toolbar: { ...(current.toolbar ?? {}), ...(patch.toolbar ?? {}) } })); return { ...getUiState(), ...patch }; };
+  const ui = (): OasisEditorAppUiProps => ({
+    ...(props.ui ?? {}),
+    ...uiOverrides(),
+    toolbar: { ...(props.ui?.toolbar ?? {}), ...(uiOverrides().toolbar ?? {}) },
+  });
+  const documentOptions = (): OasisEditorAppDocumentProps => ({
+    ...(props.document ?? {}),
+    ...(uiOverrides().readOnly === undefined
+      ? {}
+      : { readOnly: uiOverrides().readOnly }),
+  });
+  const getUiState = (): OasisEditorUiState => ({
+    ...ui(),
+    readOnly: documentOptions().readOnly,
+  });
+  const updateUiState = (patch: OasisEditorUiState): OasisEditorUiState => {
+    setUiOverrides((current) => ({
+      ...current,
+      ...patch,
+      toolbar: { ...(current.toolbar ?? {}), ...(patch.toolbar ?? {}) },
+    }));
+    return { ...getUiState(), ...patch };
+  };
   const runtimeOptions = (): OasisEditorAppRuntimeProps => props.runtime ?? {};
   syncCanvasDebugApiVisibility();
   // Per-instance translator: reads this editor's locale signal, so two editors
@@ -127,6 +146,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     setParagraphDialog,
     tablePropertiesDialog,
     setTablePropertiesDialog,
+    newDocumentDialog,
+    setNewDocumentDialog,
   } = createEditorDialogs();
 
   // First-use precise-fonts welcome overlay (rendered inside the editor shell).
@@ -258,6 +279,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     setLinkDialog,
     setImageAltDialog,
     setImageCaptionDialog,
+    setNewDocumentDialog,
   });
   const {
     commandsController,
@@ -442,6 +464,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
             setParagraphDialog,
             tablePropertiesDialog,
             setTablePropertiesDialog,
+            newDocumentDialog,
+            setNewDocumentDialog,
           }}
           findReplace={fr}
           fontFamilyOptions={computeFontFamilyOptions}
@@ -455,6 +479,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           applyParagraphDialogValues={applyParagraphDialogValues}
           setParagraphDialogDefault={setParagraphDialogDefault}
           applyTablePropertiesDialogValues={applyTablePropertiesDialogValues}
+          confirmNewDocument={(): void => runtimeClient.resetDocument()}
           closeContextMenu={closeContextMenu}
         />
 

@@ -95,6 +95,7 @@ export interface EssentialsDocumentStyleDescriptor {
 
 export interface EssentialsDocumentCapability {
   documentStyles: () => EssentialsDocumentStyleDescriptor[];
+  newDocument: () => void;
   exportDocx: () => void;
   exportPdf: () => void;
   importDocument: () => void;

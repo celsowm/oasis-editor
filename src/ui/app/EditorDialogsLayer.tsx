@@ -5,6 +5,7 @@ import { ImageCaptionDialog } from "@/ui/components/Dialogs/ImageCaptionDialog.j
 import { FontDialog } from "@/ui/components/Dialogs/FontDialog.js";
 import { ParagraphDialog } from "@/ui/components/Dialogs/ParagraphDialog.js";
 import { TablePropertiesDialog } from "@/ui/components/Dialogs/TablePropertiesDialog.js";
+import { NewDocumentConfirmationDialog } from "@/ui/components/Dialogs/NewDocumentConfirmationDialog.js";
 import { FindReplaceDialog } from "@/ui/components/FindReplace/FindReplaceDialog.js";
 import { ContextMenu } from "@/ui/components/ContextMenu/ContextMenu.js";
 import type { createEditorDialogs } from "./useEditorDialogs.js";
@@ -30,6 +31,7 @@ export interface EditorDialogsLayerProps {
   applyTablePropertiesDialogValues: ComponentProps<
     typeof TablePropertiesDialog
   >["onApply"];
+  confirmNewDocument: () => void;
   closeContextMenu: () => void;
 }
 
@@ -55,10 +57,24 @@ export function EditorDialogsLayer(
     setParagraphDialog,
     tablePropertiesDialog,
     setTablePropertiesDialog,
+    newDocumentDialog,
+    setNewDocumentDialog,
   } = props.dialogs;
 
   return (
     <>
+      <NewDocumentConfirmationDialog
+        isOpen={newDocumentDialog().isOpen}
+        onClose={(): void => {
+          setNewDocumentDialog({ isOpen: false });
+          props.focusInput();
+        }}
+        onConfirm={(): void => {
+          setNewDocumentDialog({ isOpen: false });
+          props.confirmNewDocument();
+        }}
+      />
+
       <LinkDialog
         isOpen={linkDialog().isOpen}
         initialHref={linkDialog().initialHref}

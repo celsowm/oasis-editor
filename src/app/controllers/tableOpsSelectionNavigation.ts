@@ -155,8 +155,7 @@ export const resolveAdjacentTableCellPosition = (
 
   const cells = table.rows.flatMap((row): EditorTableCellNode[] =>
     row.cells.filter(
-      (cell): boolean =>
-        cell.vMerge !== "continue" && cell.blocks.length > 0,
+      (cell): boolean => cell.vMerge !== "continue" && cell.blocks.length > 0,
     ),
   );
   const currentCellIndex = cells.findIndex((cell): boolean =>

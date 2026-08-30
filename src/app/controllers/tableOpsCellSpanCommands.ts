@@ -55,7 +55,7 @@ function resolveRangeMutation(
   current: EditorState,
   deps: TableCellSpanOperationsDeps,
   range: HorizontalTableCellRange | VerticalTableCellRange,
-) {
+): ReturnType<typeof resolveTablePathMutation> {
   const lastSegment = range.tablePath[range.tablePath.length - 1];
   if (!lastSegment) return null;
   return resolveTablePathMutation(current, deps.getTargetBlocks, {
@@ -381,9 +381,7 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
       {
         ...cell,
         colSpan: undefined,
-        blocks: cell.blocks.map(
-          (block): EditorBlockNode => cloneBlock(block),
-        ),
+        blocks: cell.blocks.map((block): EditorBlockNode => cloneBlock(block)),
         ...(revision
           ? {
               style: {

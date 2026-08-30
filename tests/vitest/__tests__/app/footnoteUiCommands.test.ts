@@ -126,4 +126,40 @@ describe("footnote UI commands", () => {
     expect(item?.shortcut).toBe("Ctrl+Alt+F");
     expect(item?.command).toBe("insertFootnote");
   });
+
+  it("exposes New Document in the File menu", () => {
+    const item = defaultMenuItems.find(
+      (candidate) => candidate.id === "file_new",
+    );
+
+    expect(item).toMatchObject({
+      path: "File/New",
+      labelKey: "menu.file.new",
+      shortcut: "Ctrl+N",
+      command: "newDocument",
+    });
+  });
+
+  it("registers Ctrl+N as the New Document shortcut", () => {
+    const registry = new EditorCommandRegistry();
+    defaultEditorKeyBindings.forEach((binding) => registry.register(binding));
+    const executeCommand = vi.fn();
+    const event = {
+      key: "n",
+      ctrlKey: true,
+      metaKey: false,
+      altKey: false,
+      shiftKey: false,
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent;
+
+    const handled = registry.execute(event, {} as any, {
+      executeCommand,
+      canExecuteCommand: () => true,
+    });
+
+    expect(handled).toBe(true);
+    expect(executeCommand).toHaveBeenCalledWith("newDocument");
+    expect(event.preventDefault).toHaveBeenCalledOnce();
+  });
 });

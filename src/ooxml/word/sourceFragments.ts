@@ -11,8 +11,7 @@ import type {
   EditorTextRun,
 } from "@/core/model.js";
 
-const WORD_NS =
-  "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
 export interface EditorOoxmlRunSource {
   xml: string;
@@ -143,9 +142,7 @@ function firstDirectWordChild(
 }
 
 function serializeElement(element: XmlElement | undefined): string | undefined {
-  return element
-    ? new XMLSerializer().serializeToString(element)
-    : undefined;
+  return element ? new XMLSerializer().serializeToString(element) : undefined;
 }
 
 /**
@@ -160,23 +157,16 @@ export function ooxmlSourceNeedsCanonicalRunSerialization(
   return RUN_PROPERTIES_PATTERN.test(xml);
 }
 
-export function createEditorRunSemanticSignature(
-  run: EditorTextRun,
-): string {
+export function createEditorRunSemanticSignature(run: EditorTextRun): string {
   return stableSemanticString(run);
 }
 
-export function createEditorRunStructureSignature(
-  run: EditorTextRun,
-): string {
+export function createEditorRunStructureSignature(run: EditorTextRun): string {
   const semanticRun = { ...run, text: undefined };
   return stableSemanticString(semanticRun);
 }
 
-export function setEditorRunOoxmlSource(
-  run: EditorTextRun,
-  xml: string,
-): void {
+export function setEditorRunOoxmlSource(run: EditorTextRun, xml: string): void {
   (run as EditorRunWithOoxmlSource).ooxmlSource = {
     xml,
     semanticSignature: createEditorRunSemanticSignature(run),
