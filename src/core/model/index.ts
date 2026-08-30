@@ -80,6 +80,27 @@ export type {
   EditorTableNode,
   EditorBlockNode,
 } from "./types/nodes.js";
+export type {
+  EditorMathNode,
+  EditorMathText,
+  EditorMathFraction,
+  EditorMathRadical,
+  EditorMathScript,
+  EditorMathDelimiter,
+  EditorMathAccent,
+  EditorMathNary,
+  EditorMathLimit,
+  EditorMathMatrix,
+  EditorMathBox,
+  EditorMathGroup,
+  EditorMathRaw,
+  EditorMathStyle,
+  EditorMathExpression,
+} from "./types/math.js";
+export {
+  EMPTY_EDITOR_MATH_EXPRESSION,
+  MATH_OBJECT_REPLACEMENT,
+} from "./types/math.js";
 
 export type { RunKind, RunOfKind, RunVisitor } from "./runKind.js";
 export {
@@ -94,6 +115,7 @@ export {
   getRunFootnoteReference,
   getRunEndnoteReference,
   getRunSym,
+  getRunMath,
 } from "./runKind.js";
 
 export type { EditorFootnote } from "./types/documentFootnotes.js";

@@ -56,6 +56,22 @@ export function buildCoreFormattingCommands({
         typeof payload.fontFamily === "string" ? payload.fontFamily : null,
       );
     }),
+    insertEquation: actionCommand("insertEquation", (p): void => {
+      formatting.insertEquation(
+        p as Parameters<typeof formatting.insertEquation>[0],
+      );
+    }),
+    updateEquation: actionCommand("updateEquation", (p): void => {
+      const payload = p as Parameters<
+        typeof formatting.updateEquation
+      >[1] extends never
+        ? never
+        : {
+            runId: string;
+            expression: Parameters<typeof formatting.updateEquation>[1];
+          };
+      formatting.updateEquation(payload.runId, payload.expression);
+    }),
     pastePlainText: command("pastePlainText", formatting.pastePlainText),
     bold: command("bold", formatting.bold, (): { isActive: boolean } => ({
       isActive: Boolean(s().bold),

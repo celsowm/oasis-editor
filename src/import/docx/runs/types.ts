@@ -4,6 +4,7 @@ import type {
   EditorTextStyle,
   EditorImageRunData,
   EditorTextBoxData,
+  EditorMathExpression,
 } from "@/core/model.js";
 
 export type ParseNestedBlocks = (
@@ -52,4 +53,5 @@ export interface ImportedRun {
   bookmark?: ImportedBookmarkMarker;
   comment?: ImportedCommentMarker;
   sym?: { font: string; char: string };
+  math?: EditorMathExpression;
 }

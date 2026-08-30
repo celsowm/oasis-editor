@@ -374,6 +374,11 @@ export const ptBR = {
   "dialog.symbol.code": "Código do caractere",
   "dialog.symbol.doubleClickHelp":
     "Clique duas vezes em um caractere para inseri-lo.",
+  "dialog.equation.title": "Equação",
+  "dialog.equation.insert": "Inserir Equação",
+  "dialog.equation.structures": "Estruturas matemáticas",
+  "dialog.equation.linear": "Entrada linear",
+  "dialog.equation.empty": "Digite uma equação",
 
   // New document confirmation
   "dialog.newDocument.title": "Novo Documento",

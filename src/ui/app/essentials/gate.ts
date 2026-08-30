@@ -8,6 +8,7 @@ export function buildEssentialsGate(
   return {
     isCommandEnabled: (commandName: OasisBuiltinCommand): boolean => {
       if (commandName === "openSymbolDialog") return true;
+      if (commandName === "openEquationDialog") return true;
       return (
         !options.isReadOnly() &&
         (commandName !== "insertFootnote" ||

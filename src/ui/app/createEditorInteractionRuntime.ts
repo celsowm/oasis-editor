@@ -46,6 +46,10 @@ export interface EditorInteractionRuntimeDeps {
   measuredParagraphLayouts: DocRuntime["measuredParagraphLayouts"];
   documentLayout: DocRuntime["documentLayout"];
   canvasSnapshotProvider: DocRuntime["canvasSnapshotProvider"];
+  openEquationDialog: (
+    initial?: import("@/core/model.js").EditorMathExpression,
+    targetRunId?: string,
+  ) => void;
 }
 
 /**
@@ -199,6 +203,7 @@ function createEditorInteractionRuntimeImpl(
     getForcePlainTextPaste,
     setForcePlainTextPaste,
     insertImageFromFile,
+    openEquationDialog: deps.openEquationDialog,
   });
 
   const onEditorMouseDown = (event: MouseEvent): void => {

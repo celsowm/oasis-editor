@@ -9,6 +9,7 @@ import type {
   EditorTextRun,
   EditorTextStyle,
 } from "@/core/model.js";
+import { MATH_OBJECT_REPLACEMENT } from "@/core/model.js";
 import {
   createEditorNodeId,
   createEditorParagraphFromRuns,
@@ -172,6 +173,13 @@ function importedRunToEditorRun(run: ImportedRun): EditorTextRun {
     editorRun = { ...base, kind: "image", image: run.image };
   } else if (run.sym) {
     editorRun = { ...base, kind: "sym", sym: { ...run.sym } };
+  } else if (run.math) {
+    editorRun = {
+      ...base,
+      text: MATH_OBJECT_REPLACEMENT,
+      kind: "math",
+      math: run.math,
+    };
   } else {
     editorRun = { ...base, kind: "text" };
   }

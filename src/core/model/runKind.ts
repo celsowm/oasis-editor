@@ -1,4 +1,5 @@
 import type { EditorTextBoxData, EditorTextRun } from "./types/nodes.js";
+import type { EditorMathExpression } from "./types/math.js";
 import type {
   EditorFieldChar,
   EditorFieldData,
@@ -25,7 +26,7 @@ export function getRunKind(run: EditorTextRun): RunKind {
 
 /** True for runs that carry an inline object replacement (image or text box). */
 export function isInlineObjectRun(run: EditorTextRun): boolean {
-  return run.kind === "image" || run.kind === "textBox";
+  return run.kind === "image" || run.kind === "textBox" || run.kind === "math";
 }
 
 // Narrowing accessors: read a kind-specific field as `T | undefined`, replacing
@@ -76,6 +77,12 @@ export function getRunSym(
   return run.kind === "sym" ? run.sym : undefined;
 }
 
+export function getRunMath(
+  run: EditorTextRun,
+): EditorMathExpression | undefined {
+  return run.kind === "math" ? run.math : undefined;
+}
+
 export interface RunVisitor<R> {
   text(run: RunOfKind<"text">): R;
   image(run: RunOfKind<"image">): R;
@@ -86,6 +93,7 @@ export interface RunVisitor<R> {
   footnoteReference(run: RunOfKind<"footnoteReference">): R;
   endnoteReference(run: RunOfKind<"endnoteReference">): R;
   sym(run: RunOfKind<"sym">): R;
+  math?(run: RunOfKind<"math">): R;
 }
 
 /**
@@ -111,6 +119,10 @@ export function visitRun<R>(run: EditorTextRun, visitor: RunVisitor<R>): R {
       return visitor.image(run);
     case "sym":
       return visitor.sym(run);
+    case "math":
+      return visitor.math
+        ? visitor.math(run)
+        : visitor.text(run as unknown as RunOfKind<"text">);
     case "text":
       return visitor.text(run);
     default:

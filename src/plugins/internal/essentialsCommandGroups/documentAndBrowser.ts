@@ -68,6 +68,9 @@ export function buildDocumentAndBrowserCommands({
     openSymbolDialog: actionCommand("openSymbolDialog", (): void =>
       document.openSymbolDialog(),
     ),
+    openEquationDialog: actionCommand("openEquationDialog", (): void =>
+      document.openEquationDialog(),
+    ),
     unlink: actionCommand(
       "unlink",
       (): void => link.remove(),

@@ -4,6 +4,7 @@ import type { TextCaseMode } from "@/core/commands/text.js";
 import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
 import type { OasisBuiltinCommand } from "@/core/commands/builtinCommands.js";
 import type { TableBorderPreset } from "@/core/commands/table.js";
+import type { EditorMathExpression } from "@/core/model.js";
 
 // Capability contracts the Essentials plugin operates on. Extracted to a leaf
 // module so `createEssentialsPlugin` (which builds the plugin) and
@@ -33,6 +34,8 @@ export interface EssentialsFormattingCapability {
   selectAll: () => boolean;
   insertFootnote: () => boolean;
   insertText: (text: string, fontFamily?: string | null) => boolean;
+  insertEquation: (expression: EditorMathExpression) => boolean;
+  updateEquation: (runId: string, expression: EditorMathExpression) => boolean;
   pastePlainText: () => boolean;
   bold: () => boolean;
   italic: () => boolean;
@@ -103,6 +106,7 @@ export interface EssentialsDocumentCapability {
   insertImage: () => void;
   insertShape: (preset: string) => void;
   openSymbolDialog: () => void;
+  openEquationDialog: () => void;
 }
 
 export interface EssentialsLinkCapability {

@@ -65,6 +65,7 @@ export function buildEssentialsDocument(
     },
     newDocument: (): void => options.newDocument(),
     openSymbolDialog: (): void => options.openSymbolDialog(),
+    openEquationDialog: (): void => options.openEquationDialog(),
     exportDocx: (): undefined => void options.docIO.handleExportDocx(),
     exportPdf: (): undefined => void options.docIO.handleExportPdf(),
     importDocument: (): void | undefined => options.importInputRef()?.click(),

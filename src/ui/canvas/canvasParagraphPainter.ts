@@ -28,6 +28,7 @@ import {
 } from "./canvasFontResolution.js";
 import { getCachedCanvasImage } from "./canvasImageCache.js";
 import { resolveImageSrc } from "@/core/model.js";
+import { drawMathExpression } from "@/ui/math/mathPainter.js";
 
 // Sub-module imports — each owns one rendering concern.
 import {
@@ -343,7 +344,19 @@ export function drawParagraph(
         );
       }
 
-      if (fragment.image && !fragment.image.floating) {
+      if (fragment.math) {
+        const slot = slotByOffset.get(fragment.startOffset);
+        if (slot) {
+          drawMathExpression(
+            ctx,
+            fragment.math,
+            originX + slot.left,
+            baselineY + renderMetrics.baselineOffset,
+            fontSize,
+            styles.color ?? "#000000",
+          );
+        }
+      } else if (fragment.image && !fragment.image.floating) {
         const slot = slotByOffset.get(fragment.startOffset);
         if (slot) {
           const src = resolveImageSrc(state.document, fragment.image.src);

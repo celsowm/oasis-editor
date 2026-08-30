@@ -7,11 +7,13 @@ import type {
 import {
   getRunImage,
   getRunTextBox,
+  getRunMath,
   resolveEffectiveTextStyleForParagraph,
 } from "@/core/model.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
 import { measureCharacterWidth } from "./characterWidth.js";
 import type { MeasuredChar, MeasuredToken } from "./types.js";
+import { measureMathExpression } from "@/ui/math/mathPainter.js";
 
 export function buildParagraphFragments(
   paragraph: EditorParagraphNode,
@@ -39,6 +41,7 @@ export function buildParagraphFragments(
       styles: run.styles ? { ...run.styles } : undefined,
       image: runImage ? { ...runImage } : undefined,
       textBox: runTextBox ? { ...runTextBox } : undefined,
+      math: getRunMath(run),
       revision: run.revision ? { ...run.revision } : undefined,
       chars,
     };
@@ -92,6 +95,11 @@ export function buildMeasuredChars(
         objectHeight = fragment.textBox.floating
           ? undefined
           : fragment.textBox.height;
+      } else if (char.char === "\uFFFC" && fragment.math) {
+        const fontSize = effectiveStyles.fontSize ?? fallbackFontSize;
+        const metrics = measureMathExpression(fragment.math, fontSize);
+        width = Math.max(fontSize, metrics.width);
+        objectHeight = metrics.height;
       } else {
         width = measureCharacterWidth(
           char.char,

@@ -11,6 +11,7 @@ import {
   getFirstChildByTagNameNS,
   getAttributeValue,
 } from "./xmlHelpers.js";
+import { MATH_NS, parseMathExpression } from "./math.js";
 import { PAGE_BREAK_MARKER } from "./units.js";
 import { type AssetRegistry } from "./assetRegistry.js";
 import { type DocxImportTheme } from "./theme.js";
@@ -343,6 +344,13 @@ export async function parseRunsContainer(
     }
 
     const element = node as XmlElement;
+    if (
+      element.namespaceURI === MATH_NS &&
+      (element.localName === "oMath" || element.localName === "oMathPara")
+    ) {
+      runs.push({ text: "\uFFFC", math: parseMathExpression(element) });
+      continue;
+    }
     if (element.namespaceURI !== WORD_NS) {
       continue;
     }

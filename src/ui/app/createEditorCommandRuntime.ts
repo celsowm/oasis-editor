@@ -1,6 +1,6 @@
 import { createEffect } from "solid-js";
 import type { BooleanStyleKey } from "@/ui/toolbarStyleState.js";
-import type { EditorState } from "@/core/model.js";
+import { getDocumentParagraphs, type EditorState } from "@/core/model.js";
 import type { EditorLogger } from "@/utils/logger.js";
 import type { OasisEditorClientController } from "@/app/client/OasisEditorClient.js";
 import type { TranslateFn } from "@/i18n/index.js";
@@ -54,6 +54,11 @@ export interface EditorCommandRuntimeDeps {
   }) => void;
   setNewDocumentDialog: (state: { isOpen: boolean }) => void;
   setSymbolDialog: (state: { isOpen: boolean }) => void;
+  setEquationDialog: (state: {
+    isOpen: boolean;
+    initial?: import("@/core/model.js").EditorMathExpression;
+    targetRunId?: string;
+  }) => void;
   getUiState: () => OasisEditorUiState;
   updateUiState: (patch: OasisEditorUiState) => OasisEditorUiState;
   zoom: {
@@ -145,6 +150,31 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
           deps.setNewDocumentDialog({ isOpen: true }),
       }),
       openSymbolDialog: (): void => deps.setSymbolDialog({ isOpen: true }),
+      openEquationDialog: (): void => {
+        const focus = deps.state.selection.focus;
+        const paragraph = getDocumentParagraphs(deps.state.document).find(
+          (block) => block.id === focus.paragraphId,
+        );
+        if (paragraph?.type === "paragraph") {
+          let offset = 0;
+          for (const run of paragraph.runs) {
+            if (
+              run.kind === "math" &&
+              focus.offset >= offset &&
+              focus.offset <= offset + run.text.length
+            ) {
+              deps.setEquationDialog({
+                isOpen: true,
+                initial: run.math,
+                targetRunId: run.id,
+              });
+              return;
+            }
+            offset += run.text.length;
+          }
+        }
+        deps.setEquationDialog({ isOpen: true });
+      },
     },
     externalPlugins: deps.runtimeOptions().plugins,
     t: deps.translator,

@@ -372,6 +372,11 @@ export const en = {
   "dialog.symbol.recent": "Recently used",
   "dialog.symbol.code": "Character code",
   "dialog.symbol.doubleClickHelp": "Double-click a character to insert it.",
+  "dialog.equation.title": "Equation",
+  "dialog.equation.insert": "Insert Equation",
+  "dialog.equation.structures": "Math structures",
+  "dialog.equation.linear": "Linear input",
+  "dialog.equation.empty": "Enter an equation",
 
   // New document confirmation
   "dialog.newDocument.title": "New Document",

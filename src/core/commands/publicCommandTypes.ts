@@ -2,6 +2,7 @@ import type { CommandRef } from "./CommandRef.js";
 import type { EditorPageMargins } from "@/core/model.js";
 import type { TextCaseMode } from "./text.js";
 import type { TableBorderPreset } from "./table.js";
+import type { EditorMathExpression } from "@/core/model.js";
 
 /** Payload for the `insertTable` command. */
 export interface InsertTablePayload {
@@ -37,6 +38,8 @@ export interface OasisCommandPayloads {
   selectAll: undefined;
   insertFootnote: undefined;
   insertText: string | InsertTextPayload;
+  insertEquation: EditorMathExpression;
+  updateEquation: { runId: string; expression: EditorMathExpression };
   pastePlainText: undefined;
   bold: undefined;
   italic: undefined;
@@ -145,6 +148,7 @@ export interface OasisCommandPayloads {
   tableDistributeRows: undefined;
   insertTable: InsertTablePayload;
   openSymbolDialog: undefined;
+  openEquationDialog: undefined;
 }
 
 /** Maps commands to their typed return values. Commands not listed return `unknown`. */

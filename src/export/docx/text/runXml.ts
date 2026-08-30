@@ -24,6 +24,7 @@ import {
   serializeEndnoteReference,
 } from "./endnoteRunXml.js";
 import { wrapRunWithHyperlink } from "./hyperlinkXml.js";
+import { serializeMathExpression } from "./mathXml.js";
 import {
   mergeRunOoxmlSourceIntoGeneratedXml,
   serializeRunFromOoxmlSource,
@@ -92,6 +93,7 @@ export function serializeRun(
     },
     sym: (r): string =>
       `<w:r>${runProps()}<w:sym w:font="${escapeXml(r.sym!.font)}" w:char="${r.sym!.char}"/></w:r>`,
+    math: (r): string => serializeMathExpression(r.math!),
     text: (): string => asText(),
   });
 

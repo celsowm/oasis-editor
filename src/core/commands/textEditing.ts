@@ -4,7 +4,9 @@ import type {
   EditorState,
   EditorTextRun,
   EditorTextStyle,
+  EditorMathExpression,
 } from "@/core/model.js";
+import { MATH_OBJECT_REPLACEMENT } from "@/core/model.js";
 import {
   getParagraphLength,
   getParagraphs,
@@ -304,6 +306,62 @@ export function insertTextAtSelection(
       paragraphOffsetToPosition(nextParagraph, offset + text.length),
     ),
   );
+}
+
+export function insertMathAtSelection(
+  state: EditorState,
+  expression: EditorMathExpression,
+): EditorState {
+  const collapsedState = isSelectionCollapsed(state.selection)
+    ? state
+    : deleteSelectionRange(state);
+  const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  const styles = getStyleAtOffset(paragraph, offset);
+  const insertedRun: EditorTextRun = {
+    id: `run:${Math.random().toString(36).slice(2, 9)}`,
+    text: MATH_OBJECT_REPLACEMENT,
+    styles,
+    kind: "math",
+    math: expression,
+  };
+  const nextParagraph = insertRunsAtOffset(paragraph, offset, [insertedRun]);
+  const paragraphs = getParagraphs(collapsedState).map(
+    (candidate, candidateIndex): EditorParagraphNode =>
+      candidateIndex === index ? nextParagraph : candidate,
+  );
+  return cloneStateWithParagraphs(
+    collapsedState,
+    paragraphs,
+    withSelection(
+      paragraphOffsetToPosition(
+        nextParagraph,
+        offset + MATH_OBJECT_REPLACEMENT.length,
+      ),
+    ),
+  );
+}
+
+export function updateMathRun(
+  state: EditorState,
+  runId: string,
+  expression: EditorMathExpression,
+): EditorState {
+  let changed = false;
+  const paragraphs = getParagraphs(state).map(
+    (paragraph): EditorParagraphNode => {
+      let paragraphChanged = false;
+      const runs = paragraph.runs.map((run): EditorTextRun => {
+        if (run.id !== runId || run.kind !== "math") return run;
+        changed = true;
+        paragraphChanged = true;
+        return { ...run, math: expression, text: MATH_OBJECT_REPLACEMENT };
+      });
+      return paragraphChanged ? { ...paragraph, runs } : paragraph;
+    },
+  );
+  return changed
+    ? cloneStateWithParagraphs(state, paragraphs, state.selection)
+    : state;
 }
 
 export function insertPlainTextAtSelection(

@@ -47,6 +47,10 @@ const allowlistedFiles = new Map([
     "src/ui/components/Dialogs/SymbolDialog.tsx",
     "specialized character picker dialog",
   ],
+  [
+    "src/ui/components/Dialogs/EquationDialog.tsx",
+    "specialized equation editor dialog",
+  ],
   ["src/ui/components/Tabs/Tabs.tsx", "public tabs primitive implementation"],
   ["src/ui/components/Outline/OutlinePanel.tsx", "pending outline migration"],
   ["src/ui/components/WelcomeOverlay.tsx", "pending heading/text migration"],

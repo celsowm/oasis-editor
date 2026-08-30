@@ -43,6 +43,7 @@ import {
   isLowercaseSmallCapsChar,
   resolveRenderedTextChar,
 } from "@/core/smallCaps.js";
+import { mathDisplayText } from "@/ui/math/mathPainter.js";
 
 // Fragment-level sub-modules — each owns one rendering concern.
 import {
@@ -311,6 +312,32 @@ export async function drawFragmentText(
       fragment.textBox.height,
       drawers,
     );
+    return;
+  }
+
+  if (fragment.math) {
+    const slot =
+      line.slots.find((c): boolean => c.offset === fragment.startOffset) ??
+      line.slots.find((c): boolean => c.offset >= fragment.startOffset);
+    if (!slot) return;
+    const styles = resolveEffectiveTextStyleForParagraph(
+      fragment.styles,
+      paragraph.style?.styleId,
+      document.styles,
+    );
+    const fontFace = fontRegistry.resolveFontFace({
+      fontFamily: "Cambria Math",
+      bold: false,
+      italic: false,
+    });
+    writer.drawText(pageIndex, {
+      x: pxToPt(originX + slot.left),
+      y: pxToPt(originY + line.top + line.height * TEXT_BASELINE_RATIO),
+      text: mathDisplayText(fragment.math),
+      fontSize: textStyleToFontSizePt(styles),
+      color: styles.color ?? "#000000",
+      fontResourceName: fontFace.writerResourceName,
+    });
     return;
   }
 

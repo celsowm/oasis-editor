@@ -2,6 +2,8 @@ export const OASIS_BUILTIN_COMMANDS = [
   "selectAll",
   "insertFootnote",
   "insertText",
+  "insertEquation",
+  "updateEquation",
   "insertTableOfContents",
   "updateTableOfContents",
   "pastePlainText",
@@ -114,6 +116,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "insertTable",
   "insertShape",
   "openSymbolDialog",
+  "openEquationDialog",
 ] as const;
 
 export type OasisBuiltinCommand = (typeof OASIS_BUILTIN_COMMANDS)[number];

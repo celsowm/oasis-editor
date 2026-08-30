@@ -32,6 +32,7 @@ export interface CreateEditorEssentialsPluginOptions {
   };
   newDocument: () => void;
   openSymbolDialog: () => void;
+  openEquationDialog: () => void;
   importInputRef: () => HTMLInputElement | undefined;
   imageInputRef: () => HTMLInputElement | undefined;
   selectedImageRun: () => SelectedImageRun | null;

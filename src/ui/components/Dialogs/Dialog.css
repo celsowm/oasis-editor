@@ -467,6 +467,58 @@
   resize: vertical;
 }
 
+.oasis-editor-equation-dialog {
+  width: min(720px, calc(100vw - 32px));
+}
+
+.oasis-editor-equation-editor {
+  display: grid;
+  gap: 14px;
+}
+
+.oasis-editor-equation-palette {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.oasis-editor-equation-palette button {
+  min-height: 48px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  font-family: "Cambria Math", "Times New Roman", serif;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.oasis-editor-equation-linear {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.oasis-editor-equation-linear textarea {
+  min-height: 72px;
+  resize: vertical;
+  font-family: "Cambria Math", "Times New Roman", serif;
+  font-size: 18px;
+}
+
+.oasis-editor-equation-preview {
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  font-family: "Cambria Math", "Times New Roman", serif;
+  font-size: 24px;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 640px) {
   .oasis-editor-dialog-font {
     min-height: 0;

@@ -16,6 +16,7 @@ import type {
   EditorStructuralRevision,
   EditorTableRowHeightRule,
 } from "./primitives.js";
+import type { EditorMathExpression } from "./math.js";
 import type {
   EditorParagraphStyle,
   EditorTableCellStyle,
@@ -135,7 +136,8 @@ export type EditorTextRun =
    * `w:font` attribute value; `char` is the 4-digit hex `w:char` value. The
    * character is also stored in `text` so the canvas can render it.
    */
-  | (EditorRunBase & { kind: "sym"; sym: { font: string; char: string } });
+  | (EditorRunBase & { kind: "sym"; sym: { font: string; char: string } })
+  | (EditorRunBase & { kind: "math"; math: EditorMathExpression });
 
 /**
  * A drop cap (Word's `w:framePr/@dropCap`): a large initial letter sunk into

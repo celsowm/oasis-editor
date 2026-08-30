@@ -4,6 +4,7 @@
  * `types/document.ts` should ever import from here.
  */
 import type { EditorBlockNode, EditorTextBoxData } from "./nodes.js";
+import type { EditorMathExpression } from "./math.js";
 import type { EditorPageSettings } from "./document.js";
 import type { EditorRevision, EditorImageRunData } from "./primitives.js";
 import type { EditorTextStyle } from "./styles.js";
@@ -31,6 +32,7 @@ export interface EditorLayoutFragment {
   styles?: EditorTextStyle;
   image?: EditorImageRunData;
   textBox?: EditorTextBoxData;
+  math?: EditorMathExpression;
   revision?: EditorRevision;
   chars: EditorLayoutFragmentChar[];
 }

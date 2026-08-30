@@ -2,7 +2,11 @@ import {
   insertPageBreakAtSelection,
   splitBlockAtSelection,
 } from "@/core/commands/block.js";
-import { insertTextAtSelection } from "@/core/commands/text.js";
+import {
+  insertMathAtSelection,
+  insertTextAtSelection,
+  updateMathRun,
+} from "@/core/commands/text.js";
 import {
   getDocumentParagraphs,
   getParagraphText,
@@ -24,6 +28,7 @@ import {
 } from "@/ui/fontSizeUnits.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
 import type { EssentialsFormattingCapability } from "@/plugins/internal/essentialsCapabilities.js";
+import type { EditorMathExpression } from "@/core/model.js";
 import { togglePreciseFontMode } from "../localFontAccess.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
 
@@ -109,6 +114,27 @@ export function buildEssentialsFormatting(
             (temp): EditorState =>
               insertTextAtSelection(temp, text, styleOverride),
           ),
+      );
+      options.focusInput();
+      return true;
+    },
+    insertEquation: (expression: EditorMathExpression): boolean => {
+      options.applyTransactionalState(
+        (current): EditorState =>
+          options.tableOps.applyTableAwareParagraphEdit(
+            current,
+            (temp): EditorState => insertMathAtSelection(temp, expression),
+          ),
+      );
+      options.focusInput();
+      return true;
+    },
+    updateEquation: (
+      runId: string,
+      expression: EditorMathExpression,
+    ): boolean => {
+      options.applyTransactionalState(
+        (current): EditorState => updateMathRun(current, runId, expression),
       );
       options.focusInput();
       return true;

@@ -2,12 +2,23 @@ import { createSignal, type Accessor, type Setter } from "solid-js";
 import type { FontDialogInitialValues } from "@/ui/components/Dialogs/FontDialog.js";
 import type { ParagraphDialogInitialValues } from "@/ui/components/Dialogs/ParagraphDialog.js";
 import type { TablePropertiesDialogInitialValues } from "@/ui/components/Dialogs/TablePropertiesDialog.js";
+import type { EditorMathExpression } from "@/core/model.js";
 
 export interface EditorDialogsState {
   newDocumentDialog: Accessor<{ isOpen: boolean }>;
   setNewDocumentDialog: Setter<{ isOpen: boolean }>;
   symbolDialog: Accessor<{ isOpen: boolean }>;
   setSymbolDialog: Setter<{ isOpen: boolean }>;
+  equationDialog: Accessor<{
+    isOpen: boolean;
+    initial?: EditorMathExpression;
+    targetRunId?: string;
+  }>;
+  setEquationDialog: Setter<{
+    isOpen: boolean;
+    initial?: EditorMathExpression;
+    targetRunId?: string;
+  }>;
   linkDialog: Accessor<{ isOpen: boolean; initialHref: string }>;
   setLinkDialog: Setter<{ isOpen: boolean; initialHref: string }>;
   imageAltDialog: Accessor<{ isOpen: boolean; initialAlt: string }>;
@@ -42,6 +53,11 @@ export function createEditorDialogs(): EditorDialogsState {
   }>({ isOpen: false });
   const [symbolDialog, setSymbolDialog] = createSignal<{
     isOpen: boolean;
+  }>({ isOpen: false });
+  const [equationDialog, setEquationDialog] = createSignal<{
+    isOpen: boolean;
+    initial?: EditorMathExpression;
+    targetRunId?: string;
   }>({ isOpen: false });
   const [linkDialog, setLinkDialog] = createSignal<{
     isOpen: boolean;
@@ -199,6 +215,8 @@ export function createEditorDialogs(): EditorDialogsState {
     setNewDocumentDialog,
     symbolDialog,
     setSymbolDialog,
+    equationDialog,
+    setEquationDialog,
     linkDialog,
     setLinkDialog,
     imageAltDialog,

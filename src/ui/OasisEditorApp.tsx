@@ -150,6 +150,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     setNewDocumentDialog,
     symbolDialog,
     setSymbolDialog,
+    equationDialog,
+    setEquationDialog,
   } = createEditorDialogs();
 
   // First-use precise-fonts welcome overlay (rendered inside the editor shell).
@@ -230,6 +232,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     measuredParagraphLayouts,
     documentLayout,
     canvasSnapshotProvider,
+    openEquationDialog: (initial, targetRunId): void => {
+      setEquationDialog({ isOpen: true, initial, targetRunId });
+    },
   });
   const {
     layoutOptionsOverlay,
@@ -283,6 +288,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     setImageCaptionDialog,
     setNewDocumentDialog,
     setSymbolDialog,
+    setEquationDialog,
   });
   const {
     commandsController,
@@ -471,6 +477,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
             setNewDocumentDialog,
             symbolDialog,
             setSymbolDialog,
+            equationDialog,
+            setEquationDialog,
           }}
           findReplace={fr}
           fontFamilyOptions={computeFontFamilyOptions}
@@ -490,6 +498,17 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
               text: symbol,
               fontFamily,
             });
+            focusInput();
+          }}
+          applyEquation={(expression, targetRunId): void => {
+            if (targetRunId) {
+              runtimeEditor().commands.execute("updateEquation", {
+                runId: targetRunId,
+                expression,
+              });
+            } else {
+              runtimeEditor().commands.execute("insertEquation", expression);
+            }
             focusInput();
           }}
           closeContextMenu={closeContextMenu}

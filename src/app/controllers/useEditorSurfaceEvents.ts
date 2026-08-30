@@ -90,6 +90,10 @@ export interface UseEditorSurfaceEventsProps {
     debug: (msg: string) => void;
     info: (msg: string, payload?: unknown) => void;
   };
+  openEquationDialog: (
+    initial?: import("@/core/model.js").EditorMathExpression,
+    targetRunId?: string,
+  ) => void;
 }
 
 function resolveTripleClickParagraphRange(
@@ -459,6 +463,30 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
     paragraph: EditorParagraphNode,
   ): void => {
     dragAnchor = null;
+    let offset = 0;
+    const mathRun = paragraph.runs.find((run): boolean => {
+      const hitRun =
+        run.kind === "math" &&
+        hit.paragraphOffset >= offset &&
+        hit.paragraphOffset <= offset + run.text.length;
+      offset += run.text.length;
+      return hitRun;
+    });
+    if (mathRun?.kind === "math") {
+      const position = paragraphOffsetToPosition(
+        paragraph,
+        hit.paragraphOffset,
+      );
+      applyWithZone(
+        state,
+        hit.zone,
+        setSelection(state, { anchor: position, focus: position }),
+        position,
+      );
+      stopDragging();
+      deps.openEquationDialog(mathRun.math, mathRun.id);
+      return;
+    }
     const word = resolveWordSelection(
       getParagraphText(paragraph),
       hit.paragraphOffset,

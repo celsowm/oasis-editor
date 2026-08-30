@@ -10,6 +10,7 @@ import {
   type SymbolEntry,
 } from "./symbolCatalog.js";
 import { rememberSymbol } from "./recentSymbols.js";
+import { parseLinearMath } from "@/core/math/linear.js";
 
 type SymbolMenuView = "root" | "symbols" | "numbers" | "equations";
 
@@ -18,6 +19,21 @@ export function SymbolMenu(props: { api: ToolbarActionApi }): JSX.Element {
   const [view, setView] = createSignal<SymbolMenuView>("root");
 
   const insert = (entry: SymbolEntry): void => {
+    if (view() === "equations") {
+      if (
+        !props.api.commands.canExecute(
+          "insertEquation",
+          parseLinearMath(entry.character),
+        )
+      )
+        return;
+      props.api.commands.execute(
+        "insertEquation",
+        parseLinearMath(entry.character),
+      );
+      props.api.focusEditor();
+      return;
+    }
     if (!props.api.commands.canExecute("insertText", entry.character)) return;
     rememberSymbol(entry.character);
     props.api.commands.execute("insertText", entry.character);
@@ -124,7 +140,9 @@ export function SymbolMenu(props: { api: ToolbarActionApi }): JSX.Element {
             data-testid="editor-toolbar-equation"
             onClick={(event): void => {
               event.stopPropagation();
-              setView("equations");
+              if (props.api.commands.canExecute("openEquationDialog")) {
+                props.api.commands.execute("openEquationDialog");
+              }
             }}
           >
             <ToolIcon name="square-function" />

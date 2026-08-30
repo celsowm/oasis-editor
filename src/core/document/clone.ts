@@ -5,6 +5,7 @@ import type {
   EditorRunBase,
   EditorTextBoxData,
   EditorTextRun,
+  EditorMathExpression,
 } from "@/core/model.js";
 import { visitRun } from "@/core/model.js";
 import { cloneStyle } from "@/core/textStyle/textStyleMutations.js";
@@ -29,6 +30,22 @@ export function cloneTextBox(textBox: EditorTextBoxData): EditorTextBoxData {
     body: textBox.body ? { ...textBox.body } : undefined,
     blocks: cloneBlocks(textBox.blocks),
   };
+}
+
+function cloneMathValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(cloneMathValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [key, cloneMathValue(child)]),
+    );
+  }
+  return value;
+}
+
+export function cloneMathExpression(
+  expression: EditorMathExpression,
+): EditorMathExpression {
+  return cloneMathValue(expression) as EditorMathExpression;
 }
 
 export function cloneRun(run: EditorTextRun): EditorTextRun {
@@ -68,6 +85,11 @@ export function cloneRun(run: EditorTextRun): EditorTextRun {
       endnoteReference: { ...r.endnoteReference },
     }),
     sym: (r) => ({ ...base, kind: "sym", sym: { ...r.sym } }),
+    math: (r) => ({
+      ...base,
+      kind: "math",
+      math: cloneMathExpression(r.math),
+    }),
   });
   return copyEditorRunOoxmlSource(run, cloned);
 }

@@ -51,6 +51,10 @@ export interface EditorInteractionWiringContext {
   getForcePlainTextPaste: () => boolean;
   setForcePlainTextPaste: (value: boolean) => void;
   insertImageFromFile: ClipboardParams["insertImageFromFile"];
+  openEquationDialog: (
+    initial?: import("@/core/model.js").EditorMathExpression,
+    targetRunId?: string,
+  ) => void;
 }
 
 export interface EditorInteractionWiring {
@@ -134,6 +138,7 @@ export function useEditorInteractionWiring(
       tryStartTextDrag: textDrag.tryStartTextDrag,
     },
     logger: ctx.logger,
+    openEquationDialog: ctx.openEquationDialog,
   });
 
   const textInput = createEditorTextInput({

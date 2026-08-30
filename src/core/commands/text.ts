@@ -6,6 +6,8 @@ export {
   moveOrCopySelectionToPosition,
   insertTextAtSelection,
   insertPlainTextAtSelection,
+  insertMathAtSelection,
+  updateMathRun,
 } from "./textEditing.js";
 
 export { deleteBackward, deleteForward } from "./textDeletion.js";
