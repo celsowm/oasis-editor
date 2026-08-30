@@ -1,6 +1,7 @@
 import {
   findParagraphLocation,
   findParagraphTablePathLocation,
+  getActiveSectionIndex,
   getBlockParagraphs,
   getDocumentPageSettings,
   getDocumentSections,

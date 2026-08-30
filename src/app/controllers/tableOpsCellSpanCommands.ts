@@ -380,7 +380,7 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
     const nextCells: EditorTableCellNode[] = [
       {
         ...cell,
-        colSpan: 1,
+        colSpan: undefined,
         blocks: cell.blocks.map(
           (block): EditorBlockNode => cloneBlock(block),
         ),

@@ -8,7 +8,7 @@ import {
   parseOpcRelationships,
   resolveOpcRelationships,
 } from "@/ooxml/opc/packageXml.js";
-import { mergeWordPartRootExtensionsFromSource } from "./wordPartRootSourcePatcher.js";
+import { mergeWordStoryRootAndFlowFromSource } from "./wordPartRootSourcePatcher.js";
 
 const CONVENTIONAL_MAIN_DOCUMENT_PATH = "word/document.xml";
 const WORD_NS =
@@ -192,7 +192,7 @@ export async function patchRebuiltHeaderFooterRootsFromSource(
     }
     const expectedRootLocalName =
       currentReference.kind === "header" ? "hdr" : "ftr";
-    const mergedXml = mergeWordPartRootExtensionsFromSource(
+    const mergedXml = mergeWordStoryRootAndFlowFromSource(
       sourcePart.data,
       rebuiltPartXml,
       expectedRootLocalName,

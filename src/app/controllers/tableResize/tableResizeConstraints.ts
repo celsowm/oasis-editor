@@ -194,10 +194,11 @@ export function resolveMinColumnWidthsPx(
     if (!cell) continue;
     const visualCol = entry.visualColumnIndex;
     const currentMin = result[visualCol] ?? minFloor;
-    const minContentWidth = cell.blocks.reduce((largest, paragraph): number => {
+    const minContentWidth = cell.blocks.reduce((largest, block): number => {
+      if (block.type !== "paragraph") return largest;
       return Math.max(
         largest,
-        measureParagraphMinContentWidthPx(paragraph, state.document.styles),
+        measureParagraphMinContentWidthPx(block, state.document.styles),
       );
     }, 1);
     result[visualCol] = Math.max(

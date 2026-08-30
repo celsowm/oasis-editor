@@ -46,7 +46,7 @@ function getAttributeByLocalName(
 
 function setAttributeLike(
   target: XmlElement,
-  sourceAttribute: Attr,
+  sourceAttribute: { namespaceURI?: string | null; name: string },
   value: string,
 ): void {
   if (sourceAttribute.namespaceURI) {

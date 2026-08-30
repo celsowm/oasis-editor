@@ -29,7 +29,7 @@ describe("nested table properties service", () => {
     inner.rows[0]!.style = { height: 42, cantSplit: true };
     inner.rows[0]!.cells[0]!.style = {
       width: 80,
-      verticalAlign: "center",
+      verticalAlign: "middle",
       shading: "#abcdef",
     };
 
@@ -62,7 +62,7 @@ describe("nested table properties service", () => {
     expect(values?.allowBreakAcrossPages).toBe(false);
     expect(values?.columnWidth).toBe("80");
     expect(values?.cellWidth).toBe("80");
-    expect(values?.cellVerticalAlign).toBe("center");
+    expect(values?.cellVerticalAlign).toBe("middle");
     expect(values?.shading).toBe("#abcdef");
   });
 });

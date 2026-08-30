@@ -301,11 +301,11 @@ export function computeNoteRenumber<TNote extends NoteBody>(
     };
   });
 
-  // Prune unreferenced notes.
+  // Prune unreferenced notes unless they carry an imported source identity (docxId).
   const nextItems: Record<string, TNote> = {};
   let itemsChanged = false;
   for (const [id, body] of Object.entries(collection.items)) {
-    if (referenced.has(id)) {
+    if (referenced.has(id) || (body as { docxId?: number }).docxId !== undefined) {
       nextItems[id] = body;
     } else {
       itemsChanged = true;

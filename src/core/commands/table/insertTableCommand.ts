@@ -106,6 +106,9 @@ export function insertTableAtSelection(
   const nextSections = [...sections];
   nextSections[activeSectionIndex] = nextSection;
 
+  const firstBlock = table.rows[0]!.cells[0]!.blocks[0]!;
+  if (firstBlock.type !== "paragraph") return state;
+
   return {
     ...state,
     document: {
@@ -113,7 +116,7 @@ export function insertTableAtSelection(
       sections: nextSections,
     },
     selection: withSelection(
-      paragraphOffsetToPosition(table.rows[0]!.cells[0]!.blocks[0]!, 0),
+      paragraphOffsetToPosition(firstBlock, 0),
     ),
   };
 }
