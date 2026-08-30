@@ -94,6 +94,8 @@ export interface EditorRunBase {
   text: string;
   styles?: EditorTextStyle;
   revision?: EditorRevision;
+  /** Enclosing inline-level `w:sdt` content controls, preserved for round-trip. */
+  sdtWrappers?: EditorSdtBlockWrapper[];
 }
 
 /**
@@ -302,6 +304,8 @@ export interface EditorTableCellNode {
   id: string;
   /** Ordered block story inside the cell; Word permits paragraphs and tables. */
   blocks: EditorBlockNode[];
+  /** Enclosing cell-level `w:sdt` content controls, preserved for round-trip. */
+  sdtWrappers?: EditorSdtBlockWrapper[];
   colSpan?: number;
   rowSpan?: number;
   vMerge?: "restart" | "continue";
@@ -346,6 +350,8 @@ export interface EditorTableRowStyle {
 export interface EditorTableRowNode {
   id: string;
   cells: EditorTableCellNode[];
+  /** Enclosing row-level `w:sdt` content controls, preserved for round-trip. */
+  sdtWrappers?: EditorSdtBlockWrapper[];
   isHeader?: boolean;
   style?: EditorTableRowStyle;
   conditionalStyle?: EditorTableConditionalFlags;

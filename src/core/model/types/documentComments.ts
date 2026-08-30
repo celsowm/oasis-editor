@@ -43,8 +43,14 @@ export interface EditorComment {
   dateUtc?: number;
   /** Resolved/"done" state (`w15:commentEx/@w15:done`). */
   resolved?: boolean;
-  /** Flattened comment body text (bodies in scope are single paragraphs). */
+  /** Parent comment ID for threaded comment replies (`w15:commentEx/@w15:paraIdParent`). */
+  parentId?: string;
+  /** Author ID referencing `word/people.xml` author identity. */
+  authorId?: string;
+  /** Flattened comment body text. */
   text: string;
+  /** Formatted block story nodes inside the comment body (paragraphs, tables, runs). */
+  blocks?: import("./nodes.js").EditorBlockNode[];
   /** Start anchor. May be absent for a malformed import (orphan end). */
   start?: EditorCommentAnchor;
   /** End anchor. May be absent for a malformed import (orphan start). */
