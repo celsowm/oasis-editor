@@ -1,10 +1,13 @@
-import { For, type JSX } from "solid-js";
+import { For, Show, createSignal, type JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import type { TranslationKey } from "@/i18n/index.js";
 import { NumberField } from "@/ui/public/NumberField.js";
 import { Button } from "@/ui/components/Toolbar/primitives/Button.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
 import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
+import type { Locale } from "@/i18n/index.js";
+import { SHAPE_CATEGORIES, shapeLabel } from "../shapeCatalog.js";
+import { ShapeThumbnail } from "../shapePreview.js";
 
 /** Reads a centimetre command value, formatted to two decimals (blank if none). */
 function cmValue(api: ToolbarActionApi, command: string): string {
@@ -55,47 +58,167 @@ export function ImageSizeField(props: {
 }
 
 /** Aspect-ratio crop presets shown in the Cortar split-button menu. */
-const CROP_ASPECT_PRESETS: Array<{ id: string; labelKey: TranslationKey }> = [
-  { id: "reset", labelKey: "image.cropReset" },
-  { id: "1:1", labelKey: "image.cropRatio.square" },
-  { id: "16:9", labelKey: "image.cropRatio.16x9" },
-  { id: "4:3", labelKey: "image.cropRatio.4x3" },
-  { id: "3:2", labelKey: "image.cropRatio.3x2" },
-  { id: "2:3", labelKey: "image.cropRatio.2x3" },
-  { id: "3:4", labelKey: "image.cropRatio.3x4" },
-  { id: "9:16", labelKey: "image.cropRatio.9x16" },
+const CROP_ASPECT_GROUPS: Array<{
+  id: string;
+  labelKey: TranslationKey;
+  presets: string[];
+}> = [
+  { id: "square", labelKey: "image.cropRatio.squareGroup", presets: ["1:1"] },
+  {
+    id: "portrait",
+    labelKey: "image.cropRatio.portrait",
+    presets: ["2:3", "3:4", "3:5", "4:5"],
+  },
+  {
+    id: "landscape",
+    labelKey: "image.cropRatio.landscape",
+    presets: ["3:2", "4:3", "5:3", "5:4", "16:9", "16:10"],
+  },
 ];
+
+const OPEN_CROP_SHAPES = new Set([
+  "line",
+  "lineInv",
+  "straightConnector1",
+  "bentConnector3",
+  "curvedConnector3",
+  "arc",
+  "leftBracket",
+  "rightBracket",
+  "leftBrace",
+  "rightBrace",
+]);
+
+function cropShapePresets(): string[] {
+  return SHAPE_CATEGORIES.flatMap((category) => category.presets).filter(
+    (preset, index, all): boolean =>
+      !OPEN_CROP_SHAPES.has(preset) && all.indexOf(preset) === index,
+  );
+}
+
+function CropMenuRow(props: {
+  testId: string;
+  label: string;
+  icon?: string;
+  onClick: () => void;
+  submenu?: boolean;
+}): JSX.Element {
+  return (
+    <Button
+      class="oasis-editor-image-crop-menu-row"
+      data-testid={props.testId}
+      role="menuitem"
+      aria-haspopup={props.submenu ? "menu" : undefined}
+      onClick={props.onClick}
+      icon={props.icon}
+      label={props.submenu ? `${props.label} ›` : props.label}
+    />
+  );
+}
 
 /** The Cortar chevron menu: toggle crop mode + aspect-ratio presets. */
 export function ImageCropMenu(props: { api: ToolbarActionApi }): JSX.Element {
   const t = useI18n();
+  const locale = (): Locale => (t("locale.id") === "en" ? "en" : "pt-BR");
+  const [submenu, setSubmenu] = createSignal<"shape" | "ratio" | null>(null);
+  const toggleSubmenu = (value: "shape" | "ratio"): void => {
+    setSubmenu((current) => (current === value ? null : value));
+  };
+  const apply = (command: string, payload?: string): void => {
+    props.api.commands.execute(command, payload);
+    setSubmenu(null);
+  };
   return (
-    <div class="oasis-editor-toolbar-panel oasis-editor-image-crop-menu">
-      <Button
+    <div
+      class="oasis-editor-toolbar-panel oasis-editor-image-crop-menu"
+      role="menu"
+    >
+      <CropMenuRow
+        testId="editor-toolbar-image-crop-toggle"
         icon="crop"
-        active={props.api.commands.state("imageCrop").isActive}
-        data-testid="editor-toolbar-image-crop-toggle"
-        onClick={(): void => {
-          props.api.commands.execute("imageCrop");
-        }}
         label={t("image.crop")}
-        tooltip={t("image.crop")}
+        onClick={(): void => apply("imageCrop")}
       />
       <div class="oasis-editor-toolbar-panel-separator" role="separator" />
-      <div class="oasis-editor-image-crop-ratios">
-        <For each={CROP_ASPECT_PRESETS}>
-          {(preset): JSX.Element => (
-            <Button
-              class="oasis-editor-image-crop-ratio"
-              label={t(preset.labelKey)}
-              data-testid={`editor-toolbar-image-crop-${preset.id}`}
-              onClick={(): void => {
-                props.api.commands.execute("imageCropAspect", preset.id);
-              }}
-            />
-          )}
-        </For>
+      <div class="oasis-editor-image-crop-menu-submenu-row">
+        <CropMenuRow
+          testId="editor-toolbar-image-crop-shape"
+          icon="shapes"
+          label={t("image.cropToShape")}
+          submenu
+          onClick={(): void => toggleSubmenu("shape")}
+        />
+        <Show when={submenu() === "shape"}>
+          <div class="oasis-editor-image-crop-flyout" role="menu">
+            <For each={cropShapePresets()}>
+              {(preset): JSX.Element => (
+                <Button
+                  class="oasis-editor-image-crop-shape-tile"
+                  title={shapeLabel(preset, locale())}
+                  aria-label={shapeLabel(preset, locale())}
+                  data-testid={`editor-toolbar-image-crop-shape-${preset}`}
+                  onClick={(): void => apply("imageCropShape", preset)}
+                >
+                  <ShapeThumbnail preset={preset} />
+                </Button>
+              )}
+            </For>
+          </div>
+        </Show>
       </div>
+      <div class="oasis-editor-image-crop-menu-submenu-row">
+        <CropMenuRow
+          testId="editor-toolbar-image-crop-ratio"
+          icon="ratio"
+          label={t("image.cropAspectRatio")}
+          submenu
+          onClick={(): void => toggleSubmenu("ratio")}
+        />
+        <Show when={submenu() === "ratio"}>
+          <div
+            class="oasis-editor-image-crop-flyout oasis-editor-image-crop-ratio-flyout"
+            role="menu"
+          >
+            <For each={CROP_ASPECT_GROUPS}>
+              {(group): JSX.Element => (
+                <div class="oasis-editor-image-crop-ratio-group">
+                  <div class="oasis-editor-image-crop-ratio-heading">
+                    {t(group.labelKey)}
+                  </div>
+                  <For each={group.presets}>
+                    {(preset): JSX.Element => (
+                      <Button
+                        class="oasis-editor-image-crop-option"
+                        label={preset}
+                        data-testid={`editor-toolbar-image-crop-${preset}`}
+                        onClick={(): void => apply("imageCropAspect", preset)}
+                      />
+                    )}
+                  </For>
+                </div>
+              )}
+            </For>
+          </div>
+        </Show>
+      </div>
+      <CropMenuRow
+        testId="editor-toolbar-image-crop-fill"
+        icon="maximize"
+        label={t("image.cropFill")}
+        onClick={(): void => apply("imageCropFill")}
+      />
+      <CropMenuRow
+        testId="editor-toolbar-image-crop-fit"
+        icon="minimize"
+        label={t("image.cropFit")}
+        onClick={(): void => apply("imageCropFit")}
+      />
+      <CropMenuRow
+        testId="editor-toolbar-image-crop-reset"
+        icon="rotate-ccw"
+        label={t("image.cropReset")}
+        onClick={(): void => apply("imageCropReset")}
+      />
     </div>
   );
 }

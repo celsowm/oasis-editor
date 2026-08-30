@@ -670,12 +670,119 @@
   grid-template-columns: minmax(40px, auto) minmax(58px, 76px);
 }
 
-/* Cortar split-button menu: toggle + aspect-ratio preset grid. */
+/* Word-style Cortar menu and nested shape/ratio flyouts. */
 .oasis-editor-image-crop-menu {
+  width: min(248px, calc(100vw - 16px));
+  overflow: visible;
+  padding: 4px;
+}
+
+.oasis-editor-image-crop-menu-row {
+  width: 100%;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--oasis-text);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.oasis-editor-image-crop-menu-row:hover,
+.oasis-editor-image-crop-menu-row:focus-visible {
+  background: var(--oasis-hover-bg);
+  outline: none;
+}
+
+.oasis-editor-image-crop-menu-row > [data-lucide] {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+.oasis-editor-image-crop-menu-row .oasis-editor-dropdown-chevron {
+  margin-left: auto;
+}
+
+.oasis-editor-image-crop-menu-submenu-row {
+  position: relative;
+}
+
+.oasis-editor-image-crop-flyout {
+  position: absolute;
+  top: -4px;
+  left: calc(100% + 2px);
+  z-index: 1001;
+  width: min(320px, 70vw);
+  max-height: min(60vh, 440px);
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 30px);
+  gap: 3px;
+  box-sizing: border-box;
+  padding: 6px;
+  background: var(--oasis-paper);
+  border: 1px solid var(--oasis-toolbar-border);
+  border-radius: var(--oasis-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.oasis-editor-image-crop-ratio-flyout {
   display: flex;
   flex-direction: column;
+  width: 150px;
   gap: 6px;
-  min-width: 168px;
+}
+
+.oasis-editor-image-crop-ratio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.oasis-editor-image-crop-ratio-heading {
+  flex-basis: 100%;
+  padding: 3px 4px 1px;
+  color: var(--oasis-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.oasis-editor-image-crop-option {
+  min-width: 42px;
+  min-height: 26px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--oasis-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.oasis-editor-image-crop-option:hover,
+.oasis-editor-image-crop-option:focus-visible,
+.oasis-editor-image-crop-shape-tile:hover,
+.oasis-editor-image-crop-shape-tile:focus-visible {
+  background: var(--oasis-hover-bg);
+  outline: none;
+}
+
+.oasis-editor-image-crop-shape-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
 }
 
 .oasis-editor-image-crop-ratios {

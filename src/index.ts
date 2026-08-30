@@ -49,7 +49,12 @@ export type {
   SetSpecialIndentPayload,
   TypedCommandBus,
 } from "./core/commands/publicCommandTypes.js";
-export type { EditorMathExpression, EditorMathNode } from "./core/model.js";
+export type {
+  EditorImageCropFit,
+  EditorImageCropShape,
+  EditorMathExpression,
+  EditorMathNode,
+} from "./core/model.js";
 export { PluginCollection } from "./core/plugins/PluginCollection.js";
 export { mount } from "./ui/mount.js";
 export { DocumentShell } from "./ui/shells/DocumentShell.js";

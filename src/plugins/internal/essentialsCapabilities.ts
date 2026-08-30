@@ -131,6 +131,16 @@ export interface EssentialsImageCapability {
   toggleCrop: () => void;
   /** Apply an aspect-ratio crop preset (e.g. "16:9", "1:1", "reset"). */
   applyCropAspect: (preset: string) => void;
+  /** Current DrawingML picture mask preset, or `null` for a rectangle. */
+  getCropShape: () => string | null;
+  /** Apply/remove a DrawingML picture mask preset. */
+  applyCropShape: (preset: string) => void;
+  /** Fill the current picture frame by cropping the source. */
+  applyCropFill: () => void;
+  /** Fit the complete source image inside the current picture frame. */
+  applyCropFit: () => void;
+  /** Clear source crop, fit/fill mode and picture mask. */
+  resetCrop: () => void;
   /** Outline of the selected image (`pic:spPr/a:ln`), or `null`. */
   getBorder: () => EditorImageBorder | null;
   /** Merge a partial outline edit; `{ color: null }` removes the outline. */

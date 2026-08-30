@@ -2,6 +2,8 @@ import type {
   EditorBlockNode,
   EditorImageBorder,
   EditorImageCrop,
+  EditorImageCropShape,
+  EditorImageCropFit,
   EditorImageFillMode,
   EditorImageFloatingLayout,
   EditorParagraphListStyle,
@@ -44,6 +46,8 @@ export interface DocContext {
     cy: number;
     alt?: string;
     crop?: EditorImageCrop;
+    cropShape?: EditorImageCropShape;
+    cropFit?: EditorImageCropFit;
     fillMode?: EditorImageFillMode;
     border?: EditorImageBorder;
     rotation?: number;

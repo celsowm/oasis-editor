@@ -135,6 +135,29 @@ export function buildDocumentAndBrowserCommands({
         isEnabled: image.isSelected(),
       }),
     ),
+    imageCropShape: actionCommand(
+      "imageCropShape",
+      (p): void => image.applyCropShape(String(p)),
+      (): { isEnabled: boolean; value: string | null } => ({
+        isEnabled: image.isSelected(),
+        value: image.getCropShape(),
+      }),
+    ),
+    imageCropFill: actionCommand(
+      "imageCropFill",
+      (): void => image.applyCropFill(),
+      (): { isEnabled: boolean } => ({ isEnabled: image.isSelected() }),
+    ),
+    imageCropFit: actionCommand(
+      "imageCropFit",
+      (): void => image.applyCropFit(),
+      (): { isEnabled: boolean } => ({ isEnabled: image.isSelected() }),
+    ),
+    imageCropReset: actionCommand(
+      "imageCropReset",
+      (): void => image.resetCrop(),
+      (): { isEnabled: boolean } => ({ isEnabled: image.isSelected() }),
+    ),
     imageBorder: actionCommand(
       "imageBorder",
       (p): void => image.setBorder(p as ImageBorderPatch),

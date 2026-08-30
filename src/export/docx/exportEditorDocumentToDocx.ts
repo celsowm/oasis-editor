@@ -81,6 +81,8 @@ function buildPartContext(
         cy: Math.round(run.image.height * EMU_PER_PX),
         alt: run.image.alt,
         crop: run.image.crop,
+        cropShape: run.image.cropShape,
+        cropFit: run.image.cropFit,
         fillMode: run.image.fillMode,
         border: run.image.border,
         rotation: run.image.rotation,

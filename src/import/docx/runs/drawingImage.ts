@@ -1,6 +1,10 @@
 import JSZip from "jszip";
-import { type Element as XmlElement } from "@xmldom/xmldom";
-import type { EditorImageBorder, EditorImageRunData } from "@/core/model.js";
+import { XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
+import type {
+  EditorImageBorder,
+  EditorImageCropShape,
+  EditorImageRunData,
+} from "@/core/model.js";
 import { parseLineDash } from "@/core/lineDash.js";
 import { roundTo } from "@/utils/round.js";
 import {
@@ -102,6 +106,52 @@ function parseFillMode(picPic: XmlElement): EditorImageRunData["fillMode"] {
     return "tile";
   }
   return undefined;
+}
+
+function parseImageCropShape(
+  drawing: XmlElement,
+): EditorImageRunData["cropShape"] {
+  const pic = findElementDeep(drawing, "pic");
+  const spPr = pic && findElementDeep(pic, "spPr");
+  if (!spPr) return undefined;
+  let geometry: XmlElement | null = null;
+  for (let index = 0; index < spPr.childNodes.length; index += 1) {
+    const node = spPr.childNodes[index];
+    if (node?.nodeType !== 1) continue;
+    const element = node as XmlElement;
+    if (element.localName === "prstGeom") {
+      geometry = element;
+      break;
+    }
+  }
+  const preset = geometry?.getAttribute("prst");
+  if (!geometry || !preset || preset === "rect") return undefined;
+
+  const adjustments: Record<string, number> = {};
+  const avLst = Array.from(geometry.childNodes).find(
+    (node): boolean =>
+      node?.nodeType === 1 && (node as XmlElement).localName === "avLst",
+  ) as XmlElement | undefined;
+  if (avLst) {
+    for (let index = 0; index < avLst.childNodes.length; index += 1) {
+      const node = avLst.childNodes[index];
+      if (node?.nodeType !== 1 || (node as XmlElement).localName !== "gd") {
+        continue;
+      }
+      const gd = node as XmlElement;
+      const name = gd.getAttribute("name");
+      const formula = gd.getAttribute("fmla");
+      const match = (formula ?? "").match(/(-?\d+(?:\.\d+)?)\s*$/);
+      if (name && match) adjustments[name] = Number(match[1]);
+    }
+  }
+
+  const result: EditorImageCropShape = {
+    preset,
+    rawXml: new XMLSerializer().serializeToString(geometry),
+  };
+  if (Object.keys(adjustments).length > 0) result.adjustments = adjustments;
+  return result;
 }
 
 /**
@@ -208,6 +258,7 @@ export async function parseDrawingImage(
     : null;
 
   const crop = parseSrcRect(drawing);
+  const cropShape = parseImageCropShape(drawing);
   const fillMode = parseFillMode(drawing);
   const border = parseImageBorder(drawing);
   const xfrm = parseXfrm(drawing);
@@ -225,6 +276,7 @@ export async function parseDrawingImage(
     height,
     ...(alt !== null ? { alt } : {}),
     ...(crop ? { crop } : {}),
+    ...(cropShape ? { cropShape, cropFit: "fill" as const } : {}),
     ...(fillMode ? { fillMode } : {}),
     ...(border ? { border } : {}),
     ...(xfrm.rotation !== undefined ? { rotation: xfrm.rotation } : {}),

@@ -87,6 +87,9 @@ export interface EditorViewSurfaceInput {
   handleImageCropHandleMouseDown: NonNullable<
     OasisEditorEditorSurfaceHandlers["onImageCropHandleMouseDown"]
   >;
+  handleImageCropBodyMouseDown: NonNullable<
+    OasisEditorEditorSurfaceHandlers["onImageCropBodyMouseDown"]
+  >;
   handleTextBoxRotateHandleMouseDown: OasisEditorEditorSurfaceHandlers["onTextBoxRotateHandleMouseDown"];
   handleEditorContextMenu: (event: MouseEvent) => void;
 }
@@ -204,6 +207,7 @@ export function buildEditorViewProps(
     onTextBoxResizeHandleMouseDown: surface.handleTextBoxResizeHandleMouseDown,
     onImageRotateHandleMouseDown: surface.handleImageRotateHandleMouseDown,
     onImageCropHandleMouseDown: surface.handleImageCropHandleMouseDown,
+    onImageCropBodyMouseDown: surface.handleImageCropBodyMouseDown,
     onTextBoxRotateHandleMouseDown: surface.handleTextBoxRotateHandleMouseDown,
     onTableDragHandleMouseDown: surface.tableDrag.handleMouseDown,
     onTableCornerResizeHandleMouseDown:

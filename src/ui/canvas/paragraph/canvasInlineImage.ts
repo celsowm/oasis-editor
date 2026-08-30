@@ -16,6 +16,7 @@ import {
 import { DEG_TO_RAD } from "../canvasBorders.js";
 import { getCachedCanvasImage } from "../canvasImageCache.js";
 import { resolveInlineObjectRect } from "../canvasInlineReaders.js";
+import { buildPresetPath } from "../presetGeometry.js";
 
 function clamp01(value: number): number {
   if (!Number.isFinite(value) || value < 0) return 0;
@@ -39,6 +40,7 @@ function strokeImageBorder(
   width: number,
   height: number,
   rotation: number | undefined,
+  borderShape: string | undefined,
 ): void {
   ctx.save();
   ctx.translate(x + width / 2, y + height / 2);
@@ -48,7 +50,13 @@ function strokeImageBorder(
   ctx.setLineDash(
     lineDashPatternPt(border.dash).map((value): number => value * PX_PER_POINT),
   );
-  ctx.strokeRect(-width / 2, -height / 2, width, height);
+  if (borderShape) {
+    ctx.stroke(
+      buildPresetPath(borderShape, -width / 2, -height / 2, width, height),
+    );
+  } else {
+    ctx.strokeRect(-width / 2, -height / 2, width, height);
+  }
   ctx.restore();
 }
 
@@ -73,6 +81,7 @@ export function drawImageFragment(
       image.width,
       image.height,
       image.rotation,
+      image.cropShape?.preset,
     );
   }
 }
@@ -87,10 +96,26 @@ function drawImageContent(
   const { width, height, crop, fillMode, rotation, flipH, flipV } = image;
   const hasTransform = Boolean(rotation) || Boolean(flipH) || Boolean(flipV);
 
+  const sourceRatio = img.naturalWidth / Math.max(1, img.naturalHeight);
+  const frameRatio = width / Math.max(1, height);
+  let dx = 0;
+  let dy = 0;
+  let dw = width;
+  let dh = height;
+  if (image.cropFit === "fit" && sourceRatio > 0) {
+    if (sourceRatio > frameRatio) {
+      dh = width / sourceRatio;
+      dy = (height - dh) / 2;
+    } else {
+      dw = height * sourceRatio;
+      dx = (width - dw) / 2;
+    }
+  }
+
   if (fillMode === "tile") {
     const pattern = ctx.createPattern(img, "repeat");
     if (!pattern) {
-      ctx.drawImage(img, x, y, width, height);
+      ctx.drawImage(img, x + dx, y + dy, dw, dh);
       return;
     }
     ctx.save();
@@ -102,7 +127,7 @@ function drawImageContent(
     }
     ctx.translate(x, y);
     ctx.fillStyle = pattern;
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(dx, dy, dw, dh);
     ctx.restore();
     return;
   }
@@ -124,8 +149,9 @@ function drawImageContent(
     }
   }
 
-  if (!hasTransform) {
-    ctx.drawImage(img, sx, sy, sw, sh, x, y, width, height);
+  const hasShape = Boolean(image.cropShape?.preset);
+  if (!hasTransform && !hasShape) {
+    ctx.drawImage(img, sx, sy, sw, sh, x + dx, y + dy, dw, dh);
     return;
   }
 
@@ -133,7 +159,18 @@ function drawImageContent(
   ctx.translate(x + width / 2, y + height / 2);
   if (rotation) ctx.rotate(rotation * DEG_TO_RAD);
   ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
-  ctx.drawImage(img, sx, sy, sw, sh, -width / 2, -height / 2, width, height);
+  if (hasShape) {
+    ctx.clip(
+      buildPresetPath(
+        image.cropShape!.preset,
+        -width / 2,
+        -height / 2,
+        width,
+        height,
+      ),
+    );
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, -width / 2 + dx, -height / 2 + dy, dw, dh);
   ctx.restore();
 }
 

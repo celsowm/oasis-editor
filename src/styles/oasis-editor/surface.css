@@ -226,21 +226,143 @@
   cursor: grabbing;
 }
 
-/* Crop mode: a neutral frame with black square crop handles (Word-style). The
-   handles reuse `.oasis-editor-resize-handle` positioning; only the look changes. */
+/* Crop mode: darkened outside area and Word-style black corner/side marks. */
 .oasis-editor-image-crop-overlay {
   border: 1px dashed rgba(15, 23, 42, 0.85);
   box-shadow: 0 0 0 100vmax rgba(15, 23, 42, 0.32);
   cursor: default;
 }
 
+.oasis-editor-image-crop-preview {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  transform-origin: center;
+  /* The preview replaces the already-cropped canvas image inside the frame;
+     blending both would make the picture appear to stretch or ghost while a
+     handle is dragged. The crop overlay's box-shadow still dims the outside. */
+  opacity: 1;
+}
+
+.oasis-editor-image-crop-preview img {
+  position: absolute;
+  max-width: none;
+  display: block;
+  user-select: none;
+}
+
 .oasis-editor-image-crop-overlay .oasis-editor-resize-handle {
-  width: 12px;
-  height: 12px;
+  width: 18px;
+  height: 18px;
   border-radius: 0;
-  border: 1px solid #ffffff;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.oasis-editor-image-crop-overlay .oasis-editor-resize-handle::before,
+.oasis-editor-image-crop-overlay .oasis-editor-resize-handle::after {
+  position: absolute;
+  display: block;
+  content: "";
   background: #111827;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.5);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85);
+}
+
+.oasis-editor-image-crop-overlay .oasis-editor-resize-handle::before {
+  width: 18px;
+  height: 4px;
+}
+
+.oasis-editor-image-crop-overlay .oasis-editor-resize-handle::after {
+  width: 4px;
+  height: 18px;
+}
+
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="nw"]::before,
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="sw"]::before {
+  left: 0;
+}
+
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="ne"]::before,
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="se"]::before {
+  right: 0;
+}
+
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="nw"]::after,
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="ne"]::after {
+  top: 0;
+}
+
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="sw"]::after,
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="se"]::after {
+  bottom: 0;
+}
+
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="n"],
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="s"] {
+  width: 28px;
+  height: 8px;
+}
+
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="n"] {
+  top: -4px;
+  left: calc(50% - 14px);
+}
+
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="s"] {
+  bottom: -4px;
+  left: calc(50% - 14px);
+}
+
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="e"],
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="w"] {
+  width: 8px;
+  height: 28px;
+}
+
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="e"] {
+  top: calc(50% - 14px);
+  right: -4px;
+}
+
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="w"] {
+  top: calc(50% - 14px);
+  left: -4px;
+}
+
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="n"]::before,
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="s"]::before {
+  width: 28px;
+  height: 4px;
+  left: 0;
+}
+
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="e"]::after,
+.oasis-editor-image-crop-overlay
+  .oasis-editor-resize-handle[data-direction="w"]::after {
+  width: 4px;
+  height: 28px;
+  top: 0;
 }
 
 .oasis-editor-caret {

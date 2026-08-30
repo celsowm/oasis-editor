@@ -5,6 +5,7 @@ import type {
   EditorImageRunData,
   EditorImageBorder,
   EditorImageCrop,
+  EditorImageCropShape,
   EditorImageFloatingLayout,
   EditorLineDash,
   EditorTextRun,
@@ -289,6 +290,97 @@ export function applySelectedImageCropAspect(
     return state;
   }
   return setSelectedImageCrop(state, computeImageAspectCrop(image, mode));
+}
+
+/** Returns the selected picture's clipping geometry, or `null`. */
+export function getSelectedImageCropShape(
+  state: EditorState,
+): EditorImageCropShape | null {
+  const selectedImage = getSelectedImageRun(state);
+  const image = selectedImage && getRunImage(selectedImage.run);
+  return image?.cropShape ?? null;
+}
+
+/** Applies/removes a DrawingML preset geometry used as a picture mask. */
+export function setSelectedImageCropShape(
+  state: EditorState,
+  preset: string | null,
+): EditorState {
+  const normalized = preset?.trim();
+  return patchSelectedImage(state, (image) => {
+    const next: EditorImageRunData = { ...image };
+    if (!normalized || normalized === "rect") {
+      delete next.cropShape;
+    } else {
+      next.cropShape = { preset: normalized };
+      if (!next.cropFit) next.cropFit = "fill";
+    }
+    return next;
+  });
+}
+
+/**
+ * Computes a centred source crop that covers the existing display frame. The
+ * frame dimensions are unchanged, matching Word's Fill command.
+ */
+export function computeImageFillCrop(
+  image: EditorImageRunData,
+): EditorImageCrop {
+  const sourceWidth = image.intrinsicWidth ?? image.width;
+  const sourceHeight = image.intrinsicHeight ?? image.height;
+  const sourceRatio =
+    sourceWidth > 0 && sourceHeight > 0
+      ? sourceWidth / sourceHeight
+      : image.width / Math.max(1, image.height);
+  const frameRatio = image.width / Math.max(1, image.height);
+  if (!Number.isFinite(sourceRatio) || !Number.isFinite(frameRatio)) {
+    return {};
+  }
+  if (sourceRatio > frameRatio) {
+    const visibleWidth = frameRatio / sourceRatio;
+    const trim = Math.max(0, (1 - visibleWidth) / 2);
+    return { left: trim, right: trim };
+  }
+  if (sourceRatio < frameRatio) {
+    const visibleHeight = sourceRatio / frameRatio;
+    const trim = Math.max(0, (1 - visibleHeight) / 2);
+    return { top: trim, bottom: trim };
+  }
+  return {};
+}
+
+/** Applies Word's Fill behaviour while keeping the picture frame stable. */
+export function applySelectedImageCropFill(state: EditorState): EditorState {
+  const selectedImage = getSelectedImageRun(state);
+  const image = selectedImage && getRunImage(selectedImage.run);
+  if (!image) return state;
+  const cropped = setSelectedImageCrop(state, {
+    crop: computeImageFillCrop(image),
+  });
+  return patchSelectedImage(cropped, (next) => ({
+    ...next,
+    cropFit: "fill",
+  }));
+}
+
+/** Shows the complete source image inside the frame (Word's Adjust command). */
+export function applySelectedImageCropFit(state: EditorState): EditorState {
+  return patchSelectedImage(state, (image) => {
+    const next: EditorImageRunData = { ...image, cropFit: "fit" };
+    delete next.crop;
+    return next;
+  });
+}
+
+/** Removes crop, fit/fill state and picture mask, restoring a plain picture. */
+export function resetSelectedImageCrop(state: EditorState): EditorState {
+  return patchSelectedImage(state, (image) => {
+    const next: EditorImageRunData = { ...image };
+    delete next.crop;
+    delete next.cropFit;
+    delete next.cropShape;
+    return next;
+  });
 }
 
 /** Outline of the selected image (`pic:spPr/a:ln`), or `null`. */

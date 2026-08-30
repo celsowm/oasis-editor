@@ -6,6 +6,23 @@ import {
   buildSrcRect,
   buildXfrmAttrs,
 } from "./drawingContainerXml.js";
+
+function buildImageGeometryXml(
+  shape: DocContext["images"][number]["cropShape"],
+): string {
+  if (!shape) return '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>';
+  if (shape.rawXml && !shape.adjustments) return shape.rawXml;
+  const adjustments = Object.entries(shape.adjustments ?? {})
+    .map(
+      ([name, value]): string =>
+        `<a:gd name="${escapeXml(name)}" fmla="val ${Number.isFinite(value) ? value : 0}"/>`,
+    )
+    .join("");
+  const adjustmentList = adjustments
+    ? `<a:avLst>${adjustments}</a:avLst>`
+    : "<a:avLst/>";
+  return `<a:prstGeom prst="${escapeXml(shape.preset)}">${adjustmentList}</a:prstGeom>`;
+}
 export function serializeImageRun(
   runId: string,
   rId: string,
@@ -31,7 +48,8 @@ export function serializeImageRun(
       : "<a:stretch><a:fillRect/></a:stretch>";
   const blipRelAttr =
     img.kind === "linked" ? `r:link="${rId}"` : `r:embed="${rId}"`;
-  const picXml = `<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="Picture"${altAttr}/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip ${blipRelAttr} xmlns:r="${OFFICE_REL_NS}"/>${srcRect}${fill}</pic:blipFill><pic:spPr><a:xfrm${xfrmAttrs}><a:off x="0" y="0"/><a:ext cx="${img.cx}" cy="${img.cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${lnXml}</pic:spPr></pic:pic></a:graphicData></a:graphic>`;
+  const geometry = buildImageGeometryXml(img.cropShape);
+  const picXml = `<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="Picture"${altAttr}/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip ${blipRelAttr} xmlns:r="${OFFICE_REL_NS}"/>${srcRect}${fill}</pic:blipFill><pic:spPr><a:xfrm${xfrmAttrs}><a:off x="0" y="0"/><a:ext cx="${img.cx}" cy="${img.cy}"/></a:xfrm>${geometry}${lnXml}</pic:spPr></pic:pic></a:graphicData></a:graphic>`;
   const drawing = buildDrawingXml(img, docPrId, altAttr, picXml);
   return `<w:r>${rPrXml}${drawing}</w:r>`;
 }

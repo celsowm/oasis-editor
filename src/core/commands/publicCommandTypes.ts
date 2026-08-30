@@ -95,6 +95,10 @@ export interface OasisCommandPayloads {
   imageHeightCm: number | string | null;
   imageCrop: undefined;
   imageCropAspect: string;
+  imageCropShape: string;
+  imageCropFill: undefined;
+  imageCropFit: undefined;
+  imageCropReset: undefined;
   outdent: undefined;
   indent: undefined;
   togglePageBreakBefore: undefined;

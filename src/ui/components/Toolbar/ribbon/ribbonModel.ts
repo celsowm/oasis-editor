@@ -62,6 +62,7 @@ const GROUP_LABEL_KEYS: Record<string, TranslationKey> = {
   paragraph: "ribbon.group.paragraph",
   styles: "ribbon.group.styles",
   illustrations: "ribbon.group.illustrations",
+  symbols: "ribbon.group.symbols",
   tables: "ribbon.group.tables",
   links: "ribbon.group.links",
   footnotes: "ribbon.group.footnotes",

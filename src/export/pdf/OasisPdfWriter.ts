@@ -20,6 +20,7 @@ import type {
   OasisPdfPage,
   OasisPdfPageSize,
   OasisPdfPathOptions,
+  OasisPdfPathSegment,
   OasisPdfRectOptions,
   OasisPdfTextOptions,
 } from "./writer/pdfTypes.js";
@@ -127,6 +128,10 @@ export class OasisPdfWriter {
     height: number,
   ): void {
     this.streams[pageIndex]?.clipRect(x, y, width, height);
+  }
+
+  clipPath(pageIndex: number, segments: OasisPdfPathSegment[]): void {
+    this.streams[pageIndex]?.clipPath(segments);
   }
 
   drawText(pageIndex: number, options: OasisPdfTextOptions): void {

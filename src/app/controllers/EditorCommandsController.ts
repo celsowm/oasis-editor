@@ -19,6 +19,10 @@ import {
   setSelectedImageWidthCm,
   setSelectedImageHeightCm,
   applySelectedImageCropAspect,
+  applySelectedImageCropFill,
+  applySelectedImageCropFit,
+  resetSelectedImageCrop,
+  setSelectedImageCropShape,
   setSelectedImageBorder,
   type ImageBorderPatch,
   type ImageCropAspectMode,
@@ -533,7 +537,43 @@ function createEditorCommandsControllerImpl(
       return;
     }
     execTransactional(
-      (current): EditorState => applySelectedImageCropAspect(current, mode),
+      (current): EditorState =>
+        mode === "reset"
+          ? resetSelectedImageCrop(current)
+          : applySelectedImageCropAspect(current, mode),
+      { mergeKey: MERGE_KEYS.imageCrop },
+    );
+  };
+
+  const applyImageCropShapeCommand = (preset: string): void => {
+    if (!selectedImageRun()) return;
+    execTransactional(
+      (current): EditorState => setSelectedImageCropShape(current, preset),
+      { mergeKey: MERGE_KEYS.imageCrop },
+    );
+  };
+
+  const applyImageCropFillCommand = (): void => {
+    if (!selectedImageRun()) return;
+    execTransactional(
+      (current): EditorState => applySelectedImageCropFill(current),
+      { mergeKey: MERGE_KEYS.imageCrop },
+    );
+  };
+
+  const applyImageCropFitCommand = (): void => {
+    if (!selectedImageRun()) return;
+    execTransactional(
+      (current): EditorState => applySelectedImageCropFit(current),
+      { mergeKey: MERGE_KEYS.imageCrop },
+    );
+  };
+
+  const resetImageCropCommand = (): void => {
+    if (!selectedImageRun()) return;
+    execTransactional(
+      (current): EditorState => resetSelectedImageCrop(current),
+      { mergeKey: MERGE_KEYS.imageCrop },
     );
   };
 
@@ -577,6 +617,10 @@ function createEditorCommandsControllerImpl(
     applyImageWidthCmCommand,
     applyImageHeightCmCommand,
     applyImageCropAspectCommand,
+    applyImageCropShapeCommand,
+    applyImageCropFillCommand,
+    applyImageCropFitCommand,
+    resetImageCropCommand,
     applyImageBorderCommand,
     handleListTab,
     handleListEnter,

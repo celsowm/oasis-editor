@@ -71,7 +71,13 @@ export function createImageInsertionService(deps: ImageInsertionServiceDeps): {
         const targetState = position
           ? setSelection(current, { anchor: position, focus: position })
           : current;
-        return insertImageAtSelection(targetState, { src, width, height });
+        return insertImageAtSelection(targetState, {
+          src,
+          width,
+          height,
+          intrinsicWidth: naturalWidth,
+          intrinsicHeight: naturalHeight,
+        });
       },
       { mergeKey: MERGE_KEYS.insertImage },
     );

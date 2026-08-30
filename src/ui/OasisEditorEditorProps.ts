@@ -105,6 +105,11 @@ export interface OasisEditorEditorSurfaceHandlers {
     direction: ResizeHandleDirection,
     event: MouseEvent & { currentTarget: HTMLElement },
   ) => void;
+  onImageCropBodyMouseDown?: (
+    paragraphId: string,
+    paragraphOffset: number,
+    event: MouseEvent & { currentTarget: HTMLElement },
+  ) => void;
   onTextBoxRotateHandleMouseDown: (
     paragraphId: string,
     paragraphOffset: number,

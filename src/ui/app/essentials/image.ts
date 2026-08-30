@@ -1,6 +1,7 @@
 import type { EditorImageBorder } from "@/core/model.js";
 import type { EssentialsImageCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import {
+  getSelectedImageCropShape,
   getSelectedImageBorder,
   getSelectedImageSizeCm,
 } from "@/core/commands/image.js";
@@ -24,6 +25,15 @@ export function buildEssentialsImage(
     toggleCrop: (): void => options.imageCropMode.toggle(),
     applyCropAspect: (preset): void =>
       options.commandsController.applyImageCropAspectCommand(preset),
+    getCropShape: (): string | null =>
+      getSelectedImageCropShape(options.state())?.preset ?? null,
+    applyCropShape: (preset): void =>
+      options.commandsController.applyImageCropShapeCommand(preset),
+    applyCropFill: (): void =>
+      options.commandsController.applyImageCropFillCommand(),
+    applyCropFit: (): void =>
+      options.commandsController.applyImageCropFitCommand(),
+    resetCrop: (): void => options.commandsController.resetImageCropCommand(),
     getBorder: (): EditorImageBorder | null =>
       getSelectedImageBorder(options.state()),
     setBorder: (patch): void =>

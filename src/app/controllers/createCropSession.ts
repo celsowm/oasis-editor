@@ -10,6 +10,7 @@ import {
 } from "@/core/commands/image.js";
 import {
   resolveCroppedImage,
+  resolveMovedImageCrop,
   type CropSessionGeometry,
 } from "@/ui/cropGeometry.js";
 import type { ResizeHandleDirection } from "@/ui/resizeGeometry.js";
@@ -39,6 +40,7 @@ interface ActiveCrop extends CropSessionGeometry {
   startClientX: number;
   startClientY: number;
   initialState: EditorState;
+  mode: "handle" | "move";
 }
 
 /**
@@ -53,6 +55,12 @@ export function createCropSession(deps: CropSessionDeps): {
     paragraphId: string,
     paragraphOffset: number,
     handleDirection: ResizeHandleDirection,
+    event: MouseEvent,
+    initialState: EditorState,
+  ) => void;
+  startMove: (
+    paragraphId: string,
+    paragraphOffset: number,
     event: MouseEvent,
     initialState: EditorState,
   ) => void;
@@ -96,7 +104,10 @@ export function createCropSession(deps: CropSessionDeps): {
     const z = deps.zoomFactor?.() ?? 1;
     const deltaX = (event.clientX - crop.startClientX) / z;
     const deltaY = (event.clientY - crop.startClientY) / z;
-    const result = resolveCroppedImage(crop, deltaX, deltaY);
+    const result =
+      crop.mode === "move"
+        ? resolveMovedImageCrop(crop, deltaX, deltaY)
+        : resolveCroppedImage(crop, deltaX, deltaY);
 
     const selection = selectionForObject(
       deps.state,
@@ -139,12 +150,13 @@ export function createCropSession(deps: CropSessionDeps): {
     window.removeEventListener("mouseup", handleMouseUp);
   };
 
-  const start = (
+  const begin = (
     paragraphId: string,
     paragraphOffset: number,
     handleDirection: ResizeHandleDirection,
     event: MouseEvent,
     initialState: EditorState,
+    mode: "handle" | "move",
   ): void => {
     const selection = selectionForObject(
       initialState,
@@ -172,10 +184,35 @@ export function createCropSession(deps: CropSessionDeps): {
       startHeight: image.height,
       startCrop,
       initialState: deps.cloneState(initialState),
+      mode,
     };
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
   };
 
-  return { start, stop };
+  const start = (
+    paragraphId: string,
+    paragraphOffset: number,
+    handleDirection: ResizeHandleDirection,
+    event: MouseEvent,
+    initialState: EditorState,
+  ): void =>
+    begin(
+      paragraphId,
+      paragraphOffset,
+      handleDirection,
+      event,
+      initialState,
+      "handle",
+    );
+
+  const startMove = (
+    paragraphId: string,
+    paragraphOffset: number,
+    event: MouseEvent,
+    initialState: EditorState,
+  ): void =>
+    begin(paragraphId, paragraphOffset, "se", event, initialState, "move");
+
+  return { start, startMove, stop };
 }

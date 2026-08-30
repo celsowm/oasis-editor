@@ -1,11 +1,9 @@
 /**
  * Pure geometry for interactive image cropping (Word-style crop handles).
  *
- * Dragging a crop handle keeps the image scale constant: the displayed box
- * shrinks/grows while the crop fractions (`a:srcRect`) absorb the change, so the
- * visible picture is never distorted. The box is anchored at its top-left layout
- * position (inline images cannot float), so every handle trims from the side it
- * represents while the origin stays put.
+ * Dragging a crop handle changes the visible frame and the source crop by the
+ * same amount, preserving the original image scale instead of stretching the
+ * remaining source into a fixed frame.
  */
 
 import {
@@ -36,11 +34,25 @@ function visibleFraction(near: number, far: number): number {
   return Math.max(1e-4, 1 - near - far);
 }
 
+function clampCropPair(
+  near: number,
+  far: number,
+  nextNear: number,
+  nextFar: number,
+): { near: number; far: number } {
+  const visible = Math.max(0.01, 1 - near - far);
+  const clampedNear = Math.max(0, Math.min(nextNear, 0.99 - far));
+  const clampedFar = Math.max(0, Math.min(nextFar, 0.99 - clampedNear));
+  if (clampedNear + clampedFar >= 0.99) {
+    return { near: Math.max(0, 0.99 - visible - far), far };
+  }
+  return { near: clampedNear, far: clampedFar };
+}
+
 /**
  * Resolves the next crop + displayed size for a crop-handle drag. `deltaX`/
- * `deltaY` are pointer deltas in document px (already divided by zoom). Growing
- * a side is bounded by that side's original crop (you cannot un-crop past the
- * source image).
+ * `deltaY` are pointer deltas in document px (already divided by zoom). The
+ * display dimensions follow the handle so the source image keeps its scale.
  */
 export function resolveCroppedImage(
   geometry: CropSessionGeometry,
@@ -62,13 +74,18 @@ export function resolveCroppedImage(
   let right = r0;
   let width = W;
   if (xs !== 0) {
-    const maxGrow = (xs > 0 ? r0 : l0) / kx;
-    width = clamp(W + deltaX * xs, MIN_RESIZE_SIZE_PX, W + maxGrow);
-    const widthDelta = width - W;
-    if (xs > 0) {
-      right = Math.max(0, r0 - widthDelta * kx);
+    if (xs < 0) {
+      const maxWidth = W + l0 / kx;
+      width = clamp(W - deltaX, MIN_RESIZE_SIZE_PX, maxWidth);
+      const pair = clampCropPair(l0, r0, l0 - (width - W) * kx, r0);
+      left = pair.near;
+      right = pair.far;
     } else {
-      left = Math.max(0, l0 - widthDelta * kx);
+      const maxWidth = W + r0 / kx;
+      width = clamp(W + deltaX, MIN_RESIZE_SIZE_PX, maxWidth);
+      const pair = clampCropPair(l0, r0, l0, r0 - (width - W) * kx);
+      left = pair.near;
+      right = pair.far;
     }
   }
 
@@ -76,13 +93,18 @@ export function resolveCroppedImage(
   let bottom = b0;
   let height = H;
   if (ys !== 0) {
-    const maxGrow = (ys > 0 ? b0 : t0) / ky;
-    height = clamp(H + deltaY * ys, MIN_RESIZE_SIZE_PX, H + maxGrow);
-    const heightDelta = height - H;
-    if (ys > 0) {
-      bottom = Math.max(0, b0 - heightDelta * ky);
+    if (ys < 0) {
+      const maxHeight = H + t0 / ky;
+      height = clamp(H - deltaY, MIN_RESIZE_SIZE_PX, maxHeight);
+      const pair = clampCropPair(t0, b0, t0 - (height - H) * ky, b0);
+      top = pair.near;
+      bottom = pair.far;
     } else {
-      top = Math.max(0, t0 - heightDelta * ky);
+      const maxHeight = H + b0 / ky;
+      height = clamp(H + deltaY, MIN_RESIZE_SIZE_PX, maxHeight);
+      const pair = clampCropPair(t0, b0, t0, b0 - (height - H) * ky);
+      top = pair.near;
+      bottom = pair.far;
     }
   }
 
@@ -90,5 +112,34 @@ export function resolveCroppedImage(
     crop: { left, top, right, bottom },
     width: Math.round(width),
     height: Math.round(height),
+  };
+}
+
+/** Moves the source image inside the fixed crop frame. */
+export function resolveMovedImageCrop(
+  geometry: CropSessionGeometry,
+  deltaX: number,
+  deltaY: number,
+): CropResult {
+  const { startWidth: W, startHeight: H } = geometry;
+  const l0 = geometry.startCrop.left ?? 0;
+  const t0 = geometry.startCrop.top ?? 0;
+  const r0 = geometry.startCrop.right ?? 0;
+  const b0 = geometry.startCrop.bottom ?? 0;
+  const kx = visibleFraction(l0, r0) / W;
+  const ky = visibleFraction(t0, b0) / H;
+  const visibleW = 1 - l0 - r0;
+  const visibleH = 1 - t0 - b0;
+  const nextLeft = Math.max(0, Math.min(1 - visibleW, l0 - deltaX * kx));
+  const nextTop = Math.max(0, Math.min(1 - visibleH, t0 - deltaY * ky));
+  return {
+    crop: {
+      left: nextLeft,
+      right: Math.max(0, 1 - visibleW - nextLeft),
+      top: nextTop,
+      bottom: Math.max(0, 1 - visibleH - nextTop),
+    },
+    width: Math.round(W),
+    height: Math.round(H),
   };
 }

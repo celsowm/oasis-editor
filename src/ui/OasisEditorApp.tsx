@@ -387,6 +387,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
       handleImageRotateHandleMouseDown:
         imageOps.handleImageRotateHandleMouseDown,
       handleImageCropHandleMouseDown: imageOps.handleImageCropHandleMouseDown,
+      handleImageCropBodyMouseDown: imageOps.handleImageCropBodyMouseDown,
       handleTextBoxRotateHandleMouseDown:
         textBoxOps.handleTextBoxRotateHandleMouseDown,
       handleEditorContextMenu,

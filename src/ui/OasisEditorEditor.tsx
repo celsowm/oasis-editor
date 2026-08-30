@@ -17,6 +17,9 @@ import { FloatingLayoutOptions } from "./components/FloatingToolbar/FloatingLayo
 import {
   getDocumentPageSettings,
   getDocumentSections,
+  getDocumentParagraphs,
+  getRunImage,
+  resolveImageSrc,
   type EditorLayoutDocument,
   EditorDocument,
   EditorPageSettings,
@@ -33,6 +36,7 @@ import type {
 } from "./editorUiTypes.js";
 import type { EditorComment } from "@/core/model.js";
 import { ResizeHandlesOverlay } from "./overlays/ResizeHandlesOverlay.js";
+import { ImageCropPreviewOverlay } from "./overlays/ImageCropPreviewOverlay.js";
 import { TableHandlesOverlay } from "./overlays/TableHandlesOverlay.js";
 import { clampZoom } from "./app/editorZoom.js";
 import { EditorImportProgressOverlay } from "./EditorImportProgressOverlay.js";
@@ -234,6 +238,25 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
   const selectedImage = createMemo((): SelectedImageBox | null =>
     overlays().selectedImageBox(),
   );
+  const selectedImageData = createMemo(() => {
+    const box = selectedImage();
+    if (!box) return null;
+    const paragraph = getDocumentParagraphs(props.state().document).find(
+      (candidate): boolean => candidate.id === box.paragraphId,
+    );
+    if (!paragraph) return null;
+    let offset = 0;
+    for (const run of paragraph.runs) {
+      if (run.kind === "image" && offset === box.startOffset) {
+        return {
+          image: getRunImage(run),
+          src: resolveImageSrc(props.state().document, run.image.src),
+        };
+      }
+      offset += run.text.length;
+    }
+    return null;
+  });
   const imageCropMode = (): boolean => overlays().imageCropMode?.() ?? false;
   const selectedTextBox = createMemo((): SelectedTextBoxBox | null =>
     overlays().selectedTextBoxBox(),
@@ -421,6 +444,14 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
                 />
               }
             >
+              <ImageCropPreviewOverlay
+                box={selectedImage}
+                image={():
+                  | import("@/core/model.js").EditorImageRunData
+                  | null => selectedImageData()?.image ?? null}
+                src={(): string => selectedImageData()?.src ?? ""}
+                rotation={(): number => selectedImage()?.rotation ?? 0}
+              />
               <ResizeHandlesOverlay
                 box={selectedImage}
                 readOnly={Boolean(layout().readOnly)}
@@ -435,6 +466,15 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
                     image.paragraphId,
                     image.startOffset,
                     direction,
+                    event,
+                  );
+                }}
+                onBodyMouseDown={(event): void => {
+                  const image = selectedImage();
+                  if (!image) return;
+                  surfaceHandlers().onImageCropBodyMouseDown?.(
+                    image.paragraphId,
+                    image.startOffset,
                     event,
                   );
                 }}

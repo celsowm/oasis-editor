@@ -160,6 +160,19 @@ export interface EditorImageCrop {
   bottom?: number;
 }
 
+/**
+ * DrawingML preset geometry used to clip a picture. `rawXml` keeps imported
+ * geometries that the renderer does not understand lossless on export.
+ */
+export interface EditorImageCropShape {
+  preset: string;
+  adjustments?: Record<string, number>;
+  rawXml?: string;
+}
+
+/** How the source image is fitted into the displayed crop frame. */
+export type EditorImageCropFit = "fill" | "fit";
+
 export type EditorImageFillMode = "stretch" | "tile";
 
 /**
@@ -225,9 +238,14 @@ export interface EditorImageRunData {
   src: string;
   width: number;
   height: number;
+  /** Intrinsic source dimensions, when available. */
+  intrinsicWidth?: number;
+  intrinsicHeight?: number;
   alt?: string;
   linkedSrc?: string;
   crop?: EditorImageCrop;
+  cropFit?: EditorImageCropFit;
+  cropShape?: EditorImageCropShape;
   fillMode?: EditorImageFillMode;
   border?: EditorImageBorder;
   rotation?: number;

@@ -434,6 +434,16 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
     );
   };
 
+  const handleImageCropBodyMouseDown = (
+    paragraphId: string,
+    paragraphOffset: number,
+    event: MouseEvent & { currentTarget: HTMLElement },
+  ): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    imageCropSession.startMove(paragraphId, paragraphOffset, event, deps.state);
+  };
+
   return {
     dragging,
     cropMode,
@@ -452,5 +462,6 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
     handleImageResizeHandleMouseDown,
     handleImageRotateHandleMouseDown,
     handleImageCropHandleMouseDown,
+    handleImageCropBodyMouseDown,
   };
 }

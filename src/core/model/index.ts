@@ -19,6 +19,8 @@ export type {
   EditorTabStop,
   EditorParagraphListStyle,
   EditorImageCrop,
+  EditorImageCropShape,
+  EditorImageCropFit,
   EditorImageFillMode,
   EditorLineDash,
   EditorImageBorder,

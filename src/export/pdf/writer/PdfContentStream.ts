@@ -11,6 +11,7 @@ import type {
   OasisPdfLineOptions,
   OasisPdfPage,
   OasisPdfPathOptions,
+  OasisPdfPathSegment,
   OasisPdfRectOptions,
   OasisPdfTextOptions,
 } from "./pdfTypes.js";
@@ -219,6 +220,40 @@ export class PdfContentStream {
       "W",
       "n",
     );
+  }
+
+  /** Intersects the current clip with an arbitrary top-left-origin path. */
+  clipPath(segments: OasisPdfPathSegment[]): void {
+    const page = this.page;
+    if (segments.length === 0) return;
+    const flip = (yy: number): number => page.height - yy;
+    const commands: string[] = [];
+    for (const segment of segments) {
+      switch (segment.type) {
+        case "move":
+          commands.push(
+            `${formatNumber(segment.x)} ${formatNumber(flip(segment.y))} m`,
+          );
+          break;
+        case "line":
+          commands.push(
+            `${formatNumber(segment.x)} ${formatNumber(flip(segment.y))} l`,
+          );
+          break;
+        case "cubic":
+          commands.push(
+            `${formatNumber(segment.x1)} ${formatNumber(flip(segment.y1))} ` +
+              `${formatNumber(segment.x2)} ${formatNumber(flip(segment.y2))} ` +
+              `${formatNumber(segment.x)} ${formatNumber(flip(segment.y))} c`,
+          );
+          break;
+        case "close":
+          commands.push("h");
+          break;
+      }
+    }
+    commands.push("W", "n");
+    page.commands.push(commands.join("\n"));
   }
 
   drawText(options: OasisPdfTextOptions): void {

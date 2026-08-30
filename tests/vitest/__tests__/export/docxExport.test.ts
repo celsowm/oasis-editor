@@ -1,4 +1,13 @@
-import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
+import {
+  getRunImage,
+  getRunTextBox,
+  getRunField,
+  getRunFieldChar,
+  getRunFieldInstruction,
+  getRunFootnoteReference,
+  getRunEndnoteReference,
+  getRunSym,
+} from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import {
@@ -495,6 +504,36 @@ describe("DOCX export", () => {
     expect(getRunImage(imageRun)?.flipH).toBeUndefined();
   });
 
+  it("round-trips a picture crop shape and source crop through DOCX", async () => {
+    const pngDataUrl =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const document = createEditorDocument([
+      createEditorParagraphFromRuns([
+        {
+          text: "\uFFFC",
+          image: {
+            src: pngDataUrl,
+            width: 100,
+            height: 50,
+            crop: { left: 0.1, right: 0.2 },
+            cropShape: { preset: "ellipse" },
+          },
+        },
+      ]),
+    ]);
+    const buffer = await exportEditorDocumentToDocx(document);
+    const xml = await readDocumentXml(buffer);
+    expect(xml).toContain('<a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom>');
+    expect(xml).toContain('<a:srcRect l="10000" t="0" r="20000" b="0"/>');
+
+    const imported = await importDocxToEditorDocument(buffer);
+    const run = getDocumentParagraphs(imported)[0]!.runs.find((item) =>
+      getRunImage(item),
+    )!;
+    expect(getRunImage(run)?.cropShape?.preset).toBe("ellipse");
+    expect(getRunImage(run)?.crop).toMatchObject({ left: 0.1, right: 0.2 });
+  });
+
   it("exports the wrap element for each Layout Options preset", async () => {
     const pngDataUrl =
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
@@ -552,8 +591,8 @@ describe("DOCX export", () => {
 
     const buffer = await exportEditorDocumentToDocx(next.document);
     const document = await importDocxToEditorDocument(buffer);
-    const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
-      (r) => getRunImage(r),
+    const imageRun = getDocumentParagraphs(document)[0]!.runs.find((r) =>
+      getRunImage(r),
     )!;
 
     expect(getRunImage(imageRun)?.floating?.wrap).toBe("square");
@@ -596,8 +635,8 @@ describe("DOCX export", () => {
     expect(xml).toContain('<wp:lineTo x="10800" y="21600"/>');
 
     const document = await importDocxToEditorDocument(buffer);
-    const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
-      (r) => getRunImage(r),
+    const imageRun = getDocumentParagraphs(document)[0]!.runs.find((r) =>
+      getRunImage(r),
     )!;
     expect(getRunImage(imageRun)?.floating?.wrap).toBe("tight");
     expect(getRunImage(imageRun)?.wrapPolygon).toEqual([
@@ -630,8 +669,8 @@ describe("DOCX export", () => {
     expect(xml).not.toContain("<a:stretch>");
 
     const document = await importDocxToEditorDocument(buffer);
-    const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
-      (r) => getRunImage(r),
+    const imageRun = getDocumentParagraphs(document)[0]!.runs.find((r) =>
+      getRunImage(r),
     )!;
     expect(getRunImage(imageRun)?.fillMode).toBe("tile");
   });
@@ -683,8 +722,8 @@ describe("DOCX export", () => {
     expect(xml).toContain('<wp:wrapSquare wrapText="bothSides"/>');
 
     const document = await importDocxToEditorDocument(buffer);
-    const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
-      (r) => getRunImage(r),
+    const imageRun = getDocumentParagraphs(document)[0]!.runs.find((r) =>
+      getRunImage(r),
     )!;
     expect(getRunImage(imageRun)?.floating).toEqual({
       type: "floating",
@@ -742,8 +781,8 @@ describe("DOCX export", () => {
       createEditorDocument([paragraph]),
     );
     const document = await importDocxToEditorDocument(buffer);
-    const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
-      (r) => getRunImage(r),
+    const imageRun = getDocumentParagraphs(document)[0]!.runs.find((r) =>
+      getRunImage(r),
     )!;
     const assetId = getRunImage(imageRun)!.src.split(":")[1]!;
     expect(document.assets?.[assetId]?.url).toMatch(/^data:image\/gif;base64,/);
@@ -797,12 +836,14 @@ describe("DOCX export", () => {
       createEditorDocument([paragraph]),
     );
     const document = await importDocxToEditorDocument(buffer);
-    const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
-      (r) => getRunImage(r),
+    const imageRun = getDocumentParagraphs(document)[0]!.runs.find((r) =>
+      getRunImage(r),
     )!;
 
     expect(getRunImage(imageRun)?.src).toBe("");
-    expect(getRunImage(imageRun)?.linkedSrc).toBe("https://example.com/image.png");
+    expect(getRunImage(imageRun)?.linkedSrc).toBe(
+      "https://example.com/image.png",
+    );
     expect(getRunImage(imageRun)?.width).toBe(100);
     expect(getRunImage(imageRun)?.height).toBe(50);
     expect(document.assets).toBeUndefined();
