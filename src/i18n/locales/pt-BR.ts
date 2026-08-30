@@ -1,6 +1,7 @@
 export const ptBR = {
   // Toolbar
   "toolbar.file": "Arquivo",
+  "toolbar.newDocument": "Novo Documento",
   "toolbar.export": "Exportar",
   "toolbar.import": "Importar",
   "toolbar.undo": "Desfazer última alteração",

@@ -1,6 +1,7 @@
 export const en = {
   // Toolbar
   "toolbar.file": "File",
+  "toolbar.newDocument": "New Document",
   "toolbar.export": "Export",
   "toolbar.import": "Import",
   "toolbar.undo": "Undo last change",
