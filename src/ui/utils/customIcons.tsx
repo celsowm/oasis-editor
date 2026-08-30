@@ -268,7 +268,73 @@ export const CheckIcon = (props: { size?: number }): JSX.Element => (
   </SvgIcon>
 );
 
+/** Custom SVG icon for New Document (file with plus) */
+const FilePlusIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="12" y1="12" x2="12" y2="18" stroke-width={2.2} stroke="#2563eb" />
+    <line x1="9" y1="15" x2="15" y2="15" stroke-width={2.2} stroke="#2563eb" />
+  </SvgIcon>
+);
+
+/** Custom SVG icon for Import Document (open folder) */
+const FolderOpenIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z" fill="#fef3c7" />
+    <path d="M2 10h20l-2 8H4l-2-8z" fill="#fde68a" stroke="#d97706" />
+  </SvgIcon>
+);
+
+/** Custom SVG icon for DOCX Export (document page with Word blue badge) */
+const FileDocxIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    {/* Blue Word badge */}
+    <rect x="5.5" y="11.5" width="13" height="8" rx="1.5" fill="#2563eb" stroke="#1d4ed8" stroke-width="0.5" />
+    <text
+      x="12"
+      y="17.2"
+      font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      font-size="6.5"
+      font-weight="800"
+      fill="#ffffff"
+      text-anchor="middle"
+      stroke="none"
+    >
+      DOCX
+    </text>
+  </SvgIcon>
+);
+
+/** Custom SVG icon for PDF Export (document page with PDF red badge) */
+const FilePdfIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    {/* Red PDF badge */}
+    <rect x="6" y="11.5" width="12" height="8" rx="1.5" fill="#dc2626" stroke="#b91c1c" stroke-width="0.5" />
+    <text
+      x="12"
+      y="17.2"
+      font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      font-size="6.5"
+      font-weight="800"
+      fill="#ffffff"
+      text-anchor="middle"
+      stroke="none"
+    >
+      PDF
+    </text>
+  </SvgIcon>
+);
+
 const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
+  "file-plus": FilePlusIcon,
+  "folder-open": FolderOpenIcon,
+  "file-docx": FileDocxIcon,
+  "file-pdf": FilePdfIcon,
   footnote: FootnoteIcon,
   specialIndentFirstLine: SpecialIndentFirstLineIcon,
   lineSpacing: LineSpacingIcon,
