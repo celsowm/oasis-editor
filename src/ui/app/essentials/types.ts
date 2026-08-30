@@ -31,6 +31,7 @@ export interface CreateEditorEssentialsPluginOptions {
     handleExportPdf: () => Promise<Blob>;
   };
   newDocument: () => void;
+  openSymbolDialog: () => void;
   importInputRef: () => HTMLInputElement | undefined;
   imageInputRef: () => HTMLInputElement | undefined;
   selectedImageRun: () => SelectedImageRun | null;

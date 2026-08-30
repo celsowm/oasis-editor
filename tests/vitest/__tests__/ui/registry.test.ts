@@ -151,6 +151,14 @@ describe("UI registries", () => {
       items.find((item) => item.id === OASIS_TOOLBAR_ITEMS.insertTable),
     ).toMatchObject({ tab: "insert", group: "tables", row: 1 });
     expect(
+      items.find((item) => item.id === OASIS_TOOLBAR_ITEMS.symbols),
+    ).toMatchObject({
+      type: "custom",
+      tab: "insert",
+      group: "symbols",
+      ribbonSize: "large",
+    });
+    expect(
       items.find((item) => item.id === OASIS_TOOLBAR_ITEMS.specialIndent),
     ).toMatchObject({ tab: "home", group: "paragraph", row: 1 });
     expect(

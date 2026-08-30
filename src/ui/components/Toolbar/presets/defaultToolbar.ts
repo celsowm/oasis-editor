@@ -7,6 +7,7 @@ import { MetricGroup } from "@/ui/components/Toolbar/groups/MetricGroup.js";
 import { SectionGroup } from "@/ui/components/Toolbar/groups/SectionGroup.js";
 import { MarginsGroup } from "@/ui/components/Toolbar/groups/MarginsGroup.js";
 import { ShapeGallery } from "@/ui/components/Toolbar/ShapeGallery.js";
+import { SymbolMenu } from "@/ui/components/Toolbar/SymbolMenu.js";
 import { TableStyleGallery } from "@/ui/components/Toolbar/TableStyleGallery.js";
 import { TableStyleOptions } from "@/ui/components/Toolbar/TableStyleOptions.js";
 import { TableBordersMenu } from "@/ui/components/Toolbar/TableBordersMenu.js";
@@ -313,6 +314,13 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
       kind: "custom",
       render: (api) => ShapeGallery({ api }),
     },
+  });
+  items.push({
+    type: "custom",
+    id: "editor-toolbar-symbols",
+    testId: "editor-toolbar-symbols",
+    ribbonSize: "large",
+    render: (api) => SymbolMenu({ api }),
   });
   items.push({
     type: "gridPicker",

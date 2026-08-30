@@ -1178,6 +1178,38 @@
   gap: 8px;
 }
 
+.oasis-editor-section-panel {
+  width: min(248px, calc(100vw - 16px));
+}
+
+.oasis-editor-section-panel-section {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding-bottom: 8px;
+}
+
+.oasis-editor-section-panel-section:last-child {
+  padding-bottom: 0;
+}
+
+.oasis-editor-section-option {
+  flex-direction: column;
+  min-width: 0 !important;
+  min-height: 56px;
+  padding: 7px 5px;
+  gap: 4px;
+  font-size: 11px;
+  line-height: 13px;
+}
+
+.oasis-editor-section-option > span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .oasis-editor-toolbar-table-panel {
   width: min(280px, calc(100vw - 16px));
 }
@@ -1240,6 +1272,168 @@
 .oasis-editor-shape-thumb {
   display: block;
   pointer-events: none;
+}
+
+/* Word-style Insert > Symbols menu. */
+.oasis-editor-symbol-menu-panel {
+  width: min(348px, calc(100vw - 16px));
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.oasis-editor-symbol-menu-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.oasis-editor-symbol-menu-action {
+  display: flex;
+  min-width: 0;
+  min-height: 76px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 4px 5px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--oasis-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.oasis-editor-symbol-menu-action:hover,
+.oasis-editor-symbol-menu-action:focus-visible,
+.oasis-editor-symbol-back:hover,
+.oasis-editor-symbol-back:focus-visible,
+.oasis-editor-symbol-more:hover,
+.oasis-editor-symbol-more:focus-visible {
+  background: var(--oasis-hover-bg);
+  border-color: var(--oasis-accent-soft);
+  outline: none;
+}
+
+.oasis-editor-symbol-menu-action > svg:first-child {
+  width: 28px;
+  height: 28px;
+  stroke-width: 1.4;
+}
+
+.oasis-editor-symbol-menu-action > svg:last-child {
+  width: 12px;
+  height: 12px;
+}
+
+.oasis-editor-symbol-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.oasis-editor-symbol-picker-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  color: var(--oasis-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.oasis-editor-symbol-back {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--oasis-text);
+  cursor: pointer;
+}
+
+.oasis-editor-symbol-back svg {
+  width: 16px;
+  height: 16px;
+}
+
+.oasis-editor-symbol-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 2px;
+  max-height: 190px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.oasis-editor-symbol-tile {
+  display: flex;
+  width: 100%;
+  min-width: 28px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--oasis-text);
+  cursor: pointer;
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols", sans-serif;
+  font-size: 18px;
+}
+
+.oasis-editor-symbol-tile:hover,
+.oasis-editor-symbol-tile:focus-visible {
+  background: var(--oasis-accent-soft);
+  border-color: var(--oasis-accent);
+  outline: none;
+}
+
+.oasis-editor-symbol-more {
+  display: flex;
+  width: 100%;
+  min-height: 34px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--oasis-toolbar-border);
+  border-radius: 4px;
+  background: var(--oasis-paper);
+  color: var(--oasis-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+
+.oasis-editor-symbol-more svg {
+  width: 16px;
+  height: 16px;
+}
+
+.oasis-editor-symbol-picker .oasis-editor-symbol-more {
+  border-top-color: var(--oasis-hover-bg);
+}
+
+.oasis-editor-symbol-equation-grid {
+  display: grid;
+  gap: 4px;
+}
+
+.oasis-editor-symbol-equation-grid .oasis-editor-symbol-tile {
+  justify-content: flex-start;
+  height: auto;
+  min-height: 34px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
 }
 
 .oasis-editor-toolbar-panel-section {
@@ -1704,14 +1898,10 @@
   border: 1px solid var(--oasis-toolbar-border);
   border-radius: 2px;
   background:
-    linear-gradient(
-      var(--oasis-paper, #ffffff),
-      var(--oasis-paper, #ffffff)
-    )
-    var(--oasis-margin-preview-x, 4px)
-    var(--oasis-margin-preview-y, 4px) /
-    var(--oasis-margin-preview-width, 18px)
-    var(--oasis-margin-preview-height, 24px) no-repeat,
+    linear-gradient(var(--oasis-paper, #ffffff), var(--oasis-paper, #ffffff))
+      var(--oasis-margin-preview-x, 4px) var(--oasis-margin-preview-y, 4px) /
+      var(--oasis-margin-preview-width, 18px)
+      var(--oasis-margin-preview-height, 24px) no-repeat,
     var(--oasis-text-muted, #9ca3af);
   opacity: 0.45;
 }
@@ -2055,9 +2245,15 @@
   background: var(--table-header-fill);
 }
 
-.oasis-editor-table-style-preview i:nth-child(n + 7) { background: var(--table-band-fill); }
-.oasis-editor-table-style-preview i:nth-child(3n) { border-right: 0; }
-.oasis-editor-table-style-preview i:nth-child(n + 7) { border-bottom: 0; }
+.oasis-editor-table-style-preview i:nth-child(n + 7) {
+  background: var(--table-band-fill);
+}
+.oasis-editor-table-style-preview i:nth-child(3n) {
+  border-right: 0;
+}
+.oasis-editor-table-style-preview i:nth-child(n + 7) {
+  border-bottom: 0;
+}
 
 .oasis-editor-table-style-card:hover,
 .oasis-editor-table-style-card:focus-visible,
@@ -2083,7 +2279,10 @@
 }
 
 .oasis-editor-table-style-expand:hover,
-.oasis-editor-table-style-expand:focus-visible { background: var(--oasis-contextual-hover, #dcecf9); outline: none; }
+.oasis-editor-table-style-expand:focus-visible {
+  background: var(--oasis-contextual-hover, #dcecf9);
+  outline: none;
+}
 
 .oasis-editor-table-style-gallery-panel {
   z-index: 1200;
@@ -2097,9 +2296,22 @@
   box-sizing: border-box;
 }
 
-.oasis-editor-table-style-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.oasis-editor-table-style-grid .oasis-editor-table-style-card { width: 100%; }
-.oasis-editor-table-style-gallery-empty { display: grid; place-items: center; width: 120px; height: 63px; color: var(--oasis-ribbon-muted, var(--oasis-text-muted)); font-size: 10px; }
+.oasis-editor-table-style-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.oasis-editor-table-style-grid .oasis-editor-table-style-card {
+  width: 100%;
+}
+.oasis-editor-table-style-gallery-empty {
+  display: grid;
+  place-items: center;
+  width: 120px;
+  height: 63px;
+  color: var(--oasis-ribbon-muted, var(--oasis-text-muted));
+  font-size: 10px;
+}
 
 .oasis-editor-table-borders-trigger {
   position: relative;
@@ -2155,10 +2367,23 @@
   stroke-width: 1.4;
 }
 
-.oasis-editor-table-borders-action > svg:not(.oasis-editor-table-border-preset-icon),
-.oasis-editor-table-borders-text-icon { width: 20px; height: 20px; flex: 0 0 20px; text-align: center; }
-.oasis-editor-table-borders-text-icon { font-size: 14px; line-height: 20px; }
-.oasis-editor-table-borders-divider { height: 1px; margin: 3px 0; background: var(--oasis-ribbon-group-border, #dcdcdc); }
+.oasis-editor-table-borders-action
+  > svg:not(.oasis-editor-table-border-preset-icon),
+.oasis-editor-table-borders-text-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  text-align: center;
+}
+.oasis-editor-table-borders-text-icon {
+  font-size: 14px;
+  line-height: 20px;
+}
+.oasis-editor-table-borders-divider {
+  height: 1px;
+  margin: 3px 0;
+  background: var(--oasis-ribbon-group-border, #dcdcdc);
+}
 
 .oasis-editor-app[data-theme="dark"] .oasis-editor-tool-button,
 .oasis-editor-app[data-theme="dark"] .oasis-editor-tool-select {

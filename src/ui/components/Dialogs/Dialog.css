@@ -37,6 +37,139 @@
   width: min(720px, calc(100vw - 32px));
 }
 
+.oasis-editor-symbol-dialog {
+  width: min(680px, calc(100vw - 32px));
+}
+
+.oasis-editor-symbol-dialog-body {
+  gap: 14px;
+}
+
+.oasis-editor-symbol-dialog-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.oasis-editor-symbol-dialog-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  color: #70757a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.oasis-editor-symbol-dialog-field select,
+.oasis-editor-symbol-dialog-field input {
+  width: 100%;
+  min-height: 32px;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  background: white;
+  color: #202124;
+  font: inherit;
+  font-weight: 400;
+}
+
+.oasis-editor-symbol-dialog-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  gap: 14px;
+  min-height: 260px;
+}
+
+.oasis-editor-symbol-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(30px, 1fr));
+  align-content: start;
+  gap: 3px;
+  max-height: 300px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  background: #fafbfc;
+}
+
+.oasis-editor-symbol-dialog-recent {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e3e5e8;
+  color: #70757a;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.oasis-editor-symbol-dialog-recent-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.oasis-editor-symbol-dialog-tile {
+  display: flex;
+  min-width: 30px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: #202124;
+  cursor: pointer;
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols", sans-serif;
+  font-size: 20px;
+}
+
+.oasis-editor-symbol-dialog-tile:hover,
+.oasis-editor-symbol-dialog-tile:focus-visible,
+.oasis-editor-symbol-dialog-tile-active {
+  background: #e8f0fe;
+  border-color: #8ab4f8;
+  outline: none;
+}
+
+.oasis-editor-symbol-dialog-preview {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  background: white;
+}
+
+.oasis-editor-symbol-dialog-preview-label {
+  color: #70757a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.oasis-editor-symbol-dialog-preview-character {
+  display: flex;
+  min-height: 100px;
+  align-items: center;
+  justify-content: center;
+  color: #202124;
+  font-size: 64px;
+  line-height: 1;
+}
+
+.oasis-editor-symbol-dialog-help {
+  margin: auto 0 0;
+  color: #70757a;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .oasis-editor-dialog-font {
   width: min(720px, calc(100vw - 32px));
   min-height: min(640px, calc(100vh - 48px));

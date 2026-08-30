@@ -53,6 +53,7 @@ export interface EditorCommandRuntimeDeps {
     initialCaption: string;
   }) => void;
   setNewDocumentDialog: (state: { isOpen: boolean }) => void;
+  setSymbolDialog: (state: { isOpen: boolean }) => void;
   getUiState: () => OasisEditorUiState;
   updateUiState: (patch: OasisEditorUiState) => OasisEditorUiState;
   zoom: {
@@ -143,6 +144,7 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
         requestConfirmation: (): void =>
           deps.setNewDocumentDialog({ isOpen: true }),
       }),
+      openSymbolDialog: (): void => deps.setSymbolDialog({ isOpen: true }),
     },
     externalPlugins: deps.runtimeOptions().plugins,
     t: deps.translator,

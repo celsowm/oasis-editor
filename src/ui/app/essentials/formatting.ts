@@ -99,6 +99,20 @@ export function buildEssentialsFormatting(
       options.commandsController.applyInsertFootnoteCommand(),
       true
     ),
+    insertText: (text: string, fontFamily?: string | null): boolean => {
+      if (text.length === 0) return false;
+      const styleOverride = fontFamily ? { fontFamily } : undefined;
+      options.applyTransactionalState(
+        (current): EditorState =>
+          options.tableOps.applyTableAwareParagraphEdit(
+            current,
+            (temp): EditorState =>
+              insertTextAtSelection(temp, text, styleOverride),
+          ),
+      );
+      options.focusInput();
+      return true;
+    },
     insertTableOfContents: (): boolean => {
       options.applyTransactionalState(
         (current): EditorState =>

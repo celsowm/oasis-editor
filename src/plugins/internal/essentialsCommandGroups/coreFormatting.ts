@@ -46,6 +46,16 @@ export function buildCoreFormattingCommands({
   return {
     selectAll: command("selectAll", formatting.selectAll),
     insertFootnote: command("insertFootnote", formatting.insertFootnote),
+    insertText: actionCommand("insertText", (p): void => {
+      const payload =
+        typeof p === "object" && p !== null && "text" in p
+          ? (p as { text?: unknown; fontFamily?: unknown })
+          : { text: p };
+      formatting.insertText(
+        String(payload.text ?? ""),
+        typeof payload.fontFamily === "string" ? payload.fontFamily : null,
+      );
+    }),
     pastePlainText: command("pastePlainText", formatting.pastePlainText),
     bold: command("bold", formatting.bold, (): { isActive: boolean } => ({
       isActive: Boolean(s().bold),

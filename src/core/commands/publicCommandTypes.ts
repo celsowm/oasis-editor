@@ -23,6 +23,12 @@ export interface SetSpecialIndentPayload {
   value?: number | null;
 }
 
+/** Payload for inserting text with an optional character font override. */
+export interface InsertTextPayload {
+  text: string;
+  fontFamily?: string | null;
+}
+
 /**
  * Maps every built-in command name to its expected payload type.
  * Commands with `undefined` payload accept no arguments.
@@ -30,6 +36,7 @@ export interface SetSpecialIndentPayload {
 export interface OasisCommandPayloads {
   selectAll: undefined;
   insertFootnote: undefined;
+  insertText: string | InsertTextPayload;
   pastePlainText: undefined;
   bold: undefined;
   italic: undefined;
@@ -137,6 +144,7 @@ export interface OasisCommandPayloads {
   tableDistributeColumns: undefined;
   tableDistributeRows: undefined;
   insertTable: InsertTablePayload;
+  openSymbolDialog: undefined;
 }
 
 /** Maps commands to their typed return values. Commands not listed return `unknown`. */

@@ -19,6 +19,7 @@ export const OASIS_TOOLBAR_ITEMS = {
   subscript: "editor-toolbar-subscript",
   insertImage: "editor-toolbar-insert-image",
   insertTable: "editor-toolbar-insert-table",
+  symbols: "editor-toolbar-symbols",
   link: "editor-toolbar-link",
   unlink: "editor-toolbar-unlink",
   footnote: "editor-toolbar-footnote",

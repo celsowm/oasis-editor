@@ -16,12 +16,14 @@ export function SectionGroup(props: { api: ToolbarActionApi }): JSX.Element {
       label={t("section.orientation")}
       testId="editor-toolbar-section-dropdown"
       tooltip={t("section.pageSetup")}
-      panelClass="oasis-editor-toolbar-panel"
+      panelClass="oasis-editor-toolbar-panel oasis-editor-section-panel"
       keepMounted
     >
-      <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
+      <div class="oasis-editor-toolbar-panel-section oasis-editor-section-panel-section">
         <Button
           icon="rectangle-vertical"
+          label={t("section.portrait")}
+          class="oasis-editor-section-option"
           active={!api.commands.state("toggleOrientation").isActive}
           data-testid="editor-toolbar-orientation-portrait"
           onClick={(): unknown =>
@@ -34,6 +36,8 @@ export function SectionGroup(props: { api: ToolbarActionApi }): JSX.Element {
         />
         <Button
           icon="rectangle-horizontal"
+          label={t("section.landscape")}
+          class="oasis-editor-section-option"
           active={api.commands.state("toggleOrientation").isActive}
           data-testid="editor-toolbar-orientation-landscape"
           onClick={(): unknown =>
@@ -46,15 +50,19 @@ export function SectionGroup(props: { api: ToolbarActionApi }): JSX.Element {
         />
       </div>
 
-      <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
+      <div class="oasis-editor-toolbar-panel-section oasis-editor-section-panel-section">
         <Button
           icon="scissors"
+          label={t("section.secNext")}
+          class="oasis-editor-section-option"
           data-testid="editor-toolbar-section-break-next"
           onClick={(): unknown => api.commands.execute("sectionBreakNextPage")}
           tooltip={t("section.secNextTooltip")}
         />
         <Button
-          icon="scissors"
+          icon="scissors-line-dashed"
+          label={t("section.secCont")}
+          class="oasis-editor-section-option"
           data-testid="editor-toolbar-section-break-continuous"
           onClick={(): unknown =>
             api.commands.execute("sectionBreakContinuous")

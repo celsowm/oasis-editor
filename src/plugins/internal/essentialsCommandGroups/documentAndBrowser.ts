@@ -65,6 +65,9 @@ export function buildDocumentAndBrowserCommands({
     insertShape: actionCommand("insertShape", (p): void =>
       document.insertShape(String(p)),
     ),
+    openSymbolDialog: actionCommand("openSymbolDialog", (): void =>
+      document.openSymbolDialog(),
+    ),
     unlink: actionCommand(
       "unlink",
       (): void => link.remove(),

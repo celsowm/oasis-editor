@@ -6,9 +6,13 @@ export function buildEssentialsGate(
   options: CreateEditorEssentialsPluginOptions,
 ): EssentialsFeatureGate {
   return {
-    isCommandEnabled: (commandName: OasisBuiltinCommand): boolean =>
-      !options.isReadOnly() &&
-      (commandName !== "insertFootnote" ||
-        options.commandsController.canInsertFootnoteCommand()),
+    isCommandEnabled: (commandName: OasisBuiltinCommand): boolean => {
+      if (commandName === "openSymbolDialog") return true;
+      return (
+        !options.isReadOnly() &&
+        (commandName !== "insertFootnote" ||
+          options.commandsController.canInsertFootnoteCommand())
+      );
+    },
   };
 }

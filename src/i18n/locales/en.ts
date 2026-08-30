@@ -9,6 +9,7 @@ export const en = {
   "toolbar.redo": "Redo last undone change",
   "toolbar.insert": "Insert",
   "toolbar.image": "Image",
+  "toolbar.symbols": "Symbols",
   "toolbar.imageCaption": "Image caption",
   "toolbar.shapes": "Shapes",
   "toolbar.shape.rect": "Rectangle",
@@ -66,6 +67,18 @@ export const en = {
   "toolbar.formatUpperRoman": "I, II, III",
   "toolbar.formatBullet": "Bullet",
   "toolbar.moreTools": "More tools",
+
+  "symbols.menu.equation": "Equation",
+  "symbols.menu.symbol": "Symbol",
+  "symbols.menu.number": "Number",
+  "symbols.more": "More Symbols...",
+  "symbols.category.all": "All",
+  "symbols.category.common": "Common",
+  "symbols.category.math": "Mathematical",
+  "symbols.category.arrows": "Arrows",
+  "symbols.category.currency": "Currency",
+  "symbols.category.greek": "Greek",
+  "symbols.category.numbers": "Numbers",
 
   // Style
   "toolbar.style": "Styles",
@@ -227,9 +240,9 @@ export const en = {
   "section.marginValue": "{0} cm",
   "section.marginApply": "Apply",
   "number.decimalSeparator": ".",
-  "section.secNext": "Sec Next",
+  "section.secNext": "Next Page",
   "section.secNextTooltip": "Insert Section Break (Next Page)",
-  "section.secCont": "Sec Cont",
+  "section.secCont": "Continuous",
   "section.secContTooltip": "Insert Section Break (Continuous)",
 
   // Table
@@ -345,10 +358,20 @@ export const en = {
 
   // Generic
   "generic.close": "Close",
+  "generic.back": "Back",
   "generic.cancel": "Cancel",
   "generic.save": "Save",
   "generic.apply": "Apply",
   "generic.ok": "OK",
+
+  "dialog.symbol.title": "Symbol",
+  "dialog.symbol.insert": "Insert",
+  "dialog.symbol.font": "Font",
+  "dialog.symbol.subset": "Subset",
+  "dialog.symbol.preview": "Preview",
+  "dialog.symbol.recent": "Recently used",
+  "dialog.symbol.code": "Character code",
+  "dialog.symbol.doubleClickHelp": "Double-click a character to insert it.",
 
   // New document confirmation
   "dialog.newDocument.title": "New Document",

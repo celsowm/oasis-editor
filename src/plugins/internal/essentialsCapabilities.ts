@@ -32,6 +32,7 @@ export interface EssentialsHistoryCapability {
 export interface EssentialsFormattingCapability {
   selectAll: () => boolean;
   insertFootnote: () => boolean;
+  insertText: (text: string, fontFamily?: string | null) => boolean;
   pastePlainText: () => boolean;
   bold: () => boolean;
   italic: () => boolean;
@@ -101,6 +102,7 @@ export interface EssentialsDocumentCapability {
   importDocument: () => void;
   insertImage: () => void;
   insertShape: (preset: string) => void;
+  openSymbolDialog: () => void;
 }
 
 export interface EssentialsLinkCapability {

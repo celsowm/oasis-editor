@@ -9,6 +9,7 @@ export const ptBR = {
   "toolbar.redo": "Refazer última alteração",
   "toolbar.insert": "Inserir",
   "toolbar.image": "Imagem",
+  "toolbar.symbols": "Símbolos",
   "toolbar.imageCaption": "Legenda da imagem",
   "toolbar.shapes": "Formas",
   "toolbar.shape.rect": "Retângulo",
@@ -66,6 +67,18 @@ export const ptBR = {
   "toolbar.formatUpperRoman": "I, II, III",
   "toolbar.formatBullet": "Marcador",
   "toolbar.moreTools": "Mais ferramentas",
+
+  "symbols.menu.equation": "Equação",
+  "symbols.menu.symbol": "Símbolo",
+  "symbols.menu.number": "Número",
+  "symbols.more": "Mais Símbolos...",
+  "symbols.category.all": "Todos",
+  "symbols.category.common": "Comuns",
+  "symbols.category.math": "Matemática",
+  "symbols.category.arrows": "Setas",
+  "symbols.category.currency": "Moedas",
+  "symbols.category.greek": "Grego",
+  "symbols.category.numbers": "Números",
 
   // Style
   "toolbar.style": "Estilos",
@@ -227,9 +240,9 @@ export const ptBR = {
   "section.marginValue": "{0} cm",
   "section.marginApply": "Aplicar",
   "number.decimalSeparator": ",",
-  "section.secNext": "Próx Seç",
+  "section.secNext": "Próxima Página",
   "section.secNextTooltip": "Inserir Quebra de Seção (Próxima Página)",
-  "section.secCont": "Seç Cont",
+  "section.secCont": "Contínua",
   "section.secContTooltip": "Inserir Quebra de Seção (Contínua)",
 
   // Table
@@ -346,10 +359,21 @@ export const ptBR = {
 
   // Generic
   "generic.close": "Fechar",
+  "generic.back": "Voltar",
   "generic.cancel": "Cancelar",
   "generic.save": "Salvar",
   "generic.apply": "Aplicar",
   "generic.ok": "OK",
+
+  "dialog.symbol.title": "Símbolo",
+  "dialog.symbol.insert": "Inserir",
+  "dialog.symbol.font": "Fonte",
+  "dialog.symbol.subset": "Subconjunto",
+  "dialog.symbol.preview": "Visualização",
+  "dialog.symbol.recent": "Usados recentemente",
+  "dialog.symbol.code": "Código do caractere",
+  "dialog.symbol.doubleClickHelp":
+    "Clique duas vezes em um caractere para inseri-lo.",
 
   // New document confirmation
   "dialog.newDocument.title": "Novo Documento",

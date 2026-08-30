@@ -6,6 +6,7 @@ import { FontDialog } from "@/ui/components/Dialogs/FontDialog.js";
 import { ParagraphDialog } from "@/ui/components/Dialogs/ParagraphDialog.js";
 import { TablePropertiesDialog } from "@/ui/components/Dialogs/TablePropertiesDialog.js";
 import { NewDocumentConfirmationDialog } from "@/ui/components/Dialogs/NewDocumentConfirmationDialog.js";
+import { SymbolDialog } from "@/ui/components/Dialogs/SymbolDialog.js";
 import { FindReplaceDialog } from "@/ui/components/FindReplace/FindReplaceDialog.js";
 import { ContextMenu } from "@/ui/components/ContextMenu/ContextMenu.js";
 import type { createEditorDialogs } from "./useEditorDialogs.js";
@@ -32,6 +33,7 @@ export interface EditorDialogsLayerProps {
     typeof TablePropertiesDialog
   >["onApply"];
   confirmNewDocument: () => void;
+  insertSymbol: (symbol: string, fontFamily: string) => void;
   closeContextMenu: () => void;
 }
 
@@ -59,6 +61,8 @@ export function EditorDialogsLayer(
     setTablePropertiesDialog,
     newDocumentDialog,
     setNewDocumentDialog,
+    symbolDialog,
+    setSymbolDialog,
   } = props.dialogs;
 
   return (
@@ -72,6 +76,18 @@ export function EditorDialogsLayer(
         onConfirm={(): void => {
           setNewDocumentDialog({ isOpen: false });
           props.confirmNewDocument();
+        }}
+      />
+
+      <SymbolDialog
+        isOpen={symbolDialog().isOpen}
+        onClose={(): void => {
+          setSymbolDialog({ isOpen: false });
+          props.focusInput();
+        }}
+        onInsert={(symbol, fontFamily): void => {
+          setSymbolDialog({ isOpen: false });
+          props.insertSymbol(symbol, fontFamily);
         }}
       />
 

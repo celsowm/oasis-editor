@@ -148,6 +148,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     setTablePropertiesDialog,
     newDocumentDialog,
     setNewDocumentDialog,
+    symbolDialog,
+    setSymbolDialog,
   } = createEditorDialogs();
 
   // First-use precise-fonts welcome overlay (rendered inside the editor shell).
@@ -280,6 +282,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     setImageAltDialog,
     setImageCaptionDialog,
     setNewDocumentDialog,
+    setSymbolDialog,
   });
   const {
     commandsController,
@@ -466,6 +469,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
             setTablePropertiesDialog,
             newDocumentDialog,
             setNewDocumentDialog,
+            symbolDialog,
+            setSymbolDialog,
           }}
           findReplace={fr}
           fontFamilyOptions={computeFontFamilyOptions}
@@ -480,6 +485,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           setParagraphDialogDefault={setParagraphDialogDefault}
           applyTablePropertiesDialogValues={applyTablePropertiesDialogValues}
           confirmNewDocument={(): void => runtimeClient.resetDocument()}
+          insertSymbol={(symbol, fontFamily): void => {
+            runtimeEditor().commands.execute("insertText", {
+              text: symbol,
+              fontFamily,
+            });
+            focusInput();
+          }}
           closeContextMenu={closeContextMenu}
         />
 

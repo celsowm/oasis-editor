@@ -39,6 +39,14 @@ const allowlistedFiles = new Map([
     "src/ui/components/Dialogs/Dialog.tsx",
     "public dialog primitive implementation",
   ],
+  [
+    "src/ui/components/Dialogs/NewDocumentConfirmationDialog.tsx",
+    "dialog content pending primitive migration",
+  ],
+  [
+    "src/ui/components/Dialogs/SymbolDialog.tsx",
+    "specialized character picker dialog",
+  ],
   ["src/ui/components/Tabs/Tabs.tsx", "public tabs primitive implementation"],
   ["src/ui/components/Outline/OutlinePanel.tsx", "pending outline migration"],
   ["src/ui/components/WelcomeOverlay.tsx", "pending heading/text migration"],
@@ -55,6 +63,10 @@ const allowlistedFiles = new Map([
   [
     "src/ui/components/Toolbar/ToolbarOverflowManager.tsx",
     "pending toolbar migration",
+  ],
+  [
+    "src/ui/components/Toolbar/SymbolMenu.tsx",
+    "specialized symbol picker menu",
   ],
   ["src/ui/components/Ruler/HorizontalRuler.tsx", "low-level ruler controls"],
   ["src/ui/shells/BalloonShell.tsx", "shell stage structure"],

@@ -15,6 +15,7 @@ export interface MenuProps {
   /** Extra class for the popover panel. */
   panelClass?: string;
   keepMounted?: boolean;
+  onOpenChange?: (open: boolean) => void;
   children: JSX.Element;
 }
 
@@ -24,13 +25,17 @@ export interface MenuProps {
  */
 export function Menu(props: MenuProps): JSX.Element {
   const [open, setOpen] = createSignal(false);
+  const updateOpen = (nextOpen: boolean): void => {
+    setOpen(nextOpen);
+    props.onOpenChange?.(nextOpen);
+  };
   const ariaLabel = (): string => props.tooltip || props.label || "";
 
   return (
     <div class="oasis-editor-toolbar-dropdown">
       <Popover
         open={open()}
-        onOpenChange={setOpen}
+        onOpenChange={updateOpen}
         keepMounted={props.keepMounted}
         panelRole="menu"
         panelClass={`oasis-editor-toolbar-dropdown-menu ${props.panelClass || ""}`}

@@ -46,6 +46,7 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
     group: "illustrations",
     row: 2,
   },
+  "editor-toolbar-symbols": { tab: "insert", group: "symbols", row: 1 },
   "editor-toolbar-insert-table": { tab: "insert", group: "tables", row: 1 },
   "editor-toolbar-link": { tab: "insert", group: "links", row: 1 },
   "editor-toolbar-unlink": { tab: "insert", group: "links", row: 2 },
