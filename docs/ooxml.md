@@ -1,9 +1,9 @@
 # OOXML / DOCX Compatibility Status
 
-Current source audit: 2026-08-07  
-Audited baseline: `main` at `268d300aa6271679016f755687a083d4db85ceda`
+Current source audit: 2026-08-30
+Audited baseline: `main`
 
-This document is the current compatibility summary for Oasis Editor's DOCX / WordprocessingML implementation.
+This document is the current compatibility summary for Oasis Editor's DOCX / WordprocessingML implementation and modern MS Word 1:1 parity gap analysis.
 
 The June 2026 element-by-element inventory remains useful as a schema checklist, but its implementation status is archived and must not be treated as current. The executable roadmap is [Near-Full Microsoft Word OOXML Compatibility Execution Plan](./ooxml-near-full-compatibility-plan.md).
 
@@ -48,10 +48,10 @@ Legend:
 | DrawingML text boxes | Strong | Strong | Partial | Strong | Strong/Partial | Nested blocks, position, rotation and basic shape/body properties are modeled. |
 | General DrawingML shapes | Partial | Partial | Missing | Partial | Preserve only at package level for unrelated parts | A generic lossless drawing node/fallback is still required for rewritten parts. |
 | VML | Partial | Partial | Missing | Partial | Preserve only at package level for unrelated parts | Legacy image paths exist; generic shapes/groups/text boxes remain incomplete. |
-| Content controls (`w:sdt`) | Partial | Content visible | Partial metadata only | Partial | Partial | Block controls and typed `sdtPr` metadata are strong; inline/row/cell SDTs and bound behavior remain. |
-| Custom XML and data binding | Metadata partial | Missing | Missing | Missing semantically | Strong package preservation | `customXml` package parts now survive unrelated edits; `storeItemID`/XPath synchronization and editable binding semantics remain. |
-| Office Math / OMML | Missing semantically | Missing | Missing | Missing semantically | Preserve only at package/unmodified-fragment level | Needs an opaque-first math node, then OMML parsing/rendering/editing. |
-| Charts and SmartArt | Missing semantically | Missing | Missing | Missing semantically | Strong package preservation for unrelated parts | Package preservation prevents incidental deletion, but visual/model support is still absent. |
+| Content controls (`w:sdt`) | Partial | Content visible | Partial metadata only | Partial | Partial | Block controls and typed `sdtPr` metadata are strong; inline/row/cell SDTs, custom XML data-binding, and interactive UI widgets remain. |
+| Custom XML and data binding | Metadata partial | Missing | Missing | Missing semantically | Strong package preservation | `customXml` package parts now survive unrelated edits; `storeItemID`/XPath evaluation and two-way binding synchronization remain missing. |
+| Office Math / OMML | Missing semantically | Missing | Missing | Missing semantically | Preserve only at package/unmodified-fragment level | Needs an opaque math block/run node, OMML AST parsing, baseline/stretched delimiter canvas rendering, and MathML interop. |
+| Charts and SmartArt | Missing semantically | Missing | Missing | Missing semantically | Strong package preservation for unrelated parts | Package preservation prevents incidental deletion; preview rendering and model support for chart series / SmartArt diagrams are absent. |
 | OLE and embedded packages | Missing semantically | Missing | Missing | Missing semantically | Strong package preservation for unrelated parts | Must gain safe non-executing object representation and previews. |
 | Themes | Partial | Partial | Missing | Partial through source-backed preservation | Strong package preservation | Imported values resolve through theme data; full semantic theme editing/serialization remains. |
 | Font table | Strong metadata | Partial | Missing | Strong metadata | Strong/Partial | Metadata round-trips; embedded fonts and Word-exact script-aware substitution remain. |
