@@ -32,7 +32,7 @@ async function nestedTablePackage(): Promise<ArrayBuffer> {
 function getOuterTable(
   document: Awaited<ReturnType<typeof importDocxToEditorDocument>>,
 ) {
-  const block = document.sections?.[0]?.blocks[0] ?? document.blocks?.[0];
+  const block = document.sections?.[0]?.blocks[0];
   if (!block || block.type !== "table") {
     throw new Error("Expected outer table.");
   }
@@ -44,7 +44,7 @@ function getInnerTable(
 ) {
   const outer = getOuterTable(document);
   const inner = outer.rows[0]?.cells[0]?.blocks.find(
-    (block) => block.type === "table",
+    (block: { type: string }) => block.type === "table",
   );
   if (!inner || inner.type !== "table") {
     throw new Error("Expected inner table.");
@@ -66,8 +66,8 @@ describe("nested DOCX tables", () => {
       "paragraph",
     ]);
     expect(
-      getDocumentParagraphsCanonical(document).map((paragraph) =>
-        paragraph.runs.map((run) => run.text).join(""),
+      getDocumentParagraphsCanonical(document).map((paragraph: { runs: Array<{ text: string }> }) =>
+        paragraph.runs.map((run: { text: string }) => run.text).join(""),
       ),
     ).toEqual([
       "Before nested table",
@@ -105,7 +105,7 @@ describe("nested DOCX tables", () => {
     const reimportedParagraph = reimportedInner.rows[0]!.cells[0]!.blocks[0];
     expect(
       reimportedParagraph?.type === "paragraph"
-        ? reimportedParagraph.runs.map((run) => run.text).join("")
+        ? reimportedParagraph.runs.map((run: { text: string }) => run.text).join("")
         : null,
     ).toBe("Inner edited");
   });
@@ -135,7 +135,7 @@ describe("nested DOCX tables", () => {
       throw new Error("Expected cloned outer table.");
     }
     const clonedInner = cloned.rows[0]!.cells[0]!.blocks.find(
-      (block) => block.type === "table",
+      (block: { type: string }) => block.type === "table",
     );
     if (!clonedInner || clonedInner.type !== "table") {
       throw new Error("Expected cloned inner table.");

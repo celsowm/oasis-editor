@@ -29,7 +29,7 @@ describe("nested table properties service", () => {
     inner.rows[0]!.style = { height: 42, cantSplit: true };
     inner.rows[0]!.cells[0]!.style = {
       width: 80,
-      verticalAlign: "center",
+      verticalAlign: "middle",
       shading: "#abcdef",
     };
 
