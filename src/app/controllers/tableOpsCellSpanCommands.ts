@@ -120,9 +120,9 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
         (sum, cell): number => sum + Math.max(1, cell.colSpan ?? 1),
         0,
       ),
-      blocks: selectedCells.flatMap((cell): EditorBlockNode[] =>
-        cell.blocks.map((block): EditorBlockNode => cloneBlock(block)),
-      ),
+      blocks: selectedCells.flatMap((cell): EditorBlockNode[] => [
+        ...cell.blocks,
+      ]),
       ...(revision
         ? {
             style: {
@@ -214,9 +214,9 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
       ...selectedCells[0]!,
       rowSpan: selectedCells.length,
       vMerge: "restart" as const,
-      blocks: selectedCells.flatMap((cell): EditorBlockNode[] =>
-        cell.blocks.map((block): EditorBlockNode => cloneBlock(block)),
-      ),
+      blocks: selectedCells.flatMap((cell): EditorBlockNode[] => [
+        ...cell.blocks,
+      ]),
       ...(revision
         ? {
             style: {
@@ -381,7 +381,7 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
       {
         ...cell,
         colSpan: undefined,
-        blocks: cell.blocks.map((block): EditorBlockNode => cloneBlock(block)),
+        blocks: [...cell.blocks],
         ...(revision
           ? {
               style: {
