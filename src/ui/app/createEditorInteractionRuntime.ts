@@ -129,7 +129,6 @@ function createEditorInteractionRuntimeImpl(
     applyTransactionalState,
     applySelectionToStatePreservingStructure: (current, nextSelection) => ({
       ...current,
-      document: cloneEditorState(current).document,
       selection: nextSelection,
     }),
     focusInput,
