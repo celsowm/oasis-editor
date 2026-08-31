@@ -392,6 +392,12 @@ npm run build:lib
 - [Client API](docs/client-api.md)
 - [Plugin API](docs/plugin-api.md)
 
+## License
+
+Oasis Editor is open source software licensed under the [MIT License](LICENSE).
+Third-party dependencies and bundled assets may be distributed under their own
+licenses; see the corresponding notices in the repository and package metadata.
+
 ## Status
 
 Oasis is under active development. The public client, command, toolbar, menubar,
