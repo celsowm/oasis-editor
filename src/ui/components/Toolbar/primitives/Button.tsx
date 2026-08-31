@@ -3,6 +3,7 @@ import { ToolIcon } from "@/ui/utils/customIcons.js";
 
 export interface ToolbarButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: string;
+  trailingIcon?: string;
   label?: string;
   active?: boolean;
   tooltip?: string;
@@ -14,6 +15,7 @@ export interface ToolbarButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonE
 export function Button(props: ToolbarButtonProps): JSX.Element {
   const [local, others] = splitProps(props, [
     "icon",
+    "trailingIcon",
     "label",
     "active",
     "tooltip",
@@ -45,9 +47,14 @@ export function Button(props: ToolbarButtonProps): JSX.Element {
         <ToolIcon name={local.icon!} />
       </Show>
       <Show when={local.label}>
-        <span>{local.label}</span>
+        <span class="oasis-editor-tool-button-label">{local.label}</span>
       </Show>
       <Show when={!local.icon && !local.label}>{others.children}</Show>
+      <Show when={local.trailingIcon}>
+        <span class="oasis-editor-tool-button-trailing-icon" aria-hidden="true">
+          <ToolIcon name={local.trailingIcon!} />
+        </span>
+      </Show>
     </button>
   );
 }

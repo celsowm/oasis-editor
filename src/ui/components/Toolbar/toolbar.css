@@ -671,18 +671,27 @@
 }
 
 /* Word-style Cortar menu and nested shape/ratio flyouts. */
-.oasis-editor-image-crop-menu {
-  width: min(248px, calc(100vw - 16px));
+.oasis-editor-toolbar-dropdown-menu.oasis-editor-image-crop-panel {
+  min-width: 0;
   overflow: visible;
   padding: 4px;
 }
 
+.oasis-editor-image-crop-menu {
+  width: min(276px, calc(100vw - 16px));
+  overflow: visible;
+  padding: 2px;
+  gap: 2px;
+}
+
 .oasis-editor-image-crop-menu-row {
   width: 100%;
-  min-height: 30px;
-  display: flex;
+  min-height: 32px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 16px;
+  box-sizing: border-box;
   align-items: center;
-  gap: 8px;
+  column-gap: 8px;
   padding: 5px 8px;
   border: 0;
   border-radius: 4px;
@@ -693,20 +702,55 @@
   cursor: pointer;
 }
 
+/* The shared panel rule is declared later in this file. Keep the crop panel's
+ * compact geometry and flyout-friendly overflow more specific than that base. */
+.oasis-editor-toolbar-panel.oasis-editor-image-crop-menu {
+  width: min(276px, calc(100vw - 16px));
+  max-height: none;
+  overflow: visible;
+  padding: 2px;
+  gap: 2px;
+}
+
 .oasis-editor-image-crop-menu-row:hover,
 .oasis-editor-image-crop-menu-row:focus-visible {
   background: var(--oasis-hover-bg);
   outline: none;
 }
 
-.oasis-editor-image-crop-menu-row > [data-lucide] {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
+.oasis-editor-image-crop-menu-row {
+  justify-content: initial;
 }
 
-.oasis-editor-image-crop-menu-row .oasis-editor-dropdown-chevron {
-  margin-left: auto;
+.oasis-editor-image-crop-menu-row > [data-lucide],
+.oasis-editor-image-crop-menu-row > svg {
+  grid-column: 1;
+  width: 16px;
+  height: 16px;
+  justify-self: center;
+}
+
+.oasis-editor-image-crop-menu-row > .oasis-editor-tool-button-label {
+  grid-column: 2;
+  width: auto;
+  justify-self: stretch;
+}
+
+.oasis-editor-tool-button-trailing-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  grid-column: 3;
+  width: 16px;
+  height: 16px;
+  justify-self: end;
+  color: var(--oasis-text-muted);
+}
+
+.oasis-editor-tool-button-trailing-icon i,
+.oasis-editor-tool-button-trailing-icon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .oasis-editor-image-crop-menu-submenu-row {
@@ -716,7 +760,7 @@
 .oasis-editor-image-crop-flyout {
   position: absolute;
   top: -4px;
-  left: calc(100% + 2px);
+  left: calc(100% - 1px);
   z-index: 1001;
   width: min(320px, 70vw);
   max-height: min(60vh, 440px);
@@ -785,24 +829,16 @@
   cursor: pointer;
 }
 
-.oasis-editor-image-crop-ratios {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 4px;
-}
+@media (max-width: 720px) {
+  .oasis-editor-toolbar-dropdown-menu.oasis-editor-image-crop-panel {
+    max-width: calc(100vw - 16px);
+  }
 
-.oasis-editor-image-crop-ratio {
-  height: 28px;
-  border: 1px solid var(--oasis-toolbar-border);
-  border-radius: 4px;
-  background: transparent;
-  color: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.oasis-editor-image-crop-ratio:hover {
-  background: var(--oasis-toolbar-hover-bg, rgba(37, 99, 235, 0.12));
+  .oasis-editor-image-crop-flyout {
+    left: 0;
+    top: calc(100% - 1px);
+    width: min(320px, calc(100vw - 24px));
+  }
 }
 
 .oasis-editor-tool-color-input {

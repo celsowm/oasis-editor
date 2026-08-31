@@ -73,11 +73,12 @@ export function Menu(props: MenuProps): JSX.Element {
         <div
           onClick={(event): void => {
             // Close when an actionable button inside is clicked, but keep open
-            // for nested dropdowns and inline list-option panels.
+            // for nested menu triggers and inline list-option panels.
             const el = event.target as HTMLElement;
+            const button = el.closest("button");
             if (
-              el.closest("button") &&
-              !el.closest(".oasis-editor-tool-button-dropdown") &&
+              button &&
+              button.getAttribute("aria-haspopup") !== "menu" &&
               !el.closest(".oasis-editor-toolbar-list-options")
             ) {
               setOpen(false);

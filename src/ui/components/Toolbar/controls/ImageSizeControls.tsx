@@ -1,4 +1,4 @@
-import { For, Show, createSignal, type JSX } from "solid-js";
+import { For, Show, createSignal, createUniqueId, type JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import type { TranslationKey } from "@/i18n/index.js";
 import { NumberField } from "@/ui/public/NumberField.js";
@@ -102,6 +102,9 @@ function CropMenuRow(props: {
   icon?: string;
   onClick: () => void;
   submenu?: boolean;
+  open?: boolean;
+  submenuId?: string;
+  onHover?: () => void;
 }): JSX.Element {
   return (
     <Button
@@ -109,9 +112,14 @@ function CropMenuRow(props: {
       data-testid={props.testId}
       role="menuitem"
       aria-haspopup={props.submenu ? "menu" : undefined}
+      aria-expanded={props.submenu ? props.open : undefined}
+      aria-controls={props.submenu ? props.submenuId : undefined}
       onClick={props.onClick}
+      onMouseEnter={props.onHover}
+      onFocus={props.onHover}
       icon={props.icon}
-      label={props.submenu ? `${props.label} ›` : props.label}
+      label={props.label}
+      trailingIcon={props.submenu ? "chevron-right" : undefined}
     />
   );
 }
@@ -120,6 +128,9 @@ function CropMenuRow(props: {
 export function ImageCropMenu(props: { api: ToolbarActionApi }): JSX.Element {
   const t = useI18n();
   const locale = (): Locale => (t("locale.id") === "en" ? "en" : "pt-BR");
+  const menuId = createUniqueId();
+  const shapeSubmenuId = `${menuId}-crop-shapes`;
+  const ratioSubmenuId = `${menuId}-crop-ratios`;
   const [submenu, setSubmenu] = createSignal<"shape" | "ratio" | null>(null);
   const toggleSubmenu = (value: "shape" | "ratio"): void => {
     setSubmenu((current) => (current === value ? null : value));
@@ -140,16 +151,30 @@ export function ImageCropMenu(props: { api: ToolbarActionApi }): JSX.Element {
         onClick={(): void => apply("imageCrop")}
       />
       <div class="oasis-editor-toolbar-panel-separator" role="separator" />
-      <div class="oasis-editor-image-crop-menu-submenu-row">
+      <div
+        class="oasis-editor-image-crop-menu-submenu-row"
+        onMouseLeave={(): void => {
+          setSubmenu(null);
+        }}
+      >
         <CropMenuRow
           testId="editor-toolbar-image-crop-shape"
           icon="shapes"
           label={t("image.cropToShape")}
           submenu
+          open={submenu() === "shape"}
+          submenuId={shapeSubmenuId}
+          onHover={(): void => {
+            setSubmenu("shape");
+          }}
           onClick={(): void => toggleSubmenu("shape")}
         />
         <Show when={submenu() === "shape"}>
-          <div class="oasis-editor-image-crop-flyout" role="menu">
+          <div
+            id={shapeSubmenuId}
+            class="oasis-editor-image-crop-flyout"
+            role="menu"
+          >
             <For each={cropShapePresets()}>
               {(preset): JSX.Element => (
                 <Button
@@ -166,16 +191,27 @@ export function ImageCropMenu(props: { api: ToolbarActionApi }): JSX.Element {
           </div>
         </Show>
       </div>
-      <div class="oasis-editor-image-crop-menu-submenu-row">
+      <div
+        class="oasis-editor-image-crop-menu-submenu-row"
+        onMouseLeave={(): void => {
+          setSubmenu(null);
+        }}
+      >
         <CropMenuRow
           testId="editor-toolbar-image-crop-ratio"
           icon="ratio"
           label={t("image.cropAspectRatio")}
           submenu
+          open={submenu() === "ratio"}
+          submenuId={ratioSubmenuId}
+          onHover={(): void => {
+            setSubmenu("ratio");
+          }}
           onClick={(): void => toggleSubmenu("ratio")}
         />
         <Show when={submenu() === "ratio"}>
           <div
+            id={ratioSubmenuId}
             class="oasis-editor-image-crop-flyout oasis-editor-image-crop-ratio-flyout"
             role="menu"
           >
