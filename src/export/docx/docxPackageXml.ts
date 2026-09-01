@@ -24,6 +24,7 @@ export function buildContentTypesXml(
   hasStyles: boolean,
   hasComments: boolean,
   hasFontTable: boolean,
+  hasTheme = false,
 ): string {
   const overrides = parts
     .map((part): string => {
@@ -65,7 +66,7 @@ export function buildContentTypesXml(
     hasFontTable
       ? '<Override PartName="/word/fontTable.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml"/>'
       : ""
-  }${overrides}</Types>`;
+  }${hasTheme ? '<Override PartName="/word/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>' : ""}${overrides}</Types>`;
 }
 
 export function buildRootRelationshipsXml(): string {
@@ -83,6 +84,7 @@ export function buildDocumentRelationshipsXml(
   hasStyles: boolean,
   hasComments: boolean,
   hasFontTable: boolean,
+  hasTheme = false,
 ): string {
   let rels = "";
   if (hasStyles)
@@ -114,6 +116,9 @@ export function buildDocumentRelationshipsXml(
   }
   if (hasFontTable) {
     rels += `<Relationship Id="rIdFontTable" Type="${OFFICE_REL_NS}/fontTable" Target="fontTable.xml"/>`;
+  }
+  if (hasTheme) {
+    rels += `<Relationship Id="rIdTheme" Type="${OFFICE_REL_NS}/theme" Target="theme/theme1.xml"/>`;
   }
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${PACKAGE_REL_NS}">${rels}</Relationships>`;
 }

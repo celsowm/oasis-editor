@@ -16,6 +16,7 @@ export interface OasisPdfPage {
   imageResourceNames: Set<string>;
   shadingResourceNames: Set<string>;
   annotations: OasisPdfAnnotation[];
+  graphicsStateOpacities?: Map<string, number>;
 }
 
 /**

@@ -262,7 +262,7 @@ function projectAllPages(
 ): EditorLayoutPage[] {
   const allPages: EditorLayoutPage[] = [];
 
-  for (const section of context.sections) {
+  for (const [sectionIndex, section] of context.sections.entries()) {
     const contentWidth = getPageContentWidth(section.pageSettings);
     const sectionHeaderBlocks = projectTallestHeaderVariant(
       section,
@@ -308,6 +308,7 @@ function projectAllPages(
     }
 
     for (const page of sectionPages) {
+      page.sectionIndex = sectionIndex;
       const pageIndexInSection = page.index - sectionPageOffset;
       const pageContentWidth = getPageContentWidth(page.pageSettings);
       const headerBlocks =

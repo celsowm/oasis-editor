@@ -154,6 +154,10 @@ export type {
   EditorFootnotes,
   EditorEndnoteSettings,
   EditorEndnotes,
+  EditorDocumentDesign,
+  EditorThemeData,
+  EditorWatermark,
+  EditorPageBorder,
   EditorDocument,
 } from "./types/document.js";
 

@@ -13,6 +13,7 @@ const allowlistedFiles = new Map([
   ["src/ui/public/", "primitive implementation"],
   ["src/ui/components/Toolbar/primitives/", "toolbar primitive implementation"],
   ["src/ui/components/Toolbar/ShapeGallery.tsx", "pending gallery migration"],
+  ["src/ui/components/Toolbar/DesignGallery.tsx", "specialized design gallery"],
   ["src/ui/components/Toolbar/StyleGallery.tsx", "pending gallery migration"],
   [
     "src/ui/components/Toolbar/LineSpacingButton.tsx",

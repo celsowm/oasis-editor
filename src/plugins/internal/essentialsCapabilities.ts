@@ -1,4 +1,11 @@
-import type { EditorImageBorder, EditorPageMargins } from "@/core/model.js";
+import type {
+  EditorDocumentDesign,
+  EditorImageBorder,
+  EditorPageBorder,
+  EditorPageMargins,
+  EditorWatermark,
+} from "@/core/model.js";
+import type { DesignThemeId } from "@/core/commands/design.js";
 import type { ImageBorderPatch } from "@/core/commands/image.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
 import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
@@ -184,6 +191,22 @@ export interface EssentialsSectionCapability {
   setPageMargins: (margins: Partial<EditorPageMargins>) => void;
 }
 
+export interface EssentialsDesignCapability {
+  applyTheme: (theme: DesignThemeId) => void;
+  setColorScheme: (value: string) => void;
+  setFontScheme: (value: string) => void;
+  setParagraphSpacing: (
+    value: NonNullable<EditorDocumentDesign["paragraphSpacingId"]>,
+  ) => void;
+  setEffects: (value: string) => void;
+  setPageColor: (value: string | null) => void;
+  setWatermark: (value: EditorWatermark | null) => void;
+  setPageBorder: (value: EditorPageBorder | null) => void;
+  setDefault: () => void;
+  getDesign: () => EditorDocumentDesign | undefined;
+  getPageBorder: () => EditorPageBorder | null | undefined;
+}
+
 /** Which `w:tblLook` conditional-formatting option a toggle command controls. */
 export type TableLookFlag =
   | "firstRow"
@@ -256,4 +279,5 @@ export interface EssentialsPluginDeps {
   paragraph: EssentialsParagraphCapability;
   section: EssentialsSectionCapability;
   table: EssentialsTableCapability;
+  design: EssentialsDesignCapability;
 }

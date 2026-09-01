@@ -43,6 +43,7 @@ const TAB_LABEL_KEYS: Record<RibbonTabId, TranslationKey> = {
   file: "ribbon.tab.file",
   home: "ribbon.tab.home",
   insert: "ribbon.tab.insert",
+  design: "ribbon.tab.design",
   draw: "ribbon.tab.draw",
   layout: "ribbon.tab.layout",
   references: "ribbon.tab.references",
@@ -67,6 +68,8 @@ const GROUP_LABEL_KEYS: Record<string, TranslationKey> = {
   links: "ribbon.group.links",
   footnotes: "ribbon.group.footnotes",
   accessibility: "ribbon.group.accessibility",
+  documentFormatting: "ribbon.group.documentFormatting",
+  pageBackground: "ribbon.group.pageBackground",
   document: "ribbon.group.document",
   table: "ribbon.group.table",
   section: "ribbon.group.section",
@@ -137,6 +140,10 @@ const RIBBON_GROUP_ORDER: Partial<Record<RibbonTabId, Record<string, number>>> =
       links: 30,
       footnotes: 40,
       accessibility: 50,
+    },
+    design: {
+      documentFormatting: 10,
+      pageBackground: 20,
     },
     layout: {
       paragraph: 10,
@@ -220,6 +227,10 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
     links: { priority: 35, collapsedIcon: "link" },
     accessibility: { priority: 20, collapsedIcon: "file-text" },
     footnotes: { priority: 15, collapsedIcon: "footnote" },
+  },
+  design: {
+    documentFormatting: { priority: 10, collapsedIcon: "palette" },
+    pageBackground: { priority: 20, collapsedIcon: "paint-bucket" },
   },
   layout: {
     paragraph: { priority: 30, compactMinWidth: 112, collapsedIcon: "ruler" },

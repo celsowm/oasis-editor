@@ -323,6 +323,9 @@ export function insertSectionBreakAtSelection(
     id: newSectionId,
     blocks: [secondParagraph, ...afterBlocks],
     pageSettings: { ...section.pageSettings },
+    pageBorder: section.pageBorder
+      ? { ...section.pageBorder }
+      : section.pageBorder,
     header: section.header ? cloneBlocks(section.header) : undefined,
     footer: section.footer ? cloneBlocks(section.footer) : undefined,
     breakType: breakType,

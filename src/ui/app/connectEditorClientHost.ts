@@ -7,6 +7,10 @@ import {
   createEditorStateFromDocument,
   createInitialEditorState,
 } from "@/core/editorState.js";
+import {
+  applyDocumentTheme,
+  setDocumentDesign,
+} from "@/core/commands/design.js";
 import type { OasisEditorClientController } from "@/app/client/OasisEditorClient.js";
 import type { createEditorDocumentIO } from "@/app/controllers/useEditorDocumentIO.js";
 import type { useEditorRuntimeBootstrap } from "./useEditorRuntimeBootstrap.js";
@@ -79,7 +83,20 @@ export function connectEditorClientHost(
     },
     applyTransactionalState: deps.applyTransactionalState,
     resetDocument: (): void => {
-      deps.applyState(createInitialEditorState());
+      let next = createInitialEditorState();
+      try {
+        const raw = globalThis.localStorage?.getItem("oasis-design-default");
+        if (raw) {
+          const design = JSON.parse(
+            raw,
+          ) as import("@/core/model.js").EditorDocumentDesign;
+          if (design.themeId) next = applyDocumentTheme(next, design.themeId);
+          next = setDocumentDesign(next, design);
+        }
+      } catch {
+        // Ignore malformed preferences and keep the standard blank document.
+      }
+      deps.applyState(next);
       deps.resetEditorChromeState();
       deps.focusInput();
     },

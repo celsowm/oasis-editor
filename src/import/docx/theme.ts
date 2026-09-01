@@ -1,4 +1,5 @@
-import { DOMParser } from "@xmldom/xmldom";
+import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
+import type { EditorThemeData } from "@/core/model.js";
 import { DRAWINGML_NS, getChildrenByTagNameNS } from "./xmlHelpers.js";
 import { extractThemeFonts, type ThemeFontMap } from "./themeFonts.js";
 import { extractThemeColors, type ThemeColorMap } from "./themeColors.js";
@@ -10,6 +11,7 @@ import { extractThemeColors, type ThemeColorMap } from "./themeColors.js";
 export interface DocxImportTheme {
   fonts: ThemeFontMap;
   colors: ThemeColorMap;
+  data?: EditorThemeData;
 }
 
 /**
@@ -28,8 +30,31 @@ export function parseDocxTheme(themeXml: string | null): DocxImportTheme {
     ? (getChildrenByTagNameNS(root, DRAWINGML_NS, "themeElements")[0] ?? null)
     : null;
 
+  const fonts = extractThemeFonts(themeElements);
+  const colors = extractThemeColors(themeElements);
+  const fmtScheme = themeElements
+    ? getChildrenByTagNameNS(themeElements, DRAWINGML_NS, "fmtScheme")[0]
+    : undefined;
   return {
-    fonts: extractThemeFonts(themeElements),
-    colors: extractThemeColors(themeElements),
+    fonts,
+    colors,
+    data: {
+      name: root?.getAttribute("name") || undefined,
+      colors: { ...colors },
+      fonts: {
+        major: Object.fromEntries(
+          Object.entries(fonts).filter(([key]) => key.startsWith("major")),
+        ),
+        minor: Object.fromEntries(
+          Object.entries(fonts).filter(([key]) => key.startsWith("minor")),
+        ),
+      },
+      effectsXml: fmtScheme
+        ? Array.from(fmtScheme.childNodes)
+            .map((child) => new XMLSerializer().serializeToString(child))
+            .join("")
+        : undefined,
+      sourceXml: themeXml,
+    },
   };
 }

@@ -147,7 +147,15 @@ export async function exportEditorDocumentToPdf(
     const width = Math.max(1, pxToPt(page.pageSettings.width));
     const height = Math.max(1, pxToPt(page.pageSettings.height));
     const pageIndex = writer.addPage({ width, height });
-    drawPageBackground(writer, pageIndex, width, height);
+    await drawPageBackground(
+      writer,
+      pageIndex,
+      width,
+      height,
+      document.design,
+      document.sections?.[page.sectionIndex ?? 0]?.pageBorder,
+      document,
+    );
 
     const originX =
       page.pageSettings.margins.left + page.pageSettings.margins.gutter;
@@ -264,7 +272,15 @@ export async function exportEditorDocumentToPdf(
 
   if (writer.getPageCount() === 0) {
     const pageIndex = writer.addPage({ width: 612, height: 792 });
-    drawPageBackground(writer, pageIndex, 612, 792);
+    await drawPageBackground(
+      writer,
+      pageIndex,
+      612,
+      792,
+      document.design,
+      undefined,
+      document,
+    );
   }
 
   return writer.toArrayBuffer();

@@ -49,6 +49,58 @@ async function readZipText(buffer: ArrayBuffer, path: string): Promise<string> {
 }
 
 describe("DOCX export", () => {
+  it("serializes the complete design theme, page border and image watermark", async () => {
+    const document = createEditorDocument([createEditorParagraph("Design")]);
+    document.design = {
+      themeId: "ion",
+      colorSchemeId: "warm",
+      fontSchemeId: "georgia",
+      effectsId: "intense",
+      pageColor: "#fef3c7",
+      watermark: {
+        kind: "image",
+        src: "data:image/png;base64,AAAA",
+        opacity: 0.35,
+        rotation: -30,
+        scale: 1.2,
+      },
+    };
+    document.sections![0]!.pageBorder = {
+      style: "double",
+      color: "#9a3412",
+      width: 2,
+      distance: 18,
+    };
+
+    const buffer = await exportEditorDocumentToDocx(document);
+    const zip = await JSZip.loadAsync(buffer);
+    const themeXml = await zip.file("word/theme/theme1.xml")?.async("string");
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+    const headerPaths = Object.keys(zip.files).filter((path) =>
+      /^word\/header\d+\.xml$/.test(path),
+    );
+    expect(themeXml).toContain('name="Ion"');
+    expect(themeXml).toContain('val="ED7D31"');
+    expect(documentXml).toContain('<w:background w:color="FEF3C7"/>');
+    expect(documentXml).toContain('<w:pgBorders w:offsetFrom="page">');
+    expect(headerPaths.length).toBeGreaterThan(0);
+    const headerPath = headerPaths[0]!;
+    expect(await zip.file(headerPath)?.async("string")).toContain(
+      '<v:imagedata r:id="rIdWatermark"',
+    );
+    expect(
+      await zip
+        .file(`word/_rels/${headerPath.slice("word/".length)}.rels`)
+        ?.async("string"),
+    ).toContain("watermark.png");
+    expect(zip.file("word/media/watermark.png")).toBeTruthy();
+
+    const imported = await importDocxToEditorDocument(buffer);
+    expect(imported.design?.pageColor).toBe("#FEF3C7");
+    expect(imported.design?.watermark?.kind).toBe("image");
+    expect(imported.sections?.[0]?.pageBorder?.style).toBe("double");
+  });
+
   it("serializes image captions as Word SEQ fields", async () => {
     const imageParagraph = createEditorParagraphFromRuns([
       {

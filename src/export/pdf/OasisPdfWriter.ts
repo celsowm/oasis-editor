@@ -79,6 +79,7 @@ export class OasisPdfWriter {
       imageResourceNames: new Set(),
       shadingResourceNames: new Set(),
       annotations: [],
+      graphicsStateOpacities: new Map(),
     };
     this.pages.push(page);
     this.streams.push(
@@ -109,6 +110,10 @@ export class OasisPdfWriter {
 
   restoreGraphicsState(pageIndex: number): void {
     this.streams[pageIndex]?.restoreGraphicsState();
+  }
+
+  setOpacity(pageIndex: number, opacity: number): void {
+    this.streams[pageIndex]?.setOpacity(opacity);
   }
 
   rotateAbout(

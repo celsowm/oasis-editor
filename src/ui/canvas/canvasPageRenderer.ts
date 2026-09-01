@@ -47,6 +47,7 @@ export function createCanvasPageRenderer(options: {
 }): CanvasPageRenderer {
   let lastPaintedPage: EditorLayoutPage | undefined;
   let lastStyles: unknown;
+  let lastDesign: unknown;
   let lastShowMargins: boolean | undefined;
   let lastShowParagraphMarks: boolean | undefined;
   let lastActiveZone: EditorEditingZone | undefined;
@@ -54,6 +55,8 @@ export function createCanvasPageRenderer(options: {
   let lastWidth = 0;
   let lastHeight = 0;
   let lastDpr = 0;
+  let watermarkImage: HTMLImageElement | undefined;
+  let watermarkImageSrc: string | undefined;
   let rafHandle: number | null = null;
 
   const schedulePaint = (): void => {
@@ -85,6 +88,7 @@ export function createCanvasPageRenderer(options: {
     const page = options.getPage();
     const state = options.getState();
     const styles = state.document.styles;
+    const design = state.document.design;
     const showMargins = state.showMargins;
     const showParagraphMarks = state.showParagraphMarks;
     const activeZone = state.activeZone ?? "main";
@@ -92,6 +96,7 @@ export function createCanvasPageRenderer(options: {
     if (
       page === lastPaintedPage &&
       styles === lastStyles &&
+      design === lastDesign &&
       showMargins === lastShowMargins &&
       showParagraphMarks === lastShowParagraphMarks &&
       activeZone === lastActiveZone &&
@@ -101,6 +106,7 @@ export function createCanvasPageRenderer(options: {
     }
     lastPaintedPage = page;
     lastStyles = styles;
+    lastDesign = design;
     lastShowMargins = showMargins;
     lastShowParagraphMarks = showParagraphMarks;
     lastActiveZone = activeZone;
@@ -120,8 +126,72 @@ export function createCanvasPageRenderer(options: {
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = design?.pageColor || "#ffffff";
     ctx.fillRect(0, 0, width, height);
+
+    const watermark = design?.watermark;
+    if (watermark) {
+      ctx.save();
+      ctx.translate(width / 2, height / 2);
+      ctx.rotate(((watermark.rotation ?? -45) * Math.PI) / 180);
+      ctx.globalAlpha = Math.max(0, Math.min(1, watermark.opacity ?? 0.25));
+      ctx.fillStyle = watermark.color ?? "#94a3b8";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      if (
+        watermark.kind === "image" &&
+        watermark.src &&
+        typeof Image !== "undefined"
+      ) {
+        if (watermarkImageSrc !== watermark.src) {
+          watermarkImageSrc = watermark.src;
+          watermarkImage = new Image();
+          watermarkImage.onload = (): void => {
+            invalidatePage();
+            schedulePaint();
+          };
+          watermarkImage.src = watermark.src;
+        }
+        if (watermarkImage?.complete && watermarkImage.naturalWidth > 0) {
+          const scale = watermark.scale ?? 1;
+          ctx.drawImage(
+            watermarkImage,
+            (-watermarkImage.naturalWidth * scale) / 2,
+            (-watermarkImage.naturalHeight * scale) / 2,
+            watermarkImage.naturalWidth * scale,
+            watermarkImage.naturalHeight * scale,
+          );
+        }
+      } else {
+        ctx.font = `${watermark.fontSize ?? 48}px ${watermark.fontFamily ?? "Arial"}`;
+        ctx.fillText(watermark.text ?? "", 0, 0);
+      }
+      ctx.restore();
+    }
+
+    const section =
+      state.document.sections?.[
+        page.sectionIndex ?? state.activeSectionIndex ?? 0
+      ];
+    if (section?.pageBorder) {
+      const border = section.pageBorder;
+      ctx.save();
+      ctx.strokeStyle = border.color;
+      ctx.lineWidth = Math.max(1, border.width);
+      if (border.style === "dashed") ctx.setLineDash([8, 5]);
+      if (border.style === "dotted") ctx.setLineDash([2, 4]);
+      ctx.strokeRect(
+        border.distance ?? 12,
+        border.distance ?? 12,
+        width - 2 * (border.distance ?? 12),
+        height - 2 * (border.distance ?? 12),
+      );
+      if (border.style === "double") {
+        const d = (border.distance ?? 12) + border.width * 2;
+        ctx.strokeRect(d, d, width - 2 * d, height - 2 * d);
+      }
+      ctx.restore();
+    }
 
     const marginX =
       page.pageSettings.margins.left + page.pageSettings.margins.gutter;

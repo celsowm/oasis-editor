@@ -113,7 +113,13 @@ function serializeSectionPropertiesWithReferences(
   // w:bidi — right-to-left section layout (on/off element).
   const bidiXml = section.bidi ? "<w:bidi/>" : "";
 
-  return `<w:sectPr>${referencesXml}${titlePageXml}${typeXml}<w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/>${pgNumTypeXml}${columnsXml}${vAlignXml}${bidiXml}</w:sectPr>`;
+  const border = section.pageBorder;
+  const borderColor = border?.color.replace("#", "").toUpperCase();
+  const borderXml = border
+    ? `<w:pgBorders w:offsetFrom="page"><w:top w:val="${border.style}" w:sz="${Math.max(1, Math.round(border.width * 8))}" w:space="${Math.max(0, Math.round(border.distance ?? 0))}" w:color="${borderColor}"/><w:left w:val="${border.style}" w:sz="${Math.max(1, Math.round(border.width * 8))}" w:space="${Math.max(0, Math.round(border.distance ?? 0))}" w:color="${borderColor}"/><w:bottom w:val="${border.style}" w:sz="${Math.max(1, Math.round(border.width * 8))}" w:space="${Math.max(0, Math.round(border.distance ?? 0))}" w:color="${borderColor}"/><w:right w:val="${border.style}" w:sz="${Math.max(1, Math.round(border.width * 8))}" w:space="${Math.max(0, Math.round(border.distance ?? 0))}" w:color="${borderColor}"/></w:pgBorders>`
+    : "";
+
+  return `<w:sectPr>${referencesXml}${titlePageXml}${typeXml}<w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/>${pgNumTypeXml}${columnsXml}${vAlignXml}${bidiXml}${borderXml}</w:sectPr>`;
 }
 
 export function buildDocumentXml(
@@ -140,7 +146,11 @@ export function buildDocumentXml(
     })
     .join("");
 
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${DOCUMENT_XMLNS}><w:body>${sectionsXml}</w:body></w:document>`;
+  const pageColor = document.design?.pageColor?.replace("#", "").toUpperCase();
+  const backgroundXml = pageColor
+    ? `<w:background w:color="${pageColor}"/>`
+    : "";
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${DOCUMENT_XMLNS}>${backgroundXml}<w:body>${sectionsXml}</w:body></w:document>`;
 }
 
 export function buildHeaderFooterXml(
@@ -148,7 +158,16 @@ export function buildHeaderFooterXml(
   blocks: EditorBlockNode[],
   context: DocContext,
   styles: Record<string, EditorNamedStyle> | undefined,
+  watermark?: import("@/core/model.js").EditorWatermark | null,
 ): string {
   const tag = kind === "header" ? "hdr" : "ftr";
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:${tag} ${DOCUMENT_XMLNS}>${serializeBlocksXml(blocks, context, styles)}</w:${tag}>`;
+  const mark =
+    kind === "header" && watermark?.kind === "text" && watermark.text
+      ? `<w:pict xmlns:v="urn:schemas-microsoft-com:vml"><v:shape type="#_x0000_t136" style="position:absolute;margin-left:0;margin-top:0;width:468pt;height:216pt;z-index:-251654144;rotation:${watermark.rotation ?? -45}" fillcolor="${watermark.color ?? "#94a3b8"}" fillopacity="${watermark.opacity ?? 0.25}"><v:textpath on="true" string="${escapeXml(watermark.text)}" style="font-family:${escapeXml(watermark.fontFamily ?? "Arial")};font-size:${watermark.fontSize ?? 48}pt"/></v:shape></w:pict>`
+      : kind === "header" &&
+          watermark?.kind === "image" &&
+          context.images.some((image) => image.runId === "__watermark")
+        ? `<w:pict xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><v:shape type="#_x0000_t75" style="position:absolute;margin-left:0;margin-top:0;width:468pt;height:216pt;z-index:-251654144;rotation:${watermark.rotation ?? -45}" fillcolor="${watermark.color ?? "#ffffff"}" fillopacity="${watermark.opacity ?? 0.25}" stroked="f"><v:imagedata r:id="rIdWatermark" o:title="Watermark"/></v:shape></w:pict>`
+        : "";
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:${tag} ${DOCUMENT_XMLNS}>${mark}${serializeBlocksXml(blocks, context, styles)}</w:${tag}>`;
 }

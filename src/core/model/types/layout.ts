@@ -105,6 +105,8 @@ export interface TableCellBlockPosition {
 export interface EditorLayoutPage {
   id: string;
   index: number;
+  /** Source section used for page-level design decorations. */
+  sectionIndex?: number;
   height: number;
   maxHeight: number;
   blocks: EditorLayoutBlock[];

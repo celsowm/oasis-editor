@@ -12,6 +12,11 @@ import { TableStyleGallery } from "@/ui/components/Toolbar/TableStyleGallery.js"
 import { TableStyleOptions } from "@/ui/components/Toolbar/TableStyleOptions.js";
 import { TableBordersMenu } from "@/ui/components/Toolbar/TableBordersMenu.js";
 import {
+  DesignGallery,
+  DesignPageBorderPanel,
+  DesignWatermarkPanel,
+} from "@/ui/components/Toolbar/DesignGallery.js";
+import {
   ImageSizeField,
   ImageCropMenu,
 } from "@/ui/components/Toolbar/controls/ImageSizeControls.js";
@@ -36,6 +41,77 @@ import {
  */
 export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   const items: ToolbarItem[] = [];
+
+  // --- Design ---
+  items.push({
+    type: "menu",
+    id: "editor-toolbar-design-themes",
+    testId: "editor-toolbar-design-themes",
+    tab: "design",
+    group: "documentFormatting",
+    row: 1,
+    ribbonSize: "large",
+    iconName: "palette",
+    label: t("design.themes"),
+    tooltip: t("design.themes"),
+    panelClass: "oasis-editor-design-gallery-panel",
+    content: { kind: "custom", render: (api) => DesignGallery({ api }) },
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-design-default",
+    testId: "editor-toolbar-design-default",
+    tab: "design",
+    group: "documentFormatting",
+    row: 2,
+    iconName: "check",
+    label: t("design.setDefault"),
+    tooltip: t("design.setDefault"),
+    command: "setDocumentDesignDefault",
+  });
+  items.push({
+    type: "menu",
+    id: "editor-toolbar-design-watermark",
+    testId: "editor-toolbar-design-watermark",
+    tab: "design",
+    group: "pageBackground",
+    row: 1,
+    iconName: "droplets",
+    label: t("design.watermark"),
+    tooltip: t("design.watermark"),
+    panelClass: "oasis-editor-design-background-panel-wrap",
+    content: { kind: "custom", render: (api) => DesignWatermarkPanel({ api }) },
+  });
+  items.push({
+    type: "colorPicker",
+    id: "editor-toolbar-design-page-color",
+    testId: "editor-toolbar-design-page-color",
+    tab: "design",
+    group: "pageBackground",
+    row: 1,
+    kind: "shading",
+    command: "setDocumentPageColor",
+    defaultValue: "#ffffff",
+    label: t("design.pageColor"),
+    tooltip: t("design.pageColor"),
+    ribbonSize: "large",
+  });
+  items.push({
+    type: "menu",
+    id: "editor-toolbar-design-page-borders",
+    testId: "editor-toolbar-design-page-borders",
+    tab: "design",
+    group: "pageBackground",
+    row: 2,
+    iconName: "frame",
+    label: t("design.pageBorders"),
+    tooltip: t("design.pageBorders"),
+    panelClass: "oasis-editor-design-background-panel-wrap",
+    content: {
+      kind: "custom",
+      render: (api) => DesignPageBorderPanel({ api }),
+    },
+  });
 
   // --- File ---
   items.push({

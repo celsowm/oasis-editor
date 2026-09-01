@@ -14,6 +14,25 @@ import { createTranslator } from "@/i18n/index.js";
 const t = createTranslator(() => "pt-BR");
 
 describe("UI registries", () => {
+  it("exposes the visual Design gallery and background editors", () => {
+    const items = createDefaultToolbarPreset(t);
+    const design = items.filter((item) => item.tab === "design");
+    expect(design.map((item) => item.id)).toEqual([
+      "editor-toolbar-design-themes",
+      "editor-toolbar-design-default",
+      "editor-toolbar-design-watermark",
+      "editor-toolbar-design-page-color",
+      "editor-toolbar-design-page-borders",
+    ]);
+    const themes = design.find(
+      (item) => item.id === "editor-toolbar-design-themes",
+    );
+    expect(themes?.type).toBe("menu");
+    expect(themes && themes.type === "menu" && themes.content.kind).toBe(
+      "custom",
+    );
+  });
+
   it("deduplicates and orders toolbar items", () => {
     const registry = createToolbarRegistry();
 
@@ -178,8 +197,7 @@ describe("UI registries", () => {
       OASIS_TOOLBAR_ITEMS.exportPdf,
     ]);
     expect(
-      fileItems.map((item) =>
-        ("labelKey" in item ? item.labelKey : undefined)),
+      fileItems.map((item) => ("labelKey" in item ? item.labelKey : undefined)),
     ).toEqual([
       "toolbar.newDocument",
       "toolbar.importDocx",

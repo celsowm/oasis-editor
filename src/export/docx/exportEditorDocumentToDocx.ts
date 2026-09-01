@@ -41,6 +41,7 @@ import { buildNumberingContext, buildNumberingXml } from "./docxNumbering.js";
 import { visitBlocks } from "./docxBlockVisitor.js";
 import { buildDocumentXml, buildHeaderFooterXml } from "./docxDocumentXml.js";
 import { renumberImageCaptionsInDocument } from "@/core/document/imageCaptions.js";
+import { buildThemeXml } from "./themeXml.js";
 
 function buildPartContext(
   blocks: EditorBlockNode[],
@@ -140,6 +141,27 @@ function buildPartContext(
   };
 }
 
+function watermarkImageEntry(
+  document: EditorDocument,
+): DocContext["images"][number] | undefined {
+  const watermark = document.design?.watermark;
+  if (watermark?.kind !== "image" || !watermark.src) return undefined;
+  const resolved = resolveImageSrc(document, watermark.src);
+  const match = resolved.match(/^data:([^;,]+);base64,(.*)$/);
+  if (!match) return undefined;
+  const ext = imageExtensionFromMime(match[1]!);
+  if (!ext) return undefined;
+  return {
+    rId: "rIdWatermark",
+    runId: "__watermark",
+    kind: "embedded",
+    target: `media/watermark.${ext}`,
+    base64: match[2],
+    cx: 1,
+    cy: 1,
+  };
+}
+
 // Writes a notes part (footnotes or endnotes) and its relationships file when
 // images or hyperlinks are present. Avoids duplicating the identical block for
 // footnotes and endnotes inside exportEditorDocumentToDocx.
@@ -176,6 +198,7 @@ export async function exportEditorDocumentToDocx(
     nextTextBoxDocPrId: 1000001,
   };
   const sections = getDocumentSections(document);
+  const watermarkImage = watermarkImageEntry(document);
 
   // Footnotes: assign DOCX `w:id` values in reading order so reference runs
   // and body entries stay in sync. Bodies that aren't referenced are dropped.
@@ -229,9 +252,14 @@ export async function exportEditorDocumentToDocx(
       type: "default" | "first" | "even",
       blocks: EditorBlockNode[] | undefined,
     ): void => {
-      if (!blocks || blocks.length === 0) {
+      if (
+        (!blocks || blocks.length === 0) &&
+        !(kind === "header" && document.design?.watermark?.kind === "text") &&
+        !(kind === "header" && watermarkImage !== undefined)
+      ) {
         return;
       }
+      const partBlocks = blocks ?? [];
       const partIndex = kind === "header" ? nextHeaderIndex : nextFooterIndex;
       const relPrefix = kind === "header" ? "Header" : "Footer";
       const path = `${kind}${partIndex}.xml`;
@@ -239,14 +267,17 @@ export async function exportEditorDocumentToDocx(
       // Footnote/endnote references in headers/footers must use the same
       // numeric ids as the body so they resolve to the correct note bodies.
       const context = annotateContext(
-        buildPartContext(blocks, numberingContext, buildState, document),
+        buildPartContext(partBlocks, numberingContext, buildState, document),
       );
+      if (kind === "header" && watermarkImage) {
+        context.images.push({ ...watermarkImage });
+      }
       parts.push({
         kind,
         type,
         path,
         relId,
-        blocks,
+        blocks: partBlocks,
         context,
       });
       const referenceKey = kind === "header" ? "header" : "footer";
@@ -328,6 +359,7 @@ export async function exportEditorDocumentToDocx(
   const hasStyles =
     document.styles != null && Object.keys(document.styles).length > 0;
   const hasFontTable = (document.fontTable?.length ?? 0) > 0;
+  const hasTheme = document.design !== undefined;
 
   zip.file(
     "[Content_Types].xml",
@@ -341,6 +373,7 @@ export async function exportEditorDocumentToDocx(
       hasStyles,
       hasComments,
       hasFontTable,
+      hasTheme,
     ),
   );
   zip.file("_rels/.rels", buildRootRelationshipsXml());
@@ -370,7 +403,8 @@ export async function exportEditorDocumentToDocx(
     hasFootnotes ||
     hasEndnotes ||
     hasComments ||
-    hasFontTable
+    hasFontTable ||
+    hasTheme
   ) {
     zip.file(
       "word/_rels/document.xml.rels",
@@ -385,12 +419,17 @@ export async function exportEditorDocumentToDocx(
         hasStyles,
         hasComments,
         hasFontTable,
+        hasTheme,
       ),
     );
   }
 
   if (hasFontTable) {
     zip.file("word/fontTable.xml", buildFontTableXml(document.fontTable!));
+  }
+
+  if (hasTheme) {
+    zip.file("word/theme/theme1.xml", buildThemeXml(document.design));
   }
 
   if (hasDocumentSettings) {
@@ -420,6 +459,7 @@ export async function exportEditorDocumentToDocx(
         part.blocks,
         part.context,
         document.styles,
+        document.design?.watermark,
       ),
     );
     if (part.context.images.length > 0 || part.context.hyperlinks.length > 0) {

@@ -18,6 +18,7 @@ import {
   yieldToEventLoop,
 } from "./xmlHelpers.js";
 import { createAssetRegistry } from "./assetRegistry.js";
+import { loadEmbeddedImage } from "./runs/relationships.js";
 import {
   parseRelationshipsXml,
   loadPartRelationships,
@@ -85,6 +86,7 @@ export async function importDocxToEditorDocument(
   );
   const themeXml =
     (await zip.file("word/theme/theme1.xml")?.async("string")) ?? null;
+  const importedThemePresent = themeXml !== null;
   const theme = parseDocxTheme(themeXml);
   const importedStyles = parseImportedStyles(stylesXml, theme);
   options.onProgress?.("parsing-document");
@@ -92,6 +94,17 @@ export async function importDocxToEditorDocument(
     documentXml,
     "application/xml",
   );
+  const background = document.documentElement
+    ? getFirstChildByTagNameNS(
+        document.documentElement as XmlElement,
+        WORD_NS,
+        "background",
+      )
+    : null;
+  const importedPageColor =
+    background?.getAttribute("w:color") ??
+    background?.getAttributeNS(WORD_NS, "color") ??
+    null;
   const body = document.getElementsByTagNameNS(WORD_NS, "body")[0];
 
   if (!body) {
@@ -103,6 +116,8 @@ export async function importDocxToEditorDocument(
   // Single registry shared across body, headers and footers so identical
   // images referenced from multiple places dedupe to one stored payload.
   const assets = createAssetRegistry();
+  let importedWatermark: import("@/core/model.js").EditorWatermark | null =
+    null;
 
   // Parse body into sections separated by sectPr elements
   const sectionProps: SectionProperties[] = [];
@@ -306,6 +321,53 @@ export async function importDocxToEditorDocument(
       if (!zipPath.startsWith("word/")) zipPath = `word/${target}`;
       const xml = await zip.file(zipPath)?.async("string");
       const partRelsMap = await loadPartRelationships(zip, zipPath);
+      if (!importedWatermark && xml) {
+        const textMatch = xml.match(/<v:textpath[^>]*string="([^"]+)"/i);
+        const shapeMatch = xml.match(/<v:shape\b([^>]*)>/i);
+        const shapeAttrs = shapeMatch?.[1] ?? "";
+        const readAttr = (name: string): string | undefined =>
+          shapeAttrs.match(new RegExp(`${name}="([^"]+)"`, "i"))?.[1];
+        const decodeXmlText = (value: string): string =>
+          value
+            .replace(/&quot;/g, '"')
+            .replace(/&apos;/g, "'")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&amp;/g, "&");
+        if (textMatch?.[1]) {
+          importedWatermark = {
+            kind: "text",
+            text: decodeXmlText(textMatch[1]),
+            color: readAttr("fillcolor"),
+            opacity: Number(readAttr("fillopacity")) || undefined,
+            rotation: Number(readAttr("rotation")) || undefined,
+          };
+        } else {
+          const imageRel = xml.match(
+            /<v:imagedata[^>]*(?:r:id|id)="([^"]+)"/i,
+          )?.[1];
+          const imageTarget = imageRel ? partRelsMap.get(imageRel) : undefined;
+          if (imageTarget) {
+            const resolvedImageTarget = imageTarget.startsWith("../")
+              ? `word/${imageTarget.slice(3)}`
+              : imageTarget;
+            const src = await loadEmbeddedImage(
+              zip,
+              assets,
+              resolvedImageTarget,
+            );
+            if (src) {
+              importedWatermark = {
+                kind: "image",
+                src,
+                color: readAttr("fillcolor"),
+                opacity: Number(readAttr("fillopacity")) || undefined,
+                rotation: Number(readAttr("rotation")) || undefined,
+              };
+            }
+          }
+        }
+      }
       const partBlocks = await parseHeaderFooterXml(
         xml ?? null,
         numberingMaps,
@@ -376,6 +438,7 @@ export async function importDocxToEditorDocument(
           ? blocks
           : [createEditorParagraphFromRuns([{ text: "" }])],
       pageSettings,
+      ...(props.pageBorder ? { pageBorder: props.pageBorder } : {}),
       header: header.length > 0 ? header : undefined,
       firstPageHeader: firstPageHeader.length > 0 ? firstPageHeader : undefined,
       evenPageHeader: evenPageHeader.length > 0 ? evenPageHeader : undefined,
@@ -478,12 +541,33 @@ export async function importDocxToEditorDocument(
         section.breakType !== undefined ||
         section.pageNumbering !== undefined ||
         section.verticalAlignment !== undefined ||
-        section.bidi !== undefined,
+        section.bidi !== undefined ||
+        section.pageBorder !== undefined,
     );
 
   const hasAssets = Object.keys(assets.assets).length > 0;
 
   const finalize = (doc: EditorDocument): EditorDocument => {
+    if (importedThemePresent) {
+      const themeName = theme.data?.name?.toLowerCase() ?? "";
+      const knownTheme = (
+        ["oasis", "office", "facet", "integral", "ion", "retrospect"] as const
+      ).find((id) => themeName.includes(id));
+      doc.design = {
+        ...(doc.design ?? {}),
+        ...(knownTheme ? { themeId: knownTheme } : {}),
+        ...(theme.data ? { themeData: theme.data } : {}),
+      };
+    }
+    if (importedPageColor) {
+      doc.design = {
+        ...(doc.design ?? {}),
+        pageColor: `#${importedPageColor.replace(/^#/, "")}`,
+      };
+    }
+    if (importedWatermark) {
+      doc.design = { ...(doc.design ?? {}), watermark: importedWatermark };
+    }
     const settingsPatch: NonNullable<EditorDocument["settings"]> = {};
     if (docSettings.defaultTabStop !== undefined)
       settingsPatch.defaultTabStop = docSettings.defaultTabStop;

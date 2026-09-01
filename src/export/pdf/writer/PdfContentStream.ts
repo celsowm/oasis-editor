@@ -187,6 +187,13 @@ export class PdfContentStream {
     this.page.commands.push("Q");
   }
 
+  setOpacity(opacity: number): void {
+    const clamped = Math.max(0, Math.min(1, opacity));
+    const name = `GSOpacity${Math.round(clamped * 100)}`;
+    (this.page.graphicsStateOpacities ??= new Map()).set(name, clamped);
+    this.page.commands.push(`/${name} gs`);
+  }
+
   // Concatenates a clockwise rotation (in degrees, matching the canvas/editor
   // convention) about a top-left-origin point onto the current CTM. Must sit
   // inside a saveGraphicsState/restoreGraphicsState pair.

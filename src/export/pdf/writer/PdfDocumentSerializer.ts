@@ -160,6 +160,19 @@ export function serializePdfDocument(
   const { resourceXml: fontResourceXml } = fonts.buildFontObjects(addObject);
   const imageObjectIds = images.buildImageObjects(addObject);
   const shadingObjectIds = shadings.buildShadingObjects(addObject);
+  const graphicsStateObjectIds = new Map<string, number>();
+  for (const page of pages) {
+    for (const [name, opacity] of page.graphicsStateOpacities ?? []) {
+      if (!graphicsStateObjectIds.has(name)) {
+        graphicsStateObjectIds.set(
+          name,
+          addObject(
+            `<< /Type /ExtGState /ca ${formatNumber(opacity)} /CA ${formatNumber(opacity)} >>`,
+          ),
+        );
+      }
+    }
+  }
   const pageObjectIds: number[] = [];
 
   for (const page of pages) {
@@ -184,6 +197,14 @@ export function serializePdfDocument(
       .join(" ");
     const shadingResourceDictXml = shadingResourceXml
       ? ` /Shading << ${shadingResourceXml} >>`
+      : "";
+    const graphicsStateResourceXml = Array.from(
+      page.graphicsStateOpacities?.keys() ?? [],
+    )
+      .map((name) => `/${name} ${graphicsStateObjectIds.get(name)} 0 R`)
+      .join(" ");
+    const graphicsStateDictXml = graphicsStateResourceXml
+      ? ` /ExtGState << ${graphicsStateResourceXml} >>`
       : "";
     const annotationObjectIds = page.annotations.map((annotation): number => {
       // PDF annotation rects are in default user space (bottom-left origin), so
@@ -215,7 +236,7 @@ export function serializePdfDocument(
         "<< /Type /Page",
         `/Parent ${pagesObjectId} 0 R`,
         `/MediaBox [0 0 ${formatNumber(page.width)} ${formatNumber(page.height)}]`,
-        `/Resources << /Font << ${fontResourceXml} >>${xObjectResourceXml}${shadingResourceDictXml} >>`,
+        `/Resources << /Font << ${fontResourceXml} >>${xObjectResourceXml}${shadingResourceDictXml}${graphicsStateDictXml} >>`,
         `/Contents ${contentObjectId} 0 R${annotsXml}`,
         ">>",
       ].join("\n"),

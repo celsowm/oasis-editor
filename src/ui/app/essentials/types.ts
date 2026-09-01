@@ -5,8 +5,10 @@ import type { createEditorCommandsController } from "@/app/controllers/EditorCom
 import type { createEditorHistoryActions } from "@/app/controllers/useEditorHistoryActions.js";
 import type { createEditorStyleController } from "@/app/controllers/useEditorStyle.js";
 import type { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
+import type { EssentialsDesignCapability } from "@/plugins/internal/essentialsCapabilities.js";
 
 export interface CreateEditorEssentialsPluginOptions {
+  design?: EssentialsDesignCapability;
   state: () => EditorState;
   isReadOnly: () => boolean;
   forcePlainTextPaste: {

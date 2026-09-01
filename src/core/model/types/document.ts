@@ -51,6 +51,51 @@ export interface EditorPageSettings {
   columns?: EditorColumnsSettings;
 }
 
+/** Document-wide visual design selected from the Design ribbon. */
+export interface EditorDocumentDesign {
+  themeId?: "oasis" | "office" | "facet" | "integral" | "ion" | "retrospect";
+  colorSchemeId?: string;
+  fontSchemeId?: string;
+  paragraphSpacingId?: "compact" | "tight" | "open" | "relaxed";
+  effectsId?: string;
+  /** Concrete OOXML theme data used to rebuild theme1.xml. */
+  themeData?: EditorThemeData;
+  pageColor?: string | null;
+  watermark?: EditorWatermark | null;
+}
+
+export interface EditorThemeData {
+  name?: string;
+  colors?: Record<string, string>;
+  fonts?: {
+    major?: Record<string, string>;
+    minor?: Record<string, string>;
+  };
+  /** Theme format/effect markup retained for features not rendered by Oasis. */
+  effectsXml?: string;
+  /** Original theme XML, used until the user explicitly changes theme data. */
+  sourceXml?: string;
+}
+
+export interface EditorWatermark {
+  kind: "text" | "image";
+  text?: string;
+  src?: string;
+  color?: string;
+  opacity?: number;
+  rotation?: number;
+  scale?: number;
+  fontFamily?: string;
+  fontSize?: number;
+}
+
+export interface EditorPageBorder {
+  style: "single" | "double" | "dashed" | "dotted";
+  color: string;
+  width: number;
+  distance?: number;
+}
+
 /**
  * Page numbering settings for a section (`w:pgNumType`). Preserved for
  * round-trip; `start` is intended to seed PAGE-field numbering in a future
@@ -79,6 +124,7 @@ export interface EditorSection {
   id: string;
   blocks: EditorBlockNode[];
   pageSettings: EditorPageSettings;
+  pageBorder?: EditorPageBorder | null;
   header?: EditorBlockNode[];
   firstPageHeader?: EditorBlockNode[];
   evenPageHeader?: EditorBlockNode[];
@@ -160,6 +206,7 @@ export interface EditorDocument {
   schemaVersion?: number;
   id: string;
   pageSettings?: EditorPageSettings;
+  design?: EditorDocumentDesign;
   sections?: EditorSection[];
   styles?: Record<string, EditorNamedStyle>;
   settings?: {

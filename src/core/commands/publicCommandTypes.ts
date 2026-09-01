@@ -2,7 +2,12 @@ import type { CommandRef } from "./CommandRef.js";
 import type { EditorPageMargins } from "@/core/model.js";
 import type { TextCaseMode } from "./text.js";
 import type { TableBorderPreset } from "./table.js";
-import type { EditorMathExpression } from "@/core/model.js";
+import type {
+  EditorMathExpression,
+  EditorPageBorder,
+  EditorWatermark,
+} from "@/core/model.js";
+import type { DesignThemeId } from "./design.js";
 
 /** Payload for the `insertTable` command. */
 export interface InsertTablePayload {
@@ -120,6 +125,15 @@ export interface OasisCommandPayloads {
   sectionBreakNextPage: undefined;
   sectionBreakContinuous: undefined;
   setPageMargins: SetPageMarginsPayload;
+  applyDocumentTheme: DesignThemeId;
+  setDocumentColorScheme: string;
+  setDocumentFontScheme: string;
+  setDocumentParagraphSpacing: "compact" | "tight" | "open" | "relaxed";
+  setDocumentEffects: string;
+  setDocumentPageColor: string | null;
+  setDocumentWatermark: EditorWatermark | null;
+  setDocumentPageBorder: EditorPageBorder | null;
+  setDocumentDesignDefault: undefined;
   tableContext: undefined;
   tableMerge: undefined;
   tableSplit: undefined;

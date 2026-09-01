@@ -2533,6 +2533,223 @@
   color: var(--oasis-ribbon-text);
 }
 
+/* Document Design gallery: intentionally uses ribbon/chrome tokens so the
+ * dark interface never leaks into the page rendered on canvas or PDF. */
+.oasis-editor-design-gallery-panel {
+  z-index: 1300;
+  width: min(650px, calc(100vw - 16px));
+  max-height: min(520px, calc(100vh - 88px));
+  overflow: auto;
+  padding: 10px;
+  box-sizing: border-box;
+  color: var(--oasis-ribbon-text, #222);
+  background: var(--oasis-ribbon-panel-bg, #fff);
+  border: 1px solid var(--oasis-ribbon-border, #999);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+}
+
+.oasis-editor-design-gallery {
+  display: grid;
+  gap: 10px;
+}
+
+.oasis-editor-design-gallery-section h3,
+.oasis-editor-design-background-panel h3 {
+  margin: 0 0 6px;
+  color: var(--oasis-ribbon-active-text, #111);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.oasis-editor-design-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.oasis-editor-design-theme-card,
+.oasis-editor-design-option-card,
+.oasis-editor-design-list-card {
+  display: flex;
+  min-width: 0;
+  padding: 5px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  border: 2px solid transparent;
+  border-radius: 2px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.oasis-editor-design-theme-card:hover,
+.oasis-editor-design-theme-card:focus-visible,
+.oasis-editor-design-option-card:hover,
+.oasis-editor-design-option-card:focus-visible,
+.oasis-editor-design-list-card:hover,
+.oasis-editor-design-list-card:focus-visible,
+.oasis-editor-design-card-active {
+  border-color: var(--oasis-contextual-accent, #4c8bf5);
+  background: var(--oasis-contextual-hover, #e7f1fb);
+  outline: none;
+}
+
+.oasis-editor-design-theme-preview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 4px;
+  min-height: 54px;
+  padding: 5px;
+  gap: 2px 5px;
+  overflow: hidden;
+  border: 1px solid rgb(0 0 0 / 20%);
+  box-sizing: border-box;
+}
+
+.oasis-editor-design-theme-preview strong {
+  font-size: 18px;
+  line-height: 1;
+}
+.oasis-editor-design-theme-preview span {
+  align-self: center;
+  font-size: 9px;
+  white-space: nowrap;
+}
+.oasis-editor-design-theme-preview i {
+  display: block;
+  height: 4px;
+}
+
+.oasis-editor-design-preview-note {
+  margin: 0;
+  color: var(--oasis-ribbon-muted, #666);
+  font-size: 10px;
+}
+
+.oasis-editor-design-option-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.oasis-editor-design-swatch-row {
+  display: flex;
+  height: 16px;
+}
+.oasis-editor-design-swatch-row i {
+  flex: 1;
+}
+.oasis-editor-design-font-card {
+  min-height: 47px;
+}
+.oasis-editor-design-font-card strong {
+  font-size: 15px;
+}
+.oasis-editor-design-font-card span {
+  font-size: 11px;
+}
+.oasis-editor-design-gallery-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.oasis-editor-design-compact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+.oasis-editor-design-list-card {
+  min-height: 38px;
+  border-width: 1px;
+}
+.oasis-editor-design-list-card small {
+  color: var(--oasis-ribbon-muted, #666);
+  font-size: 9px;
+}
+
+.oasis-editor-design-background-panel-wrap {
+  z-index: 1300;
+  width: min(360px, calc(100vw - 16px));
+  padding: 10px;
+  box-sizing: border-box;
+  color: var(--oasis-ribbon-text, #222);
+  background: var(--oasis-ribbon-panel-bg, #fff);
+  border: 1px solid var(--oasis-ribbon-border, #999);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+}
+.oasis-editor-design-background-panel {
+  display: grid;
+  gap: 8px;
+}
+.oasis-editor-design-background-panel label {
+  display: grid;
+  gap: 3px;
+  font-size: 11px;
+}
+.oasis-editor-design-background-panel input,
+.oasis-editor-design-background-panel select {
+  min-width: 0;
+  box-sizing: border-box;
+}
+.oasis-editor-design-presets {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.oasis-editor-design-presets button,
+.oasis-editor-design-actions button,
+.oasis-editor-design-file {
+  padding: 4px 7px;
+  border: 1px solid var(--oasis-ribbon-border, #aaa);
+  background: var(--oasis-ribbon-hover, #eee);
+  color: inherit;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+.oasis-editor-design-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.oasis-editor-design-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.oasis-editor-design-file input {
+  display: none;
+}
+.oasis-editor-design-border-preview {
+  display: grid;
+  place-items: center;
+  min-height: 52px;
+  color: var(--oasis-ribbon-text, #222);
+  background: #fff;
+}
+
+.oasis-editor-app[data-theme="dark"] .oasis-editor-design-gallery-panel,
+.oasis-editor-app[data-theme="dark"]
+  .oasis-editor-design-background-panel-wrap {
+  color: var(--oasis-ribbon-text);
+  background: var(--oasis-ribbon-panel-bg);
+}
+
+@media (max-width: 560px) {
+  .oasis-editor-design-theme-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .oasis-editor-design-option-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .oasis-editor-design-gallery-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
 .oasis-editor-toolbar-view-compact .oasis-editor-style-gallery-compact {
   display: block;
   min-width: 120px;

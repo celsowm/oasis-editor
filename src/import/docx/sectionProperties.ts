@@ -5,6 +5,7 @@ import type {
   EditorNamedStyle,
   EditorPageNumbering,
   EditorPageSettings,
+  EditorPageBorder,
   EditorParagraphNode,
   EditorParagraphStyle,
   EditorSectionVerticalAlign,
@@ -24,6 +25,7 @@ import type { DocxSettings } from "./settings.js";
 
 export interface SectionProperties {
   pageSettings?: EditorPageSettings;
+  pageBorder?: EditorPageBorder;
   headerRIds: Partial<Record<"default" | "first" | "even", string>>;
   footerRIds: Partial<Record<"default" | "first" | "even", string>>;
   docGridLinePitchPx?: number;
@@ -81,6 +83,28 @@ export function parseSectionProperties(sectPr: XmlElement): SectionProperties {
   const pageSize = getFirstChildByTagNameNS(sectPr, WORD_NS, "pgSz");
   const pageMargins = getFirstChildByTagNameNS(sectPr, WORD_NS, "pgMar");
   const columns = parseColumns(sectPr);
+  const pageBorders = getFirstChildByTagNameNS(sectPr, WORD_NS, "pgBorders");
+  const borderNode = getFirstChildByTagNameNS(pageBorders, WORD_NS, "top");
+  const borderStyle = getAttributeValue(borderNode, "val");
+  const borderColor = getAttributeValue(borderNode, "color");
+  const borderSize = Number.parseInt(
+    getAttributeValue(borderNode, "sz") ?? "0",
+    10,
+  );
+  const pageBorder =
+    borderStyle && borderColor && borderStyle !== "nil"
+      ? {
+          style: (borderStyle === "double" ||
+          borderStyle === "dashed" ||
+          borderStyle === "dotted"
+            ? borderStyle
+            : "single") as EditorPageBorder["style"],
+          color: `#${borderColor.replace(/^#/, "")}`,
+          width:
+            Number.isFinite(borderSize) && borderSize > 0 ? borderSize / 8 : 1,
+          distance: Number(getAttributeValue(borderNode, "space") ?? 0),
+        }
+      : undefined;
 
   let pageSettings: EditorPageSettings | undefined;
   if (pageSize || pageMargins || columns) {
@@ -201,6 +225,7 @@ export function parseSectionProperties(sectPr: XmlElement): SectionProperties {
 
   return {
     pageSettings,
+    ...(pageBorder ? { pageBorder } : {}),
     headerRIds,
     footerRIds,
     docGridLinePitchPx:

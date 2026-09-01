@@ -13,6 +13,7 @@ import { buildEssentialsBrowser } from "./essentials/browser.js";
 import { buildEssentialsParagraph } from "./essentials/paragraph.js";
 import { buildEssentialsSection } from "./essentials/section.js";
 import { buildEssentialsTable } from "./essentials/table.js";
+import { buildEssentialsDesign } from "./essentials/design.js";
 
 export type { CreateEditorEssentialsPluginOptions };
 
@@ -32,5 +33,6 @@ export function createEditorEssentialsRuntimePlugin(
     paragraph: buildEssentialsParagraph(options),
     section: buildEssentialsSection(options),
     table: buildEssentialsTable(options),
+    design: buildEssentialsDesign(options),
   });
 }

@@ -8,6 +8,7 @@ export const RIBBON_TABS = [
   "file",
   "home",
   "insert",
+  "design",
   "draw",
   "layout",
   "references",
