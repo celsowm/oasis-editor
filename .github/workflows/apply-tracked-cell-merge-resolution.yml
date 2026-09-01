@@ -32,6 +32,10 @@ jobs:
           path = Path("scripts/ci/apply-tracked-cell-merge-resolution.mjs")
           content = path.read_text()
           content = content.replace(r"\`${path}", r"\`\${path}")
+          content = content.replace(
+              r'expect((xml.match(/<w:vMerge w:val="restart"\/>/g) ?? []).length).toBe(2);',
+              r'expect(xml.split(\'<w:vMerge w:val="restart"/>\').length - 1).toBe(2);',
+          )
           path.write_text(content)
           PY
           node scripts/ci/apply-tracked-cell-merge-resolution.mjs
