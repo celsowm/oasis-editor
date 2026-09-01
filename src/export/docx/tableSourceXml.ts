@@ -8,6 +8,7 @@ import {
   serializeTableXml,
   type SerializeTableParagraphXml,
 } from "./tableXml.js";
+import { wrapTableStructuralSdts } from "./tableStructuralSdtXml.js";
 import { OFFICE_REL_NS, WORD_NS } from "./xmlUtils.js";
 import { getEditorTableOoxmlSource } from "@/ooxml/word/sourceFragments.js";
 import {
@@ -54,6 +55,9 @@ function parseWordFragment(
     `<oasis:root xmlns:oasis="urn:oasis:docx" xmlns:w="${WORD_NS}">${xml}</oasis:root>`,
     "application/xml",
   ).documentElement as XmlElement | undefined;
+  if (!wrapper) {
+    return undefined;
+  }
   const element = wrapper
     ? directElementChildren(wrapper).find(
         (child): boolean =>
@@ -307,12 +311,6 @@ function ensureTerminalCellParagraphs(tableElement: XmlElement): void {
   }
 }
 
-/**
- * Serializes a table canonically and then overlays source-backed table, row and
- * cell property containers. Text/content stays authoritative from the editor;
- * source attributes, extension children and unknown property children survive
- * while relationship-bearing fragments continue to use the conservative path.
- */
 export function serializeTableXmlPreservingSource(
   table: EditorTableNode,
   serializeParagraphXml: SerializeTableParagraphXml,
@@ -326,6 +324,7 @@ export function serializeTableXmlPreservingSource(
   overlayTableProperties(table, tableElement);
   overlayRowAndCellProperties(table, tableElement);
   ensureTerminalCellParagraphs(tableElement);
+  wrapTableStructuralSdts(table, tableElement);
   const serialized = new XMLSerializer().serializeToString(tableElement);
   return serialized.replace(`<w:tbl xmlns:w="${WORD_NS}"`, "<w:tbl");
 }
