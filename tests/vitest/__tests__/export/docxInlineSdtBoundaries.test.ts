@@ -33,13 +33,20 @@ it("keeps an inline SDT when bookmark events force canonical paragraph export", 
   expect(document.bookmarks?.order).toHaveLength(1);
 
   paragraph.runs[0]!.text = "Alicia";
-  const output = await JSZip.loadAsync(await exportEditorDocumentToDocx(document));
+  const exportedBuffer = await exportEditorDocumentToDocx(document);
+  const output = await JSZip.loadAsync(exportedBuffer);
   const xml = (await output.file("word/document.xml")?.async("string")) ?? "";
 
   expect(xml).toContain('<w:tag w:val="bound-text"/>');
   expect(xml).toContain("<w:sdtContent>");
   expect(xml).toContain('<w:bookmarkStart w:id="7" w:name="inside"/>');
-  expect(xml).toContain("Alicia");
   expect(xml).toContain('<w:bookmarkEnd w:id="7"/>');
   expect(xml.split("<w:sdt>").length - 1).toBe(1);
+
+  const roundTripped = await importDocxToEditorDocument(exportedBuffer);
+  const roundTrippedParagraph = roundTripped.sections![0]!
+    .blocks[0] as EditorParagraphNode;
+  expect(roundTrippedParagraph.runs.map((run) => run.text).join("")).toBe(
+    "Alicia",
+  );
 });
