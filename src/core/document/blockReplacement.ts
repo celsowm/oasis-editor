@@ -15,6 +15,7 @@ import {
   getParagraphs,
 } from "@/core/model.js";
 import { transformBookmarksAcrossParagraphEdit } from "./bookmarkAnchors.js";
+import { transformCommentsAcrossParagraphEdit } from "./commentAnchors.js";
 
 export function blocksContainTables(nodes: EditorBlockNode[]): boolean {
   for (const node of nodes) {
@@ -140,14 +141,25 @@ export function cloneStateWithParagraphs(
 
   // Keep bookmark anchors pointing at the right text as paragraphs mutate.
   const bookmarks = state.document.bookmarks;
+  const oldParagraphs = getParagraphs(state);
   const nextBookmarks =
     bookmarks && bookmarks.order.length > 0
       ? transformBookmarksAcrossParagraphEdit(
           bookmarks,
-          getParagraphs(state),
+          oldParagraphs,
           paragraphs,
         )
       : bookmarks;
+
+  const comments = state.document.comments;
+  const nextComments =
+    comments && comments.order.length > 0
+      ? transformCommentsAcrossParagraphEdit(
+          comments,
+          oldParagraphs,
+          paragraphs,
+        )
+      : comments;
 
   return {
     ...state,
@@ -155,6 +167,7 @@ export function cloneStateWithParagraphs(
       ...state.document,
       sections: updatedSections,
       ...(nextBookmarks !== bookmarks ? { bookmarks: nextBookmarks } : {}),
+      ...(nextComments !== comments ? { comments: nextComments } : {}),
     },
     selection,
   };

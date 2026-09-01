@@ -9,8 +9,8 @@
  *    `word/comments.xml` — modeled like footnotes/endnotes.
  *
  * This is the import/display/export representation: faithful round-trip plus a
- * highlighted range and a hover/click popup. Authoring (create/reply/resolve)
- * and live-edit anchor transforms are intentionally out of scope here.
+ * highlighted range and a hover/click popup. Range anchors stay live across
+ * paragraph edits; comment authoring commands remain a separate concern.
  */
 
 export interface EditorCommentAnchor {
