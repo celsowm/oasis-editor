@@ -15,7 +15,7 @@ function sourcePackage(): EditorDocxSourcePackage {
       "customXml/item1.xml": {
         path: "customXml/item1.xml",
         kind: "xml",
-        data: '<root xmlns="urn:test"><customer><name>Alice</name><code value="42"/></customer></root>',
+        data: '<root xmlns="urn:test" xmlns:m="urn:meta"><customer><name>Alice</name><code value="42" m:state="open"/></customer></root>',
         encoding: "utf8",
         originalHash: "item",
         relationships: [
@@ -89,6 +89,21 @@ describe("custom XML data bindings", () => {
 
     expect(writeCustomXmlBinding(source, binding, "99")).toBe(true);
     expect(resolveCustomXmlBinding(source, binding)?.value).toBe("99");
+  });
+
+  it("preserves the qualified name of namespaced attributes", () => {
+    const source = sourcePackage();
+    const binding = {
+      storeItemID: "{A1B2-C3D4}",
+      prefixMappings: 'xmlns:t="urn:test" xmlns:m="urn:meta"',
+      xpath: "/t:root/t:customer/t:code/@m:state",
+    };
+
+    expect(writeCustomXmlBinding(source, binding, "closed")).toBe(true);
+    expect(resolveCustomXmlBinding(source, binding)?.value).toBe("closed");
+    expect(source.parts["customXml/item1.xml"]!.data).toContain(
+      'm:state="closed"',
+    );
   });
 
   it("returns null or false for unsupported or broken bindings", () => {
