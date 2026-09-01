@@ -26,7 +26,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Apply cell merge resolution patch
-        run: node scripts/ci/apply-tracked-cell-merge-resolution.mjs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("scripts/ci/apply-tracked-cell-merge-resolution.mjs")
+          content = path.read_text()
+          content = content.replace(r"\`${path}", r"\`\${path}")
+          path.write_text(content)
+          PY
+          node scripts/ci/apply-tracked-cell-merge-resolution.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Test
