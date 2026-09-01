@@ -15,7 +15,10 @@ import type {
   EditorTextStyle,
   EditorParagraphStyle,
 } from "@/core/model.js";
-import { getDocumentSectionsCanonical } from "@/core/model.js";
+import {
+  getDocumentSectionsCanonical,
+  getParagraphText,
+} from "@/core/model.js";
 import {
   cloneEndnotes,
   cloneFootnotes,
@@ -60,6 +63,7 @@ interface ResolutionContext {
   unresolved: EditorTrackedRevisionIssue[];
   unresolvedKeys: Set<string>;
   paragraphOffsetTransforms: Map<string, ParagraphOffsetTransform>;
+  paragraphRelocations: Map<string, AnchorRelocation | null>;
 }
 
 interface ParagraphOffsetSegment {
@@ -73,6 +77,12 @@ interface ParagraphOffsetTransform {
   segments: ParagraphOffsetSegment[];
   oldLength: number;
   newLength: number;
+}
+
+interface AnchorRelocation {
+  paragraphId: string;
+  /** Offset in the already-transformed target paragraph. */
+  offset: number;
 }
 
 function matchesRevision(context: ResolutionContext, revisionId: string): boolean {
@@ -98,6 +108,65 @@ function pushIssue(
   if (context.unresolvedKeys.has(key)) return;
   context.unresolvedKeys.add(key);
   context.unresolved.push(issue);
+}
+
+function collectParagraphsDeep(blocks: EditorBlockNode[]): EditorParagraphNode[] {
+  const paragraphs: EditorParagraphNode[] = [];
+  const collectBlocks = (story: EditorBlockNode[]): void => {
+    for (const block of story) {
+      if (block.type === "paragraph") {
+        paragraphs.push(block);
+        for (const run of block.runs) {
+          if (run.kind === "textBox") collectBlocks(run.textBox.blocks);
+        }
+        continue;
+      }
+      for (const row of block.rows) {
+        for (const cell of row.cells) collectBlocks(cell.blocks);
+      }
+    }
+  };
+  collectBlocks(blocks);
+  return paragraphs;
+}
+
+function recordRemovedParagraphRelocations(
+  before: EditorTableNode,
+  after: EditorTableNode,
+  context: ResolutionContext,
+): void {
+  const oldParagraphs = collectParagraphsDeep([before]);
+  const newParagraphs = collectParagraphsDeep([after]);
+  const newById = new Map(newParagraphs.map((paragraph) => [paragraph.id, paragraph]));
+
+  for (let index = 0; index < oldParagraphs.length; index += 1) {
+    const paragraph = oldParagraphs[index]!;
+    if (newById.has(paragraph.id) || context.paragraphRelocations.has(paragraph.id)) {
+      continue;
+    }
+
+    let relocation: AnchorRelocation | null = null;
+    for (let previous = index - 1; previous >= 0; previous -= 1) {
+      const candidate = newById.get(oldParagraphs[previous]!.id);
+      if (candidate) {
+        relocation = {
+          paragraphId: candidate.id,
+          offset: getParagraphText(candidate).length,
+        };
+        break;
+      }
+    }
+    if (!relocation) {
+      for (let following = index + 1; following < oldParagraphs.length; following += 1) {
+        const candidate = newById.get(oldParagraphs[following]!.id);
+        if (candidate) {
+          relocation = { paragraphId: candidate.id, offset: 0 };
+          break;
+        }
+      }
+    }
+    context.paragraphRelocations.set(paragraph.id, relocation);
+  }
 }
 
 function stripTextPropertyRevision(
@@ -267,6 +336,16 @@ function transformParagraph(
   for (let index = 0; index < paragraph.runs.length; index += 1) {
     const run = paragraph.runs[index]!;
     const nextRun = resolveRun(run, `${path}.runs[${index}]`, context);
+    if (!nextRun && run.kind === "textBox") {
+      for (const nested of collectParagraphsDeep(run.textBox.blocks)) {
+        if (!context.paragraphRelocations.has(nested.id)) {
+          context.paragraphRelocations.set(nested.id, {
+            paragraphId: paragraph.id,
+            offset: newCursor,
+          });
+        }
+      }
+    }
     const length = run.text.length;
     segments.push({
       oldStart: oldCursor,
@@ -334,19 +413,6 @@ function resolveRowStructuralRevision(
   if (!revision || !matchesRevision(context, revision.id)) return row;
   markMatched(context);
 
-  const requiresRemoval =
-    (context.action === "accept" && revision.type === "delete") ||
-    (context.action === "reject" && revision.type === "insert");
-  if (requiresRemoval) {
-    pushIssue(context, {
-      kind: "structural-removal-unavailable",
-      revisionId: revision.id,
-      path,
-      message:
-        "Resolving this row revision would remove a table subtree; anchor-safe subtree removal is not implemented yet.",
-    });
-    return row;
-  }
   if (context.action === "reject" && revision.type === "merge") {
     pushIssue(context, {
       kind: "cell-merge-original-unavailable",
@@ -377,19 +443,6 @@ function resolveCellStructuralRevision(
 
   if (revision && matchesRevision(context, revision.id)) {
     markMatched(context);
-    const requiresRemoval =
-      (context.action === "accept" && revision.type === "delete") ||
-      (context.action === "reject" && revision.type === "insert");
-    if (requiresRemoval) {
-      pushIssue(context, {
-        kind: "structural-removal-unavailable",
-        revisionId: revision.id,
-        path,
-        message:
-          "Resolving this cell revision would remove a table subtree; anchor-safe subtree removal is not implemented yet.",
-      });
-      return cell;
-    }
     if (context.action === "reject" && revision.type === "merge") {
       pushIssue(context, {
         kind: "cell-merge-original-unavailable",
@@ -472,12 +525,26 @@ function transformRow(
     }
   }
 
-  const cells = next.cells.map((cell, index) =>
-    transformCell(cell, `${path}.cells[${index}]`, context),
-  );
-  if (cells.some((cell, index) => cell !== next.cells[index])) {
-    next = { ...next, cells };
+  const cells: EditorTableCellNode[] = [];
+  let cellsChanged = false;
+  for (let index = 0; index < next.cells.length; index += 1) {
+    const cell = next.cells[index]!;
+    const revision = cell.style?.revision;
+    const remove =
+      revision &&
+      matchesRevision(context, revision.id) &&
+      ((context.action === "accept" && revision.type === "delete") ||
+        (context.action === "reject" && revision.type === "insert"));
+    if (remove) {
+      markResolved(context, revision.id);
+      cellsChanged = true;
+      continue;
+    }
+    const transformed = transformCell(cell, `${path}.cells[${index}]`, context);
+    cells.push(transformed);
+    if (transformed !== cell) cellsChanged = true;
   }
+  if (cellsChanged) next = { ...next, cells };
   return next;
 }
 
@@ -504,12 +571,27 @@ function transformTable(
     }
   }
 
-  const rows = next.rows.map((row, index) =>
-    transformRow(row, `${path}.rows[${index}]`, context),
-  );
-  if (rows.some((row, index) => row !== next.rows[index])) {
-    next = { ...next, rows };
+  const rows: EditorTableRowNode[] = [];
+  let rowsChanged = false;
+  for (let index = 0; index < next.rows.length; index += 1) {
+    const row = next.rows[index]!;
+    const revision = row.style?.revision;
+    const remove =
+      revision &&
+      matchesRevision(context, revision.id) &&
+      ((context.action === "accept" && revision.type === "delete") ||
+        (context.action === "reject" && revision.type === "insert"));
+    if (remove) {
+      markResolved(context, revision.id);
+      rowsChanged = true;
+      continue;
+    }
+    const transformed = transformRow(row, `${path}.rows[${index}]`, context);
+    rows.push(transformed);
+    if (transformed !== row) rowsChanged = true;
   }
+  if (rowsChanged) next = { ...next, rows };
+  if (rowsChanged) recordRemovedParagraphRelocations(table, next, context);
   return next;
 }
 
@@ -671,52 +753,92 @@ function mapParagraphOffset(
 function transformAnchor<T extends { paragraphId: string; offset: number }>(
   anchor: T | undefined,
   transforms: Map<string, ParagraphOffsetTransform>,
+  relocations: Map<string, AnchorRelocation | null>,
 ): T | undefined {
   if (!anchor) return undefined;
-  const transform = transforms.get(anchor.paragraphId);
-  if (!transform) return anchor;
-  const offset = mapParagraphOffset(transform, anchor.offset);
-  return offset === anchor.offset ? anchor : { ...anchor, offset };
+
+  let paragraphId = anchor.paragraphId;
+  let offset = anchor.offset;
+  let relocated = false;
+  const seen = new Set<string>();
+  while (relocations.has(paragraphId)) {
+    if (seen.has(paragraphId)) return undefined;
+    seen.add(paragraphId);
+    const relocation = relocations.get(paragraphId);
+    if (!relocation) return undefined;
+    paragraphId = relocation.paragraphId;
+    offset = relocation.offset;
+    relocated = true;
+  }
+
+  if (!relocated) {
+    const transform = transforms.get(paragraphId);
+    if (transform) offset = mapParagraphOffset(transform, offset);
+  }
+
+  return paragraphId === anchor.paragraphId && offset === anchor.offset
+    ? anchor
+    : { ...anchor, paragraphId, offset };
 }
 
 function transformBookmarks(
   document: EditorDocument,
   transforms: Map<string, ParagraphOffsetTransform>,
+  relocations: Map<string, AnchorRelocation | null>,
 ): void {
-  if (!document.bookmarks || transforms.size === 0) return;
+  if (!document.bookmarks || (transforms.size === 0 && relocations.size === 0)) return;
   let changed = false;
   const items = { ...document.bookmarks.items };
+  const order: string[] = [];
   for (const id of document.bookmarks.order) {
     const bookmark = document.bookmarks.items[id];
     if (!bookmark) continue;
-    const start = transformAnchor(bookmark.start, transforms);
-    const end = transformAnchor(bookmark.end, transforms);
+    const mappedStart = transformAnchor(bookmark.start, transforms, relocations);
+    const mappedEnd = transformAnchor(bookmark.end, transforms, relocations);
+    const start = mappedStart ?? (bookmark.start ? mappedEnd : undefined);
+    const end = mappedEnd ?? (bookmark.end ? mappedStart : undefined);
+    if (!start && !end) {
+      delete items[id];
+      changed = true;
+      continue;
+    }
+    order.push(id);
     if (start !== bookmark.start || end !== bookmark.end) {
       items[id] = { ...bookmark, start, end };
       changed = true;
     }
   }
-  if (changed) document.bookmarks = { ...document.bookmarks, items };
+  if (changed) document.bookmarks = { ...document.bookmarks, items, order };
 }
 
 function transformComments(
   comments: EditorComments | undefined,
   transforms: Map<string, ParagraphOffsetTransform>,
+  relocations: Map<string, AnchorRelocation | null>,
 ): EditorComments | undefined {
-  if (!comments || transforms.size === 0) return comments;
+  if (!comments || (transforms.size === 0 && relocations.size === 0)) return comments;
   let changed = false;
   const items = { ...comments.items };
+  const order: string[] = [];
   for (const id of comments.order) {
     const comment = comments.items[id];
     if (!comment) continue;
-    const start = transformAnchor<EditorCommentAnchor>(comment.start, transforms);
-    const end = transformAnchor<EditorCommentAnchor>(comment.end, transforms);
+    const mappedStart = transformAnchor<EditorCommentAnchor>(comment.start, transforms, relocations);
+    const mappedEnd = transformAnchor<EditorCommentAnchor>(comment.end, transforms, relocations);
+    const start = mappedStart ?? (comment.start ? mappedEnd : undefined);
+    const end = mappedEnd ?? (comment.end ? mappedStart : undefined);
+    if (!start && !end) {
+      delete items[id];
+      changed = true;
+      continue;
+    }
+    order.push(id);
     if (start !== comment.start || end !== comment.end) {
       items[id] = { ...comment, start, end };
       changed = true;
     }
   }
-  return changed ? { ...comments, items } : comments;
+  return changed ? { ...comments, items, order } : comments;
 }
 
 function resolve(
@@ -733,6 +855,7 @@ function resolve(
     unresolved: [],
     unresolvedKeys: new Set<string>(),
     paragraphOffsetTransforms: new Map<string, ParagraphOffsetTransform>(),
+    paragraphRelocations: new Map<string, AnchorRelocation | null>(),
   };
 
   const sections = getDocumentSectionsCanonical(document).map(cloneSection);
@@ -746,10 +869,15 @@ function resolve(
   transformSectionStories(sections, context);
   transformNoteStories(next, context);
   applySectionPropertyRevisions(sections, context);
-  transformBookmarks(next, context.paragraphOffsetTransforms);
+  transformBookmarks(
+    next,
+    context.paragraphOffsetTransforms,
+    context.paragraphRelocations,
+  );
   next.comments = transformComments(
     next.comments,
     context.paragraphOffsetTransforms,
+    context.paragraphRelocations,
   );
 
   if (revisionId !== undefined && !context.matched) {

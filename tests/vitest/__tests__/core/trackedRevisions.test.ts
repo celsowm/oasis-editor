@@ -313,36 +313,124 @@ describe("tracked revision resolver", () => {
     });
   });
 
-  it("keeps destructive table revisions explicit until subtree removal is anchor-safe", () => {
+  it("removes accepted deleted rows and relocates anchors to the nearest survivor", () => {
     const table: EditorTableNode = {
       id: "t",
       type: "table",
       rows: [
         {
+          id: "before-row",
+          cells: [{ id: "before-cell", blocks: [paragraph("before-p", [textRun("before-r", "before")])] }],
+        },
+        {
           id: "deleted-row",
           style: {
-            revision: {
-              id: "row-del",
-              type: "delete",
-              author: "A",
-              date: 1,
-            },
+            revision: { id: "row-del", type: "delete", author: "A", date: 1 },
           },
-          cells: [
-            {
-              id: "c",
-              blocks: [paragraph("p", [textRun("r", "deleted row")])],
-            },
-          ],
+          cells: [{ id: "deleted-cell", blocks: [paragraph("deleted-p", [textRun("deleted-r", "deleted")])] }],
+        },
+        {
+          id: "after-row",
+          cells: [{ id: "after-cell", blocks: [paragraph("after-p", [textRun("after-r", "after")])] }],
         },
       ],
     };
-    const result = projectTrackedRevisions(documentWithBlocks([table]), "final");
-    expect(result.complete).toBe(false);
-    expect(result.changed).toBe(false);
-    expect(result.unresolved[0]).toMatchObject({
-      kind: "structural-removal-unavailable",
-      revisionId: "row-del",
+    const source: EditorDocument = {
+      ...documentWithBlocks([table]),
+      bookmarks: {
+        order: ["inside", "after"],
+        items: {
+          inside: {
+            id: "inside",
+            name: "inside",
+            start: { paragraphId: "deleted-p", offset: 2 },
+            end: { paragraphId: "deleted-p", offset: 5 },
+          },
+          after: {
+            id: "after",
+            name: "after",
+            start: { paragraphId: "after-p", offset: 2 },
+            end: { paragraphId: "after-p", offset: 4 },
+          },
+        },
+      },
+      comments: {
+        order: ["c"],
+        items: {
+          c: {
+            id: "c",
+            author: "A",
+            text: "inside removed row",
+            start: { paragraphId: "deleted-p", offset: 1 },
+            end: { paragraphId: "deleted-p", offset: 6 },
+          },
+        },
+      },
+    };
+
+    const result = projectTrackedRevisions(source, "final");
+    expect(result.complete).toBe(true);
+    expect(result.unresolved).toEqual([]);
+    const nextTable = result.document.sections![0]!.blocks[0] as EditorTableNode;
+    expect(nextTable.rows.map((row) => row.id)).toEqual(["before-row", "after-row"]);
+    expect(result.resolvedRevisionIds).toContain("row-del");
+    expect(result.document.bookmarks!.items.inside!.start).toMatchObject({
+      paragraphId: "before-p", offset: 6,
+    });
+    expect(result.document.bookmarks!.items.inside!.end).toMatchObject({
+      paragraphId: "before-p", offset: 6,
+    });
+    expect(result.document.bookmarks!.items.after!.start).toMatchObject({
+      paragraphId: "after-p", offset: 2,
+    });
+    expect(result.document.comments!.items.c!.start).toMatchObject({
+      paragraphId: "before-p", offset: 6,
+    });
+    expect(source.sections![0]!.blocks[0]).toBe(table);
+    expect(table.rows).toHaveLength(3);
+  });
+
+  it("removes rejected inserted cells and relocates their anchors", () => {
+    const table: EditorTableNode = {
+      id: "t",
+      type: "table",
+      rows: [{
+        id: "row",
+        cells: [
+          { id: "left", blocks: [paragraph("left-p", [textRun("left-r", "left")])] },
+          {
+            id: "inserted",
+            style: { revision: { id: "cell-ins", type: "insert", author: "A", date: 1 } },
+            blocks: [paragraph("inserted-p", [textRun("inserted-r", "inserted")])],
+          },
+          { id: "right", blocks: [paragraph("right-p", [textRun("right-r", "right")])] },
+        ],
+      }],
+    };
+    const source: EditorDocument = {
+      ...documentWithBlocks([table]),
+      bookmarks: {
+        order: ["inside"],
+        items: {
+          inside: {
+            id: "inside",
+            name: "inside",
+            start: { paragraphId: "inserted-p", offset: 3 },
+            end: { paragraphId: "inserted-p", offset: 7 },
+          },
+        },
+      },
+    };
+
+    const result = projectTrackedRevisions(source, "original");
+    expect(result.complete).toBe(true);
+    const nextTable = result.document.sections![0]!.blocks[0] as EditorTableNode;
+    expect(nextTable.rows[0]!.cells.map((cell) => cell.id)).toEqual(["left", "right"]);
+    expect(result.document.bookmarks!.items.inside!.start).toMatchObject({
+      paragraphId: "left-p", offset: 4,
+    });
+    expect(result.document.bookmarks!.items.inside!.end).toMatchObject({
+      paragraphId: "left-p", offset: 4,
     });
   });
 });
