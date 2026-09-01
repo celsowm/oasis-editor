@@ -72,7 +72,6 @@ describe("DOCX block-level SDT (content control) round-trip", () => {
     expect(xml).toContain("<w:sdtContent>");
     expect(xml).toContain('w:val="doc-title"');
     expect(xml).toContain("Inside the control");
-    // Exactly one content control, wrapping the paragraph.
     expect(xml.split("<w:sdt>").length - 1).toBe(1);
     expect(xml.indexOf("<w:sdtContent>")).toBeLessThan(
       xml.indexOf("Inside the control"),
@@ -91,7 +90,6 @@ describe("DOCX block-level SDT (content control) round-trip", () => {
     const blocks = bodyBlocks(document);
     expect(blocks).toHaveLength(2);
     const [a, b] = blocks as EditorParagraphNode[];
-    // Both blocks share the same wrapper group so export re-wraps them together.
     expect(a!.sdtWrappers?.[0]?.groupId).toBe(b!.sdtWrappers?.[0]?.groupId);
 
     const xml = await reexport(document);
@@ -116,7 +114,6 @@ describe("DOCX block-level SDT (content control) round-trip", () => {
       </w:sdt>`);
     const blocks = bodyBlocks(document) as EditorParagraphNode[];
     expect(blocks).toHaveLength(2);
-    // "Before" is under the outer control only; "Nested" under outer then inner.
     expect(blocks[0]!.sdtWrappers).toHaveLength(1);
     expect(blocks[1]!.sdtWrappers).toHaveLength(2);
 
@@ -124,7 +121,6 @@ describe("DOCX block-level SDT (content control) round-trip", () => {
     expect(xml).toContain('w:val="outer"');
     expect(xml).toContain('w:val="inner"');
     expect(xml.split("<w:sdt>").length - 1).toBe(2);
-    // The inner tag must appear after the outer one (outer wraps inner).
     expect(xml.indexOf('w:val="outer"')).toBeLessThan(
       xml.indexOf('w:val="inner"'),
     );
@@ -172,7 +168,6 @@ describe("DOCX block-level SDT (content control) round-trip", () => {
     expect(sdtPr.color).toBe("FF0000");
 
     const xml = await reexport(document);
-    // Property order: lock, placeholder, temporary (subtype none), appearance, showingPlcHdr, color.
     expect(xml).toContain('<w:lock w:val="sdtContentLocked"/>');
     expect(xml).toContain(
       '<w:placeholder><w:docPart w:val="DisclaimerBlock"/></w:placeholder>',
@@ -181,13 +176,12 @@ describe("DOCX block-level SDT (content control) round-trip", () => {
     expect(xml).toContain('<w:appearance w:val="tags"/>');
     expect(xml).toContain('<w:showingPlcHdr w:val="true"/>');
     expect(xml).toContain('<w:color w:val="FF0000"/>');
-    // Schema-sequence order: lock comes before placeholder comes before temporary.
     expect(xml.indexOf('w:lock ')).toBeLessThan(xml.indexOf("w:placeholder"));
     expect(xml.indexOf("w:placeholder")).toBeLessThan(xml.indexOf("w:temporary"));
     expect(xml.indexOf("w:temporary")).toBeLessThan(xml.indexOf("w:appearance"));
   });
 
-  it("parses and round-trips a w:dataBinding with prefix mappings", async () => {
+  it("parses legacy child-form w:dataBinding and exports canonical attributes", async () => {
     const document = await importBody(`
       <w:sdt>
         <w:sdtPr>
@@ -209,14 +203,12 @@ describe("DOCX block-level SDT (content control) round-trip", () => {
     });
 
     const xml = await reexport(document);
-    expect(xml).toContain("<w:dataBinding>");
     expect(xml).toContain(
-      '<w:prefixMappings w:val="xmlns:ns=urn:customers"/>',
+      '<w:dataBinding w:prefixMappings="xmlns:ns=urn:customers" w:xpath="/ns:customers/ns:customer[1]/ns:name" w:storeItemID="{abc-123}"/>',
     );
-    expect(xml).toContain(
-      '<w:xpath w:val="/ns:customers/ns:customer[1]/ns:name"/>',
-    );
-    expect(xml).toContain('<w:storeItemID w:val="{abc-123}"/>');
+    expect(xml).not.toContain("<w:prefixMappings");
+    expect(xml).not.toContain("<w:xpath");
+    expect(xml).not.toContain("<w:storeItemID");
   });
 
   it("parses and round-trips a dropDownList with list items", async () => {
@@ -249,7 +241,6 @@ describe("DOCX block-level SDT (content control) round-trip", () => {
     expect(xml).toContain('<w:listItem w:displayText="Brazil" w:value="BR"/>');
     expect(xml).toContain('<w:lastSelectedValue w:val="BR"/>');
     expect(xml).toContain('<w:alias w:val="Country"/>');
-    // Schema order: alias must come before the subtype element.
     expect(xml.indexOf("w:alias")).toBeLessThan(xml.indexOf("w:dropDownList"));
   });
 
@@ -311,9 +302,6 @@ describe("DOCX block-level SDT (content control) round-trip", () => {
   });
 
   it("escapes special XML characters in alias values", async () => {
-    // The exporter must escape special XML characters in user-facing alias values.
-    // The source must itself be valid XML; the parser decodes &quot; into quotes
-    // before the exporter encodes those quotes again.
     const sourceSdt =
       '<w:sdt><w:sdtPr><w:alias w:val="Quote &quot;Test&quot;"/></w:sdtPr>' +
       "<w:sdtContent><w:p><w:r><w:t>Body</w:t></w:r></w:p></w:sdtContent></w:sdt>";
@@ -339,19 +327,13 @@ describe("DOCX block-level SDT (content control) round-trip", () => {
     expect(sdtPr.tag).toBe("future-proof");
     expect(sdtPr.unknownXml).toContain("w15:storeItem");
     expect(sdtPr.unknownXml).toContain("{store-99}");
-    // rPr is preserved as unknownXml; xmldom may re-add a namespace fixate when
-    // serializing a detached subtree, so we only assert on the opening tag prefix.
     expect(sdtPr.unknownXml).toMatch(/<w:rPr/);
 
     const xml = await reexport(document);
-    // Tag comes first in schema order, then extension children go after subtype.
     expect(xml).toContain('<w:tag w:val="future-proof"/>');
     expect(xml).toContain("w15:storeItem");
     expect(xml).toContain("{store-99}");
     expect(xml).toMatch(/<w:rPr/);
-    // The round-trip preserves the w15 namespace declaration from the imported
-    // fragment; the document header does not declare w15 since most documents
-    // don't need it.
     expect(xml).toContain("xmlns:w15=");
   });
 });
