@@ -37,7 +37,12 @@ interface BoundaryToken {
   xml: string;
 }
 
-function serializeRunsWithBoundaries(
+/**
+ * Boundary insertion is stateful so it can be used as the leaf serializer of
+ * `serializeRunsWithInlineSdts`. This preserves SDT envelopes while still
+ * splitting text runs at bookmark/comment offsets.
+ */
+function serializeRunsWithInlineSdtsAndBoundaries(
   runs: EditorTextRun[],
   tokens: BoundaryToken[],
   context: DocContext,
@@ -47,26 +52,29 @@ function serializeRunsWithBoundaries(
   const sorted = [...tokens].sort(
     (a, b): number => a.offset - b.offset || a.seq - b.seq,
   );
-  let ei = 0;
-  let pos = 0;
-  let out = "";
+  let eventIndex = 0;
+  let position = 0;
 
-  const flushUpTo = (limit: number): void => {
-    while (ei < sorted.length && sorted[ei]!.offset <= limit) {
-      out += sorted[ei]!.xml;
-      ei += 1;
-    }
-  };
-
-  for (const run of runs) {
-    const runStart = pos;
+  const serializeLeafRun = (run: EditorTextRun): string => {
+    let out = "";
+    const runStart = position;
     const runEnd = runStart + run.text.length;
-    flushUpTo(runStart);
+
+    while (
+      eventIndex < sorted.length &&
+      sorted[eventIndex]!.offset <= runStart
+    ) {
+      out += sorted[eventIndex]!.xml;
+      eventIndex += 1;
+    }
 
     if (isSplittableTextRun(run) && run.text.length > 0) {
       let cursor = runStart;
-      while (ei < sorted.length && sorted[ei]!.offset < runEnd) {
-        const token = sorted[ei]!;
+      while (
+        eventIndex < sorted.length &&
+        sorted[eventIndex]!.offset < runEnd
+      ) {
+        const token = sorted[eventIndex]!;
         if (token.offset > cursor) {
           out += serializeRunWithRelationships(
             {
@@ -80,7 +88,7 @@ function serializeRunsWithBoundaries(
           );
         }
         out += token.xml;
-        ei += 1;
+        eventIndex += 1;
         cursor = token.offset;
       }
       if (cursor < runEnd) {
@@ -101,10 +109,15 @@ function serializeRunsWithBoundaries(
         serializeBlocksXml,
       );
     }
-    pos = runEnd;
-  }
+    position = runEnd;
+    return out;
+  };
 
-  flushUpTo(Number.POSITIVE_INFINITY);
+  let out = serializeRunsWithInlineSdts(runs, serializeLeafRun);
+  while (eventIndex < sorted.length) {
+    out += sorted[eventIndex]!.xml;
+    eventIndex += 1;
+  }
   return out;
 }
 
@@ -271,9 +284,7 @@ export function serializeParagraphXml(
     hasOverrides: Boolean(overrides),
     hasBoundaryTokens: boundaryTokens.length > 0,
   });
-  if (reusableParagraphXml) {
-    return reusableParagraphXml;
-  }
+  if (reusableParagraphXml) return reusableParagraphXml;
 
   const serializeCanonicalRun = (run: EditorTextRun): string =>
     serializeRunWithRelationships(
@@ -294,7 +305,7 @@ export function serializeParagraphXml(
           runs as EditorTextRun[],
           serializeCanonicalRun,
         )
-      : serializeRunsWithBoundaries(
+      : serializeRunsWithInlineSdtsAndBoundaries(
           runs as EditorTextRun[],
           boundaryTokens,
           context,
@@ -325,9 +336,7 @@ export function serializeParagraphXml(
         hasBoundaryTokens: false,
       },
     );
-    if (overlaidParagraphXml) {
-      return overlaidParagraphXml;
-    }
+    if (overlaidParagraphXml) return overlaidParagraphXml;
   }
 
   return `${dropCapFrame}<w:p${paragraphAttributes}>${paragraphProperties}${runsXml}</w:p>`;
