@@ -12,10 +12,15 @@
 
 # Oasis Editor
 
-Oasis Editor is a browser-based document editor built for applications that need
-more than a textarea: paged editing, rich formatting, tables, import/export
-workflows, command-driven UI, and a plugin surface that can grow with your
-product.
+Oasis Editor is a canvas-first, browser-based document editor for applications
+that need a real paged document surface—not a `contenteditable` region or a
+textarea stretched into a page. The document lives in a typed editor model;
+layout, pagination, hit testing, selection, and caret geometry are computed by
+Oasis and rendered onto Canvas.
+
+Text input is handled separately through a hidden textarea for keyboard,
+composition, and clipboard events. This keeps the DOM lightweight while giving
+the editor precise control over document layout, interaction, and rendering.
 
 It ships as a TypeScript package with a vanilla embed API, React and Vue
 adapters, a headless runtime, public command and plugin primitives, and a CSS
@@ -23,20 +28,30 @@ bundle you can import into your app.
 
 Try the [Playground](https://celsowm.github.io/oasis-editor/).
 
-## Why Oasis
+## Why Oasis?
 
-- **Embed-first API**: mount the editor into any DOM node and receive a stable
-  `OasisEditorClient`.
-- **Command-driven runtime**: execute built-in or plugin commands from your own
-  buttons, menus, shortcuts, or app chrome.
-- **Paged document UI**: use a document shell with toolbar, menubar, canvas
-  editing, persistence hooks, and import/export flows.
-- **Plugin-ready architecture**: register commands, toolbar items, menubar
-  items, keymaps, lifecycle hooks, and dependencies.
-- **Typed package surface**: core document types, editor state, toolbar
-  registries, menu registries, command refs, and UI primitives are exported.
-- **Framework-friendly**: use the vanilla API directly or mount through the
-  React and Vue adapters.
+Oasis is built around a document model and rendering pipeline that are separate
+from the DOM:
+
+- **Canvas-first editing:** pages, text, tables, images, and document objects
+  are painted by a dedicated renderer. DOM overlays are reserved for the caret,
+  selection, and interaction layers rather than storing the document content.
+- **Real document layout:** the layout engine handles pages, sections, columns,
+  headers, footers, footnotes, endnotes, hyphenation, nested tables, floating
+  objects, images, and text boxes.
+- **Word-compatible document handling:** DOCX documents can be imported and
+  exported, while PDF export follows the same document layout. Source-backed
+  OOXML export preserves unrelated package parts and unknown markup instead of
+  silently discarding content Oasis does not edit semantically.
+- **Structured editing model:** state, selection, history, commands, document
+  queries, and edit operations work against typed document structures rather
+  than HTML extracted from the DOM.
+- **Product-level extensibility:** plugins can contribute commands, shortcuts,
+  toolbar items, menubar items, floating actions, side panels, UI primitives,
+  and lifecycle behavior.
+- **Embeddable runtime:** use the same core through JavaScript, React, Vue, or a
+  headless runtime, with events, persistence, read-only mode, and configurable
+  document, inline, or balloon shells.
 
 ## Installation
 
