@@ -21,6 +21,8 @@ It ships as a TypeScript package with a vanilla embed API, React and Vue
 adapters, a headless runtime, public command and plugin primitives, and a CSS
 bundle you can import into your app.
 
+Try the [Playground](https://celsowm.github.io/oasis-editor/).
+
 ## Why Oasis
 
 - **Embed-first API**: mount the editor into any DOM node and receive a stable
