@@ -1,10 +1,12 @@
 import JSZip from "jszip";
-import { type Element as XmlElement } from "@xmldom/xmldom";
+import { XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
 import type {
   EditorTextStyle,
   EditorImageRunData,
   EditorTextBoxData,
+  EditorSdtBlockWrapper,
 } from "@/core/model.js";
+import { createEditorNodeId } from "@/core/editorState.js";
 import {
   WORD_NS,
   getChildrenByTagNameNS,
@@ -16,6 +18,7 @@ import { PAGE_BREAK_MARKER } from "./units.js";
 import { type AssetRegistry } from "./assetRegistry.js";
 import { type DocxImportTheme } from "./theme.js";
 import { parseRunStyle } from "./runStyle.js";
+import { parseSdtPr } from "./contentControls.js";
 import type { NumberingMaps } from "./numbering.js";
 import { parseDrawingImage } from "./runs/drawingImage.js";
 import { parseVmlImage } from "./runs/vmlImage.js";
@@ -143,9 +146,6 @@ export async function parseRunElement(
         element.localName === "bookmarkStart" ||
         element.localName === "bookmarkEnd"
       ) {
-        // A bookmark marker nested *inside* a run, between its children. Capture
-        // it with its intra-run character offset so the container can splice it
-        // back into the run stream at the right boundary.
         const marker = parseBookmarkMarker(element);
         if (marker) {
           innerBookmarks.push({ offset: textLength, marker });
@@ -155,9 +155,6 @@ export async function parseRunElement(
         element.localName === "commentRangeStart" ||
         element.localName === "commentRangeEnd"
       ) {
-        // A comment range marker nested *inside* a run, between its children.
-        // Capture it with its intra-run offset so the container can splice it
-        // back into the run stream at the right boundary.
         const marker = parseCommentMarker(element);
         if (marker) {
           innerComments.push({ offset: textLength, marker });
@@ -239,12 +236,6 @@ export async function parseRunsContainer(
   parseNestedBlocks?: ParseNestedBlocks,
 ): Promise<ImportedRun[]> {
   const runs: ImportedRun[] = [];
-  // Complex fields (`w:fldChar` begin/separate/end + `w:instrText`) are
-  // preserved structurally as zero-length marker runs that ride the run stream,
-  // so arbitrary fields — including TOCs whose begin/end span multiple `w:p` —
-  // round-trip 1:1 without cross-paragraph pairing. As a backward-compatible
-  // optimization, a *complete, single-paragraph* PAGE/NUMPAGES field collapses
-  // to one `field` run (the representation the layout/paginator understands).
   const fieldStack: Array<{
     beginIndex: number;
     instruction: string;
@@ -262,11 +253,11 @@ export async function parseRunsContainer(
         ? "PAGE"
         : null;
     if (!fieldType) {
-      return; // REF/PAGEREF/TOC/unknown: keep the preserved marker structure.
+      return;
     }
-    const span = runs.slice(entry.beginIndex); // begin..end inclusive
+    const span = runs.slice(entry.beginIndex);
     if (span.some((run): ImportedBookmarkMarker | undefined => run.bookmark)) {
-      return; // never swallow a bookmark marker into a collapsed field.
+      return;
     }
     const resultRuns = span.filter(
       (run): boolean => !run.fieldChar && run.fieldInstruction === undefined,
@@ -379,13 +370,45 @@ export async function parseRunsContainer(
       continue;
     }
 
+    if (element.localName === "sdt") {
+      const sdtContent = getFirstChildByTagNameNS(element, WORD_NS, "sdtContent");
+      if (!sdtContent) {
+        continue;
+      }
+      const sdtPr = getFirstChildByTagNameNS(element, WORD_NS, "sdtPr");
+      const sdtEndPr = getFirstChildByTagNameNS(element, WORD_NS, "sdtEndPr");
+      const wrapper: EditorSdtBlockWrapper = {
+        groupId: createEditorNodeId("sdt"),
+        sdtPr: parseSdtPr(sdtPr),
+        ...(sdtEndPr
+          ? { sdtEndPrXml: new XMLSerializer().serializeToString(sdtEndPr) }
+          : {}),
+      };
+      const nestedRuns = await parseRunsContainer(
+        sdtContent,
+        numberingMaps,
+        zip,
+        relsMap,
+        assets,
+        theme,
+        inheritedLink,
+        parseNestedBlocks,
+      );
+      for (const nestedRun of nestedRuns) {
+        runs.push({
+          ...nestedRun,
+          sdtWrappers: [wrapper, ...(nestedRun.sdtWrappers ?? [])],
+        });
+      }
+      continue;
+    }
+
     if (element.localName === "r") {
       const runStyles = parseRunStyle(
         getFirstChildByTagNameNS(element, WORD_NS, "rPr"),
         theme,
       );
 
-      // Field-control run: emit preserved fldChar / instrText markers in order.
       const hasFieldControl =
         getChildrenByTagNameNS(element, WORD_NS, "fldChar").length > 0 ||
         getChildrenByTagNameNS(element, WORD_NS, "instrText").length > 0;
@@ -466,18 +489,12 @@ export async function parseRunsContainer(
 
       let styles = runStyles;
       if (sym && !styles?.fontFamily) {
-        // Apply the sym font so the canvas renders the PUA/legacy code point
-        // correctly when w:rPr did not already specify w:rFonts.
         (styles ??= {}).fontFamily = sym.font;
       }
       if (inheritedLink) {
         (styles ??= {}).link = inheritedLink;
       }
 
-      // Bookmark/comment markers nested between this run's children split it
-      // into segments. (Only plain-text runs are split; image/textbox runs are
-      // pathological here and fall through to emit their markers around the
-      // whole run.)
       const innerMarkers: Array<{ offset: number; run: ImportedRun }> = [
         ...(innerBookmarks ?? []).map(
           (m): { offset: number; run: ImportedRun } => ({
@@ -493,8 +510,6 @@ export async function parseRunsContainer(
         ),
       ];
       if (innerMarkers.length > 0 && !image && !textBox) {
-        // Stable sort by offset preserves document order for markers sharing one
-        // offset (Array.prototype.sort is stable in modern engines).
         innerMarkers.sort((a, b): number => a.offset - b.offset);
         let cursor = 0;
         for (const inner of innerMarkers) {
@@ -563,8 +578,6 @@ export async function parseRunsContainer(
           field: { type: fieldType },
         });
       } else {
-        // Preserve other simple fields (REF/PAGEREF/etc.) faithfully by
-        // promoting them to the equivalent complex-field marker structure.
         runs.push({ text: "", fieldChar: { kind: "begin" } });
         runs.push({ text: "", fieldInstruction: instr });
         runs.push({ text: "", fieldChar: { kind: "separate" } });
