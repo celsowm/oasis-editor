@@ -134,24 +134,31 @@ export function transformBookmarksAcrossParagraphEdit(
   oldParagraphs: EditorParagraphNode[],
   newParagraphs: EditorParagraphNode[],
 ): EditorBookmarks {
-  const old = buildStream(oldParagraphs);
-
   // Fast path: does any anchor actually live in the edited zone?
   let relevant = false;
-  for (const id of bookmarks.order) {
-    const bm = bookmarks.items[id];
-    if (!bm) continue;
-    if (
-      (bm.start && old.baseById.has(bm.start.paragraphId)) ||
-      (bm.end && old.baseById.has(bm.end.paragraphId))
-    ) {
-      relevant = true;
-      break;
+
+  if (bookmarks.order.length > 0) {
+    const bookmarkParagraphIds = new Set<string>();
+    for (const id of bookmarks.order) {
+      const bm = bookmarks.items[id];
+      if (!bm) continue;
+      if (bm.start) bookmarkParagraphIds.add(bm.start.paragraphId);
+      if (bm.end) bookmarkParagraphIds.add(bm.end.paragraphId);
+    }
+
+    for (const paragraph of oldParagraphs) {
+      if (bookmarkParagraphIds.has(paragraph.id)) {
+        relevant = true;
+        break;
+      }
     }
   }
+
   if (!relevant) {
     return bookmarks;
   }
+
+  const old = buildStream(oldParagraphs);
 
   const next = buildStream(newParagraphs);
   if (old.text === next.text) {
