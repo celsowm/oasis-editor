@@ -31,6 +31,7 @@ import {
 } from "./sourceRunXml.js";
 import {
   serializeDeletionRunContent,
+  serializeMoveRangeMarker,
   serializeRunRevisionWrapper,
 } from "./revisionXml.js";
 
@@ -41,6 +42,9 @@ export function serializeRun(
   styles: Record<string, EditorNamedStyle> | undefined,
   serializeBlocksXml: SerializeBlocksXml,
 ): string {
+  if (run.revisionRangeMarker) {
+    return serializeMoveRangeMarker(run.revisionRangeMarker);
+  }
   if ((run as { __isFootnoteRefMarker?: boolean }).__isFootnoteRefMarker) {
     return serializeFootnoteRefMarker();
   }
@@ -118,6 +122,9 @@ export function serializeRunWithRelationships(
     styles,
     serializeBlocksXml,
   );
+  if (run.revisionRangeMarker) {
+    return runXml;
+  }
   if (run.revision?.type === "delete") {
     runXml = serializeDeletionRunContent(runXml);
   }
