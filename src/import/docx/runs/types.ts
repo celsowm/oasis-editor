@@ -5,6 +5,7 @@ import type {
   EditorImageRunData,
   EditorTextBoxData,
   EditorMathExpression,
+  EditorSdtBlockWrapper,
 } from "@/core/model.js";
 
 export type ParseNestedBlocks = (
@@ -39,6 +40,8 @@ export interface ImportedRun {
   image?: EditorImageRunData;
   textBox?: EditorTextBoxData;
   styles?: EditorTextStyle;
+  /** Enclosing inline `w:sdt` wrappers, outermost first. */
+  sdtWrappers?: EditorSdtBlockWrapper[];
   field?: { type: "PAGE" | "NUMPAGES" };
   /** Preserved `w:fldChar` control char (complex fields). Zero-length marker. */
   fieldChar?: {
