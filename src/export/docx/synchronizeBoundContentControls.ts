@@ -3,6 +3,8 @@ import type {
   EditorDocument,
   EditorParagraphNode,
   EditorSdtBlockWrapper,
+  EditorTableCellNode,
+  EditorTableRowNode,
 } from "@/core/model.js";
 import { getDocumentSectionsCanonical, getParagraphText } from "@/core/model.js";
 import { writeCustomXmlBinding } from "@/ooxml/word/customXmlBinding.js";
@@ -27,18 +29,17 @@ function appendBoundControlText(
   }
 }
 
+function collectCellText(cell: EditorTableCellNode): string {
+  return cell.blocks.map(collectBlockText).filter(Boolean).join("\n");
+}
+
+function collectRowText(row: EditorTableRowNode): string {
+  return row.cells.map(collectCellText).filter(Boolean).join("\t");
+}
+
 function collectBlockText(block: EditorBlockNode): string {
   if (block.type === "paragraph") return getParagraphText(block);
-  const values: string[] = [];
-  for (const row of block.rows) {
-    for (const cell of row.cells) {
-      for (const nested of cell.blocks) {
-        const value = collectBlockText(nested);
-        if (value) values.push(value);
-      }
-    }
-  }
-  return values.join("\n");
+  return block.rows.map(collectRowText).filter(Boolean).join("\n");
 }
 
 function collectInlineBoundControls(
@@ -51,6 +52,25 @@ function collectInlineBoundControls(
     }
     if (run.kind === "textBox") {
       collectBoundControlsFromBlocks(run.textBox.blocks, controls);
+    }
+  }
+}
+
+function collectTableBoundControls(
+  block: Extract<EditorBlockNode, { type: "table" }>,
+  controls: Map<string, BoundControlAccumulator>,
+): void {
+  for (const row of block.rows) {
+    const rowText = collectRowText(row);
+    for (const wrapper of row.sdtWrappers ?? []) {
+      appendBoundControlText(controls, wrapper, rowText, "\n");
+    }
+    for (const cell of row.cells) {
+      const cellText = collectCellText(cell);
+      for (const wrapper of cell.sdtWrappers ?? []) {
+        appendBoundControlText(controls, wrapper, cellText, "\n");
+      }
+      collectBoundControlsFromBlocks(cell.blocks, controls);
     }
   }
 }
@@ -69,11 +89,7 @@ function collectBoundControlsFromBlocks(
     if (block.type === "paragraph") {
       collectInlineBoundControls(block, controls);
     } else {
-      for (const row of block.rows) {
-        for (const cell of row.cells) {
-          collectBoundControlsFromBlocks(cell.blocks, controls);
-        }
-      }
+      collectTableBoundControls(block, controls);
     }
   }
 }
