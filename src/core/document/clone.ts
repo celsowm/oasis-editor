@@ -54,6 +54,9 @@ export function cloneRun(run: EditorTextRun): EditorTextRun {
     text: run.text,
     styles: cloneStyle(run.styles),
     revision: run.revision ? { ...run.revision } : undefined,
+    revisionRangeMarker: run.revisionRangeMarker
+      ? { ...run.revisionRangeMarker }
+      : undefined,
     sdtWrappers: run.sdtWrappers ? [...run.sdtWrappers] : undefined,
   };
   const cloned = visitRun<EditorTextRun>(run, {
