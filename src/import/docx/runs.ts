@@ -5,6 +5,7 @@ import type {
   EditorImageRunData,
   EditorTextBoxData,
   EditorRevision,
+  EditorRunBase,
   EditorSdtBlockWrapper,
 } from "@/core/model.js";
 import { createEditorNodeId } from "@/core/editorState.js";
@@ -120,6 +121,40 @@ function parseRevisionContainer(element: XmlElement): EditorRevision | undefined
       : kind === "moveTo"
         ? { move: "to" as const }
         : {}),
+  };
+}
+
+function parseMoveRangeMarker(
+  element: XmlElement,
+): EditorRunBase["revisionRangeMarker"] | undefined {
+  const match = /^move(From|To)Range(Start|End)$/.exec(element.localName);
+  if (!match) return undefined;
+
+  const move = match[1] === "From" ? "from" : "to";
+  const edge = match[2] === "Start" ? "start" : "end";
+  const rawDate = getAttributeValue(element, "date");
+  const parsedDate = rawDate ? Date.parse(rawDate) : Number.NaN;
+  const colFirstRaw = getAttributeValue(element, "colFirst");
+  const colLastRaw = getAttributeValue(element, "colLast");
+  const columnFirst =
+    colFirstRaw !== null ? Number.parseInt(colFirstRaw, 10) : Number.NaN;
+  const columnLast =
+    colLastRaw !== null ? Number.parseInt(colLastRaw, 10) : Number.NaN;
+  const name = getAttributeValue(element, "name") ?? undefined;
+  const author = getAttributeValue(element, "author") ?? undefined;
+  const displacedByCustomXml =
+    getAttributeValue(element, "displacedByCustomXml") ?? undefined;
+
+  return {
+    move,
+    edge,
+    id: getAttributeValue(element, "id") ?? fallbackRevisionId(element),
+    ...(name !== undefined ? { name } : {}),
+    ...(author !== undefined ? { author } : {}),
+    ...(Number.isFinite(parsedDate) ? { date: parsedDate } : {}),
+    ...(Number.isFinite(columnFirst) ? { columnFirst } : {}),
+    ...(Number.isFinite(columnLast) ? { columnLast } : {}),
+    ...(displacedByCustomXml !== undefined ? { displacedByCustomXml } : {}),
   };
 }
 
@@ -405,6 +440,12 @@ export async function parseRunsContainer(
         continue;
       }
       runs.push({ text: "", comment: marker });
+      continue;
+    }
+
+    const moveRangeMarker = parseMoveRangeMarker(element);
+    if (moveRangeMarker) {
+      runs.push({ text: "", revisionRangeMarker: moveRangeMarker });
       continue;
     }
 
