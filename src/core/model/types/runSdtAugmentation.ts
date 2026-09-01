@@ -15,6 +15,16 @@ declare module "./nodes.js" {
     /** Enclosing cell-level `w:sdt` content controls, outermost first. */
     sdtWrappers?: EditorSdtBlockWrapper[];
   }
+
+  interface EditorSdtPr {
+    /** Word 2013 `w15:repeatingSection` settings. */
+    repeatingSectionProperties?: {
+      /** `w15:sectionTitle/@w15:val`. */
+      sectionTitle?: string;
+      /** Presence/value of `w15:doNotAllowInsertDeleteSection`. */
+      doNotAllowInsertDeleteSection?: boolean;
+    };
+  }
 }
 
 export {};
