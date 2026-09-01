@@ -31,6 +31,7 @@ import {
   type ParagraphAutospacingFlags,
 } from "./paragraphStyle.js";
 import { parseTableLook } from "./tableConditionalFormatting.js";
+import { collectSdtWrappedWordChildren } from "./structuralContentControls.js";
 import {
   parseTableStyle,
   parseTableRowStyle,
@@ -42,14 +43,6 @@ import {
   parseTableConditionalFlags,
 } from "./tableProperties.js";
 
-/**
- * Reproduces Word's HTML-style margin collapsing for paragraphs that use "auto
- * spacing" (`w:beforeAutospacing` / `w:afterAutospacing`) inside a table cell.
- * Word ignores the literal before/after values for these margins and collapses
- * them: the first paragraph's auto before-space and the last paragraph's auto
- * after-space collapse to 0 against the cell edge, and two adjacent auto margins
- * collapse to their max instead of summing.
- */
 function collapseCellAutospacing(
   paragraphs: EditorParagraphNode[],
   flags: ParagraphAutospacingFlags[],
@@ -85,9 +78,6 @@ function applyCellParagraphAutospacing(
   cellNode: XmlElement,
   blocks: EditorBlockNode[],
 ): void {
-  // A nested table or block SDT interrupts paragraph margin collapsing. Only
-  // apply the old paragraph-only rule when the complete direct cell story is a
-  // one-to-one paragraph sequence.
   if (
     !blocks.every(
       (block): block is EditorParagraphNode => block.type === "paragraph",
@@ -146,21 +136,20 @@ export async function parseTableNode(
   const directTableStyle = parseTableStyle(tblPr, tableStyleId ?? undefined);
   const look = parseTableLook(tblPr);
 
-  const rowNodes = getChildrenByTagNameNS(tableNode, WORD_NS, "tr");
+  const rowEntries = collectSdtWrappedWordChildren(tableNode, "tr");
 
   const rows = [];
-  for (let rowIndex = 0; rowIndex < rowNodes.length; rowIndex += 1) {
-    const rowNode = rowNodes[rowIndex]!;
+  for (let rowIndex = 0; rowIndex < rowEntries.length; rowIndex += 1) {
+    const rowEntry = rowEntries[rowIndex]!;
+    const rowNode = rowEntry.element;
     const rowProperties = getFirstChildByTagNameNS(rowNode, WORD_NS, "trPr");
-
-    // Explicit per-row `w:cnfStyle` markers act as the highest-precedence
-    // conditional source (rare; most styled tables rely on position alone).
     const rowConditionalStyle = parseTableConditionalFlags(rowProperties);
 
-    const cellNodes = getChildrenByTagNameNS(rowNode, WORD_NS, "tc");
+    const cellEntries = collectSdtWrappedWordChildren(rowNode, "tc");
     const cells = [];
-    for (let colIndex = 0; colIndex < cellNodes.length; colIndex += 1) {
-      const cellNode = cellNodes[colIndex]!;
+    for (let colIndex = 0; colIndex < cellEntries.length; colIndex += 1) {
+      const cellEntry = cellEntries[colIndex]!;
+      const cellNode = cellEntry.element;
       const cellProperties = getFirstChildByTagNameNS(
         cellNode,
         WORD_NS,
@@ -171,9 +160,6 @@ export async function parseTableNode(
 
       const colSpan = getTableCellColSpan(cellProperties);
       const hMerge = getTableCellHMerge(cellProperties);
-      // Legacy horizontal merge: a `continue` cell is absorbed into the
-      // preceding anchor cell's colspan (modern `w:gridSpan` equivalent) and
-      // is not emitted as its own cell.
       if (hMerge === "continue" && cells.length > 0) {
         const anchor = cells[cells.length - 1]!;
         anchor.colSpan = (anchor.colSpan ?? 1) + colSpan;
@@ -200,6 +186,9 @@ export async function parseTableNode(
 
       if (cellStyle) cell.style = cellStyle;
       cell.conditionalStyle = parseTableConditionalFlags(cellProperties);
+      if (cellEntry.sdtWrappers?.length) {
+        cell.sdtWrappers = [...cellEntry.sdtWrappers];
+      }
       const cellExtAttrs = collectExtAttributes(cellNode);
       if (cellExtAttrs) cell.extAttributes = cellExtAttrs;
       if (vMerge === "continue") {
@@ -216,6 +205,9 @@ export async function parseTableNode(
       row.style = rowStyle;
     }
     row.conditionalStyle = rowConditionalStyle;
+    if (rowEntry.sdtWrappers?.length) {
+      row.sdtWrappers = [...rowEntry.sdtWrappers];
+    }
     const rowExtAttrs = collectExtAttributes(rowNode);
     if (rowExtAttrs) row.extAttributes = rowExtAttrs;
     const tblPrEx = getFirstChildByTagNameNS(rowNode, WORD_NS, "tblPrEx");
@@ -236,7 +228,6 @@ export async function parseTableNode(
     rows.push(row);
   }
 
-  // Infer rowSpan from restart/continue sequences.
   for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
     const row = rows[rowIndex]!;
     for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
@@ -270,7 +261,6 @@ export async function parseTableNode(
   if (directTableStyle) {
     table.style = directTableStyle;
   }
-  // Store tblLook on the table style for round-trip export.
   if (table.style) {
     table.style.tblLook = look;
   } else if (tableStyleId) {
