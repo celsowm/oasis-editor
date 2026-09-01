@@ -464,6 +464,14 @@ export function getTableCellColSpan(cellProperties: XmlElement | null): number {
   return Number.isFinite(parsed) && parsed > 1 ? Math.floor(parsed) : 1;
 }
 
+function parseTrackedVerticalMergeValue(
+  value: string | null,
+): "restart" | "continue" | undefined {
+  if (value === "rest" || value === "restart") return "restart";
+  if (value === "cont" || value === "continue") return "continue";
+  return undefined;
+}
+
 export function getTableCellVMerge(
   cellProperties: XmlElement | null,
 ): "restart" | "continue" | undefined {
@@ -657,16 +665,14 @@ export function parseTableCellStyle(
   const merged = getFirstChildByTagNameNS(cellProperties, WORD_NS, "cellMerge");
   const structural = inserted ?? deleted ?? merged;
   if (structural) {
-    const originalMerge = getAttributeValue(structural, "vMergeOrig");
+    const originalMerge = parseTrackedVerticalMergeValue(
+      getAttributeValue(structural, "vMergeOrig"),
+    );
     style.revision = {
       ...parseRevisionMetadata(structural),
       type: inserted ? "insert" : deleted ? "delete" : "merge",
       ...(merged && originalMerge
-        ? {
-            previous: {
-              vMerge: originalMerge === "restart" ? "restart" : "continue",
-            },
-          }
+        ? { previous: { vMerge: originalMerge } }
         : {}),
     };
   }

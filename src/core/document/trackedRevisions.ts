@@ -431,6 +431,32 @@ function resolveRowStructuralRevision(
   };
 }
 
+function restoreVerticalCellMerge(
+  cell: EditorTableCellNode,
+): EditorTableCellNode | undefined {
+  const state = cell.mergeRevisionState;
+  if (
+    state?.orientation === "vertical" &&
+    state.currentCellCount === 1 &&
+    state.previousCells.length === 1
+  ) {
+    return structuredClone(state.previousCells[0]!);
+  }
+
+  const revision = cell.style?.revision;
+  if (revision?.type === "merge" && revision.previous?.vMerge === "continue") {
+    return {
+      ...cell,
+      blocks: [],
+      rowSpan: undefined,
+      vMerge: "continue",
+      style: cell.style ? { ...cell.style, revision: undefined } : cell.style,
+      mergeRevisionState: undefined,
+    };
+  }
+  return undefined;
+}
+
 function resolveCellStructuralRevision(
   cell: EditorTableCellNode,
   path: string,
@@ -444,14 +470,19 @@ function resolveCellStructuralRevision(
   if (revision && matchesRevision(context, revision.id)) {
     markMatched(context);
     if (context.action === "reject" && revision.type === "merge") {
-      pushIssue(context, {
-        kind: "cell-merge-original-unavailable",
-        revisionId: revision.id,
-        path,
-        message:
-          "The original cell grid for this merge revision is preserved but not reconstructed by the core resolver yet.",
-      });
-      return cell;
+      const restored = restoreVerticalCellMerge(cell);
+      if (!restored) {
+        pushIssue(context, {
+          kind: "cell-merge-original-unavailable",
+          revisionId: revision.id,
+          path,
+          message:
+            "The previous merge topology lacks an exact semantic snapshot for safe restoration.",
+        });
+        return cell;
+      }
+      markResolved(context, revision.id);
+      return restored;
     }
 
     markResolved(context, revision.id);
@@ -469,12 +500,17 @@ function resolveCellStructuralRevision(
       markResolved(context, revisionId);
       return { ...cell, mergeRevisionState: undefined };
     }
+    const restored = restoreVerticalCellMerge(cell);
+    if (restored) {
+      markResolved(context, revisionId);
+      return restored;
+    }
     pushIssue(context, {
       kind: "cell-merge-original-unavailable",
       revisionId,
       path: `${path}.mergeRevisionState`,
       message:
-        "The original cell grid is preserved but cannot yet be spliced back into the live table safely.",
+        "The preserved merge snapshot is not a supported exact vertical-cell restoration.",
     });
   }
 
@@ -548,6 +584,31 @@ function transformRow(
   return next;
 }
 
+function recomputeVerticalMergeRowSpans(table: EditorTableNode): EditorTableNode {
+  let changed = false;
+  const rows = table.rows.map((row, rowIndex) => {
+    let rowChanged = false;
+    const cells = row.cells.map((cell, cellIndex) => {
+      let rowSpan: number | undefined;
+      if (cell.vMerge === "restart") {
+        rowSpan = 1;
+        for (let nextRowIndex = rowIndex + 1; nextRowIndex < table.rows.length; nextRowIndex += 1) {
+          const nextCell = table.rows[nextRowIndex]!.cells[cellIndex];
+          if (!nextCell || nextCell.vMerge !== "continue") break;
+          rowSpan += 1;
+        }
+      }
+      if (cell.rowSpan === rowSpan) return cell;
+      rowChanged = true;
+      return { ...cell, rowSpan };
+    });
+    if (!rowChanged) return row;
+    changed = true;
+    return { ...row, cells };
+  });
+  return changed ? { ...table, rows } : table;
+}
+
 function transformTable(
   table: EditorTableNode,
   path: string,
@@ -591,7 +652,10 @@ function transformTable(
     if (transformed !== row) rowsChanged = true;
   }
   if (rowsChanged) next = { ...next, rows };
-  if (rowsChanged) recordRemovedParagraphRelocations(table, next, context);
+  if (rowsChanged) {
+    next = recomputeVerticalMergeRowSpans(next);
+    recordRemovedParagraphRelocations(table, next, context);
+  }
   return next;
 }
 

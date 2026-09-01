@@ -5,6 +5,7 @@ import type {
   EditorNamedStyle,
   EditorParagraphNode,
   EditorParagraphStyle,
+  EditorTableCellNode,
   EditorTableNode,
 } from "@/core/model.js";
 import {
@@ -100,6 +101,31 @@ function applyCellParagraphAutospacing(
   );
 }
 
+function captureTrackedCellMergeState(cell: EditorTableCellNode): void {
+  const revision = cell.style?.revision;
+  const previousVMerge =
+    revision?.type === "merge" ? revision.previous?.vMerge : undefined;
+  if (!revision || revision.type !== "merge" || !previousVMerge) return;
+
+  const previousStyle = cell.style
+    ? { ...cell.style, revision: undefined }
+    : undefined;
+  const previousCell: EditorTableCellNode = {
+    ...cell,
+    blocks: previousVMerge === "continue" ? [] : cell.blocks,
+    vMerge: previousVMerge,
+    rowSpan: undefined,
+    style: previousStyle,
+    mergeRevisionState: undefined,
+  };
+  cell.mergeRevisionState = {
+    revisionId: revision.id,
+    orientation: "vertical",
+    currentCellCount: 1,
+    previousCells: [previousCell],
+  };
+}
+
 export async function parseTableNode(
   tableNode: XmlElement,
   numberingMaps: NumberingMaps,
@@ -191,6 +217,7 @@ export async function parseTableNode(
       }
       const cellExtAttrs = collectExtAttributes(cellNode);
       if (cellExtAttrs) cell.extAttributes = cellExtAttrs;
+      captureTrackedCellMergeState(cell);
       if (vMerge === "continue") {
         cell.blocks = [];
       }
