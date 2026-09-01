@@ -1,16 +1,4 @@
-/**
- * Serializes a typed {@link EditorSdtPr} back to `<w:sdtPr>` XML, emitting the
- * recognized children in the CT_SdtPr schema sequence (`alias`, `tag`, `id`,
- * `lock`, `placeholder`, `dataBinding`, `temporary`, then the single subtype
- * element, then `appearance`/`showingPlcHdr`/`color` which the schema groups with
- * extension attributes). Unknown future-schema children preserved in
- * `unknownXml` are appended verbatim to keep documents byte-faithful on round-trip.
- *
- * The serializer produces only string output (the export pipeline is deterministic
- * string concatenation, never DOM-based), with `escapeXml` applied to user-facing
- * values (`alias`, `tag`) since a control name may legitimately contain any XML
- * special character.
- */
+/** Serializes typed content-control properties as schema-valid WordprocessingML. */
 import type {
   EditorSdtDataBinding,
   EditorSdtListItem,
@@ -19,13 +7,6 @@ import type {
 } from "@/core/model.js";
 import { escapeXml } from "../xmlUtils.js";
 
-/**
- * `<w:sdtPr>` requires its subtype element to be the final named child per schema
- * order, with `appearance`, `showingPlcHdr`, `color` trailing as extension-like
- * properties. The exact ordering used by Word is: rPr, alias, tag, id, lock,
- * placeholder, dataBinding, temporary, subtype, appearance, showingPlcHdr,
- * color, extension. We mirror that so we round-trip as schema-valid.
- */
 export function serializeSdtPrXml(sdtPr: EditorSdtPr): string {
   const hasAnyField =
     sdtPr.alias !== undefined ||
@@ -39,14 +20,12 @@ export function serializeSdtPrXml(sdtPr: EditorSdtPr): string {
     sdtPr.placeholderDocPart !== undefined ||
     sdtPr.dataBinding !== undefined ||
     sdtPr.subtype !== undefined ||
+    sdtPr.repeatingSectionProperties !== undefined ||
     (sdtPr.unknownXml ?? "").length > 0;
 
-  if (!hasAnyField) {
-    return "<w:sdtPr/>";
-  }
+  if (!hasAnyField) return "<w:sdtPr/>";
 
   let inner = "";
-
   if (sdtPr.alias !== undefined) {
     inner += `<w:alias w:val="${escapeXml(sdtPr.alias)}"/>`;
   }
@@ -71,7 +50,10 @@ export function serializeSdtPrXml(sdtPr: EditorSdtPr): string {
     inner += `<w:temporary w:val="${sdtPr.temporary ? "true" : "false"}"/>`;
   }
   if (sdtPr.subtype !== undefined) {
-    inner += serializeSdtSubtypeXml(sdtPr.subtype);
+    inner += serializeSdtSubtypeXml(
+      sdtPr.subtype,
+      sdtPr.repeatingSectionProperties,
+    );
   }
   if (sdtPr.appearance !== undefined) {
     inner += `<w:appearance w:val="${escapeXml(sdtPr.appearance)}"/>`;
@@ -84,27 +66,24 @@ export function serializeSdtPrXml(sdtPr: EditorSdtPr): string {
   if (sdtPr.color !== undefined) {
     inner += `<w:color w:val="${escapeXml(sdtPr.color)}"/>`;
   }
-  if (sdtPr.unknownXml) {
-    inner += sdtPr.unknownXml;
-  }
+  if (sdtPr.unknownXml) inner += sdtPr.unknownXml;
 
   return `<w:sdtPr>${inner}</w:sdtPr>`;
 }
 
+/** CT_DataBinding stores all three semantic values as attributes. */
 function serializeSdtDataBindingXml(dataBinding: EditorSdtDataBinding): string {
-  let inner = "";
+  const attrs: string[] = [];
   if (dataBinding.prefixMappings !== undefined) {
-    inner += `<w:prefixMappings w:val="${escapeXml(
-      dataBinding.prefixMappings,
-    )}"/>`;
+    attrs.push(`w:prefixMappings="${escapeXml(dataBinding.prefixMappings)}"`);
   }
   if (dataBinding.xpath !== undefined) {
-    inner += `<w:xpath w:val="${escapeXml(dataBinding.xpath)}"/>`;
+    attrs.push(`w:xpath="${escapeXml(dataBinding.xpath)}"`);
   }
   if (dataBinding.storeItemID !== undefined) {
-    inner += `<w:storeItemID w:val="${escapeXml(dataBinding.storeItemID)}"/>`;
+    attrs.push(`w:storeItemID="${escapeXml(dataBinding.storeItemID)}"`);
   }
-  return inner ? `<w:dataBinding>${inner}</w:dataBinding>` : "";
+  return attrs.length > 0 ? `<w:dataBinding ${attrs.join(" ")}/>` : "";
 }
 
 function serializeSdtListItemXml(item: EditorSdtListItem): string {
@@ -117,7 +96,27 @@ function serializeSdtListItemXml(item: EditorSdtListItem): string {
   return `<w:listItem${displayTextAttr}${valueAttr}/>`;
 }
 
-function serializeSdtSubtypeXml(subtype: EditorSdtSubtype): string {
+function serializeRepeatingSectionXml(
+  properties: EditorSdtPr["repeatingSectionProperties"],
+): string {
+  let children = "";
+  if (properties?.sectionTitle !== undefined) {
+    children += `<w15:sectionTitle w15:val="${escapeXml(properties.sectionTitle)}"/>`;
+  }
+  if (properties?.doNotAllowInsertDeleteSection !== undefined) {
+    children += `<w15:doNotAllowInsertDeleteSection w15:val="${
+      properties.doNotAllowInsertDeleteSection ? "1" : "0"
+    }"/>`;
+  }
+  return children
+    ? `<w15:repeatingSection>${children}</w15:repeatingSection>`
+    : "<w15:repeatingSection/>";
+}
+
+function serializeSdtSubtypeXml(
+  subtype: EditorSdtSubtype,
+  repeatingSectionProperties?: EditorSdtPr["repeatingSectionProperties"],
+): string {
   switch (subtype.kind) {
     case "text":
       return "<w:text/>";
@@ -134,9 +133,9 @@ function serializeSdtSubtypeXml(subtype: EditorSdtSubtype): string {
     case "bibliography":
       return "<w:bibliography/>";
     case "repeatingSection":
-      return "<w:repeatingSection/>";
+      return serializeRepeatingSectionXml(repeatingSectionProperties);
     case "repeatingSectionItem":
-      return "<w:repeatingSectionItem/>";
+      return "<w15:repeatingSectionItem/>";
     case "comboBox":
     case "dropDownList": {
       const items = (subtype.listItems ?? [])
@@ -205,13 +204,9 @@ function serializeSdtSubtypeXml(subtype: EditorSdtSubtype): string {
             : "";
         children += `<w14:uncheckedState${fontAttr}${charAttr}/>`;
       }
-      // `w14:checkbox` is the modern checkbox extension element; the consumer
-      // (`document.xml`) declares `xmlns:w14`, so the prefixed emission is valid.
       return `<w14:checkbox>${children}</w14:checkbox>`;
     }
     default: {
-      // Exhaustiveness guard — if a new subtype is added to the union without
-      // a serializer case the build fails.
       const _exhaustive: never = subtype;
       return _exhaustive as never;
     }
