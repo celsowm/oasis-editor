@@ -13,11 +13,17 @@ export const DRAWINGML_NS =
 export const OFFICE_REL_NS =
   "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 export const WORD14_NS = "http://schemas.microsoft.com/office/word/2010/wordml";
+export const WORD15_NS = "http://schemas.microsoft.com/office/word/2012/wordml";
 
 const WORD14_MARKUP_COMPATIBILITY_CAPABILITIES =
   extendMarkupCompatibilityCapabilities(
     DEFAULT_MARKUP_COMPATIBILITY_CAPABILITIES,
     WORD14_NS,
+  );
+const WORD15_MARKUP_COMPATIBILITY_CAPABILITIES =
+  extendMarkupCompatibilityCapabilities(
+    DEFAULT_MARKUP_COMPATIBILITY_CAPABILITIES,
+    WORD15_NS,
   );
 
 export function getChildrenByTagNameNS(
@@ -45,7 +51,6 @@ const DOCX_TEXT_DIRECTIONS: readonly DocxTextDirection[] = [
   "tbRlV",
 ];
 
-/** Validate a raw `w:textDirection/@w:val` token, or return undefined. */
 export function parseTextDirection(
   value: string | null | undefined,
 ): DocxTextDirection | undefined {
@@ -62,11 +67,6 @@ export function getFirstChildByTagNameNS(
   return getChildrenByTagNameNS(element, namespace, localName)[0] ?? null;
 }
 
-/**
- * Finds a direct `w14:localName` child using a Markup Compatibility capability
- * profile that explicitly understands the w14 namespace. The generic child
- * helpers remain conservative and continue to consume mc:Fallback instead.
- */
 export function getFirstW14Child(
   element: XmlElement | null | undefined,
   localName: string,
@@ -85,6 +85,25 @@ export function getFirstW14Child(
   );
 }
 
+/** Finds a direct Word 2013 (`w15`) child while honoring MC choice semantics. */
+export function getFirstW15Child(
+  element: XmlElement | null | undefined,
+  localName: string,
+): XmlElement | null {
+  if (!element) {
+    return null;
+  }
+  return (
+    getMarkupCompatibleChildren(
+      element,
+      WORD15_MARKUP_COMPATIBILITY_CAPABILITIES,
+    ).find(
+      (child): boolean =>
+        child.namespaceURI === WORD15_NS && child.localName === localName,
+    ) ?? null
+  );
+}
+
 export function getAttributeValue(
   element: XmlElement | null,
   localName: string,
@@ -95,8 +114,10 @@ export function getAttributeValue(
   return (
     element.getAttributeNS(WORD_NS, localName) ??
     element.getAttributeNS(WORD14_NS, localName) ??
+    element.getAttributeNS(WORD15_NS, localName) ??
     element.getAttribute(`w:${localName}`) ??
     element.getAttribute(`w14:${localName}`) ??
+    element.getAttribute(`w15:${localName}`) ??
     element.getAttribute(localName)
   );
 }
@@ -117,10 +138,6 @@ export function findElementDeep(
   return null;
 }
 
-/**
- * Collects non-WORD_NS extension attributes (e.g. `w14:paraId`, `w15:*`) from
- * a table/row/cell element for round-trip preservation.
- */
 export function collectExtAttributes(
   element: XmlElement,
 ): Record<string, string> | undefined {
@@ -131,8 +148,6 @@ export function collectExtAttributes(
     if (!attr) continue;
     const ns = attr.namespaceURI;
     if (!ns || ns === WORD_NS || ns === MARKUP_COMPATIBILITY_NS) continue;
-    // Skip namespace declarations. Markup Compatibility control attributes are
-    // consumed by the MC processor and are not editor semantic properties.
     if (attr.prefix === "xmlns" || attr.localName === "xmlns") continue;
     const localName = attr.localName ?? attr.name;
     if (!localName) continue;
