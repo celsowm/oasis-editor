@@ -143,6 +143,9 @@ function importedRunToEditorRun(run: ImportedRun): EditorTextRun {
   if (run.revision) {
     base.revision = { ...run.revision };
   }
+  if (run.revisionRangeMarker) {
+    base.revisionRangeMarker = { ...run.revisionRangeMarker };
+  }
   if (run.sdtWrappers?.length) {
     base.sdtWrappers = [...run.sdtWrappers];
   }
@@ -255,7 +258,8 @@ function splitRunsAtPageBreaks(runs: ImportedRun[]): {
       !run.fieldChar &&
       run.fieldInstruction === undefined &&
       !run.bookmark &&
-      !run.comment
+      !run.comment &&
+      !run.revisionRangeMarker
     ) {
       return;
     }
@@ -294,6 +298,7 @@ function paragraphHasVisibleContent(runs: ImportedRun[]): boolean {
       run.fieldInstruction !== undefined ||
       run.bookmark ||
       run.comment ||
+      run.revisionRangeMarker ||
       run.text.replace(/\s/g, "").length > 0,
   );
 }
