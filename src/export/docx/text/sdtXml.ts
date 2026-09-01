@@ -7,6 +7,9 @@ import type {
 } from "@/core/model.js";
 import { escapeXml } from "../xmlUtils.js";
 
+const WORD15_NS = "http://schemas.microsoft.com/office/word/2012/wordml";
+const WORD15_XMLNS = `xmlns:w15="${WORD15_NS}"`;
+
 export function serializeSdtPrXml(sdtPr: EditorSdtPr): string {
   const hasAnyField =
     sdtPr.alias !== undefined ||
@@ -109,8 +112,8 @@ function serializeRepeatingSectionXml(
     }"/>`;
   }
   return children
-    ? `<w15:repeatingSection>${children}</w15:repeatingSection>`
-    : "<w15:repeatingSection/>";
+    ? `<w15:repeatingSection ${WORD15_XMLNS}>${children}</w15:repeatingSection>`
+    : `<w15:repeatingSection ${WORD15_XMLNS}/>`;
 }
 
 function serializeSdtSubtypeXml(
@@ -135,7 +138,7 @@ function serializeSdtSubtypeXml(
     case "repeatingSection":
       return serializeRepeatingSectionXml(repeatingSectionProperties);
     case "repeatingSectionItem":
-      return "<w15:repeatingSectionItem/>";
+      return `<w15:repeatingSectionItem ${WORD15_XMLNS}/>`;
     case "comboBox":
     case "dropDownList": {
       const items = (subtype.listItems ?? [])
