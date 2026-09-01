@@ -1,0 +1,804 @@
+import type {
+  EditorBlockNode,
+  EditorCommentAnchor,
+  EditorComments,
+  EditorDocument,
+  EditorParagraphNode,
+  EditorSection,
+  EditorTableCellNode,
+  EditorTableCellStyle,
+  EditorTableNode,
+  EditorTableRowNode,
+  EditorTableRowStyle,
+  EditorTableStyle,
+  EditorTextRun,
+  EditorTextStyle,
+  EditorParagraphStyle,
+} from "@/core/model.js";
+import { getDocumentSectionsCanonical } from "@/core/model.js";
+import {
+  cloneEndnotes,
+  cloneFootnotes,
+  cloneSection,
+} from "@/core/cloneState.js";
+import {
+  cloneParagraphStyle,
+  cloneStyle,
+} from "@/core/textStyle/textStyleMutations.js";
+
+export type EditorTrackedRevisionAction = "accept" | "reject";
+export type EditorTrackedRevisionView = "final" | "original";
+
+export type EditorTrackedRevisionIssueKind =
+  | "revision-not-found"
+  | "numbering-original-unavailable"
+  | "structural-removal-unavailable"
+  | "cell-merge-original-unavailable"
+  | "table-property-exception-original-unavailable";
+
+export interface EditorTrackedRevisionIssue {
+  kind: EditorTrackedRevisionIssueKind;
+  revisionId?: string;
+  path: string;
+  message: string;
+}
+
+export interface EditorTrackedRevisionResolutionResult {
+  document: EditorDocument;
+  changed: boolean;
+  complete: boolean;
+  resolvedRevisionIds: string[];
+  unresolved: EditorTrackedRevisionIssue[];
+}
+
+interface ResolutionContext {
+  action: EditorTrackedRevisionAction;
+  revisionId?: string;
+  changed: boolean;
+  matched: boolean;
+  resolvedRevisionIds: Set<string>;
+  unresolved: EditorTrackedRevisionIssue[];
+  unresolvedKeys: Set<string>;
+  paragraphOffsetTransforms: Map<string, ParagraphOffsetTransform>;
+}
+
+interface ParagraphOffsetSegment {
+  oldStart: number;
+  oldEnd: number;
+  newStart: number;
+  kept: boolean;
+}
+
+interface ParagraphOffsetTransform {
+  segments: ParagraphOffsetSegment[];
+  oldLength: number;
+  newLength: number;
+}
+
+function matchesRevision(context: ResolutionContext, revisionId: string): boolean {
+  return context.revisionId === undefined || context.revisionId === revisionId;
+}
+
+function markMatched(context: ResolutionContext): void {
+  context.matched = true;
+}
+
+function markResolved(context: ResolutionContext, revisionId: string): void {
+  context.matched = true;
+  context.changed = true;
+  context.resolvedRevisionIds.add(revisionId);
+}
+
+function pushIssue(
+  context: ResolutionContext,
+  issue: EditorTrackedRevisionIssue,
+): void {
+  context.matched = true;
+  const key = `${issue.kind}:${issue.revisionId ?? ""}:${issue.path}`;
+  if (context.unresolvedKeys.has(key)) return;
+  context.unresolvedKeys.add(key);
+  context.unresolved.push(issue);
+}
+
+function stripTextPropertyRevision(
+  style: EditorTextStyle | undefined,
+): EditorTextStyle | undefined {
+  const next = cloneStyle(style);
+  if (!next) return undefined;
+  delete next.propertyRevision;
+  return Object.keys(next).length > 0 ? next : undefined;
+}
+
+function stripParagraphPropertyRevision(
+  style: EditorParagraphStyle | undefined,
+): EditorParagraphStyle | undefined {
+  const next = cloneParagraphStyle(style);
+  if (!next) return undefined;
+  delete next.propertyRevision;
+  return Object.keys(next).length > 0 ? next : undefined;
+}
+
+function resolveTextStyle(
+  style: EditorTextStyle | undefined,
+  path: string,
+  context: ResolutionContext,
+): EditorTextStyle | undefined {
+  const revision = style?.propertyRevision;
+  if (!revision || !matchesRevision(context, revision.id)) return style;
+  markResolved(context, revision.id);
+  if (context.action === "accept") {
+    return stripTextPropertyRevision(style);
+  }
+  return stripTextPropertyRevision(revision.previous);
+}
+
+function resolveParagraphStyle(
+  style: EditorParagraphStyle | undefined,
+  path: string,
+  context: ResolutionContext,
+): EditorParagraphStyle | undefined {
+  const revision = style?.propertyRevision;
+  if (!revision || !matchesRevision(context, revision.id)) return style;
+  markResolved(context, revision.id);
+  if (context.action === "accept") {
+    return stripParagraphPropertyRevision(style);
+  }
+  return stripParagraphPropertyRevision(revision.previous);
+}
+
+function resolveTableStyle(
+  style: EditorTableStyle | undefined,
+  path: string,
+  context: ResolutionContext,
+): EditorTableStyle | undefined {
+  const revision = style?.revision;
+  if (!revision || !matchesRevision(context, revision.id)) return style;
+  markResolved(context, revision.id);
+  const next = structuredClone(
+    context.action === "accept" ? style : revision.previous,
+  );
+  delete next.revision;
+  return next;
+}
+
+function resolveRowPropertyStyle(
+  style: EditorTableRowStyle | undefined,
+  path: string,
+  context: ResolutionContext,
+): EditorTableRowStyle | undefined {
+  const revision = style?.propertyRevision;
+  if (!revision || !matchesRevision(context, revision.id)) return style;
+  markResolved(context, revision.id);
+  const structuralRevision = style.revision
+    ? structuredClone(style.revision)
+    : undefined;
+  const next = structuredClone(
+    context.action === "accept" ? style : revision.previous,
+  );
+  delete next.propertyRevision;
+  if (structuralRevision) next.revision = structuralRevision;
+  return next;
+}
+
+function resolveCellPropertyStyle(
+  style: EditorTableCellStyle | undefined,
+  path: string,
+  context: ResolutionContext,
+): EditorTableCellStyle | undefined {
+  const revision = style?.propertyRevision;
+  if (!revision || !matchesRevision(context, revision.id)) return style;
+  markResolved(context, revision.id);
+  const structuralRevision = style.revision
+    ? structuredClone(style.revision)
+    : undefined;
+  const next = structuredClone(
+    context.action === "accept" ? style : revision.previous,
+  );
+  delete next.propertyRevision;
+  if (structuralRevision) next.revision = structuralRevision;
+  return next;
+}
+
+function shouldKeepRun(
+  run: EditorTextRun,
+  path: string,
+  context: ResolutionContext,
+): boolean {
+  const revision = run.revision;
+  if (!revision || !matchesRevision(context, revision.id)) return true;
+  markResolved(context, revision.id);
+  return context.action === "accept"
+    ? revision.type === "insert"
+    : revision.type === "delete";
+}
+
+function resolveRun(
+  run: EditorTextRun,
+  path: string,
+  context: ResolutionContext,
+): EditorTextRun | null {
+  if (
+    run.revisionRangeMarker &&
+    matchesRevision(context, run.revisionRangeMarker.id)
+  ) {
+    markResolved(context, run.revisionRangeMarker.id);
+    return null;
+  }
+
+  if (!shouldKeepRun(run, path, context)) return null;
+
+  let next = run;
+  if (run.revision && matchesRevision(context, run.revision.id)) {
+    next = { ...next, revision: undefined };
+  }
+
+  const styles = resolveTextStyle(next.styles, `${path}.styles`, context);
+  if (styles !== next.styles) {
+    next = { ...next, styles };
+  }
+
+  if (next.kind === "textBox") {
+    const blocks = transformBlocks(
+      next.textBox.blocks,
+      `${path}.textBox.blocks`,
+      context,
+    );
+    if (blocks !== next.textBox.blocks) {
+      next = {
+        ...next,
+        textBox: { ...next.textBox, blocks },
+      };
+    }
+  }
+
+  return next;
+}
+
+function transformParagraph(
+  paragraph: EditorParagraphNode,
+  path: string,
+  context: ResolutionContext,
+): EditorParagraphNode {
+  const nextRuns: EditorTextRun[] = [];
+  const segments: ParagraphOffsetSegment[] = [];
+  let oldCursor = 0;
+  let newCursor = 0;
+
+  for (let index = 0; index < paragraph.runs.length; index += 1) {
+    const run = paragraph.runs[index]!;
+    const nextRun = resolveRun(run, `${path}.runs[${index}]`, context);
+    const length = run.text.length;
+    segments.push({
+      oldStart: oldCursor,
+      oldEnd: oldCursor + length,
+      newStart: newCursor,
+      kept: nextRun !== null,
+    });
+    oldCursor += length;
+    if (nextRun) {
+      nextRuns.push(nextRun);
+      newCursor += nextRun.text.length;
+    }
+  }
+
+  if (oldCursor !== newCursor) {
+    context.paragraphOffsetTransforms.set(paragraph.id, {
+      segments,
+      oldLength: oldCursor,
+      newLength: newCursor,
+    });
+  }
+
+  let next: EditorParagraphNode =
+    nextRuns.length === paragraph.runs.length &&
+    nextRuns.every((run, index) => run === paragraph.runs[index])
+      ? paragraph
+      : { ...paragraph, runs: nextRuns };
+
+  const style = resolveParagraphStyle(next.style, `${path}.style`, context);
+  if (style !== next.style) next = { ...next, style };
+
+  const numberingRevision = next.numberingRevision;
+  if (
+    numberingRevision &&
+    matchesRevision(context, numberingRevision.id)
+  ) {
+    markMatched(context);
+    if (context.action === "accept") {
+      markResolved(context, numberingRevision.id);
+      next = { ...next, numberingRevision: undefined };
+    } else {
+      pushIssue(context, {
+        kind: "numbering-original-unavailable",
+        revisionId: numberingRevision.id,
+        path: `${path}.numberingRevision`,
+        message:
+          "w:numberingChange only stores the previous rendered-number cache; it cannot reconstruct the previous numId/ilvl safely.",
+      });
+    }
+  }
+
+  return next;
+}
+
+function rawRevisionId(xml: string): string | undefined {
+  return /\bw:id\s*=\s*["']([^"']+)["']/.exec(xml)?.[1];
+}
+
+function resolveRowStructuralRevision(
+  row: EditorTableRowNode,
+  path: string,
+  context: ResolutionContext,
+): EditorTableRowNode {
+  const revision = row.style?.revision;
+  if (!revision || !matchesRevision(context, revision.id)) return row;
+  markMatched(context);
+
+  const requiresRemoval =
+    (context.action === "accept" && revision.type === "delete") ||
+    (context.action === "reject" && revision.type === "insert");
+  if (requiresRemoval) {
+    pushIssue(context, {
+      kind: "structural-removal-unavailable",
+      revisionId: revision.id,
+      path,
+      message:
+        "Resolving this row revision would remove a table subtree; anchor-safe subtree removal is not implemented yet.",
+    });
+    return row;
+  }
+  if (context.action === "reject" && revision.type === "merge") {
+    pushIssue(context, {
+      kind: "cell-merge-original-unavailable",
+      revisionId: revision.id,
+      path,
+      message:
+        "The original table structure for this merge revision is not reconstructed by the core resolver yet.",
+    });
+    return row;
+  }
+
+  markResolved(context, revision.id);
+  return {
+    ...row,
+    style: row.style ? { ...row.style, revision: undefined } : row.style,
+  };
+}
+
+function resolveCellStructuralRevision(
+  cell: EditorTableCellNode,
+  path: string,
+  context: ResolutionContext,
+): EditorTableCellNode {
+  const revision = cell.style?.revision;
+  const mergeStateMatches =
+    cell.mergeRevisionState &&
+    matchesRevision(context, cell.mergeRevisionState.revisionId);
+
+  if (revision && matchesRevision(context, revision.id)) {
+    markMatched(context);
+    const requiresRemoval =
+      (context.action === "accept" && revision.type === "delete") ||
+      (context.action === "reject" && revision.type === "insert");
+    if (requiresRemoval) {
+      pushIssue(context, {
+        kind: "structural-removal-unavailable",
+        revisionId: revision.id,
+        path,
+        message:
+          "Resolving this cell revision would remove a table subtree; anchor-safe subtree removal is not implemented yet.",
+      });
+      return cell;
+    }
+    if (context.action === "reject" && revision.type === "merge") {
+      pushIssue(context, {
+        kind: "cell-merge-original-unavailable",
+        revisionId: revision.id,
+        path,
+        message:
+          "The original cell grid for this merge revision is preserved but not reconstructed by the core resolver yet.",
+      });
+      return cell;
+    }
+
+    markResolved(context, revision.id);
+    return {
+      ...cell,
+      style: cell.style ? { ...cell.style, revision: undefined } : cell.style,
+      ...(revision.type === "merge" ? { mergeRevisionState: undefined } : {}),
+    };
+  }
+
+  if (mergeStateMatches) {
+    const revisionId = cell.mergeRevisionState!.revisionId;
+    markMatched(context);
+    if (context.action === "accept") {
+      markResolved(context, revisionId);
+      return { ...cell, mergeRevisionState: undefined };
+    }
+    pushIssue(context, {
+      kind: "cell-merge-original-unavailable",
+      revisionId,
+      path: `${path}.mergeRevisionState`,
+      message:
+        "The original cell grid is preserved but cannot yet be spliced back into the live table safely.",
+    });
+  }
+
+  return cell;
+}
+
+function transformCell(
+  cell: EditorTableCellNode,
+  path: string,
+  context: ResolutionContext,
+): EditorTableCellNode {
+  let next = resolveCellStructuralRevision(cell, path, context);
+  const style = resolveCellPropertyStyle(next.style, `${path}.style`, context);
+  if (style !== next.style) next = { ...next, style };
+  const blocks = transformBlocks(next.blocks, `${path}.blocks`, context);
+  if (blocks !== next.blocks) next = { ...next, blocks };
+  return next;
+}
+
+function transformRow(
+  row: EditorTableRowNode,
+  path: string,
+  context: ResolutionContext,
+): EditorTableRowNode {
+  let next = resolveRowStructuralRevision(row, path, context);
+  const style = resolveRowPropertyStyle(next.style, `${path}.style`, context);
+  if (style !== next.style) next = { ...next, style };
+
+  if (next.tblPrExChangeXml) {
+    const revisionId = rawRevisionId(next.tblPrExChangeXml);
+    if (
+      revisionId &&
+      matchesRevision(context, revisionId)
+    ) {
+      markMatched(context);
+      if (context.action === "accept") {
+        markResolved(context, revisionId);
+        next = { ...next, tblPrExChangeXml: undefined };
+      } else {
+        pushIssue(context, {
+          kind: "table-property-exception-original-unavailable",
+          revisionId,
+          path: `${path}.tblPrExChangeXml`,
+          message:
+            "w:tblPrExChange is still preservation-only; its previous properties are not semantically decoded yet.",
+        });
+      }
+    }
+  }
+
+  const cells = next.cells.map((cell, index) =>
+    transformCell(cell, `${path}.cells[${index}]`, context),
+  );
+  if (cells.some((cell, index) => cell !== next.cells[index])) {
+    next = { ...next, cells };
+  }
+  return next;
+}
+
+function transformTable(
+  table: EditorTableNode,
+  path: string,
+  context: ResolutionContext,
+): EditorTableNode {
+  let next = table;
+  const style = resolveTableStyle(next.style, `${path}.style`, context);
+  if (style !== next.style) next = { ...next, style };
+
+  const gridRevision = next.gridRevision;
+  if (gridRevision && matchesRevision(context, gridRevision.id)) {
+    markResolved(context, gridRevision.id);
+    if (context.action === "accept") {
+      next = { ...next, gridRevision: undefined };
+    } else {
+      next = {
+        ...next,
+        gridCols: [...gridRevision.previous],
+        gridRevision: undefined,
+      };
+    }
+  }
+
+  const rows = next.rows.map((row, index) =>
+    transformRow(row, `${path}.rows[${index}]`, context),
+  );
+  if (rows.some((row, index) => row !== next.rows[index])) {
+    next = { ...next, rows };
+  }
+  return next;
+}
+
+function transformBlocks(
+  blocks: EditorBlockNode[],
+  path: string,
+  context: ResolutionContext,
+): EditorBlockNode[] {
+  let changed = false;
+  const next = blocks.map((block, index): EditorBlockNode => {
+    const blockPath = `${path}[${index}]`;
+    const transformed =
+      block.type === "paragraph"
+        ? transformParagraph(block, blockPath, context)
+        : transformTable(block, blockPath, context);
+    if (transformed !== block) changed = true;
+    return transformed;
+  });
+  return changed ? next : blocks;
+}
+
+const SECTION_STORY_KEYS = [
+  "header",
+  "firstPageHeader",
+  "evenPageHeader",
+  "footer",
+  "firstPageFooter",
+  "evenPageFooter",
+] as const;
+
+function applySectionPropertyRevisions(
+  sections: EditorSection[],
+  context: ResolutionContext,
+): void {
+  for (let index = 0; index < sections.length; index += 1) {
+    const section = sections[index]!;
+    const revision = section.propertyRevision;
+    if (!revision || !matchesRevision(context, revision.id)) continue;
+    markResolved(context, revision.id);
+    if (context.action === "accept") {
+      sections[index] = { ...section, propertyRevision: undefined };
+      continue;
+    }
+
+    const previous = structuredClone(revision.previous);
+    sections[index] = {
+      ...section,
+      pageSettings: previous.pageSettings,
+      pageBorder: previous.pageBorder,
+      pageNumbering: previous.pageNumbering,
+      verticalAlignment: previous.verticalAlignment,
+      bidi: previous.bidi,
+      propertyRevision: undefined,
+    };
+
+    const nextSection = sections[index + 1];
+    if (nextSection) {
+      sections[index + 1] = {
+        ...nextSection,
+        breakType: previous.nextBreakType,
+      };
+    }
+  }
+}
+
+function transformSectionStories(
+  sections: EditorSection[],
+  context: ResolutionContext,
+): void {
+  for (let index = 0; index < sections.length; index += 1) {
+    let section = sections[index]!;
+    const blocks = transformBlocks(
+      section.blocks,
+      `sections[${index}].blocks`,
+      context,
+    );
+    if (blocks !== section.blocks) section = { ...section, blocks };
+
+    for (const key of SECTION_STORY_KEYS) {
+      const story = section[key];
+      if (!story) continue;
+      const nextStory = transformBlocks(
+        story,
+        `sections[${index}].${key}`,
+        context,
+      );
+      if (nextStory !== story) section = { ...section, [key]: nextStory };
+    }
+    sections[index] = section;
+  }
+}
+
+function transformNoteStories(
+  document: EditorDocument,
+  context: ResolutionContext,
+): void {
+  if (document.footnotes) {
+    for (const [id, note] of Object.entries(document.footnotes.items)) {
+      note.blocks = transformBlocks(
+        note.blocks,
+        `footnotes.items[${JSON.stringify(id)}].blocks`,
+        context,
+      );
+    }
+    if (document.footnotes.separator) {
+      document.footnotes.separator = transformBlocks(
+        document.footnotes.separator,
+        "footnotes.separator",
+        context,
+      );
+    }
+    if (document.footnotes.continuationSeparator) {
+      document.footnotes.continuationSeparator = transformBlocks(
+        document.footnotes.continuationSeparator,
+        "footnotes.continuationSeparator",
+        context,
+      );
+    }
+  }
+
+  if (document.endnotes) {
+    for (const [id, note] of Object.entries(document.endnotes.items)) {
+      note.blocks = transformBlocks(
+        note.blocks,
+        `endnotes.items[${JSON.stringify(id)}].blocks`,
+        context,
+      );
+    }
+    if (document.endnotes.separator) {
+      document.endnotes.separator = transformBlocks(
+        document.endnotes.separator,
+        "endnotes.separator",
+        context,
+      );
+    }
+    if (document.endnotes.continuationSeparator) {
+      document.endnotes.continuationSeparator = transformBlocks(
+        document.endnotes.continuationSeparator,
+        "endnotes.continuationSeparator",
+        context,
+      );
+    }
+  }
+}
+
+function mapParagraphOffset(
+  transform: ParagraphOffsetTransform,
+  offset: number,
+): number {
+  const clamped = Math.max(0, Math.min(offset, transform.oldLength));
+  for (const segment of transform.segments) {
+    if (clamped > segment.oldEnd) continue;
+    if (!segment.kept) return segment.newStart;
+    return segment.newStart + Math.max(0, clamped - segment.oldStart);
+  }
+  return transform.newLength;
+}
+
+function transformAnchor<T extends { paragraphId: string; offset: number }>(
+  anchor: T | undefined,
+  transforms: Map<string, ParagraphOffsetTransform>,
+): T | undefined {
+  if (!anchor) return undefined;
+  const transform = transforms.get(anchor.paragraphId);
+  if (!transform) return anchor;
+  const offset = mapParagraphOffset(transform, anchor.offset);
+  return offset === anchor.offset ? anchor : { ...anchor, offset };
+}
+
+function transformBookmarks(
+  document: EditorDocument,
+  transforms: Map<string, ParagraphOffsetTransform>,
+): void {
+  if (!document.bookmarks || transforms.size === 0) return;
+  let changed = false;
+  const items = { ...document.bookmarks.items };
+  for (const id of document.bookmarks.order) {
+    const bookmark = document.bookmarks.items[id];
+    if (!bookmark) continue;
+    const start = transformAnchor(bookmark.start, transforms);
+    const end = transformAnchor(bookmark.end, transforms);
+    if (start !== bookmark.start || end !== bookmark.end) {
+      items[id] = { ...bookmark, start, end };
+      changed = true;
+    }
+  }
+  if (changed) document.bookmarks = { ...document.bookmarks, items };
+}
+
+function transformComments(
+  comments: EditorComments | undefined,
+  transforms: Map<string, ParagraphOffsetTransform>,
+): EditorComments | undefined {
+  if (!comments || transforms.size === 0) return comments;
+  let changed = false;
+  const items = { ...comments.items };
+  for (const id of comments.order) {
+    const comment = comments.items[id];
+    if (!comment) continue;
+    const start = transformAnchor<EditorCommentAnchor>(comment.start, transforms);
+    const end = transformAnchor<EditorCommentAnchor>(comment.end, transforms);
+    if (start !== comment.start || end !== comment.end) {
+      items[id] = { ...comment, start, end };
+      changed = true;
+    }
+  }
+  return changed ? { ...comments, items } : comments;
+}
+
+function resolve(
+  document: EditorDocument,
+  action: EditorTrackedRevisionAction,
+  revisionId?: string,
+): EditorTrackedRevisionResolutionResult {
+  const context: ResolutionContext = {
+    action,
+    revisionId,
+    changed: false,
+    matched: false,
+    resolvedRevisionIds: new Set<string>(),
+    unresolved: [],
+    unresolvedKeys: new Set<string>(),
+    paragraphOffsetTransforms: new Map<string, ParagraphOffsetTransform>(),
+  };
+
+  const sections = getDocumentSectionsCanonical(document).map(cloneSection);
+  const next: EditorDocument = {
+    ...document,
+    sections,
+    footnotes: cloneFootnotes(document.footnotes),
+    endnotes: cloneEndnotes(document.endnotes),
+  };
+
+  transformSectionStories(sections, context);
+  transformNoteStories(next, context);
+  applySectionPropertyRevisions(sections, context);
+  transformBookmarks(next, context.paragraphOffsetTransforms);
+  next.comments = transformComments(
+    next.comments,
+    context.paragraphOffsetTransforms,
+  );
+
+  if (revisionId !== undefined && !context.matched) {
+    context.unresolved.push({
+      kind: "revision-not-found",
+      revisionId,
+      path: "document",
+      message: `Tracked revision ${revisionId} was not found in the modeled document.`,
+    });
+  }
+
+  return {
+    document: context.changed ? next : document,
+    changed: context.changed,
+    complete: context.unresolved.length === 0,
+    resolvedRevisionIds: [...context.resolvedRevisionIds],
+    unresolved: context.unresolved,
+  };
+}
+
+/** Resolve every modeled tracked change whose semantics are safe for the action. */
+export function resolveAllTrackedRevisions(
+  document: EditorDocument,
+  action: EditorTrackedRevisionAction,
+): EditorTrackedRevisionResolutionResult {
+  return resolve(document, action);
+}
+
+/** Resolve one logical tracked revision id across every run/property it spans. */
+export function resolveTrackedRevision(
+  document: EditorDocument,
+  revisionId: string,
+  action: EditorTrackedRevisionAction,
+): EditorTrackedRevisionResolutionResult {
+  return resolve(document, action, revisionId);
+}
+
+/**
+ * Build Word-style Final/Original projections without mutating the source model.
+ * `complete` is false when the requested projection requires semantics that are
+ * still preservation-only (currently previous numbering and destructive table
+ * subtree reconstruction).
+ */
+export function projectTrackedRevisions(
+  document: EditorDocument,
+  view: EditorTrackedRevisionView,
+): EditorTrackedRevisionResolutionResult {
+  return resolveAllTrackedRevisions(
+    document,
+    view === "final" ? "accept" : "reject",
+  );
+}
