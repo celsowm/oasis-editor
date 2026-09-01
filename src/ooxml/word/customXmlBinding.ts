@@ -11,6 +11,7 @@ import type {
 const CUSTOM_XML_PROPS_RELATIONSHIP_SUFFIX = "/customXmlProps";
 const DATASTORE_NS =
   "http://schemas.openxmlformats.org/officeDocument/2006/customXml";
+type XmlDocument = ReturnType<DOMParser["parseFromString"]>;
 
 export interface ResolvedCustomXmlBinding {
   storeItemId: string;
@@ -28,7 +29,7 @@ interface LocatedStore {
 }
 
 interface LocatedBindingTarget {
-  document: Document;
+  document: XmlDocument;
   element: XmlElement;
   attribute?: {
     namespaceUri?: string;
