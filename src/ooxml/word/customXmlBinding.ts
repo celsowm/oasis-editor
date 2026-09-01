@@ -1,4 +1,8 @@
-import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
+import {
+  DOMParser,
+  XMLSerializer,
+  type Element as XmlElement,
+} from "@xmldom/xmldom";
 import type {
   EditorDocxSourcePackage,
   EditorSdtDataBinding,
@@ -14,6 +18,19 @@ export interface ResolvedCustomXmlBinding {
   itemPropsPartPath: string;
   value: string;
   kind: "element" | "attribute";
+}
+
+interface LocatedStore {
+  storeItemId: string;
+  itemPartPath: string;
+  itemPropsPartPath: string;
+  xml: string;
+}
+
+interface LocatedBindingTarget {
+  document: Document;
+  element: XmlElement;
+  attribute?: { namespaceUri?: string; name: string };
 }
 
 function normalizeStoreItemId(value: string): string {
@@ -80,17 +97,56 @@ function childElements(element: XmlElement): XmlElement[] {
   return children;
 }
 
-function evaluateBinding(
+function findStore(
+  sourcePackage: EditorDocxSourcePackage,
+  storeItemId: string,
+): LocatedStore | null {
+  const wantedStoreItemId = normalizeStoreItemId(storeItemId);
+  for (const part of Object.values(sourcePackage.parts)) {
+    if (
+      part.kind !== "xml" ||
+      !/^customXml\/item\d+\.xml$/i.test(part.path)
+    ) {
+      continue;
+    }
+    const propsRelationship = part.relationships?.find(
+      (relationship) =>
+        relationship.targetMode !== "External" &&
+        relationship.type.endsWith(CUSTOM_XML_PROPS_RELATIONSHIP_SUFFIX) &&
+        relationship.resolvedTarget,
+    );
+    const itemPropsPartPath = propsRelationship?.resolvedTarget;
+    if (!itemPropsPartPath) continue;
+    const itemPropsPart = sourcePackage.parts[itemPropsPartPath];
+    if (!itemPropsPart || itemPropsPart.kind !== "xml") continue;
+    const actualStoreItemId = readStoreItemId(itemPropsPart.data);
+    if (
+      !actualStoreItemId ||
+      normalizeStoreItemId(actualStoreItemId) !== wantedStoreItemId
+    ) {
+      continue;
+    }
+    return {
+      storeItemId: actualStoreItemId,
+      itemPartPath: part.path,
+      itemPropsPartPath,
+      xml: part.data,
+    };
+  }
+  return null;
+}
+
+function locateBindingTarget(
   xml: string,
   xpath: string,
   namespaces: Map<string, string>,
-): { value: string; kind: "element" | "attribute" } | null {
+): LocatedBindingTarget | null {
   const document = new DOMParser().parseFromString(xml, "application/xml");
-  const root = document.documentElement;
+  const root = document.documentElement as XmlElement | null;
   if (!root) return null;
 
   const normalized = xpath.trim().replace(/\/text\(\)$/, "");
-  if (!normalized.startsWith("/")) return null;
+  if (!normalized.startsWith("/") || normalized.startsWith("//")) return null;
   const steps = normalized.split("/").filter(Boolean);
   if (steps.length === 0) return null;
 
@@ -108,26 +164,38 @@ function evaluateBinding(
     const candidates = childElements(current).filter((child) =>
       matchesExpandedName(child, step.prefix, step.localName, namespaces),
     );
-    current = candidates[step.index - 1]!;
-    if (!current) return null;
+    const candidate = candidates[step.index - 1];
+    if (!candidate) return null;
+    current = candidate;
   }
 
-  if (attributeStep) {
-    const rawName = attributeStep.slice(1);
-    const separator = rawName.indexOf(":");
-    if (separator < 0) {
-      const value = current.getAttribute(rawName);
-      return value === null ? null : { value, kind: "attribute" };
-    }
-    const prefix = rawName.slice(0, separator);
-    const localName = rawName.slice(separator + 1);
-    const namespaceUri = namespaces.get(prefix);
-    if (!namespaceUri) return null;
-    const value = current.getAttributeNS(namespaceUri, localName);
-    return value === null ? null : { value, kind: "attribute" };
-  }
+  if (!attributeStep) return { document, element: current };
 
-  return { value: current.textContent ?? "", kind: "element" };
+  const rawName = attributeStep.slice(1);
+  const separator = rawName.indexOf(":");
+  if (separator < 0) {
+    return { document, element: current, attribute: { name: rawName } };
+  }
+  const prefix = rawName.slice(0, separator);
+  const localName = rawName.slice(separator + 1);
+  const namespaceUri = namespaces.get(prefix);
+  if (!namespaceUri) return null;
+  return {
+    document,
+    element: current,
+    attribute: { namespaceUri, name: localName },
+  };
+}
+
+function readLocatedTarget(target: LocatedBindingTarget): string | null {
+  if (!target.attribute) return target.element.textContent ?? "";
+  const value = target.attribute.namespaceUri
+    ? target.element.getAttributeNS(
+        target.attribute.namespaceUri,
+        target.attribute.name,
+      )
+    : target.element.getAttribute(target.attribute.name);
+  return value;
 }
 
 export function resolveCustomXmlBinding(
@@ -135,41 +203,60 @@ export function resolveCustomXmlBinding(
   binding: EditorSdtDataBinding | undefined,
 ): ResolvedCustomXmlBinding | null {
   if (!sourcePackage || !binding?.storeItemID || !binding.xpath) return null;
-  const wantedStoreItemId = normalizeStoreItemId(binding.storeItemID);
-  const namespaces = parsePrefixMappings(binding.prefixMappings);
+  const store = findStore(sourcePackage, binding.storeItemID);
+  if (!store) return null;
+  const target = locateBindingTarget(
+    store.xml,
+    binding.xpath,
+    parsePrefixMappings(binding.prefixMappings),
+  );
+  if (!target) return null;
+  const value = readLocatedTarget(target);
+  if (value === null) return null;
+  return {
+    storeItemId: store.storeItemId,
+    itemPartPath: store.itemPartPath,
+    itemPropsPartPath: store.itemPropsPartPath,
+    value,
+    kind: target.attribute ? "attribute" : "element",
+  };
+}
 
-  for (const part of Object.values(sourcePackage.parts)) {
-    if (
-      part.kind !== "xml" ||
-      !part.path.startsWith("customXml/") ||
-      !/^customXml\/item\d+\.xml$/i.test(part.path)
-    ) {
-      continue;
+export function writeCustomXmlBinding(
+  sourcePackage: EditorDocxSourcePackage | undefined,
+  binding: EditorSdtDataBinding | undefined,
+  value: string,
+): boolean {
+  if (!sourcePackage || !binding?.storeItemID || !binding.xpath) return false;
+  const store = findStore(sourcePackage, binding.storeItemID);
+  if (!store) return false;
+  const target = locateBindingTarget(
+    store.xml,
+    binding.xpath,
+    parsePrefixMappings(binding.prefixMappings),
+  );
+  if (!target) return false;
+
+  if (target.attribute) {
+    if (target.attribute.namespaceUri) {
+      target.element.setAttributeNS(
+        target.attribute.namespaceUri,
+        target.attribute.name,
+        value,
+      );
+    } else {
+      target.element.setAttribute(target.attribute.name, value);
     }
-    const propsRelationship = part.relationships?.find(
-      (relationship) =>
-        relationship.targetMode !== "External" &&
-        relationship.type.endsWith(CUSTOM_XML_PROPS_RELATIONSHIP_SUFFIX) &&
-        relationship.resolvedTarget,
-    );
-    const itemPropsPartPath = propsRelationship?.resolvedTarget;
-    if (!itemPropsPartPath) continue;
-    const itemPropsPart = sourcePackage.parts[itemPropsPartPath];
-    if (!itemPropsPart || itemPropsPart.kind !== "xml") continue;
-    const storeItemId = readStoreItemId(itemPropsPart.data);
-    if (!storeItemId || normalizeStoreItemId(storeItemId) !== wantedStoreItemId) {
-      continue;
+  } else {
+    if (childElements(target.element).length > 0) return false;
+    while (target.element.firstChild) {
+      target.element.removeChild(target.element.firstChild);
     }
-    const resolved = evaluateBinding(part.data, binding.xpath, namespaces);
-    if (!resolved) return null;
-    return {
-      storeItemId,
-      itemPartPath: part.path,
-      itemPropsPartPath,
-      value: resolved.value,
-      kind: resolved.kind,
-    };
+    target.element.appendChild(target.document.createTextNode(value));
   }
 
-  return null;
+  const part = sourcePackage.parts[store.itemPartPath];
+  if (!part) return false;
+  part.data = new XMLSerializer().serializeToString(target.document);
+  return true;
 }
