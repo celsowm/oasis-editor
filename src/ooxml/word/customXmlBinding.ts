@@ -30,7 +30,11 @@ interface LocatedStore {
 interface LocatedBindingTarget {
   document: Document;
   element: XmlElement;
-  attribute?: { namespaceUri?: string; name: string };
+  attribute?: {
+    namespaceUri?: string;
+    localName: string;
+    qualifiedName: string;
+  };
 }
 
 function normalizeStoreItemId(value: string): string {
@@ -174,7 +178,11 @@ function locateBindingTarget(
   const rawName = attributeStep.slice(1);
   const separator = rawName.indexOf(":");
   if (separator < 0) {
-    return { document, element: current, attribute: { name: rawName } };
+    return {
+      document,
+      element: current,
+      attribute: { localName: rawName, qualifiedName: rawName },
+    };
   }
   const prefix = rawName.slice(0, separator);
   const localName = rawName.slice(separator + 1);
@@ -183,7 +191,11 @@ function locateBindingTarget(
   return {
     document,
     element: current,
-    attribute: { namespaceUri, name: localName },
+    attribute: {
+      namespaceUri,
+      localName,
+      qualifiedName: `${prefix}:${localName}`,
+    },
   };
 }
 
@@ -192,9 +204,9 @@ function readLocatedTarget(target: LocatedBindingTarget): string | null {
   const value = target.attribute.namespaceUri
     ? target.element.getAttributeNS(
         target.attribute.namespaceUri,
-        target.attribute.name,
+        target.attribute.localName,
       )
-    : target.element.getAttribute(target.attribute.name);
+    : target.element.getAttribute(target.attribute.localName);
   return value;
 }
 
@@ -241,11 +253,11 @@ export function writeCustomXmlBinding(
     if (target.attribute.namespaceUri) {
       target.element.setAttributeNS(
         target.attribute.namespaceUri,
-        target.attribute.name,
+        target.attribute.qualifiedName,
         value,
       );
     } else {
-      target.element.setAttribute(target.attribute.name, value);
+      target.element.setAttribute(target.attribute.localName, value);
     }
   } else {
     if (childElements(target.element).length > 0) return false;
