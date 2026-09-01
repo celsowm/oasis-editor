@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { EditorDocxSourcePackage } from "@/core/model.js";
+import type {
+  EditorDocxSourcePackage,
+  EditorSdtBlockWrapper,
+} from "@/core/model.js";
 import {
   createEditorDocument,
   createEditorParagraphFromRuns,
@@ -40,23 +43,25 @@ function buildSourcePackage(): EditorDocxSourcePackage {
   };
 }
 
+function bindingWrapper(groupId: string): EditorSdtBlockWrapper {
+  return {
+    groupId,
+    sdtPr: {
+      tag: "customer-name",
+      subtype: { kind: "text" },
+      dataBinding: {
+        storeItemID: "{STORE-1}",
+        prefixMappings: 'xmlns:t="urn:test"',
+        xpath: "/t:root/t:name",
+      },
+    },
+  };
+}
+
 describe("synchronizeBoundContentControls", () => {
   it("writes edited block SDT text into its bound custom XML leaf", () => {
     const paragraph = createEditorParagraphFromRuns([{ text: "Bob" }]);
-    paragraph.sdtWrappers = [
-      {
-        groupId: "sdt:1",
-        sdtPr: {
-          tag: "customer-name",
-          subtype: { kind: "text" },
-          dataBinding: {
-            storeItemID: "{STORE-1}",
-            prefixMappings: 'xmlns:t="urn:test"',
-            xpath: "/t:root/t:name",
-          },
-        },
-      },
-    ];
+    paragraph.sdtWrappers = [bindingWrapper("sdt:1")];
     const document = createEditorDocument([paragraph]);
     document.sourcePackage = buildSourcePackage();
 
@@ -67,6 +72,26 @@ describe("synchronizeBoundContentControls", () => {
         paragraph.sdtWrappers[0]!.sdtPr.dataBinding,
       )?.value,
     ).toBe("Bob");
+  });
+
+  it("concatenates edited inline SDT runs into the bound custom XML leaf", () => {
+    const paragraph = createEditorParagraphFromRuns([
+      { text: "Ali" },
+      { text: "cia" },
+    ]);
+    const wrapper = bindingWrapper("sdt:inline");
+    paragraph.runs[0]!.sdtWrappers = [wrapper];
+    paragraph.runs[1]!.sdtWrappers = [wrapper];
+    const document = createEditorDocument([paragraph]);
+    document.sourcePackage = buildSourcePackage();
+
+    expect(synchronizeBoundContentControls(document)).toBe(1);
+    expect(
+      resolveCustomXmlBinding(
+        document.sourcePackage,
+        wrapper.sdtPr.dataBinding,
+      )?.value,
+    ).toBe("Alicia");
   });
 
   it("does not count unresolved bindings", () => {
