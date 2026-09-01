@@ -1,0 +1,47 @@
+name: Apply Modern Comment Reply Threads
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - scripts/ci/apply-comment-reply-threads.py
+      - .github/workflows/apply-comment-reply-threads.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Apply comment reply thread patch
+        run: python3 scripts/ci/apply-comment-reply-threads.py
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Commit comment reply threads
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src tests
+          git rm -f \
+            scripts/ci/apply-comment-reply-threads.py \
+            .github/workflows/apply-comment-reply-threads.yml
+          git diff --cached --check
+          git commit -m "feat(docx): preserve modern comment reply threads"
+          git pull --rebase origin main
+          git push origin HEAD:main
