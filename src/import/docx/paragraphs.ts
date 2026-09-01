@@ -140,6 +140,9 @@ function importedRunToEditorRun(run: ImportedRun): EditorTextRun {
   if (run.styles) {
     base.styles = { ...run.styles };
   }
+  if (run.revision) {
+    base.revision = { ...run.revision };
+  }
   if (run.sdtWrappers?.length) {
     base.sdtWrappers = [...run.sdtWrappers];
   }
