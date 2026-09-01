@@ -61,11 +61,6 @@ function serializeShallowElementAttributes(
   return rawAttributes || undefined;
 }
 
-/**
- * Collects run subtrees that belong to this paragraph's inline flow. A run is
- * treated as an atomic source fragment, so drawings/text boxes nested inside it
- * are never traversed as separate paragraph runs.
- */
 function collectParagraphRunXml(
   paragraphNode: XmlElement,
   serializer: XMLSerializer,
@@ -113,8 +108,6 @@ function captureImportedParagraphSource(
   const inlineSectionProperties = paragraphProperties
     ? getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "sectPr")
     : null;
-  // Intermediate section breaks are rebuilt from the section model. Reusing a
-  // whole source paragraph that still owns w:sectPr would duplicate the break.
   const xml = !inlineSectionProperties
     ? serializer.serializeToString(paragraphNode)
     : undefined;
@@ -139,14 +132,6 @@ function captureImportedParagraphSource(
   };
 }
 
-/**
- * Converts an {@link ImportedRun} (the import-only optional bag) into the final
- * {@link EditorTextRun} discriminated union, deriving `kind` by the same
- * precedence the model uses. Footnote/endnote references stay as transient
- * `__imported*Ref` markers (their docxId is remapped to a document-local id by
- * the import driver once the notes parts are parsed); bookmark/comment markers
- * are likewise carried as transient props extracted later.
- */
 function importedRunToEditorRun(run: ImportedRun): EditorTextRun {
   const base: EditorRunBase = {
     id: createEditorNodeId("run"),
@@ -154,6 +139,9 @@ function importedRunToEditorRun(run: ImportedRun): EditorTextRun {
   };
   if (run.styles) {
     base.styles = { ...run.styles };
+  }
+  if (run.sdtWrappers?.length) {
+    base.sdtWrappers = [...run.sdtWrappers];
   }
 
   let editorRun: EditorTextRun;
@@ -215,10 +203,7 @@ function createImportedParagraph(
   const editorRuns: EditorTextRun[] =
     runs.length > 0
       ? runs.map(importedRunToEditorRun)
-      : // An empty paragraph still carries the formatting of its paragraph mark
-        // (`w:pPr/w:rPr`), which Word uses to render the blank line's font/size.
-        // Apply it so empty lines match Word instead of falling back to defaults.
-        [
+      : [
           {
             id: createEditorNodeId("run"),
             text: "",
@@ -342,8 +327,6 @@ export async function parseParagraphNodes(
   const parsedStyle = withDocxImplicitSingleLineHeight(
     parseParagraphStyle(paragraphProperties, theme.colors),
   );
-  // Paragraph-mark run properties: the font/size Word applies to the blank line
-  // of an empty paragraph (and to its trailing mark).
   const markRunStyle = parseRunStyle(
     getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "rPr"),
     theme,
@@ -351,9 +334,6 @@ export async function parseParagraphNodes(
   const listResult = parseParagraphList(paragraphProperties, numberingMaps);
   const list = listResult?.list;
 
-  // Apply numbering-level indentation as a fallback when the paragraph itself
-  // has no explicit indent. Word inherits list indentation from the abstractNum
-  // level definition rather than repeating it on each paragraph.
   let styleWithListIndent = parsedStyle;
   if (listResult?.indent) {
     const { left, hanging } = listResult.indent;
@@ -375,9 +355,6 @@ export async function parseParagraphNodes(
       : styleWithListIndent,
   );
 
-  // A drop cap frame paragraph (`w:framePr/@dropCap`) is not emitted as a block;
-  // its cap rides out to the import driver, which attaches it to the next
-  // paragraph (the body text that wraps around the cap).
   const dropCapFrame = parseDropCapFrame(paragraphProperties, runs);
   if (dropCapFrame) {
     return { paragraphs: [], pageBreakAfter: false, dropCapFrame };
