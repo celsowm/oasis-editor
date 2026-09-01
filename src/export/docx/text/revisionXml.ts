@@ -3,7 +3,7 @@ import {
   XMLSerializer,
   type Element as XmlElement,
 } from "@xmldom/xmldom";
-import type { EditorRevision } from "@/core/model.js";
+import type { EditorRevision, EditorRunBase } from "@/core/model.js";
 import { escapeXml, WORD_NS } from "@/export/docx/xmlUtils.js";
 
 const WRAPPER_XMLNS =
@@ -144,4 +144,41 @@ export function serializeRunRevisionWrapper(
     `w:date="${date}"`;
   const element = revisionElementName(revision);
   return `<w:${element} ${attributes}>${innerXml}</w:${element}>`;
+}
+
+type MoveRangeMarker = NonNullable<EditorRunBase["revisionRangeMarker"]>;
+
+/** Serializes a zero-length move source/destination container boundary. */
+export function serializeMoveRangeMarker(marker: MoveRangeMarker): string {
+  const element = `move${marker.move === "from" ? "From" : "To"}Range${
+    marker.edge === "start" ? "Start" : "End"
+  }`;
+  const attributes: string[] = [
+    `w:id="${revisionNumericId(marker.id)}"`,
+  ];
+
+  if (marker.displacedByCustomXml !== undefined) {
+    attributes.push(
+      `w:displacedByCustomXml="${escapeXml(marker.displacedByCustomXml)}"`,
+    );
+  }
+  if (marker.edge === "start") {
+    if (marker.name !== undefined) {
+      attributes.push(`w:name="${escapeXml(marker.name)}"`);
+    }
+    if (marker.author !== undefined) {
+      attributes.push(`w:author="${escapeXml(marker.author)}"`);
+    }
+    if (marker.date !== undefined && Number.isFinite(marker.date)) {
+      attributes.push(`w:date="${new Date(marker.date).toISOString()}"`);
+    }
+    if (marker.columnFirst !== undefined) {
+      attributes.push(`w:colFirst="${Math.trunc(marker.columnFirst)}"`);
+    }
+    if (marker.columnLast !== undefined) {
+      attributes.push(`w:colLast="${Math.trunc(marker.columnLast)}"`);
+    }
+  }
+
+  return `<w:${element} ${attributes.join(" ")}/>`;
 }
