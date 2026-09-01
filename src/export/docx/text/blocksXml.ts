@@ -16,6 +16,7 @@ import { assertNever } from "@/core/assertNever.js";
 import { serializeParagraphProperties } from "./paragraphPropertiesXml.js";
 import { serializeRunWithRelationships } from "./runXml.js";
 import { serializeSdtPrXml } from "./sdtXml.js";
+import { serializeRunsWithInlineSdts } from "./inlineSdtXml.js";
 import { serializeDropCapFrameParagraph } from "./dropCapXml.js";
 import {
   getEditorParagraphOoxmlAttributes,
@@ -26,33 +27,16 @@ import {
 import { mergeParagraphPropertiesOoxmlSource } from "./sourceParagraphPropertiesXml.js";
 import { overlayEditorParagraphOnOoxmlSource } from "./sourceParagraphXml.js";
 
-/**
- * A run whose text can be safely sliced when a bookmark boundary falls inside
- * it (no image/textbox/field/note reference to keep atomic).
- */
 function isSplittableTextRun(run: EditorTextRun): boolean {
-  // Only plain text and `w:sym` runs may be sliced at a boundary; every other
-  // kind carries an inline object/marker that must stay atomic.
   return run.kind === "text" || run.kind === "sym";
 }
 
-/**
- * A pre-serialized zero-width insertion (a bookmark/comment range marker, or the
- * standalone `w:commentReference` run) to splice into the run stream at
- * `offset`. `seq` breaks ties between boundaries that share an offset.
- */
 interface BoundaryToken {
   offset: number;
   seq: number;
   xml: string;
 }
 
-/**
- * Serialize a paragraph's runs, interleaving bookmark/comment boundary tokens at
- * their character offsets. Splittable text runs are virtually sliced so a
- * boundary can land mid-run; other runs stay atomic (boundaries inside them are
- * emitted just before the run).
- */
 function serializeRunsWithBoundaries(
   runs: EditorTextRun[],
   tokens: BoundaryToken[],
@@ -77,7 +61,6 @@ function serializeRunsWithBoundaries(
   for (const run of runs) {
     const runStart = pos;
     const runEnd = runStart + run.text.length;
-    // Boundaries at or before this run's start.
     flushUpTo(runStart);
 
     if (isSplittableTextRun(run) && run.text.length > 0) {
@@ -121,7 +104,6 @@ function serializeRunsWithBoundaries(
     pos = runEnd;
   }
 
-  // Trailing boundaries at the paragraph end (or clamped beyond it).
   flushUpTo(Number.POSITIVE_INFINITY);
   return out;
 }
@@ -212,12 +194,6 @@ function serializeSingleBlockXml(
   }
 }
 
-/**
- * Serialize a block run, re-wrapping any block-level `w:sdt` content controls
- * preserved on import. Consecutive blocks sharing an outermost wrapper `groupId`
- * are coalesced back into one `<w:sdt>` envelope; the wrapper is stripped before
- * recursing so nested content controls re-wrap from the inside out.
- */
 export function serializeBlocksXml(
   blocks: EditorBlockNode[],
   context: DocContext,
@@ -233,7 +209,6 @@ export function serializeBlocksXml(
       i += 1;
       continue;
     }
-    // Gather the maximal run of consecutive blocks under the same outer wrapper.
     const group: EditorBlockNode[] = [];
     let j = i;
     while (
@@ -266,8 +241,6 @@ export function serializeParagraphXml(
     paragraph.runs.length > 0
       ? paragraph.runs
       : [{ id: "", text: "", kind: "text" as const }];
-  // A drop cap is emitted as a preceding standalone frame paragraph (Word's
-  // representation); the body paragraph itself serializes unchanged.
   const dropCapFrame = paragraph.dropCap
     ? serializeDropCapFrameParagraph(paragraph.dropCap)
     : "";
@@ -294,10 +267,6 @@ export function serializeParagraphXml(
     ),
   ];
 
-  // Whole-paragraph reuse is the safest preservation mode: every unknown
-  // direct child, wrapper and relative position survives exactly. It is allowed
-  // only while editor semantics are unchanged and no regenerated boundary or
-  // table-cell override must be injected.
   const reusableParagraphXml = getReusableEditorParagraphXml(paragraph, {
     hasOverrides: Boolean(overrides),
     hasBoundaryTokens: boundaryTokens.length > 0,
@@ -306,27 +275,32 @@ export function serializeParagraphXml(
     return reusableParagraphXml;
   }
 
+  const serializeCanonicalRun = (run: EditorTextRun): string =>
+    serializeRunWithRelationships(
+      run,
+      context,
+      paragraph.style?.styleId,
+      styles,
+      serializeBlocksXml,
+    );
+
   const serializedRunXml =
     boundaryTokens.length === 0
-      ? runs.map((run): string =>
-          serializeRunWithRelationships(
-            run,
-            context,
-            paragraph.style?.styleId,
-            styles,
-            serializeBlocksXml,
-          ),
-        )
+      ? (runs as EditorTextRun[]).map(serializeCanonicalRun)
       : undefined;
-  const runsXml = serializedRunXml
-    ? serializedRunXml.join("")
-    : serializeRunsWithBoundaries(
-        runs as EditorTextRun[],
-        boundaryTokens,
-        context,
-        paragraph.style?.styleId,
-        styles,
-      );
+  const runsXml =
+    boundaryTokens.length === 0
+      ? serializeRunsWithInlineSdts(
+          runs as EditorTextRun[],
+          serializeCanonicalRun,
+        )
+      : serializeRunsWithBoundaries(
+          runs as EditorTextRun[],
+          boundaryTokens,
+          context,
+          paragraph.style?.styleId,
+          styles,
+        );
   const sourceAttributes = getEditorParagraphOoxmlAttributes(paragraph);
   const paragraphAttributes = sourceAttributes ? ` ${sourceAttributes}` : "";
   const generatedParagraphProperties = serializeParagraphProperties(
