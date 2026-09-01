@@ -26,6 +26,7 @@ import {
   parseShdFill,
 } from "./styleUtils.js";
 import { type ThemeColorMap } from "./themeColors.js";
+import { parseRevisionMetadata } from "./revisionMetadata.js";
 
 export function normalizeImportedParagraphStyle(
   style: EditorParagraphStyle | undefined,
@@ -180,6 +181,13 @@ export function normalizeImportedParagraphStyle(
     borderBetween: style.borderBetween ?? undefined,
     borderBar: style.borderBar ?? undefined,
     framePrXml: style.framePrXml ?? undefined,
+    propertyRevision: style.propertyRevision
+      ? {
+          ...style.propertyRevision,
+          previous:
+            normalizeImportedParagraphStyle(style.propertyRevision.previous) ?? {},
+        }
+      : undefined,
   });
 
   return normalized;
@@ -583,6 +591,25 @@ export function parseParagraphStyle(
     if (!frameDropCap || frameDropCap === "none") {
       style.framePrXml = new XMLSerializer().serializeToString(framePrEl);
     }
+  }
+
+  const propertyChange = getFirstChildByTagNameNS(
+    paragraphProperties,
+    WORD_NS,
+    "pPrChange",
+  );
+  const revisionMetadata = parseRevisionMetadata(propertyChange);
+  const previousProperties = getFirstChildByTagNameNS(
+    propertyChange,
+    WORD_NS,
+    "pPr",
+  );
+  if (revisionMetadata && previousProperties) {
+    style.propertyRevision = {
+      ...revisionMetadata,
+      type: "property",
+      previous: parseParagraphStyle(previousProperties, colors) ?? {},
+    };
   }
 
   return emptyOrUndefined(style);

@@ -15,6 +15,7 @@ import {
 import { serializeParagraphBorders } from "@/export/docx/borders.js";
 import { materializeParagraphStyle } from "./styleMaterialization.js";
 import { TABLE_CONDITIONAL_FLAG_ATTRIBUTES } from "@/core/docxTableMaps.js";
+import { serializeRevisionMetadataAttributes } from "./revisionXml.js";
 
 function serializeParagraphTabs(
   tabs: EditorTabStop[] | null | undefined,
@@ -120,6 +121,24 @@ function serializeParagraphDecorations(style: EditorParagraphStyle): string[] {
   return parts;
 }
 
+function serializeParagraphPropertyRevision(
+  revision: NonNullable<EditorParagraphStyle["propertyRevision"]>,
+): string {
+  const { propertyRevision: _nestedRevision, styleId, ...previous } =
+    revision.previous;
+  const serialized = serializeParagraphStyleXml(previous);
+  const inner = serialized
+    ? serialized.slice("<w:pPr>".length, -"</w:pPr>".length)
+    : "";
+  const styleXml = styleId
+    ? `<w:pStyle w:val="${escapeXml(styleId)}"/>`
+    : "";
+  return (
+    `<w:pPrChange ${serializeRevisionMetadataAttributes(revision)}>` +
+    `<w:pPr>${styleXml}${inner}</w:pPr></w:pPrChange>`
+  );
+}
+
 /**
  * Serializes a raw `EditorParagraphStyle` into the contents of a `w:pPr`
  * element (without the wrapping tag). Used for style definitions in styles.xml
@@ -209,6 +228,10 @@ export function serializeParagraphStyleXml(
   }
 
   parts.push(...serializeParagraphDecorations(style));
+
+  if (style.propertyRevision) {
+    parts.push(serializeParagraphPropertyRevision(style.propertyRevision));
+  }
 
   return parts.length > 0 ? `<w:pPr>${parts.join("")}</w:pPr>` : "";
 }
@@ -311,6 +334,12 @@ export function serializeParagraphProperties(
   if (numbering) {
     parts.push(
       `<w:numPr><w:ilvl w:val="${numbering.level}"/><w:numId w:val="${numbering.numId}"/></w:numPr>`,
+    );
+  }
+
+  if (paragraph.style?.propertyRevision) {
+    parts.push(
+      serializeParagraphPropertyRevision(paragraph.style.propertyRevision),
     );
   }
 

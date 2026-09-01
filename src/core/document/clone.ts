@@ -8,7 +8,10 @@ import type {
   EditorMathExpression,
 } from "@/core/model.js";
 import { visitRun } from "@/core/model.js";
-import { cloneStyle } from "@/core/textStyle/textStyleMutations.js";
+import {
+  cloneParagraphStyle,
+  cloneStyle,
+} from "@/core/textStyle/textStyleMutations.js";
 import { assertNever } from "@/core/assertNever.js";
 import { copyEditorRunOoxmlSource } from "@/ooxml/word/sourceFragments.js";
 
@@ -104,7 +107,7 @@ export function cloneParagraph(
   return {
     ...paragraph,
     runs: paragraph.runs.map(cloneRun),
-    style: paragraph.style ? { ...paragraph.style } : undefined,
+    style: cloneParagraphStyle(paragraph.style),
     list: paragraph.list ? { ...paragraph.list } : undefined,
   };
 }

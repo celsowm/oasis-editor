@@ -3,7 +3,11 @@ import {
   XMLSerializer,
   type Element as XmlElement,
 } from "@xmldom/xmldom";
-import type { EditorRevision, EditorRunBase } from "@/core/model.js";
+import type {
+  EditorRevision,
+  EditorRevisionMetadata,
+  EditorRunBase,
+} from "@/core/model.js";
 import { escapeXml, WORD_NS } from "@/export/docx/xmlUtils.js";
 
 const WRAPPER_XMLNS =
@@ -125,6 +129,19 @@ function revisionNumericId(id: string): string {
   );
 }
 
+export function serializeRevisionMetadataAttributes(
+  revision: EditorRevisionMetadata,
+): string {
+  const date = Number.isFinite(revision.date)
+    ? new Date(revision.date).toISOString()
+    : new Date(0).toISOString();
+  return (
+    `w:id="${revisionNumericId(revision.id)}" ` +
+    `w:author="${escapeXml(revision.author)}" ` +
+    `w:date="${date}"`
+  );
+}
+
 function revisionElementName(revision: EditorRevision): string {
   if (revision.move === "from") return "moveFrom";
   if (revision.move === "to") return "moveTo";
@@ -135,13 +152,7 @@ export function serializeRunRevisionWrapper(
   innerXml: string,
   revision: EditorRevision,
 ): string {
-  const date = Number.isFinite(revision.date)
-    ? new Date(revision.date).toISOString()
-    : new Date(0).toISOString();
-  const attributes =
-    `w:id="${revisionNumericId(revision.id)}" ` +
-    `w:author="${escapeXml(revision.author)}" ` +
-    `w:date="${date}"`;
+  const attributes = serializeRevisionMetadataAttributes(revision);
   const element = revisionElementName(revision);
   return `<w:${element} ${attributes}>${innerXml}</w:${element}>`;
 }

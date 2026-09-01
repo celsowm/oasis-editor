@@ -21,6 +21,7 @@ import {
 } from "./constants.js";
 import { serializeDocxBorderAttrs } from "@/export/docx/borders.js";
 import { parseHexColorToRgb255 } from "@/core/color.js";
+import { serializeRevisionMetadataAttributes } from "./revisionXml.js";
 
 const MC_NS = "http://schemas.openxmlformats.org/markup-compatibility/2006";
 
@@ -250,6 +251,24 @@ function normalizeHighlightForDocx(highlight: string): string {
   return bestName;
 }
 
+function serializeRunPropertyRevision(
+  revision: NonNullable<EditorTextStyle["propertyRevision"]>,
+): string {
+  const { propertyRevision: _nestedRevision, styleId, ...previous } =
+    revision.previous;
+  const serialized = serializeRunProperties(previous);
+  const inner = serialized
+    ? serialized.slice("<w:rPr>".length, -"</w:rPr>".length)
+    : "";
+  const styleXml = styleId
+    ? `<w:rStyle w:val="${escapeXml(styleId)}"/>`
+    : "";
+  return (
+    `<w:rPrChange ${serializeRevisionMetadataAttributes(revision)}>` +
+    `<w:rPr>${styleXml}${inner}</w:rPr></w:rPrChange>`
+  );
+}
+
 export function serializeRunProperties(styles?: EditorTextStyle): string {
   if (!styles) {
     return "";
@@ -416,6 +435,10 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
     if (attrs.length > 0) {
       parts.push(`<w:lang ${attrs.join(" ")}/>`);
     }
+  }
+
+  if (styles.propertyRevision) {
+    parts.push(serializeRunPropertyRevision(styles.propertyRevision));
   }
 
   return parts.length > 0 ? `<w:rPr>${parts.join("")}</w:rPr>` : "";

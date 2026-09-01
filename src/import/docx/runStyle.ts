@@ -38,6 +38,7 @@ import {
   emptyOrUndefined,
   parseShdFill,
 } from "./styleUtils.js";
+import { parseRevisionMetadata } from "./revisionMetadata.js";
 
 function parseW14SolidFillColor(solidFillEl: XmlElement): string | null {
   const srgbClr = getFirstChildByTagNameNS(solidFillEl, WORD14_NS, "srgbClr");
@@ -289,6 +290,16 @@ export function normalizeImportedRunStyle(
     shading: dd(effective.shading, defaultEffective.shading),
     language: dd(effective.language, defaultEffective.language),
     link: dd(effective.link, defaultEffective.link),
+    propertyRevision: style.propertyRevision
+      ? {
+          ...style.propertyRevision,
+          previous:
+            normalizeImportedRunStyle(
+              style.propertyRevision.previous,
+              paragraphStyleId,
+            ) ?? {},
+        }
+      : undefined,
   });
 }
 
@@ -664,6 +675,25 @@ export function parseRunStyle(
     if (Object.keys(parsedLanguage).length > 0) {
       styles.language = parsedLanguage;
     }
+  }
+
+  const propertyChange = getFirstChildByTagNameNS(
+    runProperties,
+    WORD_NS,
+    "rPrChange",
+  );
+  const revisionMetadata = parseRevisionMetadata(propertyChange);
+  const previousProperties = getFirstChildByTagNameNS(
+    propertyChange,
+    WORD_NS,
+    "rPr",
+  );
+  if (revisionMetadata && previousProperties) {
+    styles.propertyRevision = {
+      ...revisionMetadata,
+      type: "property",
+      previous: parseRunStyle(previousProperties, theme) ?? {},
+    };
   }
 
   return emptyOrUndefined(styles);

@@ -56,6 +56,7 @@ export function materializeParagraphStyle(
     borderBetween: effective.borderBetween,
     borderBar: effective.borderBar,
     framePrXml: effective.framePrXml,
+    propertyRevision: paragraph.style?.propertyRevision,
   };
 }
 
@@ -119,6 +120,7 @@ export function materializeRunStyle(
     highlight: effective.highlight,
     shading: effective.shading,
     language: effective.language,
+    propertyRevision: run.styles?.propertyRevision,
   };
 
   if (run.styles?.link) {

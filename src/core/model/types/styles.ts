@@ -96,6 +96,8 @@ export interface EditorTextStyle {
   shading?: string | null;
   language?: EditorTextLanguage | null;
   link?: string | null;
+  /** Previous direct run properties from `w:rPrChange`. */
+  propertyRevision?: EditorPropertyRevision<EditorTextStyle>;
 }
 
 export interface EditorParagraphStyle {
@@ -186,6 +188,8 @@ export interface EditorParagraphStyle {
    * never silently dropped. Not rendered on any surface.
    */
   framePrXml?: string | null;
+  /** Previous paragraph properties from `w:pPrChange`. */
+  propertyRevision?: EditorPropertyRevision<EditorParagraphStyle>;
 }
 
 /** Row properties from a conditional format's `w:trPr`. */

@@ -8,7 +8,32 @@ import type {
 export function cloneStyle(
   style?: EditorTextStyle,
 ): EditorTextStyle | undefined {
-  return style ? { ...style } : undefined;
+  if (!style) return undefined;
+  return {
+    ...style,
+    propertyRevision: style.propertyRevision
+      ? {
+          ...style.propertyRevision,
+          previous: cloneStyle(style.propertyRevision.previous) ?? {},
+        }
+      : undefined,
+  };
+}
+
+export function cloneParagraphStyle(
+  style?: EditorParagraphStyle,
+): EditorParagraphStyle | undefined {
+  if (!style) return undefined;
+  return {
+    ...style,
+    tabs: style.tabs ? style.tabs.map((tab) => ({ ...tab })) : style.tabs,
+    propertyRevision: style.propertyRevision
+      ? {
+          ...style.propertyRevision,
+          previous: cloneParagraphStyle(style.propertyRevision.previous) ?? {},
+        }
+      : undefined,
+  };
 }
 
 export function stylesEqual(
