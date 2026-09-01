@@ -1,16 +1,7 @@
 /**
  * Parses `<w:sdtPr>` content-control (structured-document-tag) properties into
  * the typed {@link EditorSdtPr} so the editor can read the control's alias,
- * tag, id, lock, subtype, and `w:dataBinding`. The CT_SdtPr schema sequence is:
- * `rPr?`, `alias?`, `tag?`, `id?`, `lock?`, `placeholder?`, `dataBinding?`,
- * `temporary?`, then exactly one content-control subtype element (`text`,
- * `richText`, `picture`, `comboBox`, `dropDownList`, `date`, `checkbox`,
- * `repeatingSection`, `repeatingSectionItem`, `group`, `equation`, `citation`,
- * `bibliography`), then any extension children.
- *
- * `rPr` (run properties baked into the control itself) is not modeled; round-trip
- * uses the `unknownXml` bag. Unknown future-schema children are preserved
- * verbatim in {@link EditorSdtPr.unknownXml} so export re-emits them byte-for-byte.
+ * tag, id, lock, subtype, and `w:dataBinding`.
  */
 import { XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
 import type {
@@ -22,15 +13,16 @@ import type {
 import {
   WORD_NS,
   WORD14_NS,
+  WORD15_NS,
   getAttributeValue,
   getChildrenByTagNameNS,
   getFirstChildByTagNameNS,
   getFirstW14Child,
+  getFirstW15Child,
   isWordTrue,
 } from "./xmlHelpers.js";
 
-/** OOXML CT_SdtPr schema child sequence (after `rPr`, which is preserved raw). */
-const RECOGNIZED_SDT_PR_CHILDREN = new Set([
+const RECOGNIZED_WORD_SDT_PR_CHILDREN = new Set([
   "alias",
   "tag",
   "id",
@@ -47,6 +39,8 @@ const RECOGNIZED_SDT_PR_CHILDREN = new Set([
   "comboBox",
   "dropDownList",
   "date",
+  // Keep accepting the old namespace form for compatibility with Oasis files
+  // produced before the w15 correction.
   "repeatingSection",
   "repeatingSectionItem",
   "group",
@@ -55,11 +49,11 @@ const RECOGNIZED_SDT_PR_CHILDREN = new Set([
   "bibliography",
 ]);
 
-/**
- * Parse a `<w:sdtPr>` element into the typed model. Returns `{}` (empty) when
- * `sdtPr` is null or has no recognized children; the caller still attaches an
- * empty wrapper so the round-trip emits an empty `<w:sdtPr/>`.
- */
+const RECOGNIZED_WORD15_SDT_PR_CHILDREN = new Set([
+  "repeatingSection",
+  "repeatingSectionItem",
+]);
+
 export function parseSdtPr(sdtPr: XmlElement | null): EditorSdtPr {
   if (!sdtPr) {
     return {};
@@ -70,41 +64,31 @@ export function parseSdtPr(sdtPr: XmlElement | null): EditorSdtPr {
   const aliasEl = getFirstChildByTagNameNS(sdtPr, WORD_NS, "alias");
   if (aliasEl) {
     const alias = getAttributeValue(aliasEl, "val");
-    if (alias !== null) {
-      result.alias = alias;
-    }
+    if (alias !== null) result.alias = alias;
   }
 
   const tagEl = getFirstChildByTagNameNS(sdtPr, WORD_NS, "tag");
   if (tagEl) {
     const tag = getAttributeValue(tagEl, "val");
-    if (tag !== null) {
-      result.tag = tag;
-    }
+    if (tag !== null) result.tag = tag;
   }
 
   const idEl = getFirstChildByTagNameNS(sdtPr, WORD_NS, "id");
   if (idEl) {
     const id = getAttributeValue(idEl, "val");
-    if (id !== null) {
-      result.id = id;
-    }
+    if (id !== null) result.id = id;
   }
 
   const lockEl = getFirstChildByTagNameNS(sdtPr, WORD_NS, "lock");
   if (lockEl) {
     const lock = getAttributeValue(lockEl, "val");
-    if (lock !== null) {
-      result.lock = lock;
-    }
+    if (lock !== null) result.lock = lock;
   }
 
   const appearanceEl = getFirstChildByTagNameNS(sdtPr, WORD_NS, "appearance");
   if (appearanceEl) {
     const appearance = getAttributeValue(appearanceEl, "val");
-    if (appearance !== null) {
-      result.appearance = appearance;
-    }
+    if (appearance !== null) result.appearance = appearance;
   }
 
   const showingPlcHdrEl = getFirstChildByTagNameNS(
@@ -126,9 +110,7 @@ export function parseSdtPr(sdtPr: XmlElement | null): EditorSdtPr {
   const colorEl = getFirstChildByTagNameNS(sdtPr, WORD_NS, "color");
   if (colorEl) {
     const color = getAttributeValue(colorEl, "val");
-    if (color !== null) {
-      result.color = color;
-    }
+    if (color !== null) result.color = color;
   }
 
   const placeholderEl = getFirstChildByTagNameNS(sdtPr, WORD_NS, "placeholder");
@@ -136,79 +118,94 @@ export function parseSdtPr(sdtPr: XmlElement | null): EditorSdtPr {
     const docPart = getFirstChildByTagNameNS(placeholderEl, WORD_NS, "docPart");
     if (docPart) {
       const docPartVal = getAttributeValue(docPart, "val");
-      if (docPartVal !== null) {
-        result.placeholderDocPart = docPartVal;
-      }
+      if (docPartVal !== null) result.placeholderDocPart = docPartVal;
     }
   }
 
   const dataBindingEl = getFirstChildByTagNameNS(sdtPr, WORD_NS, "dataBinding");
   if (dataBindingEl) {
     const dataBinding = parseSdtDataBinding(dataBindingEl);
-    if (dataBinding) {
-      result.dataBinding = dataBinding;
-    }
+    if (dataBinding) result.dataBinding = dataBinding;
   }
 
   const subtype = parseSdtSubtype(sdtPr);
   if (subtype) {
     result.subtype = subtype;
+    if (subtype.kind === "repeatingSection") {
+      const repeating =
+        getFirstW15Child(sdtPr, "repeatingSection") ??
+        getFirstChildByTagNameNS(sdtPr, WORD_NS, "repeatingSection");
+      if (repeating) {
+        const sectionTitle = getFirstW15Child(repeating, "sectionTitle");
+        const noInsertDelete = getFirstW15Child(
+          repeating,
+          "doNotAllowInsertDeleteSection",
+        );
+        const properties: NonNullable<EditorSdtPr["repeatingSectionProperties"]> = {};
+        const title = getAttributeValue(sectionTitle, "val");
+        if (title !== null) properties.sectionTitle = title;
+        if (noInsertDelete) {
+          const raw = getAttributeValue(noInsertDelete, "val");
+          properties.doNotAllowInsertDeleteSection =
+            raw === null ? true : isWordTrue(raw);
+        }
+        if (Object.keys(properties).length > 0) {
+          result.repeatingSectionProperties = properties;
+        }
+      }
+    }
   }
 
   const unknownXml = serializeUnknownSdtPrChildren(sdtPr);
-  if (unknownXml.length > 0) {
-    result.unknownXml = unknownXml;
-  }
+  if (unknownXml.length > 0) result.unknownXml = unknownXml;
 
   return result;
 }
 
-/** Parse `<w:dataBinding>` (prefix mappings, xpath, storeItemID). */
+/**
+ * Parse canonical `<w:dataBinding w:prefixMappings="…" w:xpath="…"
+ * w:storeItemID="…"/>`. The child-element fallback keeps files emitted by
+ * older Oasis versions readable while canonical export uses attributes.
+ */
 function parseSdtDataBinding(el: XmlElement): EditorSdtDataBinding | null {
-  const prefixMappingsEl = getFirstChildByTagNameNS(
-    el,
-    WORD_NS,
-    "prefixMappings",
-  );
-  const xpathEl = getFirstChildByTagNameNS(el, WORD_NS, "xpath");
-  const storeItemIDEl = getFirstChildByTagNameNS(el, WORD_NS, "storeItemID");
   const dataBinding: EditorSdtDataBinding = {};
-  if (prefixMappingsEl) {
-    const val = getAttributeValue(prefixMappingsEl, "val");
-    if (val !== null) {
-      dataBinding.prefixMappings = val;
-    }
+
+  const prefixMappings = getAttributeValue(el, "prefixMappings");
+  const xpath = getAttributeValue(el, "xpath");
+  const storeItemID = getAttributeValue(el, "storeItemID");
+
+  if (prefixMappings !== null) dataBinding.prefixMappings = prefixMappings;
+  if (xpath !== null) dataBinding.xpath = xpath;
+  if (storeItemID !== null) dataBinding.storeItemID = storeItemID;
+
+  if (dataBinding.prefixMappings === undefined) {
+    const legacy = getFirstChildByTagNameNS(el, WORD_NS, "prefixMappings");
+    const value = getAttributeValue(legacy, "val");
+    if (value !== null) dataBinding.prefixMappings = value;
   }
-  if (xpathEl) {
-    const val = getAttributeValue(xpathEl, "val");
-    if (val !== null) {
-      dataBinding.xpath = val;
-    }
+  if (dataBinding.xpath === undefined) {
+    const legacy = getFirstChildByTagNameNS(el, WORD_NS, "xpath");
+    const value = getAttributeValue(legacy, "val");
+    if (value !== null) dataBinding.xpath = value;
   }
-  if (storeItemIDEl) {
-    const val = getAttributeValue(storeItemIDEl, "val");
-    if (val !== null) {
-      dataBinding.storeItemID = val;
-    }
+  if (dataBinding.storeItemID === undefined) {
+    const legacy = getFirstChildByTagNameNS(el, WORD_NS, "storeItemID");
+    const value = getAttributeValue(legacy, "val");
+    if (value !== null) dataBinding.storeItemID = value;
   }
-  if (
-    dataBinding.prefixMappings === undefined &&
+
+  return dataBinding.prefixMappings === undefined &&
     dataBinding.xpath === undefined &&
     dataBinding.storeItemID === undefined
-  ) {
-    return null;
-  }
-  return dataBinding;
+    ? null
+    : dataBinding;
 }
 
-/** Parse `<w:listItem>` children of a `<w:comboBox>` or `<w:dropDownList>`. */
 function parseSdtListItems(
   parent: XmlElement,
 ): EditorSdtListItem[] | undefined {
   const items = getChildrenByTagNameNS(parent, WORD_NS, "listItem");
-  if (items.length === 0) {
-    return undefined;
-  }
+  if (items.length === 0) return undefined;
   return items.map(
     (item): EditorSdtListItem => ({
       displayText: getAttributeValue(item, "displayText") ?? undefined,
@@ -217,7 +214,6 @@ function parseSdtListItems(
   );
 }
 
-/** Parse the single content-control subtype element (`<w:text>`, `<w:date>`, …). */
 function parseSdtSubtype(parent: XmlElement): EditorSdtSubtype | undefined {
   const comboBoxEl = getFirstChildByTagNameNS(parent, WORD_NS, "comboBox");
   if (comboBoxEl) {
@@ -289,9 +285,7 @@ function parseSdtSubtype(parent: XmlElement): EditorSdtSubtype | undefined {
   }
 
   const textEl = getFirstChildByTagNameNS(parent, WORD_NS, "text");
-  if (textEl) {
-    return { kind: "text" };
-  }
+  if (textEl) return { kind: "text" };
 
   for (const kind of [
     "richText",
@@ -300,15 +294,23 @@ function parseSdtSubtype(parent: XmlElement): EditorSdtSubtype | undefined {
     "equation",
     "citation",
     "bibliography",
-    "repeatingSection",
-    "repeatingSectionItem",
   ] as const) {
-    if (getFirstChildByTagNameNS(parent, WORD_NS, kind)) {
-      return { kind };
-    }
+    if (getFirstChildByTagNameNS(parent, WORD_NS, kind)) return { kind };
   }
 
-  // Modern checkbox lives under w14 (or wrapped in `mc:AlternateContent`).
+  if (
+    getFirstW15Child(parent, "repeatingSection") ||
+    getFirstChildByTagNameNS(parent, WORD_NS, "repeatingSection")
+  ) {
+    return { kind: "repeatingSection" };
+  }
+  if (
+    getFirstW15Child(parent, "repeatingSectionItem") ||
+    getFirstChildByTagNameNS(parent, WORD_NS, "repeatingSectionItem")
+  ) {
+    return { kind: "repeatingSectionItem" };
+  }
+
   const w14CheckboxEl = getFirstW14Child(parent, "checkbox");
   if (w14CheckboxEl) {
     const checkedEl = getFirstChildByTagNameNS(
@@ -354,28 +356,21 @@ function parseSdtSubtype(parent: XmlElement): EditorSdtSubtype | undefined {
   return undefined;
 }
 
-/**
- * Build the `unknownXml` fallback: concatenated serialized XML of any
- * `w:sdtPr` element the parser does not recognize (different localName in the
- * `w` namespace, or anything in any foreign namespace, including `rPr` run
- * properties baked into the control, `w15:*` extension store references, and
- * the legacy `mc:AlternateContent` wrapper around `w14:checkbox`).
- */
 function serializeUnknownSdtPrChildren(sdtPr: XmlElement): string {
   let out = "";
   for (let i = 0; i < sdtPr.childNodes.length; i += 1) {
     const node = sdtPr.childNodes[i];
-    if (node?.nodeType !== node.ELEMENT_NODE) {
-      continue;
-    }
+    if (node?.nodeType !== node.ELEMENT_NODE) continue;
     const el = node as XmlElement;
-    if (
+    const recognizedWord =
       el.localName &&
       el.namespaceURI === WORD_NS &&
-      RECOGNIZED_SDT_PR_CHILDREN.has(el.localName)
-    ) {
-      continue;
-    }
+      RECOGNIZED_WORD_SDT_PR_CHILDREN.has(el.localName);
+    const recognizedWord15 =
+      el.localName &&
+      el.namespaceURI === WORD15_NS &&
+      RECOGNIZED_WORD15_SDT_PR_CHILDREN.has(el.localName);
+    if (recognizedWord || recognizedWord15) continue;
     out += new XMLSerializer().serializeToString(el);
   }
   return out;
