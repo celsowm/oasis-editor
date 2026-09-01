@@ -147,6 +147,8 @@ export type {
   EditorPageSettings,
   EditorColumnsSettings,
   EditorSection,
+  EditorSectionBreakType,
+  EditorSectionPropertiesSnapshot,
   EditorPageNumbering,
   EditorSectionVerticalAlign,
   EditorFontInfo,

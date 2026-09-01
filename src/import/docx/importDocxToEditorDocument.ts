@@ -430,6 +430,17 @@ export async function importDocxToEditorDocument(
     const pageNumbering = props.pageNumbering;
     const verticalAlignment = props.verticalAlignment;
     const bidi = props.bidi;
+    const propertyRevision = props.propertyRevision
+      ? {
+          ...props.propertyRevision,
+          previous: {
+            ...props.propertyRevision.previous,
+            pageSettings: normalizePageSettings(
+              props.propertyRevision.previous.pageSettings,
+            ),
+          },
+        }
+      : undefined;
 
     sections.push({
       id: `section:${i + 1}`,
@@ -449,6 +460,7 @@ export async function importDocxToEditorDocument(
       ...(pageNumbering ? { pageNumbering } : {}),
       ...(verticalAlignment ? { verticalAlignment } : {}),
       ...(bidi ? { bidi } : {}),
+      ...(propertyRevision ? { propertyRevision } : {}),
     });
   }
 

@@ -7,6 +7,7 @@ import type {
   EditorAsset,
   EditorFootnoteNumberFormat,
   EditorFootnoteRestart,
+  EditorPropertyRevision,
 } from "./primitives.js";
 import type { EditorBlockNode } from "./nodes.js";
 import type { EditorFootnote } from "./documentFootnotes.js";
@@ -120,6 +121,24 @@ export interface EditorPageNumbering {
  */
 export type EditorSectionVerticalAlign = "top" | "center" | "both" | "bottom";
 
+export type EditorSectionBreakType =
+  | "nextPage"
+  | "continuous"
+  | "evenPage"
+  | "oddPage"
+  | "nextColumn";
+
+/** Previous semantic section properties stored by `w:sectPrChange`. */
+export interface EditorSectionPropertiesSnapshot {
+  pageSettings: EditorPageSettings;
+  pageBorder?: EditorPageBorder | null;
+  pageNumbering?: EditorPageNumbering;
+  verticalAlignment?: EditorSectionVerticalAlign;
+  bidi?: boolean;
+  /** Previous `w:type`; semantically this controls how the following section begins. */
+  nextBreakType?: EditorSectionBreakType;
+}
+
 export interface EditorSection {
   id: string;
   blocks: EditorBlockNode[];
@@ -139,13 +158,15 @@ export interface EditorSection {
    * is omitted on export. Only `continuous` currently affects layout rendering;
    * `evenPage`/`oddPage`/`nextColumn` are preserved for round-trip.
    */
-  breakType?: "nextPage" | "continuous" | "evenPage" | "oddPage" | "nextColumn";
+  breakType?: EditorSectionBreakType;
   /** `w:pgNumType` — page numbering format/start/chapter. Round-trip only. */
   pageNumbering?: EditorPageNumbering;
   /** `w:vAlign` — vertical justification of page contents. Round-trip only. */
   verticalAlignment?: EditorSectionVerticalAlign;
   /** `w:bidi` — right-to-left section layout. Round-trip only. */
   bidi?: boolean;
+  /** Previous section-property snapshot from `w:sectPrChange`. */
+  propertyRevision?: EditorPropertyRevision<EditorSectionPropertiesSnapshot>;
 }
 
 /**

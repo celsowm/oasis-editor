@@ -4,6 +4,7 @@ import type {
   EditorNamedStyle,
   EditorPageSettings,
   EditorSection,
+  EditorSectionPropertiesSnapshot,
 } from "@/core/model.js";
 import { getDocumentSections } from "@/core/model.js";
 import type { DocContext, SectionReferenceDefinition } from "./docxTypes.js";
@@ -15,6 +16,7 @@ import {
   escapeXml,
 } from "./xmlUtils.js";
 import { serializeBlocksXml } from "./textXml.js";
+import { serializeRevisionMetadataAttributes } from "./text/revisionXml.js";
 
 const DOCUMENT_XMLNS =
   `xmlns:w="${WORD_NS}" xmlns:w14="${WORD14_NS}" ` +
@@ -23,6 +25,26 @@ const DOCUMENT_XMLNS =
   'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" ' +
   'xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" ' +
   `xmlns:r="${OFFICE_REL_NS}"`;
+
+function sectionFromSnapshot(
+  snapshot: EditorSectionPropertiesSnapshot,
+): EditorSection {
+  return {
+    id: "section:revision",
+    blocks: [],
+    pageSettings: snapshot.pageSettings,
+    ...(snapshot.pageBorder !== undefined
+      ? { pageBorder: snapshot.pageBorder }
+      : {}),
+    ...(snapshot.pageNumbering
+      ? { pageNumbering: snapshot.pageNumbering }
+      : {}),
+    ...(snapshot.verticalAlignment
+      ? { verticalAlignment: snapshot.verticalAlignment }
+      : {}),
+    ...(snapshot.bidi !== undefined ? { bidi: snapshot.bidi } : {}),
+  };
+}
 
 function serializeSectionPropertiesWithReferences(
   pageSettings: EditorPageSettings,
@@ -119,7 +141,16 @@ function serializeSectionPropertiesWithReferences(
     ? `<w:pgBorders w:offsetFrom="page"><w:top w:val="${border.style}" w:sz="${Math.max(1, Math.round(border.width * 8))}" w:space="${Math.max(0, Math.round(border.distance ?? 0))}" w:color="${borderColor}"/><w:left w:val="${border.style}" w:sz="${Math.max(1, Math.round(border.width * 8))}" w:space="${Math.max(0, Math.round(border.distance ?? 0))}" w:color="${borderColor}"/><w:bottom w:val="${border.style}" w:sz="${Math.max(1, Math.round(border.width * 8))}" w:space="${Math.max(0, Math.round(border.distance ?? 0))}" w:color="${borderColor}"/><w:right w:val="${border.style}" w:sz="${Math.max(1, Math.round(border.width * 8))}" w:space="${Math.max(0, Math.round(border.distance ?? 0))}" w:color="${borderColor}"/></w:pgBorders>`
     : "";
 
-  return `<w:sectPr>${referencesXml}${titlePageXml}${typeXml}<w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/>${pgNumTypeXml}${columnsXml}${vAlignXml}${bidiXml}${borderXml}</w:sectPr>`;
+  const propertyRevisionXml = section.propertyRevision
+    ? `<w:sectPrChange ${serializeRevisionMetadataAttributes(section.propertyRevision)}>${serializeSectionPropertiesWithReferences(
+        section.propertyRevision.previous.pageSettings,
+        undefined,
+        sectionFromSnapshot(section.propertyRevision.previous),
+        section.propertyRevision.previous.nextBreakType,
+      )}</w:sectPrChange>`
+    : "";
+
+  return `<w:sectPr>${referencesXml}${titlePageXml}${typeXml}<w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/>${pgNumTypeXml}${columnsXml}${vAlignXml}${bidiXml}${borderXml}${propertyRevisionXml}</w:sectPr>`;
 }
 
 export function buildDocumentXml(

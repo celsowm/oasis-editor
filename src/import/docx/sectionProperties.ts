@@ -9,6 +9,8 @@ import type {
   EditorParagraphNode,
   EditorParagraphStyle,
   EditorSectionVerticalAlign,
+  EditorSectionPropertiesSnapshot,
+  EditorPropertyRevision,
 } from "@/core/model.js";
 import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
 import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
@@ -22,6 +24,7 @@ import {
 } from "./xmlHelpers.js";
 import { twipsToPx } from "./units.js";
 import type { DocxSettings } from "./settings.js";
+import { parseRevisionMetadata } from "./revisionMetadata.js";
 
 export interface SectionProperties {
   pageSettings?: EditorPageSettings;
@@ -43,6 +46,41 @@ export interface SectionProperties {
   verticalAlignment?: EditorSectionVerticalAlign;
   /** `w:bidi` — right-to-left section layout. Round-trip only. */
   bidi?: boolean;
+  propertyRevision?: EditorPropertyRevision<EditorSectionPropertiesSnapshot>;
+}
+
+const DEFAULT_SECTION_PAGE_SETTINGS: EditorPageSettings = {
+  width: 816,
+  height: 1056,
+  orientation: "portrait",
+  margins: {
+    top: 96,
+    right: 96,
+    bottom: 96,
+    left: 96,
+    header: 48,
+    footer: 48,
+    gutter: 0,
+  },
+};
+
+function sectionPropertiesSnapshot(
+  properties: SectionProperties,
+  fallbackPageSettings?: EditorPageSettings,
+): EditorSectionPropertiesSnapshot {
+  return {
+    pageSettings:
+      properties.pageSettings ?? fallbackPageSettings ?? DEFAULT_SECTION_PAGE_SETTINGS,
+    ...(properties.pageBorder ? { pageBorder: properties.pageBorder } : {}),
+    ...(properties.pageNumbering
+      ? { pageNumbering: properties.pageNumbering }
+      : {}),
+    ...(properties.verticalAlignment
+      ? { verticalAlignment: properties.verticalAlignment }
+      : {}),
+    ...(properties.bidi !== undefined ? { bidi: properties.bidi } : {}),
+    ...(properties.breakType ? { nextBreakType: properties.breakType } : {}),
+  };
 }
 
 function isXmlTrue(value: string | null | undefined): boolean {
@@ -223,6 +261,29 @@ export function parseSectionProperties(sectPr: XmlElement): SectionProperties {
   // w:bidi — right-to-left section layout (on/off element).
   const bidi = parseOnOffProperty(sectPr, "bidi");
 
+  const propertyChange = getFirstChildByTagNameNS(
+    sectPr,
+    WORD_NS,
+    "sectPrChange",
+  );
+  const revisionMetadata = parseRevisionMetadata(propertyChange);
+  const previousSectPr = getFirstChildByTagNameNS(
+    propertyChange,
+    WORD_NS,
+    "sectPr",
+  );
+  const propertyRevision =
+    revisionMetadata && previousSectPr
+      ? {
+          ...revisionMetadata,
+          type: "property" as const,
+          previous: sectionPropertiesSnapshot(
+            parseSectionProperties(previousSectPr),
+            pageSettings,
+          ),
+        }
+      : undefined;
+
   return {
     pageSettings,
     ...(pageBorder ? { pageBorder } : {}),
@@ -246,6 +307,7 @@ export function parseSectionProperties(sectPr: XmlElement): SectionProperties {
     pageNumbering,
     verticalAlignment,
     bidi,
+    propertyRevision,
   };
 }
 
