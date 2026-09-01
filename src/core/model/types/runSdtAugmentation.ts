@@ -11,6 +11,22 @@ declare module "./nodes.js" {
   interface EditorRunBase {
     /** Enclosing inline `w:sdt` content controls, outermost first. */
     sdtWrappers?: EditorSdtBlockWrapper[];
+    /**
+     * Zero-length Word move-container boundary (`moveFrom/ToRangeStart/End`).
+     * Start markers carry CT_MoveBookmark metadata; end markers retain the
+     * matching id and optional custom-XML displacement hint.
+     */
+    revisionRangeMarker?: {
+      move: "from" | "to";
+      edge: "start" | "end";
+      id: string;
+      name?: string;
+      author?: string;
+      date?: number;
+      columnFirst?: number;
+      columnLast?: number;
+      displacedByCustomXml?: string;
+    };
   }
 
   interface EditorTableRowNode {
