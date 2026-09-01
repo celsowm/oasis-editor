@@ -86,6 +86,16 @@ function parseCommentMarker(
   };
 }
 
+function fallbackRevisionId(element: XmlElement): string {
+  const xml = new XMLSerializer().serializeToString(element);
+  let hash = 2166136261;
+  for (let index = 0; index < xml.length; index += 1) {
+    hash ^= xml.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `revision:${hash >>> 0}`;
+}
+
 function parseRevisionContainer(element: XmlElement): EditorRevision | undefined {
   const kind = element.localName;
   if (
@@ -101,7 +111,7 @@ function parseRevisionContainer(element: XmlElement): EditorRevision | undefined
   const parsedDate = rawDate ? Date.parse(rawDate) : Number.NaN;
   const isDeletion = kind === "del" || kind === "moveFrom";
   return {
-    id: getAttributeValue(element, "id") ?? createEditorNodeId("revision"),
+    id: getAttributeValue(element, "id") ?? fallbackRevisionId(element),
     type: isDeletion ? "delete" : "insert",
     author: getAttributeValue(element, "author") ?? "Unknown",
     date: Number.isFinite(parsedDate) ? parsedDate : 0,
