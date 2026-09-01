@@ -29,6 +29,10 @@ import {
   mergeRunOoxmlSourceIntoGeneratedXml,
   serializeRunFromOoxmlSource,
 } from "./sourceRunXml.js";
+import {
+  serializeDeletionRunContent,
+  serializeRunRevisionWrapper,
+} from "./revisionXml.js";
 
 export function serializeRun(
   run: EditorTextRun,
@@ -107,17 +111,20 @@ export function serializeRunWithRelationships(
   styles: Record<string, EditorNamedStyle> | undefined,
   serializeBlocksXml: SerializeBlocksXml,
 ): string {
-  const runXml = serializeRun(
+  let runXml = serializeRun(
     run,
     context,
     paragraphStyleId,
     styles,
     serializeBlocksXml,
   );
-  const href = run.styles?.link;
-  if (!href) {
-    return runXml;
+  if (run.revision?.type === "delete") {
+    runXml = serializeDeletionRunContent(runXml);
   }
 
-  return wrapRunWithHyperlink(runXml, href, context);
+  const href = run.styles?.link;
+  const linkedXml = href ? wrapRunWithHyperlink(runXml, href, context) : runXml;
+  return run.revision
+    ? serializeRunRevisionWrapper(linkedXml, run.revision)
+    : linkedXml;
 }
