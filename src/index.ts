@@ -171,6 +171,19 @@ export type {
   SemanticDocumentSnapshot,
   SemanticNode,
 } from "./app/client/publicDocumentApi.js";
+export {
+  projectTrackedRevisions,
+  resolveAllTrackedRevisions,
+  resolveTrackedRevision,
+} from "./core/document/trackedRevisions.js";
+export type {
+  EditorTrackedRevisionAction,
+  EditorTrackedRevisionIssue,
+  EditorTrackedRevisionIssueKind,
+  EditorTrackedRevisionResolutionResult,
+  EditorTrackedRevisionView,
+} from "./core/document/trackedRevisions.js";
+
 export type { DocumentPersistence } from "./app/controllers/useEditorPersistence.js";
 export type { ImportProgressState } from "./app/controllers/useEditorDocumentIO.js";
 export type {

@@ -10,6 +10,7 @@ import type {
   EditorFootnoteReferenceData,
   EditorImageFloatingLayout,
   EditorImageRunData,
+  EditorMoveRangeMarker,
   EditorParagraphListStyle,
   EditorNumberingRevision,
   EditorRevision,
@@ -96,6 +97,10 @@ export interface EditorRunBase {
   text: string;
   styles?: EditorTextStyle;
   revision?: EditorRevision;
+  /** Zero-length move range boundary retained for lossless tracked-move round-trip. */
+  revisionRangeMarker?: EditorMoveRangeMarker;
+  /** Enclosing inline w:sdt wrappers, outermost first. */
+  sdtWrappers?: EditorSdtBlockWrapper[];
 }
 
 /**

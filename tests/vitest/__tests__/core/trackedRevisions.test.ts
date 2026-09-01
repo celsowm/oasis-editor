@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type {
+  EditorBlockNode,
   EditorDocument,
   EditorPageSettings,
   EditorParagraphNode,
@@ -45,7 +46,7 @@ function paragraph(
   return { id, type: "paragraph", runs, ...extra };
 }
 
-function documentWithBlocks(blocks: EditorDocument["sections"][number]["blocks"]): EditorDocument {
+function documentWithBlocks(blocks: EditorBlockNode[]): EditorDocument {
   return {
     id: "doc",
     sections: [{ id: "s1", blocks, pageSettings: pageSettings() }],

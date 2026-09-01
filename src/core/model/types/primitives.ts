@@ -292,6 +292,21 @@ export interface EditorRevision {
   type: "insert" | "delete";
   author: string;
   date: number;
+  /** Word move containers reuse insertion/deletion semantics plus source/target identity. */
+  move?: "from" | "to";
+}
+
+/** Zero-length w:moveFrom/ToRangeStart/End marker retained in inline order. */
+export interface EditorMoveRangeMarker {
+  move: "from" | "to";
+  edge: "start" | "end";
+  id: string;
+  name?: string;
+  author?: string;
+  date?: number;
+  columnFirst?: number;
+  columnLast?: number;
+  displacedByCustomXml?: string;
 }
 
 export interface EditorRevisionMetadata {
