@@ -1,0 +1,71 @@
+import fs from "node:fs";
+
+function read(path) { return fs.readFileSync(path, "utf8"); }
+function write(path, content) { fs.writeFileSync(path, content); }
+function replaceOnce(content, before, after, path) {
+  const index = content.indexOf(before);
+  if (index < 0) throw new Error(`Anchor not found in ${path}: ${before.slice(0, 120)}`);
+  if (content.indexOf(before, index + before.length) >= 0) throw new Error(`Anchor not unique in ${path}`);
+  return content.slice(0, index) + after + content.slice(index + before.length);
+}
+function patch(path, replacements) {
+  let content = read(path);
+  for (const [before, after] of replacements) content = replaceOnce(content, before, after, path);
+  write(path, content);
+}
+
+patch("src/import/docx/tableProperties.ts", [
+  [
+    `export function getTableCellVMerge(\n  cellProperties: XmlElement | null,\n): "restart" | "continue" | undefined {\n  if (!cellProperties) {\n    return undefined;\n  }\n\n  const vMerge = getFirstChildByTagNameNS(cellProperties, WORD_NS, "vMerge");\n  if (!vMerge) {\n    return undefined;\n  }\n\n  const value = getAttributeValue(vMerge, "val");\n  return value === "restart" ? "restart" : "continue";\n}`,
+    `function parseTrackedVerticalMergeValue(\n  value: string | null,\n): "restart" | "continue" | undefined {\n  if (value === "rest" || value === "restart") return "restart";\n  if (value === "cont" || value === "continue") return "continue";\n  return undefined;\n}\n\nexport function getTableCellVMerge(\n  cellProperties: XmlElement | null,\n): "restart" | "continue" | undefined {\n  if (!cellProperties) {\n    return undefined;\n  }\n\n  const vMerge = getFirstChildByTagNameNS(cellProperties, WORD_NS, "vMerge");\n  if (vMerge) {\n    const value = getAttributeValue(vMerge, "val");\n    return value === "restart" ? "restart" : "continue";\n  }\n\n  const cellMerge = getFirstChildByTagNameNS(cellProperties, WORD_NS, "cellMerge");\n  return parseTrackedVerticalMergeValue(getAttributeValue(cellMerge, "vMerge"));\n}`,
+  ],
+  [
+    `  if (structural) {\n    const originalMerge = getAttributeValue(structural, "vMergeOrig");\n    style.revision = {\n      ...parseRevisionMetadata(structural),\n      type: inserted ? "insert" : deleted ? "delete" : "merge",\n      ...(merged && originalMerge\n        ? {\n            previous: {\n              vMerge: originalMerge === "restart" ? "restart" : "continue",\n            },\n          }\n        : {}),\n    };\n  }`,
+    `  if (structural) {\n    const originalMerge = parseTrackedVerticalMergeValue(\n      getAttributeValue(structural, "vMergeOrig"),\n    );\n    style.revision = {\n      ...parseRevisionMetadata(structural),\n      type: inserted ? "insert" : deleted ? "delete" : "merge",\n      ...(merged && originalMerge\n        ? { previous: { vMerge: originalMerge } }\n        : {}),\n    };\n  }`,
+  ],
+]);
+
+patch("src/import/docx/tables.ts", [
+  [
+    `  EditorParagraphStyle,\n  EditorTableNode,`,
+    `  EditorParagraphStyle,\n  EditorTableCellNode,\n  EditorTableNode,`,
+  ],
+  [
+    `export async function parseTableNode(`,
+    `function captureTrackedCellMergeState(cell: EditorTableCellNode): void {\n  const revision = cell.style?.revision;\n  const previousVMerge =\n    revision?.type === "merge" ? revision.previous?.vMerge : undefined;\n  if (!revision || revision.type !== "merge" || !previousVMerge) return;\n\n  const previousStyle = cell.style\n    ? { ...cell.style, revision: undefined }\n    : undefined;\n  const previousCell: EditorTableCellNode = {\n    ...cell,\n    blocks: previousVMerge === "continue" ? [] : cell.blocks,\n    vMerge: previousVMerge,\n    rowSpan: undefined,\n    style: previousStyle,\n    mergeRevisionState: undefined,\n  };\n  cell.mergeRevisionState = {\n    revisionId: revision.id,\n    orientation: "vertical",\n    currentCellCount: 1,\n    previousCells: [previousCell],\n  };\n}\n\nexport async function parseTableNode(`,
+  ],
+  [
+    `      const cellExtAttrs = collectExtAttributes(cellNode);\n      if (cellExtAttrs) cell.extAttributes = cellExtAttrs;\n      if (vMerge === "continue") {`,
+    `      const cellExtAttrs = collectExtAttributes(cellNode);\n      if (cellExtAttrs) cell.extAttributes = cellExtAttrs;\n      captureTrackedCellMergeState(cell);\n      if (vMerge === "continue") {`,
+  ],
+]);
+
+patch("src/core/document/trackedRevisions.ts", [
+  [
+    `function resolveCellStructuralRevision(\n  cell: EditorTableCellNode,`,
+    `function restoreVerticalCellMerge(\n  cell: EditorTableCellNode,\n): EditorTableCellNode | undefined {\n  const state = cell.mergeRevisionState;\n  if (\n    state?.orientation === "vertical" &&\n    state.currentCellCount === 1 &&\n    state.previousCells.length === 1\n  ) {\n    return structuredClone(state.previousCells[0]!);\n  }\n\n  const revision = cell.style?.revision;\n  if (revision?.type === "merge" && revision.previous?.vMerge === "continue") {\n    return {\n      ...cell,\n      blocks: [],\n      rowSpan: undefined,\n      vMerge: "continue",\n      style: cell.style ? { ...cell.style, revision: undefined } : cell.style,\n      mergeRevisionState: undefined,\n    };\n  }\n  return undefined;\n}\n\nfunction resolveCellStructuralRevision(\n  cell: EditorTableCellNode,`,
+  ],
+  [
+    `    if (context.action === "reject" && revision.type === "merge") {\n      pushIssue(context, {\n        kind: "cell-merge-original-unavailable",\n        revisionId: revision.id,\n        path,\n        message:\n          "The original cell grid for this merge revision is preserved but not reconstructed by the core resolver yet.",\n      });\n      return cell;\n    }\n\n    markResolved(context, revision.id);`,
+    `    if (context.action === "reject" && revision.type === "merge") {\n      const restored = restoreVerticalCellMerge(cell);\n      if (!restored) {\n        pushIssue(context, {\n          kind: "cell-merge-original-unavailable",\n          revisionId: revision.id,\n          path,\n          message:\n            "The previous merge topology lacks an exact semantic snapshot for safe restoration.",\n        });\n        return cell;\n      }\n      markResolved(context, revision.id);\n      return restored;\n    }\n\n    markResolved(context, revision.id);`,
+  ],
+  [
+    `    pushIssue(context, {\n      kind: "cell-merge-original-unavailable",\n      revisionId,\n      path: \`${path}.mergeRevisionState\`,\n      message:\n        "The original cell grid is preserved but cannot yet be spliced back into the live table safely.",\n    });`,
+    `    const restored = restoreVerticalCellMerge(cell);\n    if (restored) {\n      markResolved(context, revisionId);\n      return restored;\n    }\n    pushIssue(context, {\n      kind: "cell-merge-original-unavailable",\n      revisionId,\n      path: \`${path}.mergeRevisionState\`,\n      message:\n        "The preserved merge snapshot is not a supported exact vertical-cell restoration.",\n    });`,
+  ],
+  [
+    `function transformTable(\n  table: EditorTableNode,`,
+    `function recomputeVerticalMergeRowSpans(table: EditorTableNode): EditorTableNode {\n  let changed = false;\n  const rows = table.rows.map((row, rowIndex) => {\n    let rowChanged = false;\n    const cells = row.cells.map((cell, cellIndex) => {\n      let rowSpan: number | undefined;\n      if (cell.vMerge === "restart") {\n        rowSpan = 1;\n        for (let nextRowIndex = rowIndex + 1; nextRowIndex < table.rows.length; nextRowIndex += 1) {\n          const nextCell = table.rows[nextRowIndex]!.cells[cellIndex];\n          if (!nextCell || nextCell.vMerge !== "continue") break;\n          rowSpan += 1;\n        }\n      }\n      if (cell.rowSpan === rowSpan) return cell;\n      rowChanged = true;\n      return { ...cell, rowSpan };\n    });\n    if (!rowChanged) return row;\n    changed = true;\n    return { ...row, cells };\n  });\n  return changed ? { ...table, rows } : table;\n}\n\nfunction transformTable(\n  table: EditorTableNode,`,
+  ],
+  [
+    `  if (rowsChanged) next = { ...next, rows };\n  if (rowsChanged) recordRemovedParagraphRelocations(table, next, context);\n  return next;`,
+    `  if (rowsChanged) next = { ...next, rows };\n  if (rowsChanged) {\n    next = recomputeVerticalMergeRowSpans(next);\n    recordRemovedParagraphRelocations(table, next, context);\n  }\n  return next;`,
+  ],
+]);
+
+write(
+  "tests/vitest/__tests__/import/docxImport.cellMergeRevisions.test.ts",
+  `import { describe, expect, it } from "vitest";\nimport JSZip from "jszip";\nimport type { EditorParagraphNode, EditorTableNode } from "@/core/model.js";\nimport { projectTrackedRevisions } from "@/core/document/trackedRevisions.js";\nimport { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";\nimport { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";\n\nconst WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";\n\nfunction paragraphText(cell: EditorTableNode["rows"][number]["cells"][number]): string {\n  return cell.blocks\n    .filter((block): block is EditorParagraphNode => block.type === "paragraph")\n    .flatMap((block) => block.runs)\n    .map((run) => run.text)\n    .join("");\n}\n\nasync function importMergeDocument(\n  currentSecond: "restart" | "continue",\n  originalSecond: "restart" | "continue",\n) {\n  const zip = new JSZip();\n  const currentToken = currentSecond === "restart" ? "rest" : "cont";\n  const originalToken = originalSecond === "restart" ? "rest" : "cont";\n  const currentElement = currentSecond === "restart"\n    ? '<w:vMerge w:val="restart"/>'\n    : '<w:vMerge/>';\n  zip.file(\n    "word/document.xml",\n    \`<w:document xmlns:w="\${WORD_NS}"><w:body><w:tbl>\n      <w:tblGrid><w:gridCol w:w="3000"/></w:tblGrid>\n      <w:tr><w:tc><w:tcPr><w:vMerge w:val="restart"/></w:tcPr><w:p><w:r><w:t>Top</w:t></w:r></w:p></w:tc></w:tr>\n      <w:tr><w:tc><w:tcPr>\${currentElement}<w:cellMerge w:id="50" w:author="Merge Author" w:date="2026-02-07T06:07:08Z" w:vMergeOrig="\${originalToken}" w:vMerge="\${currentToken}"/></w:tcPr><w:p><w:r><w:t>Bottom original</w:t></w:r></w:p></w:tc></w:tr>\n    </w:tbl><w:sectPr/></w:body></w:document>\`,\n  );\n  return importDocxToEditorDocument(await zip.generateAsync({ type: "arraybuffer" }));\n}\n\ndescribe("DOCX tracked vertical cell merges", () => {\n  it("captures hidden pre-merge content and restores it in Original view", async () => {\n    const document = await importMergeDocument("continue", "restart");\n    const table = document.sections![0]!.blocks[0] as EditorTableNode;\n    const currentTop = table.rows[0]!.cells[0]!;\n    const currentBottom = table.rows[1]!.cells[0]!;\n\n    expect(currentTop.rowSpan).toBe(2);\n    expect(currentBottom.vMerge).toBe("continue");\n    expect(currentBottom.blocks).toEqual([]);\n    expect(currentBottom.style?.revision).toMatchObject({\n      id: "50", type: "merge", previous: { vMerge: "restart" },\n    });\n    expect(currentBottom.mergeRevisionState).toMatchObject({\n      revisionId: "50", orientation: "vertical", currentCellCount: 1,\n    });\n    expect(paragraphText(currentBottom.mergeRevisionState!.previousCells[0]!)).toBe(\n      "Bottom original",\n    );\n\n    const original = projectTrackedRevisions(document, "original");\n    expect(original.complete).toBe(true);\n    const originalTable = original.document.sections![0]!.blocks[0] as EditorTableNode;\n    expect(originalTable.rows[0]!.cells[0]!.rowSpan).toBe(1);\n    expect(originalTable.rows[1]!.cells[0]!.vMerge).toBe("restart");\n    expect(originalTable.rows[1]!.cells[0]!.rowSpan).toBe(1);\n    expect(paragraphText(originalTable.rows[1]!.cells[0]!)).toBe("Bottom original");\n    expect(originalTable.rows[1]!.cells[0]!.style?.revision).toBeUndefined();\n    expect(originalTable.rows[1]!.cells[0]!.mergeRevisionState).toBeUndefined();\n\n    const exported = await exportEditorDocumentToDocx(original.document);\n    const exportedZip = await JSZip.loadAsync(exported);\n    const xml = (await exportedZip.file("word/document.xml")?.async("string")) ?? "";\n    expect(xml).not.toContain("cellMerge");\n    expect((xml.match(/<w:vMerge w:val="restart"\/>/g) ?? []).length).toBe(2);\n\n    const reimported = await importDocxToEditorDocument(exported);\n    const reimportedTable = reimported.sections![0]!.blocks[0] as EditorTableNode;\n    expect(paragraphText(reimportedTable.rows[1]!.cells[0]!)).toBe("Bottom original");\n  });\n\n  it("restores a previous continuation and recalculates the anchor rowSpan", async () => {\n    const document = await importMergeDocument("restart", "continue");\n    const table = document.sections![0]!.blocks[0] as EditorTableNode;\n    expect(table.rows[1]!.cells[0]!.style?.revision?.previous).toEqual({\n      vMerge: "continue",\n    });\n\n    const original = projectTrackedRevisions(document, "original");\n    expect(original.complete).toBe(true);\n    const originalTable = original.document.sections![0]!.blocks[0] as EditorTableNode;\n    expect(originalTable.rows[0]!.cells[0]!.rowSpan).toBe(2);\n    expect(originalTable.rows[1]!.cells[0]!.vMerge).toBe("continue");\n    expect(originalTable.rows[1]!.cells[0]!.blocks).toEqual([]);\n\n    const final = projectTrackedRevisions(document, "final");\n    expect(final.complete).toBe(true);\n    const finalTable = final.document.sections![0]!.blocks[0] as EditorTableNode;\n    expect(finalTable.rows[0]!.cells[0]!.rowSpan).toBe(1);\n    expect(finalTable.rows[1]!.cells[0]!.vMerge).toBe("restart");\n    expect(finalTable.rows[1]!.cells[0]!.rowSpan).toBe(1);\n    expect(paragraphText(finalTable.rows[1]!.cells[0]!)).toBe("Bottom original");\n  });\n\n  it("parses the exporter rest/cont tokens without flipping vMergeOrig", async () => {\n    const document = await importMergeDocument("continue", "restart");\n    const exported = await exportEditorDocumentToDocx(document);\n    const reimported = await importDocxToEditorDocument(exported);\n    const table = reimported.sections![0]!.blocks[0] as EditorTableNode;\n    expect(table.rows[1]!.cells[0]!.style?.revision?.previous).toEqual({\n      vMerge: "restart",\n    });\n  });\n});\n`,
+);
+
+console.log("Applied tracked vertical cell merge resolution patch.");
