@@ -1,5 +1,12 @@
 import type { EditorSdtBlockWrapper } from "./nodes.js";
 
+declare module "./primitives.js" {
+  interface EditorRevision {
+    /** Word tracked-move semantics layered over delete/insert revisions. */
+    move?: "from" | "to";
+  }
+}
+
 declare module "./nodes.js" {
   interface EditorRunBase {
     /** Enclosing inline `w:sdt` content controls, outermost first. */
