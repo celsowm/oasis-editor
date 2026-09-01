@@ -127,7 +127,7 @@ function parseRevisionContainer(element: XmlElement): EditorRevision | undefined
 function parseMoveRangeMarker(
   element: XmlElement,
 ): EditorRunBase["revisionRangeMarker"] | undefined {
-  const match = /^move(From|To)Range(Start|End)$/.exec(element.localName);
+  const match = /^move(From|To)Range(Start|End)$/.exec(element.localName ?? "");
   if (!match) return undefined;
 
   const move = match[1] === "From" ? "from" : "to";
