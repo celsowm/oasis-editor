@@ -539,12 +539,24 @@ function transformRow(
   const style = resolveRowPropertyStyle(next.style, `${path}.style`, context);
   if (style !== next.style) next = { ...next, style };
 
-  if (next.tblPrExChangeXml) {
+  const propertyExceptionsRevision = next.propertyExceptionsRevision;
+  if (
+    propertyExceptionsRevision &&
+    matchesRevision(context, propertyExceptionsRevision.id)
+  ) {
+    markResolved(context, propertyExceptionsRevision.id);
+    next = {
+      ...next,
+      propertyExceptions:
+        context.action === "accept"
+          ? next.propertyExceptions
+          : structuredClone(propertyExceptionsRevision.previous),
+      propertyExceptionsRevision: undefined,
+      tblPrExChangeXml: undefined,
+    };
+  } else if (next.tblPrExChangeXml && !propertyExceptionsRevision) {
     const revisionId = rawRevisionId(next.tblPrExChangeXml);
-    if (
-      revisionId &&
-      matchesRevision(context, revisionId)
-    ) {
+    if (revisionId && matchesRevision(context, revisionId)) {
       markMatched(context);
       if (context.action === "accept") {
         markResolved(context, revisionId);
@@ -555,7 +567,7 @@ function transformRow(
           revisionId,
           path: `${path}.tblPrExChangeXml`,
           message:
-            "w:tblPrExChange is still preservation-only; its previous properties are not semantically decoded yet.",
+            "The imported w:tblPrExChange has no decodable previous w:tblPrEx snapshot.",
         });
       }
     }

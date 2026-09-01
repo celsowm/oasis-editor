@@ -35,6 +35,7 @@ import { parseTableLook } from "./tableConditionalFormatting.js";
 import { collectSdtWrappedWordChildren } from "./structuralContentControls.js";
 import {
   parseTableStyle,
+  parseTablePropertyExceptionRevision,
   parseTableRowStyle,
   getTableCellColSpan,
   getTableCellHMerge,
@@ -249,6 +250,10 @@ export async function parseTableNode(
         "tblPrExChange",
       );
       if (changeEl) {
+        const revision = parseTablePropertyExceptionRevision(changeEl);
+        if (revision) {
+          row.propertyExceptionsRevision = revision;
+        }
         row.tblPrExChangeXml = new XMLSerializer().serializeToString(changeEl);
       }
     }

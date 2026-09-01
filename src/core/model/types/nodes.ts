@@ -366,7 +366,9 @@ export interface EditorTableRowNode {
    * resolution and re-serialized before `w:trPr` on export.
    */
   propertyExceptions?: EditorTableStyle;
-  /** Raw `<w:tblPrExChange ...>` XML preserved for DOCX round-trip. */
+  /** Semantic previous row table-property exceptions from `w:tblPrExChange`. */
+  propertyExceptionsRevision?: EditorPropertyRevision<EditorTableStyle>;
+  /** Exact imported `<w:tblPrExChange ...>` retained as a preservation fallback. */
   tblPrExChangeXml?: string;
   /** Extension attributes (e.g. `w14:paraId`, `w15:*`) preserved for round-trip. */
   extAttributes?: Record<string, string>;

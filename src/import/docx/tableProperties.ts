@@ -10,6 +10,7 @@ import type {
   EditorTableRowStyle,
   EditorTableStyle,
   EditorRevisionMetadata,
+  EditorPropertyRevision,
   EditorTableConditionalFlags,
 } from "@/core/model.js";
 import { TABLE_CONDITIONAL_FLAG_ATTRIBUTES } from "@/core/docxTableMaps.js";
@@ -105,6 +106,19 @@ function parseRevisionMetadata(element: XmlElement): EditorRevisionMetadata {
     id: getAttributeValue(element, "id") ?? `revision:${element.localName}`,
     author: getAttributeValue(element, "author") ?? "Unknown",
     date: Number.isFinite(parsedDate) ? parsedDate : 0,
+  };
+}
+
+export function parseTablePropertyExceptionRevision(
+  change: XmlElement | null,
+): EditorPropertyRevision<EditorTableStyle> | undefined {
+  if (!change) return undefined;
+  const previous = getFirstChildByTagNameNS(change, WORD_NS, "tblPrEx");
+  if (!previous) return undefined;
+  return {
+    ...parseRevisionMetadata(change),
+    type: "property",
+    previous: parseTableStyle(previous) ?? {},
   };
 }
 

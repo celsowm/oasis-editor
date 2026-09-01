@@ -50,6 +50,12 @@ export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
           conditionalStyle: row.conditionalStyle
             ? { ...row.conditionalStyle }
             : undefined,
+          propertyExceptions: row.propertyExceptions
+            ? structuredClone(row.propertyExceptions)
+            : undefined,
+          propertyExceptionsRevision: row.propertyExceptionsRevision
+            ? structuredClone(row.propertyExceptionsRevision)
+            : undefined,
           style: row.style
             ? {
                 ...row.style,

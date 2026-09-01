@@ -568,9 +568,10 @@ function serializeTableProperties(table: EditorTableNode): string {
  */
 function serializeTablePropertyExceptions(
   exceptions: EditorTableStyle | undefined,
+  revision?: EditorTableNode["rows"][number]["propertyExceptionsRevision"],
   tblPrExChangeXml?: string,
 ): string {
-  if (!exceptions && !tblPrExChangeXml) {
+  if (!exceptions && !revision && !tblPrExChangeXml) {
     return "";
   }
   const parts: string[] = [];
@@ -606,6 +607,12 @@ function serializeTablePropertyExceptions(
   }
   if (tblPrExChangeXml) {
     parts.push(tblPrExChangeXml);
+  } else if (revision) {
+    const previous =
+      serializeTablePropertyExceptions(revision.previous) || "<w:tblPrEx/>";
+    parts.push(
+      `<w:tblPrExChange ${serializeRevisionAttrs(revision)}>${previous}</w:tblPrExChange>`,
+    );
   }
   return parts.length > 0 ? `<w:tblPrEx>${parts.join("")}</w:tblPrEx>` : "";
 }
@@ -652,7 +659,11 @@ export function serializeTableXml(
           return `<w:tc${serializeExtAttributes(cell.extAttributes)}>${serializeTableCellProperties(cell, fallbackWidthPt)}${contentXml}</w:tc>`;
         })
         .join("");
-      return `<w:tr${serializeExtAttributes(row.extAttributes)}>${serializeTablePropertyExceptions(row.propertyExceptions, row.tblPrExChangeXml)}${serializeTableRowProperties(row)}${cellsXml}</w:tr>`;
+      return `<w:tr${serializeExtAttributes(row.extAttributes)}>${serializeTablePropertyExceptions(
+        row.propertyExceptions,
+        row.propertyExceptionsRevision,
+        row.tblPrExChangeXml,
+      )}${serializeTableRowProperties(row)}${cellsXml}</w:tr>`;
     })
     .join("");
   const gridXml = table.gridCols
