@@ -43,6 +43,8 @@ export interface EditorComment {
   dateUtc?: number;
   /** Resolved/"done" state (`w15:commentEx/@w15:done`). */
   resolved?: boolean;
+  /** Editor-local parent comment id for a threaded reply (`w15:paraIdParent`). */
+  parentId?: string;
   /** Flattened comment body text (bodies in scope are single paragraphs). */
   text: string;
   /** Start anchor. May be absent for a malformed import (orphan end). */

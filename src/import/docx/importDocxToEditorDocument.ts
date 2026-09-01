@@ -673,6 +673,18 @@ function buildEditorComments(
     return na - nb;
   });
 
+  const localIdByDocxId = new Map<string, string>();
+  for (const docxId of sorted) {
+    localIdByDocxId.set(docxId, createEditorCommentId());
+  }
+  const localIdByParaId = new Map<string, string>();
+  for (const [docxId, body] of bodies) {
+    const localId = localIdByDocxId.get(docxId);
+    if (localId && body.paraId) {
+      localIdByParaId.set(body.paraId, localId);
+    }
+  }
+
   const items: EditorComments["items"] = {};
   const order: string[] = [];
   for (const docxId of sorted) {
@@ -681,7 +693,10 @@ function buildEditorComments(
     if (!range && !body) {
       continue;
     }
-    const id = createEditorCommentId();
+    const id = localIdByDocxId.get(docxId)!;
+    const parentId = body?.parentParaId
+      ? localIdByParaId.get(body.parentParaId)
+      : undefined;
     const docxIdNum = Number.parseInt(docxId, 10);
     items[id] = {
       id,
@@ -690,6 +705,7 @@ function buildEditorComments(
       ...(body?.date !== undefined ? { date: body.date } : {}),
       ...(body?.dateUtc !== undefined ? { dateUtc: body.dateUtc } : {}),
       ...(body?.resolved ? { resolved: body.resolved } : {}),
+      ...(parentId ? { parentId } : {}),
       text: body?.text ?? "",
       ...(range?.start ? { start: range.start } : {}),
       ...(range?.end ? { end: range.end } : {}),

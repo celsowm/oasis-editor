@@ -178,11 +178,19 @@ export function buildCommentsPartXml(plan: CommentExportPlan): string {
 
 /** Build `word/commentsExtended.xml` carrying the resolved/"done" state. */
 export function buildCommentsExtendedPartXml(plan: CommentExportPlan): string {
+  const paraIdByCommentId = new Map(
+    plan.comments.map(({ comment, paraId }) => [comment.id, paraId] as const),
+  );
   const body = plan.comments
-    .map(
-      ({ comment, paraId }): string =>
-        `<w15:commentEx w15:paraId="${paraId}" w15:done="${comment.resolved ? "1" : "0"}"/>`,
-    )
+    .map(({ comment, paraId }): string => {
+      const parentParaId = comment.parentId
+        ? paraIdByCommentId.get(comment.parentId)
+        : undefined;
+      const parentAttr = parentParaId
+        ? ` w15:paraIdParent="${parentParaId}"`
+        : "";
+      return `<w15:commentEx w15:paraId="${paraId}"${parentAttr} w15:done="${comment.resolved ? "1" : "0"}"/>`;
+    })
     .join("");
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w15:commentsEx ${COMMENTS_XMLNS}>${body}</w15:commentsEx>`;
 }

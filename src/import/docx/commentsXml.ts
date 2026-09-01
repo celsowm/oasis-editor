@@ -28,6 +28,8 @@ export interface ParsedCommentBody {
   resolved?: boolean;
   /** `w14:paraId` of the comment's (first) paragraph — links to commentsEx. */
   paraId?: string;
+  /** Parent comment paragraph id from `w15:commentEx/@w15:paraIdParent`. */
+  parentParaId?: string;
 }
 
 /** Recursively collect text from `w:t` / `w:tab` / `w:br` descendants. */
@@ -71,15 +73,22 @@ function parseDate(value: string | null): number | undefined {
  * Parse `word/commentsExtended.xml` into a `w15:paraId -> done` map so the
  * resolved state can be folded onto the matching comment body.
  */
-function parseCommentsExtended(xml: string | null): Map<string, boolean> {
-  const done = new Map<string, boolean>();
+interface ParsedCommentExtended {
+  resolved: boolean;
+  parentParaId?: string;
+}
+
+function parseCommentsExtended(
+  xml: string | null,
+): Map<string, ParsedCommentExtended> {
+  const extended = new Map<string, ParsedCommentExtended>();
   if (!xml) {
-    return done;
+    return extended;
   }
   const doc = new DOMParser().parseFromString(xml, "application/xml");
   const root = doc.documentElement;
   if (!root) {
-    return done;
+    return extended;
   }
   for (const ex of getChildrenByTagNameNS(root, WORD15_NS, "commentEx")) {
     const paraId = ex.getAttributeNS(WORD15_NS, "paraId");
@@ -87,9 +96,14 @@ function parseCommentsExtended(xml: string | null): Map<string, boolean> {
       continue;
     }
     const isDone = ex.getAttributeNS(WORD15_NS, "done");
-    done.set(paraId, isDone === "1" || isDone === "true");
+    const parentParaId =
+      ex.getAttributeNS(WORD15_NS, "paraIdParent") || undefined;
+    extended.set(paraId, {
+      resolved: isDone === "1" || isDone === "true",
+      ...(parentParaId ? { parentParaId } : {}),
+    });
   }
-  return done;
+  return extended;
 }
 
 /**
@@ -110,7 +124,7 @@ export function parseCommentsXml(
     return byDocxId;
   }
 
-  const doneByParaId = parseCommentsExtended(commentsExtendedXml);
+  const extendedByParaId = parseCommentsExtended(commentsExtendedXml);
 
   for (const comment of getChildrenByTagNameNS(root, WORD_NS, "comment")) {
     const docxId = getAttributeValue(comment, "id");
@@ -130,8 +144,8 @@ export function parseCommentsXml(
       paragraphs.length > 0
         ? (getAttributeValue(paragraphs[0]!, "paraId") ?? undefined)
         : undefined;
-    const resolved =
-      paraId !== undefined ? doneByParaId.get(paraId) : undefined;
+    const extended =
+      paraId !== undefined ? extendedByParaId.get(paraId) : undefined;
 
     byDocxId.set(docxId, {
       author,
@@ -139,8 +153,11 @@ export function parseCommentsXml(
       ...(date !== undefined ? { date } : {}),
       ...(dateUtc !== undefined ? { dateUtc } : {}),
       text,
-      ...(resolved ? { resolved } : {}),
+      ...(extended?.resolved ? { resolved: true } : {}),
       ...(paraId ? { paraId } : {}),
+      ...(extended?.parentParaId
+        ? { parentParaId: extended.parentParaId }
+        : {}),
     });
   }
 
