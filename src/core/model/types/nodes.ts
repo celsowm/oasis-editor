@@ -11,6 +11,7 @@ import type {
   EditorImageFloatingLayout,
   EditorImageRunData,
   EditorParagraphListStyle,
+  EditorNumberingRevision,
   EditorRevision,
   EditorPropertyRevision,
   EditorStructuralRevision,
@@ -294,6 +295,8 @@ export interface EditorParagraphNode {
   runs: EditorTextRun[];
   style?: EditorParagraphStyle;
   list?: EditorParagraphListStyle;
+  /** Tracked previous numbering metadata from `w:numPr/w:numberingChange`. */
+  numberingRevision?: EditorNumberingRevision;
   /** Drop cap that body text in this paragraph wraps around, when present. */
   dropCap?: EditorDropCap;
   /** Enclosing block-level `w:sdt` content controls, preserved for round-trip. */

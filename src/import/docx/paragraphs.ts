@@ -24,7 +24,11 @@ import {
   normalizeImportedParagraphStyle,
   withDocxImplicitSingleLineHeight,
 } from "./paragraphStyle.js";
-import { type NumberingMaps, parseParagraphList } from "./numbering.js";
+import {
+  type NumberingMaps,
+  parseParagraphList,
+  parseParagraphNumberingRevision,
+} from "./numbering.js";
 import { type ImportedRun, parseRunsContainer } from "./runs.js";
 import type {
   ImportedBookmarkMarker,
@@ -203,6 +207,7 @@ function createImportedParagraph(
   runs: ImportedRun[],
   paragraphStyle: EditorParagraphStyle | undefined,
   list: EditorParagraphListStyle | undefined,
+  numberingRevision: EditorParagraphNode["numberingRevision"],
   markRunStyle?: EditorTextStyle,
   source?: ImportedParagraphSource,
 ): EditorParagraphNode {
@@ -230,6 +235,9 @@ function createImportedParagraph(
     );
   }
   paragraph.list = list ? { ...list } : undefined;
+  paragraph.numberingRevision = numberingRevision
+    ? { ...numberingRevision }
+    : undefined;
 
   if (source?.runXml?.length === paragraph.runs.length) {
     for (let index = 0; index < paragraph.runs.length; index += 1) {
@@ -341,6 +349,8 @@ export async function parseParagraphNodes(
   );
   const listResult = parseParagraphList(paragraphProperties, numberingMaps);
   const list = listResult?.list;
+  const numberingRevision =
+    parseParagraphNumberingRevision(paragraphProperties);
 
   let styleWithListIndent = parsedStyle;
   if (listResult?.indent) {
@@ -382,6 +392,7 @@ export async function parseParagraphNodes(
           runs,
           paragraphStyle,
           list,
+          numberingRevision,
           markRunStyle,
           source,
         ),
@@ -405,7 +416,13 @@ export async function parseParagraphNodes(
       ? { ...(paragraphStyle ?? {}), pageBreakBefore: true }
       : paragraphStyle;
     paragraphs.push(
-      createImportedParagraph(segment, style, list, markRunStyle),
+      createImportedParagraph(
+        segment,
+        style,
+        list,
+        numberingRevision,
+        markRunStyle,
+      ),
     );
     pendingPageBreakBefore = false;
   }

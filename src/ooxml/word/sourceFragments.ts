@@ -205,6 +205,7 @@ export function createEditorParagraphPropertiesSignature(
   return stableSemanticString({
     style: paragraph.style,
     list: paragraph.list,
+    numberingRevision: paragraph.numberingRevision,
   });
 }
 

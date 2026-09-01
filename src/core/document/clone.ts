@@ -109,6 +109,9 @@ export function cloneParagraph(
     runs: paragraph.runs.map(cloneRun),
     style: cloneParagraphStyle(paragraph.style),
     list: paragraph.list ? { ...paragraph.list } : undefined,
+    numberingRevision: paragraph.numberingRevision
+      ? { ...paragraph.numberingRevision }
+      : undefined,
   };
 }
 

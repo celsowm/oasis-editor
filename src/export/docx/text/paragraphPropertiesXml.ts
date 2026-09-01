@@ -331,10 +331,20 @@ export function serializeParagraphProperties(
   parts.push(...serializeParagraphDecorations(style));
 
   const numbering = numberingInfo.get(paragraph.id);
-  if (numbering) {
-    parts.push(
-      `<w:numPr><w:ilvl w:val="${numbering.level}"/><w:numId w:val="${numbering.numId}"/></w:numPr>`,
-    );
+  const numberingChange = paragraph.numberingRevision
+    ? `<w:numberingChange ${serializeRevisionMetadataAttributes(
+        paragraph.numberingRevision,
+      )}${
+        paragraph.numberingRevision.original !== undefined
+          ? ` w:original="${escapeXml(paragraph.numberingRevision.original)}"`
+          : ""
+      }/>`
+    : "";
+  if (numbering || numberingChange) {
+    const currentNumbering = numbering
+      ? `<w:ilvl w:val="${numbering.level}"/><w:numId w:val="${numbering.numId}"/>`
+      : "";
+    parts.push(`<w:numPr>${currentNumbering}${numberingChange}</w:numPr>`);
   }
 
   if (paragraph.style?.propertyRevision) {

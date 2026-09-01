@@ -34,6 +34,7 @@ export type {
   EditorEndnoteReferenceData,
   EditorRevision,
   EditorRevisionMetadata,
+  EditorNumberingRevision,
   EditorStructuralRevision,
   EditorPropertyRevision,
   EditorAsset,

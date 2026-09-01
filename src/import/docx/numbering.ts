@@ -1,5 +1,8 @@
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
-import type { EditorParagraphListStyle } from "@/core/model.js";
+import type {
+  EditorNumberingRevision,
+  EditorParagraphListStyle,
+} from "@/core/model.js";
 import {
   WORD_NS,
   getChildrenByTagNameNS,
@@ -8,6 +11,7 @@ import {
 } from "./xmlHelpers.js";
 import { twipsToPx } from "./units.js";
 import { setEditorListOoxmlNumberingMetadata } from "@/ooxml/word/numberingMetadata.js";
+import { parseRevisionMetadata } from "./revisionMetadata.js";
 
 type ListFormat = NonNullable<EditorParagraphListStyle["format"]>;
 
@@ -218,6 +222,21 @@ function effectiveLevel(
   // A nested w:lvl is a complete replacement for the abstract level. Only a
   // lone w:startOverride inherits the remaining abstract-level properties.
   return override ?? base ?? {};
+}
+
+export function parseParagraphNumberingRevision(
+  paragraphProperties: XmlElement | null,
+): EditorNumberingRevision | undefined {
+  if (!paragraphProperties) return undefined;
+  const numPr = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "numPr");
+  const change = getFirstChildByTagNameNS(numPr, WORD_NS, "numberingChange");
+  const metadata = parseRevisionMetadata(change);
+  if (!metadata) return undefined;
+  const original = getAttributeValue(change, "original") ?? undefined;
+  return {
+    ...metadata,
+    ...(original !== undefined ? { original } : {}),
+  };
 }
 
 export function parseParagraphList(

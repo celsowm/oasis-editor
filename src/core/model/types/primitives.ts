@@ -300,6 +300,11 @@ export interface EditorRevisionMetadata {
   date: number;
 }
 
+/** Previous paragraph numbering cache from `w:numberingChange`. */
+export interface EditorNumberingRevision extends EditorRevisionMetadata {
+  original?: string;
+}
+
 export interface EditorStructuralRevision extends EditorRevisionMetadata {
   type: "insert" | "delete" | "merge";
   previous?: {
