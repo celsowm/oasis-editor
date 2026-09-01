@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - scripts/ci/apply-docx-section-property-revisions.mjs
+      - scripts/ci/export-docx-section-revision-types.mjs
       - .github/workflows/apply-docx-section-property-revisions.yml
 
 permissions:
@@ -26,7 +27,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Apply semantic section revision patch
-        run: node scripts/ci/apply-docx-section-property-revisions.mjs
+        run: |
+          node scripts/ci/apply-docx-section-property-revisions.mjs
+          node scripts/ci/export-docx-section-revision-types.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Test
