@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { EditorDocxSourcePackage } from "@/core/model.js";
-import { resolveCustomXmlBinding } from "@/ooxml/word/customXmlBinding.js";
+import {
+  resolveCustomXmlBinding,
+  writeCustomXmlBinding,
+} from "@/ooxml/word/customXmlBinding.js";
 
 function sourcePackage(): EditorDocxSourcePackage {
   return {
@@ -35,7 +38,7 @@ function sourcePackage(): EditorDocxSourcePackage {
   };
 }
 
-describe("resolveCustomXmlBinding", () => {
+describe("custom XML data bindings", () => {
   it("resolves a namespaced element value through storeItemID", () => {
     const resolved = resolveCustomXmlBinding(sourcePackage(), {
       storeItemID: "a1b2-c3d4",
@@ -63,7 +66,32 @@ describe("resolveCustomXmlBinding", () => {
     expect(resolved?.kind).toBe("attribute");
   });
 
-  it("returns null for unsupported or broken bindings", () => {
+  it("writes leaf element values back into the source package", () => {
+    const source = sourcePackage();
+    const binding = {
+      storeItemID: "{A1B2-C3D4}",
+      prefixMappings: 'xmlns:t="urn:test"',
+      xpath: "/t:root/t:customer/t:name",
+    };
+
+    expect(writeCustomXmlBinding(source, binding, "Bob")).toBe(true);
+    expect(resolveCustomXmlBinding(source, binding)?.value).toBe("Bob");
+    expect(source.parts["customXml/item1.xml"]!.data).toContain(">Bob<");
+  });
+
+  it("writes attribute values back into the source package", () => {
+    const source = sourcePackage();
+    const binding = {
+      storeItemID: "{A1B2-C3D4}",
+      prefixMappings: 'xmlns:t="urn:test"',
+      xpath: "/t:root/t:customer/t:code/@value",
+    };
+
+    expect(writeCustomXmlBinding(source, binding, "99")).toBe(true);
+    expect(resolveCustomXmlBinding(source, binding)?.value).toBe("99");
+  });
+
+  it("returns null or false for unsupported or broken bindings", () => {
     expect(
       resolveCustomXmlBinding(sourcePackage(), {
         storeItemID: "missing",
@@ -73,11 +101,15 @@ describe("resolveCustomXmlBinding", () => {
     ).toBeNull();
 
     expect(
-      resolveCustomXmlBinding(sourcePackage(), {
-        storeItemID: "{A1B2-C3D4}",
-        prefixMappings: 'xmlns:t="urn:test"',
-        xpath: "//t:name",
-      }),
-    ).toBeNull();
+      writeCustomXmlBinding(
+        sourcePackage(),
+        {
+          storeItemID: "{A1B2-C3D4}",
+          prefixMappings: 'xmlns:t="urn:test"',
+          xpath: "//t:name",
+        },
+        "Bob",
+      ),
+    ).toBe(false);
   });
 });
