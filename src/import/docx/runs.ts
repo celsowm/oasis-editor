@@ -4,6 +4,7 @@ import type {
   EditorTextStyle,
   EditorImageRunData,
   EditorTextBoxData,
+  EditorRevision,
   EditorSdtBlockWrapper,
 } from "@/core/model.js";
 import { createEditorNodeId } from "@/core/editorState.js";
@@ -85,6 +86,33 @@ function parseCommentMarker(
   };
 }
 
+function parseRevisionContainer(element: XmlElement): EditorRevision | undefined {
+  const kind = element.localName;
+  if (
+    kind !== "ins" &&
+    kind !== "del" &&
+    kind !== "moveFrom" &&
+    kind !== "moveTo"
+  ) {
+    return undefined;
+  }
+
+  const rawDate = getAttributeValue(element, "date");
+  const parsedDate = rawDate ? Date.parse(rawDate) : Number.NaN;
+  const isDeletion = kind === "del" || kind === "moveFrom";
+  return {
+    id: getAttributeValue(element, "id") ?? createEditorNodeId("revision"),
+    type: isDeletion ? "delete" : "insert",
+    author: getAttributeValue(element, "author") ?? "Unknown",
+    date: Number.isFinite(parsedDate) ? parsedDate : 0,
+    ...(kind === "moveFrom"
+      ? { move: "from" as const }
+      : kind === "moveTo"
+        ? { move: "to" as const }
+        : {}),
+  };
+}
+
 export async function parseRunElement(
   runElement: XmlElement,
   zip: JSZip,
@@ -126,7 +154,7 @@ export async function parseRunElement(
 
     const element = node as XmlElement;
     if (element.namespaceURI === WORD_NS) {
-      if (element.localName === "t") {
+      if (element.localName === "t" || element.localName === "delText") {
         pushText(element.textContent ?? "");
       } else if (element.localName === "tab") {
         pushText("\t");
@@ -370,6 +398,27 @@ export async function parseRunsContainer(
       continue;
     }
 
+    const revision = parseRevisionContainer(element);
+    if (revision) {
+      const nestedRuns = await parseRunsContainer(
+        element,
+        numberingMaps,
+        zip,
+        relsMap,
+        assets,
+        theme,
+        inheritedLink,
+        parseNestedBlocks,
+      );
+      for (const nestedRun of nestedRuns) {
+        runs.push({
+          ...nestedRun,
+          revision: nestedRun.revision ?? revision,
+        });
+      }
+      continue;
+    }
+
     if (element.localName === "sdt") {
       const sdtContent = getFirstChildByTagNameNS(element, WORD_NS, "sdtContent");
       if (!sdtContent) {
@@ -411,7 +460,8 @@ export async function parseRunsContainer(
 
       const hasFieldControl =
         getChildrenByTagNameNS(element, WORD_NS, "fldChar").length > 0 ||
-        getChildrenByTagNameNS(element, WORD_NS, "instrText").length > 0;
+        getChildrenByTagNameNS(element, WORD_NS, "instrText").length > 0 ||
+        getChildrenByTagNameNS(element, WORD_NS, "delInstrText").length > 0;
       if (hasFieldControl) {
         for (let child = 0; child < element.childNodes.length; child += 1) {
           const childNode = element.childNodes[child];
@@ -424,7 +474,10 @@ export async function parseRunsContainer(
           }
           if (childElement.localName === "fldChar") {
             onFldChar(childElement, runStyles);
-          } else if (childElement.localName === "instrText") {
+          } else if (
+            childElement.localName === "instrText" ||
+            childElement.localName === "delInstrText"
+          ) {
             onInstrText(childElement, runStyles);
           }
         }
