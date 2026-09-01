@@ -9,20 +9,21 @@ import { writeCustomXmlBinding } from "@/ooxml/word/customXmlBinding.js";
 
 interface BoundControlAccumulator {
   wrapper: EditorSdtBlockWrapper;
-  texts: string[];
+  value: string;
 }
 
 function appendBoundControlText(
   controls: Map<string, BoundControlAccumulator>,
   wrapper: EditorSdtBlockWrapper,
   text: string,
+  separator: string,
 ): void {
   if (!wrapper.sdtPr.dataBinding) return;
   const current = controls.get(wrapper.groupId);
   if (current) {
-    current.texts.push(text);
+    current.value += `${separator}${text}`;
   } else {
-    controls.set(wrapper.groupId, { wrapper, texts: [text] });
+    controls.set(wrapper.groupId, { wrapper, value: text });
   }
 }
 
@@ -46,7 +47,7 @@ function collectInlineBoundControls(
 ): void {
   for (const run of paragraph.runs) {
     for (const wrapper of run.sdtWrappers ?? []) {
-      appendBoundControlText(controls, wrapper, run.text);
+      appendBoundControlText(controls, wrapper, run.text, "");
     }
     if (run.kind === "textBox") {
       collectBoundControlsFromBlocks(run.textBox.blocks, controls);
@@ -62,7 +63,7 @@ function collectBoundControlsFromBlocks(
   for (const block of blocks) {
     const text = collectBlockText(block);
     for (const wrapper of block.sdtWrappers ?? []) {
-      appendBoundControlText(controls, wrapper, text);
+      appendBoundControlText(controls, wrapper, text, "\n");
     }
 
     if (block.type === "paragraph") {
@@ -92,10 +93,9 @@ export function synchronizeBoundContentControls(document: EditorDocument): numbe
   }
 
   let synchronized = 0;
-  for (const { wrapper, texts } of controls.values()) {
+  for (const { wrapper, value } of controls.values()) {
     const binding = wrapper.sdtPr.dataBinding;
     if (!binding) continue;
-    const value = texts.join("");
     if (writeCustomXmlBinding(document.sourcePackage, binding, value)) {
       synchronized += 1;
     }
