@@ -5,6 +5,7 @@ import type {
   EditorImageRunData,
   EditorTextBoxData,
   EditorMathExpression,
+  EditorRevision,
   EditorSdtBlockWrapper,
 } from "@/core/model.js";
 
@@ -40,6 +41,8 @@ export interface ImportedRun {
   image?: EditorImageRunData;
   textBox?: EditorTextBoxData;
   styles?: EditorTextStyle;
+  /** Tracked insertion/deletion, optionally paired as a Word move. */
+  revision?: EditorRevision;
   /** Enclosing inline `w:sdt` wrappers, outermost first. */
   sdtWrappers?: EditorSdtBlockWrapper[];
   field?: { type: "PAGE" | "NUMPAGES" };
@@ -49,7 +52,7 @@ export interface ImportedRun {
     fieldLock?: boolean;
     dirty?: boolean;
   };
-  /** Preserved `w:instrText`. Zero-length marker. */
+  /** Preserved `w:instrText` / `w:delInstrText`. Zero-length marker. */
   fieldInstruction?: string;
   footnoteReference?: { docxId: string; customMark?: string };
   endnoteReference?: { docxId: string; customMark?: string };
