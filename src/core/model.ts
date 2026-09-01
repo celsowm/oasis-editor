@@ -7,5 +7,6 @@
  * existing `import { ... } from "@/model.js"` sites continue to work
  * without any change.
  */
+import "./model/types/runSdtAugmentation.js";
 export * from "./model/index.js";
 export * from "./tableStyleResolver.js";
