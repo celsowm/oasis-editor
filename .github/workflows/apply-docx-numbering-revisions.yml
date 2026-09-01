@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - scripts/ci/apply-docx-numbering-revisions.mjs
+      - scripts/ci/fix-docx-numbering-source-signature.mjs
       - .github/workflows/apply-docx-numbering-revisions.yml
 
 permissions:
@@ -26,7 +27,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Apply numbering revision patch
-        run: node scripts/ci/apply-docx-numbering-revisions.mjs
+        run: |
+          node scripts/ci/apply-docx-numbering-revisions.mjs
+          node scripts/ci/fix-docx-numbering-source-signature.mjs
       - name: Typecheck
         run: npm run typecheck
       - name: Test
