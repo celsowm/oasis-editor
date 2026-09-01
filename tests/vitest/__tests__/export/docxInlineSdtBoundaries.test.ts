@@ -38,8 +38,8 @@ it("keeps an inline SDT when bookmark events force canonical paragraph export", 
 
   expect(xml).toContain('<w:tag w:val="bound-text"/>');
   expect(xml).toContain("<w:sdtContent>");
-  expect(xml).toContain('<w:bookmarkStart w:id="0" w:name="inside"/>');
+  expect(xml).toContain('<w:bookmarkStart w:id="7" w:name="inside"/>');
   expect(xml).toContain("Alicia");
-  expect(xml).toContain('<w:bookmarkEnd w:id="0"/>');
+  expect(xml).toContain('<w:bookmarkEnd w:id="7"/>');
   expect(xml.split("<w:sdt>").length - 1).toBe(1);
 });
