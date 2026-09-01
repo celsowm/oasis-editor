@@ -6,6 +6,7 @@ import type {
   EditorTextBoxData,
   EditorMathExpression,
   EditorRevision,
+  EditorRunBase,
   EditorSdtBlockWrapper,
 } from "@/core/model.js";
 
@@ -43,6 +44,8 @@ export interface ImportedRun {
   styles?: EditorTextStyle;
   /** Tracked insertion/deletion, optionally paired as a Word move. */
   revision?: EditorRevision;
+  /** Zero-length move range start/end marker retained in inline order. */
+  revisionRangeMarker?: EditorRunBase["revisionRangeMarker"];
   /** Enclosing inline `w:sdt` wrappers, outermost first. */
   sdtWrappers?: EditorSdtBlockWrapper[];
   field?: { type: "PAGE" | "NUMPAGES" };
