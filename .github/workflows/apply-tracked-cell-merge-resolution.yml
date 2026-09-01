@@ -36,6 +36,11 @@ jobs:
               r'expect((xml.match(/<w:vMerge w:val="restart"\/>/g) ?? []).length).toBe(2);',
               r'expect(xml.split(\'<w:vMerge w:val="restart"/>\').length - 1).toBe(2);',
           )
+          structural_fallback = r'''  if (vMerge) {\n    const value = getAttributeValue(vMerge, "val");\n    return value === "restart" ? "restart" : "continue";\n  }\n\n  const cellMerge = getFirstChildByTagNameNS(cellProperties, WORD_NS, "cellMerge");\n  return parseTrackedVerticalMergeValue(getAttributeValue(cellMerge, "vMerge"));'''
+          structural_only = r'''  if (!vMerge) {\n    return undefined;\n  }\n\n  const value = getAttributeValue(vMerge, "val");\n  return value === "restart" ? "restart" : "continue";'''
+          if structural_fallback not in content:
+              raise SystemExit("cellMerge fallback patch anchor not found")
+          content = content.replace(structural_fallback, structural_only, 1)
           path.write_text(content)
           PY
           node scripts/ci/apply-tracked-cell-merge-resolution.mjs
