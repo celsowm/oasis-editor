@@ -208,6 +208,69 @@ describe("nested table structural operations", () => {
     expect(before.runs[0]?.text).toBe("before");
   });
 
+  it("spine-clones only the edited nested-table path", () => {
+    const { state, p00 } = fixture();
+    const operations = createOperations();
+    const selected = selectParagraphs(state, p00);
+    const sourceOuter = getOuterTable(selected);
+    const sourceOuterRow = sourceOuter.rows[0]!;
+    const sourceOuterCell = sourceOuterRow.cells[0]!;
+    const sourceInner = getInnerTable(selected);
+    const sourceEditedRow = sourceInner.rows[0]!;
+    const sourceSiblingRow = sourceInner.rows[1]!;
+    const sourceEditedCell = sourceEditedRow.cells[0]!;
+    const sourceSiblingCell = sourceEditedRow.cells[1]!;
+
+    const edited = operations.applyTableAwareParagraphEdit(
+      selected,
+      (temporary) => {
+        const paragraph = getDocumentParagraphs(temporary.document).find(
+          (candidate) => candidate.id === p00.id,
+        );
+        if (!paragraph) throw new Error("Expected target paragraph.");
+        paragraph.runs[0]!.text = "edited";
+        return temporary;
+      },
+    );
+
+    const nextOuter = getOuterTable(edited);
+    const nextInner = getInnerTable(edited);
+
+    expect(nextOuter).not.toBe(sourceOuter);
+    expect(nextOuter.rows[0]).not.toBe(sourceOuterRow);
+    expect(nextOuter.rows[0]!.cells[0]).not.toBe(sourceOuterCell);
+    expect(nextInner).not.toBe(sourceInner);
+    expect(nextInner.rows[0]).not.toBe(sourceEditedRow);
+    expect(nextInner.rows[0]!.cells[0]).not.toBe(sourceEditedCell);
+    expect(nextInner.rows[0]!.cells[1]).toBe(sourceSiblingCell);
+    expect(nextInner.rows[1]).toBe(sourceSiblingRow);
+    expect(sourceEditedCell.blocks[0]).toBe(p00);
+    expect(p00.runs[0]?.text).toBe("00");
+  });
+
+  it("does not mutate the previous state during structural column edits", () => {
+    const { state, p00 } = fixture();
+    const operations = createOperations();
+    const selected = selectParagraphs(state, p00);
+    const sourceInner = getInnerTable(selected);
+    const sourceFirstRow = sourceInner.rows[0]!;
+    const sourceSecondRow = sourceInner.rows[1]!;
+    const sourceSecondCell = sourceSecondRow.cells[0]!;
+
+    const inserted = operations.insertSelectedTableColumn(selected, 1);
+    const nextInner = getInnerTable(inserted);
+
+    expect(sourceInner.rows).toHaveLength(2);
+    expect(sourceFirstRow.cells).toHaveLength(2);
+    expect(sourceSecondRow.cells).toHaveLength(2);
+    expect(sourceSecondCell.blocks[0]).toBeDefined();
+    expect(nextInner.rows[0]?.cells).toHaveLength(3);
+    expect(nextInner.rows[1]?.cells).toHaveLength(3);
+    expect(nextInner.rows[0]).not.toBe(sourceFirstRow);
+    expect(nextInner.rows[1]).not.toBe(sourceSecondRow);
+    expect(nextInner.rows[1]!.cells[0]).not.toBe(sourceSecondCell);
+  });
+
   it("navigates adjacent cells within the innermost table", () => {
     const { state, before, p00, p01, p10 } = fixture();
     const operations = createOperations();

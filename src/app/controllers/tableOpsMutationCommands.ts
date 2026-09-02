@@ -1,4 +1,5 @@
 import { cloneBlock } from "@/core/cloneState.js";
+import { cloneParagraph } from "@/core/document/clone.js";
 import { createEditorDocument } from "@/core/editorState.js";
 import {
   findParagraphLocation,
@@ -176,11 +177,81 @@ export interface TableLocationMutation {
   targetBlocks: EditorBlockNode[];
 }
 
+function cloneTablePath(
+  blocks: EditorBlockNode[],
+  tablePath: TablePathLocation["tablePath"],
+): EditorBlockNode[] {
+  const rootBlocks = [...blocks];
+  let currentBlocks = rootBlocks;
+
+  for (let i = 0; i < tablePath.length; i += 1) {
+    const segment = tablePath[i];
+    if (!segment) break;
+
+    const table = currentBlocks[segment.tableBlockIndex];
+    if (!table || table.type !== "table") break;
+
+    const clonedTable = { ...table, rows: [...table.rows] };
+    currentBlocks[segment.tableBlockIndex] = clonedTable;
+
+    const row = clonedTable.rows[segment.rowIndex];
+    if (!row) break;
+
+    const clonedRow = { ...row, cells: [...row.cells] };
+    clonedTable.rows[segment.rowIndex] = clonedRow;
+
+    const cell = clonedRow.cells[segment.cellIndex];
+    if (!cell) break;
+
+    const clonedCell = { ...cell, blocks: [...cell.blocks] };
+    clonedRow.cells[segment.cellIndex] = clonedCell;
+
+    currentBlocks = clonedCell.blocks;
+  }
+  return rootBlocks;
+}
+
+function resolveClonedTablePath(
+  targetBlocks: EditorBlockNode[],
+  location: TablePathLocation,
+): TableLocationMutation | null {
+  const resolvedPath = resolveTablePath(targetBlocks, location.tablePath);
+  const resolvedTarget = resolvedPath?.[resolvedPath.length - 1];
+  if (!resolvedTarget) return null;
+
+  return {
+    tableBlock: resolvedTarget.table,
+    targetCell: resolvedTarget.cell,
+    location: normalizeInnermostLocation(location),
+    targetBlocks,
+  };
+}
+
+function resolveTableParagraphEditMutation(
+  current: EditorState,
+  getTargetBlocks: (
+    state: EditorState,
+    zone: EditorEditingZone,
+  ) => EditorBlockNode[],
+  location: TablePathLocation,
+): TableLocationMutation | null {
+  const rootSegment = location.tablePath[0];
+  if (!rootSegment) return null;
+
+  const sourceBlocks = getTargetBlocks(current, location.zone);
+  const sourceRoot = sourceBlocks[rootSegment.tableBlockIndex];
+  if (!sourceRoot || sourceRoot.type !== "table") return null;
+
+  return resolveClonedTablePath(
+    cloneTablePath(sourceBlocks, location.tablePath),
+    location,
+  );
+}
+
 /**
- * Clones only the top-level table that owns `location.tablePath`, then resolves
- * the cloned path to the innermost table and active cell. All mutation callers
- * therefore operate on the intended nested table while unrelated document
- * blocks retain structural sharing.
+ * Resolves a mutation-safe clone for structural table commands. These commands
+ * may update rows or cells outside the selected path, so the owning table must
+ * remain deeply cloned rather than sharing mutable descendants with history.
  */
 export function resolveTablePathMutation(
   current: EditorState,
@@ -199,17 +270,7 @@ export function resolveTablePathMutation(
 
   const targetBlocks = [...sourceBlocks];
   targetBlocks[rootSegment.tableBlockIndex] = cloneBlock(sourceRoot);
-
-  const resolvedPath = resolveTablePath(targetBlocks, location.tablePath);
-  const resolvedTarget = resolvedPath?.[resolvedPath.length - 1];
-  if (!resolvedTarget) return null;
-
-  return {
-    tableBlock: resolvedTarget.table,
-    targetCell: resolvedTarget.cell,
-    location: normalizeInnermostLocation(location),
-    targetBlocks,
-  };
+  return resolveClonedTablePath(targetBlocks, location);
 }
 
 export const applyTableAwareParagraphEdit = (
@@ -232,13 +293,19 @@ export const applyTableAwareParagraphEdit = (
     return edit(current);
   }
 
-  const mutation = resolveTablePathMutation(current, getTargetBlocks, location);
+  const mutation = resolveTableParagraphEditMutation(
+    current,
+    getTargetBlocks,
+    location,
+  );
   if (!mutation) return edit(current);
 
   const tempState: EditorState = {
     ...current,
     document: createEditorDocument(
-      mutation.targetCell.blocks,
+      mutation.targetCell.blocks.map((block) =>
+        block.type === "paragraph" ? cloneParagraph(block) : block,
+      ),
       undefined,
       undefined,
       undefined,
