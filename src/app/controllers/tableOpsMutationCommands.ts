@@ -1,4 +1,3 @@
-import { cloneBlock } from "@/core/cloneState.js";
 import { createEditorDocument } from "@/core/editorState.js";
 import {
   findParagraphLocation,
@@ -176,6 +175,40 @@ export interface TableLocationMutation {
   targetBlocks: EditorBlockNode[];
 }
 
+function cloneTablePath(
+  blocks: EditorBlockNode[],
+  tablePath: TablePathLocation["tablePath"]
+): EditorBlockNode[] {
+  const rootBlocks = [...blocks];
+  let currentBlocks = rootBlocks;
+
+  for (let i = 0; i < tablePath.length; i++) {
+    const segment = tablePath[i];
+    if (!segment) break;
+
+    const table = currentBlocks[segment.tableBlockIndex];
+    if (!table || table.type !== "table") break;
+
+    const clonedTable = { ...table, rows: [...table.rows] };
+    currentBlocks[segment.tableBlockIndex] = clonedTable;
+
+    const row = clonedTable.rows[segment.rowIndex];
+    if (!row) break;
+
+    const clonedRow = { ...row, cells: [...row.cells] };
+    clonedTable.rows[segment.rowIndex] = clonedRow;
+
+    const cell = clonedRow.cells[segment.cellIndex];
+    if (!cell) break;
+
+    const clonedCell = { ...cell, blocks: [...cell.blocks] };
+    clonedRow.cells[segment.cellIndex] = clonedCell;
+
+    currentBlocks = clonedCell.blocks;
+  }
+  return rootBlocks;
+}
+
 /**
  * Clones only the top-level table that owns `location.tablePath`, then resolves
  * the cloned path to the innermost table and active cell. All mutation callers
@@ -197,8 +230,7 @@ export function resolveTablePathMutation(
   const sourceRoot = sourceBlocks[rootSegment.tableBlockIndex];
   if (!sourceRoot || sourceRoot.type !== "table") return null;
 
-  const targetBlocks = [...sourceBlocks];
-  targetBlocks[rootSegment.tableBlockIndex] = cloneBlock(sourceRoot);
+  const targetBlocks = cloneTablePath(sourceBlocks, location.tablePath);
 
   const resolvedPath = resolveTablePath(targetBlocks, location.tablePath);
   const resolvedTarget = resolvedPath?.[resolvedPath.length - 1];
@@ -235,10 +267,14 @@ export const applyTableAwareParagraphEdit = (
   const mutation = resolveTablePathMutation(current, getTargetBlocks, location);
   if (!mutation) return edit(current);
 
+  // When we extract the cell blocks to edit them in isolation, we must shallow clone
+  // the paragraph nodes to avoid mutating the original editor state.
   const tempState: EditorState = {
     ...current,
     document: createEditorDocument(
-      mutation.targetCell.blocks,
+      mutation.targetCell.blocks.map((block) =>
+        block.type === 'paragraph' ? { ...block, runs: block.runs.map(run => ({ ...run })) } : block
+      ),
       undefined,
       undefined,
       undefined,
