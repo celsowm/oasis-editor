@@ -6,8 +6,12 @@ import type {
   CanvasDebugSelectionSnapshot,
 } from "@/ui/canvas/CanvasDebug.js";
 
-const SIMPLE_LOREM_DOCX = resolve("tests/vitest/__tests__/word-parity/fixtures/word-authored-lorem.docx");
-const COMPLEX_DOCX = resolve("tests/vitest/__tests__/word-parity/fixtures/documento_complexo.docx");
+const SIMPLE_LOREM_DOCX = resolve(
+  "tests/vitest/__tests__/word-parity/fixtures/word-authored-lorem.docx",
+);
+const COMPLEX_DOCX = resolve(
+  "tests/vitest/__tests__/word-parity/fixtures/documento_complexo.docx",
+);
 test.describe.configure({ timeout: 180_000 });
 
 type CanvasDebugState = {
@@ -61,7 +65,9 @@ async function gotoEditor(page: Page, testProps?: EditorTestProps) {
   await expect(
     page.locator('[data-testid="editor-page"][data-renderer="canvas"]').first(),
   ).toBeVisible({ timeout: 60_000 });
-  const debugReady = await page.evaluate(() => Boolean(window.__oasisCanvasDebug));
+  const debugReady = await page.evaluate(() =>
+    Boolean(window.__oasisCanvasDebug),
+  );
   if (!debugReady) {
     throw new Error("__oasisCanvasDebug is not available");
   }
@@ -99,7 +105,10 @@ async function expectDebugSelection(page: Page) {
   return state.selection!;
 }
 
-async function expectTripleClickWordLikeRange(page: Page, point: { x: number; y: number }) {
+async function expectTripleClickWordLikeRange(
+  page: Page,
+  point: { x: number; y: number },
+) {
   await page.mouse.click(point.x, point.y, { clickCount: 3 });
   const expectation = await page.evaluate(() => {
     const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
@@ -111,9 +120,14 @@ async function expectTripleClickWordLikeRange(page: Page, point: { x: number; y:
       .filter((entry) => entry.zone === hit.zone)
       .sort((a, b) => a.paragraphIndex - b.paragraphIndex);
     const uniqueZoneParagraphs = zoneParagraphs.filter(
-      (entry, index, all) => all.findIndex((candidate) => candidate.paragraphId === entry.paragraphId) === index,
+      (entry, index, all) =>
+        all.findIndex(
+          (candidate) => candidate.paragraphId === entry.paragraphId,
+        ) === index,
     );
-    const index = uniqueZoneParagraphs.findIndex((entry) => entry.paragraphId === hit.paragraphId);
+    const index = uniqueZoneParagraphs.findIndex(
+      (entry) => entry.paragraphId === hit.paragraphId,
+    );
     if (index < 0) return null;
     const current = uniqueZoneParagraphs[index]!;
     const next = uniqueZoneParagraphs[index + 1];
@@ -131,13 +145,17 @@ async function expectTripleClickWordLikeRange(page: Page, point: { x: number; y:
     };
   });
   expect(expectation).not.toBeNull();
-  expect(expectation!.actualAnchorParagraphId).toBe(expectation!.expectedAnchorParagraphId);
+  expect(expectation!.actualAnchorParagraphId).toBe(
+    expectation!.expectedAnchorParagraphId,
+  );
   const matchesNextParagraphMark =
     expectation!.actualAnchorOffset === expectation!.expectedAnchorOffset &&
-    expectation!.actualFocusParagraphId === expectation!.expectedFocusParagraphId &&
+    expectation!.actualFocusParagraphId ===
+      expectation!.expectedFocusParagraphId &&
     expectation!.actualFocusOffset === expectation!.expectedFocusOffset;
   const matchesLegacyParagraphRange =
-    expectation!.actualFocusParagraphId === expectation!.expectedAnchorParagraphId &&
+    expectation!.actualFocusParagraphId ===
+      expectation!.expectedAnchorParagraphId &&
     expectation!.actualFocusOffset > expectation!.actualAnchorOffset;
   expect(matchesNextParagraphMark || matchesLegacyParagraphRange).toBeTruthy();
   expect(expectation!.actualZone).toBe(expectation!.zone);
@@ -154,7 +172,9 @@ async function seedText(page: Page, text: string) {
 async function selectFirstSeedWord(page: Page) {
   const pageRect = await canvasPageRect(page);
   await page.mouse.dblclick(pageRect.x + 190, pageRect.y + 140);
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+  await expect(
+    page.locator(".oasis-editor-selection-box").first(),
+  ).toBeVisible();
   await expectDebugSelection(page);
 }
 
@@ -194,7 +214,9 @@ const INLINE_IMAGE = resolve("tests/e2e/fixtures/gradient.png");
 async function insertInlineImage(page: Page) {
   const pageRect = await canvasPageRect(page);
   await page.mouse.click(pageRect.x + 180, pageRect.y + 140);
-  await page.getByTestId("editor-insert-image-input").setInputFiles(INLINE_IMAGE);
+  await page
+    .getByTestId("editor-insert-image-input")
+    .setInputFiles(INLINE_IMAGE);
   await expect
     .poll(async () => {
       await page.mouse.click(pageRect.x + 180, pageRect.y + 140);
@@ -253,7 +275,9 @@ async function exercisePointerCoherence(
   expect(caretBefore).not.toBeNull();
   expect(caretAfter).not.toBeNull();
   if (requireCaretDelta) {
-    expect(Math.abs((caretAfter?.x ?? 0) - (caretBefore?.x ?? 0))).toBeGreaterThan(8);
+    expect(
+      Math.abs((caretAfter?.x ?? 0) - (caretBefore?.x ?? 0)),
+    ).toBeGreaterThan(8);
   }
   expect(hitAfterSecondClick.resolvedFromParagraph).toBe(true);
 
@@ -262,20 +286,126 @@ async function exercisePointerCoherence(
   await page.mouse.move(p2.x, p2.y);
   await page.mouse.up();
   if (requireSelectionVisible) {
-    await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+    await expect(
+      page.locator(".oasis-editor-selection-box").first(),
+    ).toBeVisible();
   }
   await expectLastHitFromCanvas(page);
 
   if (requireWordClicks) {
     const wordPoint = options.wordPoint ?? p2;
     await page.mouse.dblclick(wordPoint.x, wordPoint.y);
-    await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+    await expect(
+      page.locator(".oasis-editor-selection-box").first(),
+    ).toBeVisible();
     await expectLastHitFromCanvas(page);
 
     await page.mouse.click(wordPoint.x, wordPoint.y, { clickCount: 3 });
-    await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+    await expect(
+      page.locator(".oasis-editor-selection-box").first(),
+    ).toBeVisible();
     await expectLastHitFromCanvas(page);
   }
+}
+
+/**
+ * Scrolls a paragraph into the editor viewport and returns the click geometry
+ * for its first line.
+ *
+ * Snapshot geometry is in viewport coordinates, so a paragraph further down the
+ * document reports a `top` well below the window: clicking it without scrolling
+ * dispatches the click at a point that is not on screen. Only a hit test
+ * rebuilds the snapshot, hence the probe click after each scroll.
+ */
+async function scrollParagraphIntoView(page: Page, paragraphId: string) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const info = await page.evaluate((id) => {
+      const editor = document.querySelector<HTMLElement>(
+        ".oasis-editor-editor",
+      );
+      if (!editor) return null;
+      const box = editor.getBoundingClientRect();
+      const paragraph = window.__oasisCanvasDebug
+        ?.getLayoutSnapshot()
+        ?.paragraphs.find((entry) => entry.paragraphId === id);
+      const line = paragraph?.lines[0];
+      return {
+        editorTop: box.top,
+        editorBottom: box.bottom,
+        editorCenterX: box.left + box.width / 2,
+        line: line
+          ? {
+              top: line.top,
+              height: line.height,
+              slots: line.slots.map((slot) => ({
+                left: slot.left,
+                offset: slot.offset,
+              })),
+            }
+          : null,
+      };
+    }, paragraphId);
+    if (!info) throw new Error("editor viewport not found");
+
+    const settled =
+      info.line !== null &&
+      info.line.top > info.editorTop + 60 &&
+      info.line.top < info.editorBottom - 60;
+    if (settled && info.line!.slots.length > 0) {
+      return {
+        y: info.line!.top + info.line!.height / 2,
+        slots: info.line!.slots,
+      };
+    }
+
+    const center = info.editorTop + (info.editorBottom - info.editorTop) / 2;
+    const delta = info.line ? info.line.top - center : 400;
+    await page.evaluate((by) => {
+      document.querySelector<HTMLElement>(".oasis-editor-editor")!.scrollTop +=
+        by;
+    }, delta);
+    await page.mouse.click(info.editorCenterX, info.editorTop + 40);
+  }
+  throw new Error(`paragraph ${paragraphId} never scrolled into view`);
+}
+
+async function canvasSelection(page: Page) {
+  const selection = await page.evaluate(() => {
+    const value = window.__oasisCanvasDebug?.getSelection();
+    if (!value) return null;
+    return {
+      anchorId: value.anchor.paragraphId,
+      anchorOffset: value.anchor.offset,
+      focusId: value.focus.paragraphId,
+      focusOffset: value.focus.offset,
+    };
+  });
+  if (!selection) throw new Error("no selection snapshot recorded");
+  return selection;
+}
+
+/** Resolves the first two text paragraphs that live inside a table cell. */
+async function tableCellParagraphs(page: Page) {
+  const found = await page.evaluate(() => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const cellParagraphs = snapshot.paragraphs.filter(
+      (entry) =>
+        entry.zone === "main" &&
+        entry.tableCell &&
+        entry.lines.length > 0 &&
+        entry.textLength > 0,
+    );
+    if (cellParagraphs.length < 2) return null;
+    return {
+      firstParagraphId: cellParagraphs[0]!.paragraphId,
+      secondParagraphId: cellParagraphs[1]!.paragraphId,
+    };
+  });
+  if (!found) {
+    throw new Error("unable to resolve table paragraphs for click assertion");
+  }
+  return found;
 }
 
 test("canvas pointer interactions update caret and selection from canvas layout only", async ({
@@ -292,7 +422,9 @@ test("canvas pointer interactions update caret and selection from canvas layout 
   await expectNoMissEvents(page);
 });
 
-test("canvas text selection uses square overlay covering the final character slot", async ({ page }) => {
+test("canvas text selection uses square overlay covering the final character slot", async ({
+  page,
+}) => {
   await gotoEditor(page);
   await clearMissEvents(page);
   await seedText(page, "asdasdasda");
@@ -309,7 +441,9 @@ test("canvas text selection uses square overlay covering the final character slo
         !entry.tableCell &&
         entry.lines.some((candidate) => candidate.slots.length >= 11),
     );
-    const line = paragraph?.lines.find((candidate) => candidate.slots.length >= 11);
+    const line = paragraph?.lines.find(
+      (candidate) => candidate.slots.length >= 11,
+    );
     if (!line || line.slots.length < 11) return null;
     const startSlot = line.slots[0]!;
     const endSlot = line.slots[10]!;
@@ -336,12 +470,18 @@ test("canvas text selection uses square overlay covering the final character slo
   }
   expect(box.x + box.width).toBeGreaterThanOrEqual(points.expectedRight - 0.5);
   await expect
-    .poll(() => selectionBox.evaluate((element) => getComputedStyle(element).borderRadius))
+    .poll(() =>
+      selectionBox.evaluate(
+        (element) => getComputedStyle(element).borderRadius,
+      ),
+    )
     .toBe("0px");
   await expectNoMissEvents(page);
 });
 
-test("toolbar color split buttons separate direct apply from palette selection", async ({ page }) => {
+test("toolbar color split buttons separate direct apply from palette selection", async ({
+  page,
+}) => {
   // Compact view keeps the colour split buttons in the overflow menu at every
   // width, so the inline indicator assertions below only apply to the ribbon.
   await page.setViewportSize({ width: 1700, height: 900 });
@@ -376,8 +516,12 @@ test("toolbar color split buttons separate direct apply from palette selection",
 
   await page.getByTestId("editor-toolbar-highlight-dropdown").click();
   await expect(page.locator(".oasis-editor-color-menu")).toBeVisible();
-  await expect(page.getByTestId("editor-toolbar-highlight-clear")).toBeVisible();
-  await page.getByTestId("editor-toolbar-highlight-standard-swatch-00b050").click();
+  await expect(
+    page.getByTestId("editor-toolbar-highlight-clear"),
+  ).toBeVisible();
+  await page
+    .getByTestId("editor-toolbar-highlight-standard-swatch-00b050")
+    .click();
   await expect(page.locator(".oasis-editor-color-menu")).toHaveCount(0);
   await expect
     .poll(() =>
@@ -416,16 +560,28 @@ test("toolbar color split buttons separate direct apply from palette selection",
   await expect(page.locator(".oasis-editor-color-menu")).toHaveCount(0);
 });
 
-test("underline split button matches text color split button dimensions", async ({ page }) => {
+test("underline split button matches text color split button dimensions", async ({
+  page,
+}) => {
   await gotoEditor(page);
 
   const dimensions = await page.evaluate(() => {
     const read = (testId: string) => {
-      const main = document.querySelector(`[data-testid="${testId}"]`) as HTMLElement | null;
-      const menu = document.querySelector(`[data-testid="${testId}-dropdown"]`) as HTMLElement | null;
-      const root = main?.closest(".oasis-editor-color-split") as HTMLElement | null;
-      const icon = main?.querySelector(".oasis-editor-color-split-icon") as HTMLElement | null;
-      const glyph = icon?.querySelector("svg, i, .oasis-editor-underline-split-glyph") as HTMLElement | null;
+      const main = document.querySelector(
+        `[data-testid="${testId}"]`,
+      ) as HTMLElement | null;
+      const menu = document.querySelector(
+        `[data-testid="${testId}-dropdown"]`,
+      ) as HTMLElement | null;
+      const root = main?.closest(
+        ".oasis-editor-color-split",
+      ) as HTMLElement | null;
+      const icon = main?.querySelector(
+        ".oasis-editor-color-split-icon",
+      ) as HTMLElement | null;
+      const glyph = icon?.querySelector(
+        "svg, i, .oasis-editor-underline-split-glyph",
+      ) as HTMLElement | null;
       if (!root || !main || !menu || !icon) return null;
 
       const rect = (element: HTMLElement) => {
@@ -454,14 +610,22 @@ test("underline split button matches text color split button dimensions", async 
   expect(dimensions.underline).toEqual(dimensions.color);
 });
 
-test("canvas header requires double-click to enter and double-click body to exit", async ({ page }) => {
+test("canvas header requires double-click to enter and double-click body to exit", async ({
+  page,
+}) => {
   await gotoEditor(page);
   await clearMissEvents(page);
   await seedText(page, "header zone trigger");
 
   const editorPage = await canvasPageRect(page);
-  const headerPoint = { x: editorPage.x + editorPage.width / 2, y: editorPage.y + 26 };
-  const bodyPoint = { x: editorPage.x + editorPage.width / 2, y: editorPage.y + 140 };
+  const headerPoint = {
+    x: editorPage.x + editorPage.width / 2,
+    y: editorPage.y + 26,
+  };
+  const bodyPoint = {
+    x: editorPage.x + editorPage.width / 2,
+    y: editorPage.y + 140,
+  };
 
   await page.mouse.click(headerPoint.x, headerPoint.y);
   const singleClickHit = await expectLastHitFromCanvas(page);
@@ -475,7 +639,9 @@ test("canvas header requires double-click to enter and double-click body to exit
 
   let caret = await page.locator(".oasis-editor-caret").boundingBox();
   expect(caret).not.toBeNull();
-  expect((caret?.y ?? Number.POSITIVE_INFINITY) < editorPage.y + 92).toBeTruthy();
+  expect(
+    (caret?.y ?? Number.POSITIVE_INFINITY) < editorPage.y + 92,
+  ).toBeTruthy();
   selection = await expectDebugSelection(page);
   expect(headerHit.zone).toBe("header");
   expect(selection.activeZone).toBe("header");
@@ -492,10 +658,14 @@ test("canvas header requires double-click to enter and double-click body to exit
   await expectNoMissEvents(page);
 });
 
-test("DOCX lorem simples hit-test never misses in hit-test", async ({ page }) => {
+test("DOCX lorem simples hit-test never misses in hit-test", async ({
+  page,
+}) => {
   await gotoEditor(page);
   await clearMissEvents(page);
-  await page.getByTestId("editor-import-docx-input").setInputFiles(SIMPLE_LOREM_DOCX);
+  await page
+    .getByTestId("editor-import-docx-input")
+    .setInputFiles(SIMPLE_LOREM_DOCX);
   await waitForDocxImportReady(page, 90_000);
   const pageRect = await canvasPageRect(page);
   await page.mouse.click(pageRect.x + 220, pageRect.y + 200);
@@ -505,12 +675,18 @@ test("DOCX lorem simples hit-test never misses in hit-test", async ({ page }) =>
     const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
     if (!snapshot) return null;
     const paragraph = snapshot.paragraphs.find(
-      (entry) => entry.zone === "main" && !entry.tableCell && entry.lines.length > 0 && entry.lines[0]!.slots.length > 6,
+      (entry) =>
+        entry.zone === "main" &&
+        !entry.tableCell &&
+        entry.lines.length > 0 &&
+        entry.lines[0]!.slots.length > 6,
     );
     if (!paragraph) return null;
     const line = paragraph.lines[0]!;
     const first = line.slots[1]!;
-    const mid = line.slots[Math.floor(line.slots.length * 0.6)] ?? line.slots[line.slots.length - 2];
+    const mid =
+      line.slots[Math.floor(line.slots.length * 0.6)] ??
+      line.slots[line.slots.length - 2];
     if (!mid) return null;
     // The first wide advance in the line is the space ending the first word;
     // anything before it is inside that word and safe to double-click.
@@ -531,7 +707,9 @@ test("DOCX lorem simples hit-test never misses in hit-test", async ({ page }) =>
     };
   });
   if (!points) {
-    throw new Error("unable to resolve stable DOCX click points from canvas snapshot");
+    throw new Error(
+      "unable to resolve stable DOCX click points from canvas snapshot",
+    );
   }
 
   await exercisePointerCoherence(page, points.p1, points.p2, {
@@ -546,7 +724,9 @@ test("canvas drag on imported DOCX does not trigger repeated layout projection",
 }) => {
   await gotoEditor(page);
   await clearMissEvents(page);
-  await page.getByTestId("editor-import-docx-input").setInputFiles(SIMPLE_LOREM_DOCX);
+  await page
+    .getByTestId("editor-import-docx-input")
+    .setInputFiles(SIMPLE_LOREM_DOCX);
   await waitForDocxImportReady(page, 90_000);
   const pageRect = await canvasPageRect(page);
   await page.mouse.click(pageRect.x + 220, pageRect.y + 200);
@@ -572,7 +752,9 @@ test("canvas drag on imported DOCX does not trigger repeated layout projection",
     };
   });
   if (!points) {
-    throw new Error("unable to resolve drag points from imported DOCX snapshot");
+    throw new Error(
+      "unable to resolve drag points from imported DOCX snapshot",
+    );
   }
 
   await page.mouse.click(points.from.x, points.from.y);
@@ -599,7 +781,9 @@ test("canvas drag on imported DOCX does not trigger repeated layout projection",
   await page.mouse.up();
   page.off("console", onConsole);
 
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+  await expect(
+    page.locator(".oasis-editor-selection-box").first(),
+  ).toBeVisible();
   await expectNoMissEvents(page);
   expect(layoutProjectCount).toBeLessThanOrEqual(5);
 });
@@ -609,7 +793,9 @@ test("canvas selection overlay stays visible on imported complex DOCX (header/fo
 }) => {
   await gotoEditor(page);
   await clearMissEvents(page);
-  await page.getByTestId("editor-import-docx-input").setInputFiles(COMPLEX_DOCX);
+  await page
+    .getByTestId("editor-import-docx-input")
+    .setInputFiles(COMPLEX_DOCX);
   await waitForDocxImportReady(page, 120_000);
   const pageRect = await canvasPageRect(page);
   await page.mouse.click(pageRect.x + 220, pageRect.y + 220);
@@ -619,7 +805,8 @@ test("canvas selection overlay stays visible on imported complex DOCX (header/fo
     const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
     if (!snapshot) return null;
     const paragraph = snapshot.paragraphs.find(
-      (entry) => entry.zone === "main" && !entry.tableCell && entry.lines.length > 0,
+      (entry) =>
+        entry.zone === "main" && !entry.tableCell && entry.lines.length > 0,
     );
     if (!paragraph) return null;
 
@@ -629,8 +816,11 @@ test("canvas selection overlay stays visible on imported complex DOCX (header/fo
       paragraph.lines[0];
     if (!line) return null;
 
-    const startSlot = line.slots[Math.min(2, Math.max(0, line.slots.length - 2))] ?? line.slots[0];
-    const endSlot = line.slots[Math.max(1, Math.floor(line.slots.length * 0.65))];
+    const startSlot =
+      line.slots[Math.min(2, Math.max(0, line.slots.length - 2))] ??
+      line.slots[0];
+    const endSlot =
+      line.slots[Math.max(1, Math.floor(line.slots.length * 0.65))];
     if (!startSlot || !endSlot) return null;
 
     return {
@@ -639,7 +829,9 @@ test("canvas selection overlay stays visible on imported complex DOCX (header/fo
     };
   });
   if (!points) {
-    throw new Error("unable to resolve main paragraph drag points from complex DOCX snapshot");
+    throw new Error(
+      "unable to resolve main paragraph drag points from complex DOCX snapshot",
+    );
   }
 
   await page.mouse.click(points.from.x, points.from.y);
@@ -650,7 +842,9 @@ test("canvas selection overlay stays visible on imported complex DOCX (header/fo
   await page.mouse.move(points.to.x, points.to.y);
   await page.mouse.up();
 
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+  await expect(
+    page.locator(".oasis-editor-selection-box").first(),
+  ).toBeVisible();
   await expectLastHitFromCanvas(page);
   await expectNoMissEvents(page);
 });
@@ -676,7 +870,9 @@ test("text drag moves selected text and does not trigger selection drag concurre
   await page.mouse.down();
   await page.mouse.move(points.selectTo.x, points.selectTo.y);
   await page.mouse.up();
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+  await expect(
+    page.locator(".oasis-editor-selection-box").first(),
+  ).toBeVisible();
 
   const applyLogs: string[] = [];
   const concurrentSelectionDragLogs: string[] = [];
@@ -702,7 +898,9 @@ test("text drag moves selected text and does not trigger selection drag concurre
   await expectNoMissEvents(page);
 });
 
-test("single click inside selection collapses caret with word parity", async ({ page }) => {
+test("single click inside selection collapses caret with word parity", async ({
+  page,
+}) => {
   await gotoEditor(page);
   await clearMissEvents(page);
   await seedText(page, "alpha beta gamma delta epsilon zeta");
@@ -718,10 +916,15 @@ test("single click inside selection collapses caret with word parity", async ({ 
   await page.mouse.down();
   await page.mouse.move(points.selectTo.x, points.selectTo.y);
   await page.mouse.up();
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+  await expect(
+    page.locator(".oasis-editor-selection-box").first(),
+  ).toBeVisible();
 
   let selection = await expectDebugSelection(page);
-  expect(selection.anchor.paragraphId !== selection.focus.paragraphId || selection.anchor.offset !== selection.focus.offset).toBeTruthy();
+  expect(
+    selection.anchor.paragraphId !== selection.focus.paragraphId ||
+      selection.anchor.offset !== selection.focus.offset,
+  ).toBeTruthy();
 
   await page.mouse.click(points.inside.x, points.inside.y);
   selection = await expectDebugSelection(page);
@@ -731,10 +934,15 @@ test("single click inside selection collapses caret with word parity", async ({ 
 });
 
 for (const align of ["center", "right", "justify"] as const) {
-  test(`canvas ${align} paragraph keeps caret/selection/hit-test coherent`, async ({ page }) => {
+  test(`canvas ${align} paragraph keeps caret/selection/hit-test coherent`, async ({
+    page,
+  }) => {
     await gotoEditor(page);
     await clearMissEvents(page);
-    await seedText(page, "alpha beta gamma delta epsilon zeta eta theta iota kappa");
+    await seedText(
+      page,
+      "alpha beta gamma delta epsilon zeta eta theta iota kappa",
+    );
     await clickToolbarAction(page, `editor-toolbar-align-${align}`);
     await page.waitForTimeout(100);
 
@@ -746,7 +954,9 @@ for (const align of ["center", "right", "justify"] as const) {
   });
 }
 
-test("canvas simple 2x2 table hit-test uses canvas layout only", async ({ page }) => {
+test("canvas simple 2x2 table hit-test uses canvas layout only", async ({
+  page,
+}) => {
   await gotoEditor(page);
   await clearMissEvents(page);
   await seedText(page, "table baseline");
@@ -758,7 +968,9 @@ test("canvas simple 2x2 table hit-test uses canvas layout only", async ({ page }
   const points = await page.evaluate(() => {
     const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
     if (!snapshot) return null;
-    const tableParagraphs = snapshot.paragraphs.filter((paragraph) => paragraph.tableCell);
+    const tableParagraphs = snapshot.paragraphs.filter(
+      (paragraph) => paragraph.tableCell,
+    );
     if (tableParagraphs.length === 0) return null;
 
     const firstCell = tableParagraphs[0]!.tableCell!;
@@ -792,7 +1004,9 @@ test("canvas simple 2x2 table hit-test uses canvas layout only", async ({ page }
   await expectNoMissEvents(page);
 });
 
-test("triple-click selects paragraph including paragraph mark in main zone", async ({ page }) => {
+test("triple-click selects paragraph including paragraph mark in main zone", async ({
+  page,
+}) => {
   await gotoEditor(page);
   await clearMissEvents(page);
   await seedText(page, "aaa bbb ccc");
@@ -808,13 +1022,17 @@ test("triple-click selects paragraph including paragraph mark in main zone", asy
     if (!snapshot) return null;
     const mainParagraphs = snapshot.paragraphs.filter(
       (entry) =>
-        entry.zone === "main" && !entry.tableCell && entry.lines.length > 0 && entry.textLength > 0,
+        entry.zone === "main" &&
+        !entry.tableCell &&
+        entry.lines.length > 0 &&
+        entry.textLength > 0,
     );
     if (mainParagraphs.length < 2) return null;
     const first = mainParagraphs[0]!;
     const second = mainParagraphs[1]!;
     const line = first.lines[0]!;
-    const slot = line.slots[Math.min(2, line.slots.length - 1)] ?? line.slots[0];
+    const slot =
+      line.slots[Math.min(2, line.slots.length - 1)] ?? line.slots[0];
     if (!slot) return null;
     return {
       click: { x: slot.left + 0.5, y: line.top + line.height * 0.5 },
@@ -824,16 +1042,22 @@ test("triple-click selects paragraph including paragraph mark in main zone", asy
     };
   });
   if (!target) {
-    throw new Error("unable to resolve main paragraphs for triple-click assertion");
+    throw new Error(
+      "unable to resolve main paragraphs for triple-click assertion",
+    );
   }
 
   await page.mouse.click(target.click.x, target.click.y, { clickCount: 3 });
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+  await expect(
+    page.locator(".oasis-editor-selection-box").first(),
+  ).toBeVisible();
   await expectLastHitFromCanvas(page);
   await expectNoMissEvents(page);
 });
 
-test("triple-click on last paragraph falls back to end of same paragraph", async ({ page }) => {
+test("triple-click on last paragraph falls back to end of same paragraph", async ({
+  page,
+}) => {
   await gotoEditor(page);
   await clearMissEvents(page);
   await seedText(page, "ultimo paragrafo");
@@ -847,7 +1071,10 @@ test("triple-click on last paragraph falls back to end of same paragraph", async
     if (!snapshot) return null;
     const mainParagraphs = snapshot.paragraphs.filter(
       (entry) =>
-        entry.zone === "main" && !entry.tableCell && entry.lines.length > 0 && entry.textLength > 0,
+        entry.zone === "main" &&
+        !entry.tableCell &&
+        entry.lines.length > 0 &&
+        entry.textLength > 0,
     );
     if (mainParagraphs.length === 0) return null;
     const last = mainParagraphs[mainParagraphs.length - 1]!;
@@ -861,11 +1088,15 @@ test("triple-click on last paragraph falls back to end of same paragraph", async
     };
   });
   if (!target) {
-    throw new Error("unable to resolve last main paragraph for triple-click assertion");
+    throw new Error(
+      "unable to resolve last main paragraph for triple-click assertion",
+    );
   }
 
   await page.mouse.click(target.click.x, target.click.y, { clickCount: 3 });
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+  await expect(
+    page.locator(".oasis-editor-selection-box").first(),
+  ).toBeVisible();
   await expectLastHitFromCanvas(page);
   await expectNoMissEvents(page);
 });
@@ -873,57 +1104,99 @@ test("triple-click on last paragraph falls back to end of same paragraph", async
 test("triple-click in table cell includes paragraph mark to next paragraph in same zone order", async ({
   page,
 }) => {
-  test.fixme(true, "Table-cell triple-click semantic selection is not stable yet in canvas hit-test flow.");
   await gotoEditor(page);
   await clearMissEvents(page);
-  await page.getByTestId("editor-import-docx-input").setInputFiles(COMPLEX_DOCX);
+  await page
+    .getByTestId("editor-import-docx-input")
+    .setInputFiles(COMPLEX_DOCX);
   await waitForDocxImportReady(page);
   const pageRect = await canvasPageRect(page);
   await page.mouse.click(pageRect.x + 240, pageRect.y + 220);
   await expectLastHitFromCanvas(page);
 
-  const target = await page.evaluate(() => {
-    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
-    if (!snapshot) return null;
-    const cellParagraphs = snapshot.paragraphs.filter(
-      (entry) => entry.zone === "main" && entry.tableCell && entry.lines.length > 0 && entry.textLength > 0,
-    );
-    if (cellParagraphs.length < 2) return null;
-    const first = cellParagraphs[0]!;
-    const second = cellParagraphs[1]!;
-    const line = first.lines[0]!;
-    const slot = line.slots[0];
-    if (!slot) return null;
-    return {
-      click: { x: slot.left + 0.5, y: line.top + line.height * 0.5 },
-      firstParagraphId: first.paragraphId,
-      secondParagraphId: second.paragraphId,
-    };
-  });
-  if (!target) {
-    throw new Error("unable to resolve table paragraphs for triple-click assertion");
-  }
+  const target = await tableCellParagraphs(page);
+  const line = await scrollParagraphIntoView(page, target.firstParagraphId);
+  await clearMissEvents(page);
 
-  await page.mouse.click(target.click.x, target.click.y, { clickCount: 3 });
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+  await page.mouse.click(line.slots[0]!.left + 0.5, line.y, { clickCount: 3 });
+  await expect(
+    page.locator(".oasis-editor-selection-box").first(),
+  ).toBeVisible();
+
+  // The paragraph mark is part of the selection, so it runs from the start of
+  // the cell paragraph to offset 0 of the paragraph that follows it in the same
+  // zone — the next cell, not the next block after the table.
+  const selection = await canvasSelection(page);
+  expect(selection.anchorId).toBe(target.firstParagraphId);
+  expect(selection.anchorOffset).toBe(0);
+  expect(selection.focusId).toBe(target.secondParagraphId);
+  expect(selection.focusOffset).toBe(0);
+
   await expectLastHitFromCanvas(page);
   await expectNoMissEvents(page);
 });
 
-test("triple-click in header includes paragraph mark to next header paragraph", async ({ page }) => {
+test("clicking inside a table-cell selection drops the caret under the pointer", async ({
+  page,
+}) => {
+  // Pressing inside an existing selection arms a drag-to-move; a press that
+  // never moves collapses the selection to a caret instead. In a table cell
+  // that collapse used the cell's anchor position rather than the clicked one,
+  // so the caret jumped to the top of the cell wherever the click landed.
   await gotoEditor(page);
   await clearMissEvents(page);
-  await page.getByTestId("editor-import-docx-input").setInputFiles(COMPLEX_DOCX);
+  await page
+    .getByTestId("editor-import-docx-input")
+    .setInputFiles(COMPLEX_DOCX);
+  await waitForDocxImportReady(page);
+  const pageRect = await canvasPageRect(page);
+  await page.mouse.click(pageRect.x + 240, pageRect.y + 220);
+
+  const target = await tableCellParagraphs(page);
+  const line = await scrollParagraphIntoView(page, target.firstParagraphId);
+  const lastSlot = line.slots[line.slots.length - 1]!;
+  expect(lastSlot.offset).toBeGreaterThan(0);
+
+  // Select the cell paragraph, so the next click lands inside a selection.
+  await page.mouse.click(line.slots[0]!.left + 0.5, line.y, { clickCount: 3 });
+  const selected = await canvasSelection(page);
+  expect(selected.focusId).not.toBe(selected.anchorId);
+
+  // Wait out the multi-click window so this reads as a fresh single click.
+  await page.waitForTimeout(700);
+  await page.mouse.click(lastSlot.left + 0.5, line.y);
+
+  const caret = await canvasSelection(page);
+  expect(caret.anchorId).toBe(target.firstParagraphId);
+  expect(caret.focusId).toBe(target.firstParagraphId);
+  expect(caret.anchorOffset).toBe(caret.focusOffset);
+  expect(caret.anchorOffset).toBe(lastSlot.offset);
+});
+
+test("triple-click in header includes paragraph mark to next header paragraph", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+  await clearMissEvents(page);
+  await page
+    .getByTestId("editor-import-docx-input")
+    .setInputFiles(COMPLEX_DOCX);
   await waitForDocxImportReady(page, 120_000);
   const editorPage = await canvasPageRect(page);
-  await page.mouse.dblclick(editorPage.x + editorPage.width / 2, editorPage.y + 26);
+  await page.mouse.dblclick(
+    editorPage.x + editorPage.width / 2,
+    editorPage.y + 26,
+  );
   await expectLastHitFromCanvas(page);
 
   const target = await page.evaluate(() => {
     const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
     if (!snapshot) return null;
     const headerParagraphs = snapshot.paragraphs.filter(
-      (entry) => entry.zone === "header" && entry.lines.length > 0 && entry.textLength > 0,
+      (entry) =>
+        entry.zone === "header" &&
+        entry.lines.length > 0 &&
+        entry.textLength > 0,
     );
     if (headerParagraphs.length < 2) return null;
     const first = headerParagraphs[0]!;
@@ -938,14 +1211,18 @@ test("triple-click in header includes paragraph mark to next header paragraph", 
     };
   });
   if (!target) {
-    throw new Error("unable to resolve header paragraphs for triple-click assertion");
+    throw new Error(
+      "unable to resolve header paragraphs for triple-click assertion",
+    );
   }
 
   await expectTripleClickWordLikeRange(page, target.click);
   await expectNoMissEvents(page);
 });
 
-test("canvas table column resize uses editor-bounded guide and applies width", async ({ page }) => {
+test("canvas table column resize uses editor-bounded guide and applies width", async ({
+  page,
+}) => {
   await gotoEditor(page);
   await clearMissEvents(page);
   await seedText(page, "resize column baseline");
@@ -961,17 +1238,21 @@ test("canvas table column resize uses editor-bounded guide and applies width", a
     const cells = snapshot.paragraphs
       .filter((paragraph) => paragraph.tableCell)
       .map((paragraph) => paragraph.tableCell!)
-      .filter((cell, index, all) =>
-        all.findIndex((candidate) =>
-          candidate.tableId === cell.tableId &&
-          candidate.rowIndex === cell.rowIndex &&
-          candidate.cellIndex === cell.cellIndex,
-        ) === index,
+      .filter(
+        (cell, index, all) =>
+          all.findIndex(
+            (candidate) =>
+              candidate.tableId === cell.tableId &&
+              candidate.rowIndex === cell.rowIndex &&
+              candidate.cellIndex === cell.cellIndex,
+          ) === index,
       );
     if (cells.length === 0) return null;
     const tableId = cells[0]!.tableId;
     const tableCells = cells.filter((cell) => cell.tableId === tableId);
-    const first = tableCells.find((cell) => cell.rowIndex === 0 && cell.cellIndex === 0) ?? tableCells[0];
+    const first =
+      tableCells.find((cell) => cell.rowIndex === 0 && cell.cellIndex === 0) ??
+      tableCells[0];
     if (!first) return null;
     const left = Math.min(...tableCells.map((cell) => cell.left));
     const right = Math.max(...tableCells.map((cell) => cell.left + cell.width));
@@ -995,7 +1276,9 @@ test("canvas table column resize uses editor-bounded guide and applies width", a
   await expect(guide).toBeVisible();
 
   const guideRect = await guide.boundingBox();
-  const editorRect = await page.locator('[data-testid="editor-editor"]').boundingBox();
+  const editorRect = await page
+    .locator('[data-testid="editor-editor"]')
+    .boundingBox();
   if (!guideRect || !editorRect) {
     throw new Error("unable to resolve guide/editor bounds");
   }
@@ -1014,15 +1297,19 @@ test("canvas table column resize uses editor-bounded guide and applies width", a
     const cells = snapshot.paragraphs
       .filter((paragraph) => paragraph.tableCell?.tableId === tableId)
       .map((paragraph) => paragraph.tableCell!)
-      .filter((cell, index, all) =>
-        all.findIndex((candidate) =>
-          candidate.tableId === cell.tableId &&
-          candidate.rowIndex === cell.rowIndex &&
-          candidate.cellIndex === cell.cellIndex,
-        ) === index,
+      .filter(
+        (cell, index, all) =>
+          all.findIndex(
+            (candidate) =>
+              candidate.tableId === cell.tableId &&
+              candidate.rowIndex === cell.rowIndex &&
+              candidate.cellIndex === cell.cellIndex,
+          ) === index,
       );
     if (cells.length === 0) return null;
-    const first = cells.find((cell) => cell.rowIndex === 0 && cell.cellIndex === 0);
+    const first = cells.find(
+      (cell) => cell.rowIndex === 0 && cell.cellIndex === 0,
+    );
     if (!first) return null;
     const left = Math.min(...cells.map((cell) => cell.left));
     const right = Math.max(...cells.map((cell) => cell.left + cell.width));
@@ -1033,12 +1320,24 @@ test("canvas table column resize uses editor-bounded guide and applies width", a
   }, geometryBefore.tableId);
 
   expect(geometryAfter).not.toBeNull();
-  expect(Math.abs((geometryAfter?.firstWidth ?? geometryBefore.firstWidth) - geometryBefore.firstWidth)).toBeGreaterThan(4);
-  expect(Math.abs((geometryAfter?.tableWidth ?? geometryBefore.tableWidth) - geometryBefore.tableWidth)).toBeLessThanOrEqual(4);
+  expect(
+    Math.abs(
+      (geometryAfter?.firstWidth ?? geometryBefore.firstWidth) -
+        geometryBefore.firstWidth,
+    ),
+  ).toBeGreaterThan(4);
+  expect(
+    Math.abs(
+      (geometryAfter?.tableWidth ?? geometryBefore.tableWidth) -
+        geometryBefore.tableWidth,
+    ),
+  ).toBeLessThanOrEqual(4);
   await expectNoMissEvents(page);
 });
 
-test("canvas table row resize on last bottom border increases last row height", async ({ page }) => {
+test("canvas table row resize on last bottom border increases last row height", async ({
+  page,
+}) => {
   await gotoEditor(page);
   await clearMissEvents(page);
   await seedText(page, "resize row baseline");
@@ -1054,26 +1353,34 @@ test("canvas table row resize on last bottom border increases last row height", 
     const cells = snapshot.paragraphs
       .filter((paragraph) => paragraph.tableCell)
       .map((paragraph) => paragraph.tableCell!)
-      .filter((cell, index, all) =>
-        all.findIndex((candidate) =>
-          candidate.tableId === cell.tableId &&
-          candidate.rowIndex === cell.rowIndex &&
-          candidate.cellIndex === cell.cellIndex,
-        ) === index,
+      .filter(
+        (cell, index, all) =>
+          all.findIndex(
+            (candidate) =>
+              candidate.tableId === cell.tableId &&
+              candidate.rowIndex === cell.rowIndex &&
+              candidate.cellIndex === cell.cellIndex,
+          ) === index,
       );
     if (cells.length === 0) return null;
     const tableId = cells[0]!.tableId;
     const tableCells = cells.filter((cell) => cell.tableId === tableId);
-    const rowIndexes = Array.from(new Set(tableCells.map((cell) => cell.rowIndex))).sort((a, b) => a - b);
+    const rowIndexes = Array.from(
+      new Set(tableCells.map((cell) => cell.rowIndex)),
+    ).sort((a, b) => a - b);
     const firstRowIndex = rowIndexes[0];
     const maxRowIndex = rowIndexes[rowIndexes.length - 1];
     if (firstRowIndex === undefined || maxRowIndex === undefined) return null;
     const firstRowCell =
-      tableCells.find((cell) => cell.rowIndex === firstRowIndex && cell.cellIndex === 0) ??
+      tableCells.find(
+        (cell) => cell.rowIndex === firstRowIndex && cell.cellIndex === 0,
+      ) ??
       tableCells.find((cell) => cell.rowIndex === firstRowIndex) ??
       tableCells[0];
     const lastRowCell =
-      tableCells.find((cell) => cell.rowIndex === maxRowIndex && cell.cellIndex === 0) ??
+      tableCells.find(
+        (cell) => cell.rowIndex === maxRowIndex && cell.cellIndex === 0,
+      ) ??
       tableCells.find((cell) => cell.rowIndex === maxRowIndex) ??
       tableCells[tableCells.length - 1];
     if (!firstRowCell || !lastRowCell) return null;
@@ -1099,7 +1406,9 @@ test("canvas table row resize on last bottom border increases last row height", 
   await expect(guide).toBeVisible();
 
   const guideRect = await guide.boundingBox();
-  const editorRect = await page.locator('[data-testid="editor-editor"]').boundingBox();
+  const editorRect = await page
+    .locator('[data-testid="editor-editor"]')
+    .boundingBox();
   if (!guideRect || !editorRect) {
     throw new Error("unable to resolve guide/editor bounds");
   }
@@ -1112,39 +1421,60 @@ test("canvas table row resize on last bottom border increases last row height", 
   await page.mouse.click(geometryBefore.midX, geometryBefore.edgeY + 12);
   await expectLastHitFromCanvas(page);
 
-  const geometryAfter = await page.evaluate(({ tableId, firstRowIndex, maxRowIndex }) => {
-    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
-    if (!snapshot) return null;
-    const cells = snapshot.paragraphs
-      .filter((paragraph) => paragraph.tableCell?.tableId === tableId)
-      .map((paragraph) => paragraph.tableCell!)
-      .filter((cell, index, all) =>
-        all.findIndex((candidate) =>
-          candidate.tableId === cell.tableId &&
-          candidate.rowIndex === cell.rowIndex &&
-          candidate.cellIndex === cell.cellIndex,
-        ) === index,
-      );
-    const firstRowCell =
-      cells.find((cell) => cell.rowIndex === firstRowIndex && cell.cellIndex === 0) ??
-      cells.find((cell) => cell.rowIndex === firstRowIndex);
-    const lastRowCell =
-      cells.find((cell) => cell.rowIndex === maxRowIndex && cell.cellIndex === 0) ??
-      cells.find((cell) => cell.rowIndex === maxRowIndex);
-    if (!firstRowCell || !lastRowCell) return null;
-    return {
-      firstRowHeight: firstRowCell.height,
-      lastRowHeight: lastRowCell.height,
-    };
-  }, { tableId: geometryBefore.tableId, firstRowIndex: geometryBefore.firstRowIndex, maxRowIndex: geometryBefore.maxRowIndex });
+  const geometryAfter = await page.evaluate(
+    ({ tableId, firstRowIndex, maxRowIndex }) => {
+      const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+      if (!snapshot) return null;
+      const cells = snapshot.paragraphs
+        .filter((paragraph) => paragraph.tableCell?.tableId === tableId)
+        .map((paragraph) => paragraph.tableCell!)
+        .filter(
+          (cell, index, all) =>
+            all.findIndex(
+              (candidate) =>
+                candidate.tableId === cell.tableId &&
+                candidate.rowIndex === cell.rowIndex &&
+                candidate.cellIndex === cell.cellIndex,
+            ) === index,
+        );
+      const firstRowCell =
+        cells.find(
+          (cell) => cell.rowIndex === firstRowIndex && cell.cellIndex === 0,
+        ) ?? cells.find((cell) => cell.rowIndex === firstRowIndex);
+      const lastRowCell =
+        cells.find(
+          (cell) => cell.rowIndex === maxRowIndex && cell.cellIndex === 0,
+        ) ?? cells.find((cell) => cell.rowIndex === maxRowIndex);
+      if (!firstRowCell || !lastRowCell) return null;
+      return {
+        firstRowHeight: firstRowCell.height,
+        lastRowHeight: lastRowCell.height,
+      };
+    },
+    {
+      tableId: geometryBefore.tableId,
+      firstRowIndex: geometryBefore.firstRowIndex,
+      maxRowIndex: geometryBefore.maxRowIndex,
+    },
+  );
 
   expect(geometryAfter).not.toBeNull();
-  expect((geometryAfter?.lastRowHeight ?? geometryBefore.lastRowHeight) - geometryBefore.lastRowHeight).toBeGreaterThan(4);
-  expect(Math.abs((geometryAfter?.firstRowHeight ?? geometryBefore.firstRowHeight) - geometryBefore.firstRowHeight)).toBeLessThanOrEqual(3);
+  expect(
+    (geometryAfter?.lastRowHeight ?? geometryBefore.lastRowHeight) -
+      geometryBefore.lastRowHeight,
+  ).toBeGreaterThan(4);
+  expect(
+    Math.abs(
+      (geometryAfter?.firstRowHeight ?? geometryBefore.firstRowHeight) -
+        geometryBefore.firstRowHeight,
+    ),
+  ).toBeLessThanOrEqual(3);
   await expectNoMissEvents(page);
 });
 
-test("canvas table row resize does not shrink below row content minimum", async ({ page }) => {
+test("canvas table row resize does not shrink below row content minimum", async ({
+  page,
+}) => {
   await gotoEditor(page);
   await clearMissEvents(page);
   await seedText(page, "resize row min baseline");
@@ -1160,20 +1490,23 @@ test("canvas table row resize does not shrink below row content minimum", async 
     const cells = snapshot.paragraphs
       .filter((paragraph) => paragraph.tableCell)
       .map((paragraph) => paragraph.tableCell!)
-      .filter((cell, index, all) =>
-        all.findIndex((candidate) =>
-          candidate.tableId === cell.tableId &&
-          candidate.rowIndex === cell.rowIndex &&
-          candidate.cellIndex === cell.cellIndex,
-        ) === index,
+      .filter(
+        (cell, index, all) =>
+          all.findIndex(
+            (candidate) =>
+              candidate.tableId === cell.tableId &&
+              candidate.rowIndex === cell.rowIndex &&
+              candidate.cellIndex === cell.cellIndex,
+          ) === index,
       );
     if (cells.length === 0) return null;
     const tableId = cells[0]!.tableId;
     const tableCells = cells.filter((cell) => cell.tableId === tableId);
     const lastRowIndex = Math.max(...tableCells.map((cell) => cell.rowIndex));
     const lastRowCell =
-      tableCells.find((cell) => cell.rowIndex === lastRowIndex && cell.cellIndex === 0) ??
-      tableCells.find((cell) => cell.rowIndex === lastRowIndex);
+      tableCells.find(
+        (cell) => cell.rowIndex === lastRowIndex && cell.cellIndex === 0,
+      ) ?? tableCells.find((cell) => cell.rowIndex === lastRowIndex);
     if (!lastRowCell) return null;
     return {
       tableId,
@@ -1193,32 +1526,45 @@ test("canvas table row resize does not shrink below row content minimum", async 
   await page.mouse.up();
   await page.waitForTimeout(120);
 
-  const geometryAfter = await page.evaluate(({ tableId, lastRowIndex }) => {
-    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
-    if (!snapshot) return null;
-    const cells = snapshot.paragraphs
-      .filter((paragraph) => paragraph.tableCell?.tableId === tableId)
-      .map((paragraph) => paragraph.tableCell!)
-      .filter((cell, index, all) =>
-        all.findIndex((candidate) =>
-          candidate.tableId === cell.tableId &&
-          candidate.rowIndex === cell.rowIndex &&
-          candidate.cellIndex === cell.cellIndex,
-        ) === index,
-      );
-    const lastRowCell =
-      cells.find((cell) => cell.rowIndex === lastRowIndex && cell.cellIndex === 0) ??
-      cells.find((cell) => cell.rowIndex === lastRowIndex);
-    if (!lastRowCell) return null;
-    return { lastRowHeight: lastRowCell.height };
-  }, { tableId: geometryBefore.tableId, lastRowIndex: geometryBefore.lastRowIndex });
+  const geometryAfter = await page.evaluate(
+    ({ tableId, lastRowIndex }) => {
+      const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+      if (!snapshot) return null;
+      const cells = snapshot.paragraphs
+        .filter((paragraph) => paragraph.tableCell?.tableId === tableId)
+        .map((paragraph) => paragraph.tableCell!)
+        .filter(
+          (cell, index, all) =>
+            all.findIndex(
+              (candidate) =>
+                candidate.tableId === cell.tableId &&
+                candidate.rowIndex === cell.rowIndex &&
+                candidate.cellIndex === cell.cellIndex,
+            ) === index,
+        );
+      const lastRowCell =
+        cells.find(
+          (cell) => cell.rowIndex === lastRowIndex && cell.cellIndex === 0,
+        ) ?? cells.find((cell) => cell.rowIndex === lastRowIndex);
+      if (!lastRowCell) return null;
+      return { lastRowHeight: lastRowCell.height };
+    },
+    {
+      tableId: geometryBefore.tableId,
+      lastRowIndex: geometryBefore.lastRowIndex,
+    },
+  );
 
   expect(geometryAfter).not.toBeNull();
-  expect((geometryAfter?.lastRowHeight ?? 0) + 1).toBeGreaterThanOrEqual(geometryBefore.lastRowHeight);
+  expect((geometryAfter?.lastRowHeight ?? 0) + 1).toBeGreaterThanOrEqual(
+    geometryBefore.lastRowHeight,
+  );
   await expectNoMissEvents(page);
 });
 
-test("canvas table column resize does not shrink below content minimum", async ({ page }) => {
+test("canvas table column resize does not shrink below content minimum", async ({
+  page,
+}) => {
   await gotoEditor(page);
   await clearMissEvents(page);
   await seedText(page, "resize column min baseline");
@@ -1234,17 +1580,21 @@ test("canvas table column resize does not shrink below content minimum", async (
     const cells = snapshot.paragraphs
       .filter((paragraph) => paragraph.tableCell)
       .map((paragraph) => paragraph.tableCell!)
-      .filter((cell, index, all) =>
-        all.findIndex((candidate) =>
-          candidate.tableId === cell.tableId &&
-          candidate.rowIndex === cell.rowIndex &&
-          candidate.cellIndex === cell.cellIndex,
-        ) === index,
+      .filter(
+        (cell, index, all) =>
+          all.findIndex(
+            (candidate) =>
+              candidate.tableId === cell.tableId &&
+              candidate.rowIndex === cell.rowIndex &&
+              candidate.cellIndex === cell.cellIndex,
+          ) === index,
       );
     if (cells.length === 0) return null;
     const tableId = cells[0]!.tableId;
     const tableCells = cells.filter((cell) => cell.tableId === tableId);
-    const first = tableCells.find((cell) => cell.rowIndex === 0 && cell.cellIndex === 0) ?? tableCells[0];
+    const first =
+      tableCells.find((cell) => cell.rowIndex === 0 && cell.cellIndex === 0) ??
+      tableCells[0];
     if (!first) return null;
     return {
       tableId,
@@ -1269,20 +1619,26 @@ test("canvas table column resize does not shrink below content minimum", async (
     const cells = snapshot.paragraphs
       .filter((paragraph) => paragraph.tableCell?.tableId === tableId)
       .map((paragraph) => paragraph.tableCell!)
-      .filter((cell, index, all) =>
-        all.findIndex((candidate) =>
-          candidate.tableId === cell.tableId &&
-          candidate.rowIndex === cell.rowIndex &&
-          candidate.cellIndex === cell.cellIndex,
-        ) === index,
+      .filter(
+        (cell, index, all) =>
+          all.findIndex(
+            (candidate) =>
+              candidate.tableId === cell.tableId &&
+              candidate.rowIndex === cell.rowIndex &&
+              candidate.cellIndex === cell.cellIndex,
+          ) === index,
       );
-    const first = cells.find((cell) => cell.rowIndex === 0 && cell.cellIndex === 0);
+    const first = cells.find(
+      (cell) => cell.rowIndex === 0 && cell.cellIndex === 0,
+    );
     if (!first) return null;
     return { firstWidth: first.width };
   }, geometryBefore.tableId);
 
   expect(geometryAfter).not.toBeNull();
-  expect((geometryAfter?.firstWidth ?? 0) + 1).toBeGreaterThanOrEqual(geometryBefore.firstWidth);
+  expect((geometryAfter?.firstWidth ?? 0) + 1).toBeGreaterThanOrEqual(
+    geometryBefore.firstWidth,
+  );
   await expectNoMissEvents(page);
 });
 
@@ -1316,7 +1672,9 @@ test("canvas image click selects object and resize handle changes image dimensio
 
   await page.mouse.click(imageTarget.clickX, imageTarget.clickY);
   await expectLastHitFromCanvas(page);
-  await expect(page.locator(".oasis-editor-image-selection-overlay")).toBeVisible();
+  await expect(
+    page.locator(".oasis-editor-image-selection-overlay"),
+  ).toBeVisible();
 
   const handle = page.locator(
     '.oasis-editor-image-selection-overlay .oasis-editor-resize-handle[data-direction="se"]',
@@ -1327,7 +1685,10 @@ test("canvas image click selects object and resize handle changes image dimensio
     throw new Error("unable to resolve southeast image resize handle bounds");
   }
 
-  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.move(
+    handleBox.x + handleBox.width / 2,
+    handleBox.y + handleBox.height / 2,
+  );
   await page.mouse.down();
   await page.mouse.move(
     handleBox.x + handleBox.width / 2 + 36,
@@ -1363,8 +1724,12 @@ test("canvas image click selects object and resize handle changes image dimensio
   const imageAfter = await readImage();
 
   expect(imageAfter).not.toBeNull();
-  expect((imageAfter?.width ?? imageTarget.width) - imageTarget.width).toBeGreaterThan(8);
-  expect((imageAfter?.height ?? imageTarget.height) - imageTarget.height).toBeGreaterThan(4);
+  expect(
+    (imageAfter?.width ?? imageTarget.width) - imageTarget.width,
+  ).toBeGreaterThan(8);
+  expect(
+    (imageAfter?.height ?? imageTarget.height) - imageTarget.height,
+  ).toBeGreaterThan(4);
   await expectNoMissEvents(page);
 });
 
@@ -1381,14 +1746,18 @@ test("toolbar overflow table insert does not throw insertBefore NotFoundError", 
     pageErrors.push(error.message);
   });
 
-  await expect(page.getByTestId("editor-toolbar-overflow-dropdown")).toBeVisible();
+  await expect(
+    page.getByTestId("editor-toolbar-overflow-dropdown"),
+  ).toBeVisible();
   await insertTable(page, 2, 3);
   await page.waitForTimeout(120);
 
   const hasInsertBeforeNotFoundError = pageErrors.some(
     (message) =>
       message.includes("insertBefore") &&
-      message.includes("The node before which the new node is to be inserted is not a child of this node"),
+      message.includes(
+        "The node before which the new node is to be inserted is not a child of this node",
+      ),
   );
   expect(hasInsertBeforeNotFoundError).toBeFalsy();
 });
@@ -1397,14 +1766,20 @@ test("toolbar wrap layout keeps overflowing tools visible without more menu", as
   page,
 }) => {
   await page.setViewportSize({ width: 760, height: 900 });
-  await gotoEditor(page, { ui: { toolbar: { view: "compact", layout: "wrap" } } });
+  await gotoEditor(page, {
+    ui: { toolbar: { view: "compact", layout: "wrap" } },
+  });
 
-  await expect(page.getByTestId("editor-toolbar-overflow-dropdown")).toBeHidden();
+  await expect(
+    page.getByTestId("editor-toolbar-overflow-dropdown"),
+  ).toBeHidden();
   await expect(page.getByTestId("editor-toolbar-insert-table")).toBeVisible();
   await insertTable(page, 2, 3);
 });
 
-test("toolbar customization can remove, move and add items", async ({ page }) => {
+test("toolbar customization can remove, move and add items", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1200, height: 900 });
   await gotoEditor(page, {
     ui: { toolbar: { view: "compact", layout: "wrap" } },
@@ -1431,7 +1806,9 @@ test("toolbar customization can remove, move and add items", async ({ page }) =>
   await expect(page.getByTestId("editor-toolbar-footnote")).toHaveCount(0);
   await expect(page.getByTestId("editor-toolbar-custom-test")).toBeVisible();
 
-  const tableBox = await page.getByTestId("editor-toolbar-insert-table").boundingBox();
+  const tableBox = await page
+    .getByTestId("editor-toolbar-insert-table")
+    .boundingBox();
   const linkBox = await page.getByTestId("editor-toolbar-link").boundingBox();
   expect(tableBox).not.toBeNull();
   expect(linkBox).not.toBeNull();

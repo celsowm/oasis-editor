@@ -284,7 +284,13 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
     pendingStart = {
       x: event.clientX,
       y: event.clientY,
-      position: hit.tableCellAnchorPosition ?? hit.position,
+      // The clicked offset, never the cell anchor. A press that never turns
+      // into a drag collapses the caret here, and snapping to the start of the
+      // enclosing table cell would drop the caret at the top of the cell
+      // instead of under the pointer. The cell anchor is a *drop* target — it
+      // says where text lands when dragged into a cell — and is applied as
+      // such in handleWindowMouseMove.
+      position: hit.position,
     };
     setPointerPos({ x: event.clientX, y: event.clientY });
     setCopyMode(event.ctrlKey || event.metaKey);
