@@ -6,7 +6,10 @@ import type {
   EditorTableCellNode,
   EditorTableRowNode,
 } from "@/core/model.js";
-import { getDocumentSectionsCanonical, getParagraphText } from "@/core/model.js";
+import {
+  getDocumentSectionsCanonical,
+  getParagraphText,
+} from "@/core/model.js";
 import { writeCustomXmlBinding } from "@/ooxml/word/customXmlBinding.js";
 
 interface BoundControlAccumulator {
@@ -94,7 +97,9 @@ function collectBoundControlsFromBlocks(
   }
 }
 
-export function synchronizeBoundContentControls(document: EditorDocument): number {
+export function synchronizeBoundContentControls(
+  document: EditorDocument,
+): number {
   if (!document.sourcePackage) return 0;
   const controls = new Map<string, BoundControlAccumulator>();
 

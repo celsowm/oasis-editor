@@ -1,7 +1,4 @@
-import type {
-  EditorDocument,
-  EditorDocxSourcePackage,
-} from "@/core/model.js";
+import type { EditorDocument, EditorDocxSourcePackage } from "@/core/model.js";
 import {
   exportEditorDocumentToDocx,
   exportEditorDocumentToDocxBlob,

@@ -254,15 +254,16 @@ function normalizeHighlightForDocx(highlight: string): string {
 function serializeRunPropertyRevision(
   revision: NonNullable<EditorTextStyle["propertyRevision"]>,
 ): string {
-  const { propertyRevision: _nestedRevision, styleId, ...previous } =
-    revision.previous;
+  const {
+    propertyRevision: _nestedRevision,
+    styleId,
+    ...previous
+  } = revision.previous;
   const serialized = serializeRunProperties(previous);
   const inner = serialized
     ? serialized.slice("<w:rPr>".length, -"</w:rPr>".length)
     : "";
-  const styleXml = styleId
-    ? `<w:rStyle w:val="${escapeXml(styleId)}"/>`
-    : "";
+  const styleXml = styleId ? `<w:rStyle w:val="${escapeXml(styleId)}"/>` : "";
   return (
     `<w:rPrChange ${serializeRevisionMetadataAttributes(revision)}>` +
     `<w:rPr>${styleXml}${inner}</w:rPr></w:rPrChange>`

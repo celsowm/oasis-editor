@@ -141,7 +141,9 @@ export function parseSdtPr(sdtPr: XmlElement | null): EditorSdtPr {
           repeating,
           "doNotAllowInsertDeleteSection",
         );
-        const properties: NonNullable<EditorSdtPr["repeatingSectionProperties"]> = {};
+        const properties: NonNullable<
+          EditorSdtPr["repeatingSectionProperties"]
+        > = {};
         const title = getAttributeValue(sectionTitle, "val");
         if (title !== null) properties.sectionTitle = title;
         if (noInsertDelete) {

@@ -185,7 +185,8 @@ export function normalizeImportedParagraphStyle(
       ? {
           ...style.propertyRevision,
           previous:
-            normalizeImportedParagraphStyle(style.propertyRevision.previous) ?? {},
+            normalizeImportedParagraphStyle(style.propertyRevision.previous) ??
+            {},
         }
       : undefined,
   });

@@ -1,8 +1,5 @@
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
-import type {
-  EditorSdtBlockWrapper,
-  EditorTableNode,
-} from "@/core/model.js";
+import type { EditorSdtBlockWrapper, EditorTableNode } from "@/core/model.js";
 import { WORD_NS } from "./xmlUtils.js";
 import { serializeSdtPrXml } from "./text/sdtXml.js";
 
@@ -58,7 +55,10 @@ function createSdtEnvelope(
   const document = parent.ownerDocument;
   if (!document) return null;
   const sdt = document.createElementNS(WORD_NS, "w:sdt");
-  const properties = parseWordFragment(serializeSdtPrXml(wrapper.sdtPr), "sdtPr");
+  const properties = parseWordFragment(
+    serializeSdtPrXml(wrapper.sdtPr),
+    "sdtPr",
+  );
   if (properties) {
     sdt.appendChild(properties.cloneNode(true));
   }
@@ -130,18 +130,22 @@ export function wrapTableStructuralSdts(
     if (cellElements.length !== row.cells.length) continue;
     wrapSequence(
       rowElement,
-      cellElements.map((element, cellIndex): WrappedElement => ({
-        element,
-        wrappers: row.cells[cellIndex]!.sdtWrappers ?? [],
-      })),
+      cellElements.map(
+        (element, cellIndex): WrappedElement => ({
+          element,
+          wrappers: row.cells[cellIndex]!.sdtWrappers ?? [],
+        }),
+      ),
     );
   }
 
   wrapSequence(
     tableElement,
-    rowElements.map((element, rowIndex): WrappedElement => ({
-      element,
-      wrappers: table.rows[rowIndex]!.sdtWrappers ?? [],
-    })),
+    rowElements.map(
+      (element, rowIndex): WrappedElement => ({
+        element,
+        wrappers: table.rows[rowIndex]!.sdtWrappers ?? [],
+      }),
+    ),
   );
 }

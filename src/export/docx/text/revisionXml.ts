@@ -40,7 +40,9 @@ function parseSingleRun(xml: string): XmlElement | undefined {
   const children = elementChildren(wrapper);
   if (children.length !== 1) return undefined;
   const run = children[0]!;
-  return run.namespaceURI === WORD_NS && run.localName === "r" ? run : undefined;
+  return run.namespaceURI === WORD_NS && run.localName === "r"
+    ? run
+    : undefined;
 }
 
 function replaceWordChildName(
@@ -86,7 +88,8 @@ export function serializeDeletionRunContent(xml: string): string {
 
   const children = elementChildren(run);
   const generatedText = children.filter(
-    (child): boolean => child.namespaceURI === WORD_NS && child.localName === "t",
+    (child): boolean =>
+      child.namespaceURI === WORD_NS && child.localName === "t",
   );
   if (generatedText.length > 0) {
     for (const child of children) {
@@ -106,7 +109,10 @@ export function serializeDeletionRunContent(xml: string): string {
   );
   if (generatedInstructions.length > 0) {
     for (const child of refreshed) {
-      if (child.namespaceURI === WORD_NS && child.localName === "delInstrText") {
+      if (
+        child.namespaceURI === WORD_NS &&
+        child.localName === "delInstrText"
+      ) {
         run.removeChild(child);
       }
     }
@@ -122,8 +128,7 @@ function revisionNumericId(id: string): string {
   if (/^\d+$/.test(id)) return id;
   return String(
     Array.from(id).reduce(
-      (hash, character): number =>
-        (hash * 31 + character.charCodeAt(0)) >>> 0,
+      (hash, character): number => (hash * 31 + character.charCodeAt(0)) >>> 0,
       0,
     ),
   );
@@ -164,9 +169,7 @@ export function serializeMoveRangeMarker(marker: MoveRangeMarker): string {
   const element = `move${marker.move === "from" ? "From" : "To"}Range${
     marker.edge === "start" ? "Start" : "End"
   }`;
-  const attributes: string[] = [
-    `w:id="${revisionNumericId(marker.id)}"`,
-  ];
+  const attributes: string[] = [`w:id="${revisionNumericId(marker.id)}"`];
 
   if (marker.displacedByCustomXml !== undefined) {
     attributes.push(

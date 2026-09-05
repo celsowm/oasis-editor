@@ -58,8 +58,7 @@ function commonSuffixLength(a: string, b: string, max: number): number {
   let index = 0;
   while (
     index < max &&
-    a.charCodeAt(a.length - 1 - index) ===
-      b.charCodeAt(b.length - 1 - index)
+    a.charCodeAt(a.length - 1 - index) === b.charCodeAt(b.length - 1 - index)
   ) {
     index += 1;
   }

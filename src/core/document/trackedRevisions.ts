@@ -85,7 +85,10 @@ interface AnchorRelocation {
   offset: number;
 }
 
-function matchesRevision(context: ResolutionContext, revisionId: string): boolean {
+function matchesRevision(
+  context: ResolutionContext,
+  revisionId: string,
+): boolean {
   return context.revisionId === undefined || context.revisionId === revisionId;
 }
 
@@ -110,7 +113,9 @@ function pushIssue(
   context.unresolved.push(issue);
 }
 
-function collectParagraphsDeep(blocks: EditorBlockNode[]): EditorParagraphNode[] {
+function collectParagraphsDeep(
+  blocks: EditorBlockNode[],
+): EditorParagraphNode[] {
   const paragraphs: EditorParagraphNode[] = [];
   const collectBlocks = (story: EditorBlockNode[]): void => {
     for (const block of story) {
@@ -137,11 +142,16 @@ function recordRemovedParagraphRelocations(
 ): void {
   const oldParagraphs = collectParagraphsDeep([before]);
   const newParagraphs = collectParagraphsDeep([after]);
-  const newById = new Map(newParagraphs.map((paragraph) => [paragraph.id, paragraph]));
+  const newById = new Map(
+    newParagraphs.map((paragraph) => [paragraph.id, paragraph]),
+  );
 
   for (let index = 0; index < oldParagraphs.length; index += 1) {
     const paragraph = oldParagraphs[index]!;
-    if (newById.has(paragraph.id) || context.paragraphRelocations.has(paragraph.id)) {
+    if (
+      newById.has(paragraph.id) ||
+      context.paragraphRelocations.has(paragraph.id)
+    ) {
       continue;
     }
 
@@ -157,7 +167,11 @@ function recordRemovedParagraphRelocations(
       }
     }
     if (!relocation) {
-      for (let following = index + 1; following < oldParagraphs.length; following += 1) {
+      for (
+        let following = index + 1;
+        following < oldParagraphs.length;
+        following += 1
+      ) {
         const candidate = newById.get(oldParagraphs[following]!.id);
         if (candidate) {
           relocation = { paragraphId: candidate.id, offset: 0 };
@@ -378,10 +392,7 @@ function transformParagraph(
   if (style !== next.style) next = { ...next, style };
 
   const numberingRevision = next.numberingRevision;
-  if (
-    numberingRevision &&
-    matchesRevision(context, numberingRevision.id)
-  ) {
+  if (numberingRevision && matchesRevision(context, numberingRevision.id)) {
     markMatched(context);
     if (context.action === "accept") {
       markResolved(context, numberingRevision.id);
@@ -596,7 +607,9 @@ function transformRow(
   return next;
 }
 
-function recomputeVerticalMergeRowSpans(table: EditorTableNode): EditorTableNode {
+function recomputeVerticalMergeRowSpans(
+  table: EditorTableNode,
+): EditorTableNode {
   let changed = false;
   const rows = table.rows.map((row, rowIndex) => {
     let rowChanged = false;
@@ -604,7 +617,11 @@ function recomputeVerticalMergeRowSpans(table: EditorTableNode): EditorTableNode
       let rowSpan: number | undefined;
       if (cell.vMerge === "restart") {
         rowSpan = 1;
-        for (let nextRowIndex = rowIndex + 1; nextRowIndex < table.rows.length; nextRowIndex += 1) {
+        for (
+          let nextRowIndex = rowIndex + 1;
+          nextRowIndex < table.rows.length;
+          nextRowIndex += 1
+        ) {
           const nextCell = table.rows[nextRowIndex]!.cells[cellIndex];
           if (!nextCell || nextCell.vMerge !== "continue") break;
           rowSpan += 1;
@@ -862,14 +879,19 @@ function transformBookmarks(
   transforms: Map<string, ParagraphOffsetTransform>,
   relocations: Map<string, AnchorRelocation | null>,
 ): void {
-  if (!document.bookmarks || (transforms.size === 0 && relocations.size === 0)) return;
+  if (!document.bookmarks || (transforms.size === 0 && relocations.size === 0))
+    return;
   let changed = false;
   const items = { ...document.bookmarks.items };
   const order: string[] = [];
   for (const id of document.bookmarks.order) {
     const bookmark = document.bookmarks.items[id];
     if (!bookmark) continue;
-    const mappedStart = transformAnchor(bookmark.start, transforms, relocations);
+    const mappedStart = transformAnchor(
+      bookmark.start,
+      transforms,
+      relocations,
+    );
     const mappedEnd = transformAnchor(bookmark.end, transforms, relocations);
     const start = mappedStart ?? (bookmark.start ? mappedEnd : undefined);
     const end = mappedEnd ?? (bookmark.end ? mappedStart : undefined);
@@ -892,15 +914,24 @@ function transformComments(
   transforms: Map<string, ParagraphOffsetTransform>,
   relocations: Map<string, AnchorRelocation | null>,
 ): EditorComments | undefined {
-  if (!comments || (transforms.size === 0 && relocations.size === 0)) return comments;
+  if (!comments || (transforms.size === 0 && relocations.size === 0))
+    return comments;
   let changed = false;
   const items = { ...comments.items };
   const order: string[] = [];
   for (const id of comments.order) {
     const comment = comments.items[id];
     if (!comment) continue;
-    const mappedStart = transformAnchor<EditorCommentAnchor>(comment.start, transforms, relocations);
-    const mappedEnd = transformAnchor<EditorCommentAnchor>(comment.end, transforms, relocations);
+    const mappedStart = transformAnchor<EditorCommentAnchor>(
+      comment.start,
+      transforms,
+      relocations,
+    );
+    const mappedEnd = transformAnchor<EditorCommentAnchor>(
+      comment.end,
+      transforms,
+      relocations,
+    );
     const start = mappedStart ?? (comment.start ? mappedEnd : undefined);
     const end = mappedEnd ?? (comment.end ? mappedStart : undefined);
     if (!start && !end) {

@@ -97,7 +97,9 @@ function fallbackRevisionId(element: XmlElement): string {
   return `revision:${hash >>> 0}`;
 }
 
-function parseRevisionContainer(element: XmlElement): EditorRevision | undefined {
+function parseRevisionContainer(
+  element: XmlElement,
+): EditorRevision | undefined {
   const kind = element.localName;
   if (
     kind !== "ins" &&
@@ -471,7 +473,11 @@ export async function parseRunsContainer(
     }
 
     if (element.localName === "sdt") {
-      const sdtContent = getFirstChildByTagNameNS(element, WORD_NS, "sdtContent");
+      const sdtContent = getFirstChildByTagNameNS(
+        element,
+        WORD_NS,
+        "sdtContent",
+      );
       if (!sdtContent) {
         continue;
       }

@@ -70,7 +70,9 @@ function sectionPropertiesSnapshot(
 ): EditorSectionPropertiesSnapshot {
   return {
     pageSettings:
-      properties.pageSettings ?? fallbackPageSettings ?? DEFAULT_SECTION_PAGE_SETTINGS,
+      properties.pageSettings ??
+      fallbackPageSettings ??
+      DEFAULT_SECTION_PAGE_SETTINGS,
     ...(properties.pageBorder ? { pageBorder: properties.pageBorder } : {}),
     ...(properties.pageNumbering
       ? { pageNumbering: properties.pageNumbering }

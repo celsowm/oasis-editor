@@ -68,7 +68,7 @@ function parseStep(step: string): {
   localName: string;
   index: number;
 } | null {
-  const match = /^(([^:\[]+):)?([^\[]+?)(?:\[(\d+)\])?$/.exec(step);
+  const match = /^(([^:[]+):)?([^[]+?)(?:\[(\d+)\])?$/.exec(step);
   if (!match) return null;
   const index = match[4] ? Number.parseInt(match[4], 10) : 1;
   if (!Number.isFinite(index) || index < 1) return null;
@@ -108,10 +108,7 @@ function findStore(
 ): LocatedStore | null {
   const wantedStoreItemId = normalizeStoreItemId(storeItemId);
   for (const part of Object.values(sourcePackage.parts)) {
-    if (
-      part.kind !== "xml" ||
-      !/^customXml\/item\d+\.xml$/i.test(part.path)
-    ) {
+    if (part.kind !== "xml" || !/^customXml\/item\d+\.xml$/i.test(part.path)) {
       continue;
     }
     const propsRelationship = part.relationships?.find(

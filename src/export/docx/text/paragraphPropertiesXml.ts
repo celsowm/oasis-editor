@@ -124,15 +124,16 @@ function serializeParagraphDecorations(style: EditorParagraphStyle): string[] {
 function serializeParagraphPropertyRevision(
   revision: NonNullable<EditorParagraphStyle["propertyRevision"]>,
 ): string {
-  const { propertyRevision: _nestedRevision, styleId, ...previous } =
-    revision.previous;
+  const {
+    propertyRevision: _nestedRevision,
+    styleId,
+    ...previous
+  } = revision.previous;
   const serialized = serializeParagraphStyleXml(previous);
   const inner = serialized
     ? serialized.slice("<w:pPr>".length, -"</w:pPr>".length)
     : "";
-  const styleXml = styleId
-    ? `<w:pStyle w:val="${escapeXml(styleId)}"/>`
-    : "";
+  const styleXml = styleId ? `<w:pStyle w:val="${escapeXml(styleId)}"/>` : "";
   return (
     `<w:pPrChange ${serializeRevisionMetadataAttributes(revision)}>` +
     `<w:pPr>${styleXml}${inner}</w:pPr></w:pPrChange>`

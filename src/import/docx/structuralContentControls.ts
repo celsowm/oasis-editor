@@ -2,10 +2,7 @@ import { XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
 import type { EditorSdtBlockWrapper } from "@/core/model.js";
 import { createEditorNodeId } from "@/core/editorState.js";
 import { getMarkupCompatibleChildren } from "./markupCompatibility.js";
-import {
-  WORD_NS,
-  getFirstChildByTagNameNS,
-} from "./xmlHelpers.js";
+import { WORD_NS, getFirstChildByTagNameNS } from "./xmlHelpers.js";
 import { parseSdtPr } from "./contentControls.js";
 
 export interface SdtWrappedWordChild {
