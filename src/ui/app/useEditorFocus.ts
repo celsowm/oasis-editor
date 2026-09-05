@@ -5,6 +5,7 @@ export interface EditorFocusController {
   setFocused: Setter<boolean>;
   focusInput: () => void;
   focusInputAfterPointerSelection: () => void;
+  focusInputSync: () => void;
   viewportRef: HTMLDivElement | undefined;
   surfaceRef: HTMLDivElement | undefined;
   textareaRef: HTMLTextAreaElement | undefined;
@@ -44,11 +45,29 @@ export function createEditorFocusController(): EditorFocusController {
     });
   };
 
+  /**
+   * Focuses the textarea immediately, inside the caller's own call stack.
+   *
+   * Mobile browsers — iOS Safari in particular — only raise the on-screen
+   * keyboard when `focus()` happens synchronously during a user gesture. The
+   * deferred variants above are ignored there, so a tap would place the caret
+   * and leave the user with no keyboard. Call this from a touch handler.
+   */
+  const focusInputSync = (): void => {
+    setFocused(true);
+    textareaRef?.focus({ preventScroll: true });
+    if (textareaRef) {
+      textareaRef.selectionStart = textareaRef.value.length;
+      textareaRef.selectionEnd = textareaRef.value.length;
+    }
+  };
+
   return {
     focused,
     setFocused,
     focusInput,
     focusInputAfterPointerSelection,
+    focusInputSync,
     get viewportRef(): HTMLDivElement | undefined {
       return viewportRef;
     },

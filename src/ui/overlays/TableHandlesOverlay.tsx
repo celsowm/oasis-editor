@@ -7,9 +7,9 @@ export interface TableHandlesOverlayProps {
   box: () => SelectedTableBox | null;
   readOnly: boolean;
   /** Press on the top-left move handle (drag/reorder the whole table). */
-  onMoveStart: (event: MouseEvent & { currentTarget: HTMLElement }) => void;
+  onMoveStart: (event: PointerEvent & { currentTarget: HTMLElement }) => void;
   /** Press on the bottom-right corner handle (proportional resize). */
-  onResizeStart: (event: MouseEvent & { currentTarget: HTMLElement }) => void;
+  onResizeStart: (event: PointerEvent & { currentTarget: HTMLElement }) => void;
 }
 
 /**
@@ -38,9 +38,9 @@ export function TableHandlesOverlay(
             class="oasis-editor-table-move-handle"
             tabIndex={-1}
             type="button"
-            onMouseDown={(event): void => {
+            onPointerDown={(event): void => {
               props.onMoveStart(
-                event as MouseEvent & { currentTarget: HTMLElement },
+                event as PointerEvent & { currentTarget: HTMLElement },
               );
             }}
           />
@@ -49,9 +49,9 @@ export function TableHandlesOverlay(
             class="oasis-editor-table-resize-corner"
             tabIndex={-1}
             type="button"
-            onMouseDown={(event): void => {
+            onPointerDown={(event): void => {
               props.onResizeStart(
-                event as MouseEvent & { currentTarget: HTMLElement },
+                event as PointerEvent & { currentTarget: HTMLElement },
               );
             }}
           />

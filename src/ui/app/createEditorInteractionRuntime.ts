@@ -27,6 +27,8 @@ export interface EditorInteractionRuntimeDeps {
   cloneState: (state: EditorState) => EditorState;
   focusInput: () => void;
   focusInputAfterPointerSelection: () => void;
+  /** Synchronous focus, required for touch to raise the on-screen keyboard. */
+  focusInputSync: () => void;
   surfaceRef: () => HTMLDivElement | undefined;
   viewportRef: () => HTMLDivElement | undefined;
   zoomFactor: () => number;
@@ -78,6 +80,7 @@ function createEditorInteractionRuntimeImpl(
     cloneState,
     focusInput,
     focusInputAfterPointerSelection,
+    focusInputSync,
     surfaceRef,
     viewportRef,
     zoomFactor,
@@ -185,6 +188,7 @@ function createEditorInteractionRuntimeImpl(
     logger,
     focusInput,
     focusInputAfterPointerSelection,
+    focusInputSync,
     clearPreferredColumn,
     resetTransactionGrouping,
     surfaceRef,
@@ -206,7 +210,7 @@ function createEditorInteractionRuntimeImpl(
     openEquationDialog: deps.openEquationDialog,
   });
 
-  const onEditorMouseDown = (event: MouseEvent): void => {
+  const onEditorPointerDown = (event: PointerEvent): void => {
     // Preserve the current selection on right-click so the user can copy/cut
     // from the selected text via the context menu.
     if (event.button !== 0) {
@@ -228,7 +232,7 @@ function createEditorInteractionRuntimeImpl(
     imageOps,
     textBoxOps,
     styleController,
-    onEditorMouseDown,
+    onEditorPointerDown,
     tableResize: wiring.tableResize,
     tableCornerResize: wiring.tableCornerResize,
     tableDrag: wiring.tableDrag,

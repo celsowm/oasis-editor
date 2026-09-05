@@ -1,4 +1,5 @@
 import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
+import { createPointerGesture } from "./pointerGesture.js";
 import { createSignal } from "solid-js";
 import { setSelection } from "@/core/commands/selection.js";
 import { moveOrCopySelectionToPosition } from "@/core/commands/text.js";
@@ -116,6 +117,8 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
     document.head.appendChild(cursorStyleEl);
   };
 
+  const gesture = createPointerGesture();
+
   const stopDrag = (): void => {
     deps.logger?.info("text-drag:stop", {
       dragging: dragging(),
@@ -132,11 +135,14 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
     setPointerPos(null);
     setCaretViewport(null);
     hideCursor();
-    window.removeEventListener("mousemove", handleWindowMouseMove);
-    window.removeEventListener("mouseup", handleWindowMouseUp);
+    gesture.release();
+    window.removeEventListener("pointermove", handleWindowMouseMove);
+    window.removeEventListener("pointerup", handleWindowMouseUp);
+    window.removeEventListener("pointercancel", handleWindowMouseUp);
   };
 
-  const handleWindowMouseMove = (event: MouseEvent): void => {
+  const handleWindowMouseMove = (event: PointerEvent): void => {
+    if (!gesture.owns(event)) return;
     if (!pendingStart) {
       return;
     }
@@ -192,7 +198,8 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
     setCaretViewport(hit.caretViewport ?? null);
   };
 
-  const handleWindowMouseUp = (event: MouseEvent): void => {
+  const handleWindowMouseUp = (event: PointerEvent): void => {
+    if (!gesture.owns(event)) return;
     deps.logger?.info("text-drag:mouseup", {
       x: event.clientX,
       y: event.clientY,
@@ -247,7 +254,7 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
   };
 
   const tryStartTextDrag = (
-    event: MouseEvent,
+    event: PointerEvent,
     hit: SurfaceHit | null,
   ): boolean => {
     if (deps.isReadOnly() || !hit?.resolvedFromParagraph) {
@@ -284,8 +291,10 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
     setDropTargetPos(null);
     setCaretViewport(hit.caretViewport ?? null);
     setDragging(false);
-    window.addEventListener("mousemove", handleWindowMouseMove);
-    window.addEventListener("mouseup", handleWindowMouseUp);
+    gesture.claim(event);
+    window.addEventListener("pointermove", handleWindowMouseMove);
+    window.addEventListener("pointerup", handleWindowMouseUp);
+    window.addEventListener("pointercancel", handleWindowMouseUp);
     return true;
   };
 

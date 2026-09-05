@@ -96,9 +96,9 @@ export function CanvasEditorSurface(props: EditorSurfaceProps): JSX.Element {
               index={index}
               state={props.state()}
               paintGeneration={layoutMetricsEpoch()}
-              onSurfaceMouseDown={props.onSurfaceMouseDown}
+              onSurfacePointerDown={props.onSurfacePointerDown}
               onSurfaceClick={props.onSurfaceClick}
-              onSurfaceMouseMove={props.onSurfaceMouseMove}
+              onSurfacePointerMove={props.onSurfacePointerMove}
               onSurfaceDblClick={props.onSurfaceDblClick}
               onRevisionMouseEnter={props.onRevisionMouseEnter}
               onRevisionMouseLeave={props.onRevisionMouseLeave}
@@ -115,9 +115,9 @@ function CanvasPage(props: {
   index: number;
   state: EditorState;
   paintGeneration: number;
-  onSurfaceMouseDown: (event: MouseEvent) => void;
+  onSurfacePointerDown: (event: PointerEvent) => void;
   onSurfaceClick?: (event: MouseEvent) => void;
-  onSurfaceMouseMove?: (event: MouseEvent) => void;
+  onSurfacePointerMove?: (event: PointerEvent) => void;
   onSurfaceDblClick: (event: MouseEvent) => void;
   onRevisionMouseEnter: (revisionId: string, event: MouseEvent) => void;
   onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;
@@ -242,9 +242,9 @@ function CanvasPage(props: {
         width: `${props.page.pageSettings.width}px`,
         "min-height": `${props.page.pageSettings.height}px`,
       }}
-      onMouseDown={props.onSurfaceMouseDown}
+      onPointerDown={props.onSurfacePointerDown}
       onClick={props.onSurfaceClick}
-      onMouseMove={props.onSurfaceMouseMove}
+      onPointerMove={props.onSurfacePointerMove}
       onDblClick={props.onSurfaceDblClick}
     >
       <canvas ref={canvasRef} />
@@ -268,7 +268,7 @@ function CanvasPage(props: {
             onMouseLeave={(event): void | undefined =>
               props.onRevisionMouseLeave?.(revision.id, event)
             }
-            onMouseDown={props.onSurfaceMouseDown}
+            onPointerDown={props.onSurfacePointerDown}
           />
         )}
       </For>

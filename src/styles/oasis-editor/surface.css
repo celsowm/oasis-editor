@@ -449,6 +449,8 @@
   width: 14px;
   height: 14px;
   padding: 0;
+  /* Dragging a handle is unambiguous: never let the browser pan instead. */
+  touch-action: none;
   border: 2px solid var(--oasis-paper);
   border-radius: 999px;
   background: var(--oasis-caret-color);
@@ -510,6 +512,7 @@
   width: 14px;
   height: 14px;
   padding: 0;
+  touch-action: none;
   top: -28px;
   left: calc(50% - 7px);
   border: 2px solid var(--oasis-paper);

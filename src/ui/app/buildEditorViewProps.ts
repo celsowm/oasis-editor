@@ -79,18 +79,18 @@ export interface EditorViewSurfaceInput {
   tableDrag: ReturnType<typeof createEditorTableDrag>;
   revisionController: ReturnType<typeof createEditorRevisionController>;
   handleDrop: OasisEditorEditorSurfaceHandlers["onDrop"];
-  onEditorMouseDown: OasisEditorEditorSurfaceHandlers["onEditorMouseDown"];
-  handleImageMouseDown: OasisEditorEditorSurfaceHandlers["onImageMouseDown"];
-  handleImageResizeHandleMouseDown: OasisEditorEditorSurfaceHandlers["onImageResizeHandleMouseDown"];
-  handleTextBoxResizeHandleMouseDown: OasisEditorEditorSurfaceHandlers["onTextBoxResizeHandleMouseDown"];
-  handleImageRotateHandleMouseDown: OasisEditorEditorSurfaceHandlers["onImageRotateHandleMouseDown"];
-  handleImageCropHandleMouseDown: NonNullable<
-    OasisEditorEditorSurfaceHandlers["onImageCropHandleMouseDown"]
+  onEditorPointerDown: OasisEditorEditorSurfaceHandlers["onEditorPointerDown"];
+  handleImagePointerDown: OasisEditorEditorSurfaceHandlers["onImagePointerDown"];
+  handleImageResizeHandlePointerDown: OasisEditorEditorSurfaceHandlers["onImageResizeHandlePointerDown"];
+  handleTextBoxResizeHandlePointerDown: OasisEditorEditorSurfaceHandlers["onTextBoxResizeHandlePointerDown"];
+  handleImageRotateHandlePointerDown: OasisEditorEditorSurfaceHandlers["onImageRotateHandlePointerDown"];
+  handleImageCropHandlePointerDown: NonNullable<
+    OasisEditorEditorSurfaceHandlers["onImageCropHandlePointerDown"]
   >;
-  handleImageCropBodyMouseDown: NonNullable<
-    OasisEditorEditorSurfaceHandlers["onImageCropBodyMouseDown"]
+  handleImageCropBodyPointerDown: NonNullable<
+    OasisEditorEditorSurfaceHandlers["onImageCropBodyPointerDown"]
   >;
-  handleTextBoxRotateHandleMouseDown: OasisEditorEditorSurfaceHandlers["onTextBoxRotateHandleMouseDown"];
+  handleTextBoxRotateHandlePointerDown: OasisEditorEditorSurfaceHandlers["onTextBoxRotateHandlePointerDown"];
   handleEditorContextMenu: (event: MouseEvent) => void;
 }
 
@@ -196,22 +196,24 @@ export function buildEditorViewProps(
   const surfaceHandlers: OasisEditorEditorSurfaceHandlers = {
     onDragOver: (event): void => event.preventDefault(),
     onDrop: surface.handleDrop,
-    onEditorMouseDown: surface.onEditorMouseDown,
-    onSurfaceMouseDown: surface.surfaceEvents.handleSurfaceMouseDown,
+    onEditorPointerDown: surface.onEditorPointerDown,
+    onSurfacePointerDown: surface.surfaceEvents.handleSurfacePointerDown,
     onSurfaceClick: surface.surfaceEvents.handleSurfaceClick,
-    onSurfaceMouseMove: surface.tableResize.handleMouseMove,
+    onSurfacePointerMove: surface.tableResize.handlePointerMove,
     onSurfaceDblClick: surface.surfaceEvents.handleSurfaceDblClick,
-    onParagraphMouseDown: surface.surfaceEvents.handleParagraphMouseDown,
-    onImageMouseDown: surface.handleImageMouseDown,
-    onImageResizeHandleMouseDown: surface.handleImageResizeHandleMouseDown,
-    onTextBoxResizeHandleMouseDown: surface.handleTextBoxResizeHandleMouseDown,
-    onImageRotateHandleMouseDown: surface.handleImageRotateHandleMouseDown,
-    onImageCropHandleMouseDown: surface.handleImageCropHandleMouseDown,
-    onImageCropBodyMouseDown: surface.handleImageCropBodyMouseDown,
-    onTextBoxRotateHandleMouseDown: surface.handleTextBoxRotateHandleMouseDown,
-    onTableDragHandleMouseDown: surface.tableDrag.handleMouseDown,
-    onTableCornerResizeHandleMouseDown:
-      surface.tableCornerResize.handleMouseDown,
+    onParagraphPointerDown: surface.surfaceEvents.handleParagraphPointerDown,
+    onImagePointerDown: surface.handleImagePointerDown,
+    onImageResizeHandlePointerDown: surface.handleImageResizeHandlePointerDown,
+    onTextBoxResizeHandlePointerDown:
+      surface.handleTextBoxResizeHandlePointerDown,
+    onImageRotateHandlePointerDown: surface.handleImageRotateHandlePointerDown,
+    onImageCropHandlePointerDown: surface.handleImageCropHandlePointerDown,
+    onImageCropBodyPointerDown: surface.handleImageCropBodyPointerDown,
+    onTextBoxRotateHandlePointerDown:
+      surface.handleTextBoxRotateHandlePointerDown,
+    onTableDragHandlePointerDown: surface.tableDrag.handlePointerDown,
+    onTableCornerResizeHandlePointerDown:
+      surface.tableCornerResize.handlePointerDown,
     onRevisionMouseEnter: surface.revisionController.handleRevisionMouseEnter,
     onRevisionMouseLeave: surface.revisionController.handleRevisionMouseLeave,
     onEditorContextMenu: (event): void =>

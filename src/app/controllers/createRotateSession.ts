@@ -3,6 +3,7 @@ import {
   paragraphOffsetToPosition,
   type EditorState,
 } from "@/core/model.js";
+import { createPointerGesture } from "./pointerGesture.js";
 import {
   appendEditorHistoryEntry,
   type EditorHistoryState,
@@ -57,7 +58,7 @@ export function createRotateSession(
   start: (
     paragraphId: string,
     paragraphOffset: number,
-    event: MouseEvent & { currentTarget: HTMLElement },
+    event: PointerEvent & { currentTarget: HTMLElement },
     initialState: EditorState,
   ) => void;
   stop: () => void;
@@ -92,7 +93,10 @@ export function createRotateSession(
     },
   });
 
-  const handleMouseMove = (event: MouseEvent): void => {
+  const gesture = createPointerGesture();
+
+  const handleMouseMove = (event: PointerEvent): void => {
+    if (!gesture.owns(event)) return;
     const rotate = active;
     if (!rotate) {
       return;
@@ -148,14 +152,16 @@ export function createRotateSession(
 
   const stop = (): void => {
     active = null;
-    window.removeEventListener("mousemove", handleMouseMove);
-    window.removeEventListener("mouseup", handleMouseUp);
+    gesture.release();
+    window.removeEventListener("pointermove", handleMouseMove);
+    window.removeEventListener("pointerup", handleMouseUp);
+    window.removeEventListener("pointercancel", handleMouseUp);
   };
 
   const start = (
     paragraphId: string,
     paragraphOffset: number,
-    event: MouseEvent & { currentTarget: HTMLElement },
+    event: PointerEvent & { currentTarget: HTMLElement },
     initialState: EditorState,
   ): void => {
     const overlay = event.currentTarget.closest(
@@ -175,8 +181,10 @@ export function createRotateSession(
       centerY: rect.top + rect.height / 2,
       initialState: deps.cloneState(initialState),
     };
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    gesture.claim(event);
+    window.addEventListener("pointermove", handleMouseMove);
+    window.addEventListener("pointerup", handleMouseUp);
+    window.addEventListener("pointercancel", handleMouseUp);
   };
 
   return { start, stop };

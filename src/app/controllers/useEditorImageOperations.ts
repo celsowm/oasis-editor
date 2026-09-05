@@ -1,4 +1,5 @@
 import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
+import { createPointerGesture } from "./pointerGesture.js";
 import { createEffect, createSignal } from "solid-js";
 import {
   getDocumentParagraphs,
@@ -187,6 +188,8 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
     document.body.style.cursor = "";
   };
 
+  const gesture = createPointerGesture();
+
   const clearImagePointerTracking = (): void => {
     hideImageDragCursor();
     pendingImagePointer = null;
@@ -194,8 +197,10 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
     setDragging(false);
     setDraggedImageInfo(null);
     setDropTargetPos(null);
-    window.removeEventListener("mousemove", handleImageDragMouseMove);
-    window.removeEventListener("mouseup", handleImageDragMouseUp);
+    gesture.release();
+    window.removeEventListener("pointermove", handleImageDragMouseMove);
+    window.removeEventListener("pointerup", handleImageDragMouseUp);
+    window.removeEventListener("pointercancel", handleImageDragMouseUp);
   };
 
   const stopImageDrag = (): void => {
@@ -253,7 +258,8 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
     zoomFactor: deps.zoomFactor,
   });
 
-  const handleImageDragMouseMove = (event: MouseEvent): void => {
+  const handleImageDragMouseMove = (event: PointerEvent): void => {
+    if (!gesture.owns(event)) return;
     let dragState = activeImageDrag;
     if (!dragState) {
       const pendingState = pendingImagePointer;
@@ -292,7 +298,8 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
     );
   };
 
-  const handleImageDragMouseUp = (event: MouseEvent): void => {
+  const handleImageDragMouseUp = (event: PointerEvent): void => {
+    if (!gesture.owns(event)) return;
     const pendingState = pendingImagePointer;
     const dragState = activeImageDrag;
     if (!dragState && !pendingState) {
@@ -328,7 +335,7 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
   const startImageDrag = (
     paragraphId: string,
     paragraphOffset: number,
-    event: MouseEvent,
+    event: PointerEvent,
     pointerBounds?: ImagePointerBounds,
   ): void => {
     const currentTarget = event.currentTarget as HTMLElement | null;
@@ -362,14 +369,16 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
     setDragging(false);
     setDraggedImageInfo(null);
     setDropTargetPos(null);
-    window.addEventListener("mousemove", handleImageDragMouseMove);
-    window.addEventListener("mouseup", handleImageDragMouseUp);
+    gesture.claim(event);
+    window.addEventListener("pointermove", handleImageDragMouseMove);
+    window.addEventListener("pointerup", handleImageDragMouseUp);
+    window.addEventListener("pointercancel", handleImageDragMouseUp);
   };
 
-  const handleImageMouseDown = (
+  const handleImagePointerDown = (
     paragraphId: string,
     paragraphOffset: number,
-    event: MouseEvent & { currentTarget: HTMLElement },
+    event: PointerEvent & { currentTarget: HTMLElement },
   ): void => {
     event.preventDefault();
     event.stopPropagation();
@@ -390,11 +399,11 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
     deps.focusInputAfterPointerSelection();
   };
 
-  const handleImageResizeHandleMouseDown = (
+  const handleImageResizeHandlePointerDown = (
     paragraphId: string,
     paragraphOffset: number,
     direction: ResizeHandleDirection,
-    event: MouseEvent & { currentTarget: HTMLElement },
+    event: PointerEvent & { currentTarget: HTMLElement },
   ): void => {
     event.preventDefault();
     event.stopPropagation();
@@ -407,21 +416,21 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
     );
   };
 
-  const handleImageRotateHandleMouseDown = (
+  const handleImageRotateHandlePointerDown = (
     paragraphId: string,
     paragraphOffset: number,
-    event: MouseEvent & { currentTarget: HTMLElement },
+    event: PointerEvent & { currentTarget: HTMLElement },
   ): void => {
     event.preventDefault();
     event.stopPropagation();
     imageRotateSession.start(paragraphId, paragraphOffset, event, deps.state);
   };
 
-  const handleImageCropHandleMouseDown = (
+  const handleImageCropHandlePointerDown = (
     paragraphId: string,
     paragraphOffset: number,
     direction: ResizeHandleDirection,
-    event: MouseEvent & { currentTarget: HTMLElement },
+    event: PointerEvent & { currentTarget: HTMLElement },
   ): void => {
     event.preventDefault();
     event.stopPropagation();
@@ -434,10 +443,10 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
     );
   };
 
-  const handleImageCropBodyMouseDown = (
+  const handleImageCropBodyPointerDown = (
     paragraphId: string,
     paragraphOffset: number,
-    event: MouseEvent & { currentTarget: HTMLElement },
+    event: PointerEvent & { currentTarget: HTMLElement },
   ): void => {
     event.preventDefault();
     event.stopPropagation();
@@ -458,10 +467,10 @@ function createEditorImageOperationsImpl(deps: EditorImageOperationsDeps) {
     stopImageResize: imageResizeSession.stop,
     stopImageRotate: imageRotateSession.stop,
     stopImageCrop: imageCropSession.stop,
-    handleImageMouseDown,
-    handleImageResizeHandleMouseDown,
-    handleImageRotateHandleMouseDown,
-    handleImageCropHandleMouseDown,
-    handleImageCropBodyMouseDown,
+    handleImagePointerDown,
+    handleImageResizeHandlePointerDown,
+    handleImageRotateHandlePointerDown,
+    handleImageCropHandlePointerDown,
+    handleImageCropBodyPointerDown,
   };
 }

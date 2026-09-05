@@ -29,6 +29,28 @@ const REUSE_MOUSE_DOWN_HIT_MAX_AGE_MS = 600;
 const REUSE_MOUSE_DOWN_HIT_MAX_DISTANCE_PX = 8;
 
 /**
+ * A finger is far less precise than a mouse, and a touch that lands on the same
+ * spot still wanders by several pixels. Every "did the pointer stay put?" test
+ * therefore uses a wider tolerance for touch than for mouse/pen.
+ */
+const TOUCH_SLOP_PX = 20;
+
+/**
+ * How long a finger must rest without moving before the gesture is read as a
+ * long-press (select the word) rather than as a scroll.
+ */
+const LONG_PRESS_MS = 500;
+
+/** A touch that lifts within this window, without wandering, counts as a tap. */
+const TAP_MAX_DURATION_MS = 500;
+
+const isTouch = (event: PointerEvent): boolean => event.pointerType === "touch";
+
+/** Distance tolerance for "the pointer did not move", widened for fingers. */
+const slopFor = (event: PointerEvent, mouseSlop: number): number =>
+  isTouch(event) ? TOUCH_SLOP_PX : mouseSlop;
+
+/**
  * Resolves the first navigable paragraph in a header/footer zone, creating a
  * boundary paragraph (and the containing block array) when the zone is empty.
  */
@@ -54,14 +76,14 @@ function resolveZoneFirstParagraph(
 export interface UseEditorSurfaceEventsProps {
   state: () => EditorState;
   applyState: (newState: EditorState) => void;
-  tableResize: { handleMouseDown: (event: MouseEvent) => boolean };
+  tableResize: { handlePointerDown: (event: PointerEvent) => boolean };
   imageOps: {
     stopImageDrag: () => void;
     stopImageResize: () => void;
     startImageDrag: (
       paragraphId: string,
       paragraphOffset: number,
-      event: MouseEvent,
+      event: PointerEvent,
       pointerBounds?: {
         left: number;
         top: number;
@@ -74,6 +96,8 @@ export interface UseEditorSurfaceEventsProps {
   clearPreferredColumn: () => void;
   resetTransactionGrouping: () => void;
   focusInputAfterPointerSelection: () => void;
+  /** Synchronous focus, required for touch to raise the on-screen keyboard. */
+  focusInputSync: () => void;
   resolveSurfaceHitAtPoint: (
     clientX: number,
     clientY: number,
@@ -84,7 +108,7 @@ export interface UseEditorSurfaceEventsProps {
     id: string,
   ) => EditorParagraphNode | undefined;
   textDrag?: {
-    tryStartTextDrag: (event: MouseEvent, hit: SurfaceHit | null) => boolean;
+    tryStartTextDrag: (event: PointerEvent, hit: SurfaceHit | null) => boolean;
   };
   logger: {
     debug: (msg: string) => void;
@@ -138,6 +162,30 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
   let lastMouseDownAt = 0;
   let lastMouseDownX = 0;
   let lastMouseDownY = 0;
+
+  /**
+   * The pointer that owns the current gesture. Secondary pointers (a second
+   * finger starting a pinch-zoom) must not steer a drag that another pointer
+   * began, so every move/up handler filters on this id.
+   */
+  let activePointerId: number | null = null;
+
+  /**
+   * A touch that has landed but is not yet committed to being a tap, a scroll
+   * or a long-press. Mouse gestures never populate this: they dispatch straight
+   * from pointerdown, exactly as they did before pointer events.
+   */
+  let pendingTouch: {
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    startedAt: number;
+    hit: SurfaceHit | null;
+    clickDetail: number;
+    longPressHandle: ReturnType<typeof setTimeout> | null;
+    /** Set once the long-press fired and the word under the finger is selected. */
+    longPressFired: boolean;
+  } | null = null;
 
   const scheduleFrame = (callback: () => void): number => {
     if (
@@ -270,15 +318,37 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
     );
   };
 
+  const cancelPendingTouch = (): void => {
+    if (pendingTouch?.longPressHandle) {
+      clearTimeout(pendingTouch.longPressHandle);
+    }
+    pendingTouch = null;
+  };
+
   const stopDragging = (): void => {
     dragAnchor = null;
     dragPendingPoint = null;
+    activePointerId = null;
+    cancelPendingTouch();
     if (dragFrameHandle !== null) {
       cancelFrame(dragFrameHandle);
       dragFrameHandle = null;
     }
-    window.removeEventListener("mousemove", handleWindowMouseMove);
-    window.removeEventListener("mouseup", handleWindowMouseUp);
+    window.removeEventListener("pointermove", handleWindowPointerMove);
+    window.removeEventListener("pointerup", handleWindowPointerUp);
+    window.removeEventListener("pointercancel", handleWindowPointerCancel);
+  };
+
+  /**
+   * The browser fires `pointercancel` when it takes the gesture over for its own
+   * scrolling. Any selection already applied stays: a long-press that selected a
+   * word keeps that word selected even if the extend-drag is cut short.
+   */
+  const startTrackingPointer = (pointerId: number): void => {
+    activePointerId = pointerId;
+    window.addEventListener("pointermove", handleWindowPointerMove);
+    window.addEventListener("pointerup", handleWindowPointerUp);
+    window.addEventListener("pointercancel", handleWindowPointerCancel);
   };
 
   const processDragFrame = (): void => {
@@ -307,7 +377,24 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
     logSelection("selection:drag");
   };
 
-  const handleWindowMouseMove = (event: MouseEvent): void => {
+  const handleWindowPointerMove = (event: PointerEvent): void => {
+    if (activePointerId !== null && event.pointerId !== activePointerId) {
+      return;
+    }
+
+    // A finger that wanders before the long-press fires is scrolling, not
+    // selecting. Drop the pending tap and let the browser have the gesture.
+    if (pendingTouch && !pendingTouch.longPressFired) {
+      const moved = Math.hypot(
+        event.clientX - pendingTouch.clientX,
+        event.clientY - pendingTouch.clientY,
+      );
+      if (moved > TOUCH_SLOP_PX) {
+        stopDragging();
+      }
+      return;
+    }
+
     if (!dragAnchor) return;
     dragPendingPoint = { clientX: event.clientX, clientY: event.clientY };
     if (dragFrameHandle === null) {
@@ -315,10 +402,42 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
     }
   };
 
-  const handleWindowMouseUp = (): void => {
+  const handleWindowPointerUp = (event: PointerEvent): void => {
+    if (activePointerId !== null && event.pointerId !== activePointerId) {
+      return;
+    }
+
+    // A touch that lifts before the long-press fired, without wandering, is a
+    // tap: only now do we know it was not a scroll, so dispatch it here.
+    if (pendingTouch && !pendingTouch.longPressFired) {
+      const touch = pendingTouch;
+      const moved = Math.hypot(
+        event.clientX - touch.clientX,
+        event.clientY - touch.clientY,
+      );
+      const isTap =
+        moved <= TOUCH_SLOP_PX &&
+        Date.now() - touch.startedAt <= TAP_MAX_DURATION_MS;
+      cancelPendingTouch();
+      stopDragging();
+      if (isTap) {
+        commitTouchTap(touch.hit, touch.clickDetail, event);
+      }
+      return;
+    }
+
     logSelection("selection:end");
     stopDragging();
     deps.focusInputAfterPointerSelection();
+  };
+
+  const handleWindowPointerCancel = (event: PointerEvent): void => {
+    if (activePointerId !== null && event.pointerId !== activePointerId) {
+      return;
+    }
+    // The browser claimed the gesture (it is scrolling). Whatever selection was
+    // already applied stands; we simply stop tracking.
+    stopDragging();
   };
 
   // Named handlers for each dispatch branch of handleSurfaceMouseDown.
@@ -387,7 +506,7 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
   const handleImageDown = (
     state: EditorState,
     hit: SurfaceHit,
-    event: MouseEvent,
+    event: PointerEvent,
   ): void => {
     const imageParagraph = deps.getParagraphById(
       state.document,
@@ -410,21 +529,30 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
       start,
     );
     stopDragging();
-    deps.imageOps.startImageDrag(
-      hit.image!.paragraphId,
-      hit.image!.startOffset,
-      event,
-      {
-        left: hit.image!.left,
-        top: hit.image!.top,
-        width: hit.image!.width,
-        height: hit.image!.height,
-      },
-    );
+    // Touch selects the image but does not begin moving it: a finger dragging
+    // across the page is scrolling, and the move gesture belongs to the drag
+    // handle. Mouse and pen keep the direct-manipulation drag.
+    if (!isTouch(event)) {
+      deps.imageOps.startImageDrag(
+        hit.image!.paragraphId,
+        hit.image!.startOffset,
+        event,
+        {
+          left: hit.image!.left,
+          top: hit.image!.top,
+          width: hit.image!.width,
+          height: hit.image!.height,
+        },
+      );
+    }
     deps.focusInputAfterPointerSelection();
   };
 
-  const handleShiftClickDown = (state: EditorState, hit: SurfaceHit): void => {
+  const handleShiftClickDown = (
+    state: EditorState,
+    hit: SurfaceHit,
+    pointerId: number,
+  ): void => {
     dragAnchor = state.selection.anchor;
     applyWithZone(
       state,
@@ -435,8 +563,7 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
       }),
       hit.position,
     );
-    window.addEventListener("mousemove", handleWindowMouseMove);
-    window.addEventListener("mouseup", handleWindowMouseUp);
+    startTrackingPointer(pointerId);
     deps.focusInputAfterPointerSelection();
   };
 
@@ -503,50 +630,29 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
     deps.focusInputAfterPointerSelection();
   };
 
-  const handleSurfaceMouseDown = (event: MouseEvent): void => {
-    // Non-left mouse buttons (e.g. right-click for context menu) must not
-    // alter the selection or steal focus mid-drag.
-    if (event.button !== 0) {
-      return;
-    }
-    const now = Date.now();
-    const distance = Math.hypot(
-      event.clientX - lastClickX,
-      event.clientY - lastClickY,
-    );
-    const withinStreakWindow =
-      now - lastClickAt <= 450 &&
-      distance <= 6 &&
-      event.button === lastClickButton;
-    clickStreak = withinStreakWindow ? clickStreak + 1 : 1;
-    lastClickAt = now;
-    lastClickX = event.clientX;
-    lastClickY = event.clientY;
-    lastClickButton = event.button;
-    const clickDetail = Math.max(event.detail, clickStreak);
-
-    const state = deps.state();
-    deps.clearPendingCaretTextStyle();
-    if (deps.tableResize.handleMouseDown(event)) return;
-
-    event.preventDefault();
+  /**
+   * Applies a resolved surface hit. Mouse and pen reach this straight from
+   * `pointerdown`; touch reaches it from `pointerup`, once the gesture has been
+   * confirmed to be a tap rather than a scroll.
+   */
+  const dispatchSurfaceDown = (
+    state: EditorState,
+    hit: SurfaceHit | null,
+    clickDetail: number,
+    event: PointerEvent,
+  ): void => {
     deps.imageOps.stopImageDrag();
     deps.imageOps.stopImageResize();
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
 
-    const hit = deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY, {
-      pierce: event.altKey,
-    });
-    lastMouseDownHit = hit;
-    lastMouseDownAt = now;
-    lastMouseDownX = event.clientX;
-    lastMouseDownY = event.clientY;
     if (!hit) {
       deps.focusInputAfterPointerSelection();
       return;
     }
-    if (deps.textDrag?.tryStartTextDrag(event, hit)) {
+    // Dragging selected text to move it is a mouse/pen gesture: with a finger
+    // the same motion is a scroll, and there is no modifier to tell them apart.
+    if (!isTouch(event) && deps.textDrag?.tryStartTextDrag(event, hit)) {
       dragAnchor = null;
       stopDragging();
       deps.focusInputAfterPointerSelection();
@@ -569,7 +675,7 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
       return;
     }
     if (event.shiftKey && hit.resolvedFromParagraph) {
-      handleShiftClickDown(state, hit);
+      handleShiftClickDown(state, hit, event.pointerId);
       return;
     }
     if (clickDetail >= 3 && paragraph) {
@@ -603,9 +709,121 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
       },
       hit.position,
     );
-    window.addEventListener("mousemove", handleWindowMouseMove);
-    window.addEventListener("mouseup", handleWindowMouseUp);
+    // Only mouse and pen extend the selection by dragging from the caret. A
+    // finger that keeps moving is scrolling; touch extends via long-press.
+    if (!isTouch(event)) {
+      startTrackingPointer(event.pointerId);
+    }
     deps.focusInputAfterPointerSelection();
+  };
+
+  /** A touch that lifted in place: place the caret and raise the keyboard. */
+  const commitTouchTap = (
+    hit: SurfaceHit | null,
+    clickDetail: number,
+    event: PointerEvent,
+  ): void => {
+    dispatchSurfaceDown(deps.state(), hit, clickDetail, event);
+    // iOS Safari opens the on-screen keyboard only when `focus()` runs inside
+    // the user gesture. The rAF-deferred focus used for mouse is ignored there,
+    // so the caret would land with no keyboard.
+    deps.focusInputSync();
+  };
+
+  /**
+   * The finger has rested in place long enough to mean "select", not "scroll":
+   * select the word underneath and let further movement extend from it.
+   */
+  const beginTouchLongPress = (): void => {
+    const touch = pendingTouch;
+    if (!touch) return;
+    touch.longPressHandle = null;
+    touch.longPressFired = true;
+
+    const hit = touch.hit;
+    if (!hit?.resolvedFromParagraph) return;
+    const state = deps.state();
+    const paragraph = deps.getParagraphById(state.document, hit.paragraphId);
+    if (!paragraph) return;
+
+    const word = resolveWordSelection(
+      getParagraphText(paragraph),
+      hit.paragraphOffset,
+    );
+    const startPos = paragraphOffsetToPosition(paragraph, word.start);
+    const endPos = paragraphOffsetToPosition(paragraph, word.end);
+    applyWithZone(
+      state,
+      hit.zone,
+      setSelection(state, { anchor: startPos, focus: endPos }),
+      startPos,
+    );
+    dragAnchor = startPos;
+    deps.focusInputSync();
+  };
+
+  const handleSurfacePointerDown = (event: PointerEvent): void => {
+    // Non-primary buttons (e.g. right-click for the context menu) must not
+    // alter the selection or steal focus mid-drag.
+    if (event.button !== 0) {
+      return;
+    }
+    const now = Date.now();
+    const distance = Math.hypot(
+      event.clientX - lastClickX,
+      event.clientY - lastClickY,
+    );
+    const withinStreakWindow =
+      now - lastClickAt <= 450 &&
+      distance <= slopFor(event, 6) &&
+      event.button === lastClickButton;
+    clickStreak = withinStreakWindow ? clickStreak + 1 : 1;
+    lastClickAt = now;
+    lastClickX = event.clientX;
+    lastClickY = event.clientY;
+    lastClickButton = event.button;
+    // Touch reports `detail` as 0 or 1 regardless of tap count, so the streak
+    // we track ourselves is what makes double/triple tap work there.
+    const clickDetail = Math.max(event.detail, clickStreak);
+
+    const state = deps.state();
+    deps.clearPendingCaretTextStyle();
+    // Dragging a table edge is unambiguous on every pointer type, so it claims
+    // the gesture here and suppresses the browser's own panning.
+    if (deps.tableResize.handlePointerDown(event)) {
+      event.preventDefault();
+      return;
+    }
+
+    const hit = deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY, {
+      pierce: event.altKey,
+    });
+    lastMouseDownHit = hit;
+    lastMouseDownAt = now;
+    lastMouseDownX = event.clientX;
+    lastMouseDownY = event.clientY;
+
+    if (isTouch(event)) {
+      // Deliberately no `preventDefault`: the page must stay scrollable under
+      // the finger. Nothing is applied to the document yet — `pointerup`
+      // decides tap versus scroll, and the timer below decides long-press.
+      cancelPendingTouch();
+      pendingTouch = {
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        startedAt: now,
+        hit,
+        clickDetail,
+        longPressHandle: setTimeout(beginTouchLongPress, LONG_PRESS_MS),
+        longPressFired: false,
+      };
+      startTrackingPointer(event.pointerId);
+      return;
+    }
+
+    event.preventDefault();
+    dispatchSurfaceDown(state, hit, clickDetail, event);
   };
 
   const handleSurfaceDblClick = (event: MouseEvent): void => {
@@ -652,22 +870,26 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
     deps.focusInputAfterPointerSelection();
   };
 
-  const handleParagraphMouseDown = (
+  const handleParagraphPointerDown = (
     _paragraphId: string,
-    event: MouseEvent & { currentTarget: HTMLParagraphElement },
+    event: PointerEvent & { currentTarget: HTMLParagraphElement },
   ): void => {
     if (event.button !== 0) {
       return;
     }
-    event.preventDefault();
-    handleSurfaceMouseDown(event);
+    // Touch must keep its default action so the page can still scroll; the
+    // pointerdown handler decides what the gesture means.
+    if (!isTouch(event)) {
+      event.preventDefault();
+    }
+    handleSurfacePointerDown(event);
   };
 
   return {
-    handleSurfaceMouseDown,
+    handleSurfacePointerDown,
     handleSurfaceClick,
     handleSurfaceDblClick,
-    handleParagraphMouseDown,
+    handleParagraphPointerDown,
     stopDragging,
   };
 }

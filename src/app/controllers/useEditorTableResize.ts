@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { createPointerGesture } from "./pointerGesture.js";
 import type { Accessor } from "solid-js";
 import type { EditorLayoutDocument, EditorState } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
@@ -84,7 +85,10 @@ export function createEditorTableResize(deps: {
     );
   };
 
-  const handleMouseMove = (event: MouseEvent): void => {
+  const gesture = createPointerGesture();
+
+  const handlePointerMove = (event: PointerEvent): void => {
+    if (!gesture.owns(event)) return;
     if (resizing()) return;
     hoverPendingPoint = { clientX: event.clientX, clientY: event.clientY };
     if (hoverFrameHandle === null) {
@@ -92,7 +96,7 @@ export function createEditorTableResize(deps: {
     }
   };
 
-  const handleMouseDown = (event: MouseEvent): boolean => {
+  const handlePointerDown = (event: PointerEvent): boolean => {
     hoverPendingPoint = null;
     if (hoverFrameHandle !== null) {
       cancelScheduledAnimationFrame(hoverFrameHandle);
@@ -158,8 +162,10 @@ export function createEditorTableResize(deps: {
       });
 
       setActiveCursorClass(true, cursorOwner);
-      window.addEventListener("mousemove", handleWindowMouseMove);
-      window.addEventListener("mouseup", handleWindowMouseUp);
+      gesture.claim(event);
+      window.addEventListener("pointermove", handleWindowMouseMove);
+      window.addEventListener("pointerup", handleWindowMouseUp);
+      window.addEventListener("pointercancel", handleWindowMouseUp);
       event.preventDefault();
       event.stopPropagation();
       return true;
@@ -199,14 +205,17 @@ export function createEditorTableResize(deps: {
     });
 
     setActiveCursorClass(false, cursorOwner);
-    window.addEventListener("mousemove", handleWindowMouseMove);
-    window.addEventListener("mouseup", handleWindowMouseUp);
+    gesture.claim(event);
+    window.addEventListener("pointermove", handleWindowMouseMove);
+    window.addEventListener("pointerup", handleWindowMouseUp);
+    window.addEventListener("pointercancel", handleWindowMouseUp);
     event.preventDefault();
     event.stopPropagation();
     return true;
   };
 
-  const handleWindowMouseMove = (event: MouseEvent): void => {
+  const handleWindowMouseMove = (event: PointerEvent): void => {
+    if (!gesture.owns(event)) return;
     if (!resizing()) return;
     resizePendingPoint = { clientX: event.clientX, clientY: event.clientY };
     if (resizeFrameHandle === null) {
@@ -241,11 +250,14 @@ export function createEditorTableResize(deps: {
     }
     setResizing(null);
     clearResizeCursorClasses(cursorOwner);
-    window.removeEventListener("mousemove", handleWindowMouseMove);
-    window.removeEventListener("mouseup", handleWindowMouseUp);
+    gesture.release();
+    window.removeEventListener("pointermove", handleWindowMouseMove);
+    window.removeEventListener("pointerup", handleWindowMouseUp);
+    window.removeEventListener("pointercancel", handleWindowMouseUp);
   };
 
-  const handleWindowMouseUp = (event: MouseEvent): void => {
+  const handleWindowMouseUp = (event: PointerEvent): void => {
+    if (!gesture.owns(event)) return;
     const currentResizing = resizing();
     if (!currentResizing) return;
 
@@ -269,8 +281,8 @@ export function createEditorTableResize(deps: {
 
   return {
     resizing,
-    handleMouseMove,
-    handleMouseDown,
+    handlePointerMove,
+    handlePointerDown,
     stop,
   };
 }

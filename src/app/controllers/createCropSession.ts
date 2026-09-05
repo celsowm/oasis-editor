@@ -4,6 +4,7 @@ import {
   paragraphOffsetToPosition,
   type EditorState,
 } from "@/core/model.js";
+import { createPointerGesture } from "./pointerGesture.js";
 import {
   getSelectedImageRun,
   setSelectedImageCrop,
@@ -55,13 +56,13 @@ export function createCropSession(deps: CropSessionDeps): {
     paragraphId: string,
     paragraphOffset: number,
     handleDirection: ResizeHandleDirection,
-    event: MouseEvent,
+    event: PointerEvent,
     initialState: EditorState,
   ) => void;
   startMove: (
     paragraphId: string,
     paragraphOffset: number,
-    event: MouseEvent,
+    event: PointerEvent,
     initialState: EditorState,
   ) => void;
   stop: () => void;
@@ -96,7 +97,10 @@ export function createCropSession(deps: CropSessionDeps): {
     },
   });
 
-  const handleMouseMove = (event: MouseEvent): void => {
+  const gesture = createPointerGesture();
+
+  const handleMouseMove = (event: PointerEvent): void => {
+    if (!gesture.owns(event)) return;
     const crop = active;
     if (!crop) {
       return;
@@ -146,15 +150,17 @@ export function createCropSession(deps: CropSessionDeps): {
 
   const stop = (): void => {
     active = null;
-    window.removeEventListener("mousemove", handleMouseMove);
-    window.removeEventListener("mouseup", handleMouseUp);
+    gesture.release();
+    window.removeEventListener("pointermove", handleMouseMove);
+    window.removeEventListener("pointerup", handleMouseUp);
+    window.removeEventListener("pointercancel", handleMouseUp);
   };
 
   const begin = (
     paragraphId: string,
     paragraphOffset: number,
     handleDirection: ResizeHandleDirection,
-    event: MouseEvent,
+    event: PointerEvent,
     initialState: EditorState,
     mode: "handle" | "move",
   ): void => {
@@ -186,15 +192,17 @@ export function createCropSession(deps: CropSessionDeps): {
       initialState: deps.cloneState(initialState),
       mode,
     };
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    gesture.claim(event);
+    window.addEventListener("pointermove", handleMouseMove);
+    window.addEventListener("pointerup", handleMouseUp);
+    window.addEventListener("pointercancel", handleMouseUp);
   };
 
   const start = (
     paragraphId: string,
     paragraphOffset: number,
     handleDirection: ResizeHandleDirection,
-    event: MouseEvent,
+    event: PointerEvent,
     initialState: EditorState,
   ): void =>
     begin(
@@ -209,7 +217,7 @@ export function createCropSession(deps: CropSessionDeps): {
   const startMove = (
     paragraphId: string,
     paragraphOffset: number,
-    event: MouseEvent,
+    event: PointerEvent,
     initialState: EditorState,
   ): void =>
     begin(paragraphId, paragraphOffset, "se", event, initialState, "move");

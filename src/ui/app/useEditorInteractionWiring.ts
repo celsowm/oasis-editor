@@ -33,6 +33,7 @@ export interface EditorInteractionWiringContext {
   logger: EditorLogger;
   focusInput: TableDragParams["focusInput"];
   focusInputAfterPointerSelection: TextDragParams["focusInputAfterPointerSelection"];
+  focusInputSync: () => void;
   clearPreferredColumn: TextDragParams["clearPreferredColumn"];
   resetTransactionGrouping: TextDragParams["resetTransactionGrouping"];
   surfaceRef: () => HTMLDivElement | undefined;
@@ -132,6 +133,7 @@ export function useEditorInteractionWiring(
     clearPreferredColumn: ctx.clearPreferredColumn,
     resetTransactionGrouping: ctx.resetTransactionGrouping,
     focusInputAfterPointerSelection: ctx.focusInputAfterPointerSelection,
+    focusInputSync: ctx.focusInputSync,
     resolveSurfaceHitAtPoint: ctx.resolveSurfaceHitAtPoint,
     getParagraphById,
     textDrag: {

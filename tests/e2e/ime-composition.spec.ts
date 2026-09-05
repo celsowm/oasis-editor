@@ -10,7 +10,7 @@ async function gotoEditor(page: Page): Promise<void> {
   });
   // Relative to baseURL, so this works against both the dev server and the
   // base-prefixed preview server.
-  await page.goto("index.html", { waitUntil: "domcontentloaded" });
+  await page.goto("/oasis-editor/index.html", { waitUntil: "domcontentloaded" });
   await expect(
     page.locator('[data-testid="editor-page"][data-renderer="canvas"]').first(),
   ).toBeVisible({ timeout: 60_000 });

@@ -106,35 +106,35 @@ export interface EditorSurfaceProps {
    * pages render in full (legacy behaviour).
    */
   viewportRef?: () => HTMLElement | undefined;
-  onSurfaceMouseDown: (event: MouseEvent) => void;
+  onSurfacePointerDown: (event: PointerEvent) => void;
   onSurfaceClick?: (event: MouseEvent) => void;
-  onSurfaceMouseMove?: (event: MouseEvent) => void;
+  onSurfacePointerMove?: (event: PointerEvent) => void;
   onSurfaceDblClick: (event: MouseEvent) => void;
-  onParagraphMouseDown: (
+  onParagraphPointerDown: (
     paragraphId: string,
-    event: MouseEvent & { currentTarget: HTMLParagraphElement },
+    event: PointerEvent & { currentTarget: HTMLParagraphElement },
   ) => void;
-  onImageMouseDown: (
-    paragraphId: string,
-    paragraphOffset: number,
-    event: MouseEvent & { currentTarget: HTMLElement },
-  ) => void;
-  onImageResizeHandleMouseDown: (
+  onImagePointerDown: (
     paragraphId: string,
     paragraphOffset: number,
-    direction: ResizeHandleDirection,
-    event: MouseEvent & { currentTarget: HTMLElement },
+    event: PointerEvent & { currentTarget: HTMLElement },
   ) => void;
-  onTextBoxResizeHandleMouseDown: (
+  onImageResizeHandlePointerDown: (
     paragraphId: string,
     paragraphOffset: number,
     direction: ResizeHandleDirection,
-    event: MouseEvent & { currentTarget: HTMLElement },
+    event: PointerEvent & { currentTarget: HTMLElement },
   ) => void;
-  onTableDragHandleMouseDown: (tableId: string, event: MouseEvent) => void;
-  onTableCornerResizeHandleMouseDown: (
+  onTextBoxResizeHandlePointerDown: (
+    paragraphId: string,
+    paragraphOffset: number,
+    direction: ResizeHandleDirection,
+    event: PointerEvent & { currentTarget: HTMLElement },
+  ) => void;
+  onTableDragHandlePointerDown: (tableId: string, event: PointerEvent) => void;
+  onTableCornerResizeHandlePointerDown: (
     tableId: string,
-    event: MouseEvent,
+    event: PointerEvent,
   ) => void;
   onRevisionMouseEnter: (revisionId: string, event: MouseEvent) => void;
   onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;

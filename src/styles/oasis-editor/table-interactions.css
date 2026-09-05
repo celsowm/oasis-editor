@@ -102,6 +102,8 @@
 .oasis-editor-table-resize-corner {
   position: absolute;
   pointer-events: auto;
+  /* Dragging a handle is unambiguous: never let the browser pan instead. */
+  touch-action: none;
   padding: 0;
   background-color: var(--oasis-paper);
   border: 1px solid var(--oasis-border-color);

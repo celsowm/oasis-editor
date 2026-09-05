@@ -100,11 +100,11 @@ function createEditorTextBoxOperationsImpl(deps: EditorTextBoxOperationsDeps) {
     },
   );
 
-  const handleTextBoxResizeHandleMouseDown = (
+  const handleTextBoxResizeHandlePointerDown = (
     paragraphId: string,
     paragraphOffset: number,
     direction: ResizeHandleDirection,
-    event: MouseEvent & { currentTarget: HTMLElement },
+    event: PointerEvent & { currentTarget: HTMLElement },
   ): void => {
     event.preventDefault();
     event.stopPropagation();
@@ -117,10 +117,10 @@ function createEditorTextBoxOperationsImpl(deps: EditorTextBoxOperationsDeps) {
     );
   };
 
-  const handleTextBoxRotateHandleMouseDown = (
+  const handleTextBoxRotateHandlePointerDown = (
     paragraphId: string,
     paragraphOffset: number,
-    event: MouseEvent & { currentTarget: HTMLElement },
+    event: PointerEvent & { currentTarget: HTMLElement },
   ): void => {
     event.preventDefault();
     event.stopPropagation();
@@ -128,8 +128,8 @@ function createEditorTextBoxOperationsImpl(deps: EditorTextBoxOperationsDeps) {
   };
 
   return {
-    handleTextBoxResizeHandleMouseDown,
-    handleTextBoxRotateHandleMouseDown,
+    handleTextBoxResizeHandlePointerDown,
+    handleTextBoxRotateHandlePointerDown,
     stopTextBoxResize: resizeSession.stop,
     stopTextBoxRotate: rotateSession.stop,
   };

@@ -122,6 +122,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   const focusInput = focusController.focusInput;
   const focusInputAfterPointerSelection =
     focusController.focusInputAfterPointerSelection;
+  const focusInputSync = focusController.focusInputSync;
   const [initialLoading, setInitialLoading] = createSignal(
     ui().loading !== false,
   );
@@ -212,6 +213,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     cloneState,
     focusInput,
     focusInputAfterPointerSelection,
+    focusInputSync,
     surfaceRef,
     viewportRef,
     zoomFactor: zoom.zoomFactor,
@@ -243,7 +245,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     imageOps,
     textBoxOps,
     styleController,
-    onEditorMouseDown,
+    onEditorPointerDown,
     tableResize,
     tableCornerResize,
     tableDrag,
@@ -378,18 +380,19 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
       tableDrag,
       revisionController,
       handleDrop,
-      onEditorMouseDown,
-      handleImageMouseDown: imageOps.handleImageMouseDown,
-      handleImageResizeHandleMouseDown:
-        imageOps.handleImageResizeHandleMouseDown,
-      handleTextBoxResizeHandleMouseDown:
-        textBoxOps.handleTextBoxResizeHandleMouseDown,
-      handleImageRotateHandleMouseDown:
-        imageOps.handleImageRotateHandleMouseDown,
-      handleImageCropHandleMouseDown: imageOps.handleImageCropHandleMouseDown,
-      handleImageCropBodyMouseDown: imageOps.handleImageCropBodyMouseDown,
-      handleTextBoxRotateHandleMouseDown:
-        textBoxOps.handleTextBoxRotateHandleMouseDown,
+      onEditorPointerDown,
+      handleImagePointerDown: imageOps.handleImagePointerDown,
+      handleImageResizeHandlePointerDown:
+        imageOps.handleImageResizeHandlePointerDown,
+      handleTextBoxResizeHandlePointerDown:
+        textBoxOps.handleTextBoxResizeHandlePointerDown,
+      handleImageRotateHandlePointerDown:
+        imageOps.handleImageRotateHandlePointerDown,
+      handleImageCropHandlePointerDown:
+        imageOps.handleImageCropHandlePointerDown,
+      handleImageCropBodyPointerDown: imageOps.handleImageCropBodyPointerDown,
+      handleTextBoxRotateHandlePointerDown:
+        textBoxOps.handleTextBoxRotateHandlePointerDown,
       handleEditorContextMenu,
     },
     input: {

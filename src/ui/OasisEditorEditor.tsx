@@ -317,7 +317,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
         data-testid="editor-editor"
         onDragOver={surfaceHandlers().onDragOver}
         onDrop={surfaceHandlers().onDrop}
-        onMouseDown={surfaceHandlers().onEditorMouseDown}
+        onPointerDown={surfaceHandlers().onEditorPointerDown}
         onContextMenu={surfaceHandlers().onEditorContextMenu}
       >
         <div
@@ -366,23 +366,23 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
               viewportRef={(): HTMLDivElement | undefined =>
                 viewportElement ?? undefined
               }
-              onSurfaceMouseDown={surfaceHandlers().onSurfaceMouseDown}
+              onSurfacePointerDown={surfaceHandlers().onSurfacePointerDown}
               onSurfaceClick={surfaceHandlers().onSurfaceClick}
-              onSurfaceMouseMove={surfaceHandlers().onSurfaceMouseMove}
+              onSurfacePointerMove={surfaceHandlers().onSurfacePointerMove}
               onSurfaceDblClick={surfaceHandlers().onSurfaceDblClick}
-              onParagraphMouseDown={surfaceHandlers().onParagraphMouseDown}
-              onImageMouseDown={surfaceHandlers().onImageMouseDown}
-              onImageResizeHandleMouseDown={
-                surfaceHandlers().onImageResizeHandleMouseDown
+              onParagraphPointerDown={surfaceHandlers().onParagraphPointerDown}
+              onImagePointerDown={surfaceHandlers().onImagePointerDown}
+              onImageResizeHandlePointerDown={
+                surfaceHandlers().onImageResizeHandlePointerDown
               }
-              onTextBoxResizeHandleMouseDown={
-                surfaceHandlers().onTextBoxResizeHandleMouseDown
+              onTextBoxResizeHandlePointerDown={
+                surfaceHandlers().onTextBoxResizeHandlePointerDown
               }
-              onTableDragHandleMouseDown={
-                surfaceHandlers().onTableDragHandleMouseDown
+              onTableDragHandlePointerDown={
+                surfaceHandlers().onTableDragHandlePointerDown
               }
-              onTableCornerResizeHandleMouseDown={
-                surfaceHandlers().onTableCornerResizeHandleMouseDown
+              onTableCornerResizeHandlePointerDown={
+                surfaceHandlers().onTableCornerResizeHandlePointerDown
               }
               onRevisionMouseEnter={surfaceHandlers().onRevisionMouseEnter}
               onRevisionMouseLeave={surfaceHandlers().onRevisionMouseLeave}
@@ -416,7 +416,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
                     if (!image) return;
                     event.preventDefault();
                     event.stopPropagation();
-                    surfaceHandlers().onImageResizeHandleMouseDown(
+                    surfaceHandlers().onImageResizeHandlePointerDown(
                       image.paragraphId,
                       image.startOffset,
                       direction,
@@ -426,7 +426,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
                   onRotateStart={(event): void => {
                     const image = selectedImage();
                     if (!image) return;
-                    surfaceHandlers().onImageRotateHandleMouseDown(
+                    surfaceHandlers().onImageRotateHandlePointerDown(
                       image.paragraphId,
                       image.startOffset,
                       event,
@@ -435,7 +435,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
                   onBodyMouseDown={(event): void => {
                     const image = selectedImage();
                     if (!image) return;
-                    surfaceHandlers().onImageMouseDown(
+                    surfaceHandlers().onImagePointerDown(
                       image.paragraphId,
                       image.startOffset,
                       event,
@@ -462,7 +462,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
                   if (!image) return;
                   event.preventDefault();
                   event.stopPropagation();
-                  surfaceHandlers().onImageCropHandleMouseDown?.(
+                  surfaceHandlers().onImageCropHandlePointerDown?.(
                     image.paragraphId,
                     image.startOffset,
                     direction,
@@ -472,7 +472,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
                 onBodyMouseDown={(event): void => {
                   const image = selectedImage();
                   if (!image) return;
-                  surfaceHandlers().onImageCropBodyMouseDown?.(
+                  surfaceHandlers().onImageCropBodyPointerDown?.(
                     image.paragraphId,
                     image.startOffset,
                     event,
@@ -491,7 +491,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
                 if (!textBox) return;
                 event.preventDefault();
                 event.stopPropagation();
-                surfaceHandlers().onTextBoxResizeHandleMouseDown(
+                surfaceHandlers().onTextBoxResizeHandlePointerDown(
                   textBox.paragraphId,
                   textBox.startOffset,
                   direction,
@@ -501,7 +501,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
               onRotateStart={(event): void => {
                 const textBox = selectedTextBox();
                 if (!textBox) return;
-                surfaceHandlers().onTextBoxRotateHandleMouseDown(
+                surfaceHandlers().onTextBoxRotateHandlePointerDown(
                   textBox.paragraphId,
                   textBox.startOffset,
                   event,
@@ -515,7 +515,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
               onMoveStart={(event): void => {
                 const table = selectedTable();
                 if (!table) return;
-                surfaceHandlers().onTableDragHandleMouseDown(
+                surfaceHandlers().onTableDragHandlePointerDown(
                   table.tableId,
                   event,
                 );
@@ -523,7 +523,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
               onResizeStart={(event): void => {
                 const table = selectedTable();
                 if (!table) return;
-                surfaceHandlers().onTableCornerResizeHandleMouseDown(
+                surfaceHandlers().onTableCornerResizeHandlePointerDown(
                   table.tableId,
                   event,
                 );
@@ -559,8 +559,13 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
               aria-label="Editor input"
               autocomplete="off"
               autocapitalize="off"
+              autocorrect="off"
               class="oasis-editor-input"
               data-testid="editor-input"
+              enterkeyhint="enter"
+              // Tells mobile keyboards to offer a plain text layout with an
+              // Enter key, rather than a "Go"/"Search" action key.
+              inputmode="text"
               readOnly={layout().readOnly}
               spellcheck={false}
               value=""

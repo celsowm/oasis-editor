@@ -3,6 +3,7 @@ import {
   paragraphOffsetToPosition,
   type EditorState,
 } from "@/core/model.js";
+import { createPointerGesture } from "./pointerGesture.js";
 import {
   resolveResizedDimensions,
   type ResizeHandleDirection,
@@ -79,7 +80,7 @@ export function createResizeSession(
     paragraphId: string,
     paragraphOffset: number,
     handleDirection: ResizeHandleDirection,
-    event: MouseEvent,
+    event: PointerEvent,
     initialState: EditorState,
   ) => void;
   stop: () => void;
@@ -114,7 +115,10 @@ export function createResizeSession(
     },
   });
 
-  const handleMouseMove = (event: MouseEvent): void => {
+  const gesture = createPointerGesture();
+
+  const handleMouseMove = (event: PointerEvent): void => {
+    if (!gesture.owns(event)) return;
     const resize = active;
     if (!resize) {
       return;
@@ -171,15 +175,17 @@ export function createResizeSession(
 
   const stop = (): void => {
     active = null;
-    window.removeEventListener("mousemove", handleMouseMove);
-    window.removeEventListener("mouseup", handleMouseUp);
+    gesture.release();
+    window.removeEventListener("pointermove", handleMouseMove);
+    window.removeEventListener("pointerup", handleMouseUp);
+    window.removeEventListener("pointercancel", handleMouseUp);
   };
 
   const start = (
     paragraphId: string,
     paragraphOffset: number,
     handleDirection: ResizeHandleDirection,
-    event: MouseEvent,
+    event: PointerEvent,
     initialState: EditorState,
   ): void => {
     const selection = selectionForObject(
@@ -208,8 +214,10 @@ export function createResizeSession(
       aspectRatio: selected.width / selected.height,
       initialState: deps.cloneState(initialState),
     };
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    gesture.claim(event);
+    window.addEventListener("pointermove", handleMouseMove);
+    window.addEventListener("pointerup", handleMouseUp);
+    window.addEventListener("pointercancel", handleMouseUp);
   };
 
   return { start, stop };

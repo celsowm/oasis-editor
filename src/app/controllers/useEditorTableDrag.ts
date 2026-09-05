@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { createPointerGesture } from "./pointerGesture.js";
 import type {
   EditorBlockNode,
   EditorDocument,
@@ -95,7 +96,7 @@ function paragraphIsInsideTable(
 export interface TableDragOps {
   dragging: () => boolean;
   startClientY: () => number;
-  handleMouseDown: (tableId: string, event: MouseEvent) => void;
+  handlePointerDown: (tableId: string, event: PointerEvent) => void;
   dropTargetPos: () => EditorPosition | null;
   stop: () => void;
 }
@@ -161,6 +162,8 @@ function createEditorTableDragImpl(deps: {
     );
   };
 
+  const gesture = createPointerGesture();
+
   const stopDrag = (): void => {
     dragPendingPoint = null;
     if (dragFrameHandle !== null) {
@@ -170,8 +173,10 @@ function createEditorTableDragImpl(deps: {
     setDragging(false);
     setDraggedTableInfo(null);
     setDropTargetPos(null);
-    window.removeEventListener("mousemove", handleMouseMove);
-    window.removeEventListener("mouseup", handleMouseUp);
+    gesture.release();
+    window.removeEventListener("pointermove", handleMouseMove);
+    window.removeEventListener("pointerup", handleMouseUp);
+    window.removeEventListener("pointercancel", handleMouseUp);
     if (tableDragCursorOwner === cursorOwner) {
       tableDragCursorOwner = null;
       if (document.body.style.cursor === "grabbing") {
@@ -204,7 +209,8 @@ function createEditorTableDragImpl(deps: {
     updateDropTarget(pos);
   };
 
-  const handleMouseMove = (event: MouseEvent): void => {
+  const handleMouseMove = (event: PointerEvent): void => {
+    if (!gesture.owns(event)) return;
     if (!dragging()) {
       const delta = Math.abs(event.clientY - startClientY());
       if (delta <= 4) return;
@@ -219,7 +225,8 @@ function createEditorTableDragImpl(deps: {
     }
   };
 
-  const handleMouseUp = (event: MouseEvent): void => {
+  const handleMouseUp = (event: PointerEvent): void => {
+    if (!gesture.owns(event)) return;
     const info = draggedTableInfo();
     if (dragging()) {
       const pos = deps.resolvePositionAtSurfacePoint(
@@ -257,7 +264,7 @@ function createEditorTableDragImpl(deps: {
     deps.focusInput();
   };
 
-  const handleMouseDown = (tableId: string, event: MouseEvent): void => {
+  const handlePointerDown = (tableId: string, event: PointerEvent): void => {
     event.preventDefault();
     event.stopPropagation();
 
@@ -279,8 +286,10 @@ function createEditorTableDragImpl(deps: {
     setDragging(false);
     setDropTargetPos(null);
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    gesture.claim(event);
+    window.addEventListener("pointermove", handleMouseMove);
+    window.addEventListener("pointerup", handleMouseUp);
+    window.addEventListener("pointercancel", handleMouseUp);
   };
 
   return {
@@ -288,7 +297,7 @@ function createEditorTableDragImpl(deps: {
     draggedTableInfo,
     mousePos,
     dropTargetPos,
-    handleMouseDown,
+    handlePointerDown,
     stop: stopDrag,
   };
 }

@@ -60,7 +60,7 @@ export interface TableResizeState {
 
 export interface TableResizeOps {
   resizing: () => TableResizeState | null;
-  handleMouseMove: (event: MouseEvent) => void;
-  handleMouseDown: (event: MouseEvent) => boolean;
+  handlePointerMove: (event: PointerEvent) => void;
+  handlePointerDown: (event: PointerEvent) => boolean;
   stop: () => void;
 }

@@ -22,14 +22,16 @@ export interface ResizeHandlesOverlayProps {
   rotation?: () => number;
   onResizeStart: (
     direction: ResizeHandleDirection,
-    event: MouseEvent & { currentTarget: HTMLElement },
+    event: PointerEvent & { currentTarget: HTMLElement },
   ) => void;
   /** Optional handler for pressing the overlay body (e.g. image drag-to-move). */
   onBodyMouseDown?: (
-    event: MouseEvent & { currentTarget: HTMLElement },
+    event: PointerEvent & { currentTarget: HTMLElement },
   ) => void;
   /** Optional handler for pressing the rotation knob. */
-  onRotateStart?: (event: MouseEvent & { currentTarget: HTMLElement }) => void;
+  onRotateStart?: (
+    event: PointerEvent & { currentTarget: HTMLElement },
+  ) => void;
 }
 
 /**
@@ -56,13 +58,13 @@ export function ResizeHandlesOverlay(
         "transform-origin": "center",
         "pointer-events": !props.readOnly && props.box() ? "auto" : "none",
       }}
-      onMouseDown={(event): void => {
+      onPointerDown={(event): void => {
         if (props.readOnly || !props.box() || !props.onBodyMouseDown) {
           return;
         }
         event.preventDefault();
         props.onBodyMouseDown(
-          event as MouseEvent & { currentTarget: HTMLElement },
+          event as PointerEvent & { currentTarget: HTMLElement },
         );
       }}
     >
@@ -75,13 +77,13 @@ export function ResizeHandlesOverlay(
               data-direction={direction}
               tabIndex={-1}
               type="button"
-              onMouseDown={(event): void => {
+              onPointerDown={(event): void => {
                 if (!props.box()) {
                   return;
                 }
                 props.onResizeStart(
                   direction,
-                  event as MouseEvent & { currentTarget: HTMLElement },
+                  event as PointerEvent & { currentTarget: HTMLElement },
                 );
               }}
             />
@@ -93,14 +95,14 @@ export function ResizeHandlesOverlay(
             class="oasis-editor-rotate-handle"
             tabIndex={-1}
             type="button"
-            onMouseDown={(event): void => {
+            onPointerDown={(event): void => {
               if (!props.box()) {
                 return;
               }
               event.preventDefault();
               event.stopPropagation();
               props.onRotateStart?.(
-                event as MouseEvent & { currentTarget: HTMLElement },
+                event as PointerEvent & { currentTarget: HTMLElement },
               );
             }}
           />

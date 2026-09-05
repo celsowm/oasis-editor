@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { createPointerGesture } from "./pointerGesture.js";
 import type { Accessor } from "solid-js";
 import type { EditorLayoutDocument, EditorState } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
@@ -53,7 +54,7 @@ export interface TableCornerResizeOps {
     width: number;
     height: number;
   } | null>;
-  handleMouseDown: (tableId: string, event: MouseEvent) => void;
+  handlePointerDown: (tableId: string, event: PointerEvent) => void;
   stop: () => void;
 }
 
@@ -161,7 +162,10 @@ export function createEditorTableCornerResize(deps: {
     };
   };
 
-  const handleWindowMouseMove = (event: MouseEvent): void => {
+  const gesture = createPointerGesture();
+
+  const handleWindowMouseMove = (event: PointerEvent): void => {
+    if (!gesture.owns(event)) return;
     if (!resizing()) return;
     resizePendingPoint = { clientX: event.clientX, clientY: event.clientY };
     if (resizeFrameHandle === null) {
@@ -192,8 +196,10 @@ export function createEditorTableCornerResize(deps: {
       resizeFrameHandle = null;
     }
     setResizing(null);
-    window.removeEventListener("mousemove", handleWindowMouseMove);
-    window.removeEventListener("mouseup", handleWindowMouseUp);
+    gesture.release();
+    window.removeEventListener("pointermove", handleWindowMouseMove);
+    window.removeEventListener("pointerup", handleWindowMouseUp);
+    window.removeEventListener("pointercancel", handleWindowMouseUp);
     if (tableCornerResizeCursorOwner === cursorOwner) {
       tableCornerResizeCursorOwner = null;
       if (document.body.style.cursor === "nwse-resize") {
@@ -202,7 +208,8 @@ export function createEditorTableCornerResize(deps: {
     }
   };
 
-  const handleWindowMouseUp = (event: MouseEvent): void => {
+  const handleWindowMouseUp = (event: PointerEvent): void => {
+    if (!gesture.owns(event)) return;
     const current = resizing();
     if (current) {
       const movedX = Math.abs(event.clientX - current.startClientX);
@@ -223,7 +230,7 @@ export function createEditorTableCornerResize(deps: {
     stop();
   };
 
-  const handleMouseDown = (tableId: string, event: MouseEvent): void => {
+  const handlePointerDown = (tableId: string, event: PointerEvent): void => {
     const surface = deps.surfaceRef();
     if (!surface) return;
 
@@ -271,11 +278,13 @@ export function createEditorTableCornerResize(deps: {
 
     tableCornerResizeCursorOwner = cursorOwner;
     document.body.style.cursor = "nwse-resize";
-    window.addEventListener("mousemove", handleWindowMouseMove);
-    window.addEventListener("mouseup", handleWindowMouseUp);
+    gesture.claim(event);
+    window.addEventListener("pointermove", handleWindowMouseMove);
+    window.addEventListener("pointerup", handleWindowMouseUp);
+    window.addEventListener("pointercancel", handleWindowMouseUp);
     event.preventDefault();
     event.stopPropagation();
   };
 
-  return { resizing, previewRect, handleMouseDown, stop };
+  return { resizing, previewRect, handlePointerDown, stop };
 }
