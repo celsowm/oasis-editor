@@ -132,6 +132,9 @@ export interface OasisEditorEditorInputHandlers {
     event: CompositionEvent & { currentTarget: HTMLTextAreaElement },
   ) => void;
   onCompositionStart: () => void;
+  onCompositionUpdate: (
+    event: CompositionEvent & { currentTarget: HTMLTextAreaElement },
+  ) => void;
   onCopy: (
     event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
   ) => void;

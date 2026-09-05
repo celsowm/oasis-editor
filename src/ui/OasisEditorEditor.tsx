@@ -573,6 +573,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
               onBlur={inputHandlers().onInputBlur}
               onCompositionEnd={inputHandlers().onCompositionEnd}
               onCompositionStart={inputHandlers().onCompositionStart}
+              onCompositionUpdate={inputHandlers().onCompositionUpdate}
               onCopy={inputHandlers().onCopy}
               onCut={inputHandlers().onCut}
               onFocus={inputHandlers().onInputFocus}

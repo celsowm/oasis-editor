@@ -69,6 +69,14 @@ function createEditorKeyboardControllerImpl(deps: EditorKeyboardDeps) {
       return;
     }
 
+    // While an IME composition is active the keyboard belongs to the IME:
+    // mobile keyboards emit real Enter/Backspace keydowns mid-composition, and
+    // acting on them here would duplicate or corrupt the composition preview.
+    // Chrome reports keyCode 229 for the same situation on Android.
+    if (event.isComposing || event.keyCode === 229) {
+      return;
+    }
+
     const commandExecutor = deps.executeCommand
       ? {
           executeCommand: (commandName: string, payload?: unknown): unknown =>

@@ -10,6 +10,7 @@
 
 export const MERGE_KEYS = {
   insertText: "insertText",
+  composition: "composition",
   insertImage: "insertImage",
   insertTable: "insertTable",
   moveImage: "moveImage",

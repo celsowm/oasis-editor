@@ -223,6 +223,7 @@ export function buildEditorViewProps(
     onInputFocus: (): void => input.setFocused(true),
     onCompositionEnd: input.textInput.handleCompositionEnd,
     onCompositionStart: input.textInput.handleCompositionStart,
+    onCompositionUpdate: input.textInput.handleCompositionUpdate,
     onCopy: input.handleCopy,
     onCut: input.handleCut,
     onInput: input.textInput.handleTextInput,

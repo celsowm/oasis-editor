@@ -10,7 +10,11 @@ export {
   updateMathRun,
 } from "./textEditing.js";
 
-export { deleteBackward, deleteForward } from "./textDeletion.js";
+export {
+  deleteBackward,
+  deleteForward,
+  deleteCharsBackwardRaw,
+} from "./textDeletion.js";
 
 export {
   toggleTextStyle,

@@ -22,6 +22,49 @@ import {
   withSelection,
 } from "@/core/selection/rangeEditing.js";
 
+/**
+ * Removes `count` UTF-16 code units immediately before the caret, inside the
+ * focused paragraph only.
+ *
+ * Unlike `deleteBackward` this never marks revisions when track changes is on
+ * and never merges paragraphs: it exists to retract IME composition previews,
+ * which are provisional text the user has not committed yet.
+ */
+export function deleteCharsBackwardRaw(
+  state: EditorState,
+  count: number,
+): EditorState {
+  if (count <= 0) {
+    return state;
+  }
+
+  const { paragraph, index, offset } = getFocusParagraph(state);
+  if (offset < count) {
+    return state;
+  }
+
+  const paragraphs = getParagraphs(state);
+  const start = offset - count;
+  const nextParagraph = buildParagraphFromRuns(
+    paragraph,
+    [
+      ...sliceRuns(paragraph, 0, start),
+      ...sliceRuns(paragraph, offset, getParagraphLength(paragraph)),
+    ],
+    getStyleAtOffset(paragraph, start),
+  );
+  const nextParagraphs = paragraphs.map(
+    (candidate, candidateIndex): EditorParagraphNode =>
+      candidateIndex === index ? nextParagraph : candidate,
+  );
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    withSelection(paragraphOffsetToPosition(nextParagraph, start)),
+  );
+}
+
 export function deleteBackward(state: EditorState): EditorState {
   if (!isSelectionCollapsed(state.selection)) {
     return deleteSelectionRange(state);
