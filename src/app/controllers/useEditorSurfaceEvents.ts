@@ -377,6 +377,16 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
     logSelection("selection:drag");
   };
 
+  /** Applies a coalesced move that has not had its frame yet. */
+  const flushPendingDragFrame = (): void => {
+    if (!dragPendingPoint) return;
+    if (dragFrameHandle !== null) {
+      cancelFrame(dragFrameHandle);
+      dragFrameHandle = null;
+    }
+    processDragFrame();
+  };
+
   const handleWindowPointerMove = (event: PointerEvent): void => {
     if (activePointerId !== null && event.pointerId !== activePointerId) {
       return;
@@ -426,6 +436,11 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
       return;
     }
 
+    // Moves are coalesced into an animation frame, and `stopDragging` cancels
+    // any frame still pending. A drag that ends in the same frame as its last
+    // move would otherwise lose that move entirely, leaving the selection short
+    // of where the pointer was released.
+    flushPendingDragFrame();
     logSelection("selection:end");
     stopDragging();
     deps.focusInputAfterPointerSelection();

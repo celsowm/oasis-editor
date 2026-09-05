@@ -6,6 +6,11 @@ const VERTICAL_DOCX = resolve("ooxml_vertical_text_examples.docx");
 test.describe.configure({ timeout: 180_000 });
 
 async function gotoEditor(page: Page) {
+  // Without this the welcome overlay sits above the canvas and swallows the
+  // warm-up click, leaving the debug layout snapshot empty.
+  await page.addInitScript(() => {
+    localStorage.setItem("oasis.welcomeSeen", "1");
+  });
   await page.goto("/oasis-editor/index.html", { waitUntil: "load" });
   await expect(
     page.locator('[data-testid="editor-page"][data-renderer="canvas"]').first(),
@@ -19,18 +24,25 @@ async function gotoEditor(page: Page) {
 }
 
 async function importVerticalDocx(page: Page) {
-  const done = page.waitForEvent("console", {
-    predicate: (message) => message.text().includes("import docx:done"),
-    timeout: 90_000,
-  });
   await page
     .getByTestId("editor-import-docx-input")
     .setInputFiles(VERTICAL_DOCX);
-  await done;
   await page
     .getByTestId("editor-import-overlay")
     .waitFor({ state: "detached", timeout: 90_000 });
-  await page.waitForTimeout(200);
+  // The overlay can detach before the document is laid out, and never attaches
+  // at all for a fast import, so wait until the document reports content.
+  await expect
+    .poll(
+      async () => {
+        const raw = await page
+          .getByTestId("editor-statusbar-character-count")
+          .innerText();
+        return Number(raw.match(/\d+/)?.[0] ?? 0);
+      },
+      { timeout: 90_000 },
+    )
+    .toBeGreaterThan(0);
   // The layout snapshot is built during hit-testing; warm it with a click.
   const rect = await page
     .locator('[data-testid="editor-page"][data-renderer="canvas"]')

@@ -6,8 +6,8 @@ import type {
   CanvasDebugSelectionSnapshot,
 } from "@/ui/canvas/CanvasDebug.js";
 
-const SIMPLE_LOREM_DOCX = resolve("src/__tests__/word-parity/fixtures/word-authored-lorem.docx");
-const COMPLEX_DOCX = resolve("src/__tests__/word-parity/fixtures/documento_complexo.docx");
+const SIMPLE_LOREM_DOCX = resolve("tests/vitest/__tests__/word-parity/fixtures/word-authored-lorem.docx");
+const COMPLEX_DOCX = resolve("tests/vitest/__tests__/word-parity/fixtures/documento_complexo.docx");
 test.describe.configure({ timeout: 180_000 });
 
 type CanvasDebugState = {
@@ -185,16 +185,60 @@ async function insertTable(page: Page, rows: number, cols: number) {
   await gridCell.click();
 }
 
+const INLINE_IMAGE = resolve("tests/e2e/fixtures/gradient.png");
+
+/**
+ * Inserts a known image at the caret and warms the debug layout snapshot, which
+ * is only built during hit-testing.
+ */
+async function insertInlineImage(page: Page) {
+  const pageRect = await canvasPageRect(page);
+  await page.mouse.click(pageRect.x + 180, pageRect.y + 140);
+  await page.getByTestId("editor-insert-image-input").setInputFiles(INLINE_IMAGE);
+  await expect
+    .poll(async () => {
+      await page.mouse.click(pageRect.x + 180, pageRect.y + 140);
+      return page.evaluate(
+        () =>
+          window.__oasisCanvasDebug?.getLayoutSnapshot()?.inlineImages.length ??
+          0,
+      );
+    })
+    .toBeGreaterThan(0);
+}
+
 async function waitForDocxImportReady(page: Page, timeoutMs = 90_000) {
   const overlay = page.getByTestId("editor-import-overlay");
   await overlay.waitFor({ state: "detached", timeout: timeoutMs });
+  // The overlay can detach before the document is laid out, and it may never
+  // attach at all for a fast import, so the load is only really done once the
+  // document reports content.
+  await expect
+    .poll(
+      async () => {
+        const raw = await page
+          .getByTestId("editor-statusbar-character-count")
+          .innerText();
+        return Number(raw.match(/\d+/)?.[0] ?? 0);
+      },
+      { timeout: timeoutMs },
+    )
+    .toBeGreaterThan(0);
 }
 
 async function exercisePointerCoherence(
   page: Page,
   p1: { x: number; y: number },
   p2: { x: number; y: number },
-  options: { requireWordClicks?: boolean; requireCaretDelta?: boolean; requireSelectionVisible?: boolean } = {},
+  options: {
+    requireWordClicks?: boolean;
+    requireCaretDelta?: boolean;
+    requireSelectionVisible?: boolean;
+    // Double/triple-click target. Defaults to p2, but a caller whose p2 may
+    // land on a space must point this at a character inside a word: selecting
+    // a lone space produces no selection box.
+    wordPoint?: { x: number; y: number };
+  } = {},
 ) {
   const requireWordClicks = options.requireWordClicks ?? true;
   const requireCaretDelta = options.requireCaretDelta ?? true;
@@ -223,11 +267,12 @@ async function exercisePointerCoherence(
   await expectLastHitFromCanvas(page);
 
   if (requireWordClicks) {
-    await page.mouse.dblclick(p2.x, p2.y);
+    const wordPoint = options.wordPoint ?? p2;
+    await page.mouse.dblclick(wordPoint.x, wordPoint.y);
     await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
     await expectLastHitFromCanvas(page);
 
-    await page.mouse.click(p2.x, p2.y, { clickCount: 3 });
+    await page.mouse.click(wordPoint.x, wordPoint.y, { clickCount: 3 });
     await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
     await expectLastHitFromCanvas(page);
   }
@@ -297,7 +342,10 @@ test("canvas text selection uses square overlay covering the final character slo
 });
 
 test("toolbar color split buttons separate direct apply from palette selection", async ({ page }) => {
-  await gotoEditor(page, { ui: { toolbar: { view: "compact" } } });
+  // Compact view keeps the colour split buttons in the overflow menu at every
+  // width, so the inline indicator assertions below only apply to the ribbon.
+  await page.setViewportSize({ width: 1700, height: 900 });
+  await gotoEditor(page);
   await seedText(page, "alpha beta gamma");
   await selectFirstSeedWord(page);
 
@@ -464,16 +512,32 @@ test("DOCX lorem simples hit-test never misses in hit-test", async ({ page }) =>
     const first = line.slots[1]!;
     const mid = line.slots[Math.floor(line.slots.length * 0.6)] ?? line.slots[line.slots.length - 2];
     if (!mid) return null;
+    // The first wide advance in the line is the space ending the first word;
+    // anything before it is inside that word and safe to double-click.
+    let firstGapIndex = line.slots.length - 1;
+    for (let i = 1; i < line.slots.length - 1; i++) {
+      const advance = line.slots[i + 1]!.left - line.slots[i]!.left;
+      const previous = line.slots[i]!.left - line.slots[i - 1]!.left;
+      if (advance > previous * 1.5) {
+        firstGapIndex = i;
+        break;
+      }
+    }
+    const inWord = line.slots[Math.max(1, Math.floor(firstGapIndex / 2))]!;
     return {
       p1: { x: first.left + 0.5, y: line.top + line.height * 0.5 },
       p2: { x: mid.left + 0.5, y: line.top + line.height * 0.5 },
+      word: { x: inWord.left + 0.5, y: line.top + line.height * 0.5 },
     };
   });
   if (!points) {
     throw new Error("unable to resolve stable DOCX click points from canvas snapshot");
   }
 
-  await exercisePointerCoherence(page, points.p1, points.p2, { requireWordClicks: true });
+  await exercisePointerCoherence(page, points.p1, points.p2, {
+    requireWordClicks: true,
+    wordPoint: points.word,
+  });
   await expectNoMissEvents(page);
 });
 
@@ -813,11 +877,7 @@ test("triple-click in table cell includes paragraph mark to next paragraph in sa
   await gotoEditor(page);
   await clearMissEvents(page);
   await page.getByTestId("editor-import-docx-input").setInputFiles(COMPLEX_DOCX);
-  await page.waitForEvent("console", {
-    predicate: (message) => message.text().includes("import docx:done"),
-    timeout: 60_000,
-  });
-  await page.getByTestId("editor-import-overlay").waitFor({ state: "detached" });
+  await waitForDocxImportReady(page);
   const pageRect = await canvasPageRect(page);
   await page.mouse.click(pageRect.x + 240, pageRect.y + 220);
   await expectLastHitFromCanvas(page);
@@ -1231,12 +1291,10 @@ test("canvas image click selects object and resize handle changes image dimensio
 }) => {
   await gotoEditor(page);
   await clearMissEvents(page);
-  await page.getByTestId("editor-import-docx-input").setInputFiles(COMPLEX_DOCX);
-  await page.waitForEvent("console", {
-    predicate: (message) => message.text().includes("import docx:done"),
-    timeout: 60_000,
-  });
-  await page.getByTestId("editor-import-overlay").waitFor({ state: "detached" });
+  // The complex DOCX carries no inline images (its pictures are anchored), so
+  // insert one directly: this test is about selecting and resizing an image,
+  // not about DOCX picture import.
+  await insertInlineImage(page);
 
   const imageTarget = await page.evaluate(() => {
     const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
@@ -1278,18 +1336,31 @@ test("canvas image click selects object and resize handle changes image dimensio
   await page.mouse.up();
   await page.waitForTimeout(100);
 
-  const imageAfter = await page.evaluate(({ paragraphId, startOffset }) => {
-    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
-    if (!snapshot) return null;
-    const image = snapshot.inlineImages.find(
-      (entry) => entry.paragraphId === paragraphId && entry.startOffset === startOffset,
+  // The debug snapshot is only rebuilt during hit-testing, so clicking away
+  // from the image both drops the selection and refreshes the geometry. Without
+  // this the assertions below read the pre-resize size.
+  const measureRect = await canvasPageRect(page);
+  const readImage = async () => {
+    await page.mouse.click(measureRect.x + 180, measureRect.y + 420);
+    return page.evaluate(
+      ({ paragraphId, startOffset }) =>
+        window.__oasisCanvasDebug
+          ?.getLayoutSnapshot()
+          ?.inlineImages.find(
+            (entry) =>
+              entry.paragraphId === paragraphId &&
+              entry.startOffset === startOffset,
+          ) ?? null,
+      {
+        paragraphId: imageTarget.paragraphId,
+        startOffset: imageTarget.startOffset,
+      },
     );
-    if (!image) return null;
-    return {
-      width: image.width,
-      height: image.height,
-    };
-  }, { paragraphId: imageTarget.paragraphId, startOffset: imageTarget.startOffset });
+  };
+  await expect
+    .poll(async () => (await readImage())?.width ?? 0)
+    .toBeGreaterThan(imageTarget.width + 8);
+  const imageAfter = await readImage();
 
   expect(imageAfter).not.toBeNull();
   expect((imageAfter?.width ?? imageTarget.width) - imageTarget.width).toBeGreaterThan(8);

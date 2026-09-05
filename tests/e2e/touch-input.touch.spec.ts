@@ -1,4 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
+import { resolve } from "node:path";
+
+const INLINE_IMAGE = resolve("tests/e2e/fixtures/gradient.png");
 
 /**
  * The editor surface listens for pointer events so one code path serves mouse,
@@ -157,4 +160,78 @@ test("a long press selects the word under the finger", async ({ page }) => {
   expect(sel.anchorId).toBe(sel.focusId);
   // A whole word is selected, so the range is non-empty.
   expect(sel.focusOffset).toBeGreaterThan(sel.anchorOffset);
+});
+
+test("a finger can drag an image resize handle", async ({ page }) => {
+  const origin = await gotoEditor(page);
+
+  // Insert a known image through the file input, bypassing the toolbar (which
+  // collapses at phone width).
+  await page.touchscreen.tap(origin.x + 120, origin.y + 140);
+  await expect(page.locator("textarea.oasis-editor-input")).toBeFocused();
+  await page
+    .getByTestId("editor-insert-image-input")
+    .setInputFiles(INLINE_IMAGE);
+
+  const imageBefore = await expect
+    .poll(async () => {
+      await page.touchscreen.tap(origin.x + 120, origin.y + 140);
+      return page.evaluate(
+        () =>
+          window.__oasisCanvasDebug?.getLayoutSnapshot()?.inlineImages.length ??
+          0,
+      );
+    })
+    .toBeGreaterThan(0)
+    .then(() =>
+      page.evaluate(
+        () => window.__oasisCanvasDebug!.getLayoutSnapshot()!.inlineImages[0]!,
+      ),
+    );
+
+  // Select the image, then drag its south-east handle with a finger. This is
+  // the gesture mouse-event emulation cannot produce at all: mobile browsers
+  // synthesise nothing between touchstart and touchend.
+  await page.touchscreen.tap(
+    imageBefore.left + imageBefore.width / 2,
+    imageBefore.top + imageBefore.height / 2,
+  );
+  const handle = page.locator(
+    '.oasis-editor-image-selection-overlay .oasis-editor-resize-handle[data-direction="se"]',
+  );
+  await expect(handle).toBeVisible();
+  const handleBox = await handle.boundingBox();
+  if (!handleBox) throw new Error("no south-east resize handle");
+
+  const cdp = await page.context().newCDPSession(page);
+  const from = {
+    x: handleBox.x + handleBox.width / 2,
+    y: handleBox.y + handleBox.height / 2,
+  };
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: from.x, y: from.y }],
+  });
+  for (let step = 1; step <= 6; step++) {
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ x: from.x + step * 6, y: from.y + step * 3 }],
+    });
+  }
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+
+  // Hit-testing rebuilds the debug snapshot, so tap away before measuring.
+  await expect
+    .poll(async () => {
+      await page.touchscreen.tap(origin.x + 120, origin.y + 420);
+      return page.evaluate(
+        () =>
+          window.__oasisCanvasDebug?.getLayoutSnapshot()?.inlineImages[0]
+            ?.width ?? 0,
+      );
+    })
+    .toBeGreaterThan(imageBefore.width + 8);
 });
