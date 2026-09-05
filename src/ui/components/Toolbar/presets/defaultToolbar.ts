@@ -602,7 +602,6 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   items.push({
     type: "custom",
     id: "editor-toolbar-metrics",
-    ribbonSize: "large",
     render: (api) => MetricGroup({ api }),
   });
   items.push({ type: "separator", id: "sep-metrics" });

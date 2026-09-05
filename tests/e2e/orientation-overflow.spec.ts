@@ -152,13 +152,6 @@ test("high zoom preserves reachable horizontal scrolling", async ({ page }) => {
 test("layout ribbon renders margins and orientation as full-height buttons", async ({
   page,
 }) => {
-  test.fixme(
-    true,
-    "Margins and orientation are no longer full-height: measured at 1280x900 " +
-      "the metrics, margins and section dropdowns are all 63px tall, so the " +
-      "large-button treatment this test guards has been lost. Unrelated to " +
-      "pointer input; needs a ribbon-layout fix, not a weaker assertion.",
-  );
   await page.setViewportSize({ width: 1200, height: 900 });
   await gotoEditor(page);
 
@@ -189,16 +182,88 @@ test("layout ribbon renders margins and orientation as full-height buttons", asy
   ).toBeVisible();
 });
 
+/**
+ * Reads the compact style gallery once its size has settled. The panel
+ * re-measures on a ResizeObserver and applies the result on the next animation
+ * frame, so a single read right after a viewport change sees the previous
+ * layout.
+ */
+async function settledGallery(page: Page): Promise<{
+  ribbonWidth: number;
+  stripWidth: number;
+  firstCardWidth: number;
+  firstCardRight: number;
+  nextCardLeft: number | null;
+  stripRight: number;
+  chevronLeft: number;
+  chevronRight: number;
+  ribbonRight: number;
+  chevronHeight: number;
+  ribbonHeight: number;
+  visibleCardSlots: number;
+}> {
+  const read = async (): Promise<ReturnType<typeof settledGallery>> =>
+    page.evaluate(() => {
+      const group = document.querySelector<HTMLElement>(
+        '[data-ribbon-group="styles"]',
+      );
+      const ribbon = group?.querySelector<HTMLElement>(
+        ".oasis-editor-style-gallery-ribbon",
+      );
+      const strip = group?.querySelector<HTMLElement>(
+        ".oasis-editor-style-gallery-strip",
+      );
+      const cards = Array.from(
+        group?.querySelectorAll<HTMLElement>(
+          ".oasis-editor-style-gallery-strip .oasis-editor-style-gallery-card",
+        ) ?? [],
+      );
+      const chevron = group?.querySelector<HTMLElement>(
+        ".oasis-editor-style-gallery-expand",
+      );
+      if (!group || !ribbon || !strip || cards.length < 2 || !chevron) {
+        return null;
+      }
+      const ribbonBox = ribbon.getBoundingClientRect();
+      const stripBox = strip.getBoundingClientRect();
+      const firstCardBox = cards[0]!.getBoundingClientRect();
+      const chevronBox = chevron.getBoundingClientRect();
+      const visibleCardSlots = Math.round(stripBox.width / firstCardBox.width);
+      const nextCardBox = cards[visibleCardSlots]?.getBoundingClientRect();
+      return {
+        ribbonWidth: ribbonBox.width,
+        stripWidth: stripBox.width,
+        firstCardWidth: firstCardBox.width,
+        firstCardRight: firstCardBox.right,
+        nextCardLeft: nextCardBox?.left ?? null,
+        stripRight: stripBox.right,
+        chevronLeft: chevronBox.left,
+        chevronRight: chevronBox.right,
+        ribbonRight: ribbonBox.right,
+        chevronHeight: chevronBox.height,
+        ribbonHeight: ribbonBox.height,
+        visibleCardSlots,
+      };
+    }) as never;
+
+  let previous = await read();
+  await expect
+    .poll(async (): Promise<boolean> => {
+      const next = await read();
+      const stable =
+        Boolean(next) &&
+        Boolean(previous) &&
+        next.stripWidth === previous.stripWidth;
+      previous = next;
+      return stable;
+    })
+    .toBe(true);
+  return previous;
+}
+
 test("home ribbon shrinks and collapses groups as width decreases", async ({
   page,
 }) => {
-  test.fixme(
-    true,
-    "The compact style gallery sizes its strip incoherently: measured widths " +
-      "are 106px (one card slot) at 1200/1120/1040 but 318px (three slots) at " +
-      "960, so a narrower ribbon shows more cards than a wider one. Unrelated " +
-      "to pointer input; needs a style-gallery fix, not a weaker assertion.",
-  );
   await page.setViewportSize({ width: 1280, height: 900 });
   await gotoEditor(page);
   await page.getByTestId("editor-ribbon-tab-home").click();
@@ -208,7 +273,9 @@ test("home ribbon shrinks and collapses groups as width decreases", async ({
     "full",
   );
 
-  await page.setViewportSize({ width: 1120, height: 900 });
+  // 1500px leaves the style gallery compact but wide enough to show several
+  // cards, which is where the strip geometry is actually worth checking.
+  await page.setViewportSize({ width: 1500, height: 900 });
   await expect
     .poll(async () =>
       page
@@ -217,82 +284,41 @@ test("home ribbon shrinks and collapses groups as width decreases", async ({
     )
     .toBe("compact");
 
-  const compactGallery = await page.evaluate(() => {
-    const group = document.querySelector<HTMLElement>(
-      '[data-ribbon-group="styles"]',
-    );
-    const ribbon = group?.querySelector<HTMLElement>(
-      ".oasis-editor-style-gallery-ribbon",
-    );
-    const strip = group?.querySelector<HTMLElement>(
-      ".oasis-editor-style-gallery-strip",
-    );
-    const cards = Array.from(
-      group?.querySelectorAll<HTMLElement>(
-        ".oasis-editor-style-gallery-strip .oasis-editor-style-gallery-card",
-      ) ?? [],
-    );
-    const chevron = group?.querySelector<HTMLElement>(
-      ".oasis-editor-style-gallery-expand",
-    );
-    if (!group || !ribbon || !strip || cards.length < 2 || !chevron) {
-      return null;
-    }
-    const ribbonBox = ribbon.getBoundingClientRect();
-    const stripBox = strip.getBoundingClientRect();
-    const firstCardBox = cards[0]!.getBoundingClientRect();
-    const chevronBox = chevron.getBoundingClientRect();
-    const visibleCardSlots = Math.round(stripBox.width / firstCardBox.width);
-    const nextCardBox = cards[visibleCardSlots]?.getBoundingClientRect();
-    return {
-      ribbonWidth: ribbonBox.width,
-      stripWidth: stripBox.width,
-      firstCardWidth: firstCardBox.width,
-      firstCardRight: firstCardBox.right,
-      nextCardLeft: nextCardBox?.left ?? null,
-      stripRight: stripBox.right,
-      chevronLeft: chevronBox.left,
-      chevronRight: chevronBox.right,
-      ribbonRight: ribbonBox.right,
-      chevronHeight: chevronBox.height,
-      ribbonHeight: ribbonBox.height,
-      visibleCardSlots,
-    };
-  });
-
-  expect(compactGallery).not.toBeNull();
-  expect(compactGallery!.visibleCardSlots).toBeGreaterThanOrEqual(2);
-  expect(compactGallery!.stripWidth).toBeCloseTo(
-    compactGallery!.visibleCardSlots * 106,
+  const compactGallery = await settledGallery(page);
+  expect(compactGallery.visibleCardSlots).toBeGreaterThanOrEqual(2);
+  // The strip is cut to whole cards, so no card is ever half-clipped.
+  expect(compactGallery.stripWidth).toBeCloseTo(
+    compactGallery.visibleCardSlots * 106,
     0,
   );
-  expect(compactGallery!.ribbonWidth).toBeCloseTo(
-    compactGallery!.stripWidth + 26,
+  expect(compactGallery.ribbonWidth).toBeCloseTo(
+    compactGallery.stripWidth + 26,
     0,
   );
-  expect(compactGallery!.firstCardWidth).toBeCloseTo(106, 0);
-  expect(compactGallery!.firstCardRight).toBeLessThanOrEqual(
-    compactGallery!.stripRight + 1,
+  expect(compactGallery.firstCardWidth).toBeCloseTo(106, 0);
+  expect(compactGallery.firstCardRight).toBeLessThanOrEqual(
+    compactGallery.stripRight + 1,
   );
-  if (compactGallery!.nextCardLeft !== null) {
-    expect(compactGallery!.nextCardLeft).toBeGreaterThanOrEqual(
-      compactGallery!.stripRight - 1,
+  if (compactGallery.nextCardLeft !== null) {
+    expect(compactGallery.nextCardLeft).toBeGreaterThanOrEqual(
+      compactGallery.stripRight - 1,
     );
   }
-  expect(compactGallery!.chevronLeft).toBeCloseTo(
-    compactGallery!.stripRight,
+  expect(compactGallery.chevronLeft).toBeCloseTo(compactGallery.stripRight, 0);
+  expect(compactGallery.chevronRight).toBeCloseTo(
+    compactGallery.ribbonRight - 1,
     0,
   );
-  expect(compactGallery!.chevronRight).toBeCloseTo(
-    compactGallery!.ribbonRight - 1,
-    0,
-  );
-  expect(compactGallery!.chevronHeight).toBeCloseTo(
-    compactGallery!.ribbonHeight - 2,
+  expect(compactGallery.chevronHeight).toBeCloseTo(
+    compactGallery.ribbonHeight - 2,
     0,
   );
 
-  await page.setViewportSize({ width: 560, height: 900 });
+  // Phone width. The ribbon reclaims whatever a collapse frees, so groups now
+  // hold on to a usable state further down than they used to: at 560px the
+  // paragraph group still fits in full and the gallery still shows a card. Only
+  // here is there room for nothing but icons.
+  await page.setViewportSize({ width: 320, height: 900 });
   await expect
     .poll(async () =>
       page
@@ -310,4 +336,34 @@ test("home ribbon shrinks and collapses groups as width decreases", async ({
 
   await page.getByTestId("editor-ribbon-group-styles").click();
   await expect(page.getByTestId("editor-toolbar-style-expand")).toBeVisible();
+});
+
+test("narrowing the ribbon never shows more style cards", async ({ page }) => {
+  // The ribbon frees width by collapsing groups, and whatever it frees is then
+  // available to the compact style gallery. Left unchecked that inverts the
+  // relationship: collapsing the paragraph group recovered 165px, of which the
+  // gallery spent 106px on an extra card, so 880px showed *more* styles than
+  // 960px. The card count must fall — or hold — as the window narrows.
+  await page.setViewportSize({ width: 1700, height: 900 });
+  await gotoEditor(page);
+  await page.getByTestId("editor-ribbon-tab-home").click();
+
+  const widths = [1700, 1600, 1500, 1400, 1300, 1200, 1120, 1040, 960, 880];
+  const slots: { width: number; cards: number }[] = [];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    slots.push({ width, cards: (await settledGallery(page)).visibleCardSlots });
+  }
+
+  for (let index = 1; index < slots.length; index++) {
+    expect(
+      slots[index]!.cards,
+      `${slots[index]!.width}px shows ${slots[index]!.cards} cards, ` +
+        `more than the ${slots[index - 1]!.cards} at the wider ` +
+        `${slots[index - 1]!.width}px`,
+    ).toBeLessThanOrEqual(slots[index - 1]!.cards);
+  }
+  // The sweep has to actually move, or it would pass on a gallery stuck at one
+  // width.
+  expect(slots[0]!.cards).toBeGreaterThan(slots[slots.length - 1]!.cards);
 });

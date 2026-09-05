@@ -21,6 +21,10 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:4201/oasis-editor/",
     trace: "retain-on-failure",
   },
+  // `vite preview` serves the built bundle from `dist`, so a source change is
+  // invisible until `npm run build` runs again — the `test:e2e` scripts build
+  // first for that reason. Running `playwright test` against this config by
+  // hand tests whatever was last built.
   webServer: {
     command:
       "node ./node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4201 --strictPort --base /oasis-editor/",

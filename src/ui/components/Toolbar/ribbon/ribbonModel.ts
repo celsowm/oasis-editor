@@ -546,16 +546,12 @@ export function resolveResponsiveRibbonGroups(
         groupWidths,
         allocatedWidths,
       );
-      const deficit = currentWidth - targetWidth;
-      const nextStateWidth =
-        next.nextState === "compact"
-          ? snapCompactWidthToWholeItems(
-              next.group,
-              currentStateWidth - deficit,
-              groupWidths.compact,
-              groupWidths.full,
-            )
-          : widthForState(next.nextState, groupWidths);
+      // Demote to the state's own minimum. Sizing a compact group to "just
+      // enough to close the deficit" here would make its width depend on the
+      // order groups happen to be visited, which is what let the style gallery
+      // end up wider at 960px than at 1200px. Every width above the minimum is
+      // handed out once, below, from a single leftover budget.
+      const nextStateWidth = widthForState(next.nextState, groupWidths);
       const actualSaving = currentStateWidth - nextStateWidth;
       states.set(next.group.id, next.nextState);
       if (next.nextState === "compact") {
@@ -567,7 +563,47 @@ export function resolveResponsiveRibbonGroups(
     }
 
     let slack = targetWidth - currentWidth;
+
+    // The loop above pays for a demotion in full, so it overshoots whenever the
+    // step frees more than was missing: a group collapses to an icon to recover
+    // 165px when 20px would have done. Walk back up, most-recently-demoted
+    // first, restoring any state the leftover covers. Without this a group's
+    // collapse leaves a pile of slack behind, and handing that pile to the
+    // style gallery is what made a narrower ribbon show more cards.
+    let promoted = true;
+    while (promoted && slack > 0) {
+      promoted = false;
+      for (const group of [...groups].sort(
+        (a, b): number =>
+          b.resizePolicy.priority - a.resizePolicy.priority ||
+          a.order - b.order,
+      )) {
+        const groupStates = group.resizePolicy.states;
+        const state = states.get(group.id) ?? "full";
+        const index = groupStates.indexOf(state);
+        const previous = index > 0 ? groupStates[index - 1] : undefined;
+        if (!previous) continue;
+        const groupWidths = widths.get(group.id)!;
+        const cost =
+          widthForState(previous, groupWidths) -
+          widthForResolvedState(group, state, groupWidths, allocatedWidths);
+        if (cost <= 0 || cost > slack) continue;
+        states.set(group.id, previous);
+        if (previous === "compact") {
+          allocatedWidths.set(group.id, groupWidths.compact);
+        } else {
+          allocatedWidths.delete(group.id);
+        }
+        slack -= cost;
+        promoted = true;
+      }
+    }
+
     if (slack > 0) {
+      const totalFullWidth = groups.reduce(
+        (sum, group): number => sum + widths.get(group.id)!.full,
+        0,
+      );
       for (const group of groups
         .filter((candidate): boolean => states.get(candidate.id) === "compact")
         .sort(
@@ -576,16 +612,27 @@ export function resolveResponsiveRibbonGroups(
             a.resizePolicy.priority - b.resizePolicy.priority,
         )) {
         const groupWidths = widths.get(group.id)!;
-        const compactWidth = groupWidths.compact;
-        const maxExtra = groupWidths.full - compactWidth;
-        if (maxExtra <= 0) continue;
+        const current = allocatedWidths.get(group.id) ?? groupWidths.compact;
+        // A compact group may only claim the room left over once every other
+        // group is at its full width. Slack freed by *collapsing* a neighbour
+        // is not spendable here: letting it through meant collapsing the
+        // paragraph group bought the style gallery a card, so shrinking the
+        // window from 960px to 880px showed one more style, not one fewer.
+        const ceiling = Math.min(
+          groupWidths.full,
+          targetWidth - (totalFullWidth - groupWidths.full),
+        );
+        if (ceiling <= current) continue;
+        // Grow from what the group already has, not from its minimum: the
+        // difference was already spent out of `currentWidth`, and counting it
+        // twice let the panel allocate more than it has.
         const allocated = snapCompactWidthToWholeItems(
           group,
-          compactWidth + slack,
-          compactWidth,
-          groupWidths.full,
+          Math.min(current + slack, ceiling),
+          current,
+          ceiling,
         );
-        const consumed = allocated - compactWidth;
+        const consumed = allocated - current;
         if (consumed <= 0) continue;
         allocatedWidths.set(group.id, allocated);
         slack -= consumed;
