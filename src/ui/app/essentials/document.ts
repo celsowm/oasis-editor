@@ -68,6 +68,7 @@ export function buildEssentialsDocument(
     openEquationDialog: (): void => options.openEquationDialog(),
     exportDocx: (): undefined => void options.docIO.handleExportDocx(),
     exportPdf: (): undefined => void options.docIO.handleExportPdf(),
+    printDocument: (): undefined => void options.docIO.handlePrint(),
     importDocument: (): void | undefined => options.importInputRef()?.click(),
     insertImage: (): void | undefined => options.imageInputRef()?.click(),
     insertShape: (preset: string): void =>

@@ -31,6 +31,7 @@ export interface CreateEditorEssentialsPluginOptions {
   docIO: {
     handleExportDocx: () => Promise<Blob>;
     handleExportPdf: () => Promise<Blob>;
+    handlePrint: () => Promise<Blob>;
   };
   newDocument: () => void;
   openSymbolDialog: () => void;

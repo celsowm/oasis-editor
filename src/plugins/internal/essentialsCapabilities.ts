@@ -109,6 +109,7 @@ export interface EssentialsDocumentCapability {
   newDocument: () => void;
   exportDocx: () => void;
   exportPdf: () => void;
+  printDocument: () => void;
   importDocument: () => void;
   insertImage: () => void;
   insertShape: (preset: string) => void;
@@ -155,7 +156,6 @@ export interface EssentialsImageCapability {
 }
 
 export interface EssentialsBrowserCapability {
-  print: () => void;
   copy: () => void;
 }
 

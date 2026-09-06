@@ -154,6 +154,16 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     command: "exportPdf",
     ribbonSize: "large",
   });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-print",
+    testId: "editor-toolbar-print",
+    iconName: "printer",
+    labelKey: "toolbar.print",
+    tooltipKey: "toolbar.print",
+    command: "print",
+    ribbonSize: "large",
+  });
 
   // --- History ---
   items.push({

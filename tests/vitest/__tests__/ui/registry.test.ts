@@ -195,6 +195,7 @@ describe("UI registries", () => {
       OASIS_TOOLBAR_ITEMS.importDocument,
       OASIS_TOOLBAR_ITEMS.exportDocx,
       OASIS_TOOLBAR_ITEMS.exportPdf,
+      OASIS_TOOLBAR_ITEMS.print,
     ]);
     expect(
       fileItems.map((item) => ("labelKey" in item ? item.labelKey : undefined)),
@@ -203,6 +204,7 @@ describe("UI registries", () => {
       "toolbar.importDocx",
       "toolbar.exportDocx",
       "toolbar.exportPdf",
+      "toolbar.print",
     ]);
     expect(
       fileItems.every(

@@ -43,7 +43,7 @@ export function buildDocumentAndBrowserCommands({
     ),
     print: actionCommand(
       "print",
-      (): void => browser.print(),
+      (): void => document.printDocument(),
       (): { isEnabled: true } => ({ isEnabled: true }),
     ),
     copy: actionCommand(

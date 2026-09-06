@@ -520,6 +520,7 @@ export const en = {
   // Export
   "toolbar.exportDocx": "Export DOCX",
   "toolbar.exportPdf": "Export PDF",
+  "toolbar.print": "Print",
 
   "underline.style.single": "Single",
   "underline.style.double": "Double",

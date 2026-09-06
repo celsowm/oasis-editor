@@ -90,6 +90,13 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     execute: (): true => true,
   },
   {
+    id: "print",
+    command: "print",
+    key: "p",
+    ctrlOrMeta: true,
+    execute: (): true => true,
+  },
+  {
     id: "selectAll",
     command: "selectAll",
     key: "a",

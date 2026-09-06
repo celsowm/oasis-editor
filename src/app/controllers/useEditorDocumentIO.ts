@@ -148,11 +148,16 @@ function createEditorDocumentIOImpl(deps: UseEditorDocumentIOProps) {
     return exporter.handleExportPdf();
   };
 
+  const handlePrint = async (): Promise<Blob> => {
+    return exporter.handlePrint();
+  };
+
   return {
     importProgress,
     handleImportFile,
     handleExportDocx,
     handleExportPdf,
+    handlePrint,
     exportDocxBlob: exporter.exportDocxBlob,
     exportPdfBlob: exporter.exportPdfBlob,
     insertImageFromFile,

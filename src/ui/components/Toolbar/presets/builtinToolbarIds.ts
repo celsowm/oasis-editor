@@ -3,6 +3,7 @@ export const OASIS_TOOLBAR_ITEMS = {
   importDocument: "editor-toolbar-import-document",
   exportDocx: "editor-toolbar-export-docx",
   exportPdf: "editor-toolbar-export-pdf",
+  print: "editor-toolbar-print",
   undo: "editor-toolbar-undo",
   redo: "editor-toolbar-redo",
   style: "editor-toolbar-style",

@@ -522,6 +522,7 @@ export const ptBR = {
   // Export
   "toolbar.exportDocx": "Exportar DOCX",
   "toolbar.exportPdf": "Exportar PDF",
+  "toolbar.print": "Imprimir",
 
   "underline.style.single": "Simples",
   "underline.style.double": "Duplo",

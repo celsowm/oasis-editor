@@ -14,6 +14,7 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-new-document": { tab: "file", group: "document", row: 1 },
   "editor-toolbar-export-docx": { tab: "file", group: "document", row: 1 },
   "editor-toolbar-export-pdf": { tab: "file", group: "document", row: 1 },
+  "editor-toolbar-print": { tab: "file", group: "document", row: 1 },
   "editor-toolbar-import-document": { tab: "file", group: "document", row: 1 },
   "editor-toolbar-undo": { tab: "home", group: "clipboard", row: 1 },
   "editor-toolbar-redo": { tab: "home", group: "clipboard", row: 2 },
