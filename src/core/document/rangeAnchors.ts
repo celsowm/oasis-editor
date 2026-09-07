@@ -114,15 +114,15 @@ export function transformTextRangeRegistryAcrossParagraphEdit<
   oldParagraphs: EditorParagraphNode[],
   newParagraphs: EditorParagraphNode[],
 ): Registry {
-  const old = buildStream(oldParagraphs);
+  const oldParagraphIds = new Set(oldParagraphs.map((p) => p.id));
 
   let relevant = false;
   for (const id of registry.order) {
     const item = registry.items[id];
     if (!item) continue;
     if (
-      (item.start && old.baseById.has(item.start.paragraphId)) ||
-      (item.end && old.baseById.has(item.end.paragraphId))
+      (item.start && oldParagraphIds.has(item.start.paragraphId)) ||
+      (item.end && oldParagraphIds.has(item.end.paragraphId))
     ) {
       relevant = true;
       break;
@@ -132,6 +132,7 @@ export function transformTextRangeRegistryAcrossParagraphEdit<
     return registry;
   }
 
+  const old = buildStream(oldParagraphs);
   const next = buildStream(newParagraphs);
   if (old.text === next.text) {
     return registry;
