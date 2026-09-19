@@ -473,6 +473,33 @@ export function OasisSiteApp() {
             <span aria-hidden="true" />
           </button>
           <span class="oasis-site-strip-title">{routeLabels[language()][activeRoute()]}</span>
+          <Show when={activeRoute() === "editor"}>
+            <div class="oasis-site-strip-actions">
+              <a
+                class="oasis-site-support-link"
+                href="https://ko-fi.com/L4L11VB7JN"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={language() === "pt" ? "Apoiar o Oasis Editor no Ko-fi" : "Support Oasis Editor on Ko-fi"}
+                title={language() === "pt" ? "Apoiar no Ko-fi" : "Support on Ko-fi"}
+              >
+                <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Ko-fi" />
+              </a>
+              <a
+                class="oasis-site-star-link"
+                href="https://github.com/celsowm/oasis-editor"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={language() === "pt" ? "Dar uma estrela ao Oasis Editor no GitHub" : "Star Oasis Editor on GitHub"}
+                title={language() === "pt" ? "Dar estrela no GitHub" : "Star on GitHub"}
+              >
+                <img
+                  src="https://img.shields.io/github/stars/celsowm/oasis-editor?style=social"
+                  alt={language() === "pt" ? "Estrelas no GitHub" : "GitHub stars"}
+                />
+              </a>
+            </div>
+          </Show>
         </div>
 
         <Switch>
