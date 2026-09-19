@@ -474,7 +474,7 @@ export function OasisSiteApp() {
           </button>
           <span class="oasis-site-strip-title">{routeLabels[language()][activeRoute()]}</span>
           <Show when={activeRoute() === "editor"}>
-            <div class="oasis-site-strip-actions">
+            <div class="oasis-site-strip-actions" style={{ "margin-left": "auto", display: "flex", "align-items": "center", "justify-content": "flex-end", gap: "10px", "flex-shrink": "0" }}>
               <a
                 class="oasis-site-support-link"
                 href="https://ko-fi.com/L4L11VB7JN"
