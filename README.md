@@ -12,6 +12,8 @@
 
 # Oasis Editor
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L4L11VB7JN)
+
 Oasis Editor is a canvas-first, browser-based document editor for applications
 that need a real paged document surface—not a `contenteditable` region or a
 textarea stretched into a page. The document lives in a typed editor model;
