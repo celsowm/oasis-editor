@@ -27,9 +27,7 @@ export interface EditorUiOptions {
   loadingOptions: () => OasisEditorLoadingOptions | undefined;
   loadingLabel: () => string;
   shellComponent: () =>
-    | typeof DocumentShell
-    | typeof InlineShell
-    | typeof BalloonShell;
+    typeof DocumentShell | typeof InlineShell | typeof BalloonShell;
 }
 
 /**
@@ -63,9 +61,7 @@ export function createEditorUiOptions(
     loadingLabel: (): string =>
       loadingOptions()?.label ?? "Loading oasis-editor...",
     shellComponent: ():
-      | typeof DocumentShell
-      | typeof InlineShell
-      | typeof BalloonShell => {
+      typeof DocumentShell | typeof InlineShell | typeof BalloonShell => {
       const s = ui().shell ?? "document";
       if (s === "inline") return InlineShell;
       if (s === "balloon") return BalloonShell;

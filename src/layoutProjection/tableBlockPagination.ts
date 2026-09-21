@@ -437,21 +437,20 @@ export function paginateTableBlock(
           currentCellBlockPositions,
           undefined,
         );
-        let ends = starts.map(
-          (start, cellIdx): TableCellBlockPosition =>
-            findCellSplitEndPosition(
-              targetRow,
-              cellIdx,
-              start,
-              track.currentMaxHeight,
-              styles,
-              measurer,
-              defaultTabStop,
-              contentWidth,
-              sourceBlock,
-              startRowIndex,
-              projectionContext,
-            ),
+        let ends = starts.map((start, cellIdx): TableCellBlockPosition =>
+          findCellSplitEndPosition(
+            targetRow,
+            cellIdx,
+            start,
+            track.currentMaxHeight,
+            styles,
+            measurer,
+            defaultTabStop,
+            contentWidth,
+            sourceBlock,
+            startRowIndex,
+            projectionContext,
+          ),
         );
         if (!positionsProgressed(starts, ends)) {
           ends = starts.map((start, cellIdx): { blockIndex: number } => ({

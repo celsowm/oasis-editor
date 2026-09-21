@@ -73,12 +73,7 @@ export type SerializeTableBlockXml = (
 export type SerializeTableParagraphXml = SerializeTableBlockXml;
 
 type DocxWidthTag =
-  | "tblW"
-  | "tcW"
-  | "tblInd"
-  | "tblCellSpacing"
-  | "wBefore"
-  | "wAfter";
+  "tblW" | "tcW" | "tblInd" | "tblCellSpacing" | "wBefore" | "wAfter";
 
 function serializeOnOffElement(
   tag: string,

@@ -72,8 +72,8 @@ export function buildEssentialsDocument(
     importDocument: (): void | undefined => options.importInputRef()?.click(),
     insertImage: (): void | undefined => options.imageInputRef()?.click(),
     insertShape: (preset: string): void =>
-      options.applyTransactionalState(
-        (current): EditorState => insertShapeAtSelection(current, preset),
+      options.applyTransactionalState((current): EditorState =>
+        insertShapeAtSelection(current, preset),
       ),
   };
 }

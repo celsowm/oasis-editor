@@ -192,9 +192,8 @@ export function deleteFootnote(
   };
 
   const zoneParagraphs = getParagraphs(navState);
-  const nextZoneParagraphs = zoneParagraphs.map(
-    (p): EditorParagraphNode =>
-      p.id === targetParagraphId ? updatedParagraph : p,
+  const nextZoneParagraphs = zoneParagraphs.map((p): EditorParagraphNode =>
+    p.id === targetParagraphId ? updatedParagraph : p,
   );
 
   const intermediate = cloneStateWithParagraphs(

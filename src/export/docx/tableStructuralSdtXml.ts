@@ -130,22 +130,18 @@ export function wrapTableStructuralSdts(
     if (cellElements.length !== row.cells.length) continue;
     wrapSequence(
       rowElement,
-      cellElements.map(
-        (element, cellIndex): WrappedElement => ({
-          element,
-          wrappers: row.cells[cellIndex]!.sdtWrappers ?? [],
-        }),
-      ),
+      cellElements.map((element, cellIndex): WrappedElement => ({
+        element,
+        wrappers: row.cells[cellIndex]!.sdtWrappers ?? [],
+      })),
     );
   }
 
   wrapSequence(
     tableElement,
-    rowElements.map(
-      (element, rowIndex): WrappedElement => ({
-        element,
-        wrappers: table.rows[rowIndex]!.sdtWrappers ?? [],
-      }),
-    ),
+    rowElements.map((element, rowIndex): WrappedElement => ({
+      element,
+      wrappers: table.rows[rowIndex]!.sdtWrappers ?? [],
+    })),
   );
 }

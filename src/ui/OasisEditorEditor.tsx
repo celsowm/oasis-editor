@@ -447,8 +447,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
               <ImageCropPreviewOverlay
                 box={selectedImage}
                 image={():
-                  | import("@/core/model.js").EditorImageRunData
-                  | null => selectedImageData()?.image ?? null}
+                  import("@/core/model.js").EditorImageRunData | null =>
+                  selectedImageData()?.image ?? null
+                }
                 src={(): string => selectedImageData()?.src ?? ""}
                 rotation={(): number => selectedImage()?.rotation ?? 0}
               />

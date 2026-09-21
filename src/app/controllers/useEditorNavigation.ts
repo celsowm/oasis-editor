@@ -384,14 +384,13 @@ function createEditorNavigationImpl(deps: UseEditorNavigationProps) {
 
     deps.setPreferredColumnX(desiredX);
     deps.resetTransactionGrouping();
-    deps.applyTransactionalState(
-      (current): EditorState =>
-        setSelection(current, {
-          anchor: extend
-            ? current.selection.anchor
-            : paragraphOffsetToPosition(targetParagraph, offset),
-          focus: paragraphOffsetToPosition(targetParagraph, offset),
-        }),
+    deps.applyTransactionalState((current): EditorState =>
+      setSelection(current, {
+        anchor: extend
+          ? current.selection.anchor
+          : paragraphOffsetToPosition(targetParagraph, offset),
+        focus: paragraphOffsetToPosition(targetParagraph, offset),
+      }),
     );
     deps.focusInput();
     return true;

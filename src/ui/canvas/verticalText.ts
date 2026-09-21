@@ -20,10 +20,7 @@ import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
  * `tbRlV` renders rotated (≈ `tbRl`); only `wordArtVert` stacks glyphs upright.
  */
 export type VerticalRenderMode =
-  | "horizontal"
-  | "rotate-cw"
-  | "rotate-ccw"
-  | "stack";
+  "horizontal" | "rotate-cw" | "rotate-ccw" | "stack";
 
 /**
  * Map an OOXML text-direction token (`w:textDirection/@w:val` or

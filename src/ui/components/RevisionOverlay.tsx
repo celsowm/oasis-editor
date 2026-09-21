@@ -9,7 +9,7 @@ export function RevisionOverlay(props: RevisionOverlayProps): JSX.Element {
   const formattedDate = (): string => {
     try {
       return new Date(props.box.date).toLocaleString();
-    } catch (e) {
+    } catch (_e) {
       return "Data desconhecida";
     }
   };

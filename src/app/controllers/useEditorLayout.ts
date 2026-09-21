@@ -36,11 +36,7 @@ interface UseEditorLayoutProps {
 }
 
 type LayoutSyncReason =
-  | "selection"
-  | "scroll"
-  | "content-change"
-  | "resize"
-  | "import";
+  "selection" | "scroll" | "content-change" | "resize" | "import";
 
 export interface LayoutInvalidation {
   dirtyParagraphIds?: string[];

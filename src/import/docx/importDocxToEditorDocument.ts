@@ -49,9 +49,7 @@ import { createEditorCommentId } from "@/core/editorState.js";
 import type { EditorComments } from "@/core/model.js";
 
 export type DocxImportStage =
-  | "opening-docx"
-  | "parsing-document"
-  | "parsing-headers-footers";
+  "opening-docx" | "parsing-document" | "parsing-headers-footers";
 
 export interface ImportDocxToEditorDocumentOptions {
   onProgress?: (stage: DocxImportStage, progress?: number) => void;

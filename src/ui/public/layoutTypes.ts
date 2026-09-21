@@ -5,17 +5,10 @@ export type ResponsiveValue<T> = T | Partial<Record<Breakpoint, T>>;
 
 export type SpacingValue = number | string;
 export type StackDirection =
-  | "row"
-  | "row-reverse"
-  | "column"
-  | "column-reverse";
+  "row" | "row-reverse" | "column" | "column-reverse";
 export type FlexWrap = "nowrap" | "wrap" | "wrap-reverse";
 export type FlexAlign =
-  | "flex-start"
-  | "center"
-  | "flex-end"
-  | "stretch"
-  | "baseline";
+  "flex-start" | "center" | "flex-end" | "stretch" | "baseline";
 export type FlexJustify =
   | "flex-start"
   | "center"

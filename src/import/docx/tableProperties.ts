@@ -710,10 +710,7 @@ export function isTableHeaderRow(rowNode: XmlElement): boolean {
 }
 
 type CellBorderKey =
-  | "borderTop"
-  | "borderBottom"
-  | "borderLeft"
-  | "borderRight";
+  "borderTop" | "borderBottom" | "borderLeft" | "borderRight";
 
 function applyBorderIfMissing(
   style: EditorTableCellStyle,

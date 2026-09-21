@@ -49,10 +49,7 @@ function parseRun(element: XmlElement): EditorMathNode {
         ...(child(rPr, "sty")
           ? {
               script: value(child(rPr, "sty"), "val") as
-                | "roman"
-                | "script"
-                | "fraktur"
-                | "double-struck",
+                "roman" | "script" | "fraktur" | "double-struck",
             }
           : {}),
         ...(child(rPr, "nor") ? { normalText: true } : {}),

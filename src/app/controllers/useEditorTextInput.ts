@@ -145,10 +145,8 @@ function createEditorTextInputImpl(deps: UseEditorTextInputProps) {
     const pendingStyle = cloneStyle(deps.pendingCaretTextStyle());
     deps.applyTransactionalState(
       (current): EditorState =>
-        deps.applyTableAwareParagraphEdit(
-          current,
-          (temp): EditorState =>
-            insertTextAtSelection(temp, text, pendingStyle),
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+          insertTextAtSelection(temp, text, pendingStyle),
         ),
       {
         mergeKey: MERGE_KEYS.insertText,

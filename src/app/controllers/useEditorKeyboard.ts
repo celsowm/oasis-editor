@@ -114,12 +114,10 @@ function createEditorKeyboardControllerImpl(deps: EditorKeyboardDeps) {
         deps.resetTransactionGrouping();
 
         if (!isSelectionCollapsed(currentState.selection)) {
-          deps.applyTransactionalState(
-            (current): EditorState =>
-              deps.applyTableAwareParagraphEdit(
-                current,
-                (temp): EditorState => deleteBackward(temp),
-              ),
+          deps.applyTransactionalState((current): EditorState =>
+            deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+              deleteBackward(temp),
+            ),
           );
           event.currentTarget.value = "";
           deps.focusInput();
@@ -144,8 +142,8 @@ function createEditorKeyboardControllerImpl(deps: EditorKeyboardDeps) {
             currentState.selection.focus,
           );
           if (focusParagraphOffset === 0) {
-            deps.applySelectionAwareParagraphCommand(
-              (current): EditorState => outdentParagraphList(current),
+            deps.applySelectionAwareParagraphCommand((current): EditorState =>
+              outdentParagraphList(current),
             );
             event.currentTarget.value = "";
             deps.focusInput();
@@ -159,60 +157,43 @@ function createEditorKeyboardControllerImpl(deps: EditorKeyboardDeps) {
 
         if (event.key === "Backspace") {
           if (focusOffset === 0 || word.start === focusOffset) {
-            deps.applyTransactionalState(
-              (current): EditorState =>
-                deps.applyTableAwareParagraphEdit(
-                  current,
-                  (temp): EditorState => deleteBackward(temp),
-                ),
+            deps.applyTransactionalState((current): EditorState =>
+              deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+                deleteBackward(temp),
+              ),
             );
           } else {
-            deps.applyTransactionalState(
-              (current): EditorState =>
-                deps.applyTableAwareParagraphEdit(
-                  setSelection(current, {
-                    anchor: paragraphOffsetToPosition(
-                      focusParagraph,
-                      word.start,
-                    ),
-                    focus: paragraphOffsetToPosition(
-                      focusParagraph,
-                      focusOffset,
-                    ),
-                  }),
-                  (temp): EditorState => deleteBackward(temp),
-                ),
-            );
-          }
-        } else if (focusOffset >= paragraphText.length) {
-          deps.applyTransactionalState(
-            (current): EditorState =>
-              deps.applyTableAwareParagraphEdit(
-                current,
-                (temp): EditorState => deleteForward(temp),
-              ),
-          );
-        } else if (word.end > focusOffset) {
-          deps.applyTransactionalState(
-            (current): EditorState =>
+            deps.applyTransactionalState((current): EditorState =>
               deps.applyTableAwareParagraphEdit(
                 setSelection(current, {
-                  anchor: paragraphOffsetToPosition(
-                    focusParagraph,
-                    focusOffset,
-                  ),
-                  focus: paragraphOffsetToPosition(focusParagraph, word.end),
+                  anchor: paragraphOffsetToPosition(focusParagraph, word.start),
+                  focus: paragraphOffsetToPosition(focusParagraph, focusOffset),
                 }),
                 (temp): EditorState => deleteBackward(temp),
               ),
+            );
+          }
+        } else if (focusOffset >= paragraphText.length) {
+          deps.applyTransactionalState((current): EditorState =>
+            deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+              deleteForward(temp),
+            ),
+          );
+        } else if (word.end > focusOffset) {
+          deps.applyTransactionalState((current): EditorState =>
+            deps.applyTableAwareParagraphEdit(
+              setSelection(current, {
+                anchor: paragraphOffsetToPosition(focusParagraph, focusOffset),
+                focus: paragraphOffsetToPosition(focusParagraph, word.end),
+              }),
+              (temp): EditorState => deleteBackward(temp),
+            ),
           );
         } else {
-          deps.applyTransactionalState(
-            (current): EditorState =>
-              deps.applyTableAwareParagraphEdit(
-                current,
-                (temp): EditorState => deleteForward(temp),
-              ),
+          deps.applyTransactionalState((current): EditorState =>
+            deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+              deleteForward(temp),
+            ),
           );
         }
 
@@ -257,12 +238,10 @@ function createEditorKeyboardControllerImpl(deps: EditorKeyboardDeps) {
         event.preventDefault();
         deps.clearPreferredColumn();
         deps.resetTransactionGrouping();
-        deps.applyTransactionalState(
-          (current): EditorState =>
-            deps.applyTableAwareParagraphEdit(
-              current,
-              (temp): EditorState => deleteBackward(temp),
-            ),
+        deps.applyTransactionalState((current): EditorState =>
+          deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+            deleteBackward(temp),
+          ),
         );
         event.currentTarget.value = "";
         deps.focusInput();
@@ -271,12 +250,10 @@ function createEditorKeyboardControllerImpl(deps: EditorKeyboardDeps) {
         event.preventDefault();
         deps.clearPreferredColumn();
         deps.resetTransactionGrouping();
-        deps.applyTransactionalState(
-          (current): EditorState =>
-            deps.applyTableAwareParagraphEdit(
-              current,
-              (temp): EditorState => deleteForward(temp),
-            ),
+        deps.applyTransactionalState((current): EditorState =>
+          deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+            deleteForward(temp),
+          ),
         );
         event.currentTarget.value = "";
         deps.focusInput();

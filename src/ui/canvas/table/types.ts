@@ -7,9 +7,7 @@ import type { projectParagraphLayout } from "@/layoutProjection/index.js";
 import type { VerticalRenderMode } from "../verticalText.js";
 
 export type CanvasUnsupportedReason =
-  | "unsupported:v-span"
-  | "unsupported:v-merge"
-  | "unsupported:nested-table";
+  "unsupported:v-span" | "unsupported:v-merge" | "unsupported:nested-table";
 
 export interface CanvasTableBorderSpec {
   width: number;

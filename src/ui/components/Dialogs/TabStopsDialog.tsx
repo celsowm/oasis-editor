@@ -44,9 +44,8 @@ export function TabStopsDialog(props: TabStopsDialogProps): JSX.Element {
 
   const updateStop = (index: number, patch: Partial<DraftTabStop>): void => {
     setStops((current) =>
-      current.map(
-        (stop, stopIndex): DraftTabStop =>
-          stopIndex === index ? { ...stop, ...patch } : stop,
+      current.map((stop, stopIndex): DraftTabStop =>
+        stopIndex === index ? { ...stop, ...patch } : stop,
       ),
     );
   };
@@ -67,13 +66,11 @@ export function TabStopsDialog(props: TabStopsDialogProps): JSX.Element {
   const handleApply = (): void => {
     const tabs: EditorTabStop[] = stops()
       .filter((stop): boolean => stop.position !== null)
-      .map(
-        (stop): EditorTabStop => ({
-          position: stop.position as number,
-          type: stop.type,
-          ...(stop.leader !== "none" ? { leader: stop.leader } : {}),
-        }),
-      )
+      .map((stop): EditorTabStop => ({
+        position: stop.position as number,
+        type: stop.type,
+        ...(stop.leader !== "none" ? { leader: stop.leader } : {}),
+      }))
       .sort((a, b): number => a.position - b.position);
     props.onApply(tabs);
     props.onClose();

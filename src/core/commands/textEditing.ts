@@ -129,12 +129,11 @@ function insertFragmentsAtPosition(
     [...beforeRuns, ...firstRuns],
     getStyleAtOffset(targetParagraph, targetOffset),
   );
-  const insertedMiddle = middleFragments.map(
-    (fragment): EditorParagraphNode =>
-      buildParagraphFromRuns(
-        cloneParagraph(fragment.paragraphTemplate),
-        cloneFragmentRuns(fragment.runs),
-      ),
+  const insertedMiddle = middleFragments.map((fragment): EditorParagraphNode =>
+    buildParagraphFromRuns(
+      cloneParagraph(fragment.paragraphTemplate),
+      cloneFragmentRuns(fragment.runs),
+    ),
   );
   const lastInserted = buildParagraphFromRuns(
     cloneParagraph(lastFragment.paragraphTemplate),
@@ -395,9 +394,8 @@ export function insertPlainTextAtSelection(
   const tailRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
   const middleParagraphs = lines
     .slice(1, -1)
-    .map(
-      (line): EditorParagraphNode =>
-        createParagraphFromRuns([{ text: line, styles: insertionStyles }]),
+    .map((line): EditorParagraphNode =>
+      createParagraphFromRuns([{ text: line, styles: insertionStyles }]),
     );
   const lastParagraph = createParagraphFromRuns([
     { text: lines[lines.length - 1], styles: insertionStyles },

@@ -221,9 +221,8 @@ export function createEditorTableCornerResize(deps: {
           currentClientY: event.clientY,
         };
         const { scaleX, scaleY } = computeCornerScales(settled);
-        deps.applyTransactionalState(
-          (state): EditorState =>
-            applyTableCornerResize(state, settled, scaleX, scaleY),
+        deps.applyTransactionalState((state): EditorState =>
+          applyTableCornerResize(state, settled, scaleX, scaleY),
         );
       }
     }

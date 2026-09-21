@@ -25,11 +25,7 @@ export type EditorUnderlineStyle =
   | "words";
 
 export type EditorLigatures =
-  | "none"
-  | "standard"
-  | "contextual"
-  | "historical"
-  | "standardContextual";
+  "none" | "standard" | "contextual" | "historical" | "standardContextual";
 
 export type EditorNumberSpacing = "default" | "proportional" | "tabular";
 export type EditorNumberForm = "default" | "lining" | "oldStyle";
@@ -48,11 +44,7 @@ export interface EditorBorderStyle {
 
 /** `w:em/@w:val`: the emphasis mark drawn over each glyph of a run. */
 export type EditorEmphasisMark =
-  | "dot"
-  | "comma"
-  | "circle"
-  | "underDot"
-  | "none";
+  "dot" | "comma" | "circle" | "underDot" | "none";
 
 /** One color stop in a `w14:gradFill` gradient. `position` is 0–1 (0 = start, 1 = end). */
 export interface EditorGradientStop {

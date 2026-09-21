@@ -18,8 +18,7 @@ function nodeBrotliModule(): {
   brotliDecompressSync?: (bytes: Uint8Array) => Uint8Array;
 } | null {
   const processLike = (globalThis as { process?: unknown }).process as
-    | { getBuiltinModule?: (name: string) => unknown }
-    | undefined;
+    { getBuiltinModule?: (name: string) => unknown } | undefined;
   const getBuiltinModule = processLike?.getBuiltinModule;
   if (typeof getBuiltinModule !== "function") {
     return null;

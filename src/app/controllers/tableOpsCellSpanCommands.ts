@@ -405,10 +405,8 @@ function createTableCellSpanOperationsImpl(deps: TableCellSpanOperationsDeps) {
             }
           : {}),
       },
-      ...Array.from(
-        { length: span - 1 },
-        (): EditorTableCellNode =>
-          createEditorTableCell([createEditorParagraph("")]),
+      ...Array.from({ length: span - 1 }, (): EditorTableCellNode =>
+        createEditorTableCell([createEditorParagraph("")]),
       ),
     ];
 

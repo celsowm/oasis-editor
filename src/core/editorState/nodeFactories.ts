@@ -94,14 +94,8 @@ export function createEditorParagraphFromRuns(
     type: "paragraph",
     runs:
       runs.length > 0
-        ? runs.map(
-            (run): EditorTextRun =>
-              createEditorStyledRun(
-                run.text,
-                run.styles,
-                run.image,
-                run.textBox,
-              ),
+        ? runs.map((run): EditorTextRun =>
+            createEditorStyledRun(run.text, run.styles, run.image, run.textBox),
           )
         : [createEditorRun("")],
   };

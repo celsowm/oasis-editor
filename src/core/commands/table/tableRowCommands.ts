@@ -25,29 +25,28 @@ export function setSelectedTableRowStyleValue<
   if (!target) return state;
 
   const updateTable = (table: EditorTableNode): EditorTableNode => {
-    const nextRows = table.rows.map(
-      (row, rowIndex): EditorTableRowNode =>
-        rowIndex === target.loc.rowIndex
-          ? ((): EditorTableRowNode => {
-              let style = row.style;
-              if (
-                state.trackChangesEnabled &&
-                key !== "revision" &&
-                key !== "propertyRevision" &&
-                !style?.propertyRevision
-              ) {
-                style = {
-                  ...(style ?? {}),
-                  propertyRevision: {
-                    ...createTableRevisionMetadata(),
-                    type: "property",
-                    previous: { ...(style ?? {}) },
-                  },
-                };
-              }
-              return { ...row, style: patchStyleValue(style, key, value) };
-            })()
-          : row,
+    const nextRows = table.rows.map((row, rowIndex): EditorTableRowNode =>
+      rowIndex === target.loc.rowIndex
+        ? ((): EditorTableRowNode => {
+            let style = row.style;
+            if (
+              state.trackChangesEnabled &&
+              key !== "revision" &&
+              key !== "propertyRevision" &&
+              !style?.propertyRevision
+            ) {
+              style = {
+                ...(style ?? {}),
+                propertyRevision: {
+                  ...createTableRevisionMetadata(),
+                  type: "property",
+                  previous: { ...(style ?? {}) },
+                },
+              };
+            }
+            return { ...row, style: patchStyleValue(style, key, value) };
+          })()
+        : row,
     );
     return { ...table, rows: nextRows };
   };
@@ -154,16 +153,14 @@ export function distributeSelectedTableRows(state: EditorState): EditorState {
       if (Number.isFinite(px) && px > target) target = px;
     }
     if (target <= 0) target = DEFAULT_DISTRIBUTED_ROW_PX;
-    const nextRows = table.rows.map(
-      (row): EditorTableRowNode => ({
-        ...row,
-        style: {
-          ...(row.style ?? {}),
-          height: target,
-          heightRule: "atLeast",
-        },
-      }),
-    );
+    const nextRows = table.rows.map((row): EditorTableRowNode => ({
+      ...row,
+      style: {
+        ...(row.style ?? {}),
+        height: target,
+        heightRule: "atLeast",
+      },
+    }));
     return { ...table, rows: nextRows };
   });
 }

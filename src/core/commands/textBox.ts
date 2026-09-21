@@ -120,14 +120,13 @@ export function rotateSelectedTextBox(
 
       return {
         ...cloneParagraph(candidate),
-        runs: candidate.runs.map(
-          (run): EditorTextRun =>
-            run.id === targetRun.id && run.kind === "textBox"
-              ? {
-                  ...run,
-                  textBox: { ...run.textBox, rotation: nextRotation },
-                }
-              : cloneRun(run),
+        runs: candidate.runs.map((run): EditorTextRun =>
+          run.id === targetRun.id && run.kind === "textBox"
+            ? {
+                ...run,
+                textBox: { ...run.textBox, rotation: nextRotation },
+              }
+            : cloneRun(run),
         ),
       };
     },

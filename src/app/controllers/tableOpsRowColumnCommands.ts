@@ -182,12 +182,11 @@ function createTableRowColumnOperationsImpl(
     }
 
     blankRow = createEditorTableRow(
-      sourceRow.cells.map(
-        (cell): EditorTableCellNode =>
-          createEditorTableCell(
-            [createEditorParagraph("")],
-            Math.max(1, cell.colSpan ?? 1),
-          ),
+      sourceRow.cells.map((cell): EditorTableCellNode =>
+        createEditorTableCell(
+          [createEditorParagraph("")],
+          Math.max(1, cell.colSpan ?? 1),
+        ),
       ),
     );
     if (current.trackChangesEnabled) {

@@ -208,12 +208,10 @@ function parseSdtListItems(
 ): EditorSdtListItem[] | undefined {
   const items = getChildrenByTagNameNS(parent, WORD_NS, "listItem");
   if (items.length === 0) return undefined;
-  return items.map(
-    (item): EditorSdtListItem => ({
-      displayText: getAttributeValue(item, "displayText") ?? undefined,
-      value: getAttributeValue(item, "value") ?? undefined,
-    }),
-  );
+  return items.map((item): EditorSdtListItem => ({
+    displayText: getAttributeValue(item, "displayText") ?? undefined,
+    value: getAttributeValue(item, "value") ?? undefined,
+  }));
 }
 
 function parseSdtSubtype(parent: XmlElement): EditorSdtSubtype | undefined {

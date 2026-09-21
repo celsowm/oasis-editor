@@ -82,12 +82,10 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
     );
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
-    deps.applyTransactionalState(
-      (current): EditorState =>
-        deps.applyTableAwareParagraphEdit(
-          current,
-          (temp): EditorState => deleteBackward(temp),
-        ),
+    deps.applyTransactionalState((current): EditorState =>
+      deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+        deleteBackward(temp),
+      ),
     );
     deps.focusInput();
   };
@@ -110,12 +108,10 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
       event.preventDefault();
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState(
-        (current): EditorState =>
-          deps.applyTableAwareParagraphEdit(
-            current,
-            (temp): EditorState => insertPlainTextAtSelection(temp, text),
-          ),
+      deps.applyTransactionalState((current): EditorState =>
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+          insertPlainTextAtSelection(temp, text),
+        ),
       );
       event.currentTarget.value = "";
       deps.focusInput();
@@ -139,13 +135,10 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
       event.preventDefault();
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState(
-        (current): EditorState =>
-          deps.applyTableAwareParagraphEdit(
-            current,
-            (temp): EditorState =>
-              insertClipboardParagraphsAtSelection(temp, paragraphs),
-          ),
+      deps.applyTransactionalState((current): EditorState =>
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+          insertClipboardParagraphsAtSelection(temp, paragraphs),
+        ),
       );
       event.currentTarget.value = "";
       deps.focusInput();
@@ -160,12 +153,10 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
     event.preventDefault();
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
-    deps.applyTransactionalState(
-      (current): EditorState =>
-        deps.applyTableAwareParagraphEdit(
-          current,
-          (temp): EditorState => insertPlainTextAtSelection(temp, text),
-        ),
+    deps.applyTransactionalState((current): EditorState =>
+      deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+        insertPlainTextAtSelection(temp, text),
+      ),
     );
     event.currentTarget.value = "";
     deps.focusInput();

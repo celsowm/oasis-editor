@@ -93,11 +93,10 @@ function applyCellParagraphAutospacing(
   }
   collapseCellAutospacing(
     blocks,
-    paragraphNodes.map(
-      (paragraphNode): ParagraphAutospacingFlags =>
-        parseAutospacingFlags(
-          getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr"),
-        ),
+    paragraphNodes.map((paragraphNode): ParagraphAutospacingFlags =>
+      parseAutospacingFlags(
+        getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr"),
+      ),
     ),
   );
 }

@@ -12,12 +12,10 @@ export interface SymbolCategory {
 }
 
 const entries = (characters: string): readonly SymbolEntry[] =>
-  Array.from(characters).map(
-    (character): SymbolEntry => ({
-      character,
-      codePoint: `U+${character.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")}`,
-    }),
-  );
+  Array.from(characters).map((character): SymbolEntry => ({
+    character,
+    codePoint: `U+${character.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")}`,
+  }));
 
 export const SYMBOL_CATEGORIES: readonly SymbolCategory[] = [
   {

@@ -219,8 +219,8 @@ export function createEditorStateFromParagraphRuns(
 ): EditorState {
   const paragraphs =
     paragraphsSpec.length > 0
-      ? paragraphsSpec.map(
-          (runs): EditorParagraphNode => createEditorParagraphFromRuns(runs),
+      ? paragraphsSpec.map((runs): EditorParagraphNode =>
+          createEditorParagraphFromRuns(runs),
         )
       : [createEditorParagraph("")];
 

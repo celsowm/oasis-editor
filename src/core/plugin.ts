@@ -128,10 +128,7 @@ export type FloatingActionScope = "container" | "viewport";
 
 /** Placement options for floating action buttons. */
 export type FloatingActionPlacement =
-  | "bottom-right"
-  | "bottom-left"
-  | "top-right"
-  | "top-left";
+  "bottom-right" | "bottom-left" | "top-right" | "top-left";
 
 /** Contribution descriptor for a floating action button. */
 export interface FloatingActionContribution extends PluginAction {

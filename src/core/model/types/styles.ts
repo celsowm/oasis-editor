@@ -168,11 +168,7 @@ export interface EditorParagraphStyle {
   textAlignment?: "auto" | "top" | "center" | "baseline" | "bottom" | null;
   /** `w:textboxTightWrap/@w:val`: tight wrap behavior for text boxes. */
   textboxTightWrap?:
-    | "none"
-    | "allLines"
-    | "firstLineOnly"
-    | "firstLastLine"
-    | null;
+    "none" | "allLines" | "firstLineOnly" | "firstLastLine" | null;
   /** `w:divId/@w:val`: HTML-div mapping id (preserve only). */
   divId?: number | null;
   /** `w:cnfStyle/@w:val`: conditional style flags (table-style context). */

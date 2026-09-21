@@ -70,19 +70,17 @@ export function TableTabPanel(props: TablePanelProps): JSX.Element {
             )
           }
         >
-          {(["left", "center", "right"] as const).map(
-            (align): JSX.Element => (
-              <Radio
-                value={align}
-                label={t(
-                  `table.align${align[0]!.toUpperCase()}${align.slice(1)}` as Parameters<
-                    typeof t
-                  >[0],
-                )}
-                data-testid={`editor-table-properties-align-${align}`}
-              />
-            ),
-          )}
+          {(["left", "center", "right"] as const).map((align): JSX.Element => (
+            <Radio
+              value={align}
+              label={t(
+                `table.align${align[0]!.toUpperCase()}${align.slice(1)}` as Parameters<
+                  typeof t
+                >[0],
+              )}
+              data-testid={`editor-table-properties-align-${align}`}
+            />
+          ))}
         </RadioGroup>
         <Grid container spacing={1.5}>
           <Grid size={{ xs: 12, md: 6 }}>

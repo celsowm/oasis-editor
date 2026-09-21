@@ -107,10 +107,7 @@ export function resolveCanvasTextRenderMetrics(
 type CanvasTextFeatureContext = CanvasRenderingContext2D & {
   fontKerning?: "auto" | "normal" | "none";
   textRendering?:
-    | "auto"
-    | "optimizeSpeed"
-    | "optimizeLegibility"
-    | "geometricPrecision";
+    "auto" | "optimizeSpeed" | "optimizeLegibility" | "geometricPrecision";
 };
 
 /**

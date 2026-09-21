@@ -9,11 +9,7 @@ import {
 } from "@/core/selection/rangeEditing.js";
 
 export type TextCaseMode =
-  | "sentence"
-  | "lower"
-  | "upper"
-  | "capitalize"
-  | "toggle";
+  "sentence" | "lower" | "upper" | "capitalize" | "toggle";
 
 function isLetter(char: string): boolean {
   return /\p{L}/u.test(char);

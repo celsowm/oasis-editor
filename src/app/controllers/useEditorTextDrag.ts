@@ -216,10 +216,8 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
       deps.resetTransactionGrouping();
       deps.applyTransactionalState(
         (current): EditorState =>
-          deps.applyTableAwareParagraphEdit(
-            current,
-            (temp): EditorState =>
-              moveOrCopySelectionToPosition(temp, destination, { copy }),
+          deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+            moveOrCopySelectionToPosition(temp, destination, { copy }),
           ),
         {
           mergeKey: copy

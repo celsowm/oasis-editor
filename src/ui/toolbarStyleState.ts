@@ -280,9 +280,8 @@ function getSelectedParagraphStyles(
   const { styles: docStyles } = state.document;
   return paragraphs
     .slice(normalized.startIndex, normalized.endIndex + 1)
-    .map(
-      (paragraph): Required<EditorParagraphStyle> =>
-        resolveEffectiveParagraphStyle(paragraph.style, docStyles),
+    .map((paragraph): Required<EditorParagraphStyle> =>
+      resolveEffectiveParagraphStyle(paragraph.style, docStyles),
     );
 }
 

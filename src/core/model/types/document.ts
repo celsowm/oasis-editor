@@ -122,11 +122,7 @@ export interface EditorPageNumbering {
 export type EditorSectionVerticalAlign = "top" | "center" | "both" | "bottom";
 
 export type EditorSectionBreakType =
-  | "nextPage"
-  | "continuous"
-  | "evenPage"
-  | "oddPage"
-  | "nextColumn";
+  "nextPage" | "continuous" | "evenPage" | "oddPage" | "nextColumn";
 
 /** Previous semantic section properties stored by `w:sectPrChange`. */
 export interface EditorSectionPropertiesSnapshot {

@@ -210,11 +210,10 @@ function createEditorCommandsControllerImpl(
       return false;
     }
 
-    execParagraph(
-      (current): EditorState =>
-        direction === "indent"
-          ? indentParagraphList(current)
-          : outdentParagraphList(current),
+    execParagraph((current): EditorState =>
+      direction === "indent"
+        ? indentParagraphList(current)
+        : outdentParagraphList(current),
     );
     return true;
   };
@@ -229,15 +228,14 @@ function createEditorCommandsControllerImpl(
     clearPreferredColumn();
     resetTransactionGrouping();
     if (selectionCollapsed() && getParagraphText(paragraph).length === 0) {
-      applySelectionAwareParagraphCommand(
-        (current): EditorState => clearParagraphListAtSelection(current),
+      applySelectionAwareParagraphCommand((current): EditorState =>
+        clearParagraphListAtSelection(current),
       );
     } else {
       applyTransactionalState(
         (current): EditorState =>
-          applyTableAwareParagraphEdit(
-            current,
-            (temp): EditorState => splitListItemAtSelection(temp),
+          applyTableAwareParagraphEdit(current, (temp): EditorState =>
+            splitListItemAtSelection(temp),
           ),
         { mergeKey: MERGE_KEYS.splitListItem },
       );
@@ -265,8 +263,8 @@ function createEditorCommandsControllerImpl(
     // Extra step between apply and focusInput: ceremony is manual here.
     clearPreferredColumn();
     resetTransactionGrouping();
-    applySelectionAwareParagraphCommand(
-      (current): EditorState => outdentParagraphList(current),
+    applySelectionAwareParagraphCommand((current): EditorState =>
+      outdentParagraphList(current),
     );
     event.currentTarget.value = "";
     focusInput();
@@ -347,8 +345,8 @@ function createEditorCommandsControllerImpl(
     key: K,
     value: EditorParagraphStyle[K] | null,
   ): void => {
-    execParagraph(
-      (current): EditorState => setParagraphStyle(current, key, value),
+    execParagraph((current): EditorState =>
+      setParagraphStyle(current, key, value),
     );
   };
 
@@ -368,14 +366,14 @@ function createEditorCommandsControllerImpl(
   const handleListFormatChange = (
     format: EditorParagraphListStyle["format"],
   ): void => {
-    execParagraph(
-      (current): EditorState => setParagraphListFormat(current, format),
+    execParagraph((current): EditorState =>
+      setParagraphListFormat(current, format),
     );
   };
 
   const handleListStartAtChange = (startAt: number | null): void => {
-    execParagraph(
-      (current): EditorState => setParagraphListStartAt(current, startAt),
+    execParagraph((current): EditorState =>
+      setParagraphListStartAt(current, startAt),
     );
   };
 
@@ -386,12 +384,10 @@ function createEditorCommandsControllerImpl(
   };
 
   const applyInsertPageBreakCommand = (): void => {
-    execTransactional(
-      (current): EditorState =>
-        applyTableAwareParagraphEdit(
-          current,
-          (temp): EditorState => insertPageBreakAtSelection(temp),
-        ),
+    execTransactional((current): EditorState =>
+      applyTableAwareParagraphEdit(current, (temp): EditorState =>
+        insertPageBreakAtSelection(temp),
+      ),
     );
   };
 
@@ -406,9 +402,8 @@ function createEditorCommandsControllerImpl(
   };
 
   const handleStyleChange = (styleId: string): void => {
-    execParagraph(
-      (current): EditorState =>
-        setParagraphNamedStyle(current, styleId || null),
+    execParagraph((current): EditorState =>
+      setParagraphNamedStyle(current, styleId || null),
     );
   };
 
@@ -581,8 +576,8 @@ function createEditorCommandsControllerImpl(
     if (!selectedImageRun()) {
       return;
     }
-    execTransactional(
-      (current): EditorState => setSelectedImageBorder(current, patch),
+    execTransactional((current): EditorState =>
+      setSelectedImageBorder(current, patch),
     );
   };
 

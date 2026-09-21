@@ -107,24 +107,22 @@ export function buildEssentialsFormatting(
     insertText: (text: string, fontFamily?: string | null): boolean => {
       if (text.length === 0) return false;
       const styleOverride = fontFamily ? { fontFamily } : undefined;
-      options.applyTransactionalState(
-        (current): EditorState =>
-          options.tableOps.applyTableAwareParagraphEdit(
-            current,
-            (temp): EditorState =>
-              insertTextAtSelection(temp, text, styleOverride),
-          ),
+      options.applyTransactionalState((current): EditorState =>
+        options.tableOps.applyTableAwareParagraphEdit(
+          current,
+          (temp): EditorState =>
+            insertTextAtSelection(temp, text, styleOverride),
+        ),
       );
       options.focusInput();
       return true;
     },
     insertEquation: (expression: EditorMathExpression): boolean => {
-      options.applyTransactionalState(
-        (current): EditorState =>
-          options.tableOps.applyTableAwareParagraphEdit(
-            current,
-            (temp): EditorState => insertMathAtSelection(temp, expression),
-          ),
+      options.applyTransactionalState((current): EditorState =>
+        options.tableOps.applyTableAwareParagraphEdit(
+          current,
+          (temp): EditorState => insertMathAtSelection(temp, expression),
+        ),
       );
       options.focusInput();
       return true;
@@ -133,24 +131,22 @@ export function buildEssentialsFormatting(
       runId: string,
       expression: EditorMathExpression,
     ): boolean => {
-      options.applyTransactionalState(
-        (current): EditorState => updateMathRun(current, runId, expression),
+      options.applyTransactionalState((current): EditorState =>
+        updateMathRun(current, runId, expression),
       );
       options.focusInput();
       return true;
     },
     insertTableOfContents: (): boolean => {
-      options.applyTransactionalState(
-        (current): EditorState =>
-          insertTableOfContents(current, buildTocPageResolver(current)),
+      options.applyTransactionalState((current): EditorState =>
+        insertTableOfContents(current, buildTocPageResolver(current)),
       );
       options.focusInput();
       return true;
     },
     updateTableOfContents: (): boolean => {
-      options.applyTransactionalState(
-        (current): EditorState =>
-          updateTableOfContents(current, buildTocPageResolver(current)),
+      options.applyTransactionalState((current): EditorState =>
+        updateTableOfContents(current, buildTocPageResolver(current)),
       );
       options.focusInput();
       return true;
@@ -234,35 +230,32 @@ export function buildEssentialsFormatting(
     ),
     togglePreciseFonts: (): true => (void togglePreciseFontMode(), true),
     pageBreak: (): boolean => {
-      options.applyTransactionalState(
-        (current): EditorState =>
-          options.tableOps.applyTableAwareParagraphEdit(
-            current,
-            (temp): EditorState => insertPageBreakAtSelection(temp),
-          ),
+      options.applyTransactionalState((current): EditorState =>
+        options.tableOps.applyTableAwareParagraphEdit(
+          current,
+          (temp): EditorState => insertPageBreakAtSelection(temp),
+        ),
       );
       options.focusInput();
       return true;
     },
     lineBreak: (): boolean => {
-      options.applyTransactionalState(
-        (current): EditorState =>
-          options.tableOps.applyTableAwareParagraphEdit(
-            current,
-            (temp): EditorState => insertTextAtSelection(temp, "\n"),
-          ),
+      options.applyTransactionalState((current): EditorState =>
+        options.tableOps.applyTableAwareParagraphEdit(
+          current,
+          (temp): EditorState => insertTextAtSelection(temp, "\n"),
+        ),
       );
       options.focusInput();
       return true;
     },
     splitBlock: (): boolean => {
       if (options.commandsController.handleListEnter()) return true;
-      options.applyTransactionalState(
-        (current): EditorState =>
-          options.tableOps.applyTableAwareParagraphEdit(
-            current,
-            (temp): EditorState => splitBlockAtSelection(temp),
-          ),
+      options.applyTransactionalState((current): EditorState =>
+        options.tableOps.applyTableAwareParagraphEdit(
+          current,
+          (temp): EditorState => splitBlockAtSelection(temp),
+        ),
       );
       options.focusInput();
       return true;

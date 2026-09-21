@@ -8,12 +8,7 @@ export type SpecialIndent = "none" | "firstLine" | "hanging";
 export type BorderStyleValue = "none" | "solid" | "dashed" | "dotted";
 export type LineRuleValue = "auto" | "exact" | "atLeast" | null;
 export type LineSpacingMode =
-  | "single"
-  | "onePointFive"
-  | "double"
-  | "multiple"
-  | "atLeast"
-  | "exact";
+  "single" | "onePointFive" | "double" | "multiple" | "atLeast" | "exact";
 
 /** Word's pt-based "At" values are stored as px for exact/atLeast line rules. */
 export const PT_TO_PX = 96 / 72;

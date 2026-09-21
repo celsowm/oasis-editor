@@ -209,12 +209,7 @@ export interface EssentialsDesignCapability {
 
 /** Which `w:tblLook` conditional-formatting option a toggle command controls. */
 export type TableLookFlag =
-  | "firstRow"
-  | "lastRow"
-  | "firstCol"
-  | "lastCol"
-  | "bandedRows"
-  | "bandedCols";
+  "firstRow" | "lastRow" | "firstCol" | "lastCol" | "bandedRows" | "bandedCols";
 
 /** Resolved on/off state of every tblLook option for the selected table. */
 export type TableLookState = Record<TableLookFlag, boolean>;

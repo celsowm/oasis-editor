@@ -139,13 +139,11 @@ function estimateSingleCellRowSliceHeight(
   table: EditorTableNode,
   rowIndex: number,
 ): number {
-  const starts = row.cells.map(
-    (_, idx): TableCellBlockPosition =>
-      idx === cellIndex ? start : { blockIndex: 0 },
+  const starts = row.cells.map((_, idx): TableCellBlockPosition =>
+    idx === cellIndex ? start : { blockIndex: 0 },
   );
-  const ends = row.cells.map(
-    (cell, idx): TableCellBlockPosition =>
-      idx === cellIndex ? end : { blockIndex: 0 },
+  const ends = row.cells.map((cell, idx): TableCellBlockPosition =>
+    idx === cellIndex ? end : { blockIndex: 0 },
   );
   return estimateTableRowHeight(
     buildRowSliceFromPositions(row, starts, ends),

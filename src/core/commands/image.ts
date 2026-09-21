@@ -492,11 +492,10 @@ function patchSelectedImage(
       }
       return {
         ...cloneParagraph(candidate),
-        runs: candidate.runs.map(
-          (run): EditorTextRun =>
-            run.id === targetRun.id && run.kind === "image"
-              ? { ...run, image: updater(run.image) }
-              : cloneRun(run),
+        runs: candidate.runs.map((run): EditorTextRun =>
+          run.id === targetRun.id && run.kind === "image"
+            ? { ...run, image: updater(run.image) }
+            : cloneRun(run),
         ),
       };
     },

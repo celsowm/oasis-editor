@@ -37,13 +37,7 @@ export const NO_WRAP_MEASURE_WIDTH_PX = 100000;
  */
 export function resolveTextAlignmentBaselineOffset(
   textAlignment:
-    | "auto"
-    | "top"
-    | "center"
-    | "baseline"
-    | "bottom"
-    | null
-    | undefined,
+    "auto" | "top" | "center" | "baseline" | "bottom" | null | undefined,
   fontSizePx: number,
   lineHeightPx: number,
 ): number {

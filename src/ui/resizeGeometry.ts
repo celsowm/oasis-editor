@@ -8,14 +8,7 @@
  */
 
 export type ResizeHandleDirection =
-  | "n"
-  | "ne"
-  | "e"
-  | "se"
-  | "s"
-  | "sw"
-  | "w"
-  | "nw";
+  "n" | "ne" | "e" | "se" | "s" | "sw" | "w" | "nw";
 
 export const RESIZE_HANDLE_DIRECTIONS: ResizeHandleDirection[] = [
   "nw",

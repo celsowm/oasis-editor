@@ -279,14 +279,14 @@ function parseChainContextSubst(
     );
     const substCount = reader.u16();
     const records = readSubstLookupRecords(reader, substCount);
-    const backtrack = backtrackCoverageOffsets.map(
-      (o): Coverage => parseCoverage(reader, o),
+    const backtrack = backtrackCoverageOffsets.map((o): Coverage =>
+      parseCoverage(reader, o),
     );
-    const input = inputCoverageOffsets.map(
-      (o): Coverage => parseCoverage(reader, o),
+    const input = inputCoverageOffsets.map((o): Coverage =>
+      parseCoverage(reader, o),
     );
-    const lookahead = lookaheadCoverageOffsets.map(
-      (o): Coverage => parseCoverage(reader, o),
+    const lookahead = lookaheadCoverageOffsets.map((o): Coverage =>
+      parseCoverage(reader, o),
     );
     return {
       apply(glyphs, pos, engine): number | null {

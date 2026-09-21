@@ -354,9 +354,7 @@ export function DesignWatermarkPanel(
 ): JSX.Element {
   const current = (): EditorWatermark | null =>
     (props.api.commands.state("setDocumentWatermark").value as
-      | EditorWatermark
-      | null
-      | undefined) ?? null;
+      EditorWatermark | null | undefined) ?? null;
   const [text, setText] = createSignal(current()?.text ?? "CONFIDENCIAL");
   const [color, setColor] = createSignal(current()?.color ?? "#94a3b8");
   const [opacity, setOpacity] = createSignal(current()?.opacity ?? 0.25);
@@ -512,9 +510,7 @@ export function DesignPageBorderPanel(
 ): JSX.Element {
   const current = (): EditorPageBorder | null =>
     (props.api.commands.state("setDocumentPageBorder").value as
-      | EditorPageBorder
-      | null
-      | undefined) ?? null;
+      EditorPageBorder | null | undefined) ?? null;
   const [style, setStyle] = createSignal<EditorPageBorder["style"]>(
     current()?.style ?? "single",
   );

@@ -111,12 +111,10 @@ function createEditorContextMenuClipboardImpl(
     await programmaticCopy();
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
-    deps.applyTransactionalState(
-      (current): EditorState =>
-        deps.applyTableAwareParagraphEdit(
-          current,
-          (temp): EditorState => deleteBackward(temp),
-        ),
+    deps.applyTransactionalState((current): EditorState =>
+      deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+        deleteBackward(temp),
+      ),
     );
     deps.focusInput();
   };
@@ -154,13 +152,10 @@ function createEditorContextMenuClipboardImpl(
     if (paragraphs.length > 0) {
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState(
-        (current): EditorState =>
-          deps.applyTableAwareParagraphEdit(
-            current,
-            (temp): EditorState =>
-              insertClipboardParagraphsAtSelection(temp, paragraphs),
-          ),
+      deps.applyTransactionalState((current): EditorState =>
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+          insertClipboardParagraphsAtSelection(temp, paragraphs),
+        ),
       );
       deps.focusInput();
       return;
@@ -169,12 +164,10 @@ function createEditorContextMenuClipboardImpl(
     if (text) {
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
-      deps.applyTransactionalState(
-        (current): EditorState =>
-          deps.applyTableAwareParagraphEdit(
-            current,
-            (temp): EditorState => insertPlainTextAtSelection(temp, text),
-          ),
+      deps.applyTransactionalState((current): EditorState =>
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+          insertPlainTextAtSelection(temp, text),
+        ),
       );
       deps.focusInput();
     }

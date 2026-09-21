@@ -34,8 +34,7 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
   const current = createMemo(
     (): EditorPageMargins | undefined =>
       api.commands.state("setPageMargins").value as
-        | EditorPageMargins
-        | undefined,
+        EditorPageMargins | undefined,
   );
 
   const activePresetId = createMemo((): string | undefined => {

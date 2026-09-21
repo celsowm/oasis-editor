@@ -11,8 +11,7 @@ export const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 /** Document's named styles, read through the uniform command-state channel. */
 export const documentStyles = (api: ToolbarActionApi): ToolbarDocumentStyle[] =>
   (api.commands.state("documentStyles").value as
-    | ToolbarDocumentStyle[]
-    | undefined) ?? [];
+    ToolbarDocumentStyle[] | undefined) ?? [];
 
 /** Named table styles for the Table Design gallery select. */
 export const tableStyleOptions = (api: ToolbarActionApi): SelectOption[] =>

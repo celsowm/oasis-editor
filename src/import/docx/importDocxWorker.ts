@@ -34,9 +34,7 @@ type ImportWorkerError = {
 };
 
 type ImportWorkerResponse =
-  | ImportWorkerProgress
-  | ImportWorkerDone
-  | ImportWorkerError;
+  ImportWorkerProgress | ImportWorkerDone | ImportWorkerError;
 
 function post(message: ImportWorkerResponse): void {
   globalThis.postMessage(message);

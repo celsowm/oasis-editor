@@ -372,8 +372,7 @@ function resolveParagraph(
     const table = allNodes(document).find(
       (n) => n.id === selector.tableId && n.type === "table",
     )?.node as
-      | { rows: { cells: { blocks: EditorBlockNode[] }[] }[] }
-      | undefined;
+      { rows: { cells: { blocks: EditorBlockNode[] }[] }[] } | undefined;
     return (
       (table?.rows[selector.row]?.cells[selector.column]?.blocks.find(
         (b) => b.type === "paragraph",

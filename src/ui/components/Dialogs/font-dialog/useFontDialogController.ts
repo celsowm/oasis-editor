@@ -42,9 +42,8 @@ export function useFontDialogController(
     }
   });
 
-  const selectedFontStyle = createMemo<FontStylePreset>(
-    (): FontFaceStyle =>
-      resolveFontFaceStyle(fontTabValues().bold, fontTabValues().italic),
+  const selectedFontStyle = createMemo<FontStylePreset>((): FontFaceStyle =>
+    resolveFontFaceStyle(fontTabValues().bold, fontTabValues().italic),
   );
   const visibleFamilyOptions = createMemo((): string[] => {
     const needle = fontTabValues().familyFilter.trim().toLowerCase();

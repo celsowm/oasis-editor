@@ -31,8 +31,7 @@ function createEditorRevisionControllerImpl(deps: UseEditorRevisionProps) {
   ): void => {
     const paragraphs = getParagraphs(deps.state());
     let foundRevision:
-      | (EditorRevisionMetadata & { type: RevisionBox["type"] })
-      | undefined;
+      (EditorRevisionMetadata & { type: RevisionBox["type"] }) | undefined;
     for (const p of paragraphs) {
       for (const run of p.runs) {
         if (run.revision?.id === revisionId) {

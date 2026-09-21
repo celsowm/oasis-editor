@@ -94,10 +94,7 @@ export const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> =
     lineRule: null as unknown as "auto" | "exact" | "atLeast" | null,
     lineGridPitch: null as unknown as number | null,
     lineGridType: null as unknown as
-      | "lines"
-      | "linesAndChars"
-      | "snapToChars"
-      | null,
+      "lines" | "linesAndChars" | "snapToChars" | null,
     snapToGrid: true,
     indentLeft: 0,
     indentRight: 0,
@@ -115,12 +112,7 @@ export const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> =
     keepLinesTogether: false,
     widowControl: true,
     textDirection: null as unknown as
-      | "lrTb"
-      | "tbRl"
-      | "btLr"
-      | "lrTbV"
-      | "tbRlV"
-      | null,
+      "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV" | null,
     outlineLevel: null as unknown as number | null,
     suppressLineNumbers: false,
     suppressAutoHyphens: false,
@@ -133,18 +125,9 @@ export const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> =
     autoSpaceDN: true,
     adjustRightInd: true,
     textAlignment: null as unknown as
-      | "auto"
-      | "top"
-      | "center"
-      | "baseline"
-      | "bottom"
-      | null,
+      "auto" | "top" | "center" | "baseline" | "bottom" | null,
     textboxTightWrap: null as unknown as
-      | "none"
-      | "allLines"
-      | "firstLineOnly"
-      | "firstLastLine"
-      | null,
+      "none" | "allLines" | "firstLineOnly" | "firstLastLine" | null,
     divId: null as unknown as number | null,
     conditionalStyle: null as unknown as EditorTableConditionalFlags | null,
     borderBetween: null as unknown as EditorBorderStyle | null,

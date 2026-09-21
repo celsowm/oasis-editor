@@ -191,8 +191,7 @@ export interface OasisPdfImageOptions {
 }
 
 export type OasisPdfFontResource =
-  | OasisPdfBase14FontResource
-  | OasisPdfUnicodeFontResource;
+  OasisPdfBase14FontResource | OasisPdfUnicodeFontResource;
 
 export interface OasisPdfBase14FontResource {
   kind: "base14";
