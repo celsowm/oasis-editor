@@ -218,6 +218,42 @@
   letter-spacing: -0.01em;
 }
 
+.oasis-site-strip-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.oasis-site-support-link,
+.oasis-site-star-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  line-height: 0;
+}
+
+.oasis-site-strip-actions a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.oasis-site-support-link img {
+  display: block;
+  height: 30px;
+  width: auto;
+}
+
+.oasis-site-star-link img {
+  display: block;
+  height: 24px;
+  width: auto;
+}
+
 .oasis-site-strip-hint {
   margin-left: auto;
   display: inline-flex;
@@ -669,6 +705,30 @@
 
   .oasis-site-strip-hint {
     display: none;
+  }
+
+  .oasis-site-strip {
+    gap: 8px;
+    padding: 0 10px;
+  }
+
+  .oasis-site-strip-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .oasis-site-strip-actions {
+    gap: 6px;
+  }
+
+  .oasis-site-support-link img {
+    height: 25px;
+  }
+
+  .oasis-site-star-link img {
+    height: 21px;
   }
 
   /* Hide info panel on mobile — content is on the About page */
