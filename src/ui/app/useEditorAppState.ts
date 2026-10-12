@@ -1,5 +1,9 @@
 import { createSignal, type Setter } from "solid-js";
-import type { EditorDocument, EditorState } from "@/core/model.js";
+import {
+  syncActiveSectionToSelection,
+  type EditorDocument,
+  type EditorState,
+} from "@/core/model.js";
 import {
   createEditorStateFromDocument,
   createInitialEditorState,
@@ -75,7 +79,8 @@ export function createEditorAppState(options: {
     },
   });
 
-  const commitState = (next: EditorState): void => {
+  const commitState = (nextState: EditorState): void => {
+    const next = syncActiveSectionToSelection(nextState);
     stateSnapshot = next;
     setStateSignal(next);
   };

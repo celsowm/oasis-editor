@@ -13,6 +13,7 @@ import type { EditorState } from "./editorState.js";
 import type { EditorEditingZone } from "./types/selection.js";
 import { getDocumentSections } from "./documentSections.js";
 import { getBlockParagraphs } from "./paragraphWalker.js";
+import { findParagraphLocation } from "./documentIndex.js";
 
 export function getActiveSectionIndex(state: EditorState): number {
   return state.activeSectionIndex ?? 0;
@@ -90,4 +91,37 @@ export function getParagraphs(state: EditorState): EditorParagraphNode[] {
   return getEditableBlocksForZone(state, getActiveZone(state)).flatMap(
     getBlockParagraphs,
   );
+}
+
+/**
+ * Points `activeSectionIndex` at the section that owns the selection.
+ *
+ * The editable paragraph stream is scoped to one section, so a selection whose
+ * paragraphs live in another section (e.g. a click on a page of section 2) would
+ * resolve against the wrong stream: no selection highlight, wrong commands.
+ * Leaves the state untouched when anchor and focus sit in different sections or
+ * zones, which the per-section stream cannot represent.
+ */
+export function syncActiveSectionToSelection(state: EditorState): EditorState {
+  const zone = getActiveZone(state);
+  if (zone === "footnote") return state;
+  const anchor = findParagraphLocation(
+    state.document,
+    state.selection.anchor.paragraphId,
+  );
+  const focus = findParagraphLocation(
+    state.document,
+    state.selection.focus.paragraphId,
+  );
+  if (
+    !anchor ||
+    !focus ||
+    anchor.zone !== zone ||
+    focus.zone !== zone ||
+    anchor.sectionIndex !== focus.sectionIndex ||
+    focus.sectionIndex === getActiveSectionIndex(state)
+  ) {
+    return state;
+  }
+  return { ...state, activeSectionIndex: focus.sectionIndex };
 }

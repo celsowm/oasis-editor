@@ -283,4 +283,5 @@ export {
   tryGetEditableBlocksForZone,
   getActiveSectionBlocks,
   getParagraphs,
+  syncActiveSectionToSelection,
 } from "./editingZones.js";

@@ -369,6 +369,19 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
     }
 
     const state = deps.state();
+    // The editable paragraph stream is per section, so a selection cannot span
+    // a section break: hold the focus where it is until the pointer returns.
+    const anchorSection = findParagraphLocation(
+      state.document,
+      dragAnchor.paragraphId,
+    )?.sectionIndex;
+    const hitSection = findParagraphLocation(
+      state.document,
+      hit.paragraphId,
+    )?.sectionIndex;
+    if (anchorSection !== hitSection) {
+      return;
+    }
     const next = setSelection(state, {
       anchor: dragAnchor,
       focus: hit.position,
