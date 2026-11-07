@@ -101,13 +101,10 @@ function buildListParagraphs(
 
 function buildCell(element: Element): EditorTableCellNode {
   const blocks = collectBlocks(element);
-  const paragraphs = blocks.filter(
-    (block): block is EditorParagraphNode => block.type === "paragraph",
-  );
   const colSpan = Number.parseInt(element.getAttribute("colspan") ?? "", 10);
   const rowSpan = Number.parseInt(element.getAttribute("rowspan") ?? "", 10);
   return createEditorTableCell(
-    paragraphs.length > 0 ? paragraphs : [createEditorParagraph("")],
+    blocks.length > 0 ? blocks : [createEditorParagraph("")],
     Number.isFinite(colSpan) && colSpan > 1 ? colSpan : 1,
     Number.isFinite(rowSpan) && rowSpan > 1 ? { rowSpan } : undefined,
   );
@@ -169,6 +166,10 @@ function collectBlocks(container: ParentNode): EditorBlockNode[] {
     }
 
     const element = node as Element;
+    if (["SCRIPT", "STYLE", "TEMPLATE", "IFRAME", "OBJECT", "EMBED",
+         "NOSCRIPT", "SVG", "META", "LINK"].includes(element.tagName)) {
+      continue;
+    }
 
     if (element.tagName === "TABLE") {
       const table = buildTable(element);

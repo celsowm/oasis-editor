@@ -81,7 +81,7 @@ export function serializeTextRunToHtml(
   const css = textRunStylesToCss(style);
   const languageAttrs = textLanguageToHtmlAttributes(style?.language);
   if (css.length > 0 || languageAttrs.length > 0) {
-    const styleAttr = css.length > 0 ? ` style="${css}"` : "";
+    const styleAttr = css.length > 0 ? ` style="${escapeHtml(css)}"` : "";
     html = `<span${styleAttr}${languageAttrs}>${html}</span>`;
   }
   if (style?.link) {

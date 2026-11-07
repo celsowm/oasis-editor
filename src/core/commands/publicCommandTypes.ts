@@ -92,6 +92,7 @@ export interface OasisCommandPayloads {
   exportDocx: undefined;
   exportPdf: undefined;
   importDocument: undefined;
+  insertHtml: { html: string };
   insertImage: undefined;
   editImageAlt: undefined;
   insertImageCaption: undefined;

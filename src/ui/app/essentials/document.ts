@@ -1,4 +1,5 @@
 import { insertShapeAtSelection } from "@/core/commands/shape.js";
+import { insertHtmlAtSelection } from "@/core/commands/html.js";
 import {
   getDocumentParagraphs,
   resolveNamedTextStyle,
@@ -71,6 +72,10 @@ export function buildEssentialsDocument(
     printDocument: (): undefined => void options.docIO.handlePrint(),
     importDocument: (): void | undefined => options.importInputRef()?.click(),
     insertImage: (): void | undefined => options.imageInputRef()?.click(),
+    insertHtml: (html: string): void =>
+      options.applyTransactionalState((current): EditorState =>
+        insertHtmlAtSelection(current, html),
+      ),
     insertShape: (preset: string): void =>
       options.applyTransactionalState((current): EditorState =>
         insertShapeAtSelection(current, preset),

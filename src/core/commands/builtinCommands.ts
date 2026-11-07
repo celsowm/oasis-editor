@@ -53,6 +53,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "exportDocx",
   "exportPdf",
   "importDocument",
+  "insertHtml",
   "insertImage",
   "editImageAlt",
   "insertImageCaption",
