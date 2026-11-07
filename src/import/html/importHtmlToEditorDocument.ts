@@ -84,7 +84,12 @@ function buildListParagraphs(
     if (child.tagName !== "LI") {
       continue;
     }
-    paragraphs.push(buildParagraph(child, { kind, level }));
+    // Avoid including nested list text twice in the parent list item.
+    const ownContent = child.cloneNode(true) as Element;
+    for (const nested of Array.from(ownContent.querySelectorAll("ul, ol"))) {
+      nested.remove();
+    }
+    paragraphs.push(buildParagraph(ownContent, { kind, level }));
 
     // Nested lists inside the <li> contribute deeper-level paragraphs.
     for (const grandChild of Array.from(child.children)) {

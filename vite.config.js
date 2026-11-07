@@ -91,9 +91,24 @@ export default defineConfig(({ mode }) => {
     test: {
       include: ['tests/vitest/**/*.{test,spec}.{ts,tsx}'],
       exclude: ['node_modules', 'dist', 'dist-app'],
-      environment: 'node',
-      environmentMatchGlobs: [
-        ['tests/vitest/__tests__/ui/**', 'jsdom'],
+      // Vitest 5 no longer honours environmentMatchGlobs. Separate projects
+      // keep DOM-dependent UI suites in jsdom without changing core test runtime.
+      projects: [
+        {
+          test: {
+            name: 'core',
+            environment: 'node',
+            include: ['tests/vitest/**/*.{test,spec}.{ts,tsx}'],
+            exclude: ['node_modules', 'dist', 'dist-app', 'tests/vitest/__tests__/ui/**'],
+          },
+        },
+        {
+          test: {
+            name: 'ui',
+            environment: 'jsdom',
+            include: ['tests/vitest/__tests__/ui/**/*.{test,spec}.{ts,tsx}'],
+          },
+        },
       ],
     },
   };

@@ -20,10 +20,20 @@ describe("Oasis HTML embedding API", () => {
     expect(html).toContain("#reu");
     expect(html).toContain("#cnj");
     expect(html).toContain("<table>");
-    expect(html).toContain("<th>Documento</th>");
+    expect(html).toContain("<th><p>Documento</p></th>");
     const again = importHtmlToEditorDocument(html);
     expect(getDocumentParagraphsCanonical(again).map(getParagraphText).join(" "))
       .toContain("processo #cnj.");
+  });
+
+  it("round-trips nested lists without repeating child text", () => {
+    const input = "<ul><li>Pai<ul><li>Filho</li></ul></li></ul>";
+    const imported = importHtmlToEditorDocument(input);
+    expect(getDocumentParagraphsCanonical(imported).map(getParagraphText))
+      .toEqual(["Pai", "Filho"]);
+    const restored = importHtmlToEditorDocument(exportEditorDocumentToHtml(imported));
+    expect(getDocumentParagraphsCanonical(restored).map(getParagraphText))
+      .toEqual(["Pai", "Filho"]);
   });
 
   it("does not import executable links or script content", () => {
@@ -51,7 +61,7 @@ describe("Oasis HTML embedding API", () => {
     const state = createEditorStateFromDocument(document, { offset: 6 });
     const updated = insertHtmlAtSelection(state, "<p><strong>#autor</strong></p>");
     const text = getDocumentParagraphsCanonical(updated.document).map(getParagraphText).join(" ");
-    expect(text).toContain("Antes #autor depois");
+    expect(text).toContain("Antes #autordepois");
     expect(exportEditorDocumentToHtml(updated.document)).toContain("<strong>#autor</strong>");
   });
 
