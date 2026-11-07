@@ -26,6 +26,18 @@ describe("Oasis HTML embedding API", () => {
       .toContain("processo #cnj.");
   });
 
+  it("does not import executable links or script content", () => {
+    const document = importHtmlToEditorDocument(
+      '<p>Seguro <a href="javascript:alert(1)">texto</a>' +
+      '<script>alert("não incluir")</script></p>',
+    );
+    const html = exportEditorDocumentToHtml(document);
+    expect(html).toContain("Seguro");
+    expect(html).toContain("texto");
+    expect(html).not.toContain("javascript:");
+    expect(html).not.toContain("alert");
+  });
+
   it("exports standalone HTML with escaped title", () => {
     const document = importHtmlToEditorDocument("<p>Teste</p>");
     document.metadata = { title: "Peça <jurídica>" };
