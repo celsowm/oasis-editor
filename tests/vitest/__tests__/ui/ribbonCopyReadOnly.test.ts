@@ -9,6 +9,20 @@ import { buildEssentialsBrowser } from "@/ui/app/essentials/browser.js";
 import { buildEssentialsGate } from "@/ui/app/essentials/gate.js";
 import type { CreateEditorEssentialsPluginOptions } from "@/ui/app/essentials/types.js";
 
+/** The browser adapter now also accepts the clipboard transaction boundary. */
+const browserFor = (state: import("@/core/model.js").EditorState) =>
+  buildEssentialsBrowser({
+    state: () => state,
+    isReadOnly: () => false,
+    applyTransactionalState: () => {},
+    tableOps: {
+      applyTableAwareParagraphEdit: (current: import("@/core/model.js").EditorState) => current,
+    } as CreateEditorEssentialsPluginOptions["tableOps"],
+    clearPreferredColumn: () => {},
+    resetTransactionGrouping: () => {},
+    focusInput: () => {},
+  });
+
 const selected = () => {
   const paragraph = createEditorParagraph("Copied from Oasis");
   const state = createEditorStateFromDocument(createEditorDocument([paragraph]));
@@ -33,7 +47,7 @@ describe("Ribbon model-based Copy", () => {
     const state = createEditorStateFromDocument(
       createEditorDocument([createEditorParagraph("hello")]),
     );
-    expect(buildEssentialsBrowser(() => state).hasSelection()).toBe(false);
+    expect(browserFor(state).hasSelection()).toBe(false);
   });
 
   it("copies the editor model selection even when a toolbar button holds focus", () => {
@@ -47,7 +61,7 @@ describe("Ribbon model-based Copy", () => {
       configurable: true,
       value: commands,
     });
-    const browser = buildEssentialsBrowser(() => state);
+    const browser = browserFor(state);
     expect(browser.hasSelection()).toBe(true);
     browser.copy();
     expect(commands).toHaveBeenCalledWith("copy");
@@ -62,7 +76,7 @@ describe("Ribbon model-based Copy", () => {
     vi.stubGlobal("ClipboardItem", class {
       constructor(public readonly data: Record<string, Blob>) {}
     });
-    const browser = buildEssentialsBrowser(() => state);
+    const browser = browserFor(state);
     browser.copy();
     expect(write).toHaveBeenCalledOnce();
     const item = write.mock.calls[0]?.[0]?.[0] as { data: Record<string, Blob> };
