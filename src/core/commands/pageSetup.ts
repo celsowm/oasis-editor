@@ -10,7 +10,11 @@
  * can drive paper size per section (including custom dimensions) without
  * touching the rest of page setup.
  */
-import type { EditorDocument, EditorState } from "@/core/model.js";
+import type {
+  EditorColumnsSettings,
+  EditorDocument,
+  EditorState,
+} from "@/core/model.js";
 import { getDocumentSections } from "@/core/model.js";
 import { getActiveSectionIndex } from "@/core/model/editingZones.js";
 import { updateSectionSettings } from "./block.js";
@@ -18,6 +22,84 @@ import { updateSectionSettings } from "./block.js";
 /** Convert a physical dimension in points to the editor's px unit (×96/72). */
 export function pointsToPx(points: number): number {
   return (points / 72) * 96;
+}
+
+/** Default gap between columns (0.5"), matching Word's default `w:cols` space. */
+export const DEFAULT_COLUMN_SPACE_PX = 48;
+
+/** Common multi-column presets exposed to the Layout ribbon (per Word). */
+export interface ColumnLayoutPreset {
+  /** Machine id, e.g. "two", "three", "left", "right". */
+  id: string;
+  count: number;
+  /** Whether the first column is wider (asymmetric preset) rather than equal. */
+  asymmetric?: boolean;
+}
+
+/** Ordinary single-column and the common newspaper presets. */
+export const COLUMN_LAYOUT_PRESETS: readonly ColumnLayoutPreset[] = [
+  { id: "one", count: 1 },
+  { id: "two", count: 2 },
+  { id: "three", count: 3 },
+  { id: "left", count: 2, asymmetric: true },
+  { id: "right", count: 2, asymmetric: true },
+];
+
+/** Look up a column-layout preset by id, or undefined. */
+export function getColumnLayoutPreset(
+  id: string,
+): ColumnLayoutPreset | undefined {
+  return COLUMN_LAYOUT_PRESETS.find((preset) => preset.id === id);
+}
+
+/** Read the active section's columns, or undefined when single-column. */
+export function getActiveColumns(
+  state: EditorState,
+): EditorColumnsSettings | undefined {
+  const sectionIndex = resolveActiveSectionIndex(state);
+  if (sectionIndex < 0) return undefined;
+  return getDocumentSections(state.document)[sectionIndex].pageSettings.columns;
+}
+
+/**
+ * Set the active section's multi-column layout (`w:cols`). Passing `count <= 1`
+ * clears any columns.x so an ordinary single-column layout is restored. A
+ * `space` of `undefined` keeps existing spacing or falls back to the 0.5"
+ * default. `separator` draws a vertical rule between columns. Returns the same
+ * state when there's no section.
+ *
+ * Only equal-width columns are authored here; explicit unequal per-column
+ * widths remain round-trip-only (preserved on import, still rendered by the
+ * layout engine via `getPageColumnRects`).
+ */
+export function setSectionColumns(
+  state: EditorState,
+  columns: { count: number; space?: number; separator?: boolean },
+): EditorState {
+  const sectionIndex = resolveActiveSectionIndex(state);
+  if (sectionIndex < 0) return state;
+  const current = getDocumentSections(state.document)[sectionIndex].pageSettings
+    .columns;
+  const next: EditorColumnsSettings | undefined =
+    columns.count <= 1
+      ? undefined
+      : {
+          count: columns.count,
+          space: columns.space ?? current?.space ?? DEFAULT_COLUMN_SPACE_PX,
+          ...(columns.separator
+            ? { separator: true }
+            : current?.separator
+              ? { separator: true }
+              : {}),
+        };
+  // Replacing the whole `columns` shape: set finit values while clearing when
+  // single-column. Since updateSectionSettings merges pageSettings shallowly
+  // per field, assign the full key (undefined clears it).
+  return updateSectionSettings(state, sectionIndex, {
+    pageSettings: {
+      columns: next,
+    },
+  });
 }
 
 /** A named paper size in points (the author-facing physical dimension). */
