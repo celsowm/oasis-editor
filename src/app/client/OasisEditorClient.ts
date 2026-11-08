@@ -28,6 +28,8 @@ import {
 } from "./publicDocumentApi.js";
 import type { ToolbarRegistry } from "@/ui/components/Toolbar/registry/ToolbarRegistry.js";
 import type { MenuRegistry } from "@/ui/components/Menubar/menuRegistry.js";
+import { importHtmlToEditorDocument } from "@/import/html/importHtmlToEditorDocument.js";
+import { exportEditorDocumentToHtml, type HtmlExportOptions } from "@/export/html/exportEditorDocumentToHtml.js";
 
 /** UI-related editor state that can be toggled or configured at runtime. */
 export interface OasisEditorUiState {
@@ -164,6 +166,8 @@ export interface OasisEditorImportApi {
    * @param file - The .docx file to import.
    */
   docx(file: File): Promise<void>;
+  /** Replace the current document with an HTML fragment or full HTML document. */
+  html(html: string): Promise<void>;
 }
 
 /** File export API. */
@@ -172,6 +176,8 @@ export interface OasisEditorExportApi {
   docx(): Promise<unknown>;
   /** @returns A promise resolving to the exported .pdf data. */
   pdf(): Promise<unknown>;
+  /** Export the document as an HTML fragment (default) or standalone HTML. */
+  html(options?: HtmlExportOptions): Promise<string>;
 }
 
 /** Data input/output API with progress reporting and result wrapping. */
@@ -187,15 +193,21 @@ export interface OasisEditorDataIoApi {
     filename?: string;
     signal?: AbortSignal;
     onProgress?: (progress: unknown) => void;
-  }): Promise<OasisResult<{ format: "docx" }>>;
+  } | {
+    format: "html";
+    data: string | Blob | ArrayBuffer | Uint8Array;
+    filename?: string;
+    signal?: AbortSignal;
+    onProgress?: (progress: unknown) => void;
+  }): Promise<OasisResult<{ format: "docx" | "html" }>>;
   /**
    * Exports the document as a Blob in the requested format.
    * @param request - Export configuration including format and optional filename.
    * @returns A wrapped result containing the blob.
    */
-  export(request: { format: "docx" | "pdf"; filename?: string }): Promise<
+  export(request: { format: "docx" | "pdf" | "html"; filename?: string; fullDocument?: boolean }): Promise<
     OasisResult<{
-      format: "docx" | "pdf";
+      format: "docx" | "pdf" | "html";
       blob: Blob;
       arrayBuffer: () => Promise<ArrayBuffer>;
     }>
@@ -638,10 +650,18 @@ export function createOasisEditorClient(): OasisEditorClientController {
     },
     import: {
       docx: (file): Promise<void> => requireHost().importDocx(file),
+      html: async (html): Promise<void> => {
+        const document = importHtmlToEditorDocument(html);
+        requireHost().setDocument(document);
+        version += 1;
+        dirty = false;
+      },
     },
     export: {
       docx: (): Promise<unknown> => requireHost().exportDocx(),
       pdf: (): Promise<unknown> => requireHost().exportPdf(),
+      html: async (options): Promise<string> =>
+        exportEditorDocumentToHtml(requireHost().getDocument(), options),
     },
     query: {
       snapshot: (): SemanticDocumentSnapshot =>
@@ -714,13 +734,31 @@ export function createOasisEditorClient(): OasisEditorClientController {
       },
     },
     io: {
-      async import(request): Promise<OasisResult<{ format: "docx" }>> {
+      async import(request): Promise<OasisResult<{ format: "docx" | "html" }>> {
         if (request.signal?.aborted)
           return {
             ok: false,
             error: { code: "ABORTED", message: "Import aborted" },
           };
         try {
+          if (request.format === "html") {
+            const html = typeof request.data === "string"
+              ? request.data
+              : request.data instanceof Blob
+                ? await request.data.text()
+                : new TextDecoder("utf-8", { fatal: true }).decode(request.data);
+            if (request.signal?.aborted)
+              return {
+                ok: false,
+                error: { code: "ABORTED", message: "Import aborted" },
+              };
+            const document = importHtmlToEditorDocument(html);
+            requireHost().setDocument(document);
+            version += 1;
+            dirty = false;
+            request.onProgress?.({ phase: "done", progress: 100 });
+            return { ok: true, value: { format: "html" }, version, warnings: [] };
+          }
           const data =
             request.data instanceof Blob
               ? request.data
@@ -748,16 +786,23 @@ export function createOasisEditorClient(): OasisEditorClientController {
       },
       async export(request): Promise<
         OasisResult<{
-          format: "docx" | "pdf";
+          format: "docx" | "pdf" | "html";
           blob: Blob;
           arrayBuffer: () => Promise<ArrayBuffer>;
         }>
       > {
         try {
           const value =
-            request.format === "docx"
-              ? await requireHost().exportDocxBlob()
-              : await requireHost().exportPdfBlob();
+            request.format === "html"
+              ? new Blob(
+                  [exportEditorDocumentToHtml(requireHost().getDocument(), {
+                    fullDocument: request.fullDocument,
+                  })],
+                  { type: "text/html;charset=utf-8" },
+                )
+              : request.format === "docx"
+                ? await requireHost().exportDocxBlob()
+                : await requireHost().exportPdfBlob();
           return {
             ok: true,
             value: {

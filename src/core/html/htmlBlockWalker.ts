@@ -31,6 +31,8 @@ export function collectInlineRuns(
   }
 
   const element = node as Element;
+  if (["SCRIPT", "STYLE", "TEMPLATE", "NOSCRIPT", "IFRAME",
+       "OBJECT", "EMBED", "SVG"].includes(element.tagName)) return [];
   if (element.tagName === "BR") {
     return [createEditorStyledRun("\n", inheritedStyle)];
   }

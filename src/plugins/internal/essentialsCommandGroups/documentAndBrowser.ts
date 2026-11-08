@@ -59,6 +59,13 @@ export function buildDocumentAndBrowserCommands({
     importDocument: actionCommand("importDocument", (): void =>
       document.importDocument(),
     ),
+    insertHtml: actionCommand("insertHtml", (payload): void => {
+      if (!payload || typeof payload !== "object" ||
+          typeof (payload as { html?: unknown }).html !== "string") {
+        throw new TypeError("insertHtml requires a payload with a string html property.");
+      }
+      document.insertHtml((payload as { html: string }).html);
+    }),
     insertImage: actionCommand("insertImage", (): void =>
       document.insertImage(),
     ),

@@ -145,6 +145,9 @@ export type {
   Unsubscribe,
 } from "./core/plugin.js";
 export type { EditorDocument, EditorState } from "./core/model.js";
+export { importHtmlToEditorDocument } from "./import/html/importHtmlToEditorDocument.js";
+export { exportEditorDocumentToHtml } from "./export/html/exportEditorDocumentToHtml.js";
+export type { HtmlExportOptions } from "./export/html/exportEditorDocumentToHtml.js";
 export {
   EDITOR_SCHEMA_VERSION,
   createDocument,

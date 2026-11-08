@@ -1,4 +1,5 @@
 import type { EditorTextStyle } from "@/core/model.js";
+import { isAllowedHtmlHref } from "./safeHtmlHref.js";
 
 export function parseInlineStyles(
   element: Element,
@@ -233,7 +234,7 @@ function parseLink(element: Element, result: EditorTextStyle): void {
     element.tagName === "A"
       ? ((element as HTMLAnchorElement).getAttribute("href")?.trim() ?? "")
       : "";
-  if (link) {
+  if (link && isAllowedHtmlHref(link)) {
     result.link = link;
     result.underline = true;
   }

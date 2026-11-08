@@ -111,6 +111,7 @@ export interface EssentialsDocumentCapability {
   exportPdf: () => void;
   printDocument: () => void;
   importDocument: () => void;
+  insertHtml: (html: string) => void;
   insertImage: () => void;
   insertShape: (preset: string) => void;
   openSymbolDialog: () => void;

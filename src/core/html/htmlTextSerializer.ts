@@ -5,6 +5,7 @@ import type {
 } from "@/core/model.js";
 import { resolveImageSrc } from "@/core/model.js";
 import { escapeHtml } from "./htmlEscape.js";
+import { isAllowedHtmlHref } from "./safeHtmlHref.js";
 import { getPrimaryTextLanguage, textRunStylesToCss } from "./styleCss.js";
 
 function textLanguageToHtmlAttributes(
@@ -42,7 +43,7 @@ export function serializeImageRunToHtml(
   const altAttr =
     run.image.alt !== undefined ? ` alt="${escapeHtml(run.image.alt)}"` : "";
   const img = `<img src="${escapeHtml(resolvedSrc)}" width="${Math.max(1, Math.round(run.image.width))}" height="${Math.max(1, Math.round(run.image.height))}"${altAttr}>`;
-  if (run.styles?.link) {
+  if (run.styles?.link && isAllowedHtmlHref(run.styles.link)) {
     return `<a href="${escapeHtml(run.styles.link)}">${img}</a>`;
   }
 
@@ -81,10 +82,10 @@ export function serializeTextRunToHtml(
   const css = textRunStylesToCss(style);
   const languageAttrs = textLanguageToHtmlAttributes(style?.language);
   if (css.length > 0 || languageAttrs.length > 0) {
-    const styleAttr = css.length > 0 ? ` style="${css}"` : "";
+    const styleAttr = css.length > 0 ? ` style="${escapeHtml(css)}"` : "";
     html = `<span${styleAttr}${languageAttrs}>${html}</span>`;
   }
-  if (style?.link) {
+  if (style?.link && isAllowedHtmlHref(style.link)) {
     html = `<a href="${escapeHtml(style.link)}">${html}</a>`;
   }
   return html;

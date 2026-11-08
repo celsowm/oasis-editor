@@ -34,8 +34,10 @@ The client exposes:
 - `selection.get/set`.
 - `focus.focus/blur`.
 - `history.undo/redo/canUndo/canRedo/clear`.
-- `import.docx(file)`.
-- `export.docx()` and `export.pdf()`.
+- `import.docx(file)` and `import.html(html)`.
+- `export.docx()`, `export.pdf()`, and `export.html(options?)`.
+- `io.import({ format: "html" | "docx", data })` and `io.export({ format: "html" | "docx" | "pdf" })`.
+- `commands.execute("insertHtml", { html })`: insert HTML at the selection as an undoable edit.
 - `on`, `once`, `off` for `ready`, `change`, `documentChange`,
   `selectionChange`, and `error`.
 - `dispose()`.
@@ -80,6 +82,35 @@ await client.import.docx(file);
 await client.export.docx();
 await client.export.pdf();
 ```
+
+## HTML Integration
+
+Use HTML fragments for legacy application models, not as lossless storage for
+DOCX-only capabilities (headers, footers, revisions, floating objects, etc.).
+Exporting an HTML fragment is the default; set `fullDocument: true` for a
+standalone HTML document. Importing HTML replaces the document without marking
+it dirty; inserting HTML is an undoable edit at the selection.
+
+```ts
+await client.import.html("<p>Olá, <strong>#autor</strong>.</p>");
+client.commands.execute("insertHtml", {
+  html: "<table><tr><td>#cnj</td></tr></table>",
+});
+const fragment = await client.export.html();
+const completeDocument = await client.export.html({ fullDocument: true });
+
+const imported = await client.io.import({ format: "html", data: fragment });
+if (!imported.ok) throw new Error(imported.error.message);
+
+const exported = await client.io.export({ format: "html" });
+if (!exported.ok) throw new Error(exported.error.message);
+const html = await exported.value.blob.text();
+```
+
+The imported markup is mapped to the Oasis semantic model (not retained as raw
+DOM). HTML conversion covers paragraphs, headings, text formatting, lists,
+tables, and images, but is not pixel-perfect or a general-purpose sanitizer
+for displaying hostile HTML elsewhere. Treat external HTML as untrusted.
 
 ## Typed Built-In Commands
 
