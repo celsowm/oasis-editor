@@ -163,6 +163,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "tableSetCellVerticalAlign",
   "tableSetCellTextDirection",
   "tableToText",
+  "textToTable",
   "tableSetCellWidth",
   "tableToggleHeaderRow",
   "tableToggleTotalRow",

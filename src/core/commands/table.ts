@@ -5,3 +5,4 @@ export * from "./table/tableColumnCommands.js";
 export * from "./table/insertTableCommand.js";
 export * from "./table/tableFloatingCommands.js";
 export * from "./table/tableConvertCommands.js";
+export * from "./table/tableTextToTableCommands.js";

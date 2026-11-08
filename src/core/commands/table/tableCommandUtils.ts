@@ -14,8 +14,10 @@ import {
   findParagraphLocation,
   findParagraphTablePathLocation,
   getActiveSectionIndex,
+  getActiveZone,
   getBlockParagraphs,
   getDocumentSections,
+  getHeaderFooterStoryKey,
 } from "@/core/model.js";
 
 export type StylePatchValue<T, K extends keyof T> = T[K] | null;
@@ -231,16 +233,54 @@ function storyContainsParagraph(
   );
 }
 
+function sectionStoryKind(
+  section: EditorSection,
+  zone: "header" | "footer",
+  paragraphId: string,
+): "default" | "firstPage" | "evenPage" {
+  if (zone === "header") {
+    if (storyContainsParagraph(section.firstPageHeader, paragraphId)) {
+      return "firstPage";
+    }
+    if (storyContainsParagraph(section.evenPageHeader, paragraphId)) {
+      return "evenPage";
+    }
+    return "default";
+  }
+  if (storyContainsParagraph(section.firstPageFooter, paragraphId)) {
+    return "firstPage";
+  }
+  if (storyContainsParagraph(section.evenPageFooter, paragraphId)) {
+    return "evenPage";
+  }
+  return "default";
+}
+
+/** The block story array for a section zone that owns `paragraphId`. */
+function getSectionStory(
+  section: EditorSection,
+  zone: EditorEditingZone,
+  paragraphId: string,
+): EditorBlockNode[] | null {
+  if (zone === "main") return section.blocks;
+  if (zone === "header" || zone === "footer") {
+    const kind = sectionStoryKind(section, zone, paragraphId);
+    const key = getHeaderFooterStoryKey(zone, kind);
+    return section[key] ?? null;
+  }
+  return null;
+}
+
 function updateSelectedSectionStory(
   section: EditorSection,
-  loc: TableLocation & { zone: EditorEditingZone },
+  zone: EditorEditingZone,
   paragraphId: string,
   updateBlocks: (blocks: EditorBlockNode[]) => EditorBlockNode[],
 ): EditorSection {
-  if (loc.zone === "main") {
+  if (zone === "main") {
     return { ...section, blocks: updateBlocks(section.blocks) };
   }
-  if (loc.zone === "header") {
+  if (zone === "header") {
     if (storyContainsParagraph(section.firstPageHeader, paragraphId)) {
       return {
         ...section,
@@ -258,7 +298,7 @@ function updateSelectedSectionStory(
       header: section.header ? updateBlocks(section.header) : section.header,
     };
   }
-  if (loc.zone === "footer") {
+  if (zone === "footer") {
     if (storyContainsParagraph(section.firstPageFooter, paragraphId)) {
       return {
         ...section,
@@ -358,38 +398,44 @@ export function getActiveTableStory(
   const paragraphId = state.selection.focus.paragraphId;
 
   if (loc.zone === "footnote") {
-    const paragraphLocation = findParagraphLocation(
-      state.document,
-      paragraphId,
-    );
-    const footnoteId = paragraphLocation?.footnoteId ?? state.activeFootnoteId;
-    const footnotes = state.document.footnotes;
-    const footnote = footnoteId ? footnotes?.items[footnoteId] : undefined;
-    return footnote?.blocks ?? null;
+    return getFootnoteBlocks(state, paragraphId);
   }
 
   const section = getDocumentSections(state.document)[activeSectionIndex];
   if (!section) return null;
 
-  if (loc.zone === "main") {
-    return section.blocks;
-  }
-  if (loc.zone === "header") {
-    if (storyContainsParagraph(section.firstPageHeader, paragraphId)) {
-      return section.firstPageHeader ?? null;
-    }
-    if (storyContainsParagraph(section.evenPageHeader, paragraphId)) {
-      return section.evenPageHeader ?? null;
-    }
-    return section.header ?? null;
-  }
-  if (storyContainsParagraph(section.firstPageFooter, paragraphId)) {
-    return section.firstPageFooter ?? null;
-  }
-  if (storyContainsParagraph(section.evenPageFooter, paragraphId)) {
-    return section.evenPageFooter ?? null;
-  }
-  return section.footer ?? null;
+  return getSectionStory(section, loc.zone, paragraphId);
+}
+
+/**
+ * Table-free variant of `getActiveTableStory`: resolves the block story that
+ * owns the caret (from `getActiveZone`), used when the caret is not inside a
+ * table (e.g. Text to Table). Returns `null` when the caret sits in no
+ * editable story.
+ */
+export function getActiveCaretStory(
+  state: EditorState,
+): EditorBlockNode[] | null {
+  const paragraphId = state.selection.focus.paragraphId;
+  const zone = getActiveZone(state);
+  if (zone === "footnote") return getFootnoteBlocks(state, paragraphId);
+
+  const activeSectionIndex = getActiveSectionIndex(state);
+  const section = getDocumentSections(state.document)[activeSectionIndex];
+  if (!section) return null;
+  return getSectionStory(section, zone, paragraphId);
+}
+
+/** The block story of the footnote owning `paragraphId`, if any. */
+function getFootnoteBlocks(
+  state: EditorState,
+  paragraphId: string,
+): EditorBlockNode[] | null {
+  const paragraphLocation = findParagraphLocation(state.document, paragraphId);
+  const footnoteId = paragraphLocation?.footnoteId ?? state.activeFootnoteId;
+  const footnotes = state.document.footnotes;
+  const footnote = footnoteId ? footnotes?.items[footnoteId] : undefined;
+  return footnote?.blocks ?? null;
 }
 
 /**
@@ -446,7 +492,12 @@ export function replaceActiveTableWithBlocks(
   const nextSections = getDocumentSections(state.document).map(
     (section, sectionIndex): EditorSection =>
       sectionIndex === activeSectionIndex
-        ? updateSelectedSectionStory(section, loc, paragraphId, replaceBlocks)
+        ? updateSelectedSectionStory(
+            section,
+            loc.zone,
+            paragraphId,
+            replaceBlocks,
+          )
         : section,
   );
 
@@ -501,7 +552,70 @@ export function updateActiveTableBlocks(
   const nextSections = getDocumentSections(state.document).map(
     (section, sectionIndex): EditorSection =>
       sectionIndex === activeSectionIndex
-        ? updateSelectedSectionStory(section, loc, paragraphId, updateBlocks)
+        ? updateSelectedSectionStory(
+            section,
+            loc.zone,
+            paragraphId,
+            updateBlocks,
+          )
+        : section,
+  );
+
+  return {
+    ...state,
+    document: {
+      ...state.document,
+      sections: nextSections,
+    },
+  };
+}
+
+/**
+ * Applies `updateBlocks` to the block story that owns the caret, regardless of
+ * whether the caret sits inside a table. Resolves the story from the active
+ * editing zone (footnote, or the section main/header/footer story), mirroring
+ * `updateActiveTableBlocks` but without requiring a table location. Used by the
+ * Text to Table conversion which splices a table into a paragraph run.
+ */
+export function updateActiveCaretBlocks(
+  state: EditorState,
+  updateBlocks: (blocks: EditorBlockNode[]) => EditorBlockNode[],
+): EditorState {
+  const paragraphId = state.selection.focus.paragraphId;
+  const zone = getActiveZone(state);
+  const activeSectionIndex = getActiveSectionIndex(state);
+
+  if (zone === "footnote") {
+    const paragraphLocation = findParagraphLocation(
+      state.document,
+      paragraphId,
+    );
+    const footnoteId = paragraphLocation?.footnoteId ?? state.activeFootnoteId;
+    const footnotes = state.document.footnotes;
+    const footnote = footnoteId ? footnotes?.items[footnoteId] : undefined;
+    if (!footnoteId || !footnotes || !footnote) return state;
+    return {
+      ...state,
+      document: {
+        ...state.document,
+        footnotes: {
+          ...footnotes,
+          items: {
+            ...footnotes.items,
+            [footnoteId]: {
+              ...footnote,
+              blocks: updateBlocks(footnote.blocks),
+            },
+          },
+        },
+      },
+    };
+  }
+
+  const nextSections = getDocumentSections(state.document).map(
+    (section, sectionIndex): EditorSection =>
+      sectionIndex === activeSectionIndex
+        ? updateSelectedSectionStory(section, zone, paragraphId, updateBlocks)
         : section,
   );
 
