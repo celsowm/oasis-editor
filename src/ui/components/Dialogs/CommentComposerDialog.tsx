@@ -1,6 +1,8 @@
-import { createEffect, createSignal, createUniqueId, Show, type JSX } from "solid-js";
+import { createEffect, createSignal, Show, type JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { TextField } from "@/ui/public/TextField.js";
+import { TextAreaField } from "@/ui/public/TextAreaField.js";
+import { Text } from "@/ui/public/Text.js";
 import { Button } from "@/ui/public/Button.js";
 import type { EditorCommentComposer } from "@/ui/app/createEditorCommentComposer.js";
 import { Dialog } from "./Dialog.js";
@@ -12,7 +14,6 @@ export interface CommentComposerDialogProps {
 /** Dialog state is local to the mounted editor. */
 export function CommentComposerDialog(props: CommentComposerDialogProps): JSX.Element {
   const t = useI18n();
-  const bodyId = createUniqueId();
   const [author, setAuthor] = createSignal("");
   const [body, setBody] = createSignal("");
   let bodyRef: HTMLTextAreaElement | undefined;
@@ -53,8 +54,8 @@ export function CommentComposerDialog(props: CommentComposerDialogProps): JSX.El
       <div class="oasis-editor-comment-composer">
         <Show when={pending()?.mode === "reply"}>
           <div class="oasis-editor-comment-composer-parent" data-testid="comment-reply-context">
-            <strong>{t("comment.replyTo")} {pending()?.parentAuthor}</strong>
-            <p>{pending()?.parentText}</p>
+            <Text as="strong">{t("comment.replyTo")} {pending()?.parentAuthor}</Text>
+            <Text as="p">{pending()?.parentText}</Text>
           </div>
         </Show>
         <TextField
@@ -65,26 +66,23 @@ export function CommentComposerDialog(props: CommentComposerDialogProps): JSX.El
           required
           data-testid="comment-composer-author"
         />
-        <label class="oasis-editor-ui-field" for={bodyId}>
-          <span class="oasis-editor-ui-field-label">{t("comment.body")}</span>
-          <textarea
-            ref={bodyRef}
-            id={bodyId}
-            class="oasis-editor-ui-input oasis-editor-comment-composer-textarea"
-            value={body()}
-            onInput={(e): void => { setBody(e.currentTarget.value); }}
-            onKeyDown={(e): void => {
-              if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-                e.preventDefault();
-                submit();
-              }
-            }}
-            rows={5}
-            maxLength={20000}
-            placeholder={t("comment.placeholder")}
-            data-testid="comment-composer-body"
-          />
-        </label>
+        <TextAreaField
+          ref={bodyRef}
+          label={t("comment.body")}
+          controlClass="oasis-editor-comment-composer-textarea"
+          value={body()}
+          onChange={setBody}
+          onKeyDown={(e): void => {
+            if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          rows={5}
+          maxLength={20000}
+          placeholder={t("comment.placeholder")}
+          data-testid="comment-composer-body"
+        />
       </div>
     </Dialog>
   );
