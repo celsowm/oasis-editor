@@ -167,6 +167,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "tableSplitAtRow",
   "tableSortAscending",
   "tableSortDescending",
+  "tableDelete",
   "tableSetCellWidth",
   "tableToggleHeaderRow",
   "tableToggleTotalRow",

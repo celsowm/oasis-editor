@@ -49,6 +49,7 @@ export const MERGE_KEYS = {
   tableSplitAtRow: "tableSplitAtRow",
   tableSortAscending: "tableSortAscending",
   tableSortDescending: "tableSortDescending",
+  tableDelete: "tableDelete",
   tableStyleOptions: "tableStyleOptions",
   tableStyleGallery: "tableStyleGallery",
   tableDistribute: "tableDistribute",
