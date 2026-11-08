@@ -13,6 +13,8 @@ import {
   convertActiveTextToTable,
   canSplitActiveTableAtRow,
   splitActiveTableAtRow,
+  canSortActiveTable,
+  sortActiveTable,
 } from "@/core/commands/table.js";
 import {
   findParagraphTablePathLocation,
@@ -249,6 +251,14 @@ export function buildEssentialsTable(
       apply(
         (current): EditorState => splitActiveTableAtRow(current),
         MERGE_KEYS.tableSplitAtRow,
+      ),
+    canSortTable: (): boolean => canSortActiveTable(options.state()),
+    sortTable: (direction: "ascending" | "descending"): void =>
+      apply(
+        (current): EditorState => sortActiveTable(current, direction),
+        direction === "ascending"
+          ? MERGE_KEYS.tableSortAscending
+          : MERGE_KEYS.tableSortDescending,
       ),
     merge: (): void =>
       apply(

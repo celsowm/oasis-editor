@@ -210,6 +210,20 @@ const SplitTableIcon: CustomIconRenderer = (): JSX.Element => (
   </TableIcon>
 );
 
+const SortAscendingIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
+    <path d="M4 17l4-4 3 3 4-5" stroke-width={1.6} />
+    <path d="M15 12V6h3M14.5 7.5 15 6l3 .5" stroke-width={1.5} />
+  </SvgIcon>
+);
+
+const SortDescendingIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
+    <path d="M4 8l4 4 3-3 4 6" stroke-width={1.6} />
+    <path d="M15 18v-6h3M14.5 16.5 15 18l3-.5" stroke-width={1.5} />
+  </SvgIcon>
+);
+
 const TableWidthIcon: CustomIconRenderer = (): JSX.Element => (
   <TableIcon>
     <path d="M3 21h18M4.5 19.5 3 21l1.5 1.5M19.5 19.5 21 21l-1.5 1.5" />
@@ -319,6 +333,8 @@ const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   tableToText: TableToTextIcon,
   textToTable: TextToTableIcon,
   splitTable: SplitTableIcon,
+  sortAscending: SortAscendingIcon,
+  sortDescending: SortDescendingIcon,
   tableWidth: TableWidthIcon,
   tableDistributeRows: TableDistributeRowsIcon,
   tableDistributeColumns: TableDistributeColumnsIcon,

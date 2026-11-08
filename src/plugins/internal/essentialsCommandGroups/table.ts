@@ -65,6 +65,22 @@ export function buildTableCommands({
           table.canSplitTableAtRow(),
       }),
     ),
+    tableSortAscending: actionCommand(
+      "tableSortAscending",
+      (): void => table.sortTable("ascending"),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSortAscending") && table.canSortTable(),
+      }),
+    ),
+    tableSortDescending: actionCommand(
+      "tableSortDescending",
+      (): void => table.sortTable("descending"),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSortDescending") && table.canSortTable(),
+      }),
+    ),
     tableInsertColumnBefore: actionCommand(
       "tableInsertColumnBefore",
       (): void => table.insertColumnBefore(),

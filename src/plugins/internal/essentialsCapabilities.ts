@@ -376,6 +376,10 @@ export interface EssentialsTableCapability {
   canSplitTableAtRow: () => boolean;
   /** Word's Split Table: split the active table into two at the caret row. */
   splitTableAtRow: () => void;
+  /** True when the active table's body rows can be reordered. */
+  canSortTable: () => boolean;
+  /** Word's Sort: reorder the table's body rows by the caret column. */
+  sortTable: (direction: "ascending" | "descending") => void;
   merge: () => void;
   split: () => void;
   insertColumnBefore: () => void;

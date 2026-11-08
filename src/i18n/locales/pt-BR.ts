@@ -322,6 +322,12 @@ export const ptBR = {
     "Converte texto separado por tabulação em tabela",
   "table.splitTable": "Dividir Tabela",
   "table.splitTableTooltip": "Divide a tabela em duas na linha do cursor",
+  "table.sortAscending": "Classificar Crescentemente",
+  "table.sortAscendingTooltip":
+    "Classifica as linhas da tabela em ordem crescente",
+  "table.sortDescending": "Classificar Decrescentemente",
+  "table.sortDescendingTooltip":
+    "Classifica as linhas da tabela em ordem decrescente",
   "table.distributeRows": "Distribuir Linhas",
   "table.distributeColumns": "Distribuir Colunas",
   "table.cellWidth": "Largura da Célula",

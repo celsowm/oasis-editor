@@ -1168,6 +1168,27 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     tooltipKey: "table.splitTableTooltip",
   });
 
+  // Sort the active table's body rows by the caret column (Word's "Sort").
+  // Ascending and descending variants sit side-by-side in the Layout sort group.
+  items.push({
+    type: "button",
+    id: "editor-toolbar-tbl-sort-asc",
+    testId: "editor-toolbar-tbl-sort-asc",
+    iconName: "sortAscending",
+    command: "tableSortAscending",
+    labelKey: "table.sortAscending",
+    tooltipKey: "table.sortAscendingTooltip",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-tbl-sort-desc",
+    testId: "editor-toolbar-tbl-sort-desc",
+    iconName: "sortDescending",
+    command: "tableSortDescending",
+    labelKey: "table.sortDescending",
+    tooltipKey: "table.sortDescendingTooltip",
+  });
+
   // Cell vertical alignment (Word's Align Top / Center / Bottom) on the
   // Layout tab's alignment group. These are payload commands so they are
   // surfaced explicitly rather than through TABLE_LAYOUT_BUTTONS.
