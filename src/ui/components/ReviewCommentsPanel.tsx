@@ -1,5 +1,7 @@
 import { For, Show, createMemo, createSignal, type Accessor, type JSX } from "solid-js";
-import type { EditorComment, EditorState } from "@/core/model.js";
+import type {
+  EditorComment, EditorReviewActivity, EditorState,
+} from "@/core/model.js";
 import { collectCommentThreadReplies } from "@/core/commands/commentAuthoring.js";
 import type { EditorCommentComposer } from "@/ui/app/createEditorCommentComposer.js";
 import { useI18n } from "@/i18n/I18nContext.js";
@@ -19,6 +21,7 @@ type Filter = "all" | "open" | "resolved";
 export function ReviewCommentsPanel(props: ReviewCommentsPanelProps): JSX.Element {
   const t = useI18n();
   const [filter, setFilter] = createSignal<Filter>("all");
+  const [showActivity, setShowActivity] = createSignal(false);
   const [search, setSearch] = createSignal("");
   const [expandedId, setExpandedId] = createSignal<string | null>(null);
   const [deleteCandidate, setDeleteCandidate] = createSignal<string | null>(null);
@@ -43,6 +46,28 @@ export function ReviewCommentsPanel(props: ReviewCommentsPanelProps): JSX.Elemen
   });
   const replies = (id: string): EditorComment[] =>
     collectCommentThreadReplies(registry()?.items ?? {}, id);
+  const activity = createMemo((): EditorReviewActivity[] => {
+    const query = search().trim().toLocaleLowerCase();
+    return [...(props.state().document.reviewActivity ?? [])]
+      .filter(entry => !query ||
+        (entry.actorName + " " + entry.targetAuthor + " " + entry.kind)
+          .toLocaleLowerCase().includes(query))
+      .reverse();
+  });
+  const activityLabel = (kind: EditorReviewActivity["kind"]): string => {
+    switch (kind) {
+      case "comment-created": return t("review.activity.created");
+      case "comment-replied": return t("review.activity.replied");
+      case "comment-edited": return t("review.activity.edited");
+      case "comment-resolved": return t("review.activity.resolved");
+      case "comment-reopened": return t("review.activity.reopened");
+      case "comment-deleted": return t("review.activity.deleted");
+    }
+  };
+  const eventDate = (timestamp: number): string =>
+    Number.isFinite(timestamp)
+      ? new Date(timestamp).toLocaleString()
+      : "";
 
   const applyDelete = (id: string): void => {
     if (deleteCandidate() !== id) {
@@ -64,13 +89,24 @@ export function ReviewCommentsPanel(props: ReviewCommentsPanelProps): JSX.Elemen
           ✕
         </Button>
       </div>
-      <Text as="p">{t("review.discussionCount")}: {registry()?.order.length ?? 0}</Text>
+      <div class="oasis-review-mode-switch" role="group" aria-label={t("review.displayMode")}>
+        <Button size="sm" variant="ghost" aria-pressed={!showActivity()}
+          onClick={(): void => { setShowActivity(false); }}
+          data-testid="review-show-discussions">{t("review.commentsPanel")}</Button>
+        <Button size="sm" variant="ghost" aria-pressed={showActivity()}
+          onClick={(): void => { setShowActivity(true); }}
+          data-testid="review-show-activity">{t("review.activity.title")}</Button>
+      </div>
+      <Text as="p">{showActivity()
+        ? `${t("review.activity.title")}: ${props.state().document.reviewActivity?.length ?? 0}`
+        : `${t("review.discussionCount")}: ${registry()?.order.length ?? 0}`}</Text>
       <TextField
-        label={t("review.searchComments")}
+        label={showActivity() ? t("review.activity.search") : t("review.searchComments")}
         value={search()}
         onChange={setSearch}
         data-testid="review-comments-search"
       />
+      <Show when={!showActivity()}>
       <div class="oasis-review-comments-filters" role="group" aria-label={t("review.filterComments")}>
         <Button size="sm" variant="ghost" aria-pressed={filter() === "all"}
           onClick={(): void => { setFilter("all"); }}>{t("review.filterAll")}</Button>
@@ -174,6 +210,38 @@ export function ReviewCommentsPanel(props: ReviewCommentsPanelProps): JSX.Elemen
           )}
         </For>
       </div>
+      </Show>
+      <Show when={showActivity()}>
+        <div class="oasis-review-activity-list" data-testid="review-activity-list"
+          role="list" aria-label={t("review.activity.title")}>
+          <Show when={activity().length === 0}>
+            <Text as="p">{t("review.activity.empty")}</Text>
+          </Show>
+          <For each={activity()}>
+            {(entry): JSX.Element => (
+              <div class="oasis-review-activity-entry" role="listitem"
+                data-testid="review-activity-entry" data-activity-kind={entry.kind}>
+                <div class="oasis-review-activity-heading">
+                  <Text as="strong">{entry.actorName}</Text>
+                  <Text as="span">{eventDate(entry.timestamp)}</Text>
+                </div>
+                <Text as="p">
+                  {activityLabel(entry.kind)} — {entry.targetAuthor}
+                  {entry.affectedCount && entry.affectedCount > 1
+                    ? ` (${entry.affectedCount})` : ""}
+                </Text>
+                <Show when={Boolean(registry()?.items[entry.commentId])}>
+                  <Button size="sm" variant="ghost"
+                    data-testid="review-activity-navigate"
+                    onClick={(): void => props.onNavigate(entry.commentId)}>
+                    {t("review.goToComment")}
+                  </Button>
+                </Show>
+              </div>
+            )}
+          </For>
+        </div>
+      </Show>
     </div>
   );
 }
