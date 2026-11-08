@@ -3,6 +3,8 @@ import JSZip from "jszip";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
 import { attachDocxSourcePackage } from "@/import/docx/opc/sourcePackage.js";
 import { exportEditorDocumentToDocxPreservingSource } from "@/export/docx/exportEditorDocumentToDocxPreservingSource.js";
+import { createEditorStateFromDocument } from "@/core/editorState.js";
+import { editCommentText } from "@/core/commands/commentAuthoring.js";
 
 const WORD_NS =
   "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -122,4 +124,46 @@ describe("source-backed commentsExtended preservation", () => {
     expect(extendedXml).toContain('cx:val="keep-child"');
     expect(extendedXml).toContain('cx:val="keep-root-child"');
   });
+  it("preserves source comment extension metadata when existing root and reply bodies are edited", async () => {
+    const buffer = await buildSourcePackage();
+    const document = await importDocxToEditorDocument(buffer);
+    await attachDocxSourcePackage(document, buffer);
+    const commentRegistry = document.comments!;
+    const parentId = commentRegistry.order.find(
+      (id) => commentRegistry.items[id]?.docxIdHint === 3,
+    )!;
+    const childId = commentRegistry.order.find(
+      (id) => commentRegistry.items[id]?.docxIdHint === 7,
+    )!;
+    let state = createEditorStateFromDocument(document);
+    state = editCommentText(state, parentId, "Updated <parent> & scope");
+    state = editCommentText(state, childId, "Corrected reply");
+
+    const zip = await JSZip.loadAsync(
+      await exportEditorDocumentToDocxPreservingSource(state.document),
+    );
+    const commentsXml = (await zip.file("word/comments.xml")?.async("string")) ?? "";
+    const extendedXml = (await zip.file("word/commentsExtended.xml")?.async("string")) ?? "";
+
+    expect(commentsXml).toContain("Updated &lt;parent&gt; &amp; scope");
+    expect(commentsXml).toContain("Corrected reply");
+    expect(commentsXml).toContain('w:id="3"');
+    expect(commentsXml).toContain('w:id="7"');
+    expect(extendedXml).toContain('w15:paraIdParent="40000000"');
+    expect(extendedXml).toContain('cx:threadToken="parent"');
+    expect(extendedXml).toContain('cx:threadToken="child"');
+    expect(extendedXml).toContain('cx:val="keep-child"');
+    expect(extendedXml).toContain('cx:val="keep-root-child"');
+
+    const reimported = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const [parent, child] = reimported.comments!.order.map(
+      (id) => reimported.comments!.items[id]!,
+    );
+    expect(parent?.text).toBe("Updated <parent> & scope");
+    expect(child?.text).toBe("Corrected reply");
+    expect(child?.parentId).toBe(parent?.id);
+  });
+
 });
