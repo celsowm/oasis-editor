@@ -220,6 +220,10 @@ export interface OasisCommandPayloads {
   tableRepeatHeaderRows: undefined;
   tableSetCellMargins: undefined;
   tableFormula: undefined;
+  tableSelectCell: undefined;
+  tableSelectRow: undefined;
+  tableSelectColumn: undefined;
+  tableSelectTable: undefined;
   tableSetCellWidth: string | number;
   tableToggleHeaderRow: undefined;
   tableToggleTotalRow: undefined;
