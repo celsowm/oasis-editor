@@ -189,11 +189,13 @@ export function CommentHighlightOverlay(
                     size="sm"
                     variant="ghost"
                     aria-expanded={expandedCommentId() === activeCommentId()}
-                    onClick={(): void => setExpandedCommentId(
-                      expandedCommentId() === activeCommentId()
-                        ? null
-                        : activeCommentId(),
-                    )}
+                    onClick={(): void => {
+                      setExpandedCommentId(
+                        expandedCommentId() === activeCommentId()
+                          ? null
+                          : activeCommentId(),
+                      );
+                    }}
                     data-testid="comment-popup-expand-replies"
                   >
                     {expandedCommentId() === activeCommentId()
