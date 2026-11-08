@@ -315,6 +315,8 @@ export const en = {
   "table.bandedColumns": "Banded Columns",
   "table.tableStyle": "Table Style",
   "table.autoFit": "AutoFit",
+  "table.convertToText": "Convert to Text",
+  "table.convertToTextTooltip": "Convert the table to body paragraphs",
   "table.distributeRows": "Distribute Rows",
   "table.distributeColumns": "Distribute Columns",
   "table.cellWidth": "Cell Width",

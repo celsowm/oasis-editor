@@ -364,6 +364,10 @@ export interface EssentialsTableCapability {
   canSplit: () => boolean;
   canEditColumn: () => boolean;
   canEditRow: () => boolean;
+  /** True when the caret sits inside a table that can be converted to text. */
+  canConvertToText: () => boolean;
+  /** Word's Convert Table to Text: flatten the active table into body paragraphs. */
+  convertToText: () => void;
   merge: () => void;
   split: () => void;
   insertColumnBefore: () => void;

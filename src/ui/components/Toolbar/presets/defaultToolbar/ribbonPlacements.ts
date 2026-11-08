@@ -186,6 +186,11 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   },
   "editor-toolbar-tbl-merge": { tab: "tableLayout", group: "merge", row: 1 },
   "editor-toolbar-tbl-split": { tab: "tableLayout", group: "merge", row: 2 },
+  "editor-toolbar-tbl-to-text": {
+    tab: "tableLayout",
+    group: "merge",
+    row: 2,
+  },
   "editor-toolbar-tbl-width-100": {
     tab: "tableLayout",
     group: "cellSize",

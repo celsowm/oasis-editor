@@ -315,6 +315,8 @@ export const ptBR = {
   "table.bandedColumns": "Colunas em Tiras",
   "table.tableStyle": "Estilo de Tabela",
   "table.autoFit": "AutoAjuste",
+  "table.convertToText": "Converter em Texto",
+  "table.convertToTextTooltip": "Converte a tabela em parágrafos de texto",
   "table.distributeRows": "Distribuir Linhas",
   "table.distributeColumns": "Distribuir Colunas",
   "table.cellWidth": "Largura da Célula",

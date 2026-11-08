@@ -7,6 +7,8 @@ import {
   setTableCellStyleValue,
   setTableCellWidth,
   setTableStyleValue,
+  canConvertActiveTableToText,
+  convertActiveTableToText,
 } from "@/core/commands/table.js";
 import {
   findParagraphTablePathLocation,
@@ -223,6 +225,13 @@ export function buildEssentialsTable(
       options.tableOps.canEditSelectedTableColumn(options.state()),
     canEditRow: (): boolean =>
       options.tableOps.canEditSelectedTableRow(options.state()),
+    canConvertToText: (): boolean =>
+      canConvertActiveTableToText(options.state()),
+    convertToText: (): void =>
+      apply(
+        (current): EditorState => convertActiveTableToText(current),
+        MERGE_KEYS.tableToText,
+      ),
     merge: (): void =>
       apply(
         (current): EditorState => options.tableOps.mergeSelectedTable(current),

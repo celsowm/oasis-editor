@@ -40,6 +40,14 @@ export function buildTableCommands({
         isEnabled: gate.isCommandEnabled("tableSplit") && table.canSplit(),
       }),
     ),
+    tableToText: actionCommand(
+      "tableToText",
+      (): void => table.convertToText(),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableToText") && table.canConvertToText(),
+      }),
+    ),
     tableInsertColumnBefore: actionCommand(
       "tableInsertColumnBefore",
       (): void => table.insertColumnBefore(),

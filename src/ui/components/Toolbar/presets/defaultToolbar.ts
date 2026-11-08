@@ -1132,6 +1132,18 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     tooltipKey: "table.autoFit",
   });
 
+  // Convert the active table into a run of body paragraphs (Word's "Convert
+  // Table to Text"). Placed next to Merge/Split in the Layout merge group.
+  items.push({
+    type: "button",
+    id: "editor-toolbar-tbl-to-text",
+    testId: "editor-toolbar-tbl-to-text",
+    iconName: "tableToText",
+    command: "tableToText",
+    labelKey: "table.convertToText",
+    tooltipKey: "table.convertToTextTooltip",
+  });
+
   // Cell vertical alignment (Word's Align Top / Center / Bottom) on the
   // Layout tab's alignment group. These are payload commands so they are
   // surfaced explicitly rather than through TABLE_LAYOUT_BUTTONS.
