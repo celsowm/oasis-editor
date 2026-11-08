@@ -2768,3 +2768,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+
+/* The formatting brush is instance-scoped: mounted editors never share state.
+   Only the document surface changes the pointer while a brush is armed. */
+.oasis-editor-format-painter-active .oasis-editor-paper {
+  cursor: crosshair;
+}

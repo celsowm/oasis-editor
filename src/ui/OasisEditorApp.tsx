@@ -463,6 +463,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           "oasis-editor-app": true,
           "oasis-editor-docs": useComposedShell(),
           "oasis-editor-read-only": isReadOnly(),
+          "oasis-editor-format-painter-active":
+            interaction.formatPainter.mode() !== null,
         }}
         style={{
           // Single source of truth for the horizontal page gutter: the same TS
