@@ -5,6 +5,7 @@ import type {
   CommandBuilder,
   ValueCommandBuilder,
 } from "../essentialsCommandBuilders.js";
+import { numOrNull } from "../essentialsCommandBuilders.js";
 import { formatFontSizePt, parseFontSizePtToPx } from "@/ui/fontSizeUnits.js";
 import {
   isPreciseFontModeEnabled,
@@ -477,6 +478,21 @@ export function buildCoreFormattingCommands({
       "setUnderlineColor",
       (p): boolean => formatting.setUnderlineColor((p as string) || null),
       (): string => s().underlineColor,
+    ),
+    setCharacterScale: valueCommand(
+      "setCharacterScale",
+      (p): boolean => formatting.setCharacterScale(numOrNull(p)),
+      (): string => s().characterScale,
+    ),
+    setCharacterSpacing: valueCommand(
+      "setCharacterSpacing",
+      (p): boolean => formatting.setCharacterSpacing(numOrNull(p)),
+      (): string => s().characterSpacing,
+    ),
+    setBaselineShift: valueCommand(
+      "setBaselineShift",
+      (p): boolean => formatting.setBaselineShift(numOrNull(p)),
+      (): string => s().baselineShift,
     ),
   };
 }

@@ -140,6 +140,9 @@ export interface EssentialsFormattingCapability {
   setCharacterStyleId: (value: string) => boolean;
   setUnderlineStyle: (value: string | null) => void;
   setUnderlineColor: (value: string | null) => boolean;
+  setCharacterScale: (value: number | null) => boolean;
+  setCharacterSpacing: (value: number | null) => boolean;
+  setBaselineShift: (value: number | null) => boolean;
 }
 
 export interface EssentialsDocumentStyleDescriptor {

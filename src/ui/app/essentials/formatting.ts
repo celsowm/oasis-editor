@@ -482,5 +482,32 @@ export function buildEssentialsFormatting(
       )("underlineColor", value),
       true
     ),
+    setCharacterScale: (value: number | null): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "characterScale",
+          value: number | null,
+        ) => void
+      )("characterScale", value),
+      true
+    ),
+    setCharacterSpacing: (value: number | null): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "characterSpacing",
+          value: number | null,
+        ) => void
+      )("characterSpacing", value),
+      true
+    ),
+    setBaselineShift: (value: number | null): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "baselineShift",
+          value: number | null,
+        ) => void
+      )("baselineShift", value),
+      true
+    ),
   };
 }

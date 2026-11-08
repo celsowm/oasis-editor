@@ -124,6 +124,9 @@ export interface OasisCommandPayloads {
   setCharacterStyleId: string;
   setUnderlineStyle: string | null;
   setUnderlineColor: string | null;
+  setCharacterScale: number | null;
+  setCharacterSpacing: number | null;
+  setBaselineShift: number | null;
   documentStyles: undefined;
   print: undefined;
   copy: undefined;
