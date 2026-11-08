@@ -138,7 +138,9 @@ function collectPresetItems() {
     });
     for (const key of ["menu", "content"]) {
       const menu = getExpression(node, key);
-      const nested = getExpression(menu, "items");
+      const nested = menu && ts.isObjectLiteralExpression(menu)
+        ? getExpression(menu, "items")
+        : undefined;
       if (nested && ts.isArrayLiteralExpression(nested)) {
         for (const child of nested.elements) addItem(child, id);
       }
