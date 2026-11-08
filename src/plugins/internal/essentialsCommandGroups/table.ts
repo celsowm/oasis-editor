@@ -56,6 +56,15 @@ export function buildTableCommands({
           gate.isCommandEnabled("textToTable") && table.canConvertToTable(),
       }),
     ),
+    tableSplitAtRow: actionCommand(
+      "tableSplitAtRow",
+      (): void => table.splitTableAtRow(),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSplitAtRow") &&
+          table.canSplitTableAtRow(),
+      }),
+    ),
     tableInsertColumnBefore: actionCommand(
       "tableInsertColumnBefore",
       (): void => table.insertColumnBefore(),

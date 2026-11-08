@@ -319,6 +319,8 @@ export const en = {
   "table.convertToTextTooltip": "Convert the table to body paragraphs",
   "table.convertToTable": "Convert to Table",
   "table.convertToTableTooltip": "Convert tab-separated text into a table",
+  "table.splitTable": "Split Table",
+  "table.splitTableTooltip": "Split the table into two at the caret row",
   "table.distributeRows": "Distribute Rows",
   "table.distributeColumns": "Distribute Columns",
   "table.cellWidth": "Cell Width",

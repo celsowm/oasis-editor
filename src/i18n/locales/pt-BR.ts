@@ -320,6 +320,8 @@ export const ptBR = {
   "table.convertToTable": "Converter em Tabela",
   "table.convertToTableTooltip":
     "Converte texto separado por tabulação em tabela",
+  "table.splitTable": "Dividir Tabela",
+  "table.splitTableTooltip": "Divide a tabela em duas na linha do cursor",
   "table.distributeRows": "Distribuir Linhas",
   "table.distributeColumns": "Distribuir Colunas",
   "table.cellWidth": "Largura da Célula",

@@ -372,6 +372,10 @@ export interface EssentialsTableCapability {
   canConvertToTable: () => boolean;
   /** Word's Convert Text to Table: tab-separated text into a table at the caret. */
   convertToTable: () => void;
+  /** True when the active table can be split at the caret row. */
+  canSplitTableAtRow: () => boolean;
+  /** Word's Split Table: split the active table into two at the caret row. */
+  splitTableAtRow: () => void;
   merge: () => void;
   split: () => void;
   insertColumnBefore: () => void;

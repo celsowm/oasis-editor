@@ -200,6 +200,16 @@ const TextToTableIcon: CustomIconRenderer = (): JSX.Element => (
   </SvgIcon>
 );
 
+const SplitTableIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M3 12h18M7.5 12v9M16.5 12v9" stroke-width={1.6} />
+    <path
+      d="M4.5 8.5 3 12l1.5 3.5M19.5 8.5 21 12l-1.5 3.5"
+      stroke-width={1.4}
+    />
+  </TableIcon>
+);
+
 const TableWidthIcon: CustomIconRenderer = (): JSX.Element => (
   <TableIcon>
     <path d="M3 21h18M4.5 19.5 3 21l1.5 1.5M19.5 19.5 21 21l-1.5 1.5" />
@@ -308,6 +318,7 @@ const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   tableSplit: TableSplitIcon,
   tableToText: TableToTextIcon,
   textToTable: TextToTableIcon,
+  splitTable: SplitTableIcon,
   tableWidth: TableWidthIcon,
   tableDistributeRows: TableDistributeRowsIcon,
   tableDistributeColumns: TableDistributeColumnsIcon,

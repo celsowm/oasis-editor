@@ -1156,6 +1156,18 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     tooltipKey: "table.convertToTableTooltip",
   });
 
+  // Split the active table into two tables at the caret row (Word's "Split
+  // Table"). Placed in the Layout merge group next to Merge/Split.
+  items.push({
+    type: "button",
+    id: "editor-toolbar-tbl-split-table",
+    testId: "editor-toolbar-tbl-split-table",
+    iconName: "splitTable",
+    command: "tableSplitAtRow",
+    labelKey: "table.splitTable",
+    tooltipKey: "table.splitTableTooltip",
+  });
+
   // Cell vertical alignment (Word's Align Top / Center / Bottom) on the
   // Layout tab's alignment group. These are payload commands so they are
   // surfaced explicitly rather than through TABLE_LAYOUT_BUTTONS.

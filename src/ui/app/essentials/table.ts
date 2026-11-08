@@ -11,6 +11,8 @@ import {
   convertActiveTableToText,
   canConvertActiveTextToTable,
   convertActiveTextToTable,
+  canSplitActiveTableAtRow,
+  splitActiveTableAtRow,
 } from "@/core/commands/table.js";
 import {
   findParagraphTablePathLocation,
@@ -240,6 +242,13 @@ export function buildEssentialsTable(
       apply(
         (current): EditorState => convertActiveTextToTable(current),
         MERGE_KEYS.textToTable,
+      ),
+    canSplitTableAtRow: (): boolean =>
+      canSplitActiveTableAtRow(options.state()),
+    splitTableAtRow: (): void =>
+      apply(
+        (current): EditorState => splitActiveTableAtRow(current),
+        MERGE_KEYS.tableSplitAtRow,
       ),
     merge: (): void =>
       apply(
