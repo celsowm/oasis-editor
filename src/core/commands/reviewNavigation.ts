@@ -53,11 +53,14 @@ function findNextRange(
   if (!ranges.length) return null;
   const paragraphs = getParagraphs(state);
   const byId = new Map(paragraphs.map((p, i) => [p.id, i]));
-  const focusIndex = byId.get(state.selection.focus.paragraphId);
+  const position = direction === "next"
+    ? normalizeSelection(state, paragraphs).end
+    : normalizeSelection(state, paragraphs).start;
+  const focusIndex = byId.get(position.paragraphId);
   if (focusIndex === undefined) return null;
   const focusParagraph = paragraphs[focusIndex]!;
   const focusOffset = positionToParagraphOffset(
-    focusParagraph, state.selection.focus,
+    focusParagraph, position,
   );
 
   const found = direction === "next"

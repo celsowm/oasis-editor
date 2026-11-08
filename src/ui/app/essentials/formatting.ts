@@ -16,6 +16,15 @@ import {
 import { isSelectionCollapsed } from "@/core/selection.js";
 import { hasRevisionsInSelection } from "@/core/commands/history.js";
 import {
+  collectNavigableRevisions,
+  collectNavigableComments,
+  navigateRevision,
+  navigateComment,
+  getSelectedReviewComment,
+  setSelectedCommentResolved,
+  deleteSelectedComment as removeSelectedReviewComment,
+} from "@/core/commands/reviewNavigation.js";
+import {
   insertTableOfContents,
   updateTableOfContents,
   hasTableOfContents,
@@ -140,6 +149,67 @@ export function buildEssentialsFormatting(
     hasTableOfContents: (): boolean => hasTableOfContents(options.state()),
     hasRevisionsInSelection: (): boolean =>
       hasRevisionsInSelection(options.state()),
+    hasNavigableRevisions: (): boolean =>
+      collectNavigableRevisions(options.state()).length > 0,
+    hasNavigableComments: (): boolean =>
+      collectNavigableComments(options.state()).length > 0,
+    navigateRevisionNext: (): boolean => {
+      const current = options.state();
+      const next = navigateRevision(current, "next");
+      if (next === current) return false;
+      options.applyState(next);
+      options.focusInput();
+      return true;
+    },
+    navigateRevisionPrevious: (): boolean => {
+      const current = options.state();
+      const next = navigateRevision(current, "previous");
+      if (next === current) return false;
+      options.applyState(next);
+      options.focusInput();
+      return true;
+    },
+    navigateCommentNext: (): boolean => {
+      const current = options.state();
+      const next = navigateComment(current, "next");
+      if (next === current) return false;
+      options.applyState(next);
+      options.focusInput();
+      return true;
+    },
+    navigateCommentPrevious: (): boolean => {
+      const current = options.state();
+      const next = navigateComment(current, "previous");
+      if (next === current) return false;
+      options.applyState(next);
+      options.focusInput();
+      return true;
+    },
+    hasSelectedComment: (): boolean =>
+      getSelectedReviewComment(options.state()) !== null,
+    isSelectedCommentResolved: (): boolean =>
+      Boolean(getSelectedReviewComment(options.state())?.resolved),
+    resolveSelectedComment: (): boolean => {
+      const before = options.state();
+      if (setSelectedCommentResolved(before, true) === before) return false;
+      options.applyTransactionalState((current) =>
+        setSelectedCommentResolved(current, true));
+      return true;
+    },
+    reopenSelectedComment: (): boolean => {
+      const before = options.state();
+      if (setSelectedCommentResolved(before, false) === before) return false;
+      options.applyTransactionalState((current) =>
+        setSelectedCommentResolved(current, false));
+      return true;
+    },
+    deleteSelectedComment: (): boolean => {
+      const before = options.state();
+      if (removeSelectedReviewComment(before) === before) return false;
+      options.applyTransactionalState((current) =>
+        removeSelectedReviewComment(current));
+      return true;
+    },
     insertTableOfContents: (): boolean => {
       options.applyTransactionalState((current): EditorState =>
         insertTableOfContents(current, buildTocPageResolver(current)),

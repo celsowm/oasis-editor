@@ -46,6 +46,17 @@ export interface EssentialsFormattingCapability {
   hasTableOfContents: () => boolean;
   /** True when the current selection intersects revisions this command can resolve. */
   hasRevisionsInSelection: () => boolean;
+  hasNavigableRevisions: () => boolean;
+  hasNavigableComments: () => boolean;
+  navigateRevisionNext: () => boolean;
+  navigateRevisionPrevious: () => boolean;
+  navigateCommentNext: () => boolean;
+  navigateCommentPrevious: () => boolean;
+  hasSelectedComment: () => boolean;
+  isSelectedCommentResolved: () => boolean;
+  resolveSelectedComment: () => boolean;
+  reopenSelectedComment: () => boolean;
+  deleteSelectedComment: () => boolean;
   insertText: (text: string, fontFamily?: string | null) => boolean;
   insertEquation: (expression: EditorMathExpression) => boolean;
   updateEquation: (runId: string, expression: EditorMathExpression) => boolean;

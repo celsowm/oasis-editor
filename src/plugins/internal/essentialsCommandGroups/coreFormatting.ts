@@ -218,6 +218,62 @@ export function buildCoreFormattingCommands({
           formatting.hasRevisionsInSelection(),
       }),
     ),
+    nextRevision: command(
+      "nextRevision",
+      formatting.navigateRevisionNext,
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("nextRevision") &&
+          formatting.hasNavigableRevisions(),
+      }),
+    ),
+    previousRevision: command(
+      "previousRevision",
+      formatting.navigateRevisionPrevious,
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("previousRevision") &&
+          formatting.hasNavigableRevisions(),
+      }),
+    ),
+    nextComment: command(
+      "nextComment",
+      formatting.navigateCommentNext,
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("nextComment") &&
+          formatting.hasNavigableComments(),
+      }),
+    ),
+    previousComment: command(
+      "previousComment",
+      formatting.navigateCommentPrevious,
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("previousComment") &&
+          formatting.hasNavigableComments(),
+      }),
+    ),
+    resolveComment: command(
+      "resolveComment",
+      formatting.resolveSelectedComment,
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("resolveComment") &&
+          formatting.hasSelectedComment() && !formatting.isSelectedCommentResolved(),
+      }),
+    ),
+    reopenComment: command(
+      "reopenComment",
+      formatting.reopenSelectedComment,
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("reopenComment") &&
+          formatting.hasSelectedComment() && formatting.isSelectedCommentResolved(),
+      }),
+    ),
+    deleteComment: command(
+      "deleteComment",
+      formatting.deleteSelectedComment,
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("deleteComment") &&
+          formatting.hasSelectedComment(),
+      }),
+    ),
     toggleShowMargins: command(
       "toggleShowMargins",
       formatting.toggleShowMargins,

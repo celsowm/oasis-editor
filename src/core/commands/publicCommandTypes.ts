@@ -71,6 +71,13 @@ export interface OasisCommandPayloads {
   toggleTrackChanges: undefined;
   acceptRevisions: undefined;
   rejectRevisions: undefined;
+  nextRevision: undefined;
+  previousRevision: undefined;
+  nextComment: undefined;
+  previousComment: undefined;
+  resolveComment: undefined;
+  reopenComment: undefined;
+  deleteComment: undefined;
   toggleShowMargins: undefined;
   toggleShowParagraphMarks: undefined;
   togglePreciseFonts: undefined;
