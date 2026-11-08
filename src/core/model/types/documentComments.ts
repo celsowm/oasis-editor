@@ -32,6 +32,11 @@ export interface EditorComment {
   docxIdHint?: number;
   /** `w:comment/@w:author`. */
   author: string;
+  /**
+   * Application-local stable author identity. DOCX stores only display names;
+   * this field is not silently reconstructed from a DOCX author on import.
+   */
+  authorId?: string;
   /** `w:comment/@w:initials`. */
   initials?: string;
   /** `w:comment/@w:date` as an epoch millisecond timestamp. */

@@ -21,6 +21,7 @@ export interface CommentContent {
   author: string;
   text: string;
   date: number;
+  authorId?: string;
 }
 
 export interface CommentRange {

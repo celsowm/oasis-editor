@@ -60,10 +60,25 @@ export interface OasisEditorAppDocumentProps {
   persistenceKey?: string;
 }
 
+/**
+ * Optional host-supplied review identity. Undefined retains standalone editor
+ * behavior; configured identities require stable ids for owner-only actions.
+ *
+ * Authorization here is UI/client defense-in-depth, not a server security
+ * boundary. A collaborative backend must independently enforce the same policy.
+ */
+export interface OasisReviewAccess {
+  identity?: { id: string; displayName: string };
+  /** Explicit moderator override for managing another author's comments. */
+  canModerate?: boolean;
+}
+
 /** Runtime configuration properties for the editor app (plugins, customization). */
 export interface OasisEditorAppRuntimeProps {
   onReady?: (client: OasisEditorClient) => void;
   plugins?: OasisPlugin[];
+  /** Restrict comment mutation to the authenticated host identity. */
+  review?: OasisReviewAccess;
   /** @internal Used by createOasisEditor()/mount() to bind the public client. */
   client?: OasisEditorClientController;
   /**
