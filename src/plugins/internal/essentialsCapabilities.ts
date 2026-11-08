@@ -384,6 +384,12 @@ export interface EssentialsTableCapability {
   canDeleteTable: () => boolean;
   /** Word's Delete Table: remove the active table. */
   deleteTable: () => void;
+  /** True when the caret sits inside a table whose header row can be repeated. */
+  canToggleRepeatHeaderRows: () => boolean;
+  /** True when the active table repeats its first row as a header. */
+  isRepeatHeaderRowsActive: () => boolean;
+  /** Word's Repeat Header Rows: toggle the active table's repeating header row. */
+  toggleRepeatHeaderRows: () => void;
   merge: () => void;
   split: () => void;
   insertColumnBefore: () => void;

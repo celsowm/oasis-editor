@@ -89,6 +89,16 @@ export function buildTableCommands({
           gate.isCommandEnabled("tableDelete") && table.canDeleteTable(),
       }),
     ),
+    tableRepeatHeaderRows: actionCommand(
+      "tableRepeatHeaderRows",
+      (): void => table.toggleRepeatHeaderRows(),
+      (): { isEnabled: boolean; isActive: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableRepeatHeaderRows") &&
+          table.canToggleRepeatHeaderRows(),
+        isActive: table.isRepeatHeaderRowsActive(),
+      }),
+    ),
     tableInsertColumnBefore: actionCommand(
       "tableInsertColumnBefore",
       (): void => table.insertColumnBefore(),

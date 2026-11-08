@@ -327,6 +327,9 @@ export const en = {
   "table.sortDescendingTooltip": "Sort the table rows in descending order",
   "table.deleteTable": "Delete Table",
   "table.deleteTableTooltip": "Delete the active table",
+  "table.repeatHeaderRows": "Repeat Header Rows",
+  "table.repeatHeaderRowsTooltip":
+    "Repeat the first row as a header on each page",
   "table.distributeRows": "Distribute Rows",
   "table.distributeColumns": "Distribute Columns",
   "table.cellWidth": "Cell Width",

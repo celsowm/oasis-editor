@@ -1201,6 +1201,18 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     tooltipKey: "table.deleteTableTooltip",
   });
 
+  // Repeat the active table's first row as a header on each page (Word's
+  // "Repeat Header Rows"). Placed in the Layout merge group.
+  items.push({
+    type: "toggle",
+    id: "editor-toolbar-tbl-repeat-header",
+    testId: "editor-toolbar-tbl-repeat-header",
+    iconName: "repeatHeaderRow",
+    command: "tableRepeatHeaderRows",
+    labelKey: "table.repeatHeaderRows",
+    tooltipKey: "table.repeatHeaderRowsTooltip",
+  });
+
   // Cell vertical alignment (Word's Align Top / Center / Bottom) on the
   // Layout tab's alignment group. These are payload commands so they are
   // surfaced explicitly rather than through TABLE_LAYOUT_BUTTONS.

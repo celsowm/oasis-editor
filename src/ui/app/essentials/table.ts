@@ -17,6 +17,9 @@ import {
   sortActiveTable,
   canDeleteActiveTable,
   deleteActiveTable,
+  canToggleRepeatHeaderRows,
+  isRepeatHeaderRowsActive,
+  toggleRepeatHeaderRows,
 } from "@/core/commands/table.js";
 import {
   findParagraphTablePathLocation,
@@ -267,6 +270,15 @@ export function buildEssentialsTable(
       apply(
         (current): EditorState => deleteActiveTable(current),
         MERGE_KEYS.tableDelete,
+      ),
+    canToggleRepeatHeaderRows: (): boolean =>
+      canToggleRepeatHeaderRows(options.state()),
+    isRepeatHeaderRowsActive: (): boolean =>
+      isRepeatHeaderRowsActive(options.state()),
+    toggleRepeatHeaderRows: (): void =>
+      apply(
+        (current): EditorState => toggleRepeatHeaderRows(current),
+        MERGE_KEYS.tableRepeatHeaderRows,
       ),
     merge: (): void =>
       apply(

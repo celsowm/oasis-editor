@@ -330,6 +330,9 @@ export const ptBR = {
     "Classifica as linhas da tabela em ordem decrescente",
   "table.deleteTable": "Excluir Tabela",
   "table.deleteTableTooltip": "Exclui a tabela ativa",
+  "table.repeatHeaderRows": "Repetir Linha de Cabeçalho",
+  "table.repeatHeaderRowsTooltip":
+    "Repete a primeira linha como cabeçalho em cada página",
   "table.distributeRows": "Distribuir Linhas",
   "table.distributeColumns": "Distribuir Colunas",
   "table.cellWidth": "Largura da Célula",

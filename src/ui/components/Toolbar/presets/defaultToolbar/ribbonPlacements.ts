@@ -216,6 +216,11 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
     group: "rowsColumns",
     row: 2,
   },
+  "editor-toolbar-tbl-repeat-header": {
+    tab: "tableLayout",
+    group: "merge",
+    row: 1,
+  },
   "editor-toolbar-tbl-width-100": {
     tab: "tableLayout",
     group: "cellSize",
