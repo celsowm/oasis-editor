@@ -324,3 +324,72 @@ export function setSelectedFloatingFixedPosition(
     ),
   );
 }
+
+/**
+ * True when a floating object (image or text box) is selected and can be given
+ * an exact rotation.
+ */
+export function canSetSelectedFloatingRotation(state: EditorState): boolean {
+  const selected = getSelectedObjectRun(
+    state,
+    (run): boolean => run.kind === "image" || run.kind === "textBox",
+  );
+  return selected !== null;
+}
+
+/** Normalize an angle to the [0, 360) range; `0` collapses to `undefined`. */
+function normalizeRotationDegrees(rotation: number): number | undefined {
+  if (!Number.isFinite(rotation)) return undefined;
+  const normalized = ((Math.round(rotation) % 360) + 360) % 360;
+  return normalized === 0 ? undefined : normalized;
+}
+
+/**
+ * WordCraft's `arrange.rotation`: sets the exact angle (degrees, clockwise) of
+ * the selected image or text box, normalised to 0–360. A no-op when no
+ * floating object is selected.
+ */
+export function setSelectedFloatingRotation(
+  state: EditorState,
+  degrees: number,
+): EditorState {
+  const selected = getSelectedObjectRun(
+    state,
+    (run): boolean => run.kind === "image" || run.kind === "textBox",
+  );
+  if (!selected) return state;
+
+  const nextRotation = normalizeRotationDegrees(degrees);
+  const { paragraphIndex, run: targetRun } = selected;
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map(
+    (candidate, candidateIndex): EditorParagraphNode => {
+      if (candidateIndex !== paragraphIndex) return cloneParagraph(candidate);
+      return {
+        ...cloneParagraph(candidate),
+        runs: candidate.runs.map((run): EditorTextRun => {
+          if (run.id !== targetRun.id) return cloneRun(run);
+          if (run.kind === "image") {
+            return { ...run, image: { ...run.image, rotation: nextRotation } };
+          }
+          if (run.kind === "textBox") {
+            return {
+              ...run,
+              textBox: { ...run.textBox, rotation: nextRotation },
+            };
+          }
+          return cloneRun(run);
+        }),
+      };
+    },
+  );
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
+  );
+}

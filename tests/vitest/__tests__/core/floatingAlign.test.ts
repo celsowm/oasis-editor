@@ -9,9 +9,11 @@ import {
   canAlignSelectedFloatingObject,
   canNudgeSelectedFloatingObject,
   canSetSelectedFloatingFixedPosition,
+  canSetSelectedFloatingRotation,
   isSelectedFloatingFixedPosition,
   nudgeSelectedFloatingObject,
   setSelectedFloatingFixedPosition,
+  setSelectedFloatingRotation,
 } from "@/core/commands/floatingAlignCommands.js";
 import {
   getParagraphs,
@@ -269,5 +271,52 @@ describe("floating object fixed position (move with text)", () => {
     const state = buildImageState(baseImage);
     const plain = placeOn(state, 3);
     expect(setSelectedFloatingFixedPosition(plain, true)).toBe(plain);
+  });
+});
+
+describe("floating object exact rotation", () => {
+  it("exposes a capability for an image selection", () => {
+    expect(canSetSelectedFloatingRotation(buildImageState(baseImage))).toBe(
+      true,
+    );
+  });
+
+  it("denies the capability for a plain text selection", () => {
+    const state = buildImageState(baseImage);
+    expect(canSetSelectedFloatingRotation(placeOn(state, 3))).toBe(false);
+  });
+
+  it("sets the exact rotation of a selected image", () => {
+    const state = buildImageState(baseImage);
+    const next = setSelectedFloatingRotation(state, 45);
+    expect(next).not.toBe(state);
+    const image = getRunImage(getParagraphs(next)[0]!.runs[0]!)!;
+    expect(image.rotation).toBe(45);
+  });
+
+  it("sets the exact rotation of a selected text box", () => {
+    const textBox: EditorTextBoxData = {
+      width: 150,
+      height: 100,
+      blocks: [],
+      rotation: 90,
+    };
+    const state = buildTextBoxState(textBox);
+    const next = setSelectedFloatingRotation(state, 270);
+    const box = getRunTextBox(getParagraphs(next)[0]!.runs[0]!)!;
+    expect(box.rotation).toBe(270);
+  });
+
+  it("normalizes angles into the [0, 360) range", () => {
+    const state = buildImageState(baseImage);
+    const next = setSelectedFloatingRotation(state, 405);
+    const image = getRunImage(getParagraphs(next)[0]!.runs[0]!)!;
+    expect(image.rotation).toBe(45);
+  });
+
+  it("leaves the state untouched when no object is selected", () => {
+    const state = buildImageState(baseImage);
+    const plain = placeOn(state, 3);
+    expect(setSelectedFloatingRotation(plain, 90)).toBe(plain);
   });
 });
