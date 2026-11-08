@@ -115,6 +115,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "placePageNumberBottom",
   "insertBookmark",
   "removeBookmark",
+  "insertDateField",
   "exitHeaderFooter",
   "applyDocumentTheme",
   "setDocumentColorScheme",

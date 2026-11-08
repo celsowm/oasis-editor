@@ -275,6 +275,11 @@ export interface EssentialsBookmarkCapability {
   list: () => BookmarkDescriptor[];
 }
 
+export interface EssentialsFieldsCapability {
+  /** Insert a DATE field at the active caret with the current date. */
+  insertDate: () => void;
+}
+
 export interface EssentialsDesignCapability {
   applyTheme: (theme: DesignThemeId) => void;
   setColorScheme: (value: string) => void;
@@ -361,4 +366,5 @@ export interface EssentialsPluginDeps {
   table: EssentialsTableCapability;
   design: EssentialsDesignCapability;
   bookmark: EssentialsBookmarkCapability;
+  fields: EssentialsFieldsCapability;
 }

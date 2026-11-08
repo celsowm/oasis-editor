@@ -31,6 +31,7 @@ export const ptBR = {
   "toolbar.table": "Tabela",
   "toolbar.pageNumber": "Nº de Página",
   "toolbar.bookmark": "Marcador",
+  "toolbar.date": "Data",
   "toolbar.totalPages": "Total de Páginas",
   "toolbar.link": "Link",
   "toolbar.unlink": "Remover Link",

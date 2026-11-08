@@ -91,6 +91,7 @@ const RUNTIME_COMMAND_GROUPS = [
   "src/plugins/internal/essentialsCommandGroups/design.ts",
   "src/plugins/internal/essentialsCommandGroups/headerFooter.ts",
   "src/plugins/internal/essentialsCommandGroups/bookmark.ts",
+  "src/plugins/internal/essentialsCommandGroups/fields.ts",
 ];
 
 /** Built-in declarations are not registrations: require a command builder in a live group. */

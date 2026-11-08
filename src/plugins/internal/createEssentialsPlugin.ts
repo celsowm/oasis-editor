@@ -9,6 +9,7 @@ import { buildDocumentAndBrowserCommands } from "./essentialsCommandGroups/docum
 import { buildParagraphAndSectionCommands } from "./essentialsCommandGroups/paragraphAndSection.js";
 import { buildHeaderFooterCommands } from "./essentialsCommandGroups/headerFooter.js";
 import { buildBookmarkCommands } from "./essentialsCommandGroups/bookmark.js";
+import { buildFieldsCommands } from "./essentialsCommandGroups/fields.js";
 import { buildTableCommands } from "./essentialsCommandGroups/table.js";
 import { buildDesignCommands } from "./essentialsCommandGroups/design.js";
 import type { EssentialsPluginDeps } from "./essentialsCapabilities.js";
@@ -31,6 +32,7 @@ export type {
   EssentialsPluginDeps,
   EssentialsDesignCapability,
   EssentialsBookmarkCapability,
+  EssentialsFieldsCapability,
 } from "./essentialsCapabilities.js";
 
 export function createEssentialsPlugin(
@@ -87,6 +89,10 @@ export function createEssentialsPlugin(
       }),
       ...buildBookmarkCommands({
         bookmark: deps.bookmark,
+        actionCommand,
+      }),
+      ...buildFieldsCommands({
+        fields: deps.fields,
         actionCommand,
       }),
     },

@@ -388,6 +388,13 @@ export const defaultMenuItems: MenuItem[] = [
     command: "insertBookmark",
     icon: "bookmark",
   },
+  {
+    id: "insert_date",
+    path: "Insert/Date",
+    labelKey: "toolbar.date",
+    command: "insertDateField",
+    icon: "calendar",
+  },
   { id: "insert_specialChar", path: "Insert/Special Character", hidden: true },
   { id: "insert_comment", path: "Insert/Comment", hidden: true },
 

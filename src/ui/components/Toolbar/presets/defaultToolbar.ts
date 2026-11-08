@@ -575,6 +575,16 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   });
   items.push({
     type: "button",
+    id: "editor-toolbar-insert-date",
+    testId: "editor-toolbar-insert-date",
+    iconName: "calendar",
+    tooltipKey: "toolbar.date",
+    labelKey: "toolbar.date",
+    command: "insertDateField",
+    ribbonSize: "large",
+  });
+  items.push({
+    type: "button",
     id: "editor-toolbar-footnote",
     testId: "editor-toolbar-footnote",
     iconName: "footnote",

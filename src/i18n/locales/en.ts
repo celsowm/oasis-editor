@@ -31,6 +31,7 @@ export const en = {
   "toolbar.table": "Table",
   "toolbar.pageNumber": "Page #",
   "toolbar.bookmark": "Bookmark",
+  "toolbar.date": "Date",
   "toolbar.totalPages": "Total Pages",
   "toolbar.link": "Link",
   "toolbar.unlink": "Remove Link",

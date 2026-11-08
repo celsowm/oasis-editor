@@ -369,6 +369,16 @@
       "notes": "Bookmarks the current selection (single point when collapsed) into the document-level EditorBookmarks registry, exported as w:bookmarkStart/w:bookmarkEnd and round-tripped on import. Cross-reference insertion (PAGEREF/REF with refresh) remains a follow-up."
     },
     {
+      "id": "insert.date",
+      "wordcraftCommand": "insert.date_time",
+      "oasisCommand": "insertDateField",
+      "ribbonId": "editor-toolbar-insert-date",
+      "tab": "insert",
+      "group": "links",
+      "status": "partial",
+      "notes": "Inserts a typed DATE field at the caret with a \\@ picture (default M/d/yyyy), caching the formatted result in the run text and round-tripping through DOCX. The DATE_FORMATS picture gallery and TIME fields remain follow-ups."
+    },
+    {
       "id": "insert.exitHeaderFooter",
       "wordcraftCommand": null,
       "oasisCommand": "exitHeaderFooter",

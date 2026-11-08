@@ -110,6 +110,7 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
     group: "links",
     row: 1,
   },
+  "editor-toolbar-insert-date": { tab: "insert", group: "links", row: 1 },
   "editor-toolbar-footnote": { tab: "references", group: "footnotes", row: 1 },
   "editor-toolbar-header-footer": {
     tab: "insert",
