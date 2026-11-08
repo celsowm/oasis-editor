@@ -38,6 +38,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "previousComment",
   "newComment",
   "replyComment",
+  "editComment",
   "resolveComment",
   "reopenComment",
   "deleteComment",

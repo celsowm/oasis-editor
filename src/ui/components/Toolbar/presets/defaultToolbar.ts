@@ -834,6 +834,15 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   });
   items.push({
     type: "button",
+    id: "editor-toolbar-edit-comment",
+    testId: "editor-toolbar-edit-comment",
+    iconName: "pencil",
+    labelKey: "toolbar.editComment",
+    tooltipKey: "toolbar.editComment",
+    command: "editComment",
+  });
+  items.push({
+    type: "button",
     id: "editor-toolbar-previous-comment",
     testId: "editor-toolbar-previous-comment",
     iconName: "message-square",

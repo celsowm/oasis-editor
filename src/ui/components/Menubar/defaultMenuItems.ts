@@ -177,6 +177,13 @@ export const defaultMenuItems: MenuItem[] = [
     icon: "reply",
   },
   {
+    id: "review_edit_comment",
+    path: "Review/Edit Comment",
+    labelKey: "toolbar.editComment",
+    command: "editComment",
+    icon: "pencil",
+  },
+  {
     id: "review_previous_comment",
     path: "Review/Previous Comment",
     labelKey: "toolbar.previousComment",

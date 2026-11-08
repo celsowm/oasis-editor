@@ -250,6 +250,14 @@ export function buildCoreFormattingCommands({
           formatting.canReplyToComment(),
       }),
     ),
+    editComment: command(
+      "editComment",
+      formatting.editComment,
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("editComment") &&
+          formatting.canEditComment(),
+      }),
+    ),
     nextComment: command(
       "nextComment",
       formatting.navigateCommentNext,

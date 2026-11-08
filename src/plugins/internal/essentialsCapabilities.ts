@@ -52,6 +52,8 @@ export interface EssentialsFormattingCapability {
   canReplyToComment: () => boolean;
   newComment: () => boolean;
   replyComment: () => boolean;
+  editComment: () => boolean;
+  canEditComment: () => boolean;
   navigateRevisionNext: () => boolean;
   navigateRevisionPrevious: () => boolean;
   navigateCommentNext: () => boolean;

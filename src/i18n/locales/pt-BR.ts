@@ -41,6 +41,7 @@ export const ptBR = {
   "toolbar.nextRevision": "Próxima alteração",
   "toolbar.previousComment": "Comentário anterior",
   "toolbar.newComment": "Novo comentário",
+  "toolbar.editComment": "Editar comentário",
   "toolbar.replyComment": "Responder comentário",
   "comment.author": "Autor",
   "comment.body": "Comentário",

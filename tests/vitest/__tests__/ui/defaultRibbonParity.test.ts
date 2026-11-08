@@ -23,6 +23,7 @@ const exposed = [
   ["editor-toolbar-next-revision", "nextRevision", "review", "changes"],
   ["editor-toolbar-new-comment", "newComment", "review", "comments"],
   ["editor-toolbar-reply-comment", "replyComment", "review", "comments"],
+  ["editor-toolbar-edit-comment", "editComment", "review", "comments"],
   ["editor-toolbar-previous-comment", "previousComment", "review", "comments"],
   ["editor-toolbar-next-comment", "nextComment", "review", "comments"],
   ["editor-toolbar-resolve-comment", "resolveComment", "review", "comments"],

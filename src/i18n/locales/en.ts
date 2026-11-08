@@ -41,6 +41,7 @@ export const en = {
   "toolbar.nextRevision": "Next Change",
   "toolbar.previousComment": "Previous Comment",
   "toolbar.newComment": "New Comment",
+  "toolbar.editComment": "Edit Comment",
   "toolbar.replyComment": "Reply to Comment",
   "comment.author": "Author",
   "comment.body": "Comment",

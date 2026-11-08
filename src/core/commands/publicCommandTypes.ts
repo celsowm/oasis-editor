@@ -77,6 +77,7 @@ export interface OasisCommandPayloads {
   previousComment: undefined;
   newComment: undefined;
   replyComment: undefined;
+  editComment: undefined;
   resolveComment: undefined;
   reopenComment: undefined;
   deleteComment: undefined;
