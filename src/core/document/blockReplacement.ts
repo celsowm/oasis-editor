@@ -13,6 +13,9 @@ import {
   getActiveZone,
   getDocumentSections,
   getParagraphs,
+  getSectionHeaderFooterBlocks,
+  setSectionHeaderFooterBlocks,
+  type HeaderFooterStoryKind,
 } from "@/core/model.js";
 import { transformBookmarksAcrossParagraphEdit } from "./bookmarkAnchors.js";
 import { transformCommentsAcrossParagraphEdit } from "./commentAnchors.js";
@@ -71,18 +74,16 @@ export function replaceParagraphsInSection(
   section: EditorSection,
   paragraphs: EditorParagraphNode[],
   zone: "main" | "header" | "footer",
+  story: HeaderFooterStoryKind = "default",
 ): EditorSection {
-  if (zone === "header") {
-    return {
-      ...section,
-      header: replaceParagraphsInBlocks(section.header ?? [], paragraphs),
-    };
-  }
-  if (zone === "footer") {
-    return {
-      ...section,
-      footer: replaceParagraphsInBlocks(section.footer ?? [], paragraphs),
-    };
+  if (zone === "header" || zone === "footer") {
+    const current = getSectionHeaderFooterBlocks(section, zone, story) ?? [];
+    return setSectionHeaderFooterBlocks(
+      section,
+      zone,
+      story,
+      replaceParagraphsInBlocks(current, paragraphs),
+    );
   }
 
   return {
@@ -135,7 +136,12 @@ export function cloneStateWithParagraphs(
     return { ...state, selection };
   }
 
-  const updatedSection = replaceParagraphsInSection(section, paragraphs, zone);
+  const updatedSection = replaceParagraphsInSection(
+    section,
+    paragraphs,
+    zone,
+    state.activeHeaderFooterStory,
+  );
   const updatedSections = [...sections];
   updatedSections[sectionIndex] = updatedSection;
 

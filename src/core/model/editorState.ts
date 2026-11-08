@@ -8,6 +8,7 @@ import type {
   EditorSelection,
   EditorEditingZone,
 } from "./types/selection.js";
+import type { HeaderFooterStoryKind } from "./headerFooterStories.js";
 
 export interface EditorState {
   document: EditorDocument;
@@ -19,6 +20,11 @@ export interface EditorState {
    * Ignored for other zones.
    */
   activeFootnoteId?: string;
+  /**
+   * Which header/footer story is being edited when `activeZone` is `"header"`
+   * or `"footer"`. Defaults to `"default"` for those zones.
+   */
+  activeHeaderFooterStory?: HeaderFooterStoryKind;
   trackChangesEnabled?: boolean;
   showMargins?: boolean;
   showParagraphMarks?: boolean;

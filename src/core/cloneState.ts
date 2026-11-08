@@ -195,5 +195,6 @@ export function cloneEditorState(source: EditorState): EditorState {
     activeSectionIndex: source.activeSectionIndex ?? 0,
     activeZone: source.activeZone ?? "main",
     activeFootnoteId: source.activeFootnoteId,
+    activeHeaderFooterStory: source.activeHeaderFooterStory,
   };
 }

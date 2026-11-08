@@ -4,7 +4,12 @@ import {
   createEditorParagraph,
   createEditorStateFromDocument,
 } from "@/core/editorState.js";
-import { paragraphOffsetToPosition, type EditorSection } from "@/core/model.js";
+import {
+  paragraphOffsetToPosition,
+  type EditorParagraphNode,
+  type EditorSection,
+} from "@/core/model.js";
+import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
 import {
   clearHeaderFooterStory,
   editHeaderFooter,
@@ -32,6 +37,15 @@ function fixture() {
 
 function section(state: { document: { sections?: EditorSection[] } }): EditorSection {
   return state.document.sections![0]!;
+}
+
+/** A new paragraph carrying the same structure, so write-back observes a change. */
+function cloneParagraphWithText(p: EditorParagraphNode): EditorParagraphNode {
+  return {
+    ...p,
+    id: `${p.id}:clone`,
+    runs: p.runs.map((run) => ({ ...run })),
+  };
 }
 
 describe("header/footer story authoring", () => {
@@ -110,6 +124,52 @@ describe("header/footer story authoring", () => {
     const firstBody = (section(exited).blocks[0] as { id: string });
     expect(exited.selection.anchor.paragraphId).toBe(firstBody.id);
     expect(exited.selection.anchor).toEqual(exited.selection.focus);
+  });
+
+  it("enters a first-page/even-page story in place and records the active story", () => {
+    const { state } = fixture();
+    const first = editHeaderFooter(state, "header", "firstPage");
+    expect(first.activeZone).toBe("header");
+    expect(first.activeHeaderFooterStory).toBe("firstPage");
+    const firstParagraph = section(first).firstPageHeader![0] as { id: string };
+    expect(first.selection.anchor.paragraphId).toBe(firstParagraph.id);
+    expect(section(first).header).toBeUndefined();
+
+    // Switching to the even-page footer story keeps prior stories intact.
+    const even = editHeaderFooter(first, "footer", "evenPage");
+    expect(even.activeZone).toBe("footer");
+    expect(even.activeHeaderFooterStory).toBe("evenPage");
+    expect(section(even).firstPageHeader).toHaveLength(1);
+    const evenParagraph = section(even).evenPageFooter![0] as { id: string };
+    expect(even.selection.anchor.paragraphId).toBe(evenParagraph.id);
+  });
+
+  it("writing paragraphs while editing a variant story targets that story only", () => {
+    const { state } = fixture();
+    const editing = editHeaderFooter(state, "footer", "evenPage");
+    const target = cloneParagraphWithText(
+      section(editing).evenPageFooter![0] as EditorParagraphNode,
+    );
+    const next = cloneStateWithParagraphs(editing, [target], editing.selection);
+    // Only the even-page footer story received the paragraph.
+    expect(section(next).evenPageFooter).toHaveLength(1);
+    expect(section(next).footer).toBeUndefined();
+    expect(section(next).blocks).toHaveLength(1);
+    // The active story marker survives the write-back.
+    expect(next.activeHeaderFooterStory).toBe("evenPage");
+  });
+
+  it("first/even editing keeps the default story untouched and exit clears the marker", () => {
+    const { state } = fixture();
+    let editing = editHeaderFooter(state, "header", "evenPage");
+    editing = editHeaderFooter(editing, "header", "firstPage");
+    editing = editHeaderFooter(editing, "footer", "firstPage");
+    // Default header/footer never created by variant editing.
+    expect(section(editing).header).toBeUndefined();
+    expect(section(editing).footer).toBeUndefined();
+    const exited = exitHeaderFooter(editing);
+    expect(exited.activeHeaderFooterStory).toBeUndefined();
+    expect(exited.activeZone).toBe("main");
   });
 
   it("inserts a PAGE field run into the active header story", () => {

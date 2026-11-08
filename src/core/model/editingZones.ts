@@ -11,6 +11,8 @@
 import type { EditorBlockNode, EditorParagraphNode } from "./types/nodes.js";
 import type { EditorState } from "./editorState.js";
 import type { EditorEditingZone } from "./types/selection.js";
+import type { HeaderFooterStoryKind } from "./headerFooterStories.js";
+import { getSectionHeaderFooterBlocks } from "./headerFooterStories.js";
 import { getDocumentSections } from "./documentSections.js";
 import { getBlockParagraphs } from "./paragraphWalker.js";
 import { findParagraphLocation } from "./documentIndex.js";
@@ -21,6 +23,13 @@ export function getActiveSectionIndex(state: EditorState): number {
 
 export function getActiveZone(state: EditorState): EditorEditingZone {
   return state.activeZone ?? "main";
+}
+
+/** Which header/footer story is active for header/footer zones. */
+export function getActiveHeaderFooterStory(
+  state: EditorState,
+): HeaderFooterStoryKind {
+  return state.activeHeaderFooterStory ?? "default";
 }
 
 /**
@@ -46,8 +55,14 @@ export function tryGetEditableBlocksForZone(
   );
   const section = sections[sectionIndex];
   if (!section) return null;
-  if (zone === "header") return section.header ?? null;
-  if (zone === "footer") return section.footer ?? null;
+  if (zone === "header" || zone === "footer") {
+    const story = getSectionHeaderFooterBlocks(
+      section,
+      zone,
+      getActiveHeaderFooterStory(state),
+    );
+    return story ?? null;
+  }
   return section.blocks;
 }
 
@@ -73,8 +88,15 @@ export function getEditableBlocksForZone(
   );
   const section = sections[sectionIndex];
   if (!section) return [];
-  if (zone === "header") return section.header ?? [];
-  if (zone === "footer") return section.footer ?? [];
+  if (zone === "header" || zone === "footer") {
+    return (
+      getSectionHeaderFooterBlocks(
+        section,
+        zone,
+        getActiveHeaderFooterStory(state),
+      ) ?? []
+    );
+  }
   return section.blocks;
 }
 

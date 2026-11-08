@@ -290,3 +290,15 @@ export {
   getParagraphs,
   syncActiveSectionToSelection,
 } from "./editingZones.js";
+
+// ---- Header/footer story kinds ----
+export {
+  getHeaderFooterStoryKey,
+  getSectionHeaderFooterBlocks,
+  setSectionHeaderFooterBlocks,
+} from "./headerFooterStories.js";
+export type {
+  HeaderFooterSide,
+  HeaderFooterStoryKind,
+  HeaderFooterStoryKey,
+} from "./headerFooterStories.js";

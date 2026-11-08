@@ -2,12 +2,15 @@
  * Header/footer story authoring commands.
  *
  * Each section can carry up to six separate block stories: a default header
- * and footer, plus optional first-page and even/odd variants. The editing
- * stack (zone index, `getParagraphs`, `cloneStateWithParagraphs`) currently
- * resolves the **default** header/footer zone only, so `editHeaderFooter`
- * enters and edits the default story; first/even variants are exposed as
- * create/clear operations (`enableHeaderFooterStory`), with in-place editing
- * of those variants tracked as a follow-up.
+ * and footer, plus optional first-page and even/odd variants. The story kinds
+ * and their mapping onto section fields live in the model layer
+ * (`core/model/headerFooterStories.ts`) so the editing-zone and write-back
+ * pipeline can resolve them without a model -> commands cycle.
+ *
+ * `editHeaderFooter` enters any one of the six stories and records the active
+ * story on `state.activeHeaderFooterStory`, so first/even-page variants are
+ * edited in place just like the default story. `exitHeaderFooter` clears that
+ * marker as the caret returns to the main body.
  *
  * Page numbers are inserted as PAGE/NUMPAGES field runs at the active caret
  * (see `insertFieldAtSelection`), which works in the header/footer or main
@@ -17,7 +20,10 @@ import type { EditorSection, EditorState } from "@/core/model.js";
 import {
   getBlockParagraphs,
   getDocumentSections,
+  getHeaderFooterStoryKey,
   paragraphOffsetToPosition,
+  type HeaderFooterSide,
+  type HeaderFooterStoryKind,
 } from "@/core/model.js";
 import { createSectionBoundaryParagraph } from "@/core/editorState.js";
 import {
@@ -27,40 +33,8 @@ import {
 import { createCollapsedSelection } from "@/core/selection.js";
 import { insertFieldAtSelection } from "./misc.js";
 
-export type HeaderFooterSide = "header" | "footer";
-export type HeaderFooterStoryKind = "default" | "firstPage" | "evenPage";
-
-type HeaderFooterStoryKey =
-  | "header"
-  | "firstPageHeader"
-  | "evenPageHeader"
-  | "footer"
-  | "firstPageFooter"
-  | "evenPageFooter";
-
-const SECTION_STORY_KEYS: Record<
-  HeaderFooterSide,
-  Record<HeaderFooterStoryKind, HeaderFooterStoryKey>
-> = {
-  header: {
-    default: "header",
-    firstPage: "firstPageHeader",
-    evenPage: "evenPageHeader",
-  },
-  footer: {
-    default: "footer",
-    firstPage: "firstPageFooter",
-    evenPage: "evenPageFooter",
-  },
-};
-
-/** Map a (side, kind) pair onto the section's story array field name. */
-export function getHeaderFooterStoryKey(
-  side: HeaderFooterSide,
-  kind: HeaderFooterStoryKind,
-): HeaderFooterStoryKey {
-  return SECTION_STORY_KEYS[side][kind];
-}
+export type { HeaderFooterSide, HeaderFooterStoryKind } from "@/core/model.js";
+export { getHeaderFooterStoryKey } from "@/core/model.js";
 
 /** Resolve the active section (index-clamped) that header/footer ops target. */
 function resolveActiveSection(state: EditorState): {
@@ -128,20 +102,19 @@ export function clearHeaderFooterStory(
 }
 
 /**
- * Enter header/footer editing: ensure the default story exists, move the caret
- * into its first paragraph and set the active zone to `header`/`footer`.
- *
- * Only the default story is editable through today's zone stack; first/even
- * variants are created via `enableHeaderFooterStory`.
+ * Enter header/footer editing: ensure the requested story exists, move the
+ * caret into its first paragraph, set the active zone to `header`/`footer` and
+ * record the active story so the editing-zone and write-back pipeline target
+ * it. Defaults to the `default` story when no kind is given.
  */
 export function editHeaderFooter(
   state: EditorState,
   side: HeaderFooterSide,
+  kind: HeaderFooterStoryKind = "default",
 ): EditorState {
-  const withStory = enableHeaderFooterStory(state, side, "default");
+  const withStory = enableHeaderFooterStory(state, side, kind);
   const { sections, sectionIndex } = resolveActiveSection(withStory);
-  const story =
-    sections[sectionIndex][getHeaderFooterStoryKey(side, "default")];
+  const story = sections[sectionIndex][getHeaderFooterStoryKey(side, kind)];
   const firstParagraph = (story ?? [])
     .flatMap(getBlockParagraphs)
     .find(Boolean);
@@ -153,6 +126,7 @@ export function editHeaderFooter(
     ),
     activeSectionIndex: sectionIndex,
     activeZone: side,
+    activeHeaderFooterStory: kind,
   };
 }
 
@@ -167,7 +141,11 @@ function moveToBodyStart(state: EditorState): EditorState {
     .flatMap(getBlockParagraphs)
     .find(Boolean);
   if (!firstParagraph) {
-    return { ...state, activeZone: "main" };
+    return {
+      ...state,
+      activeZone: "main",
+      activeHeaderFooterStory: undefined,
+    };
   }
   return {
     ...state,
@@ -176,6 +154,7 @@ function moveToBodyStart(state: EditorState): EditorState {
     ),
     activeSectionIndex: sectionIndex,
     activeZone: "main",
+    activeHeaderFooterStory: undefined,
   };
 }
 
