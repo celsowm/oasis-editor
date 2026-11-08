@@ -10,10 +10,13 @@ import {
   canNudgeSelectedFloatingObject,
   canSetSelectedFloatingFixedPosition,
   canSetSelectedFloatingRotation,
+  canSetSelectedFloatingWrap,
+  getSelectedFloatingWrapPreset,
   isSelectedFloatingFixedPosition,
   nudgeSelectedFloatingObject,
   setSelectedFloatingFixedPosition,
   setSelectedFloatingRotation,
+  setSelectedFloatingWrapPreset,
 } from "@/core/commands/floatingAlignCommands.js";
 import {
   getParagraphs,
@@ -318,5 +321,66 @@ describe("floating object exact rotation", () => {
     const state = buildImageState(baseImage);
     const plain = placeOn(state, 3);
     expect(setSelectedFloatingRotation(plain, 90)).toBe(plain);
+  });
+});
+
+describe("floating object wrap preset", () => {
+  it("exposes a capability for an inline image selection", () => {
+    expect(canSetSelectedFloatingWrap(buildImageState(baseImage))).toBe(true);
+  });
+
+  it("denies the capability for a plain text selection", () => {
+    const state = buildImageState(baseImage);
+    expect(canSetSelectedFloatingWrap(placeOn(state, 3))).toBe(false);
+  });
+
+  it("reads the current wrap preset (inline for a non-floating image)", () => {
+    expect(getSelectedFloatingWrapPreset(buildImageState(baseImage))).toBe(
+      "inline",
+    );
+  });
+
+  it("sets a square wrap on an inline image", () => {
+    const state = buildImageState(baseImage);
+    const next = setSelectedFloatingWrapPreset(state, "square");
+    expect(next).not.toBe(state);
+    const image = getRunImage(getParagraphs(next)[0]!.runs[0]!)!;
+    expect(image.floating?.wrap).toBe("square");
+    expect(getSelectedFloatingWrapPreset(next)).toBe("square");
+  });
+
+  it("returns a floating object to inline (removes the floating field)", () => {
+    const floatingImage: EditorImageRunData = {
+      ...baseImage,
+      floating: {
+        type: "floating",
+        wrap: "square",
+        positionH: { relativeFrom: "column", offset: 0 },
+        positionV: { relativeFrom: "paragraph", offset: 0 },
+      },
+    };
+    const state = buildImageState(floatingImage);
+    const next = setSelectedFloatingWrapPreset(state, "inline");
+    const image = getRunImage(getParagraphs(next)[0]!.runs[0]!)!;
+    expect(image.floating).toBeUndefined();
+  });
+
+  it("sets a behind-text wrap on a text box", () => {
+    const textBox: EditorTextBoxData = {
+      width: 150,
+      height: 100,
+      blocks: [],
+    };
+    const state = buildTextBoxState(textBox);
+    const next = setSelectedFloatingWrapPreset(state, "behind");
+    const box = getRunTextBox(getParagraphs(next)[0]!.runs[0]!)!;
+    expect(box.floating?.wrap).toBe("none");
+    expect(box.floating?.behindDoc).toBe(true);
+  });
+
+  it("leaves the state untouched when no object is selected", () => {
+    const state = buildImageState(baseImage);
+    const plain = placeOn(state, 3);
+    expect(setSelectedFloatingWrapPreset(plain, "square")).toBe(plain);
   });
 });

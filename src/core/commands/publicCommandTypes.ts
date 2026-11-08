@@ -250,6 +250,14 @@ export interface OasisCommandPayloads {
   nudgeFloatingObject: { dx: number; dy: number };
   setFloatingFixedPosition: boolean;
   setFloatingRotation: number;
+  setFloatingWrapPreset:
+    | "inline"
+    | "square"
+    | "tight"
+    | "through"
+    | "topAndBottom"
+    | "behind"
+    | "front";
   setShapePreset: string;
   setTextBoxTextDirection: "horz" | "vert" | "vert270" | "wordArtVert";
   setTextBoxVerticalAlign: "t" | "ctr" | "b";

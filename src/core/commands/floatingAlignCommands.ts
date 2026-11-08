@@ -1,7 +1,9 @@
 import type {
   EditorImageFloatingLayout,
+  EditorImageRunData,
   EditorParagraphNode,
   EditorState,
+  EditorTextBoxData,
   EditorTextRun,
 } from "@/core/model.js";
 import { getParagraphs } from "@/core/model.js";
@@ -13,7 +15,10 @@ import { preserveSelectionByParagraphOffsets } from "@/core/selection/rangeEditi
 import { getSelectedObjectRun } from "./selectedObjectRun.js";
 import {
   applyMoveWithText,
+  floatingToWrapPreset,
   isFloatingFixedPosition,
+  wrapPresetToFloating,
+  type WrapPreset,
 } from "./floatingLayout.js";
 
 /** The horizontal alignment presets WordCraft's `arrange.align` accepts. */
@@ -308,6 +313,104 @@ export function setSelectedFloatingFixedPosition(
                   : floating,
               },
             };
+          }
+          return cloneRun(run);
+        }),
+      };
+    },
+  );
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
+  );
+}
+
+/**
+ * True when a floating object (image or text box) is selected and its text
+ * wrapping can be changed.
+ */
+export function canSetSelectedFloatingWrap(state: EditorState): boolean {
+  const selected = getSelectedObjectRun(
+    state,
+    (run): boolean => run.kind === "image" || run.kind === "textBox",
+  );
+  return selected !== null;
+}
+
+/** The current wrap preset of the selected floating object, or `null`. */
+export function getSelectedFloatingWrapPreset(
+  state: EditorState,
+): WrapPreset | null {
+  const selected = getSelectedObjectRun(
+    state,
+    (run): boolean => run.kind === "image" || run.kind === "textBox",
+  );
+  if (!selected) return null;
+  if (selected.run.kind === "image") {
+    return floatingToWrapPreset(selected.run.image.floating);
+  }
+  if (selected.run.kind === "textBox") {
+    return floatingToWrapPreset(selected.run.textBox.floating);
+  }
+  return null;
+}
+
+/**
+ * Word's "Wrap Text" (WordCraft `arrange.wrap`): sets the text-wrapping preset
+ * of the selected image or text box (inline/square/tight/through/topAndBottom/
+ * behind/front). A no-op when no object is selected.
+ */
+export function setSelectedFloatingWrapPreset(
+  state: EditorState,
+  preset: WrapPreset,
+): EditorState {
+  const selected = getSelectedObjectRun(
+    state,
+    (run): boolean => run.kind === "image" || run.kind === "textBox",
+  );
+  if (!selected) return state;
+
+  const nextFloating = (
+    floating: EditorImageFloatingLayout | undefined,
+  ): EditorImageFloatingLayout | undefined =>
+    wrapPresetToFloating(floating, preset);
+
+  const { paragraphIndex, run: targetRun } = selected;
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map(
+    (candidate, candidateIndex): EditorParagraphNode => {
+      if (candidateIndex !== paragraphIndex) return cloneParagraph(candidate);
+      return {
+        ...cloneParagraph(candidate),
+        runs: candidate.runs.map((run): EditorTextRun => {
+          if (run.id !== targetRun.id) return cloneRun(run);
+          if (run.kind === "image") {
+            const floating = nextFloating(run.image.floating);
+            const image:
+              EditorImageRunData | Omit<EditorImageRunData, "floating"> =
+              floating
+                ? { ...run.image, floating }
+                : ((): Omit<EditorImageRunData, "floating"> => {
+                    const { floating: _removed, ...rest } = run.image;
+                    return rest;
+                  })();
+            return { ...run, image };
+          }
+          if (run.kind === "textBox") {
+            const floating = nextFloating(run.textBox.floating);
+            const textBox:
+              EditorTextBoxData | Omit<EditorTextBoxData, "floating"> = floating
+              ? { ...run.textBox, floating }
+              : ((): Omit<EditorTextBoxData, "floating"> => {
+                  const { floating: _removed, ...rest } = run.textBox;
+                  return rest;
+                })();
+            return { ...run, textBox };
           }
           return cloneRun(run);
         }),

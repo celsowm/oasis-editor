@@ -201,6 +201,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "nudgeFloatingObject",
   "setFloatingFixedPosition",
   "setFloatingRotation",
+  "setFloatingWrapPreset",
   "setShapePreset",
   "setTextBoxTextDirection",
   "setTextBoxVerticalAlign",
