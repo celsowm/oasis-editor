@@ -49,6 +49,12 @@ export function buildEssentialsSection(
       options.commandsController.applyInsertSectionBreakCommand("nextPage"),
     breakContinuous: (): void =>
       options.commandsController.applyInsertSectionBreakCommand("continuous"),
+    breakEvenPage: (): void =>
+      options.commandsController.applyInsertSectionBreakCommand("evenPage"),
+    breakOddPage: (): void =>
+      options.commandsController.applyInsertSectionBreakCommand("oddPage"),
+    breakNextColumn: (): void =>
+      options.commandsController.applyInsertSectionBreakCommand("nextColumn"),
     getMargins: (): EditorPageMargins | undefined => {
       const idx = getActiveSectionIndex(options.state());
       const target =

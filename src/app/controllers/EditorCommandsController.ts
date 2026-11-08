@@ -56,6 +56,7 @@ import {
   type EditorParagraphListStyle,
   type EditorParagraphStyle,
   type EditorSection,
+  type EditorSectionBreakType,
   type EditorState,
   type EditorTextStyle,
   EditorParagraphNode,
@@ -378,7 +379,7 @@ function createEditorCommandsControllerImpl(
   };
 
   const applyInsertSectionBreakCommand = (
-    breakType: "nextPage" | "continuous",
+    breakType: EditorSectionBreakType,
   ): void => {
     execState(insertSectionBreakAtSelection(state, breakType));
   };

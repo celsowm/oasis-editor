@@ -132,6 +132,15 @@ export function buildParagraphAndSectionCommands({
     sectionBreakContinuous: actionCommand("sectionBreakContinuous", (): void =>
       section.breakContinuous(),
     ),
+    sectionBreakEvenPage: actionCommand("sectionBreakEvenPage", (): void =>
+      section.breakEvenPage(),
+    ),
+    sectionBreakOddPage: actionCommand("sectionBreakOddPage", (): void =>
+      section.breakOddPage(),
+    ),
+    sectionBreakNextColumn: actionCommand("sectionBreakNextColumn", (): void =>
+      section.breakNextColumn(),
+    ),
     setPageMargins: actionCommand(
       "setPageMargins",
       (p): void => {

@@ -235,6 +235,12 @@ export interface EssentialsSectionCapability {
   setOrientation: (orientation: "portrait" | "landscape") => void;
   breakNextPage: () => void;
   breakContinuous: () => void;
+  /** Insert a section break that begins the next section on an even page. */
+  breakEvenPage: () => void;
+  /** Insert a section break that begins the next section on an odd page. */
+  breakOddPage: () => void;
+  /** Insert a section break that begins the next section in a new column. */
+  breakNextColumn: () => void;
   getMargins: () => EditorPageMargins | undefined;
   setPageMargins: (margins: Partial<EditorPageMargins>) => void;
   getPageNumbering: () => EditorPageNumbering | undefined;

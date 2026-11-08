@@ -144,6 +144,9 @@ export interface OasisCommandPayloads {
   setOrientation: "portrait" | "landscape";
   sectionBreakNextPage: undefined;
   sectionBreakContinuous: undefined;
+  sectionBreakEvenPage: undefined;
+  sectionBreakOddPage: undefined;
+  sectionBreakNextColumn: undefined;
   setPageMargins: SetPageMarginsPayload;
   setSectionPageNumbering: {
     start?: number;
