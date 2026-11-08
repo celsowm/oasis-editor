@@ -33,6 +33,8 @@ import {
   type TableRowHeight,
   canDeleteActiveTableCell,
   deleteActiveTableCell,
+  canSetActiveTableAutoFit,
+  setActiveTableAutoFit,
 } from "@/core/commands/table.js";
 import {
   findParagraphTablePathLocation,
@@ -231,6 +233,12 @@ export function buildEssentialsTable(
           table?.style?.layout === "autofit" ? "fixed" : "autofit";
         return setTableStyleValue(current, "layout", nextLayout);
       }, MERGE_KEYS.tableDistribute),
+    canSetAutoFit: (): boolean => canSetActiveTableAutoFit(options.state()),
+    setAutoFit: (mode: "contents" | "window" | "fixed"): void =>
+      apply(
+        (current): EditorState => setActiveTableAutoFit(current, mode),
+        MERGE_KEYS.tableAutoFit,
+      ),
     distributeColumns: (): void =>
       apply(
         (current): EditorState => distributeSelectedTableColumns(current),

@@ -364,6 +364,8 @@ export interface EssentialsTableCapability {
   getLayout: () => "fixed" | "autofit" | null;
   /** Toggle the selected table between fixed and autofit sizing. */
   toggleAutoFit: () => void;
+  canSetAutoFit: () => boolean;
+  setAutoFit: (mode: "contents" | "window" | "fixed") => void;
   /** Equalize the widths of every column in the selected table. */
   distributeColumns: () => void;
   /** Equalize the heights of every row in the selected table. */

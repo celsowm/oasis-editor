@@ -343,6 +343,12 @@ export function buildTableCommands({
         isActive: table.getLayout() === "autofit",
       }),
     ),
+    tableAutoFit: actionCommand(
+      "tableAutoFit",
+      (p): void =>
+        table.setAutoFit((p as "contents" | "window" | "fixed") ?? "contents"),
+      (): { isEnabled: boolean } => ({ isEnabled: table.canSetAutoFit() }),
+    ),
     tableDistributeColumns: actionCommand(
       "tableDistributeColumns",
       (): void => table.distributeColumns(),
