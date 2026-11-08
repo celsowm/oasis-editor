@@ -9775,8 +9775,10 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 			else if ("tab" === i.localName) p("	");
 			else if ("noBreakHyphen" === i.localName) p("‑");
 			else if ("softHyphen" === i.localName) p("­");
-			else if ("br" === i.localName) p("page" === Pe(i, "type") ? "\f" : "\n");
-			else {
+			else if ("br" === i.localName) {
+				const e = Pe(i, "type");
+				p("page" === e ? "\f" : "column" === e ? "\v" : "\n");
+			} else {
 				if ("lastRenderedPageBreak" === i.localName) continue;
 				if ("bookmarkStart" === i.localName || "bookmarkEnd" === i.localName) {
 					const e = Cr(i);
@@ -12655,7 +12657,7 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 	function Oi(e) {
 		if (0 === e.length) return "<w:t></w:t>";
 		let t = "", r = "";
-		for (const n of e) "\n" !== n ? "	" !== n ? "‑" !== n ? "­" !== n ? r += n : (t += Mi(r), r = "", t += "<w:softHyphen/>") : (t += Mi(r), r = "", t += "<w:noBreakHyphen/>") : (t += Mi(r), r = "", t += "<w:tab/>") : (t += Mi(r), r = "", t += "<w:br/>");
+		for (const n of e) "\n" !== n ? "\v" !== n ? "	" !== n ? "‑" !== n ? "­" !== n ? r += n : (t += Mi(r), r = "", t += "<w:softHyphen/>") : (t += Mi(r), r = "", t += "<w:noBreakHyphen/>") : (t += Mi(r), r = "", t += "<w:tab/>") : (t += Mi(r), r = "", t += "<w:br w:type=\"column\"/>") : (t += Mi(r), r = "", t += "<w:br/>");
 		return t += Mi(r), t || "<w:t></w:t>";
 	}
 	function Li(e, t) {
