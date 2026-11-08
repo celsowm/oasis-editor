@@ -177,6 +177,8 @@ export interface EssentialsDocumentCapability {
   alignFloatingObject: (align: "left" | "center" | "right") => void;
   /** Bring the selected floating object to the front or behind the text. */
   reorderFloatingObject: (move: "front" | "back") => void;
+  /** Nudge the selected floating object by a pixel delta. */
+  nudgeFloatingObject: (dx: number, dy: number) => void;
   /** Change the selected shape's DrawingML preset geometry. */
   setShapePreset: (preset: string) => void;
   /** Set the selected text box's text-direction flow. */

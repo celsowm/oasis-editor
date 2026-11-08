@@ -126,6 +126,10 @@ export function buildDocumentAndBrowserCommands({
     reorderFloatingObject: actionCommand("reorderFloatingObject", (p): void =>
       document.reorderFloatingObject((p as "front" | "back") ?? "front"),
     ),
+    nudgeFloatingObject: actionCommand("nudgeFloatingObject", (p): void => {
+      const px = (p ?? {}) as { dx?: number; dy?: number };
+      document.nudgeFloatingObject(Number(px.dx) || 0, Number(px.dy) || 0);
+    }),
     setShapePreset: actionCommand("setShapePreset", (p): void =>
       document.setShapePreset(p == null ? "rect" : String(p)),
     ),
