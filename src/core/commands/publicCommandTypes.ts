@@ -166,6 +166,7 @@ export interface OasisCommandPayloads {
   toggleKeepLinesTogether: undefined;
   toggleWidowControl: undefined;
   toggleParagraphBidi: undefined;
+  sortParagraphs: { descending?: boolean } | boolean | undefined;
   setSpacingAfter: number | null;
   setSpacingBefore: number | null;
   setIndentLeft: number | null;

@@ -73,6 +73,13 @@ export function buildParagraphAndSectionCommands({
       (): void => paragraph.setBidi(!s().bidi ? true : null),
       (): { isActive: boolean } => ({ isActive: Boolean(s().bidi) }),
     ),
+    sortParagraphs: actionCommand("sortParagraphs", (p?: unknown): void =>
+      paragraph.sortParagraphs(
+        p === true ||
+          p === "true" ||
+          Boolean((p as { descending?: boolean })?.descending),
+      ),
+    ),
     setSpacingAfter: valueCommand(
       "setSpacingAfter",
       (p): true => (paragraph.setSpacingAfter(numOrNull(p)), true),

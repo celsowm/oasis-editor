@@ -348,6 +348,8 @@ export interface EssentialsParagraphCapability {
   canMoveParagraphsDown: () => boolean;
   /** Set the selected paragraphs' flow direction (w:bidi, right-to-left). */
   setBidi: (enabled: boolean | null) => void;
+  /** Sort the selected paragraph run (natural order), ascending unless descending. */
+  sortParagraphs: (descending?: boolean) => void;
 }
 
 export interface EssentialsSectionCapability {

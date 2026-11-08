@@ -4,6 +4,7 @@ import {
   canMoveSelectedParagraphs,
   moveSelectedParagraphs,
 } from "@/core/commands/paragraphMove.js";
+import { sortSelectedParagraphs } from "@/core/commands/paragraphSort.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
 import type { EssentialsParagraphCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
@@ -139,5 +140,9 @@ export function buildEssentialsParagraph(
       canMoveSelectedParagraphs(options.state(), "down"),
     setBidi: (enabled: boolean | null): void =>
       options.commandsController.applyParagraphStyleCommand("bidi", enabled),
+    sortParagraphs: (descending = false): void =>
+      options.applyTransactionalState((current): EditorState =>
+        sortSelectedParagraphs(current, descending),
+      ),
   };
 }
