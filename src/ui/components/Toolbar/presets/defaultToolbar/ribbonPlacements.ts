@@ -211,6 +211,11 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
     group: "sort",
     row: 1,
   },
+  "editor-toolbar-tbl-delete-table": {
+    tab: "tableLayout",
+    group: "rowsColumns",
+    row: 2,
+  },
   "editor-toolbar-tbl-width-100": {
     tab: "tableLayout",
     group: "cellSize",

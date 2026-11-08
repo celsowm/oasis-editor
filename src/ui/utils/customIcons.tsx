@@ -224,6 +224,14 @@ const SortDescendingIcon: CustomIconRenderer = (): JSX.Element => (
   </SvgIcon>
 );
 
+const DeleteTableIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
+    <rect x="4" y="4" width="16" height="16" rx="0.8" />
+    <path d="M4 12h16M9 4v16M15 4v16" stroke-width={1.4} />
+    <path d="M11.5 14.5 14.5 11.5M14.5 14.5 11.5 11.5" stroke-width={1.6} />
+  </SvgIcon>
+);
+
 const TableWidthIcon: CustomIconRenderer = (): JSX.Element => (
   <TableIcon>
     <path d="M3 21h18M4.5 19.5 3 21l1.5 1.5M19.5 19.5 21 21l-1.5 1.5" />
@@ -335,6 +343,7 @@ const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   splitTable: SplitTableIcon,
   sortAscending: SortAscendingIcon,
   sortDescending: SortDescendingIcon,
+  deleteTable: DeleteTableIcon,
   tableWidth: TableWidthIcon,
   tableDistributeRows: TableDistributeRowsIcon,
   tableDistributeColumns: TableDistributeColumnsIcon,

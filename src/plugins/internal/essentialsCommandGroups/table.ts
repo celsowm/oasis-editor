@@ -81,6 +81,14 @@ export function buildTableCommands({
           gate.isCommandEnabled("tableSortDescending") && table.canSortTable(),
       }),
     ),
+    tableDelete: actionCommand(
+      "tableDelete",
+      (): void => table.deleteTable(),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableDelete") && table.canDeleteTable(),
+      }),
+    ),
     tableInsertColumnBefore: actionCommand(
       "tableInsertColumnBefore",
       (): void => table.insertColumnBefore(),

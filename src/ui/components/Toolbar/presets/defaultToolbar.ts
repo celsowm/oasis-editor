@@ -1189,6 +1189,18 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     tooltipKey: "table.sortDescendingTooltip",
   });
 
+  // Delete the active table (Word's "Delete Table"). Placed in the Layout
+  // rows/columns group beneath the delete column/row buttons.
+  items.push({
+    type: "button",
+    id: "editor-toolbar-tbl-delete-table",
+    testId: "editor-toolbar-tbl-delete-table",
+    iconName: "deleteTable",
+    command: "tableDelete",
+    labelKey: "table.deleteTable",
+    tooltipKey: "table.deleteTableTooltip",
+  });
+
   // Cell vertical alignment (Word's Align Top / Center / Bottom) on the
   // Layout tab's alignment group. These are payload commands so they are
   // surfaced explicitly rather than through TABLE_LAYOUT_BUTTONS.

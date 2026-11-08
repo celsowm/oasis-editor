@@ -328,6 +328,8 @@ export const ptBR = {
   "table.sortDescending": "Classificar Decrescentemente",
   "table.sortDescendingTooltip":
     "Classifica as linhas da tabela em ordem decrescente",
+  "table.deleteTable": "Excluir Tabela",
+  "table.deleteTableTooltip": "Exclui a tabela ativa",
   "table.distributeRows": "Distribuir Linhas",
   "table.distributeColumns": "Distribuir Colunas",
   "table.cellWidth": "Largura da Célula",

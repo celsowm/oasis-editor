@@ -380,6 +380,10 @@ export interface EssentialsTableCapability {
   canSortTable: () => boolean;
   /** Word's Sort: reorder the table's body rows by the caret column. */
   sortTable: (direction: "ascending" | "descending") => void;
+  /** True when the caret sits inside a table that can be deleted. */
+  canDeleteTable: () => boolean;
+  /** Word's Delete Table: remove the active table. */
+  deleteTable: () => void;
   merge: () => void;
   split: () => void;
   insertColumnBefore: () => void;

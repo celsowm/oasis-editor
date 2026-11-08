@@ -15,6 +15,8 @@ import {
   splitActiveTableAtRow,
   canSortActiveTable,
   sortActiveTable,
+  canDeleteActiveTable,
+  deleteActiveTable,
 } from "@/core/commands/table.js";
 import {
   findParagraphTablePathLocation,
@@ -259,6 +261,12 @@ export function buildEssentialsTable(
         direction === "ascending"
           ? MERGE_KEYS.tableSortAscending
           : MERGE_KEYS.tableSortDescending,
+      ),
+    canDeleteTable: (): boolean => canDeleteActiveTable(options.state()),
+    deleteTable: (): void =>
+      apply(
+        (current): EditorState => deleteActiveTable(current),
+        MERGE_KEYS.tableDelete,
       ),
     merge: (): void =>
       apply(

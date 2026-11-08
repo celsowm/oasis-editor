@@ -325,6 +325,8 @@ export const en = {
   "table.sortAscendingTooltip": "Sort the table rows in ascending order",
   "table.sortDescending": "Sort Descending",
   "table.sortDescendingTooltip": "Sort the table rows in descending order",
+  "table.deleteTable": "Delete Table",
+  "table.deleteTableTooltip": "Delete the active table",
   "table.distributeRows": "Distribute Rows",
   "table.distributeColumns": "Distribute Columns",
   "table.cellWidth": "Cell Width",
