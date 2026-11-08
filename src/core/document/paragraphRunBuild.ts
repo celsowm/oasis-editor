@@ -7,7 +7,6 @@ import {
   createEditorParagraphFromRuns,
   createEditorStyledRun,
 } from "@/core/editorState.js";
-import { isInlineObjectRun } from "@/core/model.js";
 import { cloneParagraph, cloneParagraphList } from "./clone.js";
 import {
   cloneStyle,
@@ -28,8 +27,8 @@ export function normalizeRuns(
     const previous = merged[merged.length - 1];
     if (
       previous &&
-      !isInlineObjectRun(run) &&
-      !isInlineObjectRun(previous) &&
+      previous.kind === "text" &&
+      run.kind === "text" &&
       stylesEqual(previous.styles, run.styles)
     ) {
       previous.text += run.text;
