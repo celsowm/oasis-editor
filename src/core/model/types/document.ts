@@ -14,6 +14,7 @@ import type { EditorFootnote } from "./documentFootnotes.js";
 import type { EditorEndnote } from "./documentEndnotes.js";
 import type { EditorBookmarks } from "./documentBookmarks.js";
 import type { EditorComments } from "./documentComments.js";
+import type { EditorReviewActivity } from "./documentReviewActivity.js";
 import type { EditorNamedStyle } from "./styles.js";
 import type { EditorDocxSourcePackage } from "./docxSourcePackage.js";
 
@@ -264,6 +265,11 @@ export interface EditorDocument {
    * body shown in a hover/click popup.
    */
   comments?: EditorComments;
+  /**
+   * Local review activity for the editor document. Not a DOCX comment part,
+   * authenticated server audit, or immutable event log. Part of undo/redo.
+   */
+  reviewActivity?: EditorReviewActivity[];
   /**
    * `word/fontTable.xml` entries: the fonts the document declares, with
    * substitution metadata. Preserved on import and re-emitted on export.

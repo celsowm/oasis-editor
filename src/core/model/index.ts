@@ -135,6 +135,10 @@ export type {
   EditorComments,
 } from "./types/documentComments.js";
 export type {
+  EditorReviewActivity,
+  EditorReviewActivityKind,
+} from "./types/documentReviewActivity.js";
+export type {
   EditorOpcPartKind,
   EditorOpcPartEncoding,
   EditorOpcRelationship,
