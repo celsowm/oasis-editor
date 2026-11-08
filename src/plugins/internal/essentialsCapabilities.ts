@@ -47,6 +47,9 @@ export interface EssentialsHistoryCapability {
 
 export interface EssentialsFormattingCapability {
   selectAll: () => boolean;
+  selectWord: () => boolean;
+  selectSentence: () => boolean;
+  selectParagraph: () => boolean;
   insertFootnote: () => boolean;
   insertTableOfContents: () => boolean;
   updateTableOfContents: () => boolean;

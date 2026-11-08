@@ -42,6 +42,9 @@ export interface InsertTextPayload {
  */
 export interface OasisCommandPayloads {
   selectAll: undefined;
+  selectWord: undefined;
+  selectSentence: undefined;
+  selectParagraph: undefined;
   insertFootnote: undefined;
   insertText: string | InsertTextPayload;
   insertEquation: EditorMathExpression;

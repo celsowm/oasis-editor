@@ -45,6 +45,9 @@ export function buildCoreFormattingCommands({
   const s = style.state;
   return {
     selectAll: command("selectAll", formatting.selectAll),
+    selectWord: command("selectWord", formatting.selectWord),
+    selectSentence: command("selectSentence", formatting.selectSentence),
+    selectParagraph: command("selectParagraph", formatting.selectParagraph),
     insertFootnote: command("insertFootnote", formatting.insertFootnote),
     insertTableOfContents: command(
       "insertTableOfContents",

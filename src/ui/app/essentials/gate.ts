@@ -9,6 +9,9 @@ import type { CreateEditorEssentialsPluginOptions } from "./types.js";
 const READ_ONLY_SAFE_COMMANDS: ReadonlySet<OasisBuiltinCommand> = new Set([
   "copy",
   "selectAll",
+  "selectWord",
+  "selectSentence",
+  "selectParagraph",
   "nextRevision",
   "previousRevision",
   "nextComment",

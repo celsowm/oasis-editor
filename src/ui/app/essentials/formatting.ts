@@ -14,6 +14,11 @@ import {
   paragraphOffsetToPosition,
   type EditorState,
 } from "@/core/model.js";
+import {
+  selectParagraph,
+  selectSentence,
+  selectWord,
+} from "@/core/commands/selectUnit.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
 import {
   hasRevisionsInDocument,
@@ -108,6 +113,24 @@ export function buildEssentialsFormatting(
           ),
         },
       });
+      options.focusInput();
+      return true;
+    },
+    selectWord: (): boolean => {
+      if (options.isReadOnly()) return false;
+      options.applyState(selectWord(options.state()));
+      options.focusInput();
+      return true;
+    },
+    selectSentence: (): boolean => {
+      if (options.isReadOnly()) return false;
+      options.applyState(selectSentence(options.state()));
+      options.focusInput();
+      return true;
+    },
+    selectParagraph: (): boolean => {
+      if (options.isReadOnly()) return false;
+      options.applyState(selectParagraph(options.state()));
       options.focusInput();
       return true;
     },
