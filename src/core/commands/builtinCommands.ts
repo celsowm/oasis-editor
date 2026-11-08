@@ -164,6 +164,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "tableSetCellTextDirection",
   "tableToText",
   "textToTable",
+  "tableSplitAtRow",
   "tableSetCellWidth",
   "tableToggleHeaderRow",
   "tableToggleTotalRow",

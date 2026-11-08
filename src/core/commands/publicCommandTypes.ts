@@ -213,6 +213,7 @@ export interface OasisCommandPayloads {
   tableSetCellTextDirection: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV";
   tableToText: undefined;
   textToTable: undefined;
+  tableSplitAtRow: undefined;
   tableSetCellWidth: string | number;
   tableToggleHeaderRow: undefined;
   tableToggleTotalRow: undefined;
