@@ -9,11 +9,16 @@ export function appendReviewActivity(
   state: EditorState,
   activity: EditorReviewActivity,
 ): EditorState {
-  if (!activity.id.trim() || !activity.commentId.trim()
-    || !activity.threadId.trim() || !activity.actorName.trim()
-    || !Number.isFinite(activity.timestamp)) return state;
+  if (
+    !activity.id.trim() ||
+    !activity.commentId.trim() ||
+    !activity.threadId.trim() ||
+    !activity.actorName.trim() ||
+    !Number.isFinite(activity.timestamp)
+  )
+    return state;
   const entries = state.document.reviewActivity ?? [];
-  if (entries.some(entry => entry.id === activity.id)) return state;
+  if (entries.some((entry) => entry.id === activity.id)) return state;
   return {
     ...state,
     document: {
@@ -25,7 +30,8 @@ export function appendReviewActivity(
 
 /** Resolves thread identity safely for arbitrarily nested or cyclic replies. */
 export function getReviewThreadId(
-  state: EditorState, commentId: string,
+  state: EditorState,
+  commentId: string,
 ): string | null {
   const items = state.document.comments?.items;
   if (!items?.[commentId]) return null;
@@ -55,12 +61,14 @@ export function appendReviewChange(
   },
 ): EditorState {
   if (after.document === before.document) return before;
-  const target = before.document.comments?.items[detail.commentId]
-    ?? after.document.comments?.items[detail.commentId];
+  const target =
+    before.document.comments?.items[detail.commentId] ??
+    after.document.comments?.items[detail.commentId];
   if (!target) return after;
-  const threadId = getReviewThreadId(before, detail.commentId)
-    ?? getReviewThreadId(after, detail.commentId)
-    ?? detail.commentId;
+  const threadId =
+    getReviewThreadId(before, detail.commentId) ??
+    getReviewThreadId(after, detail.commentId) ??
+    detail.commentId;
   const previousCount = before.document.comments?.order.length ?? 0;
   const nextCount = after.document.comments?.order.length ?? 0;
   return appendReviewActivity(after, {

@@ -8,6 +8,7 @@ import {
 } from "solid-js";
 import type {
   EditorComment,
+  EditorComments,
   EditorReviewActivity,
   EditorState,
 } from "@/core/model.js";
@@ -42,7 +43,8 @@ export function ReviewCommentsPanel(
     null,
   );
 
-  const registry = () => props.state().document.comments;
+  const registry = (): EditorComments | undefined =>
+    props.state().document.comments;
   const threads = createMemo((): EditorComment[] => {
     const comments = registry();
     if (!comments) return [];

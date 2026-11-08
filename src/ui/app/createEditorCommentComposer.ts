@@ -41,7 +41,13 @@ export interface CommentComposerDeps {
   access?: () => OasisReviewAccess | undefined;
 }
 
-/** One instance per editor; never a global author, dialog, or comment state. */
+/**
+ * One instance per editor; never a global author, dialog, or comment state.
+ * The return type is intentionally the self-derived `EditorCommentComposer`
+ * alias, so annotating it here would circularly reference itself (TS2577);
+ * consumers use the exported alias instead.
+ */
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function createEditorCommentComposer(deps: CommentComposerDeps) {
   const [draft, setDraft] = createSignal<CommentComposerDraft | null>(null);
   const [lastAuthor, setLastAuthor] = createSignal("");
