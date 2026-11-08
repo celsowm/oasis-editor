@@ -35,6 +35,7 @@ export type ValueTextStyleKey =
   | "characterScale"
   | "characterSpacing"
   | "baselineShift"
+  | "emphasisMark"
   | "kerningThreshold"
   | "ligatures"
   | "numberSpacing"

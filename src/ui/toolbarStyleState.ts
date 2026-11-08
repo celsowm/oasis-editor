@@ -51,6 +51,7 @@ export type ValueStyleKey =
   | "characterScale"
   | "characterSpacing"
   | "baselineShift"
+  | "emphasisMark"
   | "kerningThreshold"
   | "ligatures"
   | "numberSpacing"
@@ -102,6 +103,7 @@ export interface ToolbarStyleState {
   characterScale: string;
   characterSpacing: string;
   baselineShift: string;
+  emphasisMark: string;
   kerningThreshold: string;
   ligatures: string;
   numberSpacing: string;
@@ -446,6 +448,7 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     characterScale: resolveUniformStyleValue(styles, "characterScale"),
     characterSpacing: resolveUniformStyleValue(styles, "characterSpacing"),
     baselineShift: resolveUniformStyleValue(styles, "baselineShift"),
+    emphasisMark: resolveUniformStyleValue(styles, "emphasisMark"),
     kerningThreshold: resolveUniformStyleValue(styles, "kerningThreshold"),
     ligatures: resolveUniformStyleValue(styles, "ligatures"),
     numberSpacing: resolveUniformStyleValue(styles, "numberSpacing"),
