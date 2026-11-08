@@ -815,6 +815,25 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   });
   items.push({
     type: "button",
+    id: "editor-toolbar-new-comment",
+    testId: "editor-toolbar-new-comment",
+    iconName: "message-square-plus",
+    labelKey: "toolbar.newComment",
+    tooltipKey: "toolbar.newComment",
+    command: "newComment",
+    ribbonSize: "large",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-reply-comment",
+    testId: "editor-toolbar-reply-comment",
+    iconName: "reply",
+    labelKey: "toolbar.replyComment",
+    tooltipKey: "toolbar.replyComment",
+    command: "replyComment",
+  });
+  items.push({
+    type: "button",
     id: "editor-toolbar-previous-comment",
     testId: "editor-toolbar-previous-comment",
     iconName: "message-square",

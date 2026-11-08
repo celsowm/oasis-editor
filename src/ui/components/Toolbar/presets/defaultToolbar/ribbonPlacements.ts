@@ -25,6 +25,8 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-reject-revisions": { tab: "review", group: "changes", row: 2 },
   "editor-toolbar-previous-revision": { tab: "review", group: "changes", row: 1 },
   "editor-toolbar-next-revision": { tab: "review", group: "changes", row: 2 },
+  "editor-toolbar-new-comment": { tab: "review", group: "comments", row: 1 },
+  "editor-toolbar-reply-comment": { tab: "review", group: "comments", row: 2 },
   "editor-toolbar-previous-comment": { tab: "review", group: "comments", row: 1 },
   "editor-toolbar-next-comment": { tab: "review", group: "comments", row: 2 },
   "editor-toolbar-resolve-comment": { tab: "review", group: "comments", row: 1 },

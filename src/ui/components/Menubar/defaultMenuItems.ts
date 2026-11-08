@@ -163,6 +163,20 @@ export const defaultMenuItems: MenuItem[] = [
     icon: "chevron-down",
   },
   {
+    id: "review_new_comment",
+    path: "Review/New Comment",
+    labelKey: "toolbar.newComment",
+    command: "newComment",
+    icon: "message-square-plus",
+  },
+  {
+    id: "review_reply_comment",
+    path: "Review/Reply to Comment",
+    labelKey: "toolbar.replyComment",
+    command: "replyComment",
+    icon: "reply",
+  },
+  {
     id: "review_previous_comment",
     path: "Review/Previous Comment",
     labelKey: "toolbar.previousComment",
