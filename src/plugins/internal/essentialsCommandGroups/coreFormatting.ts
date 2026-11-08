@@ -46,6 +46,19 @@ export function buildCoreFormattingCommands({
   return {
     selectAll: command("selectAll", formatting.selectAll),
     insertFootnote: command("insertFootnote", formatting.insertFootnote),
+    insertTableOfContents: command(
+      "insertTableOfContents",
+      formatting.insertTableOfContents,
+    ),
+    updateTableOfContents: command(
+      "updateTableOfContents",
+      formatting.updateTableOfContents,
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("updateTableOfContents") &&
+          formatting.hasTableOfContents(),
+      }),
+    ),
     insertText: actionCommand("insertText", (p): void => {
       const payload =
         typeof p === "object" && p !== null && "text" in p
@@ -162,8 +175,24 @@ export function buildCoreFormattingCommands({
         isActive: formatting.isTrackChangesEnabled(),
       }),
     ),
-    acceptRevisions: command("acceptRevisions", formatting.acceptRevisions),
-    rejectRevisions: command("rejectRevisions", formatting.rejectRevisions),
+    acceptRevisions: command(
+      "acceptRevisions",
+      formatting.acceptRevisions,
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("acceptRevisions") &&
+          formatting.hasRevisionsInSelection(),
+      }),
+    ),
+    rejectRevisions: command(
+      "rejectRevisions",
+      formatting.rejectRevisions,
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("rejectRevisions") &&
+          formatting.hasRevisionsInSelection(),
+      }),
+    ),
     toggleShowMargins: command(
       "toggleShowMargins",
       formatting.toggleShowMargins,

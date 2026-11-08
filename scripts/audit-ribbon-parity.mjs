@@ -83,6 +83,35 @@ function findObjectVariable(file, variable) {
   return found;
 }
 
+const RUNTIME_COMMAND_GROUPS = [
+  "src/plugins/internal/essentialsCommandGroups/coreFormatting.ts",
+  "src/plugins/internal/essentialsCommandGroups/documentAndBrowser.ts",
+  "src/plugins/internal/essentialsCommandGroups/paragraphAndSection.ts",
+  "src/plugins/internal/essentialsCommandGroups/table.ts",
+  "src/plugins/internal/essentialsCommandGroups/design.ts",
+];
+
+/** Built-in declarations are not registrations: require a command builder in a live group. */
+function collectRegisteredCommands() {
+  const registered = new Set();
+  for (const path of RUNTIME_COMMAND_GROUPS) {
+    const file = parse(path);
+    const visit = (node) => {
+      if (
+        ts.isCallExpression(node) &&
+        ts.isIdentifier(node.expression) &&
+        ["command", "actionCommand", "valueCommand"].includes(node.expression.text)
+      ) {
+        const id = getString(node.arguments[0]);
+        if (id) registered.add(id);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(file);
+  }
+  return registered;
+}
+
 function collectBuiltinCommands() {
   const file = parse("src/core/commands/builtinCommands.ts");
   return new Set(
@@ -197,6 +226,7 @@ export function renderMatrix(data) {
 }
 function main() {
   const builtin = collectBuiltinCommands();
+  const registered = collectRegisteredCommands();
   const toolbar = collectPresetItems();
   const placements = collectPlacements();
   const menu = collectMenuCommands();
@@ -207,6 +237,9 @@ function main() {
     ids.add(feature.id);
     if (!builtin.has(feature.oasisCommand)) {
       errors.push(feature.id + ": missing built-in command " + feature.oasisCommand);
+    }
+    if (!registered.has(feature.oasisCommand)) {
+      errors.push(feature.id + ": command has no Essentials registration: " + feature.oasisCommand);
     }
     const item = toolbar.get(feature.ribbonId);
     if (!item) errors.push(feature.id + ": missing Ribbon item " + feature.ribbonId);
@@ -237,6 +270,7 @@ function main() {
       schemaVersion: 1,
       catalogFeatures: catalog.features.length,
       builtinCommands: builtin.size,
+      registeredCommands: registered.size,
       toolbarItemsScanned: toolbar.size,
       records: reachable,
     }, null, 2) + "\n");

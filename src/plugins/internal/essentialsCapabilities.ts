@@ -40,6 +40,12 @@ export interface EssentialsHistoryCapability {
 export interface EssentialsFormattingCapability {
   selectAll: () => boolean;
   insertFootnote: () => boolean;
+  insertTableOfContents: () => boolean;
+  updateTableOfContents: () => boolean;
+  /** True only when the active section contains an updateable TOC field. */
+  hasTableOfContents: () => boolean;
+  /** True when the current selection intersects revisions this command can resolve. */
+  hasRevisionsInSelection: () => boolean;
   insertText: (text: string, fontFamily?: string | null) => boolean;
   insertEquation: (expression: EditorMathExpression) => boolean;
   updateEquation: (runId: string, expression: EditorMathExpression) => boolean;

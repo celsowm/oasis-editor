@@ -14,9 +14,11 @@ import {
   type EditorState,
 } from "@/core/model.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
+import { hasRevisionsInSelection } from "@/core/commands/history.js";
 import {
   insertTableOfContents,
   updateTableOfContents,
+  hasTableOfContents,
   type TocPageNumberResolver,
 } from "@/core/commands/tableOfContents.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
@@ -32,19 +34,9 @@ import type { EditorMathExpression } from "@/core/model.js";
 import { togglePreciseFontMode } from "../localFontAccess.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
 
-// The returned object provides insertTableOfContents/updateTableOfContents in
-// addition to the EssentialsFormattingCapability surface (the TOC commands are
-// dispatched by id via the menu, so the capability interface does not declare
-// them). The intersection keeps them typed without tripping excess-property
-// checks.
-type EssentialsFormattingImpl = EssentialsFormattingCapability & {
-  insertTableOfContents: () => boolean;
-  updateTableOfContents: () => boolean;
-};
-
 export function buildEssentialsFormatting(
   options: CreateEditorEssentialsPluginOptions,
-): EssentialsFormattingImpl {
+): EssentialsFormattingCapability {
   const stepFontSize = (direction: "increase" | "decrease"): boolean => {
     const currentPx = Number(
       options.styleController.toolbarStyleState().fontSize,
@@ -137,6 +129,9 @@ export function buildEssentialsFormatting(
       options.focusInput();
       return true;
     },
+    hasTableOfContents: (): boolean => hasTableOfContents(options.state()),
+    hasRevisionsInSelection: (): boolean =>
+      hasRevisionsInSelection(options.state()),
     insertTableOfContents: (): boolean => {
       options.applyTransactionalState((current): EditorState =>
         insertTableOfContents(current, buildTocPageResolver(current)),

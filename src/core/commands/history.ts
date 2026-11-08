@@ -345,7 +345,7 @@ function collectTableRevisionIds(
   }
 }
 
-export function acceptRevisionsInSelection(state: EditorState): EditorState {
+export function collectSelectedRevisionIds(state: EditorState): Set<string> {
   const normalized = normalizeSelection(state);
   const paragraphs = getParagraphs(state);
   const revisionIds = new Set<string>();
@@ -387,60 +387,28 @@ export function acceptRevisionsInSelection(state: EditorState): EditorState {
     }
   }
 
+  return revisionIds;
+}
+
+
+/** Only count revision kinds that Accept/Reject currently handle in the selection. */
+export function hasRevisionsInSelection(state: EditorState): boolean {
+  return collectSelectedRevisionIds(state).size > 0;
+}
+
+export function acceptRevisionsInSelection(state: EditorState): EditorState {
   let nextState = state;
-  for (const revisionId of revisionIds) {
+  for (const revisionId of collectSelectedRevisionIds(state)) {
     nextState = acceptRevision(nextState, revisionId);
   }
-
   return nextState;
 }
 
 export function rejectRevisionsInSelection(state: EditorState): EditorState {
-  const normalized = normalizeSelection(state);
-  const paragraphs = getParagraphs(state);
-  const revisionIds = new Set<string>();
-
-  for (let i = normalized.startIndex; i <= normalized.endIndex; i += 1) {
-    const paragraph = paragraphs[i];
-    const startOffset =
-      i === normalized.startIndex ? normalized.startParagraphOffset : 0;
-    const endOffset =
-      i === normalized.endIndex
-        ? normalized.endParagraphOffset
-        : getParagraphLength(paragraph);
-    const runs = sliceRuns(paragraph, startOffset, endOffset);
-    for (const run of runs) {
-      if (run.revision?.id) {
-        revisionIds.add(run.revision.id);
-      }
-    }
-  }
-
-  const selectedParagraphIds = new Set(
-    paragraphs
-      .slice(normalized.startIndex, normalized.endIndex + 1)
-      .map((paragraph): string => paragraph.id),
-  );
-  for (const section of getDocumentSections(state.document)) {
-    for (const blocks of [
-      section.blocks,
-      section.header,
-      section.firstPageHeader,
-      section.evenPageHeader,
-      section.footer,
-      section.firstPageFooter,
-      section.evenPageFooter,
-    ]) {
-      if (blocks) {
-        collectTableRevisionIds(blocks, selectedParagraphIds, revisionIds);
-      }
-    }
-  }
-
   let nextState = state;
-  for (const revisionId of revisionIds) {
+  for (const revisionId of collectSelectedRevisionIds(state)) {
     nextState = rejectRevision(nextState, revisionId);
   }
-
   return nextState;
 }
+
