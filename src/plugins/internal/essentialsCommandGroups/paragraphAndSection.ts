@@ -1,5 +1,6 @@
 import type { OasisPlugin } from "@/core/plugin.js";
-import type { EditorPageMargins } from "@/core/model.js";
+import type { EditorPageMargins, EditorPageNumbering } from "@/core/model.js";
+import type { SectionPageNumberFormat } from "@/core/commands/pageNumber.js";
 import type {
   ActionCommandBuilder,
   ValueCommandBuilder,
@@ -137,6 +138,23 @@ export function buildParagraphAndSectionCommands({
       },
       (): { value: EditorPageMargins | undefined } => ({
         value: section.getMargins(),
+      }),
+    ),
+    setSectionPageNumbering: actionCommand(
+      "setSectionPageNumbering",
+      (p): void => {
+        const numbering = (p ?? {}) as Record<string, unknown>;
+        section.setPageNumbering({
+          ...(numbering.start !== undefined
+            ? { start: Number(numbering.start) }
+            : {}),
+          ...(typeof numbering.format === "string"
+            ? { format: numbering.format as SectionPageNumberFormat }
+            : {}),
+        });
+      },
+      (): { value: EditorPageNumbering | undefined } => ({
+        value: section.getPageNumbering(),
       }),
     ),
   };

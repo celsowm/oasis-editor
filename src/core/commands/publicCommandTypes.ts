@@ -1,5 +1,6 @@
 import type { CommandRef } from "./CommandRef.js";
 import type { EditorPageMargins } from "@/core/model.js";
+import type { SectionPageNumberFormat } from "./pageNumber.js";
 import type { TextCaseMode } from "./text.js";
 import type { TableBorderPreset } from "./table.js";
 import type {
@@ -144,6 +145,10 @@ export interface OasisCommandPayloads {
   sectionBreakNextPage: undefined;
   sectionBreakContinuous: undefined;
   setPageMargins: SetPageMarginsPayload;
+  setSectionPageNumbering: {
+    start?: number;
+    format?: SectionPageNumberFormat;
+  };
   editHeader: undefined;
   editFooter: undefined;
   insertPageNumber: undefined;

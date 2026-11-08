@@ -106,6 +106,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "sectionBreakNextPage",
   "sectionBreakContinuous",
   "setPageMargins",
+  "setSectionPageNumbering",
   "editHeader",
   "editFooter",
   "insertPageNumber",

@@ -3,8 +3,10 @@ import type {
   EditorImageBorder,
   EditorPageBorder,
   EditorPageMargins,
+  EditorPageNumbering,
   EditorWatermark,
 } from "@/core/model.js";
+import type { SectionPageNumberFormat } from "@/core/commands/pageNumber.js";
 import type { DesignThemeId } from "@/core/commands/design.js";
 import type { ImageBorderPatch } from "@/core/commands/image.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
@@ -233,6 +235,11 @@ export interface EssentialsSectionCapability {
   breakContinuous: () => void;
   getMargins: () => EditorPageMargins | undefined;
   setPageMargins: (margins: Partial<EditorPageMargins>) => void;
+  getPageNumbering: () => EditorPageNumbering | undefined;
+  setPageNumbering: (numbering: {
+    start?: number;
+    format?: SectionPageNumberFormat;
+  }) => void;
 }
 
 export interface EssentialsHeaderFooterCapability {

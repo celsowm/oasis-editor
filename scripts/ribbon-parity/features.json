@@ -326,7 +326,7 @@
       "tab": "insert",
       "group": "headerFooter",
       "status": "partial",
-      "notes": "Inserts a PAGE field at the caret inside a header/footer (or body). Field formatting (\\* roman etc.) resolves in layout and round-trips through DOCX. Layout resolution E2E verification remains."
+      "notes": "Inserts a PAGE field at the caret inside a header/footer (or body). Field formatting (\\* roman etc.) resolves in layout and round-trips through DOCX. Per-section start/format (w:pgNumType) is set via the setSectionPageNumbering payload command. Layout resolution E2E verification remains."
     },
     {
       "id": "insert.pageNumberXOfY",

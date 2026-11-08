@@ -1,4 +1,9 @@
-import { getActiveSectionIndex, type EditorPageMargins } from "@/core/model.js";
+import {
+  getActiveSectionIndex,
+  type EditorPageMargins,
+  type EditorPageNumbering,
+} from "@/core/model.js";
+import { setSectionPageNumbering } from "@/core/commands/pageNumber.js";
 import type { EssentialsSectionCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
 
@@ -56,6 +61,16 @@ export function buildEssentialsSection(
           },
         },
       });
+    },
+    getPageNumbering: (): EditorPageNumbering | undefined => {
+      const idx = getActiveSectionIndex(options.state());
+      return options.state().document.sections?.[idx]?.pageNumbering;
+    },
+    setPageNumbering: (numbering): void => {
+      options.applyTransactionalState((state) =>
+        setSectionPageNumbering(state, numbering),
+      );
+      options.focusInput();
     },
   };
   return section;
