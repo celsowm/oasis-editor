@@ -66,6 +66,7 @@ export const MERGE_KEYS = {
   shapeFill: "shapeFill",
   shapeOutline: "shapeOutline",
   floatingAlign: "floatingAlign",
+  floatingReorder: "floatingReorder",
 } as const;
 
 export type MergeKey = (typeof MERGE_KEYS)[keyof typeof MERGE_KEYS];

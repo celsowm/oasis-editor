@@ -196,6 +196,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setShapeFill",
   "setShapeOutline",
   "alignFloatingObject",
+  "reorderFloatingObject",
   "openSymbolDialog",
   "openEquationDialog",
   "tableProperties",
