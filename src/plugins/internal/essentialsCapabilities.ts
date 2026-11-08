@@ -183,6 +183,8 @@ export interface EssentialsDocumentCapability {
   nudgeFloatingObject: (dx: number, dy: number) => void;
   /** Set whether the selected floating object moves with text / is pinned to page. */
   setFloatingFixedPosition: (fixed: boolean) => void;
+  /** Set the exact rotation (degrees, clockwise) of the selected floating object. */
+  setFloatingRotation: (degrees: number) => void;
   /** Change the selected shape's DrawingML preset geometry. */
   setShapePreset: (preset: string) => void;
   /** Set the selected text box's text-direction flow. */

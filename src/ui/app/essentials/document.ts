@@ -3,6 +3,7 @@ import {
   alignSelectedFloatingObject,
   nudgeSelectedFloatingObject,
   setSelectedFloatingFixedPosition,
+  setSelectedFloatingRotation,
 } from "@/core/commands/floatingAlignCommands.js";
 import { reorderSelectedFloatingObject } from "@/core/commands/floatingReorderCommands.js";
 import {
@@ -143,6 +144,11 @@ export function buildEssentialsDocument(
         (current): EditorState =>
           setSelectedFloatingFixedPosition(current, fixed),
         { mergeKey: MERGE_KEYS.floatingFixedPosition },
+      ),
+    setFloatingRotation: (degrees: number): void =>
+      options.applyTransactionalState(
+        (current): EditorState => setSelectedFloatingRotation(current, degrees),
+        { mergeKey: MERGE_KEYS.floatingRotation },
       ),
     setShapePreset: (preset: string): void =>
       options.applyTransactionalState(

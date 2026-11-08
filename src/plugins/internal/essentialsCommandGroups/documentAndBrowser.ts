@@ -137,6 +137,9 @@ export function buildDocumentAndBrowserCommands({
       "setFloatingFixedPosition",
       (p): void => document.setFloatingFixedPosition(Boolean(p)),
     ),
+    setFloatingRotation: actionCommand("setFloatingRotation", (p): void =>
+      document.setFloatingRotation(Number(p)),
+    ),
     setShapePreset: actionCommand("setShapePreset", (p): void =>
       document.setShapePreset(p == null ? "rect" : String(p)),
     ),
