@@ -26,6 +26,7 @@ import {
   resetSelectedImageCrop,
   setSelectedImageCropShape,
   setSelectedImageBorder,
+  flipSelectedImage,
   type ImageBorderPatch,
   type ImageCropAspectMode,
 } from "@/core/commands/image.js";
@@ -592,6 +593,14 @@ function createEditorCommandsControllerImpl(
     );
   };
 
+  const flipImageCommand = (axis: "horizontal" | "vertical"): void => {
+    if (!selectedImageRun()) return;
+    execTransactional(
+      (current): EditorState => flipSelectedImage(current, axis),
+      { mergeKey: MERGE_KEYS.imageFlip },
+    );
+  };
+
   return {
     applyBooleanStyleCommand,
     applyValueStyleCommand,
@@ -630,6 +639,7 @@ function createEditorCommandsControllerImpl(
     applyImageCropFitCommand,
     resetImageCropCommand,
     applyImageBorderCommand,
+    flipImageCommand,
     handleListTab,
     handleListEnter,
     handleListBoundaryBackspace,

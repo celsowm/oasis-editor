@@ -207,6 +207,8 @@ export interface EssentialsImageCapability {
   getBorder: () => EditorImageBorder | null;
   /** Merge a partial outline edit; `{ color: null }` removes the outline. */
   setBorder: (patch: ImageBorderPatch) => void;
+  /** Flip the selected image about its horizontal or vertical axis. */
+  flip: (axis: "horizontal" | "vertical") => void;
 }
 
 export interface EssentialsBrowserCapability {

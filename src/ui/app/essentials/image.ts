@@ -38,5 +38,6 @@ export function buildEssentialsImage(
       getSelectedImageBorder(options.state()),
     setBorder: (patch): void =>
       options.commandsController.applyImageBorderCommand(patch),
+    flip: (axis): void => options.commandsController.flipImageCommand(axis),
   };
 }

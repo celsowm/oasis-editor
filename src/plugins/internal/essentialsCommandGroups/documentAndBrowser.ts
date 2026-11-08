@@ -214,6 +214,11 @@ export function buildDocumentAndBrowserCommands({
       (): void => image.resetCrop(),
       (): { isEnabled: boolean } => ({ isEnabled: image.isSelected() }),
     ),
+    imageFlip: actionCommand(
+      "imageFlip",
+      (p): void => image.flip((p as "horizontal" | "vertical") ?? "horizontal"),
+      (): { isEnabled: boolean } => ({ isEnabled: image.isSelected() }),
+    ),
     imageBorder: actionCommand(
       "imageBorder",
       (p): void => image.setBorder(p as ImageBorderPatch),

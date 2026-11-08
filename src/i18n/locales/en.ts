@@ -567,6 +567,8 @@ export const en = {
   "image.height": "Height",
   "image.width": "Width",
   "image.cropReset": "Reset crop",
+  "image.flipHorizontal": "Flip Horizontal",
+  "image.flipVertical": "Flip Vertical",
   "image.cropRatio.square": "1:1",
   "image.cropRatio.squareGroup": "Square",
   "image.cropRatio.portrait": "Portrait",
