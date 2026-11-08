@@ -241,6 +241,9 @@ export interface OasisCommandPayloads {
   tableDistributeColumns: undefined;
   tableDistributeRows: undefined;
   insertTable: InsertTablePayload;
+  insertShape: string;
+  setShapeFill: string | null;
+  setShapeOutline: string | null;
   openSymbolDialog: undefined;
   openEquationDialog: undefined;
   tableProperties: { activeTab?: "table" | "cell" };

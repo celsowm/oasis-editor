@@ -193,6 +193,8 @@ export const OASIS_BUILTIN_COMMANDS = [
   "tableDistributeRows",
   "insertTable",
   "insertShape",
+  "setShapeFill",
+  "setShapeOutline",
   "openSymbolDialog",
   "openEquationDialog",
   "tableProperties",

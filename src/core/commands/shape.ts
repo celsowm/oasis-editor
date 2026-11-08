@@ -21,6 +21,7 @@ import {
   getFocusParagraph,
   withSelection,
 } from "@/core/selection/rangeEditing.js";
+export * from "./shapeFillCommands.js";
 
 const SHAPE_DEFAULT_WIDTH = 150;
 const SHAPE_DEFAULT_HEIGHT = 100;

@@ -63,6 +63,8 @@ export const MERGE_KEYS = {
   tableDistribute: "tableDistribute",
   layoutWrapPreset: "layoutWrapPreset",
   layoutFixedPosition: "layoutFixedPosition",
+  shapeFill: "shapeFill",
+  shapeOutline: "shapeOutline",
 } as const;
 
 export type MergeKey = (typeof MERGE_KEYS)[keyof typeof MERGE_KEYS];
