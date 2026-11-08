@@ -19,6 +19,17 @@ function commands(gateEnabled: () => boolean, hasToc: () => boolean, hasRevision
     updateTableOfContents: vi.fn(() => true),
     hasTableOfContents: hasToc,
     hasRevisionsInSelection: hasRevision,
+    hasNavigableRevisions: hasRevision,
+    hasNavigableComments: () => true,
+    navigateRevisionNext: vi.fn(() => true),
+    navigateRevisionPrevious: vi.fn(() => true),
+    navigateCommentNext: vi.fn(() => true),
+    navigateCommentPrevious: vi.fn(() => true),
+    hasSelectedComment: () => true,
+    isSelectedCommentResolved: () => false,
+    resolveSelectedComment: vi.fn(() => true),
+    reopenSelectedComment: vi.fn(() => true),
+    deleteSelectedComment: vi.fn(() => true),
     acceptRevisions: vi.fn(() => true),
     rejectRevisions: vi.fn(() => true),
     isTrackChangesEnabled: () => true,
@@ -67,6 +78,37 @@ describe("Essentials Ribbon command registrations", () => {
     expect(result.formatPainterContinuous?.refresh?.().isEnabled).toBe(false);
     painterMode = null;
     expect(result.cancelFormatPainter?.refresh?.().isEnabled).toBe(false);
+  });
+
+  it("navigates revisions in read-only mode and disables commands when none exist", () => {
+    let navigable = true;
+    const { result, formatting } = commands(
+      () => true, () => true, () => false,
+    );
+    formatting.hasNavigableRevisions = () => navigable;
+    expect(result.nextRevision?.refresh?.().isEnabled).toBe(true);
+    expect(result.previousRevision?.execute()).toBe(true);
+    expect(formatting.navigateRevisionPrevious).toHaveBeenCalledOnce();
+    navigable = false;
+    expect(result.nextRevision?.refresh?.().isEnabled).toBe(false);
+    expect(result.previousRevision?.refresh?.().isEnabled).toBe(false);
+  });
+
+  it("enables comment Resolve/Reopen only for the matching thread state", () => {
+    let selected = true;
+    let resolved = false;
+    const { result, formatting } = commands(() => true, () => true, () => true);
+    formatting.hasSelectedComment = () => selected;
+    formatting.isSelectedCommentResolved = () => resolved;
+    expect(result.resolveComment?.refresh?.().isEnabled).toBe(true);
+    expect(result.reopenComment?.refresh?.().isEnabled).toBe(false);
+    expect(result.deleteComment?.refresh?.().isEnabled).toBe(true);
+    resolved = true;
+    expect(result.resolveComment?.refresh?.().isEnabled).toBe(false);
+    expect(result.reopenComment?.refresh?.().isEnabled).toBe(true);
+    selected = false;
+    expect(result.reopenComment?.refresh?.().isEnabled).toBe(false);
+    expect(result.deleteComment?.refresh?.().isEnabled).toBe(false);
   });
 
   it("registers both TOC commands as actual executable actions", () => {
