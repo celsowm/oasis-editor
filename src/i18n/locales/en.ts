@@ -294,6 +294,7 @@ export const en = {
   "table.insertColumnLeft": "Insert column left",
   "table.insertColumnRight": "Insert column right",
   "table.deleteColumn": "Delete column",
+  "table.deleteCells": "Delete cells",
   "table.insertAbove": "Above",
   "table.insertBelow": "Below",
   "table.insertRowAbove": "Insert row above",

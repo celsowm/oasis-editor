@@ -406,6 +406,8 @@ export interface EssentialsTableCapability {
   insertRowBefore: () => void;
   insertRowAfter: () => void;
   deleteRow: () => void;
+  canDeleteCell: () => boolean;
+  deleteCell: () => void;
   cellShading: (color: string | null) => void;
   cellBorders: () => void;
   cellNoBorders: () => void;

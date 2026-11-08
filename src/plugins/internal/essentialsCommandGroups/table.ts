@@ -149,6 +149,14 @@ export function buildTableCommands({
           gate.isCommandEnabled("tableDeleteRow") && table.canEditRow(),
       }),
     ),
+    tableDeleteCells: actionCommand(
+      "tableDeleteCells",
+      (): void => table.deleteCell(),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableDeleteCells") && table.canDeleteCell(),
+      }),
+    ),
     tableCellShading: actionCommand("tableCellShading", (p): void =>
       table.cellShading((p as string) ?? null),
     ),

@@ -31,6 +31,8 @@ import {
   canSetActiveTableRowHeight,
   setActiveTableRowHeight,
   type TableRowHeight,
+  canDeleteActiveTableCell,
+  deleteActiveTableCell,
 } from "@/core/commands/table.js";
 import {
   findParagraphTablePathLocation,
@@ -336,6 +338,12 @@ export function buildEssentialsTable(
         (current): EditorState =>
           options.tableOps.deleteSelectedTableRow(current),
         MERGE_KEYS.deleteTableRow,
+      ),
+    canDeleteCell: (): boolean => canDeleteActiveTableCell(options.state()),
+    deleteCell: (): void =>
+      apply(
+        (current): EditorState => deleteActiveTableCell(current),
+        MERGE_KEYS.deleteTableCell,
       ),
     cellShading: (color: string | null): void =>
       apply(

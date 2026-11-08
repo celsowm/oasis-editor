@@ -294,6 +294,7 @@ export const ptBR = {
   "table.insertColumnLeft": "Inserir coluna à esquerda",
   "table.insertColumnRight": "Inserir coluna à direita",
   "table.deleteColumn": "Excluir coluna",
+  "table.deleteCells": "Excluir células",
   "table.insertAbove": "Acima",
   "table.insertBelow": "Abaixo",
   "table.insertRowAbove": "Inserir linha acima",
