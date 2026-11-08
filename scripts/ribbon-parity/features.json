@@ -6,7 +6,7 @@
     "wordcraftRepository": "storytold/wordcraft",
     "wordcraftCommit": "e53cae3482d4e080a15dc2320eb4929ea7722db2"
   },
-  "scope": "Initial 27-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.",
+  "scope": "Initial 28-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.",
   "features": [
     {
       "id": "home.copy",
@@ -177,6 +177,16 @@
       "group": "comments",
       "status": "partial",
       "notes": "Creates an unanchored threaded reply linked by parentId to the selected comment. DOCX commentsExtended XML parent relationship has unit coverage; cross-application round-trip remains unverified."
+    },
+    {
+      "id": "review.editComment",
+      "wordcraftCommand": null,
+      "oasisCommand": "editComment",
+      "ribbonId": "editor-toolbar-edit-comment",
+      "tab": "review",
+      "group": "comments",
+      "status": "partial",
+      "notes": "Edits only the selected existing comment's text in a transactional modal; ID, author, creation time, anchors, resolved state and reply links are preserved. Popup actions support editing individual nested replies. DOCX export/reimport and read-only gating have tests; full visual WordCraft parity remains unverified."
     },
     {
       "id": "review.previousComment",

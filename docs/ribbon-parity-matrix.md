@@ -2,7 +2,7 @@
 
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
-**Scope:** Initial 27-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.  
+**Scope:** Initial 28-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.  
 **Oasis baseline:** `e49c1b33e1fd0b76757b42b91e91d674cd0b229f`  
 **WordCraft baseline:** `e53cae3482d4e080a15dc2320eb4929ea7722db2`
 
@@ -27,6 +27,7 @@
 | `review.nextRevision` | — | `nextRevision` | `review/changes` | partial |
 | `review.newComment` | — | `newComment` | `review/comments` | partial |
 | `review.replyComment` | — | `replyComment` | `review/comments` | partial |
+| `review.editComment` | — | `editComment` | `review/comments` | partial |
 | `review.previousComment` | — | `previousComment` | `review/comments` | partial |
 | `review.nextComment` | — | `nextComment` | `review/comments` | partial |
 | `review.resolveComment` | — | `resolveComment` | `review/comments` | partial |
@@ -57,16 +58,17 @@
 15. **review.nextRevision:** Cycles forward through tracked text-run changes without editing the document; selection is limited to the active section/zone.
 16. **review.newComment:** Creates an authored comment anchored to selected text or a caret word, through a per-editor modal. Uses native comment registry and is undoable; visual E2E and full DOCX import/export fidelity are pending.
 17. **review.replyComment:** Creates an unanchored threaded reply linked by parentId to the selected comment. DOCX commentsExtended XML parent relationship has unit coverage; cross-application round-trip remains unverified.
-18. **review.previousComment:** Navigates to the prior anchored comment in the active story, skipping unanchored replies and wrapping.
-19. **review.nextComment:** Navigates to the next anchored comment without changing the document; WordCraft command id not audited.
-20. **review.resolveComment:** Marks the comment under the selection as resolved, retaining the DOCX comment id, author, anchors and thread metadata. Needs round-trip E2E.
-21. **review.reopenComment:** Reopens a resolved comment under the selection. Enabled only when the selected comment is resolved.
-22. **review.deleteComment:** Removes an anchored comment and recursively removes replies to prevent orphan thread parent ids. Undo and DOCX source-package E2E remain to verify.
-23. **review.accept:** Selection scope and disabled states for documents without revisions need tests.
-24. **review.reject:** Selection scope and disabled states for documents without revisions need tests.
-25. **view.showMargins:** Oasis-specific display option with active state bound to EditorState.
-26. **view.paragraphMarks:** Paragraph-mark display feedback is wired; rendering and accessibility require E2E checks.
-27. **view.preciseFonts:** Oasis precise-font mode; platform font availability still requires coverage.
+18. **review.editComment:** Edits only the selected existing comment's text in a transactional modal; ID, author, creation time, anchors, resolved state and reply links are preserved. Popup actions support editing individual nested replies. DOCX export/reimport and read-only gating have tests; full visual WordCraft parity remains unverified.
+19. **review.previousComment:** Navigates to the prior anchored comment in the active story, skipping unanchored replies and wrapping.
+20. **review.nextComment:** Navigates to the next anchored comment without changing the document; WordCraft command id not audited.
+21. **review.resolveComment:** Marks the comment under the selection as resolved, retaining the DOCX comment id, author, anchors and thread metadata. Needs round-trip E2E.
+22. **review.reopenComment:** Reopens a resolved comment under the selection. Enabled only when the selected comment is resolved.
+23. **review.deleteComment:** Removes an anchored comment and recursively removes replies to prevent orphan thread parent ids. Undo and DOCX source-package E2E remain to verify.
+24. **review.accept:** Selection scope and disabled states for documents without revisions need tests.
+25. **review.reject:** Selection scope and disabled states for documents without revisions need tests.
+26. **view.showMargins:** Oasis-specific display option with active state bound to EditorState.
+27. **view.paragraphMarks:** Paragraph-mark display feedback is wired; rendering and accessibility require E2E checks.
+28. **view.preciseFonts:** Oasis precise-font mode; platform font availability still requires coverage.
 
 ## Audit interpretation
 
