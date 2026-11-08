@@ -65,6 +65,7 @@ export type ValueParagraphStyleKey =
   | "pageBreakBefore"
   | "keepWithNext"
   | "keepLinesTogether"
-  | "widowControl";
+  | "widowControl"
+  | "bidi";
 
 export type ParagraphListKind = EditorParagraphListStyle["kind"];

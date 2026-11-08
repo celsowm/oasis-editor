@@ -78,7 +78,8 @@ export type ParagraphStyleKey =
   | "pageBreakBefore"
   | "keepWithNext"
   | "keepLinesTogether"
-  | "widowControl";
+  | "widowControl"
+  | "bidi";
 
 export interface ToolbarStyleState {
   bold: boolean;
@@ -145,6 +146,7 @@ export interface ToolbarStyleState {
   keepWithNext: boolean;
   keepLinesTogether: boolean;
   widowControl: boolean;
+  bidi: boolean;
 }
 
 function selectionOverlapsRun(
@@ -324,7 +326,8 @@ function resolveUniformParagraphFlag(
     | "keepLinesTogether"
     | "widowControl"
     | "contextualSpacing"
-    | "mirrorIndents",
+    | "mirrorIndents"
+    | "bidi",
 ): boolean {
   return (
     styles.length > 0 && styles.every((style): boolean => style[key] === true)
@@ -529,5 +532,6 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
       "keepLinesTogether",
     ),
     widowControl: resolveUniformParagraphFlag(paragraphStyles, "widowControl"),
+    bidi: resolveUniformParagraphFlag(paragraphStyles, "bidi"),
   };
 }
