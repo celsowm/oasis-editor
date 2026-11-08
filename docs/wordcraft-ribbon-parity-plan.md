@@ -361,6 +361,7 @@ Completed command-surface slices (each core + tests, then wiring/parity; pushed 
 - [x] Replace all (edit.replaceAll): new core findReplace command module (literal search engine moved to core as single source of truth) with replaceAllInDocument applied across the document; reachable as a replaceAll builtin (search/replace payload + matchCase/wholeWord); the dialog's Replace All now drives the same core command instead of a duplicate inline loop. Audit → 226.
 - [x] Small caps / all caps / double strikethrough (format.smallCaps / format.allCaps / format.doubleStrikethrough): reachable toggle builtins (smallCaps/allCaps/doubleStrike) with active states, mirroring strike/superscript/subscript; these model keys existed but were only reachable via the Font dialog. Audit → 229.
 - [x] Section vertical alignment (layout.verticalAlign): new core getSectionVerticalAlign / setSectionVerticalAlign commands (w:vAlign: top/center/both/bottom; top is the Word default stored as undefined, null/top clear it) resolved against the active section, exposing the previously round-trip-only field as an authoring command wired as a setSectionVerticalAlign builtin. Audit → 230.
+- [x] Hidden text (format.hidden): reachable hidden toggle builtin with an active state, mirroring strike/small-caps wiring; the hidden model key existed but was only reachable via the Font dialog. Audit → 231.
 
 **Still open**
 - Picture adjustments (corrections/color/effects/compress/reset) — require an `EditorImageRunData` effects model + OOXML import/export round-trip (no fields exist today).
