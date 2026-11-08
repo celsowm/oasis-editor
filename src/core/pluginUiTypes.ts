@@ -12,6 +12,7 @@ export const RIBBON_TABS = [
   "draw",
   "layout",
   "references",
+  "review",
   "collaboration",
   "protection",
   "view",

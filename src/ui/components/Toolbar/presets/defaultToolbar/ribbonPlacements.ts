@@ -11,6 +11,18 @@ interface RibbonPlacement {
 }
 
 const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
+  "editor-toolbar-copy": { tab: "home", group: "clipboard", row: 1 },
+  "editor-toolbar-find": { tab: "home", group: "editing", row: 1 },
+  "editor-toolbar-select-all": { tab: "home", group: "editing", row: 2 },
+  "editor-toolbar-page-break": { tab: "insert", group: "pages", row: 1 },
+  "editor-toolbar-insert-toc": { tab: "references", group: "tableOfContents", row: 1 },
+  "editor-toolbar-update-toc": { tab: "references", group: "tableOfContents", row: 2 },
+  "editor-toolbar-track-changes": { tab: "review", group: "tracking", row: 1 },
+  "editor-toolbar-accept-revisions": { tab: "review", group: "changes", row: 1 },
+  "editor-toolbar-reject-revisions": { tab: "review", group: "changes", row: 2 },
+  "editor-toolbar-show-margins": { tab: "view", group: "show", row: 1 },
+  "editor-toolbar-show-paragraph-marks": { tab: "view", group: "show", row: 1 },
+  "editor-toolbar-precise-fonts": { tab: "view", group: "show", row: 2 },
   "editor-toolbar-new-document": { tab: "file", group: "document", row: 1 },
   "editor-toolbar-export-docx": { tab: "file", group: "document", row: 1 },
   "editor-toolbar-export-pdf": { tab: "file", group: "document", row: 1 },

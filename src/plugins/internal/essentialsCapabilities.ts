@@ -59,6 +59,10 @@ export interface EssentialsFormattingCapability {
   find: () => boolean;
   replace: () => boolean;
   toggleTrackChanges: () => boolean;
+  /** Reactive document view/state flags for Ribbon toggle feedback. */
+  isTrackChangesEnabled: () => boolean;
+  areMarginsVisible: () => boolean;
+  areParagraphMarksVisible: () => boolean;
   acceptRevisions: () => boolean;
   rejectRevisions: () => boolean;
   toggleShowMargins: () => boolean;

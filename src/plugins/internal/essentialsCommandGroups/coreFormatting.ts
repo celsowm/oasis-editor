@@ -158,16 +158,25 @@ export function buildCoreFormattingCommands({
     toggleTrackChanges: command(
       "toggleTrackChanges",
       formatting.toggleTrackChanges,
+      (): { isActive: boolean } => ({
+        isActive: formatting.isTrackChangesEnabled(),
+      }),
     ),
     acceptRevisions: command("acceptRevisions", formatting.acceptRevisions),
     rejectRevisions: command("rejectRevisions", formatting.rejectRevisions),
     toggleShowMargins: command(
       "toggleShowMargins",
       formatting.toggleShowMargins,
+      (): { isActive: boolean } => ({
+        isActive: formatting.areMarginsVisible(),
+      }),
     ),
     toggleShowParagraphMarks: command(
       "toggleShowParagraphMarks",
       formatting.toggleShowParagraphMarks,
+      (): { isActive: boolean } => ({
+        isActive: formatting.areParagraphMarksVisible(),
+      }),
     ),
     togglePreciseFonts: command(
       "togglePreciseFonts",

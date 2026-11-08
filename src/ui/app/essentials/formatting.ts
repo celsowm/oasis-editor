@@ -208,6 +208,9 @@ export function buildEssentialsFormatting(
     ),
     find: (): true => (options.findReplace.setIsOpen(true), true),
     replace: (): true => (options.findReplace.setIsOpen(true), true),
+    isTrackChangesEnabled: (): boolean => Boolean(options.state().trackChangesEnabled),
+    areMarginsVisible: (): boolean => Boolean(options.state().showMargins),
+    areParagraphMarksVisible: (): boolean => Boolean(options.state().showParagraphMarks),
     toggleTrackChanges: (): true => (
       options.commandsController.applyToggleTrackChangesCommand(),
       true

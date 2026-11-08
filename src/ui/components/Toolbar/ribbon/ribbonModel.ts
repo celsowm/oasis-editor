@@ -47,6 +47,7 @@ const TAB_LABEL_KEYS: Record<RibbonTabId, TranslationKey> = {
   draw: "ribbon.tab.draw",
   layout: "ribbon.tab.layout",
   references: "ribbon.tab.references",
+  review: "ribbon.tab.review",
   collaboration: "ribbon.tab.collaboration",
   protection: "ribbon.tab.protection",
   view: "ribbon.tab.view",
@@ -59,6 +60,12 @@ const TAB_LABEL_KEYS: Record<RibbonTabId, TranslationKey> = {
 
 const GROUP_LABEL_KEYS: Record<string, TranslationKey> = {
   clipboard: "ribbon.group.clipboard",
+  editing: "ribbon.group.editing",
+  pages: "ribbon.group.pages",
+  tableOfContents: "ribbon.group.tableOfContents",
+  tracking: "ribbon.group.tracking",
+  changes: "ribbon.group.changes",
+  show: "ribbon.group.show",
   font: "ribbon.group.font",
   paragraph: "ribbon.group.paragraph",
   styles: "ribbon.group.styles",
@@ -133,8 +140,10 @@ const RIBBON_GROUP_ORDER: Partial<Record<RibbonTabId, Record<string, number>>> =
       font: 20,
       paragraph: 30,
       styles: 40,
+      editing: 50,
     },
     insert: {
+      pages: 5,
       illustrations: 10,
       tables: 20,
       links: 30,
@@ -151,7 +160,15 @@ const RIBBON_GROUP_ORDER: Partial<Record<RibbonTabId, Record<string, number>>> =
       section: 30,
     },
     references: {
+      tableOfContents: 5,
       footnotes: 10,
+    },
+    review: {
+      tracking: 10,
+      changes: 20,
+    },
+    view: {
+      show: 10,
     },
     tableDesign: {
       tableStyleOptions: 10,
@@ -222,6 +239,7 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
     },
   },
   insert: {
+    pages: { priority: 10, collapsedIcon: "file-plus" },
     illustrations: { priority: 25, collapsedIcon: "image" },
     tables: { priority: 30, collapsedIcon: "table" },
     links: { priority: 35, collapsedIcon: "link" },
@@ -241,7 +259,15 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
     document: { priority: 10, collapsedIcon: "file" },
   },
   references: {
-    footnotes: { priority: 10, collapsedIcon: "footnote" },
+    tableOfContents: { priority: 10, collapsedIcon: "list" },
+    footnotes: { priority: 20, collapsedIcon: "footnote" },
+  },
+  review: {
+    tracking: { priority: 10, collapsedIcon: "file-check" },
+    changes: { priority: 20, collapsedIcon: "check-check" },
+  },
+  view: {
+    show: { priority: 10, collapsedIcon: "eye" },
   },
   tableDesign: {
     tableStyleOptions: {

@@ -184,6 +184,37 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   });
   items.push({ type: "separator", id: "sep-history" });
 
+  // --- Home: existing clipboard and editing commands ---
+  // Keep native paste/cut UI out until the clipboard contract is implemented.
+  items.push({
+    type: "button",
+    id: "editor-toolbar-copy",
+    testId: "editor-toolbar-copy",
+    iconName: "copy",
+    labelKey: "menu.edit.copy",
+    tooltipKey: "menu.edit.copy",
+    command: "copy",
+    ribbonSize: "large",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-find",
+    testId: "editor-toolbar-find",
+    iconName: "search",
+    labelKey: "find.title",
+    tooltipKey: "find.title",
+    command: "find",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-select-all",
+    testId: "editor-toolbar-select-all",
+    iconName: "text-select",
+    labelKey: "menu.edit.selectAll",
+    tooltipKey: "menu.edit.selectAll",
+    command: "selectAll",
+  });
+
   // --- Style ---
   items.push({
     type: "styleGallery",
@@ -377,6 +408,17 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   items.push({ type: "separator", id: "sep-style" });
 
   // --- Insert ---
+  // --- Pages ---
+  items.push({
+    type: "button",
+    id: "editor-toolbar-page-break",
+    testId: "editor-toolbar-page-break",
+    iconName: "file-minus",
+    labelKey: "metric.pageBreak",
+    tooltipKey: "metric.pageBreak",
+    command: "pageBreak",
+    ribbonSize: "large",
+  });
   items.push({
     type: "button",
     id: "editor-toolbar-insert-image",
@@ -615,6 +657,88 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     render: (api) => MetricGroup({ api }),
   });
   items.push({ type: "separator", id: "sep-metrics" });
+
+  // --- References: commands previously available only in the menu ---
+  items.push({
+    type: "button",
+    id: "editor-toolbar-insert-toc",
+    testId: "editor-toolbar-insert-toc",
+    iconName: "list-tree",
+    labelKey: "menu.insert.toc",
+    tooltipKey: "menu.insert.toc",
+    command: "insertTableOfContents",
+    ribbonSize: "large",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-update-toc",
+    testId: "editor-toolbar-update-toc",
+    iconName: "refresh-cw",
+    labelKey: "menu.insert.updateToc",
+    tooltipKey: "menu.insert.updateToc",
+    command: "updateTableOfContents",
+  });
+
+  // --- Review: reuse existing tracked-revision commands ---
+  items.push({
+    type: "toggle",
+    id: "editor-toolbar-track-changes",
+    testId: "editor-toolbar-track-changes",
+    iconName: "file-check",
+    labelKey: "toolbar.trackChanges",
+    tooltipKey: "toolbar.trackChanges",
+    command: "toggleTrackChanges",
+    ribbonSize: "large",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-accept-revisions",
+    testId: "editor-toolbar-accept-revisions",
+    iconName: "check",
+    labelKey: "toolbar.accept",
+    tooltipKey: "toolbar.accept",
+    command: "acceptRevisions",
+    ribbonSize: "large",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-reject-revisions",
+    testId: "editor-toolbar-reject-revisions",
+    iconName: "x",
+    labelKey: "toolbar.reject",
+    tooltipKey: "toolbar.reject",
+    command: "rejectRevisions",
+    ribbonSize: "large",
+  });
+
+  // --- View: state follows the editor, regardless of where it was toggled ---
+  items.push({
+    type: "toggle",
+    id: "editor-toolbar-show-margins",
+    testId: "editor-toolbar-show-margins",
+    iconName: "scan",
+    labelKey: "menu.view.margins",
+    tooltipKey: "menu.view.margins",
+    command: "toggleShowMargins",
+  });
+  items.push({
+    type: "toggle",
+    id: "editor-toolbar-show-paragraph-marks",
+    testId: "editor-toolbar-show-paragraph-marks",
+    iconName: "pilcrow",
+    labelKey: "menu.view.paragraphMarks",
+    tooltipKey: "menu.view.paragraphMarks",
+    command: "toggleShowParagraphMarks",
+  });
+  items.push({
+    type: "toggle",
+    id: "editor-toolbar-precise-fonts",
+    testId: "editor-toolbar-precise-fonts",
+    iconName: "type",
+    labelKey: "menu.view.preciseFonts",
+    tooltipKey: "menu.view.preciseFonts",
+    command: "togglePreciseFonts",
+  });
 
   // --- Table Layout (contextual tab) ---
   // First-class ribbon buttons for the existing no-arg table commands. The

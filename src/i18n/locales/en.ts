@@ -425,6 +425,7 @@ export const en = {
   "ribbon.tab.references": "References",
   "ribbon.tab.collaboration": "Collaboration",
   "ribbon.tab.protection": "Protection",
+  "ribbon.tab.review": "Review",
   "ribbon.tab.view": "View",
   "ribbon.tab.tableDesign": "Table Design",
   "ribbon.tab.tableLayout": "Table Layout",
@@ -434,6 +435,12 @@ export const en = {
 
   // Ribbon groups
   "ribbon.group.clipboard": "Clipboard",
+  "ribbon.group.editing": "Editing",
+  "ribbon.group.pages": "Pages",
+  "ribbon.group.tableOfContents": "Table of Contents",
+  "ribbon.group.tracking": "Tracking",
+  "ribbon.group.changes": "Changes",
+  "ribbon.group.show": "Show",
   "ribbon.group.font": "Font",
   "ribbon.group.paragraph": "Paragraph",
   "ribbon.group.styles": "Styles",

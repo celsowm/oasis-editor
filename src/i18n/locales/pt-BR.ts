@@ -427,6 +427,7 @@ export const ptBR = {
   "ribbon.tab.references": "Referências",
   "ribbon.tab.collaboration": "Colaboração",
   "ribbon.tab.protection": "Proteção",
+  "ribbon.tab.review": "Revisão",
   "ribbon.tab.view": "Exibir",
   "ribbon.tab.tableDesign": "Design da Tabela",
   "ribbon.tab.tableLayout": "Layout da Tabela",
@@ -436,6 +437,12 @@ export const ptBR = {
 
   // Ribbon groups
   "ribbon.group.clipboard": "Área de Transferência",
+  "ribbon.group.editing": "Edição",
+  "ribbon.group.pages": "Páginas",
+  "ribbon.group.tableOfContents": "Sumário",
+  "ribbon.group.tracking": "Controle de Alterações",
+  "ribbon.group.changes": "Alterações",
+  "ribbon.group.show": "Mostrar",
   "ribbon.group.font": "Fonte",
   "ribbon.group.paragraph": "Parágrafo",
   "ribbon.group.styles": "Estilos",
