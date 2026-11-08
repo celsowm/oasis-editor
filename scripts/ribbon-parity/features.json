@@ -6,7 +6,7 @@
     "wordcraftRepository": "storytold/wordcraft",
     "wordcraftCommit": "e53cae3482d4e080a15dc2320eb4929ea7722db2"
   },
-  "scope": "Initial 25-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.",
+  "scope": "Initial 27-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.",
   "features": [
     {
       "id": "home.copy",
@@ -157,6 +157,26 @@
       "group": "changes",
       "status": "partial",
       "notes": "Cycles forward through tracked text-run changes without editing the document; selection is limited to the active section/zone."
+    },
+    {
+      "id": "review.newComment",
+      "wordcraftCommand": null,
+      "oasisCommand": "newComment",
+      "ribbonId": "editor-toolbar-new-comment",
+      "tab": "review",
+      "group": "comments",
+      "status": "partial",
+      "notes": "Creates an authored comment anchored to selected text or a caret word, through a per-editor modal. Uses native comment registry and is undoable; visual E2E and full DOCX import/export fidelity are pending."
+    },
+    {
+      "id": "review.replyComment",
+      "wordcraftCommand": null,
+      "oasisCommand": "replyComment",
+      "ribbonId": "editor-toolbar-reply-comment",
+      "tab": "review",
+      "group": "comments",
+      "status": "partial",
+      "notes": "Creates an unanchored threaded reply linked by parentId to the selected comment. DOCX commentsExtended XML parent relationship has unit coverage; cross-application round-trip remains unverified."
     },
     {
       "id": "review.previousComment",

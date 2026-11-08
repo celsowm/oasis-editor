@@ -21,6 +21,10 @@ function commands(gateEnabled: () => boolean, hasToc: () => boolean, hasRevision
     hasRevisionsInSelection: hasRevision,
     hasNavigableRevisions: hasRevision,
     hasNavigableComments: () => true,
+    canCreateComment: () => true,
+    canReplyToComment: () => true,
+    newComment: vi.fn(() => true),
+    replyComment: vi.fn(() => true),
     navigateRevisionNext: vi.fn(() => true),
     navigateRevisionPrevious: vi.fn(() => true),
     navigateCommentNext: vi.fn(() => true),
@@ -56,6 +60,27 @@ function commands(gateEnabled: () => boolean, hasToc: () => boolean, hasRevision
 }
 
 describe("Essentials Ribbon command registrations", () => {
+  it("gates New Comment and Reply by selection, thread presence and edit permission", () => {
+    let canCreate = true;
+    let canReply = false;
+    let editing = true;
+    const { result, formatting } = commands(() => editing, () => true, () => true);
+    formatting.canCreateComment = () => canCreate;
+    formatting.canReplyToComment = () => canReply;
+    expect(result.newComment?.refresh?.().isEnabled).toBe(true);
+    expect(result.replyComment?.refresh?.().isEnabled).toBe(false);
+    expect(result.newComment?.execute()).toBe(true);
+    expect(formatting.newComment).toHaveBeenCalledOnce();
+    canReply = true;
+    expect(result.replyComment?.refresh?.().isEnabled).toBe(true);
+    expect(result.replyComment?.execute()).toBe(true);
+    expect(formatting.replyComment).toHaveBeenCalledOnce();
+    canCreate = false;
+    expect(result.newComment?.refresh?.().isEnabled).toBe(false);
+    editing = false;
+    expect(result.replyComment?.refresh?.().isEnabled).toBe(false);
+  });
+
   it("exposes distinct painter modes and blocks capture in read-only mode", () => {
     let enabled = true;
     let painterMode: "once" | "continuous" | null = null;
