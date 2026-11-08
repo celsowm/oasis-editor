@@ -356,6 +356,7 @@ Completed command-surface slices (each core + tests, then wiring/parity; pushed 
 - [x] Reset picture (picture.reset): clears crop/mask/fit-fill/tile fill/transparency/border/rotation/flips while preserving box size + floating layout. Audit → 217.
 - [x] Paragraph move up/down (para.moveUp / para.moveDown): swap the contiguous run of selected paragraph blocks with the neighbouring paragraph in the active zone, selection follows by id, refused at container edges / next to tables / footnote zone. Audit → 219.
 - [x] Named page-margin presets (setMarginsPreset): normal/narrow/moderate/wide/mirrored as a reachable builtin; preset data lives in core pageSetup (single source for the ribbon's margin dropdown), applying four-sided margins while preserving header/footer/gutter. Audit → 220.
+- [x] Keep-lines-together and widow/orphan control (para.keepLines / para.widowControl): exposed as reachable toggle builtins with active states; the controller toggle handles widowControl's on-by-default inversion (explicit false to disable). Audit → 222.
 
 **Still open**
 - Picture adjustments (corrections/color/effects/compress/reset) — require an `EditorImageRunData` effects model + OOXML import/export round-trip (no fields exist today).
