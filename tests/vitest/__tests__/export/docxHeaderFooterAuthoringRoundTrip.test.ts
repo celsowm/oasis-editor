@@ -11,6 +11,7 @@ import {
   insertPageNumber,
 } from "@/core/commands/headerFooter.js";
 import { insertTextAtSelection } from "@/core/commands/text.js";
+import { insertPageNumberField } from "@/core/commands/pageNumber.js";
 import { getRunField } from "@/core/model.js";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
@@ -71,5 +72,32 @@ describe("header/footer authoring DOCX round-trip", () => {
     expect(
       firstParagraph.runs.some((run) => getRunField(run)?.type === "PAGE"),
     ).toBe(true);
+  });
+
+  it("round-trips a formatted PAGE field (\\* ROMAN) through DOCX", async () => {
+    const body = createEditorParagraph("Body");
+    const state = createEditorStateFromDocument(
+      createEditorDocument([body]),
+    );
+    const authored = insertPageNumberField(state, "page", "ROMAN");
+
+    const buffer = await exportEditorDocumentToDocx(authored.document);
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+    expect(documentXml).toContain('instr=" PAGE \\* ROMAN "');
+
+    const imported = await importDocxToEditorDocument(buffer);
+    const paragraph = imported.sections?.[0]?.blocks[0];
+    if (!paragraph || paragraph.type !== "paragraph") {
+      throw new Error("Expected a paragraph.");
+    }
+    const fieldRun = paragraph.runs.find(
+      (run) => getRunField(run)?.type === "PAGE",
+    );
+    expect(fieldRun).toBeDefined();
+    // The \* ROMAN switch is recovered on import.
+    expect(
+      getRunField(fieldRun!),
+    ).toMatchObject({ type: "PAGE", format: "ROMAN" });
   });
 });

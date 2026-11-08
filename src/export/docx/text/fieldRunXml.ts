@@ -1,11 +1,15 @@
-import type { EditorFieldChar } from "@/core/model.js";
+import type { EditorFieldChar, PageNumberFormat } from "@/core/model.js";
+import { pageNumberFormatToSwitch } from "@/core/format/pageNumberFormat.js";
 import { escapeXml } from "@/export/docx/xmlUtils.js";
 
 export function serializeFieldRun(
   fieldType: "PAGE" | "NUMPAGES",
+  format: PageNumberFormat | undefined,
   rPrXml: string,
 ): string {
-  const instr = fieldType === "PAGE" ? " PAGE " : " NUMPAGES ";
+  const base = fieldType === "PAGE" ? " PAGE " : " NUMPAGES ";
+  const switchText = pageNumberFormatToSwitch(format);
+  const instr = switchText ? ` ${base.trim()} \\* ${switchText} ` : base;
   return `<w:fldSimple w:instr="${instr}"><w:r>${rPrXml}<w:t>1</w:t></w:r></w:fldSimple>`;
 }
 

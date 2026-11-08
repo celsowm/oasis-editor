@@ -8,6 +8,7 @@ import type {
   EditorRevision,
   EditorRunBase,
   EditorSdtBlockWrapper,
+  PageNumberFormat,
 } from "@/core/model.js";
 
 export type ParseNestedBlocks = (
@@ -48,7 +49,7 @@ export interface ImportedRun {
   revisionRangeMarker?: EditorRunBase["revisionRangeMarker"];
   /** Enclosing inline `w:sdt` wrappers, outermost first. */
   sdtWrappers?: EditorSdtBlockWrapper[];
-  field?: { type: "PAGE" | "NUMPAGES" };
+  field?: { type: "PAGE" | "NUMPAGES"; format?: PageNumberFormat };
   /** Preserved `w:fldChar` control char (complex fields). Zero-length marker. */
   fieldChar?: {
     kind: "begin" | "separate" | "end";

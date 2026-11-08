@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 import { XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
+import { pageNumberFormatFromSwitch } from "@/core/format/pageNumberFormat.js";
 import type {
   EditorTextStyle,
   EditorImageRunData,
@@ -330,6 +331,9 @@ export async function parseRunsContainer(
     if (!fieldType) {
       return;
     }
+    const format = pageNumberFormatFromSwitch(
+      /\*\s*([A-Za-z]+)/.exec(entry.instruction)?.[1],
+    );
     const span = runs.slice(entry.beginIndex);
     if (span.some((run): ImportedBookmarkMarker | undefined => run.bookmark)) {
       return;
@@ -346,7 +350,7 @@ export async function parseRunsContainer(
     runs.push({
       text: displayText,
       ...(styles ? { styles } : {}),
-      field: { type: fieldType },
+      field: format ? { type: fieldType, format } : { type: fieldType },
     });
   };
 
@@ -666,6 +670,8 @@ export async function parseRunsContainer(
         : /\bPAGE\b/i.test(instr)
           ? "PAGE"
           : null;
+      const simpleFormat = /\*\s*([A-Za-z]+)/.exec(instr)?.[1];
+      const fieldFormat = pageNumberFormatFromSwitch(simpleFormat);
       const fieldRuns = await parseRunsContainer(
         element,
         numberingMaps,
@@ -685,7 +691,9 @@ export async function parseRunsContainer(
         runs.push({
           text: displayText,
           styles,
-          field: { type: fieldType },
+          field: fieldFormat
+            ? { type: fieldType, format: fieldFormat }
+            : { type: fieldType },
         });
       } else {
         runs.push({ text: "", fieldChar: { kind: "begin" } });

@@ -79,7 +79,8 @@ export function serializeRun(
     fieldChar: (r): string => serializeFieldCharRun(r.fieldChar!, runProps()),
     fieldInstruction: (r): string =>
       serializeInstrTextRun(r.fieldInstruction!, runProps()),
-    field: (r): string => serializeFieldRun(r.field!.type, runProps()),
+    field: (r): string =>
+      serializeFieldRun(r.field!.type, r.field!.format, runProps()),
     textBox: (r): string =>
       serializeTextBoxRun(
         r,
