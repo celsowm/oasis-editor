@@ -72,7 +72,7 @@ export function CommentComposerDialog(props: CommentComposerDialogProps): JSX.El
             id={bodyId}
             class="oasis-editor-ui-input oasis-editor-comment-composer-textarea"
             value={body()}
-            onInput={(e): void => setBody(e.currentTarget.value)}
+            onInput={(e): void => { setBody(e.currentTarget.value); }}
             onKeyDown={(e): void => {
               if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
                 e.preventDefault();
