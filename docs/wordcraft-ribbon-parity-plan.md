@@ -349,6 +349,7 @@ Completed command-surface slices (each core + tests, then wiring/parity; pushed 
 - [x] Arrange cluster for the selected floating object (image or text box): align to margin (left/center/right), reorder (front/back), nudge (dx/dy), move-with-text / fix position on page. Audit → 210.
 - [x] Text box size (cm): get width/height, set width, set height (mirroring the image cm size commands). Audit → 209.
 - [x] Shape outline width in points (Shape Outline > Weight). Audit → 211.
+- [x] Floating-object exact rotation and wrap preset (arrange.rotation / arrange.wrap) exposed as shared commands. Audit → 213.
 
 **Still open**
 - Picture adjustments (corrections/color/effects/transparency) — require an `EditorImageRunData` model + OOXML import/export round-trip (no fields exist today).
