@@ -246,6 +246,7 @@ export interface OasisCommandPayloads {
   setShapeOutline: string | null;
   alignFloatingObject: "left" | "center" | "right";
   reorderFloatingObject: "front" | "back";
+  nudgeFloatingObject: { dx: number; dy: number };
   setShapePreset: string;
   setTextBoxTextDirection: "horz" | "vert" | "vert270" | "wordArtVert";
   setTextBoxVerticalAlign: "t" | "ctr" | "b";

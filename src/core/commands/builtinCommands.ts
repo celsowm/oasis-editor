@@ -197,6 +197,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setShapeOutline",
   "alignFloatingObject",
   "reorderFloatingObject",
+  "nudgeFloatingObject",
   "setShapePreset",
   "setTextBoxTextDirection",
   "setTextBoxVerticalAlign",
