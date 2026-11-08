@@ -57,22 +57,26 @@ export function buildDocumentAndBrowserCommands({
       "pasteAsPlainText",
       (): void => browser.pasteAsPlainText(),
       (): { isEnabled: boolean } => ({
-        isEnabled: gate.isCommandEnabled("pasteAsPlainText") && browser.canPaste(),
+        isEnabled:
+          gate.isCommandEnabled("pasteAsPlainText") && browser.canPaste(),
       }),
     ),
     cut: actionCommand(
       "cut",
       (): void => browser.cut(),
       (): { isEnabled: boolean } => ({
-        isEnabled: gate.isCommandEnabled("cut") &&
-          browser.hasSelection() && browser.canCut(),
+        isEnabled:
+          gate.isCommandEnabled("cut") &&
+          browser.hasSelection() &&
+          browser.canCut(),
       }),
     ),
     pasteMergeFormatting: actionCommand(
       "pasteMergeFormatting",
       (): void => browser.pasteMergeFormatting(),
       (): { isEnabled: boolean } => ({
-        isEnabled: gate.isCommandEnabled("pasteMergeFormatting") && browser.canPaste(),
+        isEnabled:
+          gate.isCommandEnabled("pasteMergeFormatting") && browser.canPaste(),
       }),
     ),
     copy: actionCommand(
@@ -91,9 +95,14 @@ export function buildDocumentAndBrowserCommands({
       document.importDocument(),
     ),
     insertHtml: actionCommand("insertHtml", (payload): void => {
-      if (!payload || typeof payload !== "object" ||
-          typeof (payload as { html?: unknown }).html !== "string") {
-        throw new TypeError("insertHtml requires a payload with a string html property.");
+      if (
+        !payload ||
+        typeof payload !== "object" ||
+        typeof (payload as { html?: unknown }).html !== "string"
+      ) {
+        throw new TypeError(
+          "insertHtml requires a payload with a string html property.",
+        );
       }
       document.insertHtml((payload as { html: string }).html);
     }),
@@ -108,6 +117,15 @@ export function buildDocumentAndBrowserCommands({
     ),
     openEquationDialog: actionCommand("openEquationDialog", (): void =>
       document.openEquationDialog(),
+    ),
+    tableProperties: actionCommand(
+      "tableProperties",
+      (p): void =>
+        document.openTableProperties(
+          (p as { activeTab?: "table" | "cell" } | undefined)?.activeTab ??
+            "table",
+        ),
+      (): { isEnabled: boolean } => ({ isEnabled: document.hasActiveTable() }),
     ),
     unlink: actionCommand(
       "unlink",

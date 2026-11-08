@@ -1,5 +1,6 @@
 import { insertShapeAtSelection } from "@/core/commands/shape.js";
 import { insertHtmlAtSelection } from "@/core/commands/html.js";
+import { hasActiveTable } from "@/app/services/tablePropertiesService.js";
 import {
   getDocumentParagraphs,
   resolveNamedTextStyle,
@@ -67,6 +68,9 @@ export function buildEssentialsDocument(
     newDocument: (): void => options.newDocument(),
     openSymbolDialog: (): void => options.openSymbolDialog(),
     openEquationDialog: (): void => options.openEquationDialog(),
+    hasActiveTable: (): boolean => hasActiveTable(options.state()),
+    openTableProperties: (activeTab?: "table" | "cell"): void =>
+      options.openTablePropertiesDialog(activeTab ?? "table"),
     exportDocx: (): undefined => void options.docIO.handleExportDocx(),
     exportPdf: (): undefined => void options.docIO.handleExportPdf(),
     printDocument: (): undefined => void options.docIO.handlePrint(),

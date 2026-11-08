@@ -304,6 +304,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     setNewDocumentDialog,
     setSymbolDialog,
     setEquationDialog,
+    setTablePropertiesDialog,
   });
   const {
     commandsController,

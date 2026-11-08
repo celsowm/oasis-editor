@@ -18,6 +18,8 @@ import type {
 } from "../OasisEditorAppProps.js";
 import type { DocumentPersistence } from "@/app/controllers/useEditorPersistence.js";
 import type { OasisEditorUiState } from "@/app/client/OasisEditorClient.js";
+import type { TablePropertiesDialogInitialValues } from "@/ui/components/Dialogs/TablePropertiesDialog.js";
+import { readTableProperties } from "@/app/services/tablePropertiesService.js";
 
 type DocumentRuntime = ReturnType<typeof createEditorDocumentRuntime>;
 type InteractionRuntime = ReturnType<typeof createEditorInteractionRuntime>;
@@ -56,6 +58,10 @@ export interface EditorCommandRuntimeDeps {
   }) => void;
   setNewDocumentDialog: (state: { isOpen: boolean }) => void;
   setSymbolDialog: (state: { isOpen: boolean }) => void;
+  setTablePropertiesDialog: (state: {
+    isOpen: boolean;
+    initial: TablePropertiesDialogInitialValues;
+  }) => void;
   setEquationDialog: (state: {
     isOpen: boolean;
     initial?: import("@/core/model.js").EditorMathExpression;
@@ -156,6 +162,11 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
           deps.setNewDocumentDialog({ isOpen: true }),
       }),
       openSymbolDialog: (): void => deps.setSymbolDialog({ isOpen: true }),
+      openTablePropertiesDialog: (activeTab?: "table" | "cell"): void => {
+        const initial = readTableProperties(deps.state, activeTab ?? "table");
+        if (!initial) return;
+        deps.setTablePropertiesDialog({ isOpen: true, initial });
+      },
       openEquationDialog: (): void => {
         const focus = deps.state.selection.focus;
         const paragraph = getDocumentParagraphs(deps.state.document).find(

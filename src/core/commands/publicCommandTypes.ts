@@ -239,6 +239,7 @@ export interface OasisCommandPayloads {
   insertTable: InsertTablePayload;
   openSymbolDialog: undefined;
   openEquationDialog: undefined;
+  tableProperties: { activeTab?: "table" | "cell" };
 }
 
 /** Maps commands to their typed return values. Commands not listed return `unknown`. */

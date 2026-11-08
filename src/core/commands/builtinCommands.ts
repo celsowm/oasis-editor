@@ -191,6 +191,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "insertShape",
   "openSymbolDialog",
   "openEquationDialog",
+  "tableProperties",
 ] as const;
 
 export type OasisBuiltinCommand = (typeof OASIS_BUILTIN_COMMANDS)[number];

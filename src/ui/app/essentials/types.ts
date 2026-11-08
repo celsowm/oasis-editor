@@ -40,6 +40,8 @@ export interface CreateEditorEssentialsPluginOptions {
   newDocument: () => void;
   openSymbolDialog: () => void;
   openEquationDialog: () => void;
+  /** Opens the Table Properties dialog for the active table/cell. */
+  openTablePropertiesDialog: (activeTab?: "table" | "cell") => void;
   importInputRef: () => HTMLInputElement | undefined;
   imageInputRef: () => HTMLInputElement | undefined;
   selectedImageRun: () => SelectedImageRun | null;
