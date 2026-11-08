@@ -9,6 +9,7 @@ import {
   getSelectedShapeAppearance,
   setSelectedShapeFill,
   setSelectedShapeOutline,
+  setSelectedShapeOutlineWidth,
 } from "@/core/commands/shapeFillCommands.js";
 import {
   getParagraphs,
@@ -121,5 +122,22 @@ describe("shape fill/outline", () => {
     };
     expect(setSelectedShapeFill(unselected, "#000000")).toBe(unselected);
     expect(setSelectedShapeOutline(unselected, "#000000")).toBe(unselected);
+    expect(setSelectedShapeOutlineWidth(unselected, 3)).toBe(unselected);
+  });
+
+  it("sets the outline width in points", () => {
+    const state = buildShapeState();
+    const next = setSelectedShapeOutlineWidth(state, 4);
+    expect(next).not.toBe(state);
+    expect(shapeOf(next)?.borderWidthPt).toBe(4);
+    // Other shape fields preserved.
+    expect(shapeOf(next)?.borderColor).toBe("#2F528F");
+    expect(shapeOf(next)?.fill).toBe("#4472C4");
+  });
+
+  it("clamps the outline width to non-negative", () => {
+    const state = buildShapeState();
+    const next = setSelectedShapeOutlineWidth(state, -2);
+    expect(shapeOf(next)?.borderWidthPt).toBe(0);
   });
 });

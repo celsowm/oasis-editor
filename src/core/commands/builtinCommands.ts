@@ -195,6 +195,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "insertShape",
   "setShapeFill",
   "setShapeOutline",
+  "setShapeOutlineWidth",
   "alignFloatingObject",
   "reorderFloatingObject",
   "nudgeFloatingObject",

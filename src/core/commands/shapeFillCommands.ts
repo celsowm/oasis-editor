@@ -58,6 +58,21 @@ export function setSelectedShapeOutline(
 }
 
 /**
+ * Word's "Shape Outline › Weight" (WordCraft `shape.outline` width): sets the
+ * selected shape's outline width in points (`borderWidthPt`, encoded in the
+ * model as EMU-derived points). A no-op when no shape is selected.
+ */
+export function setSelectedShapeOutlineWidth(
+  state: EditorState,
+  widthPt: number,
+): EditorState {
+  return patchSelectedShape(state, (shape) => ({
+    ...shape,
+    borderWidthPt: Math.max(0, widthPt),
+  }));
+}
+
+/**
  * Word's "Change Shape" (WordCraft `shape.change`): swaps the selected shape's
  * DrawingML preset geometry (e.g. "rect" → "ellipse"). A no-op when no shape
  * is selected.

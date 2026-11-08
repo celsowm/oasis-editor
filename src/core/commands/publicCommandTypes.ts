@@ -244,6 +244,7 @@ export interface OasisCommandPayloads {
   insertShape: string;
   setShapeFill: string | null;
   setShapeOutline: string | null;
+  setShapeOutlineWidth: number;
   alignFloatingObject: "left" | "center" | "right";
   reorderFloatingObject: "front" | "back";
   nudgeFloatingObject: { dx: number; dy: number };

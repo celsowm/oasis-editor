@@ -65,6 +65,7 @@ export const MERGE_KEYS = {
   layoutFixedPosition: "layoutFixedPosition",
   shapeFill: "shapeFill",
   shapeOutline: "shapeOutline",
+  shapeOutlineWidth: "shapeOutlineWidth",
   floatingAlign: "floatingAlign",
   floatingReorder: "floatingReorder",
   floatingNudge: "floatingNudge",
