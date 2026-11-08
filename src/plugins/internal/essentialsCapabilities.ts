@@ -209,6 +209,8 @@ export interface EssentialsImageCapability {
   setBorder: (patch: ImageBorderPatch) => void;
   /** Flip the selected image about its horizontal or vertical axis. */
   flip: (axis: "horizontal" | "vertical") => void;
+  /** Rotate the selected image left or right by a fixed step. */
+  rotate: (direction: "left" | "right") => void;
 }
 
 export interface EssentialsBrowserCapability {

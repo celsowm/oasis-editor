@@ -27,6 +27,7 @@ import {
   setSelectedImageCropShape,
   setSelectedImageBorder,
   flipSelectedImage,
+  rotateSelectedImageByStep,
   type ImageBorderPatch,
   type ImageCropAspectMode,
 } from "@/core/commands/image.js";
@@ -601,6 +602,14 @@ function createEditorCommandsControllerImpl(
     );
   };
 
+  const rotateImageCommand = (direction: "left" | "right"): void => {
+    if (!selectedImageRun()) return;
+    execTransactional(
+      (current): EditorState => rotateSelectedImageByStep(current, direction),
+      { mergeKey: MERGE_KEYS.imageRotate },
+    );
+  };
+
   return {
     applyBooleanStyleCommand,
     applyValueStyleCommand,
@@ -640,6 +649,7 @@ function createEditorCommandsControllerImpl(
     resetImageCropCommand,
     applyImageBorderCommand,
     flipImageCommand,
+    rotateImageCommand,
     handleListTab,
     handleListEnter,
     handleListBoundaryBackspace,

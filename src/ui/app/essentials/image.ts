@@ -39,5 +39,7 @@ export function buildEssentialsImage(
     setBorder: (patch): void =>
       options.commandsController.applyImageBorderCommand(patch),
     flip: (axis): void => options.commandsController.flipImageCommand(axis),
+    rotate: (direction): void =>
+      options.commandsController.rotateImageCommand(direction),
   };
 }

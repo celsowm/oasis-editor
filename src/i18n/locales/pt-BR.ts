@@ -574,6 +574,8 @@ export const ptBR = {
   "image.cropReset": "Redefinir corte",
   "image.flipHorizontal": "Espelhar horizontalmente",
   "image.flipVertical": "Espelhar verticalmente",
+  "image.rotateLeft": "Girar 90° à esquerda",
+  "image.rotateRight": "Girar 90° à direita",
   "image.cropRatio.square": "1:1",
   "image.cropRatio.squareGroup": "Quadrado",
   "image.cropRatio.portrait": "Retrato",

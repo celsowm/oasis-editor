@@ -219,6 +219,11 @@ export function buildDocumentAndBrowserCommands({
       (p): void => image.flip((p as "horizontal" | "vertical") ?? "horizontal"),
       (): { isEnabled: boolean } => ({ isEnabled: image.isSelected() }),
     ),
+    imageRotate: actionCommand(
+      "imageRotate",
+      (p): void => image.rotate((p as "left" | "right") ?? "left"),
+      (): { isEnabled: boolean } => ({ isEnabled: image.isSelected() }),
+    ),
     imageBorder: actionCommand(
       "imageBorder",
       (p): void => image.setBorder(p as ImageBorderPatch),

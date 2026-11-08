@@ -569,6 +569,8 @@ export const en = {
   "image.cropReset": "Reset crop",
   "image.flipHorizontal": "Flip Horizontal",
   "image.flipVertical": "Flip Vertical",
+  "image.rotateLeft": "Rotate Left 90°",
+  "image.rotateRight": "Rotate Right 90°",
   "image.cropRatio.square": "1:1",
   "image.cropRatio.squareGroup": "Square",
   "image.cropRatio.portrait": "Portrait",
