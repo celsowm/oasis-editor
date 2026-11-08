@@ -48,6 +48,10 @@ export interface EssentialsFormattingCapability {
   hasRevisionsInSelection: () => boolean;
   hasNavigableRevisions: () => boolean;
   hasNavigableComments: () => boolean;
+  canCreateComment: () => boolean;
+  canReplyToComment: () => boolean;
+  newComment: () => boolean;
+  replyComment: () => boolean;
   navigateRevisionNext: () => boolean;
   navigateRevisionPrevious: () => boolean;
   navigateCommentNext: () => boolean;

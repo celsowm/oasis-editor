@@ -234,6 +234,22 @@ export function buildCoreFormattingCommands({
           formatting.hasNavigableRevisions(),
       }),
     ),
+    newComment: command(
+      "newComment",
+      formatting.newComment,
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("newComment") &&
+          formatting.canCreateComment(),
+      }),
+    ),
+    replyComment: command(
+      "replyComment",
+      formatting.replyComment,
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("replyComment") &&
+          formatting.canReplyToComment(),
+      }),
+    ),
     nextComment: command(
       "nextComment",
       formatting.navigateCommentNext,

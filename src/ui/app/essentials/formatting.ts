@@ -153,6 +153,10 @@ export function buildEssentialsFormatting(
       collectNavigableRevisions(options.state()).length > 0,
     hasNavigableComments: (): boolean =>
       collectNavigableComments(options.state()).length > 0,
+    canCreateComment: options.commentComposer.canCreate,
+    canReplyToComment: options.commentComposer.canReply,
+    newComment: options.commentComposer.openNew,
+    replyComment: options.commentComposer.openReply,
     navigateRevisionNext: (): boolean => {
       const current = options.state();
       const next = navigateRevision(current, "next");
