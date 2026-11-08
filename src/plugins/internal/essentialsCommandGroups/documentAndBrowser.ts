@@ -151,6 +151,22 @@ export function buildDocumentAndBrowserCommands({
     rotateTextBox: actionCommand("rotateTextBox", (p): void =>
       document.rotateTextBox((p as "left" | "right") ?? "left"),
     ),
+    textBoxWidthCm: actionCommand(
+      "textBoxWidthCm",
+      (p): void => document.setTextBoxWidthCm(Number(p)),
+      (): { isEnabled: boolean; value: number | null } => ({
+        isEnabled: document.isTextBoxSelected(),
+        value: document.getTextBoxSizeCm()?.width ?? null,
+      }),
+    ),
+    textBoxHeightCm: actionCommand(
+      "textBoxHeightCm",
+      (p): void => document.setTextBoxHeightCm(Number(p)),
+      (): { isEnabled: boolean; value: number | null } => ({
+        isEnabled: document.isTextBoxSelected(),
+        value: document.getTextBoxSizeCm()?.height ?? null,
+      }),
+    ),
     openSymbolDialog: actionCommand("openSymbolDialog", (): void =>
       document.openSymbolDialog(),
     ),

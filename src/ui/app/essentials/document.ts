@@ -10,11 +10,15 @@ import {
   setSelectedShapePreset,
 } from "@/core/commands/shapeFillCommands.js";
 import {
+  getSelectedTextBoxSizeCm,
   rotateSelectedTextBoxByStep,
   setSelectedTextBoxAlt,
+  setSelectedTextBoxHeightCm,
   setSelectedTextBoxTextDirection,
   setSelectedTextBoxVerticalAlign,
+  setSelectedTextBoxWidthCm,
 } from "@/core/commands/textBoxBodyCommands.js";
+import { getSelectedTextBoxRun } from "@/core/commands/textBox.js";
 import { insertHtmlAtSelection } from "@/core/commands/html.js";
 import { MERGE_KEYS } from "@/core/transactionMergeKeys.js";
 import { hasActiveTable } from "@/app/services/tablePropertiesService.js";
@@ -154,6 +158,20 @@ export function buildEssentialsDocument(
         (current): EditorState =>
           rotateSelectedTextBoxByStep(current, direction),
         { mergeKey: MERGE_KEYS.textBoxRotate },
+      ),
+    getTextBoxSizeCm: (): { width: number; height: number } | null =>
+      getSelectedTextBoxSizeCm(options.state()),
+    isTextBoxSelected: (): boolean =>
+      getSelectedTextBoxRun(options.state()) !== null,
+    setTextBoxWidthCm: (cm: number): void =>
+      options.applyTransactionalState(
+        (current): EditorState => setSelectedTextBoxWidthCm(current, cm),
+        { mergeKey: MERGE_KEYS.textBoxWidthCm },
+      ),
+    setTextBoxHeightCm: (cm: number): void =>
+      options.applyTransactionalState(
+        (current): EditorState => setSelectedTextBoxHeightCm(current, cm),
+        { mergeKey: MERGE_KEYS.textBoxHeightCm },
       ),
   };
 }

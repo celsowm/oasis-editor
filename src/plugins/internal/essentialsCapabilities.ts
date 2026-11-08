@@ -191,6 +191,14 @@ export interface EssentialsDocumentCapability {
   setTextBoxAlt: (alt: string | null) => void;
   /** Rotate the selected text box left or right by a fixed step. */
   rotateTextBox: (direction: "left" | "right") => void;
+  /** True when a text box is selected and can be resized. */
+  isTextBoxSelected: () => boolean;
+  /** The selected text box's displayed size in cm, or `null`. */
+  getTextBoxSizeCm: () => { width: number; height: number } | null;
+  /** Set the selected text box width (cm), keeping its height. */
+  setTextBoxWidthCm: (cm: number) => void;
+  /** Set the selected text box height (cm), keeping its width. */
+  setTextBoxHeightCm: (cm: number) => void;
 }
 
 export interface EssentialsLinkCapability {
