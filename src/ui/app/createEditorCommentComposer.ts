@@ -34,7 +34,9 @@ export interface CommentComposerDraft {
 export interface CommentComposerDeps {
   state: () => EditorState;
   isReadOnly: () => boolean;
-  applyTransactionalState: (change: (current: EditorState) => EditorState) => void;
+  applyTransactionalState: (
+    change: (current: EditorState) => EditorState,
+  ) => void;
   focusInput: () => void;
   access?: () => OasisReviewAccess | undefined;
 }
@@ -44,8 +46,13 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
   const [draft, setDraft] = createSignal<CommentComposerDraft | null>(null);
   const [lastAuthor, setLastAuthor] = createSignal("");
   const [panelOpen, setPanelOpen] = createSignal(false);
-  const togglePanel = (): boolean => { setPanelOpen(!panelOpen()); return true; };
-  const closePanel = (): void => { setPanelOpen(false); };
+  const togglePanel = (): boolean => {
+    setPanelOpen(!panelOpen());
+    return true;
+  };
+  const closePanel = (): void => {
+    setPanelOpen(false);
+  };
 
   const access = (): OasisReviewAccess | undefined => deps.access?.();
   const actor = (): { id: string; displayName: string } | null => {
@@ -83,8 +90,11 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
   };
   const authorName = (): string => actor()?.displayName ?? lastAuthor();
   const authorLocked = (): boolean => access() !== undefined;
-  const recordedActor = (fallback = "Local editor"): {
-    actorName: string; actorId?: string;
+  const recordedActor = (
+    fallback = "Local editor",
+  ): {
+    actorName: string;
+    actorId?: string;
   } => {
     const identity = actor();
     return identity
@@ -98,14 +108,15 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
     commentId: string,
     fallbackActor?: string,
     parentId?: string,
-  ): EditorState => appendReviewChange(before, after, {
-    id: createEditorNodeId("review-activity"),
-    kind,
-    commentId,
-    ...recordedActor(fallbackActor),
-    timestamp: Date.now(),
-    ...(parentId ? { parentId } : {}),
-  });
+  ): EditorState =>
+    appendReviewChange(before, after, {
+      id: createEditorNodeId("review-activity"),
+      kind,
+      commentId,
+      ...recordedActor(fallbackActor),
+      timestamp: Date.now(),
+      ...(parentId ? { parentId } : {}),
+    });
 
   const openNew = (): boolean => {
     if (!canCreate()) return false;
@@ -167,9 +178,10 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
     if (!pending || deps.isReadOnly()) return false;
     if (pending.mode === "edit" && !canEditId(pending.commentId!)) return false;
     if (pending.mode !== "edit" && !mayWrite()) return false;
-    const name = pending.mode === "edit"
-      ? pending.commentAuthor?.trim() ?? ""
-      : actor()?.displayName ?? author.trim();
+    const name =
+      pending.mode === "edit"
+        ? (pending.commentAuthor?.trim() ?? "")
+        : (actor()?.displayName ?? author.trim());
     const body = text.trim();
     if (!name || !body || deps.state().document !== pending.snapshot.document) {
       return false;
@@ -178,13 +190,16 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
       close();
       return true;
     }
-    const content = pending.mode === "edit" ? null : {
-      id: createEditorNodeId("comment"),
-      author: name,
-      ...(actor() ? { authorId: actor()!.id } : {}),
-      text: body,
-      date: Date.now(),
-    };
+    const content =
+      pending.mode === "edit"
+        ? null
+        : {
+            id: createEditorNodeId("comment"),
+            author: name,
+            ...(actor() ? { authorId: actor()!.id } : {}),
+            text: body,
+            date: Date.now(),
+          };
     let succeeded = false;
     deps.applyTransactionalState((current): EditorState => {
       // An external edit or document reload while the dialog is open invalidates
@@ -192,22 +207,31 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
       if (deps.isReadOnly() || current.document !== pending.snapshot.document) {
         return current;
       }
-      if (pending.mode === "edit" &&
-        !canEditReviewComment(access(), current.document.comments?.items[pending.commentId!])) {
+      if (
+        pending.mode === "edit" &&
+        !canEditReviewComment(
+          access(),
+          current.document.comments?.items[pending.commentId!],
+        )
+      ) {
         return current;
       }
       if (pending.mode !== "edit" && !mayWrite()) return current;
-      const next = pending.mode === "edit"
-        ? editCommentText(current, pending.commentId!, body)
-        : pending.mode === "reply"
-          ? replyToComment(current, pending.parentId!, content!)
-          : insertCommentAtSelection(
-              { ...current, selection: pending.snapshot.selection,
-                activeSectionIndex: pending.snapshot.activeSectionIndex,
-                activeZone: pending.snapshot.activeZone,
-                activeFootnoteId: pending.snapshot.activeFootnoteId },
-              content!,
-            );
+      const next =
+        pending.mode === "edit"
+          ? editCommentText(current, pending.commentId!, body)
+          : pending.mode === "reply"
+            ? replyToComment(current, pending.parentId!, content!)
+            : insertCommentAtSelection(
+                {
+                  ...current,
+                  selection: pending.snapshot.selection,
+                  activeSectionIndex: pending.snapshot.activeSectionIndex,
+                  activeZone: pending.snapshot.activeZone,
+                  activeFootnoteId: pending.snapshot.activeFootnoteId,
+                },
+                content!,
+              );
       succeeded = next.document !== current.document;
       if (!succeeded) return next;
       return recordChange(
@@ -215,7 +239,9 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
         next,
         pending.mode === "new"
           ? "comment-created"
-          : pending.mode === "reply" ? "comment-replied" : "comment-edited",
+          : pending.mode === "reply"
+            ? "comment-replied"
+            : "comment-edited",
         pending.mode === "edit" ? pending.commentId! : content!.id,
         name,
         pending.mode === "reply" ? pending.parentId : undefined,
@@ -233,13 +259,18 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
     const before = deps.state();
     let changed = false;
     deps.applyTransactionalState((current): EditorState => {
-      if (deps.isReadOnly() || current.document !== before.document ||
-        !canDeleteReviewThread(access(), current.document.comments, id)) {
+      if (
+        deps.isReadOnly() ||
+        current.document !== before.document ||
+        !canDeleteReviewThread(access(), current.document.comments, id)
+      ) {
         return current;
       }
       const next = deleteReviewCommentById(current, id);
       changed = next.document !== current.document;
-      return changed ? recordChange(current, next, "comment-deleted", id) : next;
+      return changed
+        ? recordChange(current, next, "comment-deleted", id)
+        : next;
     });
     return changed;
   };
@@ -252,12 +283,21 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
     const before = deps.state();
     let changed = false;
     deps.applyTransactionalState((current): EditorState => {
-      if (deps.isReadOnly() || current.document !== before.document ||
-        !canEditReviewComment(access(), current.document.comments?.items[id])) return current;
+      if (
+        deps.isReadOnly() ||
+        current.document !== before.document ||
+        !canEditReviewComment(access(), current.document.comments?.items[id])
+      )
+        return current;
       const next = setReviewCommentResolvedById(current, id, resolved);
       changed = next.document !== current.document;
       return changed
-        ? recordChange(current, next, resolved ? "comment-resolved" : "comment-reopened", id)
+        ? recordChange(
+            current,
+            next,
+            resolved ? "comment-resolved" : "comment-reopened",
+            id,
+          )
         : next;
     });
     return changed;
@@ -268,13 +308,36 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
   };
 
   return {
-    draft, lastAuthor, panelOpen, togglePanel, closePanel,
-    canCreate, canReply, canReplyId, canEdit, canEditId,
-    canDeleteId, canDeleteSelected, deleteSelected, deleteById,
-    canResolveId, canResolveSelected, resolveSelected, resolveById,
-    authorName, authorLocked,
-    openNew, openReply, openReplyToId, openEdit, openEditToId, close, submit,
+    draft,
+    lastAuthor,
+    panelOpen,
+    togglePanel,
+    closePanel,
+    canCreate,
+    canReply,
+    canReplyId,
+    canEdit,
+    canEditId,
+    canDeleteId,
+    canDeleteSelected,
+    deleteSelected,
+    deleteById,
+    canResolveId,
+    canResolveSelected,
+    resolveSelected,
+    resolveById,
+    authorName,
+    authorLocked,
+    openNew,
+    openReply,
+    openReplyToId,
+    openEdit,
+    openEditToId,
+    close,
+    submit,
   };
 }
 
-export type EditorCommentComposer = ReturnType<typeof createEditorCommentComposer>;
+export type EditorCommentComposer = ReturnType<
+  typeof createEditorCommentComposer
+>;

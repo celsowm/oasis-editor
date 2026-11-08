@@ -433,8 +433,15 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
       handleKeyUp: (event): void => {
         if (!interaction.formatPainter.mode()) return;
         const selectionKeys = [
-          "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
-          "Home", "End", "PageUp", "PageDown", "Shift",
+          "ArrowLeft",
+          "ArrowRight",
+          "ArrowUp",
+          "ArrowDown",
+          "Home",
+          "End",
+          "PageUp",
+          "PageDown",
+          "Shift",
         ];
         if (
           selectionKeys.includes(event.key) ||
