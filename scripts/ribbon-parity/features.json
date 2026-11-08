@@ -6,7 +6,7 @@
     "wordcraftRepository": "storytold/wordcraft",
     "wordcraftCommit": "e53cae3482d4e080a15dc2320eb4929ea7722db2"
   },
-  "scope": "Initial 18-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.",
+  "scope": "Initial 25-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.",
   "features": [
     {
       "id": "home.copy",
@@ -137,6 +137,75 @@
       "group": "tracking",
       "status": "partial",
       "notes": "Active state is wired to EditorState; tracked content fidelity and UI workflows remain to verify."
+    },
+    {
+      "id": "review.previousRevision",
+      "wordcraftCommand": null,
+      "oasisCommand": "previousRevision",
+      "ribbonId": "editor-toolbar-previous-revision",
+      "tab": "review",
+      "group": "changes",
+      "status": "partial",
+      "notes": "Cycles backward through text-run revisions in the active editing story. Pure selection navigation; structural/property revisions need separate navigation support."
+    },
+    {
+      "id": "review.nextRevision",
+      "wordcraftCommand": null,
+      "oasisCommand": "nextRevision",
+      "ribbonId": "editor-toolbar-next-revision",
+      "tab": "review",
+      "group": "changes",
+      "status": "partial",
+      "notes": "Cycles forward through tracked text-run changes without editing the document; selection is limited to the active section/zone."
+    },
+    {
+      "id": "review.previousComment",
+      "wordcraftCommand": null,
+      "oasisCommand": "previousComment",
+      "ribbonId": "editor-toolbar-previous-comment",
+      "tab": "review",
+      "group": "comments",
+      "status": "partial",
+      "notes": "Navigates to the prior anchored comment in the active story, skipping unanchored replies and wrapping."
+    },
+    {
+      "id": "review.nextComment",
+      "wordcraftCommand": null,
+      "oasisCommand": "nextComment",
+      "ribbonId": "editor-toolbar-next-comment",
+      "tab": "review",
+      "group": "comments",
+      "status": "partial",
+      "notes": "Navigates to the next anchored comment without changing the document; WordCraft command id not audited."
+    },
+    {
+      "id": "review.resolveComment",
+      "wordcraftCommand": null,
+      "oasisCommand": "resolveComment",
+      "ribbonId": "editor-toolbar-resolve-comment",
+      "tab": "review",
+      "group": "comments",
+      "status": "partial",
+      "notes": "Marks the comment under the selection as resolved, retaining the DOCX comment id, author, anchors and thread metadata. Needs round-trip E2E."
+    },
+    {
+      "id": "review.reopenComment",
+      "wordcraftCommand": null,
+      "oasisCommand": "reopenComment",
+      "ribbonId": "editor-toolbar-reopen-comment",
+      "tab": "review",
+      "group": "comments",
+      "status": "partial",
+      "notes": "Reopens a resolved comment under the selection. Enabled only when the selected comment is resolved."
+    },
+    {
+      "id": "review.deleteComment",
+      "wordcraftCommand": null,
+      "oasisCommand": "deleteComment",
+      "ribbonId": "editor-toolbar-delete-comment",
+      "tab": "review",
+      "group": "Removes an anchored comment and recursively removes replies to prevent orphan thread parent ids. Undo and DOCX source-package E2E remain to verify.",
+      "status": "partial"
     },
     {
       "id": "review.accept",

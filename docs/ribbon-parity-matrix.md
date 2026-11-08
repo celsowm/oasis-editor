@@ -2,7 +2,7 @@
 
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
-**Scope:** Initial 18-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.  
+**Scope:** Initial 25-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.  
 **Oasis baseline:** `e49c1b33e1fd0b76757b42b91e91d674cd0b229f`  
 **WordCraft baseline:** `e53cae3482d4e080a15dc2320eb4929ea7722db2`
 
@@ -23,6 +23,13 @@
 | `references.toc` | `references.toc` | `insertTableOfContents` | `references/tableOfContents` | partial |
 | `references.updateToc` | `references.updateToc` | `updateTableOfContents` | `references/tableOfContents` | partial |
 | `review.trackChanges` | `review.trackChanges` | `toggleTrackChanges` | `review/tracking` | partial |
+| `review.previousRevision` | — | `previousRevision` | `review/changes` | partial |
+| `review.nextRevision` | — | `nextRevision` | `review/changes` | partial |
+| `review.previousComment` | — | `previousComment` | `review/comments` | partial |
+| `review.nextComment` | — | `nextComment` | `review/comments` | partial |
+| `review.resolveComment` | — | `resolveComment` | `review/comments` | partial |
+| `review.reopenComment` | — | `reopenComment` | `review/comments` | partial |
+| `review.deleteComment` | — | `deleteComment` | `review/Removes an anchored comment and recursively removes replies to prevent orphan thread parent ids. Undo and DOCX source-package E2E remain to verify.` | partial |
 | `review.accept` | `review.accept` | `acceptRevisions` | `review/changes` | partial |
 | `review.reject` | `review.reject` | `rejectRevisions` | `review/changes` | partial |
 | `view.showMargins` | — | `toggleShowMargins` | `view/show` | partial |
@@ -44,11 +51,18 @@
 11. **references.toc:** TOC creation, fields and export/round-trip remain independently testable.
 12. **references.updateToc:** Eligibility and missing-TOC command states still need refinement.
 13. **review.trackChanges:** Active state is wired to EditorState; tracked content fidelity and UI workflows remain to verify.
-14. **review.accept:** Selection scope and disabled states for documents without revisions need tests.
-15. **review.reject:** Selection scope and disabled states for documents without revisions need tests.
-16. **view.showMargins:** Oasis-specific display option with active state bound to EditorState.
-17. **view.paragraphMarks:** Paragraph-mark display feedback is wired; rendering and accessibility require E2E checks.
-18. **view.preciseFonts:** Oasis precise-font mode; platform font availability still requires coverage.
+14. **review.previousRevision:** Cycles backward through text-run revisions in the active editing story. Pure selection navigation; structural/property revisions need separate navigation support.
+15. **review.nextRevision:** Cycles forward through tracked text-run changes without editing the document; selection is limited to the active section/zone.
+16. **review.previousComment:** Navigates to the prior anchored comment in the active story, skipping unanchored replies and wrapping.
+17. **review.nextComment:** Navigates to the next anchored comment without changing the document; WordCraft command id not audited.
+18. **review.resolveComment:** Marks the comment under the selection as resolved, retaining the DOCX comment id, author, anchors and thread metadata. Needs round-trip E2E.
+19. **review.reopenComment:** Reopens a resolved comment under the selection. Enabled only when the selected comment is resolved.
+20. **review.deleteComment:** undefined
+21. **review.accept:** Selection scope and disabled states for documents without revisions need tests.
+22. **review.reject:** Selection scope and disabled states for documents without revisions need tests.
+23. **view.showMargins:** Oasis-specific display option with active state bound to EditorState.
+24. **view.paragraphMarks:** Paragraph-mark display feedback is wired; rendering and accessibility require E2E checks.
+25. **view.preciseFonts:** Oasis precise-font mode; platform font availability still requires coverage.
 
 ## Audit interpretation
 
