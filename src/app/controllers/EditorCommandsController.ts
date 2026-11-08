@@ -28,6 +28,7 @@ import {
   setSelectedImageBorder,
   flipSelectedImage,
   rotateSelectedImageByStep,
+  setSelectedImageTransparency,
   type ImageBorderPatch,
   type ImageCropAspectMode,
 } from "@/core/commands/image.js";
@@ -610,6 +611,15 @@ function createEditorCommandsControllerImpl(
     );
   };
 
+  const applyImageTransparencyCommand = (transparency: number | null): void => {
+    if (!selectedImageRun()) return;
+    execTransactional(
+      (current): EditorState =>
+        setSelectedImageTransparency(current, transparency ?? 0),
+      { mergeKey: MERGE_KEYS.imageTransparency },
+    );
+  };
+
   return {
     applyBooleanStyleCommand,
     applyValueStyleCommand,
@@ -650,6 +660,7 @@ function createEditorCommandsControllerImpl(
     applyImageBorderCommand,
     flipImageCommand,
     rotateImageCommand,
+    applyImageTransparencyCommand,
     handleListTab,
     handleListEnter,
     handleListBoundaryBackspace,

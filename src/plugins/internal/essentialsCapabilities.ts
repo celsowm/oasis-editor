@@ -271,6 +271,10 @@ export interface EssentialsImageCapability {
   flip: (axis: "horizontal" | "vertical") => void;
   /** Rotate the selected image left or right by a fixed step. */
   rotate: (direction: "left" | "right") => void;
+  /** Transparency (0..1) of the selected picture, or `null` when unselected. */
+  getTransparency: () => number | null;
+  /** Set the selected picture's transparency (0..1); 0 restores full opacity. */
+  setTransparency: (transparency: number | null) => void;
 }
 
 export interface EssentialsBrowserCapability {

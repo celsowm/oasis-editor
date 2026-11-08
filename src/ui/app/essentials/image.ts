@@ -4,6 +4,7 @@ import {
   getSelectedImageCropShape,
   getSelectedImageBorder,
   getSelectedImageSizeCm,
+  getSelectedImageTransparency,
 } from "@/core/commands/image.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
 
@@ -41,5 +42,9 @@ export function buildEssentialsImage(
     flip: (axis): void => options.commandsController.flipImageCommand(axis),
     rotate: (direction): void =>
       options.commandsController.rotateImageCommand(direction),
+    getTransparency: (): number | null =>
+      getSelectedImageTransparency(options.state()),
+    setTransparency: (transparency): void =>
+      options.commandsController.applyImageTransparencyCommand(transparency),
   };
 }

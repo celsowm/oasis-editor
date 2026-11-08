@@ -325,5 +325,16 @@ export function buildDocumentAndBrowserCommands({
         value: image.getBorder(),
       }),
     ),
+    imageTransparency: actionCommand(
+      "imageTransparency",
+      (p): void =>
+        image.setTransparency(
+          typeof p === "number" ? p : p == null ? 0 : Number(p),
+        ),
+      (): { isEnabled: boolean; value: number | null } => ({
+        isEnabled: image.isSelected(),
+        value: image.getTransparency(),
+      }),
+    ),
   };
 }
