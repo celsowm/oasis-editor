@@ -365,6 +365,7 @@ Completed command-surface slices (each core + tests, then wiring/parity; pushed 
 - [x] Collapse selection (select.collapse): selection-only selectCollapse command that collapses the selection to a single caret at its earlier (anchor) end (or later/focus end when `end` is true), handling backwards selections; applied via applyState (no undo) and gated read-only-safe. Audit → 232.
 - [x] Underline color (format.underlineColor): setUnderlineColor value builtin through the essentials formatting capability and command group, exposing the active underline color; the underlineColor model key existed but was only reachable via the Font dialog / import-export. Audit → 233.
 - [x] Advanced value character styles (format.scale / format.spacing / format.position): setCharacterScale / setCharacterSpacing / setBaselineShift value builtins through the essentials formatting capability and command group; these model keys existed but were only reachable via the Font dialog / import-export. Audit → 236.
+- [x] Text-effect toggles (format.shadow / format.emboss / format.engrave): shadow/emboss/engrave toggle builtins with active states (engrave maps to the imprint model key), reachable via applyBooleanStyleCommand and the toolbar state; these model keys existed but were only reachable via the Font dialog. Audit → 239.
 
 **Still open**
 - Picture adjustments (corrections/color/effects/compress/reset) — require an `EditorImageRunData` effects model + OOXML import/export round-trip (no fields exist today).
