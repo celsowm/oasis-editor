@@ -130,6 +130,6 @@ describe("programmatic clipboard paste", () => {
     vi.stubGlobal("navigator", { clipboard: { read } });
     expect(await pasteFromSystemClipboard(app.deps, "text")).toBe(true);
     expect(app.text).toBe("Hiplain");
-    expect(app.state.document.sections[0]?.blocks[0]?.type).toBe("paragraph");
+    expect(app.state.document.sections?.[0]?.blocks[0]?.type).toBe("paragraph");
   });
 });

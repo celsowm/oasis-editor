@@ -17,7 +17,7 @@ const browserFor = (state: import("@/core/model.js").EditorState) =>
     applyTransactionalState: () => {},
     tableOps: {
       applyTableAwareParagraphEdit: (current: import("@/core/model.js").EditorState) => current,
-    } as CreateEditorEssentialsPluginOptions["tableOps"],
+    } as unknown as CreateEditorEssentialsPluginOptions["tableOps"],
     clearPreferredColumn: () => {},
     resetTransactionGrouping: () => {},
     focusInput: () => {},
