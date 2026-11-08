@@ -112,33 +112,29 @@ export function CommentHighlightOverlay(
       </For>
 
       <Show when={activeComment() && popupAnchor()}>
-        {((): JSX.Element => {
-          const comment = activeComment()!;
-          const anchor = popupAnchor()!;
-          return (
-            <div
+        <div
               class="oasis-editor-comment-popup"
               data-testid="editor-comment-popup"
               style={{
-                left: `${anchor.left}px`,
-                top: `${anchor.top + anchor.height + 6}px`,
+                left: `${popupAnchor()?.left ?? 0}px`,
+                top: `${(popupAnchor()?.top ?? 0) + (popupAnchor()?.height ?? 0) + 6}px`,
               }}
               onMouseLeave={(): null => setActiveCommentId(null)}
             >
               <div class="oasis-editor-comment-popup-header">
                 <span class="oasis-editor-comment-popup-author">
-                  {comment.author || "—"}
+                  {activeComment()?.author || "—"}
                 </span>
-                <Show when={comment.date !== undefined}>
+                <Show when={activeComment()?.date !== undefined}>
                   <span class="oasis-editor-comment-popup-date">
-                    {formattedDate(comment.date)}
+                    {formattedDate(activeComment()?.date)}
                   </span>
                 </Show>
-                <Show when={comment.resolved}>
+                <Show when={activeComment()?.resolved}>
                   <span class="oasis-editor-comment-popup-resolved">✓</span>
                 </Show>
               </div>
-              <div class="oasis-editor-comment-popup-body">{comment.text}</div>
+              <div class="oasis-editor-comment-popup-body">{activeComment()?.text}</div>
               <Show when={replies().length > 0}>
                 <div class="oasis-editor-comment-popup-replies" data-testid="comment-thread-replies">
                   <For each={visibleReplies()}>
@@ -210,7 +206,10 @@ export function CommentHighlightOverlay(
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={(): void => props.onEditComment?.(comment.id)}
+                      onClick={(): void => {
+                        const id = activeComment()?.id;
+                        if (id) props.onEditComment?.(id);
+                      }}
                       data-testid="comment-popup-edit"
                     >
                       {t("toolbar.editComment")}
@@ -220,7 +219,10 @@ export function CommentHighlightOverlay(
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={(): void => props.onReplyToComment?.(comment.id)}
+                      onClick={(): void => {
+                        const id = activeComment()?.id;
+                        if (id) props.onReplyToComment?.(id);
+                      }}
                       data-testid="comment-popup-reply"
                     >
                       {t("toolbar.replyComment")}
@@ -229,8 +231,6 @@ export function CommentHighlightOverlay(
                 </div>
               </Show>
             </div>
-          );
-        })()}
       </Show>
     </div>
   );

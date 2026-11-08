@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
+import { createSignal } from "solid-js";
 import type { EditorComment } from "@/core/model.js";
 import { CommentHighlightOverlay } from "@/ui/components/CommentHighlightOverlay.js";
 
@@ -101,6 +102,26 @@ describe("highlighted comment thread popup", () => {
     expect(onReply).toHaveBeenCalledWith("nested");
     expand.click();
     expect(host.querySelectorAll(".oasis-editor-comment-popup-reply")).toHaveLength(3);
+    dispose();
+  });
+
+  it("refreshes an open popup immediately when a comment body is edited", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    let setComments!: (value: Record<string, EditorComment>) => void;
+    const dispose = render(() => {
+      const [current, update] = createSignal<Record<string, EditorComment>>(comments);
+      setComments = update;
+      return <CommentHighlightOverlay boxes={boxes} commentsById={current} />;
+    }, container);
+    container.querySelector<HTMLSpanElement>(
+      "[data-testid='editor-comment-highlight']",
+    )!.focus();
+    const popup = container.querySelector("[data-testid='editor-comment-popup']");
+    expect(popup?.textContent).toContain("Please review");
+    setComments({ ...comments, root: { ...comments.root!, text: "Edited in place" } });
+    expect(popup?.textContent).toContain("Edited in place");
+    expect(popup?.textContent).not.toContain("Please review");
     dispose();
   });
 
