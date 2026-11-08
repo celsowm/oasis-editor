@@ -92,7 +92,13 @@ export function createEditorFormatPainter(deps: EditorFormatPainterDeps) {
       didChange = next.document !== current.document;
       return next;
     });
-    if (mode() === "once") cancel();
+    if (mode() === "once") {
+      cancel();
+    } else if (didChange) {
+      // Keep the continuous painter armed across its own undoable mutations.
+      // An external document replacement still invalidates the snapshot.
+      sourceDocument = deps.state().document;
+    }
     if (didChange) deps.focusInput();
     return didChange;
   };
