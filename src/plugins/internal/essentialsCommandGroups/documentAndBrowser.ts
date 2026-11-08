@@ -123,6 +123,9 @@ export function buildDocumentAndBrowserCommands({
         (p as "left" | "center" | "right") ?? "center",
       ),
     ),
+    reorderFloatingObject: actionCommand("reorderFloatingObject", (p): void =>
+      document.reorderFloatingObject((p as "front" | "back") ?? "front"),
+    ),
     openSymbolDialog: actionCommand("openSymbolDialog", (): void =>
       document.openSymbolDialog(),
     ),

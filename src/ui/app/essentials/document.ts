@@ -1,5 +1,6 @@
 import { insertShapeAtSelection } from "@/core/commands/shape.js";
 import { alignSelectedFloatingObject } from "@/core/commands/floatingAlignCommands.js";
+import { reorderSelectedFloatingObject } from "@/core/commands/floatingReorderCommands.js";
 import {
   setSelectedShapeFill,
   setSelectedShapeOutline,
@@ -104,6 +105,11 @@ export function buildEssentialsDocument(
       options.applyTransactionalState(
         (current): EditorState => alignSelectedFloatingObject(current, align),
         { mergeKey: MERGE_KEYS.floatingAlign },
+      ),
+    reorderFloatingObject: (move: "front" | "back"): void =>
+      options.applyTransactionalState(
+        (current): EditorState => reorderSelectedFloatingObject(current, move),
+        { mergeKey: MERGE_KEYS.floatingReorder },
       ),
   };
 }

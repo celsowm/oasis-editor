@@ -175,6 +175,8 @@ export interface EssentialsDocumentCapability {
   setShapeOutline: (color: string | null) => void;
   /** Align the selected floating object (image/text box) to the margin. */
   alignFloatingObject: (align: "left" | "center" | "right") => void;
+  /** Bring the selected floating object to the front or behind the text. */
+  reorderFloatingObject: (move: "front" | "back") => void;
 }
 
 export interface EssentialsLinkCapability {
