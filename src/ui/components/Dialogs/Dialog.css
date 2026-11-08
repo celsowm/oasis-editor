@@ -530,3 +530,14 @@
     flex-direction: column;
   }
 }
+
+/* Comment authoring reuses the accessible modal shell. */
+.oasis-editor-comment-composer { display: flex; flex-direction: column; gap: 14px; }
+.oasis-editor-comment-composer-textarea { display: block; width: 100%; min-height: 124px; resize: vertical; }
+.oasis-editor-comment-composer-parent {
+  padding: 10px 12px;
+  border-inline-start: 3px solid var(--oasis-ribbon-text, #777);
+  background: var(--oasis-ribbon-panel-bg, #f6f7f9);
+  border-radius: 4px;
+}
+.oasis-editor-comment-composer-parent p { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }

@@ -2,6 +2,8 @@ import type { ComponentProps } from "solid-js";
 import { LinkDialog } from "@/ui/components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "@/ui/components/Dialogs/ImageAltDialog.js";
 import { ImageCaptionDialog } from "@/ui/components/Dialogs/ImageCaptionDialog.js";
+import { CommentComposerDialog } from "@/ui/components/Dialogs/CommentComposerDialog.js";
+import type { EditorCommentComposer } from "./createEditorCommentComposer.js";
 import { FontDialog } from "@/ui/components/Dialogs/FontDialog.js";
 import { ParagraphDialog } from "@/ui/components/Dialogs/ParagraphDialog.js";
 import { TablePropertiesDialog } from "@/ui/components/Dialogs/TablePropertiesDialog.js";
@@ -18,6 +20,7 @@ type EditorDialogsState = ReturnType<typeof createEditorDialogs>;
 
 export interface EditorDialogsLayerProps {
   dialogs: EditorDialogsState;
+  commentComposer: EditorCommentComposer;
   findReplace: ComponentProps<typeof FindReplaceDialog>["fr"];
   fontFamilyOptions: () => string[];
   fontSizeOptions: () => number[];
@@ -143,6 +146,8 @@ export function EditorDialogsLayer(
           props.applyImageCaptionCommand(caption.trim())
         }
       />
+
+      <CommentComposerDialog composer={props.commentComposer} />
 
       <FindReplaceDialog fr={props.findReplace} />
 
