@@ -13,6 +13,7 @@
 import type {
   EditorColumnsSettings,
   EditorDocument,
+  EditorSectionVerticalAlign,
   EditorState,
 } from "@/core/model.js";
 import { getDocumentSections } from "@/core/model.js";
@@ -242,4 +243,32 @@ export function setSectionMarginsPreset(
       },
     },
   });
+}
+
+/** Read the active section's vertical justification (`w:vAlign`). */
+export function getSectionVerticalAlign(
+  state: EditorState,
+): EditorSectionVerticalAlign | undefined {
+  const sectionIndex = resolveActiveSectionIndex(state);
+  if (sectionIndex < 0) return undefined;
+  return getDocumentSections(state.document)[sectionIndex].verticalAlignment;
+}
+
+/**
+ * Set the active section's vertical justification of page contents
+ * (`w:vAlign`: `top` | `center` | `both` | `bottom`). `top` is the Word
+ * default and is stored as `undefined`; passing `null` or `"top"` clears the
+ * field. Returns the same state when there's no section.
+ */
+export function setSectionVerticalAlign(
+  state: EditorState,
+  align: EditorSectionVerticalAlign | null | undefined,
+): EditorState {
+  const sectionIndex = resolveActiveSectionIndex(state);
+  if (sectionIndex < 0) return state;
+  const verticalAlignment =
+    align === undefined || align === null || align === "top"
+      ? undefined
+      : align;
+  return updateSectionSettings(state, sectionIndex, { verticalAlignment });
 }
