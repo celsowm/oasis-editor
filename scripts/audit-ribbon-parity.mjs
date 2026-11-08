@@ -157,39 +157,44 @@ function collectMenuCommands() {
 }
 
 export function renderMatrix(data) {
-  const rows = data.features.map((feature) => {
-    const ref = feature.wordcraftCommand ? `${feature.wordcraftCommand}` : "—";
-    return `| `${feature.id}` | ${ref} | `${feature.oasisCommand}` | `${feature.tab}/${feature.group}` | ${feature.status} |`;
-  }).join("\n");
-  const questions = data.features.map((feature, index) =>
-    `${index + 1}. **${feature.id}:** ${feature.notes}`
+  const code = (value) => "`" + value + "`";
+  const rows = data.features.map((feature) =>
+    "| " + code(feature.id) +
+    " | " + (feature.wordcraftCommand ? code(feature.wordcraftCommand) : "—") +
+    " | " + code(feature.oasisCommand) +
+    " | " + code(feature.tab + "/" + feature.group) +
+    " | " + feature.status + " |"
   ).join("\n");
-  return `# Oasis Ribbon Parity Matrix — Phase 0 Seed
-
-> Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
-
-**Scope:** Initial 12-feature executable Ribbon exposure slice, **not** the full WordCraft catalog.  
-**Oasis baseline:** `${data.baseline.oasisCommit}`  
-**WordCraft baseline:** `${data.baseline.wordcraftCommit}`
-
-`partial` means a command and Ribbon entry are statically bound. It does **not** certify complete semantics, DOCX round-trip, PDF/layout, accessibility or browser behavior.
-
-| Feature | WordCraft command | Oasis command | Ribbon placement | Status |
-| --- | --- | --- | --- | --- |
-${rows}
-
-## Open verification questions
-
-${questions}
-
-## Audit interpretation
-
-The audit scans the built-in command array, direct default-toolbar objects, the three active static button-spec arrays, Ribbon placement definitions and the default menubar. Dynamic custom controls and plugin contributions cannot be proved complete through static mapping and must be verified in runtime tests. The tool reports direct Ribbon, visible menu or unverified core reachability; it never upgrades a feature to `complete` automatically.
-
-**Next:** expand the mapping from WordCraft `crates/engine/src/catalog.rs`, `crates/ui-egui/src/ribbon/*.rs` and the Oasis runtime; capture UI-only, core-only, menu-only, preservation-only and not-applicable cases. Use the coverage and acceptance ladder in `docs/wordcraft-ribbon-parity-plan.md` before claiming parity.
-`;
+  const questions = data.features.map((feature, index) =>
+    (index + 1) + ". **" + feature.id + ":** " + feature.notes
+  ).join("\n");
+  return [
+    "# Oasis Ribbon Parity Matrix — Phase 0 Seed",
+    "",
+    "> Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.",
+    "",
+    "**Scope:** Initial 12-feature executable Ribbon exposure slice, **not** the full WordCraft catalog.  ",
+    "**Oasis baseline:** " + code(data.baseline.oasisCommit) + "  ",
+    "**WordCraft baseline:** " + code(data.baseline.wordcraftCommit),
+    "",
+    "`partial` means a command and Ribbon entry are statically bound. It does **not** certify complete semantics, DOCX round-trip, PDF/layout, accessibility or browser behavior.",
+    "",
+    "| Feature | WordCraft command | Oasis command | Ribbon placement | Status |",
+    "| --- | --- | --- | --- | --- |",
+    rows,
+    "",
+    "## Open verification questions",
+    "",
+    questions,
+    "",
+    "## Audit interpretation",
+    "",
+    "The audit scans the built-in command array, direct default-toolbar objects, the three active static button-spec arrays, Ribbon placement definitions and the default menubar. Dynamic custom controls and plugin contributions cannot be proved complete through static mapping and must be verified in runtime tests. The tool reports direct Ribbon, visible menu or unverified core reachability; it never upgrades a feature to `complete` automatically.",
+    "",
+    "**Next:** expand the mapping from WordCraft `crates/engine/src/catalog.rs`, `crates/ui-egui/src/ribbon/*.rs` and the Oasis runtime; capture UI-only, core-only, menu-only, preservation-only and not-applicable cases. Use the coverage and acceptance ladder in `docs/wordcraft-ribbon-parity-plan.md` before claiming parity.",
+    "",
+  ].join("\n");
 }
-
 function main() {
   const builtin = collectBuiltinCommands();
   const toolbar = collectPresetItems();
