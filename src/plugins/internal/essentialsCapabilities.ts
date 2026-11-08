@@ -425,6 +425,10 @@ export interface EssentialsTableCapability {
   /** Word's Formula: evaluate a supported aggregate over a direction and
    * write the formatted result into the active cell. */
   evaluateTableFormula: (formula: string) => void;
+  /** True when the caret sits inside a table that can be selected. */
+  canSelectTable: () => boolean;
+  /** Word's Select: expand the caret selection to a cell/row/column/table. */
+  selectTablePart: (kind: "cell" | "row" | "column" | "table") => void;
   insert: (rows: number, cols: number) => void;
 }
 

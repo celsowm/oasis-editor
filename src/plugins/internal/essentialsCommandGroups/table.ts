@@ -225,6 +225,38 @@ export function buildTableCommands({
           table.canEvaluateTableFormula(),
       }),
     ),
+    tableSelectCell: actionCommand(
+      "tableSelectCell",
+      (): void => table.selectTablePart("cell"),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSelectCell") && table.canSelectTable(),
+      }),
+    ),
+    tableSelectRow: actionCommand(
+      "tableSelectRow",
+      (): void => table.selectTablePart("row"),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSelectRow") && table.canSelectTable(),
+      }),
+    ),
+    tableSelectColumn: actionCommand(
+      "tableSelectColumn",
+      (): void => table.selectTablePart("column"),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSelectColumn") && table.canSelectTable(),
+      }),
+    ),
+    tableSelectTable: actionCommand(
+      "tableSelectTable",
+      (): void => table.selectTablePart("table"),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSelectTable") && table.canSelectTable(),
+      }),
+    ),
     tableToggleHeaderRow: actionCommand(
       "tableToggleHeaderRow",
       (): void => table.toggleTblLook("firstRow"),

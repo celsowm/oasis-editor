@@ -25,6 +25,9 @@ import {
   type TableCellMargins,
   canEvaluateActiveTableFormula,
   evaluateActiveTableFormula,
+  canSelectActiveTable,
+  selectActiveTable,
+  type TableSelectionKind,
 } from "@/core/commands/table.js";
 import {
   findParagraphTablePathLocation,
@@ -427,6 +430,9 @@ export function buildEssentialsTable(
         (current): EditorState => evaluateActiveTableFormula(current, formula),
         MERGE_KEYS.tableFormula,
       ),
+    canSelectTable: (): boolean => canSelectActiveTable(options.state()),
+    selectTablePart: (kind: TableSelectionKind): void =>
+      options.applyState(selectActiveTable(options.state(), kind)),
     insert: (rows: number, cols: number): void =>
       options.tableOps.insertTableCommand(rows, cols),
   };
