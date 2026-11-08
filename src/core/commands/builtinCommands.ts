@@ -87,6 +87,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "imageCropFill",
   "imageCropFit",
   "imageCropReset",
+  "imageFlip",
   "imageBorder",
   "outdent",
   "indent",

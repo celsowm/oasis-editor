@@ -127,6 +127,7 @@ export interface OasisCommandPayloads {
   imageCropFill: undefined;
   imageCropFit: undefined;
   imageCropReset: undefined;
+  imageFlip: "horizontal" | "vertical";
   outdent: undefined;
   indent: undefined;
   togglePageBreakBefore: undefined;

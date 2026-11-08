@@ -452,6 +452,44 @@ export function rotateSelectedImage(
   }));
 }
 
+/** The flip state of the selected image (`null` when none is selected). */
+export function getSelectedImageFlip(
+  state: EditorState,
+): { flipH: boolean; flipV: boolean } | null {
+  const selectedImage = getSelectedImageRun(state);
+  const image = selectedImage && getRunImage(selectedImage.run);
+  if (!image) return null;
+  return { flipH: Boolean(image.flipH), flipV: Boolean(image.flipV) };
+}
+
+/** True when an image is selected and can be flipped. */
+export function canFlipSelectedImage(state: EditorState): boolean {
+  return getSelectedImageRun(state) !== null;
+}
+
+/**
+ * Word's Flip Horizontal/Vertical: mirrors the selected image about its
+ * vertical or horizontal axis. Repeated flips toggle the mirror state. A no-op
+ * when no image is selected.
+ */
+export function flipSelectedImage(
+  state: EditorState,
+  axis: "horizontal" | "vertical",
+): EditorState {
+  const current = getSelectedImageFlip(state);
+  if (!current) return state;
+  if (axis === "horizontal") {
+    return patchSelectedImage(state, (image) => ({
+      ...image,
+      flipH: !current.flipH,
+    }));
+  }
+  return patchSelectedImage(state, (image) => ({
+    ...image,
+    flipV: !current.flipV,
+  }));
+}
+
 export function getSelectedImageWrapPreset(
   state: EditorState,
 ): WrapPreset | null {
