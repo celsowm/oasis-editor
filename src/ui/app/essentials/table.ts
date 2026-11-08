@@ -28,6 +28,9 @@ import {
   canSelectActiveTable,
   selectActiveTable,
   type TableSelectionKind,
+  canSetActiveTableRowHeight,
+  setActiveTableRowHeight,
+  type TableRowHeight,
 } from "@/core/commands/table.js";
 import {
   findParagraphTablePathLocation,
@@ -433,6 +436,13 @@ export function buildEssentialsTable(
     canSelectTable: (): boolean => canSelectActiveTable(options.state()),
     selectTablePart: (kind: TableSelectionKind): void =>
       options.applyState(selectActiveTable(options.state(), kind)),
+    canSetActiveTableRowHeight: (): boolean =>
+      canSetActiveTableRowHeight(options.state()),
+    setActiveTableRowHeight: (height: TableRowHeight): void =>
+      apply(
+        (current): EditorState => setActiveTableRowHeight(current, height),
+        MERGE_KEYS.tableRowHeight,
+      ),
     insert: (rows: number, cols: number): void =>
       options.tableOps.insertTableCommand(rows, cols),
   };

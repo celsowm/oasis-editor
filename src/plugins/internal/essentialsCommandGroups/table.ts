@@ -204,6 +204,20 @@ export function buildTableCommands({
     tableSetCellWidth: actionCommand("tableSetCellWidth", (p): void =>
       table.setCellWidth(String(p)),
     ),
+    tableSetRowHeight: actionCommand(
+      "tableSetRowHeight",
+      (p): void =>
+        table.setActiveTableRowHeight(
+          (p as import("@/core/commands/table.js").TableRowHeight) ?? {
+            height: null,
+          },
+        ),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSetRowHeight") &&
+          table.canSetActiveTableRowHeight(),
+      }),
+    ),
     tableSetCellMargins: actionCommand(
       "tableSetCellMargins",
       (p): void =>
