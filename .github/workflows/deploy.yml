@@ -26,6 +26,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Verify Ribbon parity matrix
+        run: npm run audit:ribbon
+
       - name: Run Tests
         run: npm test
 

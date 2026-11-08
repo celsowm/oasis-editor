@@ -19,6 +19,8 @@ jobs:
 
       - run: npm run typecheck
 
+      - run: npm run audit:ribbon
+
       - run: npm test
 
       - run: npm run build:app
