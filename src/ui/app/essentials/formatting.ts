@@ -8,6 +8,8 @@ import {
   insertTextAtSelection,
   updateMathRun,
 } from "@/core/commands/text.js";
+import { replaceAllInDocument } from "@/core/commands/findReplace.js";
+import { MERGE_KEYS } from "@/core/transactionMergeKeys.js";
 import {
   getDocumentParagraphs,
   getParagraphText,
@@ -302,6 +304,19 @@ export function buildEssentialsFormatting(
     ),
     find: (): true => (options.findReplace.setIsOpen(true), true),
     replace: (): true => (options.findReplace.setIsOpen(true), true),
+    replaceAll: (payload): true => {
+      if (options.isReadOnly()) return true;
+      options.applyTransactionalState(
+        (current): EditorState =>
+          replaceAllInDocument(current, payload.search, payload.replace, {
+            matchCase: payload.matchCase,
+            wholeWord: payload.wholeWord,
+          }),
+        { mergeKey: MERGE_KEYS.findReplaceAll },
+      );
+      options.focusInput();
+      return true;
+    },
     isTrackChangesEnabled: (): boolean =>
       Boolean(options.state().trackChangesEnabled),
     areMarginsVisible: (): boolean => Boolean(options.state().showMargins),

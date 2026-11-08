@@ -198,6 +198,13 @@ export function buildCoreFormattingCommands({
     ),
     find: command("find", formatting.find),
     replace: command("replace", formatting.replace),
+    replaceAll: actionCommand("replaceAll", (p): void => {
+      const payload = (p ??
+        {}) as import("@/core/commands/publicCommandTypes.js").ReplaceAllPayload;
+      if (typeof payload.search === "string" && payload.search.length > 0) {
+        formatting.replaceAll(payload);
+      }
+    }),
     toggleTrackChanges: command(
       "toggleTrackChanges",
       formatting.toggleTrackChanges,

@@ -12,6 +12,7 @@ import type { CrossReferenceType } from "@/core/commands/crossReference.js";
 import type { DesignThemeId } from "@/core/commands/design.js";
 import type { ImageBorderPatch } from "@/core/commands/image.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
+import type { ReplaceAllPayload } from "@/core/commands/publicCommandTypes.js";
 import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
 import type { OasisBuiltinCommand } from "@/core/commands/builtinCommands.js";
 import type { TableBorderPreset } from "@/core/commands/table.js";
@@ -103,6 +104,7 @@ export interface EssentialsFormattingCapability {
   bulletList: () => boolean;
   find: () => boolean;
   replace: () => boolean;
+  replaceAll: (payload: ReplaceAllPayload) => boolean;
   toggleTrackChanges: () => boolean;
   /** Reactive document view/state flags for Ribbon toggle feedback. */
   isTrackChangesEnabled: () => boolean;

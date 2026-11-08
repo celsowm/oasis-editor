@@ -30,7 +30,13 @@ export interface SetSpecialIndentPayload {
   value?: number | null;
 }
 
-/** Payload for inserting text with an optional character font override. */
+/** Payload for the `replaceAll` command (edit.replaceAll). */
+export interface ReplaceAllPayload {
+  search: string;
+  replace: string;
+  matchCase?: boolean;
+  wholeWord?: boolean;
+} /** Payload for inserting text with an optional character font override. */
 export interface InsertTextPayload {
   text: string;
   fontFamily?: string | null;
@@ -74,6 +80,7 @@ export interface OasisCommandPayloads {
   moveParagraphsDown: undefined;
   find: undefined;
   replace: undefined;
+  replaceAll: ReplaceAllPayload;
   toggleTrackChanges: undefined;
   acceptRevisions: undefined;
   rejectRevisions: undefined;

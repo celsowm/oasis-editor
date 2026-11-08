@@ -5,6 +5,7 @@ import {
   type FindOptions,
   type FindReplaceMatch,
 } from "@/app/services/FindReplaceService.js";
+import { replaceAllInDocument } from "@/core/commands/findReplace.js";
 import type { EditorState, EditorDocument } from "@/core/model.js";
 import { setSelection } from "@/core/commands/selection.js";
 import { insertTextAtSelection } from "@/core/commands/text.js";
@@ -121,22 +122,12 @@ export function useEditorFindReplace(
   };
 
   const replaceAll = (): void => {
-    const currentMatches = matches();
-    if (currentMatches.length === 0) return;
+    const search = searchTerm();
+    if (search.length === 0) return;
 
     deps.applyTransactionalState(
-      (current): EditorState => {
-        let workingState = current;
-        for (let i = currentMatches.length - 1; i >= 0; i--) {
-          const m = currentMatches[i];
-          workingState = setSelection(workingState, {
-            anchor: m.anchor,
-            focus: m.focus,
-          });
-          workingState = insertTextAtSelection(workingState, replaceTerm());
-        }
-        return workingState;
-      },
+      (current): EditorState =>
+        replaceAllInDocument(current, search, replaceTerm(), findOptions()),
       { mergeKey: MERGE_KEYS.findReplaceAll },
     );
 

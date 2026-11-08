@@ -32,6 +32,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "bulletList",
   "find",
   "replace",
+  "replaceAll",
   "toggleTrackChanges",
   "acceptRevisions",
   "rejectRevisions",
