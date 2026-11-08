@@ -271,6 +271,26 @@ export function buildEssentialsFormatting(
       options.keyboardCommandsController.applyBooleanStyleCommand("underline"),
       true
     ),
+    doubleUnderline: (): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "underlineStyle",
+          value: string | null,
+        ) => void
+      )("underlineStyle", "double"),
+      options.keyboardCommandsController.applyBooleanStyleCommand("underline"),
+      true
+    ),
+    wordUnderline: (): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "underlineStyle",
+          value: string | null,
+        ) => void
+      )("underlineStyle", "words"),
+      options.keyboardCommandsController.applyBooleanStyleCommand("underline"),
+      true
+    ),
     strike: (): true => (
       options.keyboardCommandsController.applyBooleanStyleCommand("strike"),
       true

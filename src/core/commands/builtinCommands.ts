@@ -20,6 +20,8 @@ export const OASIS_BUILTIN_COMMANDS = [
   "bold",
   "italic",
   "underline",
+  "doubleUnderline",
+  "wordUnderline",
   "strike",
   "doubleStrike",
   "smallCaps",

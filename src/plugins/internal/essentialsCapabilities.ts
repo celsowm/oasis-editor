@@ -95,6 +95,8 @@ export interface EssentialsFormattingCapability {
   bold: () => boolean;
   italic: () => boolean;
   underline: () => boolean;
+  doubleUnderline: () => boolean;
+  wordUnderline: () => boolean;
   strike: () => boolean;
   doubleStrike: () => boolean;
   smallCaps: () => boolean;

@@ -134,6 +134,20 @@ export function buildCoreFormattingCommands({
         isActive: Boolean(s().underline),
       }),
     ),
+    doubleUnderline: command(
+      "doubleUnderline",
+      formatting.doubleUnderline,
+      (): { isActive: boolean } => ({
+        isActive: s().underlineStyle === "double",
+      }),
+    ),
+    wordUnderline: command(
+      "wordUnderline",
+      formatting.wordUnderline,
+      (): { isActive: boolean } => ({
+        isActive: s().underlineStyle === "words",
+      }),
+    ),
     strike: command("strike", formatting.strike, (): { isActive: boolean } => ({
       isActive: Boolean(s().strike),
     })),
