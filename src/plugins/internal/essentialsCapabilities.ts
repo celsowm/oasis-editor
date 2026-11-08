@@ -168,6 +168,7 @@ export interface EssentialsImageCapability {
 
 export interface EssentialsBrowserCapability {
   copy: () => void;
+  hasSelection: () => boolean;
 }
 
 export interface EssentialsParagraphCapability {

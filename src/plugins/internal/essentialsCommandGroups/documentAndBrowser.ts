@@ -49,7 +49,9 @@ export function buildDocumentAndBrowserCommands({
     copy: actionCommand(
       "copy",
       (): void => browser.copy(),
-      (): { isEnabled: true } => ({ isEnabled: true }),
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("copy") && browser.hasSelection(),
+      }),
     ),
     newDocument: actionCommand("newDocument", (): void =>
       document.newDocument(),

@@ -29,7 +29,7 @@ export function createEditorEssentialsRuntimePlugin(
     document: buildEssentialsDocument(options),
     link: buildEssentialsLink(options),
     image: buildEssentialsImage(options),
-    browser: buildEssentialsBrowser(),
+    browser: buildEssentialsBrowser(options.state),
     paragraph: buildEssentialsParagraph(options),
     section: buildEssentialsSection(options),
     table: buildEssentialsTable(options),
