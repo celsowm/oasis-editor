@@ -39,6 +39,10 @@
 | `view.showMargins` | — | `toggleShowMargins` | `view/show` | partial |
 | `view.paragraphMarks` | `view.marks` | `toggleShowParagraphMarks` | `view/show` | partial |
 | `view.preciseFonts` | — | `togglePreciseFonts` | `view/show` | partial |
+| `insert.header` | `insert.header` | `editHeader` | `insert/headerFooter` | partial |
+| `insert.footer` | `insert.footer` | `editFooter` | `insert/headerFooter` | partial |
+| `insert.pageNumber` | `insert.pageNumber` | `insertPageNumber` | `insert/headerFooter` | partial |
+| `insert.exitHeaderFooter` | — | `exitHeaderFooter` | `insert/headerFooter` | partial |
 
 ## Open verification questions
 
@@ -71,6 +75,10 @@
 27. **view.showMargins:** Oasis-specific display option with active state bound to EditorState.
 28. **view.paragraphMarks:** Paragraph-mark display feedback is wired; rendering and accessibility require E2E checks.
 29. **view.preciseFonts:** Oasis precise-font mode; platform font availability still requires coverage.
+30. **insert.header:** Enters the default header editing zone for the active section. First/even-page variant in-place editing and brand-new header part export remain follow-ups.
+31. **insert.footer:** Enters the default footer editing zone for the active section. Variant in-place editing and brand-new footer part export remain follow-ups.
+32. **insert.pageNumber:** Inserts a PAGE field at the caret inside a header/footer (or body). Field formatting and layout resolution need E2E verification.
+33. **insert.exitHeaderFooter:** Returns the caret to the section body when editing a header/footer zone. Enabled only while the active zone is a header or footer.
 
 ## Audit interpretation
 

@@ -337,6 +337,27 @@ export const defaultMenuItems: MenuItem[] = [
     command: "pageBreak",
     icon: "file-minus",
   },
+  {
+    id: "insert_header",
+    path: "Insert/Header",
+    labelKey: "headerFooter.header",
+    command: "editHeader",
+    icon: "panel-top",
+  },
+  {
+    id: "insert_footer",
+    path: "Insert/Footer",
+    labelKey: "headerFooter.footer",
+    command: "editFooter",
+    icon: "panel-bottom",
+  },
+  {
+    id: "insert_page_number",
+    path: "Insert/Page Number",
+    labelKey: "headerFooter.pageNumber",
+    command: "insertPageNumber",
+    icon: "hash",
+  },
   { id: "insert_specialChar", path: "Insert/Special Character", hidden: true },
   { id: "insert_comment", path: "Insert/Comment", hidden: true },
 

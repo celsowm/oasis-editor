@@ -235,6 +235,19 @@ export interface EssentialsSectionCapability {
   setPageMargins: (margins: Partial<EditorPageMargins>) => void;
 }
 
+export interface EssentialsHeaderFooterCapability {
+  /** Enter header editing for the active section's default header. */
+  editHeader: () => void;
+  /** Enter footer editing for the active section's default footer. */
+  editFooter: () => void;
+  /** Insert a PAGE field at the active caret (header, footer or body). */
+  insertPageNumber: () => void;
+  /** Return the caret to the main body, leaving header/footer editing. */
+  exit: () => void;
+  /** Whether the caret currently edits a header or footer zone. */
+  isInHeaderFooter: () => boolean;
+}
+
 export interface EssentialsDesignCapability {
   applyTheme: (theme: DesignThemeId) => void;
   setColorScheme: (value: string) => void;
@@ -317,6 +330,7 @@ export interface EssentialsPluginDeps {
   browser: EssentialsBrowserCapability;
   paragraph: EssentialsParagraphCapability;
   section: EssentialsSectionCapability;
+  headerFooter: EssentialsHeaderFooterCapability;
   table: EssentialsTableCapability;
   design: EssentialsDesignCapability;
 }

@@ -89,6 +89,7 @@ const RUNTIME_COMMAND_GROUPS = [
   "src/plugins/internal/essentialsCommandGroups/paragraphAndSection.ts",
   "src/plugins/internal/essentialsCommandGroups/table.ts",
   "src/plugins/internal/essentialsCommandGroups/design.ts",
+  "src/plugins/internal/essentialsCommandGroups/headerFooter.ts",
 ];
 
 /** Built-in declarations are not registrations: require a command builder in a live group. */

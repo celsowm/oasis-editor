@@ -297,6 +297,46 @@
       "group": "show",
       "status": "partial",
       "notes": "Oasis precise-font mode; platform font availability still requires coverage."
+    },
+    {
+      "id": "insert.header",
+      "wordcraftCommand": "insert.header",
+      "oasisCommand": "editHeader",
+      "ribbonId": "editor-toolbar-header-edit",
+      "tab": "insert",
+      "group": "headerFooter",
+      "status": "partial",
+      "notes": "Enters the default header editing zone for the active section. First/even-page variant in-place editing and brand-new header part export remain follow-ups."
+    },
+    {
+      "id": "insert.footer",
+      "wordcraftCommand": "insert.footer",
+      "oasisCommand": "editFooter",
+      "ribbonId": "editor-toolbar-footer-edit",
+      "tab": "insert",
+      "group": "headerFooter",
+      "status": "partial",
+      "notes": "Enters the default footer editing zone for the active section. Variant in-place editing and brand-new footer part export remain follow-ups."
+    },
+    {
+      "id": "insert.pageNumber",
+      "wordcraftCommand": "insert.pageNumber",
+      "oasisCommand": "insertPageNumber",
+      "ribbonId": "editor-toolbar-insert-page-number",
+      "tab": "insert",
+      "group": "headerFooter",
+      "status": "partial",
+      "notes": "Inserts a PAGE field at the caret inside a header/footer (or body). Field formatting and layout resolution need E2E verification."
+    },
+    {
+      "id": "insert.exitHeaderFooter",
+      "wordcraftCommand": null,
+      "oasisCommand": "exitHeaderFooter",
+      "ribbonId": "editor-toolbar-exit-header-footer",
+      "tab": "insert",
+      "group": "headerFooter",
+      "status": "partial",
+      "notes": "Returns the caret to the section body when editing a header/footer zone. Enabled only while the active zone is a header or footer."
     }
   ]
 }

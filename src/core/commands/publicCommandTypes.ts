@@ -144,6 +144,10 @@ export interface OasisCommandPayloads {
   sectionBreakNextPage: undefined;
   sectionBreakContinuous: undefined;
   setPageMargins: SetPageMarginsPayload;
+  editHeader: undefined;
+  editFooter: undefined;
+  insertPageNumber: undefined;
+  exitHeaderFooter: undefined;
   applyDocumentTheme: DesignThemeId;
   setDocumentColorScheme: string;
   setDocumentFontScheme: string;
