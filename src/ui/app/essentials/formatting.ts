@@ -525,5 +525,14 @@ export function buildEssentialsFormatting(
       )("baselineShift", value),
       true
     ),
+    setEmphasisMark: (value: string | null): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "emphasisMark",
+          value: string | null,
+        ) => void
+      )("emphasisMark", value),
+      true
+    ),
   };
 }

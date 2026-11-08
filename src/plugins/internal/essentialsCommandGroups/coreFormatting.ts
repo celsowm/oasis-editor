@@ -514,5 +514,10 @@ export function buildCoreFormattingCommands({
       (p): boolean => formatting.setBaselineShift(numOrNull(p)),
       (): string => s().baselineShift,
     ),
+    setEmphasisMark: valueCommand(
+      "setEmphasisMark",
+      (p): boolean => formatting.setEmphasisMark((p as string) || null),
+      (): string => s().emphasisMark,
+    ),
   };
 }

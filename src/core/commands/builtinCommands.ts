@@ -83,6 +83,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setCharacterScale",
   "setCharacterSpacing",
   "setBaselineShift",
+  "setEmphasisMark",
   "documentStyles",
   "print",
   "copy",
