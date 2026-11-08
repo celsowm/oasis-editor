@@ -23,6 +23,7 @@ export type EditorNodeKind =
   | "footnote"
   | "bookmark"
   | "comment"
+  | "review-activity"
   | "sdt";
 
 /**
