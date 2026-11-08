@@ -5,6 +5,7 @@ import {
   createEditorStateFromDocument,
 } from "@/core/editorState.js";
 import {
+  selectCollapse,
   selectParagraph,
   selectSentence,
   selectWord,
@@ -149,5 +150,57 @@ describe("selection-unit commands (select.word / select.sentence / select.paragr
     const state = caretAt(buildState(["First. Second."]), 0, 9);
     const next = selectSentence(state);
     expect(selectedSpan(next)).toBe("Second.");
+  });
+
+  it("collapses the selection to the anchor end by default", () => {
+    const base = buildState(["one two three"]);
+    const paragraphs = getParagraphs(base);
+    const p = paragraphs[0]!;
+    const state: EditorState = {
+      ...base,
+      selection: {
+        anchor: paragraphOffsetToPosition(p, 3),
+        focus: paragraphOffsetToPosition(p, 7),
+      },
+    };
+    const next = selectCollapse(state);
+    expect(next.selection.anchor.paragraphId).toBe(p.id);
+    expect(next.selection.focus.paragraphId).toBe(p.id);
+    expect(next.selection.anchor.offset).toBe(3);
+    expect(next.selection.focus.offset).toBe(3);
+  });
+
+  it("collapses the selection to the focus end when end is true", () => {
+    const base = buildState(["one two three"]);
+    const paragraphs = getParagraphs(base);
+    const p = paragraphs[0]!;
+    const state: EditorState = {
+      ...base,
+      selection: {
+        anchor: paragraphOffsetToPosition(p, 3),
+        focus: paragraphOffsetToPosition(p, 7),
+      },
+    };
+    const next = selectCollapse(state, true);
+    expect(next.selection.anchor.offset).toBe(7);
+    expect(next.selection.focus.offset).toBe(7);
+  });
+
+  it("collapses to the earlier position regardless of selection direction", () => {
+    const base = buildState(["one two three"]);
+    const paragraphs = getParagraphs(base);
+    const p = paragraphs[0]!;
+    // Backwards selection: anchor is the later end.
+    const state: EditorState = {
+      ...base,
+      selection: {
+        anchor: paragraphOffsetToPosition(p, 9),
+        focus: paragraphOffsetToPosition(p, 2),
+      },
+    };
+    // Anchor (9) is the later position; collapse-to-start must land on the
+    // focus end (2), the earlier of the two.
+    const next = selectCollapse(state);
+    expect(next.selection.anchor.offset).toBe(2);
   });
 });

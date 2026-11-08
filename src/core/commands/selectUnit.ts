@@ -15,6 +15,7 @@ import {
   paragraphOffsetToPosition,
 } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
+import { comparePositions } from "@/core/selection.js";
 import { getFocusParagraph } from "@/core/selection/rangeEditing.js";
 import { setSelection } from "./selection.js";
 
@@ -84,6 +85,26 @@ export function selectSentence(state: EditorState): EditorState {
   return setSelection(state, {
     anchor: paragraphOffsetToPosition(paragraph, lo),
     focus: paragraphOffsetToPosition(paragraph, Math.min(hi, text.length)),
+  });
+}
+
+/**
+ * Collapse the selection to one of its ends (`select.collapse`). When `end`
+ * is true the caret moves to the focus end; otherwise to the anchor end. The
+ * resulting selection is a single collapsed caret (no document mutation, so
+ * it's applied via `applyState` with no undo).
+ */
+export function selectCollapse(state: EditorState, end = false): EditorState {
+  const anchor = state.selection.anchor;
+  const focus = state.selection.focus;
+  const paragraphs = getParagraphs(state);
+  const cmp = comparePositions(paragraphs, anchor, focus);
+  const first = cmp <= 0 ? anchor : focus;
+  const last = cmp <= 0 ? focus : anchor;
+  const target = end ? last : first;
+  return setSelection(state, {
+    anchor: target,
+    focus: target,
   });
 }
 
