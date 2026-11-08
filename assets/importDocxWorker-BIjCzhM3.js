@@ -9854,18 +9854,23 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 				});
 				const e = c.pop();
 				e && ((e) => {
-					const t = /\bNUMPAGES\b/i.test(e.instruction) ? "NUMPAGES" : /\bPAGE\b/i.test(e.instruction) ? "PAGE" : null;
+					const t = /\bNUMPAGES\b/i.test(e.instruction) ? "NUMPAGES" : /\bPAGE\b/i.test(e.instruction) ? "PAGE" : /\bDATE\b/i.test(e.instruction) ? "DATE" : null;
 					if (!t) return;
-					const r = Kt(/\*\s*([A-Za-z]+)/.exec(e.instruction)?.[1]), n = l.slice(e.beginIndex);
-					if (n.some((e) => e.bookmark)) return;
-					const o = n.filter((e) => !e.fieldChar && void 0 === e.fieldInstruction), i = o.map((e) => e.text).join("") || "1", a = o.find((e) => e.styles)?.styles ?? e.beginStyles;
-					l.length = e.beginIndex, l.push({
-						text: i,
-						...a ? { styles: a } : {},
-						field: r ? {
-							type: t,
-							format: r
-						} : { type: t }
+					const r = Kt(/\*\s*([A-Za-z]+)/.exec(e.instruction)?.[1]), n = "DATE" === t ? /@\s*"([^"]*)"/.exec(e.instruction)?.[1] : void 0, o = l.slice(e.beginIndex);
+					if (o.some((e) => e.bookmark)) return;
+					const i = o.filter((e) => !e.fieldChar && void 0 === e.fieldInstruction), a = i.map((e) => e.text).join("") || "1", s = i.find((e) => e.styles)?.styles ?? e.beginStyles;
+					l.length = e.beginIndex;
+					const c = "DATE" === t ? n ? {
+						type: "DATE",
+						dateFormat: n
+					} : { type: "DATE" } : r ? {
+						type: t,
+						format: r
+					} : { type: t };
+					l.push({
+						text: a,
+						...s ? { styles: s } : {},
+						field: c
 					});
 				})(e);
 			}
@@ -10030,16 +10035,19 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 				continue;
 			}
 			if ("fldSimple" === f.localName) {
-				const e = f.getAttribute("w:instr") ?? f.getAttributeNS("http://schemas.openxmlformats.org/wordprocessingml/2006/main", "instr") ?? f.getAttribute("instr") ?? "", c = /\bNUMPAGES\b/i.test(e) ? "NUMPAGES" : /\bPAGE\b/i.test(e) ? "PAGE" : null, u = /\*\s*([A-Za-z]+)/.exec(e)?.[1], d = Kt(u), p = await Pr(f, t, r, n, o, i, a, s);
+				const e = f.getAttribute("w:instr") ?? f.getAttributeNS("http://schemas.openxmlformats.org/wordprocessingml/2006/main", "instr") ?? f.getAttribute("instr") ?? "", c = /\bNUMPAGES\b/i.test(e) ? "NUMPAGES" : /\bPAGE\b/i.test(e) ? "PAGE" : /\bDATE\b/i.test(e) ? "DATE" : null, u = /\*\s*([A-Za-z]+)/.exec(e)?.[1], d = Kt(u), p = "DATE" === c ? /@\s*"([^"]*)"/.exec(e)?.[1] : void 0, h = await Pr(f, t, r, n, o, i, a, s);
 				if (c) {
-					const e = p.map((e) => e.text).join("") || "1", t = p.find((e) => e.styles)?.styles;
+					const e = h.map((e) => e.text).join("") || "1", t = h.find((e) => e.styles)?.styles, r = "DATE" === c ? p ? {
+						type: "DATE",
+						dateFormat: p
+					} : { type: "DATE" } : d ? {
+						type: c,
+						format: d
+					} : { type: c };
 					l.push({
 						text: e,
 						styles: t,
-						field: d ? {
-							type: c,
-							format: d
-						} : { type: c }
+						field: r
 					});
 				} else l.push({
 					text: "",
@@ -10050,7 +10058,7 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 				}), l.push({
 					text: "",
 					fieldChar: { kind: "separate" }
-				}), l.push(...p), l.push({
+				}), l.push(...h), l.push({
 					text: "",
 					fieldChar: { kind: "end" }
 				});
@@ -13046,12 +13054,17 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 				return t = e.fieldInstruction, `<w:r>${s()}<w:instrText xml:space="preserve">${to(t)}</w:instrText></w:r>`;
 				var t;
 			},
-			field: (e) => function(e, t, r) {
-				const n = "PAGE" === e ? " PAGE " : " NUMPAGES ", o = function(e) {
-					if (e && "decimal" !== e) return e;
-				}(t);
-				return `<w:fldSimple w:instr="${o ? ` ${n.trim()} \\* ${o} ` : n}"><w:r>${r}<w:t>1</w:t></w:r></w:fldSimple>`;
-			}(e.field.type, e.field.format, s()),
+			field: (e) => function(e, t, r = "1") {
+				let n;
+				if ("DATE" === e.type) n = ` DATE \\@ "${e.dateFormat ?? "M/d/yyyy"}" `;
+				else {
+					const t = "PAGE" === e.type ? " PAGE " : " NUMPAGES ", r = function(e) {
+						if (e && "decimal" !== e) return e;
+					}(e.format);
+					n = r ? ` ${t.trim()} \\* ${r} ` : t;
+				}
+				return `<w:fldSimple w:instr="${to(n)}"><w:r>${t}<w:t xml:space="preserve">${to(r)}</w:t></w:r></w:fldSimple>`;
+			}(e.field, s(), "DATE" === e.field.type ? e.text : void 0),
 			textBox: (e) => zi(e, e.textBox, t, n, s(), o),
 			image: (e) => {
 				const r = t.imageMap.get(e.id);
