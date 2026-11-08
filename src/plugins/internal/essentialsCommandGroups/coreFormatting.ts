@@ -48,6 +48,10 @@ export function buildCoreFormattingCommands({
     selectWord: command("selectWord", formatting.selectWord),
     selectSentence: command("selectSentence", formatting.selectSentence),
     selectParagraph: command("selectParagraph", formatting.selectParagraph),
+    selectCollapse: actionCommand("selectCollapse", (p): void => {
+      const payload = (p ?? {}) as { end?: boolean };
+      formatting.selectCollapse(Boolean(payload.end));
+    }),
     insertFootnote: command("insertFootnote", formatting.insertFootnote),
     insertTableOfContents: command(
       "insertTableOfContents",

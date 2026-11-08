@@ -51,6 +51,7 @@ export interface OasisCommandPayloads {
   selectWord: undefined;
   selectSentence: undefined;
   selectParagraph: undefined;
+  selectCollapse: { end?: boolean } | undefined;
   insertFootnote: undefined;
   insertText: string | InsertTextPayload;
   insertEquation: EditorMathExpression;

@@ -51,6 +51,8 @@ export interface EssentialsFormattingCapability {
   selectWord: () => boolean;
   selectSentence: () => boolean;
   selectParagraph: () => boolean;
+  /** Collapse the selection to its start (or end when `end` is true). */
+  selectCollapse: (end?: boolean) => boolean;
   insertFootnote: () => boolean;
   insertTableOfContents: () => boolean;
   updateTableOfContents: () => boolean;

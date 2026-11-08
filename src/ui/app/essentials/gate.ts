@@ -12,6 +12,7 @@ const READ_ONLY_SAFE_COMMANDS: ReadonlySet<OasisBuiltinCommand> = new Set([
   "selectWord",
   "selectSentence",
   "selectParagraph",
+  "selectCollapse",
   "nextRevision",
   "previousRevision",
   "nextComment",

@@ -3,6 +3,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "selectWord",
   "selectSentence",
   "selectParagraph",
+  "selectCollapse",
   "insertFootnote",
   "insertText",
   "insertEquation",

@@ -17,6 +17,7 @@ import {
   type EditorState,
 } from "@/core/model.js";
 import {
+  selectCollapse,
   selectParagraph,
   selectSentence,
   selectWord,
@@ -133,6 +134,12 @@ export function buildEssentialsFormatting(
     selectParagraph: (): boolean => {
       if (options.isReadOnly()) return false;
       options.applyState(selectParagraph(options.state()));
+      options.focusInput();
+      return true;
+    },
+    selectCollapse: (end = false): boolean => {
+      if (options.isReadOnly()) return false;
+      options.applyState(selectCollapse(options.state(), end));
       options.focusInput();
       return true;
     },
