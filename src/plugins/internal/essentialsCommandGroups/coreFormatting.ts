@@ -161,6 +161,19 @@ export function buildCoreFormattingCommands({
     hidden: command("hidden", formatting.hidden, (): { isActive: boolean } => ({
       isActive: Boolean(s().hidden),
     })),
+    shadow: command("shadow", formatting.shadow, (): { isActive: boolean } => ({
+      isActive: Boolean(s().shadow),
+    })),
+    emboss: command("emboss", formatting.emboss, (): { isActive: boolean } => ({
+      isActive: Boolean(s().emboss),
+    })),
+    engrave: command(
+      "engrave",
+      formatting.engrave,
+      (): { isActive: boolean } => ({
+        isActive: Boolean(s().imprint),
+      }),
+    ),
     superscript: command(
       "superscript",
       formatting.superscript,

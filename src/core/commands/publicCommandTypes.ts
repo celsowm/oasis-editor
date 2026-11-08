@@ -71,6 +71,9 @@ export interface OasisCommandPayloads {
   smallCaps: undefined;
   allCaps: undefined;
   hidden: undefined;
+  shadow: undefined;
+  emboss: undefined;
+  engrave: undefined;
   superscript: undefined;
   subscript: undefined;
   link: string | undefined;

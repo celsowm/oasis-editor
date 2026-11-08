@@ -293,6 +293,18 @@ export function buildEssentialsFormatting(
       options.keyboardCommandsController.applyBooleanStyleCommand("hidden"),
       true
     ),
+    shadow: (): true => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("shadow"),
+      true
+    ),
+    emboss: (): true => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("emboss"),
+      true
+    ),
+    engrave: (): true => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("imprint"),
+      true
+    ),
     superscript: (): true => (
       options.keyboardCommandsController.applyBooleanStyleCommand(
         "superscript",

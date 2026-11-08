@@ -100,6 +100,9 @@ export interface EssentialsFormattingCapability {
   smallCaps: () => boolean;
   allCaps: () => boolean;
   hidden: () => boolean;
+  shadow: () => boolean;
+  emboss: () => boolean;
+  engrave: () => boolean;
   superscript: () => boolean;
   subscript: () => boolean;
   alignLeft: () => boolean;
