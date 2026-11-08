@@ -6,6 +6,7 @@ import {
   setSelectedFloatingPositionPreset,
   setSelectedFloatingRotation,
   setSelectedFloatingWrapPreset,
+  setSelectedFloatingWrapText,
 } from "@/core/commands/floatingAlignCommands.js";
 import { reorderSelectedFloatingObject } from "@/core/commands/floatingReorderCommands.js";
 import {
@@ -166,6 +167,13 @@ export function buildEssentialsDocument(
         (current): EditorState =>
           setSelectedFloatingWrapPreset(current, preset),
         { mergeKey: MERGE_KEYS.floatingWrap },
+      ),
+    setFloatingWrapText: (
+      side: "bothSides" | "left" | "right" | "largest",
+    ): void =>
+      options.applyTransactionalState(
+        (current): EditorState => setSelectedFloatingWrapText(current, side),
+        { mergeKey: MERGE_KEYS.floatingWrapText },
       ),
     setFloatingPositionPreset: (
       preset:

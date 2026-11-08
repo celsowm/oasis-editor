@@ -203,6 +203,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setFloatingFixedPosition",
   "setFloatingRotation",
   "setFloatingWrapPreset",
+  "setFloatingWrapText",
   "setFloatingPositionPreset",
   "setShapePreset",
   "setTextBoxTextDirection",

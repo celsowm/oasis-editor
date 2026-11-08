@@ -259,6 +259,7 @@ export interface OasisCommandPayloads {
     | "topAndBottom"
     | "behind"
     | "front";
+  setFloatingWrapText: "bothSides" | "left" | "right" | "largest";
   setFloatingPositionPreset:
     | "topLeft"
     | "topCenter"

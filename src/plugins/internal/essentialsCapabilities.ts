@@ -196,6 +196,10 @@ export interface EssentialsDocumentCapability {
       | "behind"
       | "front",
   ) => void;
+  /** Set which side(s) of the selected Square/Tight/Through object text flows on. */
+  setFloatingWrapText: (
+    side: "bothSides" | "left" | "right" | "largest",
+  ) => void;
   /** Move the selected floating object to a preset page position. */
   setFloatingPositionPreset: (
     preset:

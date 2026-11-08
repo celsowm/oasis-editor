@@ -152,6 +152,11 @@ export function buildDocumentAndBrowserCommands({
           | "front") ?? "square",
       ),
     ),
+    setFloatingWrapText: actionCommand("setFloatingWrapText", (p): void =>
+      document.setFloatingWrapText(
+        (p as "bothSides" | "left" | "right" | "largest") ?? "bothSides",
+      ),
+    ),
     setFloatingPositionPreset: actionCommand(
       "setFloatingPositionPreset",
       (p): void =>
