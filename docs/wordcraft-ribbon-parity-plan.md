@@ -353,6 +353,7 @@ Completed command-surface slices (each core + tests, then wiring/parity; pushed 
 - [x] Floating-object position preset (arrange.position): topLeft…bottomRight positions of the margin area. Audit → 214.
 - [x] Picture transparency (picture.transparency / OOXML a:alphaModFix): model field, import/export round-trip, canvas (globalAlpha) and PDF (ExtGState) rendering, get/set command. Audit → 215.
 - [x] Floating-object wrap side (arrange.wrapText / wp:wrapText): model field, import/export round-trip, line-flow carve-out to one side or the widest side, get/set command. Audit → 216.
+- [x] Reset picture (picture.reset): clears crop/mask/fit-fill/tile fill/transparency/border/rotation/flips while preserving box size + floating layout. Audit → 217.
 
 **Still open**
 - Picture adjustments (corrections/color/effects/compress/reset) — require an `EditorImageRunData` effects model + OOXML import/export round-trip (no fields exist today).
