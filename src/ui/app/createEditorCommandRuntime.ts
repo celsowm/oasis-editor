@@ -138,6 +138,8 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
       },
       selectionBoxes: doc.selectionBoxes,
       focusInput: deps.focusInput,
+      clearPreferredColumn: doc.clearPreferredColumn,
+      resetTransactionGrouping: doc.resetTransactionGrouping,
       applyState: deps.applyState,
       applyTransactionalState: doc.applyTransactionalState,
       findReplace: {

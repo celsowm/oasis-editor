@@ -46,6 +46,8 @@ export interface CreateEditorEssentialsPluginOptions {
   };
   selectionBoxes: () => Array<unknown>;
   focusInput: () => void;
+  clearPreferredColumn: () => void;
+  resetTransactionGrouping: () => void;
   applyState: (nextState: EditorState) => void;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,

@@ -167,6 +167,9 @@ export interface EssentialsImageCapability {
 }
 
 export interface EssentialsBrowserCapability {
+  paste: () => void;
+  pasteAsPlainText: () => void;
+  canPaste: () => boolean;
   copy: () => void;
   hasSelection: () => boolean;
 }

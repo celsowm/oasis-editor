@@ -1,16 +1,10 @@
 import type { MergeKey } from "@/core/transactionMergeKeys.js";
 import type { EditorState } from "@/core/model.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
-import {
-  insertClipboardParagraphsAtSelection,
-  serializeEditorSelectionToHtml,
-} from "@/core/commands/clipboard.js";
+import { serializeEditorSelectionToHtml } from "@/core/commands/clipboard.js";
 import { getSelectedText as getEditorSelectedText } from "@/core/commands/selection.js";
-import {
-  deleteBackward,
-  insertPlainTextAtSelection,
-} from "@/core/commands/text.js";
-import { parseEditorClipboardHtmlWithDom } from "@/app/clipboard/htmlClipboardParser.js";
+import { deleteBackward } from "@/core/commands/text.js";
+import { pasteFromSystemClipboard } from "./clipboardPaste.js";
 import type { TranslateFn } from "@/i18n/index.js";
 import type { ContextMenuItem } from "@/ui/components/ContextMenu/ContextMenu.js";
 import type { EditorLogger } from "@/utils/logger.js";
@@ -120,57 +114,18 @@ function createEditorContextMenuClipboardImpl(
   };
 
   const programmaticPaste = async (): Promise<void> => {
-    if (deps.isReadOnly()) return;
-    let html = "";
-    let text = "";
-    try {
-      if (navigator.clipboard?.read) {
-        const items = await navigator.clipboard.read();
-        for (const item of items) {
-          if (item.types.includes("text/html")) {
-            const blob = await item.getType("text/html");
-            html = await blob.text();
-          }
-          if (item.types.includes("text/plain")) {
-            const blob = await item.getType("text/plain");
-            text = await blob.text();
-          }
-        }
-      } else if (navigator.clipboard?.readText) {
-        text = await navigator.clipboard.readText();
-      }
-    } catch (err) {
-      deps.logger.warn("contextMenu:paste:failed", { error: String(err) });
-      try {
-        text = await navigator.clipboard.readText();
-      } catch {
-        return;
-      }
-    }
-
-    const paragraphs = parseEditorClipboardHtmlWithDom(html);
-    if (paragraphs.length > 0) {
-      deps.clearPreferredColumn();
-      deps.resetTransactionGrouping();
-      deps.applyTransactionalState((current): EditorState =>
-        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-          insertClipboardParagraphsAtSelection(temp, paragraphs),
-        ),
-      );
-      deps.focusInput();
-      return;
-    }
-
-    if (text) {
-      deps.clearPreferredColumn();
-      deps.resetTransactionGrouping();
-      deps.applyTransactionalState((current): EditorState =>
-        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-          insertPlainTextAtSelection(temp, text),
-        ),
-      );
-      deps.focusInput();
-    }
+    await pasteFromSystemClipboard({
+      state: deps.state,
+      isReadOnly: deps.isReadOnly,
+      applyTransactionalState: deps.applyTransactionalState,
+      applyTableAwareParagraphEdit: deps.applyTableAwareParagraphEdit,
+      clearPreferredColumn: deps.clearPreferredColumn,
+      resetTransactionGrouping: deps.resetTransactionGrouping,
+      focusInput: deps.focusInput,
+      onError: (error): void => {
+        deps.logger.warn("contextMenu:paste:failed", { error: String(error) });
+      },
+    }, "rich");
   };
 
   const buildContextMenuItems = (): ContextMenuItem[] => {
