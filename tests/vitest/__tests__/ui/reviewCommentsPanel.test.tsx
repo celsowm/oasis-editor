@@ -114,6 +114,49 @@ describe("review discussion drawer", () => {
     app.dispose();
   });
 
+  it("shows the recorded activity and navigates to a surviving comment", () => {
+    const app = mount({ identity: { id: "alice", displayName: "Alice" } });
+    const root = app.target.querySelector<HTMLElement>(
+      '.oasis-review-thread[data-comment-id="root"]',
+    )!;
+    byTestId(root, "review-comment-resolve")!.click();
+    expect(app.transactions).toBe(1);
+    expect(app.getState().document.reviewActivity?.[0]).toMatchObject({
+      kind: "comment-resolved", commentId: "root", actorName: "Alice", actorId: "alice",
+    });
+    byTestId(app.target, "review-show-activity")!.click();
+    expect(app.target.querySelectorAll("[data-testid='review-activity-entry']")).toHaveLength(1);
+    expect(app.target.querySelector("[data-activity-kind='comment-resolved']")).not.toBeNull();
+    expect(app.target.querySelector(".oasis-review-thread")).toBeNull();
+    byTestId(app.target, "review-activity-navigate")!.click();
+    expect(app.onNavigate).toHaveBeenCalledWith("root");
+    expect(app.transactions).toBe(1);
+    byTestId(app.target, "review-show-discussions")!.click();
+    expect(app.target.querySelectorAll(".oasis-review-thread")).toHaveLength(2);
+    app.dispose();
+  });
+
+  it("preserves deleted-thread events without offering a broken navigation action", () => {
+    const app = mount({
+      identity: { id: "moderator", displayName: "Moderator" },
+      canModerate: true,
+    });
+    const root = app.target.querySelector<HTMLElement>(
+      '.oasis-review-thread[data-comment-id="root"]',
+    )!;
+    const remove = byTestId(root, "review-comment-delete")!;
+    remove.click();
+    remove.click();
+    expect(app.getState().document.comments?.items.root).toBeUndefined();
+    byTestId(app.target, "review-show-activity")!.click();
+    const event = app.target.querySelector("[data-activity-kind='comment-deleted']");
+    expect(event).not.toBeNull();
+    expect(event?.textContent).toContain("Moderator");
+    expect(event?.querySelector("[data-testid='review-activity-navigate']")).toBeNull();
+    expect(app.getState().document.reviewActivity?.[0]?.affectedCount).toBe(2);
+    app.dispose();
+  });
+
   it("requires an explicit confirmation to delete a thread as a moderator", () => {
     const app = mount({ identity: { id: "moderator", displayName: "Mod" }, canModerate: true });
     const root = app.target.querySelector<HTMLElement>('.oasis-review-thread[data-comment-id="root"]')!;
