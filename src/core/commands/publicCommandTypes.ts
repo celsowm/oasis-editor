@@ -258,6 +258,16 @@ export interface OasisCommandPayloads {
     | "topAndBottom"
     | "behind"
     | "front";
+  setFloatingPositionPreset:
+    | "topLeft"
+    | "topCenter"
+    | "topRight"
+    | "middleLeft"
+    | "middleCenter"
+    | "middleRight"
+    | "bottomLeft"
+    | "bottomCenter"
+    | "bottomRight";
   setShapePreset: string;
   setTextBoxTextDirection: "horz" | "vert" | "vert270" | "wordArtVert";
   setTextBoxVerticalAlign: "t" | "ctr" | "b";

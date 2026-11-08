@@ -9,12 +9,14 @@ import {
   canAlignSelectedFloatingObject,
   canNudgeSelectedFloatingObject,
   canSetSelectedFloatingFixedPosition,
+  canSetSelectedFloatingPositionPreset,
   canSetSelectedFloatingRotation,
   canSetSelectedFloatingWrap,
   getSelectedFloatingWrapPreset,
   isSelectedFloatingFixedPosition,
   nudgeSelectedFloatingObject,
   setSelectedFloatingFixedPosition,
+  setSelectedFloatingPositionPreset,
   setSelectedFloatingRotation,
   setSelectedFloatingWrapPreset,
 } from "@/core/commands/floatingAlignCommands.js";
@@ -382,5 +384,60 @@ describe("floating object wrap preset", () => {
     const state = buildImageState(baseImage);
     const plain = placeOn(state, 3);
     expect(setSelectedFloatingWrapPreset(plain, "square")).toBe(plain);
+  });
+});
+
+describe("floating object position preset (arrange.position)", () => {
+  it("exposes a capability for an inline image selection", () => {
+    expect(
+      canSetSelectedFloatingPositionPreset(buildImageState(baseImage)),
+    ).toBe(true);
+  });
+
+  it("denies the capability for a plain text selection", () => {
+    const state = buildImageState(baseImage);
+    expect(canSetSelectedFloatingPositionPreset(placeOn(state, 3))).toBe(
+      false,
+    );
+  });
+
+  it("promotes an inline image to a floating object at the top-left", () => {
+    const state = buildImageState(baseImage);
+    const next = setSelectedFloatingPositionPreset(state, "topLeft");
+    expect(next).not.toBe(state);
+    const image = getRunImage(getParagraphs(next)[0]!.runs[0]!)!;
+    expect(image.floating?.type).toBe("floating");
+    expect(image.floating?.wrap).toBe("square");
+    expect(image.floating?.positionH?.relativeFrom).toBe("margin");
+    expect(image.floating?.positionH?.align).toBe("left");
+    expect(image.floating?.positionV?.relativeFrom).toBe("margin");
+    expect(image.floating?.positionV?.align).toBe("top");
+  });
+
+  it("sets the middle-right preset on a text box", () => {
+    const textBox: EditorTextBoxData = {
+      width: 150,
+      height: 100,
+      blocks: [],
+    };
+    const state = buildTextBoxState(textBox);
+    const next = setSelectedFloatingPositionPreset(state, "middleRight");
+    const box = getRunTextBox(getParagraphs(next)[0]!.runs[0]!)!;
+    expect(box.floating?.positionH?.align).toBe("right");
+    expect(box.floating?.positionV?.align).toBe("ctr");
+  });
+
+  it("sets the bottom-center preset", () => {
+    const state = buildImageState(baseImage);
+    const next = setSelectedFloatingPositionPreset(state, "bottomCenter");
+    const image = getRunImage(getParagraphs(next)[0]!.runs[0]!)!;
+    expect(image.floating?.positionH?.align).toBe("center");
+    expect(image.floating?.positionV?.align).toBe("bottom");
+  });
+
+  it("leaves the state untouched when no object is selected", () => {
+    const state = buildImageState(baseImage);
+    const plain = placeOn(state, 3);
+    expect(setSelectedFloatingPositionPreset(plain, "topLeft")).toBe(plain);
   });
 });

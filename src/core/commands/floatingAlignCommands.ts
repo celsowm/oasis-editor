@@ -496,3 +496,132 @@ export function setSelectedFloatingRotation(
     ),
   );
 }
+
+/** The position presets WordCraft's `arrange.position` accepts. */
+export type FloatingPositionPreset =
+  | "topLeft"
+  | "topCenter"
+  | "topRight"
+  | "middleLeft"
+  | "middleCenter"
+  | "middleRight"
+  | "bottomLeft"
+  | "bottomCenter"
+  | "bottomRight";
+
+/** The horizontal component alignment for a position preset. */
+type PositionHAlign = "left" | "center" | "right";
+/** The vertical component alignment for a position preset. */
+type PositionVAlign = "top" | "ctr" | "bottom";
+
+/** Splits a position preset into its horizontal and vertical alignments. */
+function positionPresetAligns(preset: FloatingPositionPreset): {
+  h: PositionHAlign;
+  v: PositionVAlign;
+} {
+  const h: PositionHAlign = preset.endsWith("Left")
+    ? "left"
+    : preset.endsWith("Right")
+      ? "right"
+      : "center";
+  const v: PositionVAlign = preset.startsWith("top")
+    ? "top"
+    : preset.startsWith("bottom")
+      ? "bottom"
+      : "ctr";
+  return { h, v };
+}
+
+/**
+ * True when a floating object (image or text box) is selected and can be moved
+ * to one of the preset page positions.
+ */
+export function canSetSelectedFloatingPositionPreset(
+  state: EditorState,
+): boolean {
+  const selected = getSelectedObjectRun(
+    state,
+    (run): boolean => run.kind === "image" || run.kind === "textBox",
+  );
+  return selected !== null;
+}
+
+/**
+ * WordCraft's `arrange.position`: moves the selected image or text box to one
+ * of the nine preset positions (topLeft…bottomRight) of the page margin area,
+ * promoting an inline object to a square-wrapped floating object. Sets both
+ * anchors relative to the margin with the preset's alignment and zero offset.
+ * A no-op when no object is selected.
+ */
+export function setSelectedFloatingPositionPreset(
+  state: EditorState,
+  preset: FloatingPositionPreset,
+): EditorState {
+  const selected = getSelectedObjectRun(
+    state,
+    (run): boolean => run.kind === "image" || run.kind === "textBox",
+  );
+  if (!selected) return state;
+
+  const { h, v } = positionPresetAligns(preset);
+  const positionH = { relativeFrom: "margin", align: h, offset: 0 };
+  const positionV = { relativeFrom: "margin", align: v, offset: 0 };
+
+  const { paragraphIndex, run: targetRun } = selected;
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map(
+    (candidate, candidateIndex): EditorParagraphNode => {
+      if (candidateIndex !== paragraphIndex) return cloneParagraph(candidate);
+      return {
+        ...cloneParagraph(candidate),
+        runs: candidate.runs.map((run): EditorTextRun => {
+          if (run.id !== targetRun.id) return cloneRun(run);
+          if (run.kind === "image") {
+            const floating: EditorImageFloatingLayout = {
+              ...(run.image.floating ?? {
+                type: "floating",
+                allowOverlap: true,
+              }),
+              type: "floating",
+              wrap:
+                run.image.floating?.wrap === "none"
+                  ? run.image.floating.wrap
+                  : (run.image.floating?.wrap ?? "square"),
+              behindDoc: run.image.floating?.behindDoc,
+              positionH,
+              positionV,
+            };
+            return { ...run, image: { ...run.image, floating } };
+          }
+          if (run.kind === "textBox") {
+            const floating: EditorImageFloatingLayout = {
+              ...(run.textBox.floating ?? {
+                type: "floating",
+                allowOverlap: true,
+              }),
+              type: "floating",
+              wrap:
+                run.textBox.floating?.wrap === "none"
+                  ? run.textBox.floating.wrap
+                  : (run.textBox.floating?.wrap ?? "square"),
+              behindDoc: run.textBox.floating?.behindDoc,
+              positionH,
+              positionV,
+            };
+            return { ...run, textBox: { ...run.textBox, floating } };
+          }
+          return cloneRun(run);
+        }),
+      };
+    },
+  );
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
+  );
+}
