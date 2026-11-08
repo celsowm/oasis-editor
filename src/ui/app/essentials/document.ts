@@ -1,4 +1,5 @@
 import { insertShapeAtSelection } from "@/core/commands/shape.js";
+import { alignSelectedFloatingObject } from "@/core/commands/floatingAlignCommands.js";
 import {
   setSelectedShapeFill,
   setSelectedShapeOutline,
@@ -98,6 +99,11 @@ export function buildEssentialsDocument(
       options.applyTransactionalState(
         (current): EditorState => setSelectedShapeOutline(current, color),
         { mergeKey: MERGE_KEYS.shapeOutline },
+      ),
+    alignFloatingObject: (align: "left" | "center" | "right"): void =>
+      options.applyTransactionalState(
+        (current): EditorState => alignSelectedFloatingObject(current, align),
+        { mergeKey: MERGE_KEYS.floatingAlign },
       ),
   };
 }

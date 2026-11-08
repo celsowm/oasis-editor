@@ -173,6 +173,8 @@ export interface EssentialsDocumentCapability {
   setShapeFill: (fill: string | null) => void;
   /** Set the selected shape's outline color (`null` removes it). */
   setShapeOutline: (color: string | null) => void;
+  /** Align the selected floating object (image/text box) to the margin. */
+  alignFloatingObject: (align: "left" | "center" | "right") => void;
 }
 
 export interface EssentialsLinkCapability {
