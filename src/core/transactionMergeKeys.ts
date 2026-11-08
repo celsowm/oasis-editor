@@ -68,6 +68,7 @@ export const MERGE_KEYS = {
   floatingAlign: "floatingAlign",
   floatingReorder: "floatingReorder",
   floatingNudge: "floatingNudge",
+  floatingFixedPosition: "floatingFixedPosition",
   shapePreset: "shapePreset",
   textBoxTextDirection: "textBoxTextDirection",
   textBoxVerticalAlign: "textBoxVerticalAlign",

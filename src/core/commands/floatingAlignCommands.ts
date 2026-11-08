@@ -11,6 +11,10 @@ import { cloneParagraph, cloneRun } from "@/core/document/clone.js";
 import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
 import { preserveSelectionByParagraphOffsets } from "@/core/selection/rangeEditing.js";
 import { getSelectedObjectRun } from "./selectedObjectRun.js";
+import {
+  applyMoveWithText,
+  isFloatingFixedPosition,
+} from "./floatingLayout.js";
 
 /** The horizontal alignment presets WordCraft's `arrange.align` accepts. */
 export type FloatingObjectAlign = "left" | "center" | "right";
@@ -224,4 +228,99 @@ function patchNudge(
       offset: (v.offset ?? 0) + Math.round(dyPx * EMU_PER_PX),
     },
   };
+}
+
+/**
+ * True when a floating object (image or text box) is selected and can be
+ * pinned to the page / moved with text.
+ */
+export function canSetSelectedFloatingFixedPosition(
+  state: EditorState,
+): boolean {
+  const selected = getSelectedObjectRun(
+    state,
+    (run): boolean => run.kind === "image" || run.kind === "textBox",
+  );
+  return selected !== null;
+}
+
+/** True when the selected floating object is pinned to the page. */
+export function isSelectedFloatingFixedPosition(state: EditorState): boolean {
+  const selected = getSelectedObjectRun(
+    state,
+    (run): boolean => run.kind === "image" || run.kind === "textBox",
+  );
+  if (!selected) return false;
+  if (selected.run.kind === "image") {
+    return isFloatingFixedPosition(selected.run.image.floating);
+  }
+  if (selected.run.kind === "textBox") {
+    return isFloatingFixedPosition(selected.run.textBox.floating);
+  }
+  return false;
+}
+
+/**
+ * Word's "Move with text" / "Fix position on page" (WordCraft
+ * `arrange.moveWithText`): sets whether the selected image/text box moves with
+ * the text (anchored to the paragraph) or is pinned to the page. Only applies
+ * to floating objects; a no-op when none is selected.
+ */
+export function setSelectedFloatingFixedPosition(
+  state: EditorState,
+  fixed: boolean,
+): EditorState {
+  const selected = getSelectedObjectRun(
+    state,
+    (run): boolean => run.kind === "image" || run.kind === "textBox",
+  );
+  if (!selected) return state;
+
+  const { paragraphIndex, run: targetRun } = selected;
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map(
+    (candidate, candidateIndex): EditorParagraphNode => {
+      if (candidateIndex !== paragraphIndex) return cloneParagraph(candidate);
+      return {
+        ...cloneParagraph(candidate),
+        runs: candidate.runs.map((run): EditorTextRun => {
+          if (run.id !== targetRun.id) return cloneRun(run);
+          if (run.kind === "image") {
+            const floating = run.image.floating;
+            return {
+              ...run,
+              image: {
+                ...run.image,
+                floating: floating
+                  ? applyMoveWithText(floating, fixed)
+                  : floating,
+              },
+            };
+          }
+          if (run.kind === "textBox") {
+            const floating = run.textBox.floating;
+            return {
+              ...run,
+              textBox: {
+                ...run.textBox,
+                floating: floating
+                  ? applyMoveWithText(floating, fixed)
+                  : floating,
+              },
+            };
+          }
+          return cloneRun(run);
+        }),
+      };
+    },
+  );
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
+  );
 }

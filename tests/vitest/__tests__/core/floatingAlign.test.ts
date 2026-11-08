@@ -8,7 +8,10 @@ import {
   alignSelectedFloatingObject,
   canAlignSelectedFloatingObject,
   canNudgeSelectedFloatingObject,
+  canSetSelectedFloatingFixedPosition,
+  isSelectedFloatingFixedPosition,
   nudgeSelectedFloatingObject,
+  setSelectedFloatingFixedPosition,
 } from "@/core/commands/floatingAlignCommands.js";
 import {
   getParagraphs,
@@ -186,5 +189,85 @@ describe("nudge floating object", () => {
     const state = buildImageState(baseImage);
     const plain = placeOn(state, 3);
     expect(nudgeSelectedFloatingObject(plain, 1, 1)).toBe(plain);
+  });
+});
+
+describe("floating object fixed position (move with text)", () => {
+  it("exposes a capability for a floating image selection", () => {
+    const floatingImage: EditorImageRunData = {
+      ...baseImage,
+      floating: {
+        type: "floating",
+        wrap: "square",
+        positionV: { relativeFrom: "paragraph", offset: 0 },
+      },
+    };
+    expect(
+      canSetSelectedFloatingFixedPosition(buildImageState(floatingImage)),
+    ).toBe(true);
+  });
+
+  it("denies the capability for a plain text selection", () => {
+    const state = buildImageState(baseImage);
+    expect(
+      canSetSelectedFloatingFixedPosition(placeOn(state, 3)),
+    ).toBe(false);
+  });
+
+  it("reports the current fixed state from the vertical anchor", () => {
+    const floatingImage: EditorImageRunData = {
+      ...baseImage,
+      floating: {
+        type: "floating",
+        wrap: "square",
+        positionV: { relativeFrom: "page", offset: 0 },
+      },
+    };
+    expect(
+      isSelectedFloatingFixedPosition(buildImageState(floatingImage)),
+    ).toBe(true);
+  });
+
+  it("pins a floating image to the page", () => {
+    const floatingImage: EditorImageRunData = {
+      ...baseImage,
+      floating: {
+        type: "floating",
+        wrap: "square",
+        positionV: { relativeFrom: "paragraph", offset: 10 },
+      },
+    };
+    const next = setSelectedFloatingFixedPosition(
+      buildImageState(floatingImage),
+      true,
+    );
+    expect(next).not.toBe(buildImageState(floatingImage));
+    const image = getRunImage(getParagraphs(next)[0]!.runs[0]!)!;
+    expect(image.floating?.positionV?.relativeFrom).toBe("page");
+  });
+
+  it("returns a text box to moving with the text", () => {
+    const textBox: EditorTextBoxData = {
+      width: 150,
+      height: 100,
+      blocks: [],
+      floating: {
+        type: "floating",
+        wrap: "square",
+        positionV: { relativeFrom: "page", offset: 0 },
+      },
+    };
+    const pinned = setSelectedFloatingFixedPosition(
+      buildTextBoxState(textBox),
+      false,
+    );
+    const box = getRunTextBox(getParagraphs(pinned)[0]!.runs[0]!)!;
+    expect(box.floating?.positionV?.relativeFrom).toBe("paragraph");
+  });
+
+  it("leaves the state untouched when no object is selected", () => {
+    const state = buildImageState(baseImage);
+    const plain = placeOn(state, 3);
+    expect(setSelectedFloatingFixedPosition(plain, true)).toBe(plain);
   });
 });
