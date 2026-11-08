@@ -126,6 +126,21 @@ export function buildDocumentAndBrowserCommands({
     reorderFloatingObject: actionCommand("reorderFloatingObject", (p): void =>
       document.reorderFloatingObject((p as "front" | "back") ?? "front"),
     ),
+    setShapePreset: actionCommand("setShapePreset", (p): void =>
+      document.setShapePreset(p == null ? "rect" : String(p)),
+    ),
+    setTextBoxTextDirection: actionCommand(
+      "setTextBoxTextDirection",
+      (p): void =>
+        document.setTextBoxTextDirection(
+          (p as "horz" | "vert" | "vert270" | "wordArtVert") ?? "horz",
+        ),
+    ),
+    setTextBoxVerticalAlign: actionCommand(
+      "setTextBoxVerticalAlign",
+      (p): void =>
+        document.setTextBoxVerticalAlign((p as "t" | "ctr" | "b") ?? "t"),
+    ),
     openSymbolDialog: actionCommand("openSymbolDialog", (): void =>
       document.openSymbolDialog(),
     ),

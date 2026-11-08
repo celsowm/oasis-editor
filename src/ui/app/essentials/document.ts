@@ -4,7 +4,12 @@ import { reorderSelectedFloatingObject } from "@/core/commands/floatingReorderCo
 import {
   setSelectedShapeFill,
   setSelectedShapeOutline,
+  setSelectedShapePreset,
 } from "@/core/commands/shapeFillCommands.js";
+import {
+  setSelectedTextBoxTextDirection,
+  setSelectedTextBoxVerticalAlign,
+} from "@/core/commands/textBoxBodyCommands.js";
 import { insertHtmlAtSelection } from "@/core/commands/html.js";
 import { MERGE_KEYS } from "@/core/transactionMergeKeys.js";
 import { hasActiveTable } from "@/app/services/tablePropertiesService.js";
@@ -110,6 +115,24 @@ export function buildEssentialsDocument(
       options.applyTransactionalState(
         (current): EditorState => reorderSelectedFloatingObject(current, move),
         { mergeKey: MERGE_KEYS.floatingReorder },
+      ),
+    setShapePreset: (preset: string): void =>
+      options.applyTransactionalState(
+        (current): EditorState => setSelectedShapePreset(current, preset),
+        { mergeKey: MERGE_KEYS.shapePreset },
+      ),
+    setTextBoxTextDirection: (
+      dir: "horz" | "vert" | "vert270" | "wordArtVert",
+    ): void =>
+      options.applyTransactionalState(
+        (current): EditorState => setSelectedTextBoxTextDirection(current, dir),
+        { mergeKey: MERGE_KEYS.textBoxTextDirection },
+      ),
+    setTextBoxVerticalAlign: (anchor: "t" | "ctr" | "b"): void =>
+      options.applyTransactionalState(
+        (current): EditorState =>
+          setSelectedTextBoxVerticalAlign(current, anchor),
+        { mergeKey: MERGE_KEYS.textBoxVerticalAlign },
       ),
   };
 }

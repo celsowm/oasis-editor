@@ -177,6 +177,14 @@ export interface EssentialsDocumentCapability {
   alignFloatingObject: (align: "left" | "center" | "right") => void;
   /** Bring the selected floating object to the front or behind the text. */
   reorderFloatingObject: (move: "front" | "back") => void;
+  /** Change the selected shape's DrawingML preset geometry. */
+  setShapePreset: (preset: string) => void;
+  /** Set the selected text box's text-direction flow. */
+  setTextBoxTextDirection: (
+    dir: "horz" | "vert" | "vert270" | "wordArtVert",
+  ) => void;
+  /** Set the selected text box's vertical text alignment. */
+  setTextBoxVerticalAlign: (anchor: "t" | "ctr" | "b") => void;
 }
 
 export interface EssentialsLinkCapability {
