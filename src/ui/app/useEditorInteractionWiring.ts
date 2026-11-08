@@ -12,6 +12,7 @@ import { createEditorRevisionController } from "@/app/controllers/useEditorRevis
 import type { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
 import type { createEditorImageOperations } from "@/app/controllers/useEditorImageOperations.js";
 import type { createEditorStyleController } from "@/app/controllers/useEditorStyle.js";
+import type { EditorFormatPainter } from "./createEditorFormatPainter.js";
 
 type TableDragParams = Parameters<typeof createEditorTableDrag>[0];
 type TextDragParams = Parameters<typeof createEditorTextDrag>[0];
@@ -49,6 +50,7 @@ export interface EditorInteractionWiringContext {
   tableOps: ReturnType<typeof createEditorTableOperations>;
   imageOps: ReturnType<typeof createEditorImageOperations>;
   styleController: ReturnType<typeof createEditorStyleController>;
+  formatPainter: EditorFormatPainter;
   getForcePlainTextPaste: () => boolean;
   setForcePlainTextPaste: (value: boolean) => void;
   insertImageFromFile: ClipboardParams["insertImageFromFile"];
@@ -130,6 +132,7 @@ export function useEditorInteractionWiring(
     tableResize,
     imageOps: ctx.imageOps,
     clearPendingCaretTextStyle: ctx.styleController.clearPendingCaretTextStyle,
+    onSelectionFinalized: (): void => { ctx.formatPainter.applyToSelection("pointer"); },
     clearPreferredColumn: ctx.clearPreferredColumn,
     resetTransactionGrouping: ctx.resetTransactionGrouping,
     focusInputAfterPointerSelection: ctx.focusInputAfterPointerSelection,

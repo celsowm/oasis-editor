@@ -86,6 +86,31 @@ export function buildCoreFormattingCommands({
       formatting.updateEquation(payload.runId, payload.expression);
     }),
     pastePlainText: command("pastePlainText", formatting.pastePlainText),
+    formatPainter: command(
+      "formatPainter",
+      formatting.formatPainterOnce,
+      (): { isEnabled: boolean; isActive: boolean } => ({
+        isEnabled: gate.isCommandEnabled("formatPainter") &&
+          formatting.canCaptureFormatPainter(),
+        isActive: formatting.formatPainterMode() !== null,
+      }),
+    ),
+    formatPainterContinuous: command(
+      "formatPainterContinuous",
+      formatting.formatPainterContinuous,
+      (): { isEnabled: boolean; isActive: boolean } => ({
+        isEnabled: gate.isCommandEnabled("formatPainterContinuous") &&
+          formatting.canCaptureFormatPainter(),
+        isActive: formatting.formatPainterMode() === "continuous",
+      }),
+    ),
+    cancelFormatPainter: command(
+      "cancelFormatPainter",
+      formatting.cancelFormatPainter,
+      (): { isEnabled: boolean } => ({
+        isEnabled: formatting.formatPainterMode() !== null,
+      }),
+    ),
     bold: command("bold", formatting.bold, (): { isActive: boolean } => ({
       isActive: Boolean(s().bold),
     })),

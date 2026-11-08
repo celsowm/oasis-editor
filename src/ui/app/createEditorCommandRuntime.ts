@@ -127,6 +127,7 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
       keyboardCommandsController,
       historyActions: doc.historyActions,
       styleController: interaction.styleController,
+      formatPainter: interaction.formatPainter,
       tableOps: interaction.tableOps,
       docIO: doc.docIO,
       importInputRef: deps.importInputRef,

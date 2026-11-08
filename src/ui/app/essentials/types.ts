@@ -4,6 +4,7 @@ import type { SelectedImageRun } from "@/core/commands/image.js";
 import type { createEditorCommandsController } from "@/app/controllers/EditorCommandsController.js";
 import type { createEditorHistoryActions } from "@/app/controllers/useEditorHistoryActions.js";
 import type { createEditorStyleController } from "@/app/controllers/useEditorStyle.js";
+import type { EditorFormatPainter } from "../createEditorFormatPainter.js";
 import type { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
 import type { EssentialsDesignCapability } from "@/plugins/internal/essentialsCapabilities.js";
 
@@ -27,6 +28,7 @@ export interface CreateEditorEssentialsPluginOptions {
   };
   historyActions: ReturnType<typeof createEditorHistoryActions>;
   styleController: ReturnType<typeof createEditorStyleController>;
+  formatPainter: EditorFormatPainter;
   tableOps: ReturnType<typeof createEditorTableOperations>;
   docIO: {
     handleExportDocx: () => Promise<Blob>;

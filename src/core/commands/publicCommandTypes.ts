@@ -49,6 +49,9 @@ export interface OasisCommandPayloads {
   paste: undefined;
   pasteAsPlainText: undefined;
   pasteMergeFormatting: undefined;
+  formatPainter: undefined;
+  formatPainterContinuous: undefined;
+  cancelFormatPainter: undefined;
   bold: undefined;
   italic: undefined;
   underline: undefined;

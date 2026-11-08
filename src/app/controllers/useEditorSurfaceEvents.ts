@@ -93,6 +93,8 @@ export interface UseEditorSurfaceEventsProps {
     ) => void;
   };
   clearPendingCaretTextStyle: () => void;
+  /** Called after the final pointer selection has been committed to EditorState. */
+  onSelectionFinalized?: () => void;
   clearPreferredColumn: () => void;
   resetTransactionGrouping: () => void;
   focusInputAfterPointerSelection: () => void;
@@ -445,6 +447,7 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
       stopDragging();
       if (isTap) {
         commitTouchTap(touch.hit, touch.clickDetail, event);
+        deps.onSelectionFinalized?.();
       }
       return;
     }
@@ -456,6 +459,7 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
     flushPendingDragFrame();
     logSelection("selection:end");
     stopDragging();
+    deps.onSelectionFinalized?.();
     deps.focusInputAfterPointerSelection();
   };
 

@@ -12,6 +12,7 @@ import type { createEditorCommandsController } from "@/app/controllers/EditorCom
 import { createCanvasSurfaceHitResolver } from "./useCanvasSurfaceHitResolver.js";
 import { createEditorLayoutOptionsController } from "./createEditorLayoutOptionsController.js";
 import { useEditorInteractionWiring } from "./useEditorInteractionWiring.js";
+import { createEditorFormatPainter } from "./createEditorFormatPainter.js";
 import type { createEditorDocumentRuntime } from "./createEditorDocumentRuntime.js";
 import type { SelectedObjectRun } from "@/core/commands/selectedObjectRun.js";
 import type { CaretBox } from "@/ui/editorUiTypes.js";
@@ -139,6 +140,16 @@ function createEditorInteractionRuntimeImpl(
     logger,
   });
 
+  const formatPainter = createEditorFormatPainter({
+    state: (): EditorState => state,
+    isReadOnly,
+    applyTransactionalState,
+    applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    focusInput,
+  });
+
   const resolvePositionAtSurfacePoint = (
     clientX: number,
     clientY: number,
@@ -204,6 +215,7 @@ function createEditorInteractionRuntimeImpl(
     tableOps,
     imageOps,
     styleController,
+    formatPainter,
     getForcePlainTextPaste,
     setForcePlainTextPaste,
     insertImageFromFile,
@@ -232,6 +244,7 @@ function createEditorInteractionRuntimeImpl(
     imageOps,
     textBoxOps,
     styleController,
+    formatPainter,
     onEditorPointerDown,
     tableResize: wiring.tableResize,
     tableCornerResize: wiring.tableCornerResize,

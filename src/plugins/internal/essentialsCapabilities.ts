@@ -50,6 +50,11 @@ export interface EssentialsFormattingCapability {
   insertEquation: (expression: EditorMathExpression) => boolean;
   updateEquation: (runId: string, expression: EditorMathExpression) => boolean;
   pastePlainText: () => boolean;
+  formatPainterOnce: () => boolean;
+  formatPainterContinuous: () => boolean;
+  cancelFormatPainter: () => boolean;
+  formatPainterMode: () => "once" | "continuous" | null;
+  canCaptureFormatPainter: () => boolean;
   bold: () => boolean;
   italic: () => boolean;
   underline: () => boolean;

@@ -74,6 +74,14 @@ export function buildEssentialsFormatting(
   };
 
   return {
+    formatPainterOnce: options.formatPainter.armOnce,
+    formatPainterContinuous: options.formatPainter.armContinuous,
+    cancelFormatPainter: (): boolean => {
+      options.formatPainter.cancel();
+      return true;
+    },
+    formatPainterMode: options.formatPainter.mode,
+    canCaptureFormatPainter: options.formatPainter.canCapture,
     selectAll: (): boolean => {
       const paragraphs = getDocumentParagraphs(options.state().document);
       if (paragraphs.length === 0) return false;
