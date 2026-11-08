@@ -77,7 +77,8 @@ export const defaultMenuItems: MenuItem[] = [
     path: "Edit/Cut",
     labelKey: "menu.edit.cut",
     shortcut: "Ctrl+X",
-    hidden: true,
+    command: "cut",
+    icon: "scissors",
   },
   {
     id: "edit_copy",
@@ -94,6 +95,13 @@ export const defaultMenuItems: MenuItem[] = [
     shortcut: "Ctrl+V",
     command: "paste",
     icon: "clipboard-paste",
+  },
+  {
+    id: "edit_paste_merge",
+    path: "Edit/Paste Merge Formatting",
+    labelKey: "toolbar.pasteMergeFormatting",
+    command: "pasteMergeFormatting",
+    icon: "paintbrush",
   },
   {
     id: "edit_paste_plain",

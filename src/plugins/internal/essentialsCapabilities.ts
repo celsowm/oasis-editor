@@ -171,6 +171,7 @@ export interface EssentialsBrowserCapability {
   canCut: () => boolean;
   paste: () => void;
   pasteAsPlainText: () => void;
+  pasteMergeFormatting: () => void;
   canPaste: () => boolean;
   copy: () => void;
   hasSelection: () => boolean;

@@ -33,6 +33,7 @@ export function buildEssentialsBrowser(
     canPaste: canReadSystemClipboard,
     paste: (): void => { void pasteFromSystemClipboard(pasteDeps, "rich"); },
     pasteAsPlainText: (): void => { void pasteFromSystemClipboard(pasteDeps, "text"); },
+    pasteMergeFormatting: (): void => { void pasteFromSystemClipboard(pasteDeps, "merge"); },
     hasSelection: (): boolean => selectedText().length > 0,
     copy: (): void => {
       void writeEditorSelectionToClipboard(state());

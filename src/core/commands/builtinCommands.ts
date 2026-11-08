@@ -9,6 +9,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "pastePlainText",
   "paste",
   "pasteAsPlainText",
+  "pasteMergeFormatting",
   "bold",
   "italic",
   "underline",

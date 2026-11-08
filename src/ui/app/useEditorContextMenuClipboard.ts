@@ -1,7 +1,6 @@
 import type { MergeKey } from "@/core/transactionMergeKeys.js";
 import type { EditorState } from "@/core/model.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
-import { getSelectedText as getEditorSelectedText } from "@/core/commands/selection.js";
 import { cutEditorSelection, writeEditorSelectionToClipboard } from "./clipboardWrite.js";
 import { pasteFromSystemClipboard } from "./clipboardPaste.js";
 import type { TranslateFn } from "@/i18n/index.js";

@@ -9,6 +9,7 @@ const items = createDefaultToolbarPreset(t);
 
 const exposed = [
   ["editor-toolbar-copy", "copy", "home", "clipboard"],
+  ["editor-toolbar-cut", "cut", "home", "clipboard"],
   ["editor-toolbar-find", "find", "home", "editing"],
   ["editor-toolbar-select-all", "selectAll", "home", "editing"],
   ["editor-toolbar-page-break", "pageBreak", "insert", "pages"],
@@ -43,7 +44,7 @@ describe("WordCraft Ribbon parity: first Oasis exposure slice", () => {
     if (paste.menu.kind !== "items") throw new Error("Paste menu has no items");
     expect(paste.menu.items.map((item) =>
       item.type === "button" ? item.command : undefined
-    )).toEqual(["paste", "pasteAsPlainText"]);
+    )).toEqual(["paste", "pasteMergeFormatting", "pasteAsPlainText"]);
   });
 
   it("shows Review and View only after they have real controls", () => {

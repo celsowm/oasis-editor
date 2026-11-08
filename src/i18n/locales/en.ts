@@ -646,6 +646,7 @@ export const en = {
   "menu.edit.cut": "Cut",
   "menu.edit.copy": "Copy",
   "toolbar.pasteKeepFormatting": "Keep source formatting",
+  "toolbar.pasteMergeFormatting": "Merge formatting",
   "toolbar.pastePlainText": "Keep text only",
   "menu.edit.paste": "Paste",
   "menu.edit.selectAll": "Select All",

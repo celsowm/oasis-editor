@@ -68,6 +68,13 @@ export function buildDocumentAndBrowserCommands({
           browser.hasSelection() && browser.canCut(),
       }),
     ),
+    pasteMergeFormatting: actionCommand(
+      "pasteMergeFormatting",
+      (): void => browser.pasteMergeFormatting(),
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("pasteMergeFormatting") && browser.canPaste(),
+      }),
+    ),
     copy: actionCommand(
       "copy",
       (): void => browser.copy(),

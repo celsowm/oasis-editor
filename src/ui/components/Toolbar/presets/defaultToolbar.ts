@@ -206,6 +206,14 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
         },
         {
           type: "button",
+          id: "editor-toolbar-paste-merge",
+          testId: "editor-toolbar-paste-merge",
+          iconName: "paintbrush",
+          labelKey: "toolbar.pasteMergeFormatting",
+          command: "pasteMergeFormatting",
+        },
+        {
+          type: "button",
           id: "editor-toolbar-paste-plain",
           testId: "editor-toolbar-paste-plain",
           iconName: "clipboard",
@@ -214,6 +222,15 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
         },
       ],
     },
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-cut",
+    testId: "editor-toolbar-cut",
+    iconName: "scissors",
+    labelKey: "menu.edit.cut",
+    tooltipKey: "menu.edit.cut",
+    command: "cut",
   });
   items.push({
     type: "button",
