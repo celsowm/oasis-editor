@@ -216,6 +216,15 @@ export function buildTableCommands({
           table.canSetCellMargins(),
       }),
     ),
+    tableFormula: actionCommand(
+      "tableFormula",
+      (p): void => table.evaluateTableFormula(String(p)),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableFormula") &&
+          table.canEvaluateTableFormula(),
+      }),
+    ),
     tableToggleHeaderRow: actionCommand(
       "tableToggleHeaderRow",
       (): void => table.toggleTblLook("firstRow"),

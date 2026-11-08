@@ -23,6 +23,8 @@ import {
   canSetTableCellMargins,
   setActiveTableCellMargins,
   type TableCellMargins,
+  canEvaluateActiveTableFormula,
+  evaluateActiveTableFormula,
 } from "@/core/commands/table.js";
 import {
   findParagraphTablePathLocation,
@@ -417,6 +419,13 @@ export function buildEssentialsTable(
       apply(
         (current): EditorState => setActiveTableCellMargins(current, margins),
         MERGE_KEYS.tableCellMargins,
+      ),
+    canEvaluateTableFormula: (): boolean =>
+      canEvaluateActiveTableFormula(options.state()),
+    evaluateTableFormula: (formula: string): void =>
+      apply(
+        (current): EditorState => evaluateActiveTableFormula(current, formula),
+        MERGE_KEYS.tableFormula,
       ),
     insert: (rows: number, cols: number): void =>
       options.tableOps.insertTableCommand(rows, cols),

@@ -420,6 +420,11 @@ export interface EssentialsTableCapability {
   canSetCellMargins: () => boolean;
   /** Word's Cell Margins: set per-edge padding on the selected cells. */
   setCellMargins: (margins: TableCellMargins) => void;
+  /** True when the caret sits inside a table cell that can hold a formula result. */
+  canEvaluateTableFormula: () => boolean;
+  /** Word's Formula: evaluate a supported aggregate over a direction and
+   * write the formatted result into the active cell. */
+  evaluateTableFormula: (formula: string) => void;
   insert: (rows: number, cols: number) => void;
 }
 
