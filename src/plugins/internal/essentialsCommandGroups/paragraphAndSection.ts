@@ -32,6 +32,20 @@ export function buildParagraphAndSectionCommands({
   return {
     outdent: actionCommand("outdent", (): void => paragraph.outdent()),
     indent: actionCommand("indent", (): void => paragraph.indent()),
+    moveParagraphsUp: actionCommand(
+      "moveParagraphsUp",
+      (): void => paragraph.moveParagraphsUp(),
+      (): { isEnabled: boolean } => ({
+        isEnabled: paragraph.canMoveParagraphsUp(),
+      }),
+    ),
+    moveParagraphsDown: actionCommand(
+      "moveParagraphsDown",
+      (): void => paragraph.moveParagraphsDown(),
+      (): { isEnabled: boolean } => ({
+        isEnabled: paragraph.canMoveParagraphsDown(),
+      }),
+    ),
     togglePageBreakBefore: actionCommand(
       "togglePageBreakBefore",
       (): void => paragraph.togglePageBreakBefore(),

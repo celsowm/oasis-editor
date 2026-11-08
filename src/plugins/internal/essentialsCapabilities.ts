@@ -316,6 +316,12 @@ export interface EssentialsParagraphCapability {
   setListStartAt: (value: number | null) => void;
   outdent: () => void;
   indent: () => void;
+  /** Move the selected paragraphs one step up/down, if possible. */
+  moveParagraphsUp: () => void;
+  moveParagraphsDown: () => void;
+  /** True when the selected paragraph run can move in the given direction. */
+  canMoveParagraphsUp: () => boolean;
+  canMoveParagraphsDown: () => boolean;
 }
 
 export interface EssentialsSectionCapability {

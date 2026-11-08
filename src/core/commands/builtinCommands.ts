@@ -94,6 +94,8 @@ export const OASIS_BUILTIN_COMMANDS = [
   "resetImage",
   "outdent",
   "indent",
+  "moveParagraphsUp",
+  "moveParagraphsDown",
   "togglePageBreakBefore",
   "toggleKeepWithNext",
   "setSpacingAfter",

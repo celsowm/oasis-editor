@@ -67,6 +67,8 @@ export interface OasisCommandPayloads {
   alignJustify: undefined;
   orderedList: undefined;
   bulletList: undefined;
+  moveParagraphsUp: undefined;
+  moveParagraphsDown: undefined;
   find: undefined;
   replace: undefined;
   toggleTrackChanges: undefined;

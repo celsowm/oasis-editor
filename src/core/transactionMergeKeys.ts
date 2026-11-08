@@ -27,6 +27,8 @@ export const MERGE_KEYS = {
   layoutWrapPolygon: "layoutWrapPolygon",
   specialIndent: "specialIndent",
   paraBorders: "paraBorders",
+  paragraphMoveUp: "paragraphMoveUp",
+  paragraphMoveDown: "paragraphMoveDown",
   findReplace: "findReplace",
   findReplaceAll: "findReplaceAll",
   tableProperties: "tableProperties",

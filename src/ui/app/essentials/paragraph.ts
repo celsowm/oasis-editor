@@ -1,5 +1,9 @@
 import { MERGE_KEYS } from "@/core/transactionMergeKeys.js";
 import { setParagraphStyle } from "@/core/commands/block.js";
+import {
+  canMoveSelectedParagraphs,
+  moveSelectedParagraphs,
+} from "@/core/commands/paragraphMove.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
 import type { EssentialsParagraphCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
@@ -99,5 +103,33 @@ export function buildEssentialsParagraph(
       void options.commandsController.handleListTab("outdent"),
     indent: (): undefined =>
       void options.commandsController.handleListTab("indent"),
+    moveParagraphsUp: (): void => {
+      const current = options.state();
+      if (!canMoveSelectedParagraphs(current, "up")) {
+        options.focusInput();
+        return;
+      }
+      options.applyTransactionalState(
+        (c): EditorState => moveSelectedParagraphs(c, "up"),
+        { mergeKey: MERGE_KEYS.paragraphMoveUp },
+      );
+      options.focusInput();
+    },
+    moveParagraphsDown: (): void => {
+      const current = options.state();
+      if (!canMoveSelectedParagraphs(current, "down")) {
+        options.focusInput();
+        return;
+      }
+      options.applyTransactionalState(
+        (c): EditorState => moveSelectedParagraphs(c, "down"),
+        { mergeKey: MERGE_KEYS.paragraphMoveDown },
+      );
+      options.focusInput();
+    },
+    canMoveParagraphsUp: (): boolean =>
+      canMoveSelectedParagraphs(options.state(), "up"),
+    canMoveParagraphsDown: (): boolean =>
+      canMoveSelectedParagraphs(options.state(), "down"),
   };
 }
