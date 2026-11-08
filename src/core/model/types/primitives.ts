@@ -253,10 +253,15 @@ export interface EditorImageRunData {
 export type PageNumberFormat =
   "decimal" | "roman" | "ROMAN" | "alphabetic" | "ALPHABETIC" | "Ordinal";
 
+/** Field types the editor can author/evaluate for display. */
+export type EditorFieldType = "PAGE" | "NUMPAGES" | "DATE";
+
 export interface EditorFieldData {
-  type: "PAGE" | "NUMPAGES";
+  type: EditorFieldType;
   /** Page-number `\*` format switch. Absent ⇒ decimal. */
   format?: PageNumberFormat;
+  /** `\@` picture for DATE fields (e.g. "M/d/yyyy"). Absent ⇒ default. */
+  dateFormat?: string;
 }
 
 /**

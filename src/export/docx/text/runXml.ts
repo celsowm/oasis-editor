@@ -80,7 +80,11 @@ export function serializeRun(
     fieldInstruction: (r): string =>
       serializeInstrTextRun(r.fieldInstruction!, runProps()),
     field: (r): string =>
-      serializeFieldRun(r.field!.type, r.field!.format, runProps()),
+      serializeFieldRun(
+        r.field!,
+        runProps(),
+        r.field!.type === "DATE" ? r.text : undefined,
+      ),
     textBox: (r): string =>
       serializeTextBoxRun(
         r,

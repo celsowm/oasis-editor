@@ -169,14 +169,14 @@ describe("DOCX import: complex fields (REF / PAGEREF / TOC)", () => {
     const { imported } = await roundTrip(
       `<w:p>
         <w:r><w:fldChar w:fldCharType="begin"/></w:r>
-        <w:r><w:instrText xml:space="preserve"> DATE \\@ "yyyy-MM-dd" </w:instrText></w:r>
+        <w:r><w:instrText xml:space="preserve"> AUTHOR "Jane Doe" </w:instrText></w:r>
         <w:r><w:fldChar w:fldCharType="separate"/></w:r>
-        <w:r><w:t>2026-06-12</w:t></w:r>
+        <w:r><w:t>Jane Doe</w:t></w:r>
         <w:r><w:fldChar w:fldCharType="end"/></w:r>
       </w:p>`,
     );
     expect(fieldCharKinds(imported)).toEqual(["begin", "separate", "end"]);
-    expect(instructions(imported)).toEqual([` DATE \\@ "yyyy-MM-dd" `]);
+    expect(instructions(imported)).toEqual([` AUTHOR "Jane Doe" `]);
     expect(allRuns(imported).some((r) => getRunField(r))).toBe(false);
   });
 

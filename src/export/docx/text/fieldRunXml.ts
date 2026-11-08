@@ -1,16 +1,26 @@
-import type { EditorFieldChar, PageNumberFormat } from "@/core/model.js";
+import type { EditorFieldChar, EditorFieldData } from "@/core/model.js";
 import { pageNumberFormatToSwitch } from "@/core/format/pageNumberFormat.js";
 import { escapeXml } from "@/export/docx/xmlUtils.js";
 
 export function serializeFieldRun(
-  fieldType: "PAGE" | "NUMPAGES",
-  format: PageNumberFormat | undefined,
+  field: EditorFieldData,
   rPrXml: string,
+  resultText = "1",
 ): string {
-  const base = fieldType === "PAGE" ? " PAGE " : " NUMPAGES ";
-  const switchText = pageNumberFormatToSwitch(format);
-  const instr = switchText ? ` ${base.trim()} \\* ${switchText} ` : base;
-  return `<w:fldSimple w:instr="${instr}"><w:r>${rPrXml}<w:t>1</w:t></w:r></w:fldSimple>`;
+  let instr: string;
+  if (field.type === "DATE") {
+    const picture = field.dateFormat ?? "M/d/yyyy";
+    instr = ` DATE \\@ "${picture}" `;
+  } else {
+    const base = field.type === "PAGE" ? " PAGE " : " NUMPAGES ";
+    const switchText = pageNumberFormatToSwitch(field.format);
+    instr = switchText ? ` ${base.trim()} \\* ${switchText} ` : base;
+  }
+  return `<w:fldSimple w:instr="${escapeXml(
+    instr,
+  )}"><w:r>${rPrXml}<w:t xml:space="preserve">${escapeXml(
+    resultText,
+  )}</w:t></w:r></w:fldSimple>`;
 }
 
 /**

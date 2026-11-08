@@ -49,7 +49,16 @@ export interface ImportedRun {
   revisionRangeMarker?: EditorRunBase["revisionRangeMarker"];
   /** Enclosing inline `w:sdt` wrappers, outermost first. */
   sdtWrappers?: EditorSdtBlockWrapper[];
-  field?: { type: "PAGE" | "NUMPAGES"; format?: PageNumberFormat };
+  field?:
+    | {
+        type: "PAGE" | "NUMPAGES";
+        format?: PageNumberFormat;
+      }
+    | {
+        type: "DATE";
+        /** `\@` picture (e.g. "M/d/yyyy"). Absent ⇒ default. */
+        dateFormat?: string;
+      };
   /** Preserved `w:fldChar` control char (complex fields). Zero-length marker. */
   fieldChar?: {
     kind: "begin" | "separate" | "end";

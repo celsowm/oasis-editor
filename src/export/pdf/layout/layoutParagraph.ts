@@ -52,6 +52,11 @@ export function resolvePdfRunText(
   context: PdfParagraphTextContext,
 ): string {
   if (run.kind === "field") {
+    // DATE caches its formatted result in run.text at insert/import time, so
+    // it renders as-is; PAGE/NUMPAGES resolve via layout context.
+    if (run.field.type === "DATE") {
+      return run.text;
+    }
     const value =
       run.field.type === "NUMPAGES" ? context.totalPages : context.pageNumber;
     return formatPageNumber(value, run.field.format);

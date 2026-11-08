@@ -327,13 +327,19 @@ export async function parseRunsContainer(
       ? "NUMPAGES"
       : /\bPAGE\b/i.test(entry.instruction)
         ? "PAGE"
-        : null;
+        : /\bDATE\b/i.test(entry.instruction)
+          ? "DATE"
+          : null;
     if (!fieldType) {
       return;
     }
     const format = pageNumberFormatFromSwitch(
       /\*\s*([A-Za-z]+)/.exec(entry.instruction)?.[1],
     );
+    const dateFormat =
+      fieldType === "DATE"
+        ? /@\s*"([^"]*)"/.exec(entry.instruction)?.[1]
+        : undefined;
     const span = runs.slice(entry.beginIndex);
     if (span.some((run): ImportedBookmarkMarker | undefined => run.bookmark)) {
       return;
@@ -347,10 +353,18 @@ export async function parseRunsContainer(
       resultRuns.find((run): EditorTextStyle | undefined => run.styles)
         ?.styles ?? entry.beginStyles;
     runs.length = entry.beginIndex;
+    const field =
+      fieldType === "DATE"
+        ? dateFormat
+          ? { type: "DATE" as const, dateFormat }
+          : { type: "DATE" as const }
+        : format
+          ? { type: fieldType as "PAGE" | "NUMPAGES", format }
+          : { type: fieldType as "PAGE" | "NUMPAGES" };
     runs.push({
       text: displayText,
       ...(styles ? { styles } : {}),
-      field: format ? { type: fieldType, format } : { type: fieldType },
+      field,
     });
   };
 
@@ -669,9 +683,13 @@ export async function parseRunsContainer(
         ? "NUMPAGES"
         : /\bPAGE\b/i.test(instr)
           ? "PAGE"
-          : null;
+          : /\bDATE\b/i.test(instr)
+            ? "DATE"
+            : null;
       const simpleFormat = /\*\s*([A-Za-z]+)/.exec(instr)?.[1];
       const fieldFormat = pageNumberFormatFromSwitch(simpleFormat);
+      const simpleDate =
+        fieldType === "DATE" ? /@\s*"([^"]*)"/.exec(instr)?.[1] : undefined;
       const fieldRuns = await parseRunsContainer(
         element,
         numberingMaps,
@@ -688,12 +706,18 @@ export async function parseRunsContainer(
         const styles = fieldRuns.find(
           (run): EditorTextStyle | undefined => run.styles,
         )?.styles;
+        const field =
+          fieldType === "DATE"
+            ? simpleDate
+              ? { type: "DATE" as const, dateFormat: simpleDate }
+              : { type: "DATE" as const }
+            : fieldFormat
+              ? { type: fieldType as "PAGE" | "NUMPAGES", format: fieldFormat }
+              : { type: fieldType as "PAGE" | "NUMPAGES" };
         runs.push({
           text: displayText,
           styles,
-          field: fieldFormat
-            ? { type: fieldType, format: fieldFormat }
-            : { type: fieldType },
+          field,
         });
       } else {
         runs.push({ text: "", fieldChar: { kind: "begin" } });
