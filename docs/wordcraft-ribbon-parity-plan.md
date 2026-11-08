@@ -1,0 +1,339 @@
+# Oasis Editor — WordCraft Ribbon Parity & Feature Completion Plan
+
+> **Status:** Proposed implementation roadmap (documentation only)  
+> **Baseline date:** 2026-11-07  
+> **Oasis baseline:** `celsowm/oasis-editor`, `main` @ `3c913fdbd33db8cf59d4b1835626dbcfefeae994`  
+> **WordCraft reference:** `storytold/wordcraft`, `main` @ `e53cae3482d4e080a15dc2320eb4929ea7722db2`  
+> **Scope:** General-purpose document editing; Ribbon and the underlying feature stack  
+> **Relationship:** Complements `docs/ooxml-near-full-compatibility-plan.md`. That plan governs OOXML interoperability; this one governs discoverability, authoring workflows, parity, and end-to-end proof.
+
+## 1. Objective and product boundaries
+
+Make Oasis Editor a feature-complete, accessible, extensible, general-purpose word processor with a discoverable Ribbon that is competitive with WordCraft. **Do not optimize the core or default UI for any particular consuming application, industry, or document workflow.** Application-specific behavior belongs in integrations and plugins.
+
+WordCraft is a **reference implementation and feature inventory**, not a codebase to copy or a requirement to duplicate every Microsoft Word surface. Avoid importing Rust/egui UI architecture into SolidJS, and do not treat a registered command, a visible button, or a preserved DOCX XML element as evidence that a feature is usable.
+
+Success means:
+
+1. A user can discover and complete common and advanced editing tasks from the default Ribbon and relevant contextual menus.
+2. A command is enabled, active, and parameterized consistently with selection and editor state; UI interactions do not lose selection or undo history.
+3. Authored content renders correctly, round-trips through DOCX where applicable, exports correctly to PDF, and is accessible to keyboard and assistive technology users.
+4. The core, toolbar schema, command registry, plugin API, model, renderers, import/export pipeline, and host integrations remain independently testable.
+5. Unsupported functionality is represented truthfully: preserved-only content is never presented as fully editable.
+
+**Out of scope for automatic parity:** WordCraft-specific platform integrations, a requirement to expose every obscure command by default, cloning Word visuals pixel-for-pixel, or embedding integration-specific document variables in Oasis.
+
+## 2. Sources and reproducible audit baseline
+
+### Oasis implementation anchors
+
+- `src/core/pluginUiTypes.ts` — built-in Ribbon tabs and contextual-tab predicates.
+- `src/ui/components/Toolbar/Toolbar.tsx` — Ribbon vs compact modes, selection-driven tab changes.
+- `src/ui/components/Toolbar/ribbon/{ribbonModel,RibbonTabs,RibbonPanel}.ts(x)` — tab/group composition, responsive collapse, visibility.
+- `src/ui/components/Toolbar/presets/defaultToolbar.ts` and `presets/defaultToolbar/{ribbonPlacements,buttonSpecs}.ts` — actual default toolbar inventory.
+- `src/ui/components/Toolbar/schema/items.ts`, `registry/ToolbarRegistry.ts`, `state/createToolbarApi.ts` — declarative UI contract.
+- `src/core/commands/builtinCommands.ts` — registered built-in command IDs, **not** proof of end-to-end feature readiness.
+- `src/plugins/internal/essentialsCommandGroups/*` and `src/ui/app/essentials/*` — command bindings/implementations.
+- `src/ui/components/Menubar/defaultMenuItems.ts` — some features are currently accessible only via menus.
+- `src/core/model/`, `src/layoutProjection/`, `src/import/docx/`, `src/export/docx/`, `src/export/pdf/` — semantic capability, layout, and persistence.
+- `docs/contextual-table-tabs.md` — previously completed contextual-table foundation.
+- `docs/ooxml-near-full-compatibility-plan.md` — preservation and document fidelity acceptance requirements.
+
+### WordCraft reference anchors
+
+- `crates/engine/src/ribbon.rs` — customizable Ribbon, tab inventory, Quick Access Toolbar (QAT), persistence and validation.
+- `crates/ui-egui/src/ribbon/{home,insert,design,layout,references,review,view,mailings,table,picture,shape,draw,charts,tabs}.rs` — visible UI entry points.
+- `crates/engine/src/catalog.rs` — capability catalog.
+- `docs/parity-checklist.md` — generated registry coverage, **not proof that every UI path or workflow is complete**.
+- `docs/ui-parity.md` and `docs/gaps.md` — context, known WordCraft constraints and parity caveats.
+
+WordCraft currently declares 13 main tabs and 7 named contextual categories in its Ribbon configuration. The Oasis tab vocabulary already declares `file`, `home`, `insert`, `design`, `draw`, `layout`, `references`, `collaboration`, `protection`, `view`, `tableDesign`, `tableLayout`, `imageFormat`, `plugins`, and `ai`. **Declaring a tab does not populate it:** Oasis builds tabs from actual contributions, so empty tabs remain hidden. The built-in preset currently populates File, Home, Insert, Design, Layout, References, Table Design, Table Layout, and Image Format.
+
+The initial comparison below is **code-inspection-based, not an executed functional benchmark**. It must be replaced by a generated, tested inventory in Phase 0. Before implementation, refresh both repository SHAs and revisit changes to each catalog.
+
+## 3. Status vocabulary and non-negotiable parity contract
+
+Maintain one machine-readable row per feature (with reference command IDs, Oasis commands, UI, and tests):
+
+| Status | Definition |
+| --- | --- |
+| `complete` | Discoverable and working; model/layout/export/round-trip and accessibility tests satisfy the feature contract. |
+| `ui-only` | User-facing control exists; semantic action or persisted result is missing/broken. |
+| `core-only` | Working core command exists but default Ribbon cannot reach it. |
+| `menu-only` | Working action exposed in a menu/pane but not the intended Ribbon location. |
+| `preservation-only` | Imported OOXML survives edit/export; native authoring or rendering is incomplete. |
+| `partial` | Real workflow exists but essential options or cases are unsupported. |
+| `missing` | No verified end-to-end path. |
+| `not-applicable` | Explicitly excluded with a documented rationale and alternative (if any). |
+
+For each `complete` entry, record: feature ID, WordCraft ID(s), Oasis command(s), default tab/group, contextual predicate, model support, canvas/layout support, DOCX import/export, PDF behavior, accessibility, automated tests, limitations, and documentation. “Unknown” is distinct from “missing”.
+
+**Feature acceptance ladder:** discover -> interact -> mutate model -> undo/redo -> render -> import/export -> round-trip -> test. Do not mark complete before every applicable step passes. A preservation-only state is a valid interoperability milestone, **not** UI parity.
+
+## 4. Initial gap analysis
+
+| Area | Verified Oasis baseline | WordCraft comparison / remaining work | Initial priority |
+| --- | --- | --- | --- |
+| File | New/import/export DOCX/PDF/print in preset; save is available in menus/host facilities. | Align discoverability, save/QAT workflow, document lifecycle, error and unsaved-change UX. | P1 |
+| Home / Clipboard | Undo/redo, styles, font formatting, alignment, lists, indent/spacing. `copy` is registered; cut/paste have menu/host paths. | Expose cut/copy/paste; Paste Special, format painter, advanced find/replace, optional advanced typography. | P0/P2 |
+| Home / Paragraph | Alignment, bullet/ordered lists, list options, special indents, spacing, shading/borders. | Multilevel lists, sorting, paragraph direction, sophisticated list numbering/style parity. | P1/P2 |
+| Insert | Tables, images, shapes, symbols, links, footnotes, image captions. | Header/footer editing, page numbering, bookmarks/cross-references, fields, text boxes, date/time, reusable parts, chart/SmartArt (later). | P1/P2 |
+| Design | Themes, design default, watermark, page color/borders, document style options. | Close option/preview gaps after confirming actual state and DOCX serialization. | P2 |
+| Layout | Margins, orientation, section breaks, paragraph metrics. | Paper size, columns, hyphenation, line numbers, richer section setup, object arrange controls. | P1/P2 |
+| References | Footnote control in Ribbon. `insertTableOfContents` and `updateTableOfContents` exist in built-ins and menu. | Add TOC actions immediately; then endnote UX, captions/cross-references, sources/bibliography, figure/index/authorities workflows. | P0/P2 |
+| Review | `toggleTrackChanges`, `acceptRevisions`, `rejectRevisions` already registered; no populated default Review tab. | Expose existing revision commands first; add navigation, tracked-change detail, comments authoring, comparison/merge, proofing and protection later. | P0/P1 |
+| View | Menu options for margins, paragraph marks, outline and more; Ribbon tab currently unpopulated. | Expose existing view options, zoom, navigation, ruler and view modes; avoid duplicating status bar functionality. | P0/P1 |
+| Table Design/Layout | Contextual tabs, conditional styles, borders, shading, row/column/merge/distribute/AutoFit. | Table selection/properties, cell margins/vertical alignment, repeat header, text direction, sorting/formulas, split table, text conversion. | P2 |
+| Picture Format | Contextual crop, width/height, border. | Wrapping/position, rotation, arrangement, richer picture effects; preserve unsupported markup. | P2 |
+| Draw/Shape/Equation | Shape and equation-related commands exist; richer tabs are not populated by the default preset. | Contextual shape/equation authoring; drawing tools only after underlying editing model and interaction design are proven. | P2/P3 |
+| Mailings | No dedicated built-in tab. | Generic mail merge, merge fields, data-source interface, preview, envelope/label output. | P3 |
+| Developer / Content Controls | OOXML and document model may preserve some related content; authoring requires audit. | Structured content controls, properties, repeating sections, template/field authoring, optional macros/add-ins. | P3 |
+| Customization / QAT | Data-driven, plugin-extensible Ribbon; responsive groups and compact mode. | Persist user tab/group ordering, show/hide, QAT, reset, command search, keyboard KeyTips. | P1/P2 |
+| Accessibility / Localization | Translation keys, command-state and UI primitives already exist. | Audit screen-reader roles/names, keyboard-only navigation, RTL layouts, high contrast, focus restoration, responsive widths. | All phases |
+
+### Evidence: built-ins not surfaced in the default Ribbon
+
+The baseline `OASIS_BUILTIN_COMMANDS` array contains `find`, `replace`, `toggleTrackChanges`, `acceptRevisions`, `rejectRevisions`, `toggleShowMargins`, `toggleShowParagraphMarks`, `pageBreak`, `insertTableOfContents`, `updateTableOfContents`, and `copy`. The default toolbar preset does **not** expose these as corresponding first-class Ribbon actions. Expose them by reusing command-state and command-dispatch APIs; do not invent parallel handlers.
+
+### Important limitations
+
+- The Oasis model/export code contains header/footer stories and page-number fields. **This does not establish full authoring/editing support**; verify selection, placement, rendering and DOCX serialization before promising it.
+- Comments and tracked revisions have import/export or preservation tests, but authoring, navigation and UI completeness must be separately verified.
+- WordCraft controls are evidence of visible affordances, **not necessarily evidence of bug-free behavior**; validate its command handlers and actual user journey when prioritizing.
+- Feature parity is not equivalent to pixel parity, nor does it require every plugin-specific tab to be a core dependency.
+
+## 5. Delivery principles and architecture
+
+1. **One command boundary.** Ribbon, menus, context menus, keyboard shortcuts and host API dispatch the same command registry. No direct model writes from toolbar components.
+2. **Core first only when needed.** Prefer a real existing command; otherwise implement model mutation + command registration + state + tests before adding a visible control.
+3. **Declarative placement.** Keep toolbar items in the preset/registry and placements in `ribbonPlacements.ts`. Extend generic primitives once rather than adding one-off controls.
+4. **Selection safety.** Preserve caret/selection through popovers, dialogs, drag/drop, disabled-state transitions and contextual-tab switches. Respect IME composition.
+5. **Separate semantic state from UI state.** Document state is serializable and undoable; Ribbon ordering/active tab/dialog openness belongs in UI preferences.
+6. **Plugin-safe.** Public command and UI-contribution types are stable; plugins can contribute tabs, groups, controls and predicates without importing internal Solid components.
+7. **Preservation first.** Reuse the existing DOCX source-preservation architecture; never rewrite unrelated OOXML or remove unknown content when editing adjacent features.
+8. **No fake functionality.** Do not ship noop controls or buttons that merely open “coming soon” panels in the default Ribbon.
+9. **No consumer coupling.** Fields, templates, forms, references and mail merge are generic, documented editor capabilities.
+10. **Clean design.** Avoid compatibility shims for unshipped APIs, duplicated registries, monolithic command switches and UI-specific logic in the document core.
+
+## 6. Implementation roadmap
+
+### Phase 0 — Generate the authoritative feature matrix (P0, prerequisite)
+
+**Deliverables**
+
+- Add `docs/ribbon-parity-matrix.md`, generated from a structured source such as `scripts/ribbon-parity/features.json`.
+- Implement an audit script that enumerates Oasis default toolbar items, item placement, core built-ins, menu-only commands and contextual predicates.
+- Produce a stable mapping to WordCraft catalog IDs (baseline commit pinned), with statuses from Section 3 and the supporting source/test paths.
+- Include special-case checks for custom controls, menus, nested items, multiple UI entry points, plugins and selection-dependent commands.
+- Add a “claims requiring runtime verification” queue. Never infer completeness from command-name presence.
+
+**Acceptance:** deterministic regeneration; no duplicate feature IDs or broken references; all default toolbar actions map to real commands (or explicitly documented UI behaviors); human-reviewed reference mapping; CI fails on unclassified additions/regressions.
+
+### Phase 1 — Expose already-working commands (P0)
+
+**Home — Clipboard + Editing**
+
+- Add accessible cut, copy, paste controls with context-sensitive states using browser-safe clipboard adapters. Differentiate plain text, rich internal clipboard and paste-from-OS; do not assume arbitrary clipboard permissions.
+- Add Find/Replace entry points reusing the existing pane; expose Select All and Paragraph Marks toggle.
+- Expose `pageBreak` through Insert or Layout, with clear keyboard shortcuts/tooltip text.
+- Do **not** label Paste Special or Format Painter complete until their underlying behaviors are implemented.
+
+**Review**
+
+- Populate `review` (add to Ribbon vocabulary and translations if absent): Track Changes, Accept, Reject, change list/navigation (navigation may be a later follow-on), current enabled/active states.
+- Wire `toggleTrackChanges`, `acceptRevisions` and `rejectRevisions` to the existing built-ins.
+- Handle no-selection, mixed revisions, editing inside tables and cross-section boundaries.
+- Keep tracked-change interaction and comment authoring distinct; do not imply review collaboration is complete.
+
+**References**
+
+- Add Insert TOC and Update TOC using `insertTableOfContents`/`updateTableOfContents`; keep Footnote.
+- Correct disabled states for stale, absent or non-updatable TOCs.
+
+**View**
+
+- Populate `view` with supported show-margins, show-paragraph-marks, zoom and outline/navigation actions, reusing existing menus/status infrastructure where possible.
+- Explicitly classify view-mode items as core-only, UI-only or missing rather than adding decorative controls.
+
+**Tests and exit:** command parity between Ribbon and menu; correct shortcut/active/disabled state; selection and focus retention; keyboard/screen-reader reachability; undo/redo; DOCX smoke when document content changes; no regressions in compact mode.
+
+### Phase 2 — Document structure, fields and page setup (P1)
+
+**Insert**
+
+- Author/edit/remove headers and footers with first/even/default story handling, section boundaries and safe caret navigation between stories.
+- Insert/edit page-number fields and choose placement/format/start/continuation per section.
+- Introduce generic bookmark and cross-reference commands, including source references, refresh, broken target behavior and DOCX round-trip.
+- Provide date/time and document fields with a typed field model; use the same infrastructure for future reusable parts.
+- Expose text-box insertion/editing only when shape/text-box model, hit-testing, layout and serialization are complete.
+
+**Layout**
+
+- Paper sizes including custom dimensions; margins and orientation per section; multi-column layout; hard page/column/section breaks.
+- Verify interaction with pagination, headers/footers, tables, images, footnotes, page numbering and PDF.
+- Line numbering and hyphenation after stable core/layout algorithms; no visual-only impostors.
+
+**Acceptance:** multi-section DOCX fixtures survive at least two import/edit/export cycles; page/section numbering and fields update deterministically; correct PDF page geometry; no content loss; stable selection and undo/redo.
+
+### Phase 3 — Advanced text, references and review (P1/P2)
+
+**Home**
+
+- Format Painter with one-shot and sticky behavior, and precise paragraph vs run-level copy semantics.
+- True multilevel list definitions/restarts/indent/style mapping; robust list behavior inside tables and across sections.
+- Paragraph sorting, text direction (LTR/RTL) and advanced typography only after semantic/layout support.
+
+**References**
+
+- Complete endnote authoring and navigation; captions for figures/tables/objects with labels and numbering.
+- Cross-references, table of figures, index, sources/citation styles, bibliography and table of authorities in dependency order.
+- Generic citation source schema and extensible providers; optional Zotero integration must remain a plugin.
+
+**Review**
+
+- New/edit/delete/reply/resolve comments, scoped anchors and navigation.
+- Accept/reject selected/all changes, next/previous change, change display options and tracked edits to tables/structures.
+- Compare/merge documents with semantic, reviewable diffs and explicit conflict policies.
+- Proofing and document protection should have verifiable enforcement, not only visual toggles.
+
+**Acceptance:** anchored edits remain stable under insert/delete/move; no detached comment/revision annotations; DOCX import/export/round-trip and PDF annotation policies documented and tested; collaborative workflows do not bypass undo/redo or permission restrictions.
+
+### Phase 4 — Advanced tables, drawing and contextual toolsets (P2)
+
+**Table Design/Layout**
+
+- Expand cell/row/column/table selection and properties; cell vertical alignment, margins, repeating header rows, text direction and resize handles.
+- Add split table, delete table/cells, table-to-text/text-to-table, sorting and formula evaluation with explicit supported-function scope.
+- Preserve conditional table styles, nested tables, border painting and source-backed OOXML fidelity.
+
+**Picture / Shape / Equation**
+
+- Contextual shape-format and equation tabs using the existing contextual-tab predicate pattern; add new predicates rather than hardcoding selection logic in `Toolbar.tsx`.
+- Picture wrapping, floating positioning, anchor behavior, rotate/flip, arrange/align, image accessibility metadata and effects.
+- Shape fill/outline/text, grouping, z-order, alignment and connectors.
+- Equation editing and symbol galleries with keyboard and accessibility contracts.
+
+**Charts/SmartArt**
+
+- Treat as separate semantic/layout/OOXML projects. Until native editing is reliable, preserve imported content and provide previews/placeholders with clear diagnostics. Do not advertise native authoring prematurely.
+
+**Acceptance:** overlay/hit-testing and pagination tests; exported text wrapping/anchor behavior close to reference; import/edit/export preserves relationships and unsupported effects; table and floating-object visual-diff coverage.
+
+### Phase 5 — Mailings, forms, developer features and customizable Ribbon (P2/P3)
+
+**Generic mail merge**
+
+- Data-source interface (JSON/CSV/provider adapters), typed merge fields, preview, batch document output, conditionals, safe escaping and failure diagnostics.
+- Optional labels/envelopes built on document templates; do not bind the core to any product's placeholder syntax.
+
+**Structured documents**
+
+- Content controls (plain/rich text, checkbox, dropdown, date, repeating section) with validation, properties and authoring UI; preserve OOXML for unsupported controls.
+- Reusable templates/Quick Parts, structured custom properties and field refresh.
+- Macro execution, external add-ins and network integrations are separate opt-in security projects, not prerequisites for Ribbon parity.
+
+**User customization**
+
+- User-configurable tab/group visibility and ordering, custom tab/groups, command search and QAT; persist and migrate preferences.
+- Keep built-in contributions immutable in registry semantics while allowing presentation customization; ensure plugin uninstallation does not corrupt saved layouts.
+- Keyboard KeyTips with conflict resolution, accessible focus order and keyboard-only tab navigation.
+
+**Acceptance:** plugin registration/unregistration, cold start with stale preferences, upgrade/downgrade layout migration, restored QAT, malformed-config resilience and security boundaries covered.
+
+## 7. Interaction, accessibility and responsive requirements
+
+Apply to **every** phase, not as a final polish pass:
+
+- Tab/group/item focus order; `Tab`, arrow navigation, Enter/Space, Escape and shortcut interoperability without stealing editor input.
+- Menus/dialogs preserve selection, restore focus on close and expose programmatic labels; screen readers announce enabled/pressed/expanded/selected state correctly.
+- Pointer, touch and keyboard flows work at narrow and wide viewport widths; no inaccessible overflow menus.
+- Contextual tabs appear only for valid selections; leaving the context returns to a sensible tab without losing the caret.
+- Tooltip labels, translated strings, font/sample previews and visible keyboard shortcuts are consistent in English and Brazilian Portuguese.
+- RTL UI and RTL document content are separate responsibilities; both need tests.
+- High contrast, reduced motion and zoom: avoid relying on color alone to convey state.
+- Resize policies stay generic and deterministic; heavy popover content must not regress typing/scrolling latency.
+
+## 8. Automated test and evidence strategy
+
+| Layer | Required evidence |
+| --- | --- |
+| Static inventory | Snapshot/JSON matrix of commands, groups, tabs, contextual predicates, shortcut collisions and documentation links. |
+| Core unit | Commands with selection boundary tests, no-op and disabled behavior, undo/redo, malformed inputs, nested structures. |
+| UI unit | Toolbar registry/renderer state, active/disabled/visible, popup dismissal, keyboard navigation, localization, plugin conflict handling. |
+| E2E | Mouse + keyboard flows for each new item, compact/Ribbon variants, responsive overflow, IME typing and selection preservation. |
+| DOCX | Import -> edit -> export -> reimport, source package preservation, Word/LibreOffice consumability where available, independent validation. |
+| PDF/layout | Pagination geometry, field numbering, reference resolution, image placement, representative screenshots and visual diffs. |
+| Accessibility | Automated checks plus manual keyboard/screen-reader smoke tests; no inaccessible control shipped as complete. |
+| Performance | Measure editor startup, Ribbon first paint, tab switch, keystroke latency, memory and document scroll on representative large fixtures. |
+
+Use repository-supported gates: `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:word-parity`, `npm run test:smoke`, `npm run test:e2e`, `npm run check:imports` and `npm run check:native-ui` as appropriate for each slice. Do not claim they passed without running them.
+
+Run at least these fixture classes: small/large text documents, multisection documents, styles/multilevel lists, images/float anchors, nested tables, notes and TOCs, tracked revisions/comments, RTL/CJK, malformed DOCX, source-preservation stress, narrow viewport and mobile/touch interaction.
+
+**Metrics:** catalog feature coverage by completion status and per tab; default Ribbon discoverability; command action success on applicable selections; interaction failures; DOCX round-trip preservation; page-layout mismatch rate; accessibility regressions; startup/typing/scrolling latency. Report numerator, denominator and unverified rows; never collapse `core-only` or `preservation-only` into `complete`.
+
+## 9. Proposed implementation slices and dependency order
+
+Ship vertical slices with code, test and documentation in the same change. Suggested order:
+
+1. `audit/matrix` — catalog mapping + generator + status validation.
+2. `ribbon/review-basic` — existing tracked-change commands and states.
+3. `ribbon/references-basic` — TOC/footnote exposure.
+4. `ribbon/home-clipboard-editing` — safe clipboard surface, find/replace, paragraph marks.
+5. `ribbon/view-basic` — view options + navigation/zoom.
+6. `document/headers-footers-fields` — model/layout/selection/DOCX/PDF first, Ribbon second.
+7. `document/page-setup` — page size, columns, breaks, numbering and pagination.
+8. `document/bookmarks-cross-references` — source-target model + refresh + UI.
+9. `format/advanced-paragraph-lists` — numbering, styles, sort and formatting transfer.
+10. `review/comments-diff` — authoring/navigation/compare.
+11. `table/advanced-tools` — properties, direction, sort/formulas, conversions.
+12. `objects/contextual-tools` — floating picture/shape/equation editing.
+13. `references/advanced` — bibliography, figures, authorities and source plugins.
+14. `ribbon/customization` — QAT, user layouts and KeyTips.
+15. `mailings/structured-documents` — merge, controls, template workflows.
+
+Slices 2–5 are intentionally low-risk UI exposure; slices 6 onward must not bypass the existing OOXML compatibility plan. Review dependencies before splitting work in parallel; share model primitives rather than duplicating them across features.
+
+## 10. Definition of done and release gates
+
+A slice can merge only when:
+
+- Feature specification and matrix status change are included and manually verified.
+- A real command exists (or documented non-command UI behavior), is reachable from the right location and has correct enabled/active/selection states.
+- Changes are undoable/redone where document-mutating, with stable caret/selection.
+- Model, layout, OOXML and PDF impacts are either tested or explicitly marked inapplicable.
+- New UI is keyboard/touch accessible, localized, responsive and usable under plugin additions/removals.
+- Unsupported input is preserved or rejected with clear diagnostics; no silent data loss.
+- Relevant tests pass; failures and untested conditions are documented, not disguised as success.
+- New feature logic follows existing public core/plugin APIs without a parallel event bus or ad hoc document mutations.
+- The plan/matrix tracks what remains incomplete, with an accountable next test or implementation step.
+
+**Release gate for a “WordCraft Ribbon parity” claim:** all in-scope mapped features reach `complete` or have a documented, reviewed `not-applicable` decision; all must pass the end-to-end acceptance ladder. Separately publish supported DOCX fidelity and layout limitations.
+
+## 11. Risks and mitigations
+
+| Risk | Mitigation |
+| --- | --- |
+| Treating visible WordCraft controls as proof of behavior | Inspect command handling and exercise representative workflows; distinguish inventory from functional verification. |
+| Superficial Oasis buttons with no semantics | Enforce feature acceptance ladder; disallow `ui-only` as a completed milestone. |
+| Breakage of advanced DOCX markup on edits | Reuse source-preservation patchers and multi-cycle round-trip tests; follow existing OOXML roadmap. |
+| Toolbar complexity and responsive overflow | Small groups, contextual controls, user customization, tested collapse priorities and command search. |
+| Selection/focus losses from UI controls | Centralize focus/selection handling; test across popovers, IME, tables and headers/footers. |
+| Platform-specific dependencies | Keep clipboard, filesystem, printers and data providers behind adapters and capability checks. |
+| Plugin API instability | Contract tests for SolidJS, React, Vue and public headless API; avoid internal imports by consumers. |
+| Performance regressions from feature expansion | Lazy-load heavy dialogs; benchmark typing, scrolling, Ribbon layout and first paint. |
+
+## 12. Immediate execution checklist
+
+- [ ] Generate feature-level catalog with pinned source commits and a repeatable update procedure.
+- [ ] Identify verified `core-only` / `menu-only` commands and map their Ribbon placements.
+- [ ] Add Review and View to populated default tabs with translation keys and responsive group definitions.
+- [ ] Surface tracked-change actions and TOC insertion/update through the existing command bus.
+- [ ] Expose Find/Replace, Paragraph Marks and basic clipboard actions without disrupting focus or browser permissions.
+- [ ] Add state/interaction/regression tests and document what still lacks functional proof.
+- [ ] Triage all remaining features into model/layout/OOXML/UI tasks; link to the existing OOXML plan.
+- [ ] Run the documented quality gates, publish matrix deltas and update this roadmap after each completed slice.
+
+---
+
+**Guiding rule:** build a genuinely capable **general-purpose** editor. A feature is not “done” because a toolbar button exists; the entire document workflow must work.
