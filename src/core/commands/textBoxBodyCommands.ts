@@ -6,11 +6,15 @@ import type {
   EditorTextRun,
 } from "@/core/model.js";
 import { getParagraphs, getRunTextBox } from "@/core/model.js";
+import { PX_PER_CM } from "@/core/units.js";
 import { normalizeSelection } from "@/core/selection.js";
 import { cloneParagraph, cloneRun } from "@/core/document/clone.js";
 import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
 import { preserveSelectionByParagraphOffsets } from "@/core/selection/rangeEditing.js";
 import { getSelectedTextBoxRun } from "./textBox.js";
+
+/** TextBox sizes never collapse below this many px (mirrors textBox.ts). */
+const MIN_TEXT_BOX_SIZE_PX = 24;
 
 /** The text-direction (flow) values WordCraft's `shape.textDirection` accepts. */
 export type TextBoxTextDirection = "horz" | "vert" | "vert270" | "wordArtVert";
@@ -21,6 +25,41 @@ export type TextBoxVerticalAlign = "t" | "ctr" | "b";
 /** True when a text box is selected and its body can be styled. */
 export function canStyleSelectedTextBox(state: EditorState): boolean {
   return getSelectedTextBoxRun(state) !== null;
+}
+
+/** The displayed size of the selected text box in centimetres, or `null`. */
+export function getSelectedTextBoxSizeCm(
+  state: EditorState,
+): { width: number; height: number } | null {
+  const selected = getSelectedTextBoxRun(state);
+  const textBox = selected && getRunTextBox(selected.run);
+  if (!textBox) return null;
+  return {
+    width: textBox.width / PX_PER_CM,
+    height: textBox.height / PX_PER_CM,
+  };
+}
+
+/** Set the selected text box width (cm), keeping its height. */
+export function setSelectedTextBoxWidthCm(
+  state: EditorState,
+  cm: number,
+): EditorState {
+  return patchSelectedTextBoxData(state, (textBox) => ({
+    ...textBox,
+    width: Math.max(MIN_TEXT_BOX_SIZE_PX, Math.round(cm * PX_PER_CM)),
+  }));
+}
+
+/** Set the selected text box height (cm), keeping its width. */
+export function setSelectedTextBoxHeightCm(
+  state: EditorState,
+  cm: number,
+): EditorState {
+  return patchSelectedTextBoxData(state, (textBox) => ({
+    ...textBox,
+    height: Math.max(MIN_TEXT_BOX_SIZE_PX, Math.round(cm * PX_PER_CM)),
+  }));
 }
 
 /** Normalize an angle to the [0, 360) range; `0` collapses to `undefined`. */

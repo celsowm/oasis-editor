@@ -10,11 +10,15 @@ import {
 import {
   canStyleSelectedTextBox,
   getSelectedTextBoxAlt,
+  getSelectedTextBoxSizeCm,
   rotateSelectedTextBoxByStep,
   setSelectedTextBoxAlt,
+  setSelectedTextBoxHeightCm,
   setSelectedTextBoxTextDirection,
   setSelectedTextBoxVerticalAlign,
+  setSelectedTextBoxWidthCm,
 } from "@/core/commands/textBoxBodyCommands.js";
+import { PX_PER_CM } from "@/core/units.js";
 import {
   getParagraphs,
   getRunTextBox,
@@ -187,5 +191,45 @@ describe("text box rotate by step", () => {
   it("leaves the state untouched when no text box is selected", () => {
     const plain = plainSelection(buildState());
     expect(rotateSelectedTextBoxByStep(plain, "left")).toBe(plain);
+  });
+});
+
+describe("text box size (cm) commands", () => {
+  it("reports the displayed size in centimetres", () => {
+    const state = buildState();
+    const size = getSelectedTextBoxSizeCm(state);
+    expect(size?.width).toBeCloseTo(150 / PX_PER_CM, 5);
+    expect(size?.height).toBeCloseTo(100 / PX_PER_CM, 5);
+  });
+
+  it("reports null when no text box is selected", () => {
+    expect(getSelectedTextBoxSizeCm(plainSelection(buildState()))).toBeNull();
+  });
+
+  it("sets the width in cm, keeping the height", () => {
+    const state = buildState();
+    const next = setSelectedTextBoxWidthCm(state, 4);
+    expect(next).not.toBe(state);
+    expect(boxOf(next).width).toBe(Math.round(4 * PX_PER_CM));
+    expect(boxOf(next).height).toBe(100);
+  });
+
+  it("sets the height in cm, keeping the width", () => {
+    const state = buildState();
+    const next = setSelectedTextBoxHeightCm(state, 3);
+    expect(boxOf(next).height).toBe(Math.round(3 * PX_PER_CM));
+    expect(boxOf(next).width).toBe(150);
+  });
+
+  it("clamps sizes to the minimum box size", () => {
+    const state = buildState();
+    const next = setSelectedTextBoxWidthCm(state, 0.001);
+    expect(boxOf(next).width).toBeGreaterThanOrEqual(24);
+  });
+
+  it("leaves the state untouched when no text box is selected", () => {
+    const plain = plainSelection(buildState());
+    expect(setSelectedTextBoxWidthCm(plain, 4)).toBe(plain);
+    expect(setSelectedTextBoxHeightCm(plain, 4)).toBe(plain);
   });
 });

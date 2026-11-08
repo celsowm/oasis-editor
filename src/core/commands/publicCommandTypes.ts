@@ -252,6 +252,8 @@ export interface OasisCommandPayloads {
   setTextBoxVerticalAlign: "t" | "ctr" | "b";
   editTextBoxAlt: string | null;
   rotateTextBox: "left" | "right";
+  textBoxWidthCm: number | string | null;
+  textBoxHeightCm: number | string | null;
   openSymbolDialog: undefined;
   openEquationDialog: undefined;
   tableProperties: { activeTab?: "table" | "cell" };

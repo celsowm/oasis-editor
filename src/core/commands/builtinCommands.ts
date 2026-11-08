@@ -203,6 +203,8 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setTextBoxVerticalAlign",
   "editTextBoxAlt",
   "rotateTextBox",
+  "textBoxWidthCm",
+  "textBoxHeightCm",
   "openSymbolDialog",
   "openEquationDialog",
   "tableProperties",
