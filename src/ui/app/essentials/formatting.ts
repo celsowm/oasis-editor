@@ -282,6 +282,10 @@ export function buildEssentialsFormatting(
       options.keyboardCommandsController.applyBooleanStyleCommand("allCaps"),
       true
     ),
+    hidden: (): true => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("hidden"),
+      true
+    ),
     superscript: (): true => (
       options.keyboardCommandsController.applyBooleanStyleCommand(
         "superscript",

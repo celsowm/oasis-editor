@@ -153,6 +153,9 @@ export function buildCoreFormattingCommands({
         isActive: Boolean(s().allCaps),
       }),
     ),
+    hidden: command("hidden", formatting.hidden, (): { isActive: boolean } => ({
+      isActive: Boolean(s().hidden),
+    })),
     superscript: command(
       "superscript",
       formatting.superscript,

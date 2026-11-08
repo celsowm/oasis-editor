@@ -23,6 +23,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "doubleStrike",
   "smallCaps",
   "allCaps",
+  "hidden",
   "superscript",
   "subscript",
   "link",
