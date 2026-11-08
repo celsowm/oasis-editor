@@ -56,6 +56,7 @@ export type {
   OasisEditorAppDocumentProps,
   OasisEditorAppRuntimeProps,
   OasisEditorAppProps,
+  OasisReviewAccess,
   ToolbarLayoutMode,
   ToolbarViewMode,
 } from "./OasisEditorAppProps.js";

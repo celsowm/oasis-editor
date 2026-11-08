@@ -7,8 +7,9 @@ import {
 } from "@/core/editorState.js";
 import { paragraphOffsetToPosition, type EditorState } from "@/core/model.js";
 import { createEditorCommentComposer } from "@/ui/app/createEditorCommentComposer.js";
+import type { OasisReviewAccess } from "@/core/commands/commentPermissions.js";
 
-function harness() {
+function harness(initialAccess?: OasisReviewAccess) {
   const paragraph = createEditorParagraph("first second");
   let state: EditorState = createEditorStateFromDocument(createEditorDocument([paragraph]));
   state = {
@@ -19,6 +20,7 @@ function harness() {
     },
   };
   let readOnly = false;
+  let reviewAccess = initialAccess;
   let transactions = 0;
   const focusInput = vi.fn();
   const composer = createEditorCommentComposer({
@@ -30,6 +32,7 @@ function harness() {
       state = next;
     },
     focusInput,
+    access: () => reviewAccess,
   });
   return {
     composer,
@@ -46,6 +49,7 @@ function harness() {
       };
     },
     setReadOnly: (value: boolean) => { readOnly = value; },
+    setAccess: (value: OasisReviewAccess | undefined) => { reviewAccess = value; },
     replaceDocument: () => {
       state = createEditorStateFromDocument(
         createEditorDocument([createEditorParagraph("replacement")]),
@@ -183,6 +187,54 @@ describe("per-editor comment composer", () => {
       app.replaceDocument();
       expect(app.composer.submit("Alice", "Stale update")).toBe(false);
       expect(app.state.document.comments).toBeUndefined();
+      dispose();
+    });
+  });
+
+  it("uses host actor identity and prevents edits from a different user", () => {
+    createRoot((dispose) => {
+      const alice = { identity: { id: "user-a", displayName: "Alice" } };
+      const bob = { identity: { id: "user-b", displayName: "Bob" } };
+      const app = harness(alice);
+      expect(app.composer.authorLocked()).toBe(true);
+      expect(app.composer.authorName()).toBe("Alice");
+      expect(app.composer.openNew()).toBe(true);
+      // Host display name wins over a caller-supplied impersonation.
+      expect(app.composer.submit("Impostor", "A comment")).toBe(true);
+      const id = app.state.document.comments!.order[0]!;
+      expect(app.state.document.comments!.items[id]).toMatchObject({
+        author: "Alice", authorId: "user-a",
+      });
+      app.setAccess(bob);
+      app.select(0, 5);
+      expect(app.composer.canEdit()).toBe(false);
+      expect(app.composer.openEditToId(id)).toBe(false);
+      expect(app.composer.canDeleteId(id)).toBe(false);
+      expect(app.composer.deleteById(id)).toBe(false);
+      expect(app.composer.canResolveId(id)).toBe(false);
+      expect(app.state.document.comments!.order).toHaveLength(1);
+      app.setAccess({ identity: { id: "admin", displayName: "Mod" }, canModerate: true });
+      expect(app.composer.canEditId(id)).toBe(true);
+      expect(app.composer.openEditToId(id)).toBe(true);
+      expect(app.composer.submit("Mod", "Moderated")).toBe(true);
+      expect(app.state.document.comments!.items[id]?.author).toBe("Alice");
+      expect(app.state.document.comments!.items[id]?.text).toBe("Moderated");
+      dispose();
+    });
+  });
+
+  it("refuses changes if review permissions change while editing", () => {
+    createRoot((dispose) => {
+      const app = harness({ identity: { id: "alice", displayName: "Alice" } });
+      app.composer.openNew();
+      app.composer.submit("", "Original");
+      const id = app.state.document.comments!.order[0]!;
+      app.composer.openEditToId(id);
+      const tx = app.transactions;
+      app.setAccess({ identity: { id: "bob", displayName: "Bob" } });
+      expect(app.composer.submit("Alice", "Should not save")).toBe(false);
+      expect(app.transactions).toBe(tx);
+      expect(app.state.document.comments!.items[id]?.text).toBe("Original");
       dispose();
     });
   });
