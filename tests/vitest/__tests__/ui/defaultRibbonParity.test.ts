@@ -32,6 +32,20 @@ describe("WordCraft Ribbon parity: first Oasis exposure slice", () => {
     expect(OASIS_BUILTIN_COMMANDS).toContain(command);
   });
 
+  it("offers Paste and Paste as Plain Text from the same Ribbon split control", () => {
+    const paste = items.find((item) => item.id === "editor-toolbar-paste");
+    expect(paste?.type).toBe("split");
+    if (paste?.type !== "split") throw new Error("Paste split control is missing");
+    expect(paste.command).toBe("paste");
+    expect(paste.tab).toBe("home");
+    expect(paste.group).toBe("clipboard");
+    expect(paste.menu.kind).toBe("items");
+    if (paste.menu.kind !== "items") throw new Error("Paste menu has no items");
+    expect(paste.menu.items.map((item) =>
+      item.type === "button" ? item.command : undefined
+    )).toEqual(["paste", "pasteAsPlainText"]);
+  });
+
   it("shows Review and View only after they have real controls", () => {
     const tabs = buildRibbonTabDefinitions(t, undefined, items).map((tab) => tab.id);
     expect(tabs).toContain("review");

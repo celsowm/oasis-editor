@@ -124,6 +124,26 @@ function collectBuiltinCommands() {
 function collectPresetItems() {
   const file = parse("src/ui/components/Toolbar/presets/defaultToolbar.ts");
   const items = new Map();
+
+  const addItem = (node, parentId = undefined) => {
+    if (!ts.isObjectLiteralExpression(node)) return;
+    const id = getString(getExpression(node, "id"));
+    if (!id) return;
+    if (items.has(id)) throw new Error("Duplicate toolbar item: " + id);
+    items.set(id, {
+      command: getCommand(getExpression(node, "command")),
+      kind: getString(getExpression(node, "type")),
+      source: "preset",
+      parentId,
+    });
+    for (const key of ["menu", "content"]) {
+      const menu = getExpression(node, key);
+      const nested = getExpression(menu, "items");
+      if (nested && ts.isArrayLiteralExpression(nested)) {
+        for (const child of nested.elements) addItem(child, id);
+      }
+    }
+  };
   const visit = (node) => {
     if (
       ts.isCallExpression(node) &&
@@ -131,20 +151,13 @@ function collectPresetItems() {
       node.expression.expression.getText(file) === "items" &&
       node.expression.name.text === "push"
     ) {
-      for (const arg of node.arguments) {
-        if (!ts.isObjectLiteralExpression(arg)) continue;
-        const id = getString(getExpression(arg, "id"));
-        if (!id) continue;
-        const command = getCommand(getExpression(arg, "command"));
-        if (items.has(id)) throw new Error("Duplicate toolbar item: " + id);
-        items.set(id, { command, kind: getString(getExpression(arg, "type")), source: "preset" });
-      }
+      for (const arg of node.arguments) addItem(arg);
     }
     ts.forEachChild(node, visit);
   };
   visit(file);
 
-  // Only these arrays are currently rendered by active loops in the preset.
+  // These arrays are currently rendered by active loops in the preset.
   const specsFile = parse("src/ui/components/Toolbar/presets/defaultToolbar/buttonSpecs.ts");
   for (const variable of ["ALIGN_BUTTONS", "LIST_BUTTONS", "TABLE_LAYOUT_BUTTONS"]) {
     for (const node of findArrayVariable(specsFile, variable).elements) {
@@ -202,7 +215,7 @@ export function renderMatrix(data) {
     "",
     "> Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.",
     "",
-    "**Scope:** Initial 12-feature executable Ribbon exposure slice, **not** the full WordCraft catalog.  ",
+    "**Scope:** " + data.scope + "  ",
     "**Oasis baseline:** " + code(data.baseline.oasisCommit) + "  ",
     "**WordCraft baseline:** " + code(data.baseline.wordcraftCommit),
     "",
@@ -246,7 +259,8 @@ function main() {
     else if (item.command !== feature.oasisCommand) {
       errors.push(feature.id + ": wrong command " + (item.command ?? "<none>"));
     }
-    const placement = placements.get(feature.ribbonId);
+    const placement = placements.get(feature.ribbonId) ??
+      (item?.parentId ? placements.get(item.parentId) : undefined);
     if (!placement || placement.tab !== feature.tab || placement.group !== feature.group) {
       errors.push(feature.id + ": incorrect placement");
     }

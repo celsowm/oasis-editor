@@ -6,7 +6,7 @@
     "wordcraftRepository": "storytold/wordcraft",
     "wordcraftCommit": "e53cae3482d4e080a15dc2320eb4929ea7722db2"
   },
-  "scope": "Initial 12-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.",
+  "scope": "Initial 14-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.",
   "features": [
     {
       "id": "home.copy",
@@ -17,6 +17,26 @@
       "group": "clipboard",
       "status": "partial",
       "notes": "Clipboard adapter and browser permission behavior require runtime verification."
+    },
+    {
+      "id": "home.paste",
+      "wordcraftCommand": "edit.paste",
+      "oasisCommand": "paste",
+      "ribbonId": "editor-toolbar-paste",
+      "tab": "home",
+      "group": "clipboard",
+      "status": "partial",
+      "notes": "Rich/HTML and text paste implemented through the shared Clipboard API; browser permissions, image-only clipboard, long-document E2E and DOCX fidelity remain to verify."
+    },
+    {
+      "id": "home.pasteText",
+      "wordcraftCommand": "edit.pasteText",
+      "oasisCommand": "pasteAsPlainText",
+      "ribbonId": "editor-toolbar-paste-plain",
+      "tab": "home",
+      "group": "clipboard",
+      "status": "partial",
+      "notes": "Paste as plain text is an immediate command independent of the keyboard-only pastePlainText shortcut; unsupported Clipboard API results in a disabled action."
     },
     {
       "id": "home.find",
