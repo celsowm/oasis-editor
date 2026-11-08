@@ -2,6 +2,7 @@ import type {
   EditorParagraphNode,
   EditorState,
   EditorTextBoxBody,
+  EditorTextBoxData,
   EditorTextRun,
 } from "@/core/model.js";
 import { getParagraphs, getRunTextBox } from "@/core/model.js";
@@ -20,6 +21,28 @@ export type TextBoxVerticalAlign = "t" | "ctr" | "b";
 /** True when a text box is selected and its body can be styled. */
 export function canStyleSelectedTextBox(state: EditorState): boolean {
   return getSelectedTextBoxRun(state) !== null;
+}
+
+/** The current alt text of the selected text box, or `null` when none. */
+export function getSelectedTextBoxAlt(state: EditorState): string | null {
+  const selected = getSelectedTextBoxRun(state);
+  const textBox = selected && getRunTextBox(selected.run);
+  return textBox?.alt ?? null;
+}
+
+/**
+ * Word's "Alt Text" (WordCraft `object.altText`): sets the accessibility
+ * description of the selected text box. `null` clears it. A no-op when no text
+ * box is selected.
+ */
+export function setSelectedTextBoxAlt(
+  state: EditorState,
+  alt: string | null,
+): EditorState {
+  return patchSelectedTextBoxData(state, (textBox) => ({
+    ...textBox,
+    alt: alt ?? undefined,
+  }));
 }
 
 /**
@@ -61,14 +84,13 @@ export function setSelectedTextBoxVerticalAlign(
   }));
 }
 
-/** Applies `updater` to the text box body of the selected shape run. */
-function patchSelectedTextBoxBody(
+/** Applies `updater` to the selected text box run's data. */
+function patchSelectedTextBoxData(
   state: EditorState,
-  updater: (body: EditorTextBoxBody) => EditorTextBoxBody,
+  updater: (textBox: EditorTextBoxData) => EditorTextBoxData,
 ): EditorState {
   const selected = getSelectedTextBoxRun(state);
-  const textBox = selected && getRunTextBox(selected.run);
-  if (!selected || !textBox) return state;
+  if (!selected || !getRunTextBox(selected.run)) return state;
 
   const { paragraphIndex, run: targetRun } = selected;
   const paragraphs = getParagraphs(state);
@@ -79,13 +101,7 @@ function patchSelectedTextBoxBody(
         ...cloneParagraph(candidate),
         runs: candidate.runs.map((run): EditorTextRun =>
           run.id === targetRun.id && run.kind === "textBox"
-            ? {
-                ...run,
-                textBox: {
-                  ...run.textBox,
-                  body: updater(run.textBox.body ?? {}),
-                },
-              }
+            ? { ...run, textBox: updater(run.textBox) }
             : cloneRun(run),
         ),
       };
@@ -100,4 +116,15 @@ function patchSelectedTextBoxBody(
       normalizeSelection(state),
     ),
   );
+}
+
+/** Applies `updater` to the text box body of the selected shape run. */
+function patchSelectedTextBoxBody(
+  state: EditorState,
+  updater: (body: EditorTextBoxBody) => EditorTextBoxBody,
+): EditorState {
+  return patchSelectedTextBoxData(state, (textBox) => ({
+    ...textBox,
+    body: updater(textBox.body ?? {}),
+  }));
 }

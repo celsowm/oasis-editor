@@ -71,6 +71,7 @@ export const MERGE_KEYS = {
   shapePreset: "shapePreset",
   textBoxTextDirection: "textBoxTextDirection",
   textBoxVerticalAlign: "textBoxVerticalAlign",
+  textBoxAlt: "textBoxAlt",
 } as const;
 
 export type MergeKey = (typeof MERGE_KEYS)[keyof typeof MERGE_KEYS];

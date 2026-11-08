@@ -201,6 +201,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setShapePreset",
   "setTextBoxTextDirection",
   "setTextBoxVerticalAlign",
+  "editTextBoxAlt",
   "openSymbolDialog",
   "openEquationDialog",
   "tableProperties",

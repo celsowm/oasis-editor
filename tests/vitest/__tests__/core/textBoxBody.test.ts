@@ -9,6 +9,8 @@ import {
 } from "@/core/commands/shapeFillCommands.js";
 import {
   canStyleSelectedTextBox,
+  getSelectedTextBoxAlt,
+  setSelectedTextBoxAlt,
   setSelectedTextBoxTextDirection,
   setSelectedTextBoxVerticalAlign,
 } from "@/core/commands/textBoxBodyCommands.js";
@@ -124,5 +126,29 @@ describe("text box vertical align", () => {
   it("leaves the state untouched when no text box is selected", () => {
     const plain = plainSelection(buildState());
     expect(setSelectedTextBoxVerticalAlign(plain, "b")).toBe(plain);
+  });
+});
+
+describe("text box alt text", () => {
+  it("sets the accessibility description", () => {
+    const state = buildState();
+    const next = setSelectedTextBoxAlt(state, "A blue rectangle");
+    expect(next).not.toBe(state);
+    expect(getSelectedTextBoxAlt(next)).toBe("A blue rectangle");
+  });
+
+  it("clears the description via null", () => {
+    const state = setSelectedTextBoxAlt(buildState(), "A blue rectangle");
+    const next = setSelectedTextBoxAlt(state, null);
+    expect(getSelectedTextBoxAlt(next)).toBeNull();
+  });
+
+  it("reports the alt text of the selected text box", () => {
+    expect(getSelectedTextBoxAlt(buildState())).toBeNull();
+  });
+
+  it("leaves the state untouched when no text box is selected", () => {
+    const plain = plainSelection(buildState());
+    expect(setSelectedTextBoxAlt(plain, "x")).toBe(plain);
   });
 });
