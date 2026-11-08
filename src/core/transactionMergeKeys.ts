@@ -72,6 +72,7 @@ export const MERGE_KEYS = {
   textBoxTextDirection: "textBoxTextDirection",
   textBoxVerticalAlign: "textBoxVerticalAlign",
   textBoxAlt: "textBoxAlt",
+  textBoxRotate: "textBoxRotate",
 } as const;
 
 export type MergeKey = (typeof MERGE_KEYS)[keyof typeof MERGE_KEYS];

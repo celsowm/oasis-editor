@@ -23,6 +23,13 @@ export function canStyleSelectedTextBox(state: EditorState): boolean {
   return getSelectedTextBoxRun(state) !== null;
 }
 
+/** Normalize an angle to the [0, 360) range; `0` collapses to `undefined`. */
+function normalizeRotation(rotation: number): number | undefined {
+  if (!Number.isFinite(rotation)) return undefined;
+  const normalized = ((Math.round(rotation) % 360) + 360) % 360;
+  return normalized === 0 ? undefined : normalized;
+}
+
 /** The current alt text of the selected text box, or `null` when none. */
 export function getSelectedTextBoxAlt(state: EditorState): string | null {
   const selected = getSelectedTextBoxRun(state);
@@ -82,6 +89,24 @@ export function setSelectedTextBoxVerticalAlign(
     ...body,
     anchor: mapped,
   }));
+}
+
+/**
+ * Word's "Rotate Left/Right" (WordCraft `arrange.rotate`): rotates the selected
+ * text box by a fixed clockwise/counter-clockwise step, using the same
+ * counter-clockwise-positive rotation convention as the shape model. A no-op
+ * when no text box is selected.
+ */
+export function rotateSelectedTextBoxByStep(
+  state: EditorState,
+  direction: "left" | "right",
+  stepDegrees = 90,
+): EditorState {
+  return patchSelectedTextBoxData(state, (textBox) => {
+    const delta = direction === "right" ? -stepDegrees : stepDegrees;
+    const nextRotation = normalizeRotation((textBox.rotation ?? 0) + delta);
+    return { ...textBox, rotation: nextRotation };
+  });
 }
 
 /** Applies `updater` to the selected text box run's data. */

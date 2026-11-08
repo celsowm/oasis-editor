@@ -10,6 +10,7 @@ import {
 import {
   canStyleSelectedTextBox,
   getSelectedTextBoxAlt,
+  rotateSelectedTextBoxByStep,
   setSelectedTextBoxAlt,
   setSelectedTextBoxTextDirection,
   setSelectedTextBoxVerticalAlign,
@@ -150,5 +151,41 @@ describe("text box alt text", () => {
   it("leaves the state untouched when no text box is selected", () => {
     const plain = plainSelection(buildState());
     expect(setSelectedTextBoxAlt(plain, "x")).toBe(plain);
+  });
+});
+
+describe("text box rotate by step", () => {
+  it("rotates left counter-clockwise by 90 degrees", () => {
+    const state = buildState();
+    const next = rotateSelectedTextBoxByStep(state, "left");
+    expect(next).not.toBe(state);
+    expect(boxOf(next).rotation).toBe(90);
+  });
+
+  it("rotates right clockwise by 90 degrees", () => {
+    const once = rotateSelectedTextBoxByStep(buildState(), "left");
+    expect(boxOf(once).rotation).toBe(90);
+    const back = rotateSelectedTextBoxByStep(once, "right");
+    expect(boxOf(back).rotation).toBeUndefined();
+  });
+
+  it("wraps angles back into the [0, 360) range", () => {
+    // 4 left 90° steps from 0 = 360°, which normalizes to undefined.
+    const s1 = rotateSelectedTextBoxByStep(buildState(), "left");
+    const s2 = rotateSelectedTextBoxByStep(s1, "left");
+    const s3 = rotateSelectedTextBoxByStep(s2, "left");
+    const s4 = rotateSelectedTextBoxByStep(s3, "left");
+    expect(boxOf(s4).rotation).toBeUndefined();
+  });
+
+  it("honours a custom step", () => {
+    const state = buildState();
+    const next = rotateSelectedTextBoxByStep(state, "left", 45);
+    expect(boxOf(next).rotation).toBe(45);
+  });
+
+  it("leaves the state untouched when no text box is selected", () => {
+    const plain = plainSelection(buildState());
+    expect(rotateSelectedTextBoxByStep(plain, "left")).toBe(plain);
   });
 });
