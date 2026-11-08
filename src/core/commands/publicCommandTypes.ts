@@ -217,6 +217,7 @@ export interface OasisCommandPayloads {
   tableSortAscending: undefined;
   tableSortDescending: undefined;
   tableDelete: undefined;
+  tableRepeatHeaderRows: undefined;
   tableSetCellWidth: string | number;
   tableToggleHeaderRow: undefined;
   tableToggleTotalRow: undefined;
