@@ -29,7 +29,7 @@
 | `review.nextComment` | — | `nextComment` | `review/comments` | partial |
 | `review.resolveComment` | — | `resolveComment` | `review/comments` | partial |
 | `review.reopenComment` | — | `reopenComment` | `review/comments` | partial |
-| `review.deleteComment` | — | `deleteComment` | `review/Removes an anchored comment and recursively removes replies to prevent orphan thread parent ids. Undo and DOCX source-package E2E remain to verify.` | partial |
+| `review.deleteComment` | — | `deleteComment` | `review/comments` | partial |
 | `review.accept` | `review.accept` | `acceptRevisions` | `review/changes` | partial |
 | `review.reject` | `review.reject` | `rejectRevisions` | `review/changes` | partial |
 | `view.showMargins` | — | `toggleShowMargins` | `view/show` | partial |

@@ -204,8 +204,9 @@
       "oasisCommand": "deleteComment",
       "ribbonId": "editor-toolbar-delete-comment",
       "tab": "review",
-      "group": "Removes an anchored comment and recursively removes replies to prevent orphan thread parent ids. Undo and DOCX source-package E2E remain to verify.",
-      "status": "partial"
+      "group": "comments",
+      "status": "partial",
+      "notes": "Removes an anchored comment and recursively removes replies to prevent orphan thread parent ids. Undo and DOCX source-package E2E remain to verify."
     },
     {
       "id": "review.accept",
