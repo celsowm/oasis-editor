@@ -279,6 +279,186 @@ function updateSelectedSectionStory(
   return section;
 }
 
+/**
+ * Reads the innermost table identified by `tablePath` from a block story
+ * (`getBlocksForZone` + the top-level path), following nested hops into the
+ * parent cell's `blocks` array as `updateTableAtPath` does.
+ */
+export function readInnermostTableAtPath(
+  blocks: readonly EditorBlockNode[] | undefined,
+  tablePath: readonly TablePathSegment[],
+): EditorTableNode | null {
+  const segment = tablePath[0];
+  if (!segment || !blocks) return null;
+  const target = blocks[segment.tableBlockIndex];
+  if (!target || target.type !== "table") return null;
+  if (tablePath.length === 1) return target;
+  const row = target.rows[segment.rowIndex];
+  const cell = row?.cells[segment.cellIndex];
+  if (!row || !cell) return null;
+  return readInnermostTableAtPath(cell.blocks, tablePath.slice(1));
+}
+
+/**
+ * Splices a list of replacement blocks in place of the innermost table
+ * identified by `tablePath`. Mirrors `updateTableAtPath` structurally, but
+ * replaces the target table with `replacement` (Word's Convert Table to Text).
+ */
+export function replaceInnermostTableAtPath(
+  blocks: EditorBlockNode[],
+  tablePath: readonly TablePathSegment[],
+  replacement: readonly EditorBlockNode[],
+): EditorBlockNode[] | null {
+  const segment = tablePath[0];
+  if (!segment) return null;
+  const target = blocks[segment.tableBlockIndex];
+  if (!target || target.type !== "table") return null;
+
+  if (tablePath.length === 1) {
+    return [
+      ...blocks.slice(0, segment.tableBlockIndex),
+      ...replacement,
+      ...blocks.slice(segment.tableBlockIndex + 1),
+    ];
+  }
+
+  const row = target.rows[segment.rowIndex];
+  const cell = row?.cells[segment.cellIndex];
+  if (!row || !cell) return null;
+
+  const nextCellBlocks = replaceInnermostTableAtPath(
+    cell.blocks,
+    tablePath.slice(1),
+    replacement,
+  );
+  if (!nextCellBlocks) return null;
+
+  const nextCells = [...row.cells];
+  nextCells[segment.cellIndex] = { ...cell, blocks: nextCellBlocks };
+  const nextRows = [...target.rows];
+  nextRows[segment.rowIndex] = { ...row, cells: nextCells };
+  const nextBlocks = [...blocks];
+  nextBlocks[segment.tableBlockIndex] = { ...target, rows: nextRows };
+  return nextBlocks;
+}
+
+/**
+ * Resolves the block story that contains the active table (the story whose
+ * paragraph owns the caret), based on the same zone/story-selection rules
+ * `updateSelectedSectionStory` uses: for main/header/footer it picks the
+ * section's relevant story (first page / even page / default), and for
+ * footnotes it picks the owning note's `blocks`.
+ */
+export function getActiveTableStory(
+  state: EditorState,
+): EditorBlockNode[] | null {
+  const target = resolveActiveTableLocation(state);
+  if (!target) return null;
+  const { activeSectionIndex, loc } = target;
+  const paragraphId = state.selection.focus.paragraphId;
+
+  if (loc.zone === "footnote") {
+    const paragraphLocation = findParagraphLocation(
+      state.document,
+      paragraphId,
+    );
+    const footnoteId = paragraphLocation?.footnoteId ?? state.activeFootnoteId;
+    const footnotes = state.document.footnotes;
+    const footnote = footnoteId ? footnotes?.items[footnoteId] : undefined;
+    return footnote?.blocks ?? null;
+  }
+
+  const section = getDocumentSections(state.document)[activeSectionIndex];
+  if (!section) return null;
+
+  if (loc.zone === "main") {
+    return section.blocks;
+  }
+  if (loc.zone === "header") {
+    if (storyContainsParagraph(section.firstPageHeader, paragraphId)) {
+      return section.firstPageHeader ?? null;
+    }
+    if (storyContainsParagraph(section.evenPageHeader, paragraphId)) {
+      return section.evenPageHeader ?? null;
+    }
+    return section.header ?? null;
+  }
+  if (storyContainsParagraph(section.firstPageFooter, paragraphId)) {
+    return section.firstPageFooter ?? null;
+  }
+  if (storyContainsParagraph(section.evenPageFooter, paragraphId)) {
+    return section.evenPageFooter ?? null;
+  }
+  return section.footer ?? null;
+}
+
+/**
+ * Replaces the active table (the innermost table containing the caret) with a
+ * list of replacement blocks, mirroring `updateActiveTableBlocks` but for the
+ * Convert Table to Text splice operation. Handles footnote and all section
+ * stories; a no-op when no active table resolves.
+ */
+export function replaceActiveTableWithBlocks(
+  state: EditorState,
+  replacement: readonly EditorBlockNode[],
+): EditorState {
+  const target = resolveActiveTableLocation(state);
+  if (!target) return state;
+
+  const { activeSectionIndex, loc } = target;
+  const paragraphId = state.selection.focus.paragraphId;
+  const replaceBlocks = (blocks: EditorBlockNode[]): EditorBlockNode[] => {
+    const next = replaceInnermostTableAtPath(
+      blocks,
+      loc.tablePath,
+      replacement,
+    );
+    return next ?? blocks;
+  };
+
+  if (loc.zone === "footnote") {
+    const paragraphLocation = findParagraphLocation(
+      state.document,
+      paragraphId,
+    );
+    const footnoteId = paragraphLocation?.footnoteId ?? state.activeFootnoteId;
+    const footnotes = state.document.footnotes;
+    const footnote = footnoteId ? footnotes?.items[footnoteId] : undefined;
+    if (!footnoteId || !footnotes || !footnote) return state;
+    return {
+      ...state,
+      document: {
+        ...state.document,
+        footnotes: {
+          ...footnotes,
+          items: {
+            ...footnotes.items,
+            [footnoteId]: {
+              ...footnote,
+              blocks: replaceBlocks(footnote.blocks),
+            },
+          },
+        },
+      },
+    };
+  }
+
+  const nextSections = getDocumentSections(state.document).map(
+    (section, sectionIndex): EditorSection =>
+      sectionIndex === activeSectionIndex
+        ? updateSelectedSectionStory(section, loc, paragraphId, replaceBlocks)
+        : section,
+  );
+
+  return {
+    ...state,
+    document: {
+      ...state.document,
+      sections: nextSections,
+    },
+  };
+}
+
 export function updateActiveTableBlocks(
   state: EditorState,
   updateTable: (table: EditorTableNode) => EditorTableNode,
