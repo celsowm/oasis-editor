@@ -9,6 +9,7 @@ import {
   getActivePaperSize,
   getActiveColumns,
   setSectionColumns,
+  setSectionMarginsPreset,
   setSectionPaperSize,
   setSectionPaperSizePreset,
 } from "@/core/commands/pageSetup.js";
@@ -75,6 +76,12 @@ export function buildEssentialsSection(
           },
         },
       });
+    },
+    setMarginsPreset: (presetId: string): void => {
+      options.applyTransactionalState((state) =>
+        setSectionMarginsPreset(state, presetId),
+      );
+      options.focusInput();
     },
     getPageNumbering: (): EditorPageNumbering | undefined => {
       const idx = getActiveSectionIndex(options.state());

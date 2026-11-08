@@ -338,6 +338,8 @@ export interface EssentialsSectionCapability {
   breakNextColumn: () => void;
   getMargins: () => EditorPageMargins | undefined;
   setPageMargins: (margins: Partial<EditorPageMargins>) => void;
+  /** Apply a named page-margin preset (normal/narrow/moderate/wide/mirrored). */
+  setMarginsPreset: (presetId: string) => void;
   getPageNumbering: () => EditorPageNumbering | undefined;
   setPageNumbering: (numbering: {
     start?: number;

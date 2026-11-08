@@ -118,6 +118,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "sectionBreakOddPage",
   "sectionBreakNextColumn",
   "setPageMargins",
+  "setMarginsPreset",
   "setSectionPageNumbering",
   "setPaperSize",
   "setPaperSizePreset",

@@ -164,6 +164,11 @@ export function buildParagraphAndSectionCommands({
         value: section.getMargins(),
       }),
     ),
+    setMarginsPreset: actionCommand("setMarginsPreset", (p): void => {
+      if (typeof p === "string" && p.length > 0) {
+        section.setMarginsPreset(p);
+      }
+    }),
     setSectionPageNumbering: actionCommand(
       "setSectionPageNumbering",
       (p): void => {

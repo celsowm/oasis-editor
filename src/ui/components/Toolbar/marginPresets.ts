@@ -1,73 +1,36 @@
 import type { TranslationKey } from "@/i18n/index.js";
-import { PX_PER_CM as CM_TO_PX } from "@/core/units.js";
+import {
+  MARGIN_PRESETS as CORE_MARGIN_PRESETS,
+  type MarginPreset as CoreMarginPreset,
+} from "@/core/commands/pageSetup.js";
+import { PX_PER_CM } from "@/core/units.js";
 import { roundTo } from "@/utils/round.js";
 
 /** Convert a centimetre measurement to a rounded pixel value. */
 export function cmToPx(cm: number): number {
-  return Math.round(cm * CM_TO_PX);
+  return Math.round(cm * PX_PER_CM);
 }
 
 /** Convert pixels back to centimetres (for display in the custom form). */
 export function pxToCm(px: number): number {
-  return roundTo(px / CM_TO_PX, 2);
+  return roundTo(px / PX_PER_CM, 2);
 }
 
-export interface MarginPreset {
-  id: string;
+export interface MarginPreset extends CoreMarginPreset {
   labelKey: TranslationKey;
-  /** Margins in centimetres, mirroring Word's presets. */
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
 }
 
 /**
- * Word's built-in page-margin presets (values shown in the screenshot use the
- * pt-BR localisation: "Normal" follows ABNT 2.5/2.5/3/3 cm rather than 1 inch).
+ * Word's built-in page-margin presets. The numeric values (cm) are owned by
+ * the core `pageSetup` command; this UI layer only adds the i18n label key so
+ * the exact numbers stay in one place (single source of truth).
  */
-export const MARGIN_PRESETS: MarginPreset[] = [
-  {
-    id: "normal",
-    labelKey: "section.marginPreset.normal",
-    top: 2.5,
-    bottom: 2.5,
-    left: 3,
-    right: 3,
-  },
-  {
-    id: "narrow",
-    labelKey: "section.marginPreset.narrow",
-    top: 1.27,
-    bottom: 1.27,
-    left: 1.27,
-    right: 1.27,
-  },
-  {
-    id: "moderate",
-    labelKey: "section.marginPreset.moderate",
-    top: 2.54,
-    bottom: 2.54,
-    left: 1.91,
-    right: 1.91,
-  },
-  {
-    id: "wide",
-    labelKey: "section.marginPreset.wide",
-    top: 2.54,
-    bottom: 2.54,
-    left: 5.08,
-    right: 5.08,
-  },
-  {
-    id: "mirrored",
-    labelKey: "section.marginPreset.mirrored",
-    top: 2.54,
-    bottom: 2.54,
-    left: 3.18,
-    right: 2.54,
-  },
-];
+export const MARGIN_PRESETS: MarginPreset[] = CORE_MARGIN_PRESETS.map(
+  (preset): MarginPreset => ({
+    ...preset,
+    labelKey: `section.marginPreset.${preset.id}` as TranslationKey,
+  }),
+);
 
 /** Preset margins converted to the px units stored on the page settings. */
 export function presetMarginsPx(preset: MarginPreset): {

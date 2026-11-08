@@ -157,6 +157,7 @@ export interface OasisCommandPayloads {
   sectionBreakOddPage: undefined;
   sectionBreakNextColumn: undefined;
   setPageMargins: SetPageMarginsPayload;
+  setMarginsPreset: string;
   setSectionPageNumbering: {
     start?: number;
     format?: SectionPageNumberFormat;
