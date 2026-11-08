@@ -163,6 +163,13 @@ export const defaultMenuItems: MenuItem[] = [
     icon: "chevron-down",
   },
   {
+    id: "review_comments_panel",
+    path: "Review/Comments Panel",
+    labelKey: "review.commentsPanel",
+    command: "toggleCommentsPanel",
+    icon: "list-filter",
+  },
+  {
     id: "review_new_comment",
     path: "Review/New Comment",
     labelKey: "toolbar.newComment",

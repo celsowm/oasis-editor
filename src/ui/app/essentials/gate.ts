@@ -13,6 +13,7 @@ const READ_ONLY_SAFE_COMMANDS: ReadonlySet<OasisBuiltinCommand> = new Set([
   "previousRevision",
   "nextComment",
   "previousComment",
+  "toggleCommentsPanel",
   "find",
   "replace",
   "print",

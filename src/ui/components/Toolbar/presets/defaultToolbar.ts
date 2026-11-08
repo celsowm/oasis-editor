@@ -814,6 +814,16 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     command: "nextRevision",
   });
   items.push({
+    type: "toggle",
+    id: "editor-toolbar-comments-panel",
+    testId: "editor-toolbar-comments-panel",
+    iconName: "list-filter",
+    labelKey: "review.commentsPanel",
+    tooltipKey: "review.commentsPanel",
+    command: "toggleCommentsPanel",
+    ribbonSize: "large",
+  });
+  items.push({
     type: "button",
     id: "editor-toolbar-new-comment",
     testId: "editor-toolbar-new-comment",

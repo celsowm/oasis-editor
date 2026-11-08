@@ -42,6 +42,9 @@ export interface CommentComposerDeps {
 export function createEditorCommentComposer(deps: CommentComposerDeps) {
   const [draft, setDraft] = createSignal<CommentComposerDraft | null>(null);
   const [lastAuthor, setLastAuthor] = createSignal("");
+  const [panelOpen, setPanelOpen] = createSignal(false);
+  const togglePanel = (): boolean => { setPanelOpen(!panelOpen()); return true; };
+  const closePanel = (): void => { setPanelOpen(false); };
 
   const access = (): OasisReviewAccess | undefined => deps.access?.();
   const actor = (): { id: string; displayName: string } | null => {
@@ -54,6 +57,8 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
     !deps.isReadOnly() && (!access() || actor() !== null);
   const canCreate = (): boolean =>
     mayWrite() && getCommentRangeForSelection(deps.state()) !== null;
+  const canReplyId = (id: string): boolean =>
+    mayWrite() && Boolean(deps.state().document.comments?.items[id]);
   const canReply = (): boolean =>
     mayWrite() && getSelectedReviewComment(deps.state()) !== null;
   const canEditId = (id: string): boolean =>
@@ -86,7 +91,7 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
 
   /** Reply to the hovered thread without requiring selection changes. */
   const openReplyToId = (parentId: string): boolean => {
-    if (!mayWrite()) return false;
+    if (!canReplyId(parentId)) return false;
     const snapshot = deps.state();
     const parent = snapshot.document.comments?.items[parentId];
     if (!parent) return false;
@@ -227,7 +232,8 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
   };
 
   return {
-    draft, lastAuthor, canCreate, canReply, canEdit, canEditId,
+    draft, lastAuthor, panelOpen, togglePanel, closePanel,
+    canCreate, canReply, canReplyId, canEdit, canEditId,
     canDeleteId, canDeleteSelected, deleteSelected, deleteById,
     canResolveId, canResolveSelected, resolveSelected, resolveById,
     authorName, authorLocked,

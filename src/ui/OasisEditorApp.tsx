@@ -38,6 +38,8 @@ import { createEditorDocumentRuntime } from "./app/createEditorDocumentRuntime.j
 import { createEditorInteractionRuntime } from "./app/createEditorInteractionRuntime.js";
 import { createEditorCommandRuntime } from "./app/createEditorCommandRuntime.js";
 import { createEditorCommentComposer } from "./app/createEditorCommentComposer.js";
+import { ReviewCommentsPanel } from "./components/ReviewCommentsPanel.js";
+import { focusReviewCommentById } from "@/core/commands/reviewNavigation.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 import type { OasisEditorUiState } from "@/app/client/OasisEditorClient.js";
@@ -499,6 +501,19 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           />
         </Show>
 
+        <Show when={commentComposer.panelOpen()}>
+          <ReviewCommentsPanel
+            state={(): EditorState => state}
+            composer={commentComposer}
+            onClose={commentComposer.closePanel}
+            onNavigate={(id): void => {
+              const next = focusReviewCommentById(state, id);
+              if (next === state) return;
+              applyState(next);
+              focusInput();
+            }}
+          />
+        </Show>
         <EditorDialogsLayer
           commentComposer={commentComposer}
           dialogs={{

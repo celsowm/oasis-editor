@@ -250,6 +250,14 @@ export function buildCoreFormattingCommands({
           formatting.canReplyToComment(),
       }),
     ),
+    toggleCommentsPanel: command(
+      "toggleCommentsPanel",
+      formatting.toggleCommentsPanel,
+      (): { isEnabled: boolean; isActive: boolean } => ({
+        isEnabled: gate.isCommandEnabled("toggleCommentsPanel"),
+        isActive: formatting.isCommentsPanelOpen(),
+      }),
+    ),
     editComment: command(
       "editComment",
       formatting.editComment,

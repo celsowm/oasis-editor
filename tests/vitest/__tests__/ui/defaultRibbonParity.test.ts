@@ -21,6 +21,7 @@ const exposed = [
   ["editor-toolbar-reject-revisions", "rejectRevisions", "review", "changes"],
   ["editor-toolbar-previous-revision", "previousRevision", "review", "changes"],
   ["editor-toolbar-next-revision", "nextRevision", "review", "changes"],
+  ["editor-toolbar-comments-panel", "toggleCommentsPanel", "review", "comments"],
   ["editor-toolbar-new-comment", "newComment", "review", "comments"],
   ["editor-toolbar-reply-comment", "replyComment", "review", "comments"],
   ["editor-toolbar-edit-comment", "editComment", "review", "comments"],

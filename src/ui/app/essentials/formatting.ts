@@ -156,6 +156,8 @@ export function buildEssentialsFormatting(
     newComment: options.commentComposer.openNew,
     replyComment: options.commentComposer.openReply,
     editComment: options.commentComposer.openEdit,
+    toggleCommentsPanel: options.commentComposer.togglePanel,
+    isCommentsPanelOpen: options.commentComposer.panelOpen,
     canEditComment: options.commentComposer.canEdit,
     navigateRevisionNext: (): boolean => {
       const current = options.state();
