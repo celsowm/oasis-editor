@@ -517,3 +517,51 @@
     opacity: 0;
   }
 }
+
+/* The review drawer is local to an editor shell, not a global viewport modal. */
+.oasis-editor-app { position: relative; }
+.oasis-review-comments-panel {
+  position: absolute;
+  z-index: 140;
+  top: 100px;
+  inset-inline-end: 12px;
+  width: min(360px, calc(100% - 24px));
+  max-height: min(74vh, 680px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--oasis-paper);
+  color: var(--oasis-text);
+  border: 1px solid var(--oasis-border-color);
+  border-radius: 12px;
+  box-shadow: 0 14px 48px rgba(0, 0, 0, .16);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.oasis-review-comments-heading, .oasis-review-thread-header,
+.oasis-review-thread-actions, .oasis-review-comments-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+.oasis-review-comments-heading { justify-content: space-between; }
+.oasis-review-comments-heading h3 { margin: 0; font-size: 17px; }
+.oasis-review-comments-list { display: grid; gap: 10px; min-height: 0; }
+.oasis-review-thread {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--oasis-border-color);
+}
+.oasis-review-thread-header { justify-content: space-between; }
+.oasis-review-thread p, .oasis-review-reply p {
+  margin: 5px 0 9px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.oasis-review-thread-replies { display: grid; gap: 10px; margin: 8px 0 0 9px; }
+.oasis-review-reply { border-inline-start: 2px solid var(--oasis-border-color); padding-inline-start: 10px; }
+@media (max-width: 640px) {
+  .oasis-review-comments-panel { inset-inline: 4px; width: auto; top: 65px; max-height: 78vh; }
+}
