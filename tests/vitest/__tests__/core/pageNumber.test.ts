@@ -17,6 +17,7 @@ import {
   isInHeaderOrFooter,
   isPageNumberFieldRun,
   placePageNumber,
+  setSectionPageNumbering,
 } from "@/core/commands/pageNumber.js";
 import { getActiveZone } from "@/core/model/editingZones.js";
 
@@ -191,5 +192,36 @@ describe("page-number placement (top/bottom/current)", () => {
     const texts = story[0]!.runs.map((run) => run.text);
     expect(texts.some((t) => t.includes("Page "))).toBe(true);
     expect(texts.some((t) => t.includes(" of "))).toBe(true);
+  });
+});
+
+describe("per-section page numbering", () => {
+  it("sets the start and format on the active section", () => {
+    const { state } = fixture();
+    const result = setSectionPageNumbering(state, {
+      start: 7,
+      format: "upperRoman",
+    });
+    expect(result.document.sections![0]!.pageNumbering).toEqual({
+      start: 7,
+      format: "upperRoman",
+    });
+  });
+
+  it("updates only the provided fields, preserving others", () => {
+    const { state } = fixture();
+    const seeded = setSectionPageNumbering(state, { start: 3 });
+    const formatted = setSectionPageNumbering(seeded, { format: "lowerLetter" });
+    expect(formatted.document.sections![0]!.pageNumbering).toEqual({
+      start: 3,
+      format: "lowerLetter",
+    });
+  });
+
+  it("sets numbering even on a bare document (default section), preserving selection", () => {
+    const { state } = fixture();
+    const result = setSectionPageNumbering(state, { start: 1 });
+    expect(result.document.sections![0]!.pageNumbering).toEqual({ start: 1 });
+    expect(result.selection).toEqual(state.selection);
   });
 });

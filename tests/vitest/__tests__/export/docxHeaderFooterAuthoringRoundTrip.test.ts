@@ -14,6 +14,7 @@ import { insertTextAtSelection } from "@/core/commands/text.js";
 import {
   insertPageNumberField,
   placePageNumber,
+  setSectionPageNumbering,
 } from "@/core/commands/pageNumber.js";
 import { getRunField, type EditorParagraphNode } from "@/core/model.js";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
@@ -143,5 +144,34 @@ describe("header/footer authoring DOCX round-trip", () => {
       .filter((run) => getRunField(run)?.type)
       .map((run) => getRunField(run)?.format);
     expect(fieldFormats).toContain("ROMAN");
+  });
+
+  it("round-trips per-section page numbering (start + format)", async () => {
+    const body = createEditorParagraph("Body");
+    const state = createEditorStateFromDocument(
+      createEditorDocument([body]),
+    );
+    const seeded = setSectionPageNumbering(state, {
+      start: 7,
+      format: "upperRoman",
+    });
+    expect(seeded.document.sections![0]!.pageNumbering).toEqual({
+      start: 7,
+      format: "upperRoman",
+    });
+
+    const buffer = await exportEditorDocumentToDocx(seeded.document);
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+    expect(documentXml).toContain('<w:pgNumType ');
+    expect(documentXml).toContain('w:start="7"');
+    expect(documentXml).toContain('w:fmt="upperRoman"');
+
+    // Re-import reconstructs the page-numbering settings.
+    const imported = await importDocxToEditorDocument(buffer);
+    expect(imported.sections?.[0]?.pageNumbering).toMatchObject({
+      start: 7,
+      format: "upperRoman",
+    });
   });
 });

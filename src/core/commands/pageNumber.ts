@@ -47,10 +47,24 @@ import {
   getActiveZone,
 } from "@/core/model/editingZones.js";
 import { getHeaderFooterStoryKey } from "./headerFooter.js";
+import { updateSectionSettings } from "./block.js";
 
 export type PageNumberFieldKind = "page" | "xOfY";
 export type PageNumberPlacement = "current" | "top" | "bottom";
 export type PageNumberAlign = "left" | "center" | "right" | "justify";
+
+/**
+ * OOXML `ST_NumberFormat` page-number values the editor can author. Stored
+ * verbatim on `EditorPageNumbering.format` so uncommon imports still
+ * round-trip even though only these can be authored.
+ */
+export type SectionPageNumberFormat =
+  | "decimal"
+  | "upperRoman"
+  | "lowerRoman"
+  | "upperLetter"
+  | "lowerLetter"
+  | "none";
 
 export interface PageNumberPlacementOptions {
   /** Field shape: bare PAGE or the Page X of Y combination. Default `page`. */
@@ -232,4 +246,29 @@ export function placePageNumber(
 export function isInHeaderOrFooter(state: EditorState): boolean {
   const zone = getActiveZone(state);
   return zone === "header" || zone === "footer";
+}
+
+/**
+ * Set page numbering on the active section (`w:pgNumType`): the starting page
+ * number and/or the number format. Only explicitly provided fields update;
+ * omitted fields are left unchanged. `format` uses the OOXML `ST_NumberFormat`
+ * vocabulary (`decimal`, `upperRoman`, `lowerRoman`, `upperLetter`,
+ * `lowerLetter`, `none`).
+ */
+export function setSectionPageNumbering(
+  state: EditorState,
+  numbering: {
+    start?: number;
+    format?: SectionPageNumberFormat;
+  },
+): EditorState {
+  const { sections, sectionIndex } = resolveActiveSection(state);
+  if (sections.length === 0) return state;
+  const current = sections[sectionIndex].pageNumbering;
+  const next = {
+    ...current,
+    ...(numbering.start !== undefined ? { start: numbering.start } : {}),
+    ...(numbering.format !== undefined ? { format: numbering.format } : {}),
+  };
+  return updateSectionSettings(state, sectionIndex, { pageNumbering: next });
 }
