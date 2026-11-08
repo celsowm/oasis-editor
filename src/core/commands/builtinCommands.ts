@@ -186,6 +186,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "tableToggleBandedColumns",
   "setTableStyle",
   "tableToggleAutoFit",
+  "tableAutoFit",
   "tableDistributeColumns",
   "tableDistributeRows",
   "insertTable",

@@ -15,3 +15,4 @@ export * from "./table/tableFormulaCommands.js";
 export * from "./table/tableSelectionCommands.js";
 export * from "./table/tableRowHeightCommands.js";
 export * from "./table/tableDeleteCellsCommands.js";
+export * from "./table/tableAutoFitCommands.js";

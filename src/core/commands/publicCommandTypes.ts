@@ -225,6 +225,7 @@ export interface OasisCommandPayloads {
   tableSelectRow: undefined;
   tableSelectColumn: undefined;
   tableSelectTable: undefined;
+  tableAutoFit: "contents" | "window" | "fixed";
   tableSetRowHeight: TableRowHeight;
   tableSetCellWidth: string | number;
   tableToggleHeaderRow: undefined;
