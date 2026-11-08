@@ -4,6 +4,7 @@ import {
   nudgeSelectedFloatingObject,
   setSelectedFloatingFixedPosition,
   setSelectedFloatingRotation,
+  setSelectedFloatingWrapPreset,
 } from "@/core/commands/floatingAlignCommands.js";
 import { reorderSelectedFloatingObject } from "@/core/commands/floatingReorderCommands.js";
 import {
@@ -149,6 +150,21 @@ export function buildEssentialsDocument(
       options.applyTransactionalState(
         (current): EditorState => setSelectedFloatingRotation(current, degrees),
         { mergeKey: MERGE_KEYS.floatingRotation },
+      ),
+    setFloatingWrapPreset: (
+      preset:
+        | "inline"
+        | "square"
+        | "tight"
+        | "through"
+        | "topAndBottom"
+        | "behind"
+        | "front",
+    ): void =>
+      options.applyTransactionalState(
+        (current): EditorState =>
+          setSelectedFloatingWrapPreset(current, preset),
+        { mergeKey: MERGE_KEYS.floatingWrap },
       ),
     setShapePreset: (preset: string): void =>
       options.applyTransactionalState(

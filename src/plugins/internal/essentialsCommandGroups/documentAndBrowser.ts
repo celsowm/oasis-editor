@@ -140,6 +140,18 @@ export function buildDocumentAndBrowserCommands({
     setFloatingRotation: actionCommand("setFloatingRotation", (p): void =>
       document.setFloatingRotation(Number(p)),
     ),
+    setFloatingWrapPreset: actionCommand("setFloatingWrapPreset", (p): void =>
+      document.setFloatingWrapPreset(
+        (p as
+          | "inline"
+          | "square"
+          | "tight"
+          | "through"
+          | "topAndBottom"
+          | "behind"
+          | "front") ?? "square",
+      ),
+    ),
     setShapePreset: actionCommand("setShapePreset", (p): void =>
       document.setShapePreset(p == null ? "rect" : String(p)),
     ),

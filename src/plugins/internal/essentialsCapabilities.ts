@@ -185,6 +185,17 @@ export interface EssentialsDocumentCapability {
   setFloatingFixedPosition: (fixed: boolean) => void;
   /** Set the exact rotation (degrees, clockwise) of the selected floating object. */
   setFloatingRotation: (degrees: number) => void;
+  /** Set the text-wrap preset of the selected floating object. */
+  setFloatingWrapPreset: (
+    preset:
+      | "inline"
+      | "square"
+      | "tight"
+      | "through"
+      | "topAndBottom"
+      | "behind"
+      | "front",
+  ) => void;
   /** Change the selected shape's DrawingML preset geometry. */
   setShapePreset: (preset: string) => void;
   /** Set the selected text box's text-direction flow. */
