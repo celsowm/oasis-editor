@@ -57,7 +57,7 @@
 17. **review.nextComment:** Navigates to the next anchored comment without changing the document; WordCraft command id not audited.
 18. **review.resolveComment:** Marks the comment under the selection as resolved, retaining the DOCX comment id, author, anchors and thread metadata. Needs round-trip E2E.
 19. **review.reopenComment:** Reopens a resolved comment under the selection. Enabled only when the selected comment is resolved.
-20. **review.deleteComment:** undefined
+20. **review.deleteComment:** Removes an anchored comment and recursively removes replies to prevent orphan thread parent ids. Undo and DOCX source-package E2E remain to verify.
 21. **review.accept:** Selection scope and disabled states for documents without revisions need tests.
 22. **review.reject:** Selection scope and disabled states for documents without revisions need tests.
 23. **view.showMargins:** Oasis-specific display option with active state bound to EditorState.
