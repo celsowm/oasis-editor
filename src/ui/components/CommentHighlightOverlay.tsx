@@ -13,6 +13,8 @@ export interface CommentHighlightOverlayProps {
   commentsById: Accessor<Record<string, EditorComment>>;
   onReplyToComment?: (commentId: string) => void;
   onEditComment?: (commentId: string) => void;
+  canEditComment?: (commentId: string) => boolean;
+  canReplyComment?: (commentId: string) => boolean;
   readOnly?: boolean;
 }
 
@@ -154,7 +156,8 @@ export function CommentHighlightOverlay(
                         <div class="oasis-editor-comment-popup-body">{reply.text}</div>
                         <Show when={!props.readOnly}>
                           <div class="oasis-editor-comment-popup-actions">
-                            <Show when={props.onEditComment}>
+                            <Show when={props.onEditComment &&
+                              (!props.canEditComment || props.canEditComment(reply.id))}>
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -164,7 +167,8 @@ export function CommentHighlightOverlay(
                                 {t("toolbar.editComment")}
                               </Button>
                             </Show>
-                            <Show when={props.onReplyToComment}>
+                            <Show when={props.onReplyToComment &&
+                              (!props.canReplyComment || props.canReplyComment(reply.id))}>
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -202,7 +206,8 @@ export function CommentHighlightOverlay(
               </Show>
               <Show when={!props.readOnly}>
                 <div class="oasis-editor-comment-popup-actions">
-                  <Show when={props.onEditComment}>
+                  <Show when={props.onEditComment && (!props.canEditComment ||
+                    (activeComment()?.id && props.canEditComment(activeComment()!.id)))}>
                     <Button
                       size="sm"
                       variant="ghost"
@@ -215,7 +220,8 @@ export function CommentHighlightOverlay(
                       {t("toolbar.editComment")}
                     </Button>
                   </Show>
-                  <Show when={props.onReplyToComment}>
+                  <Show when={props.onReplyToComment && (!props.canReplyComment ||
+                    (activeComment()?.id && props.canReplyComment(activeComment()!.id)))}>
                     <Button
                       size="sm"
                       variant="ghost"

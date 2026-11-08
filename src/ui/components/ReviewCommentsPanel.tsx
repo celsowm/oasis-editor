@@ -73,11 +73,11 @@ export function ReviewCommentsPanel(props: ReviewCommentsPanelProps): JSX.Elemen
       />
       <div class="oasis-review-comments-filters" role="group" aria-label={t("review.filterComments")}>
         <Button size="sm" variant="ghost" aria-pressed={filter() === "all"}
-          onClick={(): void => setFilter("all")}>{t("review.filterAll")}</Button>
+          onClick={(): void => { setFilter("all"); }}>{t("review.filterAll")}</Button>
         <Button size="sm" variant="ghost" aria-pressed={filter() === "open"}
-          onClick={(): void => setFilter("open")}>{t("review.filterOpen")}</Button>
+          onClick={(): void => { setFilter("open"); }}>{t("review.filterOpen")}</Button>
         <Button size="sm" variant="ghost" aria-pressed={filter() === "resolved"}
-          onClick={(): void => setFilter("resolved")}>{t("review.filterResolved")}</Button>
+          onClick={(): void => { setFilter("resolved"); }}>{t("review.filterResolved")}</Button>
       </div>
       <div class="oasis-review-comments-list">
         <Show when={threads().length === 0}>
@@ -122,14 +122,14 @@ export function ReviewCommentsPanel(props: ReviewCommentsPanelProps): JSX.Elemen
                   </Button>
                   <Show when={deleteCandidate() === comment.id}>
                     <Button size="sm" variant="ghost"
-                      onClick={(): void => setDeleteCandidate(null)}>{t("generic.cancel")}</Button>
+                      onClick={(): void => { setDeleteCandidate(null); }}>{t("generic.cancel")}</Button>
                   </Show>
                 </Show>
               </div>
               <Show when={replies(comment.id).length > 0}>
                 <Button size="sm" variant="ghost" aria-expanded={expandedId() === comment.id}
                   data-testid="review-toggle-replies"
-                  onClick={(): void => setExpandedId(expandedId() === comment.id ? null : comment.id)}>
+                  onClick={(): void => { setExpandedId(expandedId() === comment.id ? null : comment.id); }}>
                   {expandedId() === comment.id
                     ? t("comment.showFewerReplies")
                     : `${t("comment.showAllReplies")} (${replies(comment.id).length})`}
@@ -161,8 +161,7 @@ export function ReviewCommentsPanel(props: ReviewCommentsPanelProps): JSX.Elemen
                                 ? t("review.confirmDelete") : t("toolbar.deleteComment")}
                             </Button>
                             <Show when={deleteCandidate() === reply.id}>
-                              <Button size="sm" variant="ghost" onClick={(): void =>
-                                setDeleteCandidate(null)}>{t("generic.cancel")}</Button>
+                              <Button size="sm" variant="ghost" onClick={(): void => { setDeleteCandidate(null); }}>{t("generic.cancel")}</Button>
                             </Show>
                           </Show>
                         </div>
