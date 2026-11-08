@@ -336,4 +336,24 @@ A slice can merge only when:
 
 ---
 
+## 13. Slice progress log
+
+Completed command-surface slices (each core + tests, then wiring/parity; pushed to `main`, ribbon audit increments noted):
+
+**Phase 4 — Tables (lines 205-206 of the plan)**
+- [x] Table selection (cell/row/column/table), table properties dialog as a command, delete cells, row height, cell margins, AutoFit modes (contents/window/fixed), split, sort, formula, text↔table conversions, repeat header row, text direction, vertical align. Audit 187 → 195.
+
+**Phase 4 — Pictures / Shapes (lines 212-213)**
+- [x] Image flip (horizontal/vertical), rotate left/right by step. Audit → 197.
+- [x] Shape fill, outline, change preset, text box text-direction, vertical-align, alt text, rotate by step. Audit → 207.
+- [x] Arrange cluster for the selected floating object (image or text box): align to margin (left/center/right), reorder (front/back), nudge (dx/dy). Audit → 207.
+
+**Still open**
+- Picture adjustments (corrections/color/effects/transparency) — require an `EditorImageRunData` model + OOXML import/export round-trip (no fields exist today).
+- Grouping/connectors, contextual shape-format/equation tabs, equation galleries.
+- Charts/SmartArt native authoring (kept as preservation-only per plan).
+- Phase 5: mail merge, content controls, Quick Parts, custom properties, customizable Ribbon/QAT.
+
+---
+
 **Guiding rule:** build a genuinely capable **general-purpose** editor. A feature is not “done” because a toolbar button exists; the entire document workflow must work.
