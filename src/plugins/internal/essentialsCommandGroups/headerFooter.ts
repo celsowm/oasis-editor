@@ -38,6 +38,14 @@ export function buildHeaderFooterCommands({
       headerFooter.insertPageNumberXOfY();
       return true;
     }),
+    placePageNumberTop: command("placePageNumberTop", (): boolean => {
+      headerFooter.placePageNumberTop();
+      return true;
+    }),
+    placePageNumberBottom: command("placePageNumberBottom", (): boolean => {
+      headerFooter.placePageNumberBottom();
+      return true;
+    }),
     exitHeaderFooter: actionCommand(
       "exitHeaderFooter",
       (): void => headerFooter.exit(),

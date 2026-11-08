@@ -3,7 +3,10 @@ import {
   exitHeaderFooter,
   insertPageNumber,
 } from "@/core/commands/headerFooter.js";
-import { insertPageNumberField } from "@/core/commands/pageNumber.js";
+import {
+  insertPageNumberField,
+  placePageNumber,
+} from "@/core/commands/pageNumber.js";
 import type { EssentialsHeaderFooterCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
 
@@ -33,6 +36,10 @@ export function buildEssentialsHeaderFooter(
       transactional((state) => insertPageNumber(state)),
     insertPageNumberXOfY: (): void =>
       transactional((state) => insertPageNumberField(state, "xOfY")),
+    placePageNumberTop: (): void =>
+      transactional((state) => placePageNumber(state, "top")),
+    placePageNumberBottom: (): void =>
+      transactional((state) => placePageNumber(state, "bottom")),
     exit: (): void => transactional((state) => exitHeaderFooter(state)),
     isInHeaderFooter: (): boolean => {
       const zone = options.state().activeZone;

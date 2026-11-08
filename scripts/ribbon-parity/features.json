@@ -326,7 +326,7 @@
       "tab": "insert",
       "group": "headerFooter",
       "status": "partial",
-      "notes": "Inserts a PAGE field at the caret inside a header/footer (or body). Field formatting and layout resolution need E2E verification."
+      "notes": "Inserts a PAGE field at the caret inside a header/footer (or body). Field formatting (\\* roman etc.) resolves in layout and round-trips through DOCX. Layout resolution E2E verification remains."
     },
     {
       "id": "insert.pageNumberXOfY",
@@ -336,7 +336,27 @@
       "tab": "insert",
       "group": "headerFooter",
       "status": "partial",
-      "notes": "Inserts the Page X of Y combination (PAGE + NUMPAGES with literals) at the caret, mirroring WordCraft insert.page_number format=of. Alignment/position placement in a header/footer story remains a follow-up."
+      "notes": "Inserts the Page X of Y combination (PAGE + NUMPAGES with literals) at the caret, mirroring WordCraft insert.page_number format=of, with an optional \\* number format."
+    },
+    {
+      "id": "insert.pageNumberTop",
+      "wordcraftCommand": "insert.pageNumber",
+      "oasisCommand": "placePageNumberTop",
+      "ribbonId": "editor-toolbar-insert-page-number-top",
+      "tab": "insert",
+      "group": "headerFooter",
+      "status": "partial",
+      "notes": "Places the active section's default header as a single centered PAGE paragraph (mirrors WordCraft insert.page_number position=top story rewrite). Alignment gallery is not yet exposed in UI."
+    },
+    {
+      "id": "insert.pageNumberBottom",
+      "wordcraftCommand": "insert.pageNumber",
+      "oasisCommand": "placePageNumberBottom",
+      "ribbonId": "editor-toolbar-insert-page-number-bottom",
+      "tab": "insert",
+      "group": "headerFooter",
+      "status": "partial",
+      "notes": "Places the active section's default footer as a single centered PAGE paragraph (mirrors WordCraft insert.page_number position=bottom story rewrite). Round-trips through DOCX with alignment."
     },
     {
       "id": "insert.exitHeaderFooter",

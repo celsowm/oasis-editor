@@ -244,6 +244,10 @@ export interface EssentialsHeaderFooterCapability {
   insertPageNumber: () => void;
   /** Insert a "Page X of Y" combination (PAGE + NUMPAGES) at the caret. */
   insertPageNumberXOfY: () => void;
+  /** Place the active section's default header page number (aligned). */
+  placePageNumberTop: () => void;
+  /** Place the active section's default footer page number (aligned). */
+  placePageNumberBottom: () => void;
   /** Return the caret to the main body, leaving header/footer editing. */
   exit: () => void;
   /** Whether the caret currently edits a header or footer zone. */

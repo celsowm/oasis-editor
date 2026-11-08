@@ -495,6 +495,8 @@ export const ptBR = {
   "headerFooter.pageNumber": "Número de Página",
   "headerFooter.pageNumberCurrent": "Posição Atual",
   "headerFooter.pageNumberXOfY": "Página X de Y",
+  "headerFooter.pageNumberTop": "Topo da Página",
+  "headerFooter.pageNumberBottom": "Rodapé da Página",
   "headerFooter.exit": "Fechar Cabeçalho/Rodapé",
   "ribbon.group.accessibility": "Acessibilidade",
   "ribbon.group.document": "Documento",

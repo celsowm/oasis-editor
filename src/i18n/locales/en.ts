@@ -493,6 +493,8 @@ export const en = {
   "headerFooter.pageNumber": "Page Number",
   "headerFooter.pageNumberCurrent": "Current Position",
   "headerFooter.pageNumberXOfY": "Page X of Y",
+  "headerFooter.pageNumberTop": "Top of Page",
+  "headerFooter.pageNumberBottom": "Bottom of Page",
   "headerFooter.exit": "Close Header/Footer",
   "ribbon.group.accessibility": "Accessibility",
   "ribbon.group.document": "Document",

@@ -369,6 +369,18 @@ export const defaultMenuItems: MenuItem[] = [
     labelKey: "headerFooter.pageNumberXOfY",
     command: "insertPageNumberXOfY",
   },
+  {
+    id: "insert_page_number_top",
+    path: "Insert/Page Number/Top of Page",
+    labelKey: "headerFooter.pageNumberTop",
+    command: "placePageNumberTop",
+  },
+  {
+    id: "insert_page_number_bottom",
+    path: "Insert/Page Number/Bottom of Page",
+    labelKey: "headerFooter.pageNumberBottom",
+    command: "placePageNumberBottom",
+  },
   { id: "insert_specialChar", path: "Insert/Special Character", hidden: true },
   { id: "insert_comment", path: "Insert/Comment", hidden: true },
 

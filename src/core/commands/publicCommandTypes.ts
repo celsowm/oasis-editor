@@ -148,6 +148,8 @@ export interface OasisCommandPayloads {
   editFooter: undefined;
   insertPageNumber: undefined;
   insertPageNumberXOfY: undefined;
+  placePageNumberTop: undefined;
+  placePageNumberBottom: undefined;
   exitHeaderFooter: undefined;
   applyDocumentTheme: DesignThemeId;
   setDocumentColorScheme: string;
