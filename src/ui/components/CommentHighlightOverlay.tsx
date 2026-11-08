@@ -3,11 +3,16 @@ import type { Accessor } from "solid-js";
 import type { EditorComment } from "@/core/model.js";
 import type { CommentHighlightBox } from "@/ui/editorUiTypes.js";
 import { JSX } from "solid-js";
+import { Button } from "@/ui/public/Button.js";
+import { useI18n } from "@/i18n/I18nContext.js";
+import { collectCommentThreadReplies } from "@/core/commands/commentAuthoring.js";
 
 export interface CommentHighlightOverlayProps {
   boxes: Accessor<CommentHighlightBox[]>;
   /** Comment bodies keyed by their editor-local id, for the hover popup. */
   commentsById: Accessor<Record<string, EditorComment>>;
+  onReplyToComment?: (commentId: string) => void;
+  readOnly?: boolean;
 }
 
 /**
@@ -19,6 +24,7 @@ export interface CommentHighlightOverlayProps {
 export function CommentHighlightOverlay(
   props: CommentHighlightOverlayProps,
 ): JSX.Element {
+  const t = useI18n();
   const [activeCommentId, setActiveCommentId] = createSignal<string | null>(
     null,
   );
@@ -29,6 +35,13 @@ export function CommentHighlightOverlay(
       if (!id) return null;
       return props.commentsById()[id] ?? null;
     },
+  );
+
+  const replies = createMemo(() =>
+    collectCommentThreadReplies(
+      props.commentsById(),
+      activeCommentId() ?? "",
+    ),
   );
 
   // Anchor the popup to the first (top-most) highlight box of the active comment.
@@ -55,7 +68,7 @@ export function CommentHighlightOverlay(
   };
 
   return (
-    <div aria-hidden="true" class="oasis-editor-comment-overlay-root">
+    <div class="oasis-editor-comment-overlay-root">
       <For each={props.boxes()}>
         {(box): JSX.Element => (
           <span
@@ -66,6 +79,16 @@ export function CommentHighlightOverlay(
             }}
             data-testid="editor-comment-highlight"
             data-comment-id={box.commentId}
+            role="button"
+            tabIndex={0}
+            aria-label={`${t("comment.body")}: ${props.commentsById()[box.commentId]?.author ?? ""}`}
+            onFocus={(): string => setActiveCommentId(box.commentId)}
+            onKeyDown={(event): void => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setActiveCommentId(box.commentId);
+              }
+            }}
             style={{
               left: `${box.left}px`,
               top: `${box.top}px`,
@@ -106,6 +129,38 @@ export function CommentHighlightOverlay(
                 </Show>
               </div>
               <div class="oasis-editor-comment-popup-body">{comment.text}</div>
+              <Show when={replies().length > 0}>
+                <div class="oasis-editor-comment-popup-replies" data-testid="comment-thread-replies">
+                  <For each={replies()}>
+                    {(reply): JSX.Element => (
+                      <div class="oasis-editor-comment-popup-reply" data-comment-id={reply.id}>
+                        <div class="oasis-editor-comment-popup-header">
+                          <span class="oasis-editor-comment-popup-author">{reply.author}</span>
+                          <Show when={reply.date !== undefined}>
+                            <span class="oasis-editor-comment-popup-date">
+                              {formattedDate(reply.date)}
+                            </span>
+                          </Show>
+                          <Show when={reply.resolved}>
+                            <span class="oasis-editor-comment-popup-resolved">✓</span>
+                          </Show>
+                        </div>
+                        <div class="oasis-editor-comment-popup-body">{reply.text}</div>
+                      </div>
+                    )}
+                  </For>
+                </div>
+              </Show>
+              <Show when={props.onReplyToComment && !props.readOnly}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(): void => props.onReplyToComment?.(comment.id)}
+                  data-testid="comment-popup-reply"
+                >
+                  {t("toolbar.replyComment")}
+                </Button>
+              </Show>
             </div>
           );
         })()}

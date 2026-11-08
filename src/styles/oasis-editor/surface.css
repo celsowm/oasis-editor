@@ -407,7 +407,9 @@
 .oasis-editor-comment-popup {
   position: absolute;
   z-index: 1000;
-  max-width: 260px;
+  max-width: min(340px, 80vw);
+  max-height: min(480px, 65vh);
+  overflow-y: auto;
   pointer-events: auto;
   background: var(--oasis-paper);
   border: 1px solid var(--oasis-border-color);
@@ -442,6 +444,22 @@
 .oasis-editor-comment-popup-body {
   white-space: pre-wrap;
   line-height: 1.4;
+}
+
+.oasis-editor-comment-popup-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding-block: 8px;
+}
+
+.oasis-editor-comment-popup-reply {
+  padding-inline-start: 10px;
+  border-inline-start: 2px solid var(--oasis-border-color);
+}
+
+.oasis-editor-comment-popup-replies + .oasis-editor-ui-button {
+  margin-top: 6px;
 }
 
 .oasis-editor-resize-handle {
