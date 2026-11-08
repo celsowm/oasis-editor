@@ -133,6 +133,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setPaperSizePreset",
   "setColumns",
   "setColumnsPreset",
+  "setSectionVerticalAlign",
   "editHeader",
   "editFooter",
   "editFirstPageHeader",

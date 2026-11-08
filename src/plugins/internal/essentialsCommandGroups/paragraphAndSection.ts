@@ -241,5 +241,24 @@ export function buildParagraphAndSectionCommands({
         section.setColumns({ count: preset.count });
       }
     }),
+    setSectionVerticalAlign: actionCommand(
+      "setSectionVerticalAlign",
+      (p): void => {
+        const align = (p ?? undefined) as
+          "top" | "center" | "both" | "bottom" | undefined;
+        if (
+          align === undefined ||
+          align === "top" ||
+          align === "center" ||
+          align === "both" ||
+          align === "bottom"
+        ) {
+          section.setVerticalAlign(align ?? "top");
+        }
+      },
+      (): { value: string | undefined } => ({
+        value: section.getVerticalAlign(),
+      }),
+    ),
   };
 }

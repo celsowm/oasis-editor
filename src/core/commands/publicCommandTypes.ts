@@ -185,6 +185,7 @@ export interface OasisCommandPayloads {
     separator?: boolean;
   };
   setColumnsPreset: string;
+  setSectionVerticalAlign: "top" | "center" | "both" | "bottom" | null;
   editHeader: undefined;
   editFooter: undefined;
   editFirstPageHeader: undefined;

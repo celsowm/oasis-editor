@@ -8,10 +8,12 @@ import { setSectionPageNumbering } from "@/core/commands/pageNumber.js";
 import {
   getActivePaperSize,
   getActiveColumns,
+  getSectionVerticalAlign,
   setSectionColumns,
   setSectionMarginsPreset,
   setSectionPaperSize,
   setSectionPaperSizePreset,
+  setSectionVerticalAlign,
 } from "@/core/commands/pageSetup.js";
 import type { EssentialsSectionCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
@@ -112,6 +114,13 @@ export function buildEssentialsSection(
     setColumns: (columns): void => {
       options.applyTransactionalState((state) =>
         setSectionColumns(state, columns),
+      );
+      options.focusInput();
+    },
+    getVerticalAlign: () => getSectionVerticalAlign(options.state()),
+    setVerticalAlign: (align): void => {
+      options.applyTransactionalState((state) =>
+        setSectionVerticalAlign(state, align),
       );
       options.focusInput();
     },

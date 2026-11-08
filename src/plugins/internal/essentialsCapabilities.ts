@@ -364,6 +364,10 @@ export interface EssentialsSectionCapability {
     space?: number;
     separator?: boolean;
   }) => void;
+  /** Read the active section's vertical justification (`w:vAlign`). */
+  getVerticalAlign: () => "top" | "center" | "both" | "bottom" | undefined;
+  /** Set the active section's vertical justification (`w:vAlign`). */
+  setVerticalAlign: (align: "top" | "center" | "both" | "bottom") => void;
 }
 
 export interface EssentialsHeaderFooterCapability {
