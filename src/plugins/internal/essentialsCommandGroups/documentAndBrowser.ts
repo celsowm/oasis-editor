@@ -118,6 +118,9 @@ export function buildDocumentAndBrowserCommands({
     setShapeOutline: actionCommand("setShapeOutline", (p): void =>
       document.setShapeOutline(p == null ? null : String(p)),
     ),
+    setShapeOutlineWidth: actionCommand("setShapeOutlineWidth", (p): void =>
+      document.setShapeOutlineWidth(Number(p)),
+    ),
     alignFloatingObject: actionCommand("alignFloatingObject", (p): void =>
       document.alignFloatingObject(
         (p as "left" | "center" | "right") ?? "center",

@@ -8,6 +8,7 @@ import { reorderSelectedFloatingObject } from "@/core/commands/floatingReorderCo
 import {
   setSelectedShapeFill,
   setSelectedShapeOutline,
+  setSelectedShapeOutlineWidth,
   setSelectedShapePreset,
 } from "@/core/commands/shapeFillCommands.js";
 import {
@@ -115,6 +116,12 @@ export function buildEssentialsDocument(
       options.applyTransactionalState(
         (current): EditorState => setSelectedShapeOutline(current, color),
         { mergeKey: MERGE_KEYS.shapeOutline },
+      ),
+    setShapeOutlineWidth: (widthPt: number): void =>
+      options.applyTransactionalState(
+        (current): EditorState =>
+          setSelectedShapeOutlineWidth(current, widthPt),
+        { mergeKey: MERGE_KEYS.shapeOutlineWidth },
       ),
     alignFloatingObject: (align: "left" | "center" | "right"): void =>
       options.applyTransactionalState(
