@@ -24,20 +24,23 @@ import {
 function revisionFixture() {
   const a = createEditorParagraphFromRuns([
     { text: "Normal " },
-    { text: "inserted", revision: {
-      id: "insert-1", type: "insert", author: "Editor", date: 100,
-    }},
+    { text: "inserted" },
     { text: " gap " },
-    { text: "removed", revision: {
-      id: "delete-1", type: "delete", author: "Editor", date: 200,
-    }},
+    { text: "removed" },
   ]);
+  a.runs[1]!.revision = {
+    id: "insert-1", type: "insert", author: "Editor", date: 100,
+  };
+  a.runs[3]!.revision = {
+    id: "delete-1", type: "delete", author: "Editor", date: 200,
+  };
   const b = createEditorParagraphFromRuns([
     { text: "then " },
-    { text: "another", revision: {
-      id: "insert-2", type: "insert", author: "Editor", date: 300,
-    }},
+    { text: "another" },
   ]);
+  b.runs[1]!.revision = {
+    id: "insert-2", type: "insert", author: "Editor", date: 300,
+  };
   const state = createEditorStateFromDocument(createEditorDocument([a, b]));
   return { state, a, b };
 }
