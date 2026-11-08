@@ -16,10 +16,12 @@ export interface SplitButtonProps {
   mainTestId?: string;
   mainAriaLabel?: string;
   mainPressed?: boolean;
+  mainDisabled?: boolean;
   onMain: () => void;
   /** Chevron (right) button. */
   menuTestId?: string;
   menuAriaLabel?: string;
+  menuDisabled?: boolean;
   /** Popover panel. */
   panelClass?: string;
   panelRole?: PanelRole;
@@ -56,6 +58,7 @@ export function SplitButton(props: SplitButtonProps): JSX.Element {
             data-testid={props.mainTestId}
             aria-label={props.mainAriaLabel ?? props.tooltip}
             aria-pressed={props.mainPressed}
+            disabled={props.mainDisabled}
             onClick={(): void => props.onMain()}
           >
             {props.mainContent}
@@ -68,6 +71,7 @@ export function SplitButton(props: SplitButtonProps): JSX.Element {
             aria-label={props.menuAriaLabel ?? `${props.tooltip ?? ""} menu`}
             aria-haspopup="menu"
             aria-expanded={api.open}
+            disabled={props.menuDisabled}
             onClick={(): void => api.toggle()}
           >
             <DropdownChevron />

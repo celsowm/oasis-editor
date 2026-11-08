@@ -92,7 +92,15 @@ export const defaultMenuItems: MenuItem[] = [
     path: "Edit/Paste",
     labelKey: "menu.edit.paste",
     shortcut: "Ctrl+V",
-    hidden: true,
+    command: "paste",
+    icon: "clipboard-paste",
+  },
+  {
+    id: "edit_paste_plain",
+    path: "Edit/Paste as Plain Text",
+    labelKey: "toolbar.pastePlainText",
+    command: "pasteAsPlainText",
+    icon: "clipboard",
   },
   {
     id: "edit_find",

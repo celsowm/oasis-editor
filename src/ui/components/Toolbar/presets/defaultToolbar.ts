@@ -184,8 +184,37 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   });
   items.push({ type: "separator", id: "sep-history" });
 
-  // --- Home: existing clipboard and editing commands ---
-  // Keep native paste/cut UI out until the clipboard contract is implemented.
+  // --- Home: format-aware paste actions through the shared clipboard service ---
+  items.push({
+    type: "split",
+    id: "editor-toolbar-paste",
+    testId: "editor-toolbar-paste",
+    iconName: "clipboard-paste",
+    tooltipKey: "menu.edit.paste",
+    command: "paste",
+    ribbonSize: "large",
+    menu: {
+      kind: "items",
+      items: [
+        {
+          type: "button",
+          id: "editor-toolbar-paste-rich",
+          testId: "editor-toolbar-paste-rich",
+          iconName: "clipboard-paste",
+          labelKey: "toolbar.pasteKeepFormatting",
+          command: "paste",
+        },
+        {
+          type: "button",
+          id: "editor-toolbar-paste-plain",
+          testId: "editor-toolbar-paste-plain",
+          iconName: "clipboard",
+          labelKey: "toolbar.pastePlainText",
+          command: "pasteAsPlainText",
+        },
+      ],
+    },
+  });
   items.push({
     type: "button",
     id: "editor-toolbar-copy",

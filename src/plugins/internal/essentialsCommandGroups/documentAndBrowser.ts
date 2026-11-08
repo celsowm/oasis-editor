@@ -46,6 +46,20 @@ export function buildDocumentAndBrowserCommands({
       (): void => document.printDocument(),
       (): { isEnabled: true } => ({ isEnabled: true }),
     ),
+    paste: actionCommand(
+      "paste",
+      (): void => browser.paste(),
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("paste") && browser.canPaste(),
+      }),
+    ),
+    pasteAsPlainText: actionCommand(
+      "pasteAsPlainText",
+      (): void => browser.pasteAsPlainText(),
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("pasteAsPlainText") && browser.canPaste(),
+      }),
+    ),
     copy: actionCommand(
       "copy",
       (): void => browser.copy(),

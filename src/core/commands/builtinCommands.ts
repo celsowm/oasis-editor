@@ -7,6 +7,8 @@ export const OASIS_BUILTIN_COMMANDS = [
   "insertTableOfContents",
   "updateTableOfContents",
   "pastePlainText",
+  "paste",
+  "pasteAsPlainText",
   "bold",
   "italic",
   "underline",

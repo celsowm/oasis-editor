@@ -649,6 +649,8 @@ export const ptBR = {
   "menu.edit": "Editar",
   "menu.edit.cut": "Recortar",
   "menu.edit.copy": "Copiar",
+  "toolbar.pasteKeepFormatting": "Manter formatação original",
+  "toolbar.pastePlainText": "Manter somente texto",
   "menu.edit.paste": "Colar",
   "menu.edit.selectAll": "Selecionar Tudo",
   "menu.view": "Ver",

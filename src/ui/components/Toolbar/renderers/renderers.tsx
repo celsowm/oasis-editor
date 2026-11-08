@@ -114,6 +114,10 @@ function RenderSplit(props: RendererProps<SplitItem>): JSX.Element {
       tooltip={resolveTooltip(props.item, props.api)}
       rootActive={b.active() || open()}
       mainTestId={props.item.testId}
+      mainAriaLabel={resolveTooltip(props.item, props.api)}
+      mainDisabled={b.disabled()}
+      menuDisabled={b.disabled()}
+      ribbonSize={props.item.ribbonSize}
       mainPressed={b.active()}
       onMain={(): void => runItem(props.item, props.api)}
       menuTestId={
@@ -125,7 +129,15 @@ function RenderSplit(props: RendererProps<SplitItem>): JSX.Element {
         props.item.iconName ? <ToolIcon name={props.item.iconName} /> : <></>
       }
     >
-      {renderMenuContent(props.item.menu, props.api)}
+      <div onClick={(event): void => {
+        const target = event.target as HTMLElement;
+        const button = target.closest("button");
+        if (button && button.getAttribute("aria-haspopup") !== "menu") {
+          setOpen(false);
+        }
+      }}>
+        {renderMenuContent(props.item.menu, props.api)}
+      </div>
     </SplitButton>
   );
 }

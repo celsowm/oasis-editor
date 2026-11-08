@@ -46,6 +46,8 @@ export interface OasisCommandPayloads {
   insertEquation: EditorMathExpression;
   updateEquation: { runId: string; expression: EditorMathExpression };
   pastePlainText: undefined;
+  paste: undefined;
+  pasteAsPlainText: undefined;
   bold: undefined;
   italic: undefined;
   underline: undefined;
