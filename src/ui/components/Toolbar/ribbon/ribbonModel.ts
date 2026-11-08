@@ -64,6 +64,7 @@ const GROUP_LABEL_KEYS: Record<string, TranslationKey> = {
   pages: "ribbon.group.pages",
   tableOfContents: "ribbon.group.tableOfContents",
   tracking: "ribbon.group.tracking",
+  comments: "ribbon.group.comments",
   changes: "ribbon.group.changes",
   show: "ribbon.group.show",
   font: "ribbon.group.font",
@@ -166,6 +167,7 @@ const RIBBON_GROUP_ORDER: Partial<Record<RibbonTabId, Record<string, number>>> =
     review: {
       tracking: 10,
       changes: 20,
+      comments: 30,
     },
     view: {
       show: 10,

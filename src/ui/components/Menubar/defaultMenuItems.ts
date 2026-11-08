@@ -147,6 +147,57 @@ export const defaultMenuItems: MenuItem[] = [
     hidden: true,
   },
 
+  // Review
+  {
+    id: "review_previous_revision",
+    path: "Review/Previous Change",
+    labelKey: "toolbar.previousRevision",
+    command: "previousRevision",
+    icon: "chevron-up",
+  },
+  {
+    id: "review_next_revision",
+    path: "Review/Next Change",
+    labelKey: "toolbar.nextRevision",
+    command: "nextRevision",
+    icon: "chevron-down",
+  },
+  {
+    id: "review_previous_comment",
+    path: "Review/Previous Comment",
+    labelKey: "toolbar.previousComment",
+    command: "previousComment",
+    icon: "message-square",
+  },
+  {
+    id: "review_next_comment",
+    path: "Review/Next Comment",
+    labelKey: "toolbar.nextComment",
+    command: "nextComment",
+    icon: "messages-square",
+  },
+  {
+    id: "review_resolve_comment",
+    path: "Review/Resolve Comment",
+    labelKey: "toolbar.resolveComment",
+    command: "resolveComment",
+    icon: "message-square-check",
+  },
+  {
+    id: "review_reopen_comment",
+    path: "Review/Reopen Comment",
+    labelKey: "toolbar.reopenComment",
+    command: "reopenComment",
+    icon: "message-square-more",
+  },
+  {
+    id: "review_delete_comment",
+    path: "Review/Delete Comment",
+    labelKey: "toolbar.deleteComment",
+    command: "deleteComment",
+    icon: "message-square-x",
+  },
+
   // View
   {
     id: "view_outline",

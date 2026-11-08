@@ -795,6 +795,70 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     ribbonSize: "large",
   });
 
+  items.push({
+    type: "button",
+    id: "editor-toolbar-previous-revision",
+    testId: "editor-toolbar-previous-revision",
+    iconName: "chevron-up",
+    labelKey: "toolbar.previousRevision",
+    tooltipKey: "toolbar.previousRevision",
+    command: "previousRevision",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-next-revision",
+    testId: "editor-toolbar-next-revision",
+    iconName: "chevron-down",
+    labelKey: "toolbar.nextRevision",
+    tooltipKey: "toolbar.nextRevision",
+    command: "nextRevision",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-previous-comment",
+    testId: "editor-toolbar-previous-comment",
+    iconName: "message-square",
+    labelKey: "toolbar.previousComment",
+    tooltipKey: "toolbar.previousComment",
+    command: "previousComment",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-next-comment",
+    testId: "editor-toolbar-next-comment",
+    iconName: "messages-square",
+    labelKey: "toolbar.nextComment",
+    tooltipKey: "toolbar.nextComment",
+    command: "nextComment",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-resolve-comment",
+    testId: "editor-toolbar-resolve-comment",
+    iconName: "message-square-check",
+    labelKey: "toolbar.resolveComment",
+    tooltipKey: "toolbar.resolveComment",
+    command: "resolveComment",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-reopen-comment",
+    testId: "editor-toolbar-reopen-comment",
+    iconName: "message-square-more",
+    labelKey: "toolbar.reopenComment",
+    tooltipKey: "toolbar.reopenComment",
+    command: "reopenComment",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-delete-comment",
+    testId: "editor-toolbar-delete-comment",
+    iconName: "message-square-x",
+    labelKey: "toolbar.deleteComment",
+    tooltipKey: "toolbar.deleteComment",
+    command: "deleteComment",
+  });
+
   // --- View: state follows the editor, regardless of where it was toggled ---
   items.push({
     type: "toggle",
