@@ -15,6 +15,7 @@ import type { TextCaseMode } from "@/core/commands/text.js";
 import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
 import type { OasisBuiltinCommand } from "@/core/commands/builtinCommands.js";
 import type { TableBorderPreset } from "@/core/commands/table.js";
+import type { TableCellMargins } from "@/core/commands/table.js";
 import type { EditorMathExpression } from "@/core/model.js";
 
 // Capability contracts the Essentials plugin operates on. Extracted to a leaf
@@ -415,6 +416,10 @@ export interface EssentialsTableCapability {
     value: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV",
   ) => void;
   setCellWidth: (width: string) => void;
+  /** True when the caret sits inside a table whose cells can be re-margined. */
+  canSetCellMargins: () => boolean;
+  /** Word's Cell Margins: set per-edge padding on the selected cells. */
+  setCellMargins: (margins: TableCellMargins) => void;
   insert: (rows: number, cols: number) => void;
 }
 

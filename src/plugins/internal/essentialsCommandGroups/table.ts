@@ -204,6 +204,18 @@ export function buildTableCommands({
     tableSetCellWidth: actionCommand("tableSetCellWidth", (p): void =>
       table.setCellWidth(String(p)),
     ),
+    tableSetCellMargins: actionCommand(
+      "tableSetCellMargins",
+      (p): void =>
+        table.setCellMargins(
+          (p as import("@/core/commands/table.js").TableCellMargins) ?? {},
+        ),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSetCellMargins") &&
+          table.canSetCellMargins(),
+      }),
+    ),
     tableToggleHeaderRow: actionCommand(
       "tableToggleHeaderRow",
       (): void => table.toggleTblLook("firstRow"),

@@ -20,6 +20,9 @@ import {
   canToggleRepeatHeaderRows,
   isRepeatHeaderRowsActive,
   toggleRepeatHeaderRows,
+  canSetTableCellMargins,
+  setActiveTableCellMargins,
+  type TableCellMargins,
 } from "@/core/commands/table.js";
 import {
   findParagraphTablePathLocation,
@@ -408,6 +411,12 @@ export function buildEssentialsTable(
       apply(
         (current): EditorState => setTableCellWidth(current, width),
         MERGE_KEYS.tableCellWidth,
+      ),
+    canSetCellMargins: (): boolean => canSetTableCellMargins(options.state()),
+    setCellMargins: (margins: TableCellMargins): void =>
+      apply(
+        (current): EditorState => setActiveTableCellMargins(current, margins),
+        MERGE_KEYS.tableCellMargins,
       ),
     insert: (rows: number, cols: number): void =>
       options.tableOps.insertTableCommand(rows, cols),
