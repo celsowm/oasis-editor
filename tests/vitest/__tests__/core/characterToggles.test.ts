@@ -23,7 +23,7 @@ function buildState(text: string): EditorState {
   };
 }
 
-describe("character toggles (format.smallCaps / format.allCaps / format.doubleStrikethrough)", () => {
+describe("character toggles (format.smallCaps / format.allCaps / format.doubleStrikethrough / format.hidden)", () => {
   it("enables small caps on the selection", () => {
     const state = buildState("hello");
     const next = toggleTextStyle(state, "smallCaps");
@@ -47,5 +47,18 @@ describe("character toggles (format.smallCaps / format.allCaps / format.doubleSt
     const state = buildState("hello");
     const next = toggleTextStyle(state, "doubleStrike");
     expect(getParagraphs(next)[0]!.runs[0]!.styles?.doubleStrike).toBe(true);
+  });
+
+  it("enables hidden text on the selection", () => {
+    const state = buildState("hello");
+    const next = toggleTextStyle(state, "hidden");
+    expect(getParagraphs(next)[0]!.runs[0]!.styles?.hidden).toBe(true);
+  });
+
+  it("disables hidden text when it is already uniform", () => {
+    const state = buildState("hello");
+    const on = toggleTextStyle(state, "hidden");
+    const off = toggleTextStyle(on, "hidden");
+    expect(getParagraphs(off)[0]!.runs[0]!.styles?.hidden).toBeUndefined();
   });
 });
