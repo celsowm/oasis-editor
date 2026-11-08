@@ -206,6 +206,21 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
     group: "alignment",
     row: 1,
   },
+  "editor-toolbar-tbl-valign-top": {
+    tab: "tableLayout",
+    group: "alignment",
+    row: 2,
+  },
+  "editor-toolbar-tbl-valign-middle": {
+    tab: "tableLayout",
+    group: "alignment",
+    row: 2,
+  },
+  "editor-toolbar-tbl-valign-bottom": {
+    tab: "tableLayout",
+    group: "alignment",
+    row: 2,
+  },
   "editor-toolbar-tbl-header-row": {
     tab: "tableDesign",
     group: "tableStyleOptions",

@@ -333,6 +333,20 @@ export function buildEssentialsTable(
           setTableCellStyleValue(current, "horizontalAlign", "right"),
         MERGE_KEYS.tableAlign,
       ),
+    setCellVerticalAlign: (value: "top" | "middle" | "bottom"): void =>
+      apply(
+        (current): EditorState =>
+          setTableCellStyleValue(current, "verticalAlign", value),
+        MERGE_KEYS.tableCellVerticalAlign,
+      ),
+    setCellTextDirection: (
+      value: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV",
+    ): void =>
+      apply(
+        (current): EditorState =>
+          setTableCellStyleValue(current, "textDirection", value),
+        MERGE_KEYS.tableCellTextDirection,
+      ),
     setCellWidth: (width: string): void =>
       apply(
         (current): EditorState => setTableCellWidth(current, width),

@@ -130,6 +130,18 @@ export function buildTableCommands({
     tableAlignRight: actionCommand("tableAlignRight", (): void =>
       table.alignRight(),
     ),
+    tableSetCellVerticalAlign: actionCommand(
+      "tableSetCellVerticalAlign",
+      (p): void =>
+        table.setCellVerticalAlign(p as unknown as "top" | "middle" | "bottom"),
+    ),
+    tableSetCellTextDirection: actionCommand(
+      "tableSetCellTextDirection",
+      (p): void =>
+        table.setCellTextDirection(
+          p as unknown as "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV",
+        ),
+    ),
     tableSetCellWidth: actionCommand("tableSetCellWidth", (p): void =>
       table.setCellWidth(String(p)),
     ),

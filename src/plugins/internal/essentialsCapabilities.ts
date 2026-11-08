@@ -384,6 +384,10 @@ export interface EssentialsTableCapability {
   alignLeft: () => void;
   alignCenter: () => void;
   alignRight: () => void;
+  setCellVerticalAlign: (value: "top" | "middle" | "bottom") => void;
+  setCellTextDirection: (
+    value: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV",
+  ) => void;
   setCellWidth: (width: string) => void;
   insert: (rows: number, cols: number) => void;
 }

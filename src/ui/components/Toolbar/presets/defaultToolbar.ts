@@ -1,4 +1,4 @@
-import type { TranslateFn } from "@/i18n/index.js";
+import type { TranslateFn, TranslationKey } from "@/i18n/index.js";
 import type { ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
 import { UnderlineControl } from "@/ui/components/Toolbar/controls/UnderlineControl.js";
 import { ListOptionsControl } from "@/ui/components/Toolbar/controls/ListOptionsControl.js";
@@ -1131,6 +1131,42 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     labelKey: "table.autoFit",
     tooltipKey: "table.autoFit",
   });
+
+  // Cell vertical alignment (Word's Align Top / Center / Bottom) on the
+  // Layout tab's alignment group. These are payload commands so they are
+  // surfaced explicitly rather than through TABLE_LAYOUT_BUTTONS.
+  const verticalAlignPayloads: Array<{
+    id: string;
+    value: "top" | "middle" | "bottom";
+    labelKey: TranslationKey;
+  }> = [
+    {
+      id: "editor-toolbar-tbl-valign-top",
+      value: "top",
+      labelKey: "table.valignTop",
+    },
+    {
+      id: "editor-toolbar-tbl-valign-middle",
+      value: "middle",
+      labelKey: "table.valignMiddle",
+    },
+    {
+      id: "editor-toolbar-tbl-valign-bottom",
+      value: "bottom",
+      labelKey: "table.valignBottom",
+    },
+  ];
+  for (const spec of verticalAlignPayloads) {
+    items.push({
+      type: "button",
+      id: spec.id,
+      testId: spec.id,
+      iconName: "tableVerticalAlign",
+      command: { name: "tableSetCellVerticalAlign", payload: spec.value },
+      labelKey: spec.labelKey,
+      tooltipKey: spec.labelKey,
+    });
+  }
 
   // --- Section ---
   items.push({

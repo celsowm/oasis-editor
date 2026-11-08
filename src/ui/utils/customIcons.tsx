@@ -227,6 +227,16 @@ const TableAlignCenterIcon: CustomIconRenderer = (): JSX.Element =>
 const TableAlignRightIcon: CustomIconRenderer = (): JSX.Element =>
   TableAlignIcon("right");
 
+const TableVerticalAlignIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
+    <rect x="4" y="4" width="16" height="16" rx="0.8" />
+    <path
+      d="M9 12h6M7.5 20.5 9 22 10.5 20.5M13.5 20.5 15 22 16.5 20.5"
+      transform="rotate(90 12 12)"
+    />
+  </SvgIcon>
+);
+
 const TableBordersIcon: CustomIconRenderer = (): JSX.Element => (
   <TableIcon>
     <path d="M3 3l18 18" stroke-width={2} />
@@ -287,6 +297,7 @@ const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   tableAlignLeft: TableAlignLeftIcon,
   tableAlignCenter: TableAlignCenterIcon,
   tableAlignRight: TableAlignRightIcon,
+  tableVerticalAlign: TableVerticalAlignIcon,
   tableBorders: TableBordersIcon,
   tableNoBorders: TableNoBordersIcon,
 };
