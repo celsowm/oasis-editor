@@ -299,6 +299,8 @@ export interface EssentialsBrowserCapability {
 export interface EssentialsParagraphCapability {
   togglePageBreakBefore: () => void;
   toggleKeepWithNext: () => void;
+  toggleKeepLinesTogether: () => void;
+  toggleWidowControl: () => void;
   setSpacingAfter: (value: number | null) => void;
   setSpacingBefore: (value: number | null) => void;
   setIndentLeft: (value: number | null) => void;

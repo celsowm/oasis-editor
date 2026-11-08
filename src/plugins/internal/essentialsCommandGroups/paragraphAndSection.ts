@@ -56,6 +56,18 @@ export function buildParagraphAndSectionCommands({
       (): void => paragraph.toggleKeepWithNext(),
       (): { isActive: boolean } => ({ isActive: Boolean(s().keepWithNext) }),
     ),
+    toggleKeepLinesTogether: actionCommand(
+      "toggleKeepLinesTogether",
+      (): void => paragraph.toggleKeepLinesTogether(),
+      (): { isActive: boolean } => ({
+        isActive: Boolean(s().keepLinesTogether),
+      }),
+    ),
+    toggleWidowControl: actionCommand(
+      "toggleWidowControl",
+      (): void => paragraph.toggleWidowControl(),
+      (): { isActive: boolean } => ({ isActive: Boolean(s().widowControl) }),
+    ),
     setSpacingAfter: valueCommand(
       "setSpacingAfter",
       (p): true => (paragraph.setSpacingAfter(numOrNull(p)), true),

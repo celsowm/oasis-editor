@@ -98,6 +98,8 @@ export const OASIS_BUILTIN_COMMANDS = [
   "moveParagraphsDown",
   "togglePageBreakBefore",
   "toggleKeepWithNext",
+  "toggleKeepLinesTogether",
+  "toggleWidowControl",
   "setSpacingAfter",
   "setSpacingBefore",
   "setIndentLeft",

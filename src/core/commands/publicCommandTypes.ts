@@ -137,6 +137,8 @@ export interface OasisCommandPayloads {
   indent: undefined;
   togglePageBreakBefore: undefined;
   toggleKeepWithNext: undefined;
+  toggleKeepLinesTogether: undefined;
+  toggleWidowControl: undefined;
   setSpacingAfter: number | null;
   setSpacingBefore: number | null;
   setIndentLeft: number | null;

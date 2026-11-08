@@ -16,6 +16,12 @@ export function buildEssentialsParagraph(
       options.commandsController.toggleParagraphFlagCommand("pageBreakBefore"),
     toggleKeepWithNext: (): void =>
       options.commandsController.toggleParagraphFlagCommand("keepWithNext"),
+    toggleKeepLinesTogether: (): void =>
+      options.commandsController.toggleParagraphFlagCommand(
+        "keepLinesTogether",
+      ),
+    toggleWidowControl: (): void =>
+      options.commandsController.toggleParagraphFlagCommand("widowControl"),
     setSpacingAfter: (value: number | null): void =>
       options.commandsController.applyParagraphStyleCommand(
         "spacingAfter",

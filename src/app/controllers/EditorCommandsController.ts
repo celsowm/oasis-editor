@@ -358,10 +358,18 @@ function createEditorCommandsControllerImpl(
   };
 
   const toggleParagraphFlagCommand = (
-    key: "pageBreakBefore" | "keepWithNext",
+    key:
+      "pageBreakBefore" | "keepWithNext" | "keepLinesTogether" | "widowControl",
   ): void => {
     const nextValue = !toolbarStyleState()[key];
-    applyParagraphStyleCommand(key, nextValue ? true : null);
+    // `widowControl` defaults to on, so turning it off needs an explicit
+    // `false` (deleting the key would resolve back to the default true); the
+    // other pagination flags default to off and clear with null.
+    if (key === "widowControl") {
+      applyParagraphStyleCommand(key, nextValue);
+    } else {
+      applyParagraphStyleCommand(key, nextValue ? true : null);
+    }
   };
 
   const applyParagraphListCommand = (
