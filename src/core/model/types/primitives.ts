@@ -249,8 +249,14 @@ export interface EditorImageRunData {
   wrapPolygon?: EditorWrapPolygonPoint[];
 }
 
+/** `\*` number-format switch for PAGE/NUMPAGES fields (WordCraft NUMBER_FORMATS). */
+export type PageNumberFormat =
+  "decimal" | "roman" | "ROMAN" | "alphabetic" | "ALPHABETIC" | "Ordinal";
+
 export interface EditorFieldData {
   type: "PAGE" | "NUMPAGES";
+  /** Page-number `\*` format switch. Absent ⇒ decimal. */
+  format?: PageNumberFormat;
 }
 
 /**

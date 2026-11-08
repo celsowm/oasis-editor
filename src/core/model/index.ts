@@ -32,6 +32,7 @@ export type {
   EditorFieldChar,
   EditorFootnoteReferenceData,
   EditorEndnoteReferenceData,
+  PageNumberFormat,
   EditorRevision,
   EditorRevisionMetadata,
   EditorMoveRangeMarker,

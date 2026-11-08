@@ -10,8 +10,7 @@ import {
   type EditorBlockNode,
   type EditorParagraphNode,
   type EditorTextRun,
-} from "@/core/model.js";
-import { editHeaderFooter } from "@/core/commands/headerFooter.js";
+} from "@/core/model.js";import { editHeaderFooter } from "@/core/commands/headerFooter.js";
 import {
   insertPageNumberField,
   isInHeaderOrFooter,
@@ -60,6 +59,20 @@ describe("page-number field insertion", () => {
     expect(fieldType(runs[runs.length - 2]!)).toBe("PAGE");
     expect(runs[0]!.text).toBe("Bo");
     expect(runs[runs.length - 1]!.text).toBe("dy");
+  });
+
+  it("applies the requested number format to the field run", () => {
+    const { state } = fixture();
+    const result = insertPageNumberField(state, "page", "ROMAN");
+    const runs = bodyRuns(result.document);
+    const fieldRun = runs.find((run) => fieldType(run) === "PAGE");
+    expect(getRunField(fieldRun!)?.format).toBe("ROMAN");
+    // Decimal (default) leaves no explicit format on the run.
+    const plain = insertPageNumberField(state, "page");
+    const plainRun = bodyRuns(plain.document).find(
+      (run) => fieldType(run) === "PAGE",
+    );
+    expect(getRunField(plainRun!)?.format).toBeUndefined();
   });
 
   it("inserts the Page X of Y combination as PAGE + NUMPAGES with literals", () => {

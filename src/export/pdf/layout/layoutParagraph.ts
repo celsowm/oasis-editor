@@ -1,4 +1,5 @@
 import type { EditorParagraphNode, EditorTextRun } from "@/core/model.js";
+import { formatPageNumber } from "@/core/format/pageNumberFormat.js";
 import type { PdfTextMeasurer } from "./PdfTextMeasurer.js";
 
 export interface PdfParagraphTextContext {
@@ -51,9 +52,9 @@ export function resolvePdfRunText(
   context: PdfParagraphTextContext,
 ): string {
   if (run.kind === "field") {
-    return run.field.type === "NUMPAGES"
-      ? String(context.totalPages)
-      : String(context.pageNumber);
+    const value =
+      run.field.type === "NUMPAGES" ? context.totalPages : context.pageNumber;
+    return formatPageNumber(value, run.field.format);
   }
   if (run.kind === "image") {
     return "";

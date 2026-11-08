@@ -10,6 +10,8 @@
  * they keep the `1` placeholder Word uses for the field result.
  */
 import type { EditorState, EditorTextRun } from "@/core/model.js";
+import type { PageNumberFormat } from "@/core/model.js";
+import type { EditorFieldData } from "@/core/model.js";
 import {
   getParagraphLength,
   getParagraphs,
@@ -38,12 +40,15 @@ function fieldRun(
   type: "PAGE" | "NUMPAGES",
   styles: EditorTextRun["styles"],
   id: string,
+  format?: PageNumberFormat,
 ): EditorTextRun {
+  const field: EditorFieldData =
+    format && format !== "decimal" ? { type, format } : { type };
   return {
     id,
     text: "1", // Placeholder, resolved during projection.
     kind: "field",
-    field: { type },
+    field,
     styles,
   };
 }
@@ -100,22 +105,24 @@ function insertRunsAtSelection(
  * Insert a page-number field at the caret in the active zone (header, footer
  * or body). `"page"` inserts a bare `PAGE` field; `"xOfY"` inserts the
  * `Page <PAGE> of <NUMPAGES>` combination Word and WordCraft use for
- * "Page X of Y" footers.
+ * "Page X of Y" footers. `format` selects the `\*` number format applied to
+ * the field runs (default decimal).
  */
 export function insertPageNumberField(
   state: EditorState,
   kind: PageNumberFieldKind = "page",
+  format?: PageNumberFormat,
 ): EditorState {
   const suffix = Math.random().toString(36).slice(2, 9);
   const runs: EditorTextRun[] =
     kind === "xOfY"
       ? [
           { id: `run:page-of:${suffix}`, text: "Page ", kind: "text" },
-          fieldRun("PAGE", undefined, `run:page-field:${suffix}`),
+          fieldRun("PAGE", undefined, `run:page-field:${suffix}`, format),
           { id: `run:page-of:${suffix}`, text: " of ", kind: "text" },
-          fieldRun("NUMPAGES", undefined, `run:page-field:${suffix}`),
+          fieldRun("NUMPAGES", undefined, `run:page-field:${suffix}`, format),
         ]
-      : [fieldRun("PAGE", undefined, `run:page-field:${suffix}`)];
+      : [fieldRun("PAGE", undefined, `run:page-field:${suffix}`, format)];
   return insertRunsAtSelection(state, runs);
 }
 
