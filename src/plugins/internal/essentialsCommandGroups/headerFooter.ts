@@ -30,6 +30,22 @@ export function buildHeaderFooterCommands({
       headerFooter.editFooter();
       return true;
     }),
+    editFirstPageHeader: command("editFirstPageHeader", (): boolean => {
+      headerFooter.editFirstPageHeader();
+      return true;
+    }),
+    editEvenPageHeader: command("editEvenPageHeader", (): boolean => {
+      headerFooter.editEvenPageHeader();
+      return true;
+    }),
+    editFirstPageFooter: command("editFirstPageFooter", (): boolean => {
+      headerFooter.editFirstPageFooter();
+      return true;
+    }),
+    editEvenPageFooter: command("editEvenPageFooter", (): boolean => {
+      headerFooter.editEvenPageFooter();
+      return true;
+    }),
     insertPageNumber: command("insertPageNumber", (): boolean => {
       headerFooter.insertPageNumber();
       return true;

@@ -32,6 +32,14 @@ export function buildEssentialsHeaderFooter(
       transactional((state) => editHeaderFooter(state, "header")),
     editFooter: (): void =>
       transactional((state) => editHeaderFooter(state, "footer")),
+    editFirstPageHeader: (): void =>
+      transactional((state) => editHeaderFooter(state, "header", "firstPage")),
+    editEvenPageHeader: (): void =>
+      transactional((state) => editHeaderFooter(state, "header", "evenPage")),
+    editFirstPageFooter: (): void =>
+      transactional((state) => editHeaderFooter(state, "footer", "firstPage")),
+    editEvenPageFooter: (): void =>
+      transactional((state) => editHeaderFooter(state, "footer", "evenPage")),
     insertPageNumber: (): void =>
       transactional((state) => insertPageNumber(state)),
     insertPageNumberXOfY: (): void =>

@@ -264,6 +264,14 @@ export interface EssentialsHeaderFooterCapability {
   editHeader: () => void;
   /** Enter footer editing for the active section's default footer. */
   editFooter: () => void;
+  /** Enter header editing for the active section's first-page header. */
+  editFirstPageHeader: () => void;
+  /** Enter header editing for the active section's even-page header. */
+  editEvenPageHeader: () => void;
+  /** Enter footer editing for the active section's first-page footer. */
+  editFirstPageFooter: () => void;
+  /** Enter footer editing for the active section's even-page footer. */
+  editEvenPageFooter: () => void;
   /** Insert a PAGE field at the active caret (header, footer or body). */
   insertPageNumber: () => void;
   /** Insert a "Page X of Y" combination (PAGE + NUMPAGES) at the caret. */

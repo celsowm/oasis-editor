@@ -162,6 +162,10 @@ export interface OasisCommandPayloads {
   setColumnsPreset: string;
   editHeader: undefined;
   editFooter: undefined;
+  editFirstPageHeader: undefined;
+  editEvenPageHeader: undefined;
+  editFirstPageFooter: undefined;
+  editEvenPageFooter: undefined;
   insertPageNumber: undefined;
   insertPageNumberXOfY: undefined;
   placePageNumberTop: undefined;
