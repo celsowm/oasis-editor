@@ -179,6 +179,8 @@ export interface EssentialsDocumentCapability {
   reorderFloatingObject: (move: "front" | "back") => void;
   /** Nudge the selected floating object by a pixel delta. */
   nudgeFloatingObject: (dx: number, dy: number) => void;
+  /** Set whether the selected floating object moves with text / is pinned to page. */
+  setFloatingFixedPosition: (fixed: boolean) => void;
   /** Change the selected shape's DrawingML preset geometry. */
   setShapePreset: (preset: string) => void;
   /** Set the selected text box's text-direction flow. */

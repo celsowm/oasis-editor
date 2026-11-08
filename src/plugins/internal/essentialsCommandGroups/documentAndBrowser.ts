@@ -130,6 +130,10 @@ export function buildDocumentAndBrowserCommands({
       const px = (p ?? {}) as { dx?: number; dy?: number };
       document.nudgeFloatingObject(Number(px.dx) || 0, Number(px.dy) || 0);
     }),
+    setFloatingFixedPosition: actionCommand(
+      "setFloatingFixedPosition",
+      (p): void => document.setFloatingFixedPosition(Boolean(p)),
+    ),
     setShapePreset: actionCommand("setShapePreset", (p): void =>
       document.setShapePreset(p == null ? "rect" : String(p)),
     ),

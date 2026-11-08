@@ -2,6 +2,7 @@ import { insertShapeAtSelection } from "@/core/commands/shape.js";
 import {
   alignSelectedFloatingObject,
   nudgeSelectedFloatingObject,
+  setSelectedFloatingFixedPosition,
 } from "@/core/commands/floatingAlignCommands.js";
 import { reorderSelectedFloatingObject } from "@/core/commands/floatingReorderCommands.js";
 import {
@@ -129,6 +130,12 @@ export function buildEssentialsDocument(
       options.applyTransactionalState(
         (current): EditorState => nudgeSelectedFloatingObject(current, dx, dy),
         { mergeKey: MERGE_KEYS.floatingNudge },
+      ),
+    setFloatingFixedPosition: (fixed: boolean): void =>
+      options.applyTransactionalState(
+        (current): EditorState =>
+          setSelectedFloatingFixedPosition(current, fixed),
+        { mergeKey: MERGE_KEYS.floatingFixedPosition },
       ),
     setShapePreset: (preset: string): void =>
       options.applyTransactionalState(
