@@ -11,3 +11,4 @@ export * from "./table/tableSortCommands.js";
 export * from "./table/tableDeleteCommands.js";
 export * from "./table/tableRepeatHeaderCommands.js";
 export * from "./table/tableCellMarginsCommands.js";
+export * from "./table/tableFormulaCommands.js";
