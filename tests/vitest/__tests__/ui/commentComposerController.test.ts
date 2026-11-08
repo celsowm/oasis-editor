@@ -255,6 +255,47 @@ describe("per-editor comment composer", () => {
     });
   });
 
+  it("records all six comment actions and leaves denied/no-op operations out of history", () => {
+    createRoot((dispose) => {
+      const app = harness({ identity: { id: "alice", displayName: "Alice" } });
+      const initial = app.state;
+      expect(app.composer.openNew()).toBe(true);
+      expect(app.composer.submit("Impersonator", "First comment")).toBe(true);
+      const root = app.state.document.comments!.order[0]!;
+      expect(initial.document.reviewActivity).toBeUndefined();
+      const creation = app.state.document.reviewActivity?.[0];
+      expect(creation).toMatchObject({
+        kind: "comment-created", actorId: "alice",
+        actorName: "Alice", commentId: root, threadId: root,
+        targetAuthor: "Alice",
+      });
+      expect(app.composer.openReplyToId(root)).toBe(true);
+      expect(app.composer.submit("Wrong name", "Reply")).toBe(true);
+      const reply = app.state.document.comments!.order[1]!;
+      expect(app.state.document.reviewActivity?.[1]).toMatchObject({
+        kind: "comment-replied", commentId: reply, parentId: root, threadId: root,
+      });
+      expect(app.composer.openEditToId(reply)).toBe(true);
+      expect(app.composer.submit("Different name", "Updated reply")).toBe(true);
+      expect(app.state.document.reviewActivity?.[2]?.kind).toBe("comment-edited");
+      expect(app.composer.resolveById(root, true)).toBe(true);
+      expect(app.composer.resolveById(root, true)).toBe(false);
+      expect(app.composer.resolveById(root, false)).toBe(true);
+      expect(app.state.document.reviewActivity?.map(e => e.kind))
+        .toEqual(["comment-created", "comment-replied", "comment-edited",
+          "comment-resolved", "comment-reopened"]);
+      expect(app.composer.deleteById(root)).toBe(true);
+      expect(app.state.document.reviewActivity?.[5]).toMatchObject({
+        kind: "comment-deleted", commentId: root, affectedCount: 2,
+      });
+      const count = app.transactions;
+      expect(app.composer.deleteById(root)).toBe(false);
+      expect(app.transactions).toBe(count);
+      expect(app.state.document.reviewActivity).toHaveLength(6);
+      dispose();
+    });
+  });
+
   it("does not share drafts between two editor instances", () => {
     createRoot((dispose) => {
       const first = harness();
