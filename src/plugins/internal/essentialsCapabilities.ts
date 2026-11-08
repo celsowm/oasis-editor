@@ -169,6 +169,10 @@ export interface EssentialsDocumentCapability {
   hasActiveTable: () => boolean;
   /** Opens the Table Properties dialog for the active table/cell. */
   openTableProperties: (activeTab?: "table" | "cell") => void;
+  /** Set the selected shape's solid fill (`null` clears/transparent). */
+  setShapeFill: (fill: string | null) => void;
+  /** Set the selected shape's outline color (`null` removes it). */
+  setShapeOutline: (color: string | null) => void;
 }
 
 export interface EssentialsLinkCapability {

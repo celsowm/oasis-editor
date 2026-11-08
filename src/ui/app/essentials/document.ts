@@ -1,5 +1,10 @@
 import { insertShapeAtSelection } from "@/core/commands/shape.js";
+import {
+  setSelectedShapeFill,
+  setSelectedShapeOutline,
+} from "@/core/commands/shapeFillCommands.js";
 import { insertHtmlAtSelection } from "@/core/commands/html.js";
+import { MERGE_KEYS } from "@/core/transactionMergeKeys.js";
 import { hasActiveTable } from "@/app/services/tablePropertiesService.js";
 import {
   getDocumentParagraphs,
@@ -83,6 +88,16 @@ export function buildEssentialsDocument(
     insertShape: (preset: string): void =>
       options.applyTransactionalState((current): EditorState =>
         insertShapeAtSelection(current, preset),
+      ),
+    setShapeFill: (fill: string | null): void =>
+      options.applyTransactionalState(
+        (current): EditorState => setSelectedShapeFill(current, fill),
+        { mergeKey: MERGE_KEYS.shapeFill },
+      ),
+    setShapeOutline: (color: string | null): void =>
+      options.applyTransactionalState(
+        (current): EditorState => setSelectedShapeOutline(current, color),
+        { mergeKey: MERGE_KEYS.shapeOutline },
       ),
   };
 }

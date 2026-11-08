@@ -112,6 +112,12 @@ export function buildDocumentAndBrowserCommands({
     insertShape: actionCommand("insertShape", (p): void =>
       document.insertShape(String(p)),
     ),
+    setShapeFill: actionCommand("setShapeFill", (p): void =>
+      document.setShapeFill(p == null ? null : String(p)),
+    ),
+    setShapeOutline: actionCommand("setShapeOutline", (p): void =>
+      document.setShapeOutline(p == null ? null : String(p)),
+    ),
     openSymbolDialog: actionCommand("openSymbolDialog", (): void =>
       document.openSymbolDialog(),
     ),
