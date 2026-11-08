@@ -132,6 +132,27 @@ export function buildCoreFormattingCommands({
     strike: command("strike", formatting.strike, (): { isActive: boolean } => ({
       isActive: Boolean(s().strike),
     })),
+    doubleStrike: command(
+      "doubleStrike",
+      formatting.doubleStrike,
+      (): { isActive: boolean } => ({
+        isActive: Boolean(s().doubleStrike),
+      }),
+    ),
+    smallCaps: command(
+      "smallCaps",
+      formatting.smallCaps,
+      (): { isActive: boolean } => ({
+        isActive: Boolean(s().smallCaps),
+      }),
+    ),
+    allCaps: command(
+      "allCaps",
+      formatting.allCaps,
+      (): { isActive: boolean } => ({
+        isActive: Boolean(s().allCaps),
+      }),
+    ),
     superscript: command(
       "superscript",
       formatting.superscript,

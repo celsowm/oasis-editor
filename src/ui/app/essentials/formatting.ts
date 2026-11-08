@@ -268,6 +268,20 @@ export function buildEssentialsFormatting(
       options.keyboardCommandsController.applyBooleanStyleCommand("strike"),
       true
     ),
+    doubleStrike: (): true => (
+      options.keyboardCommandsController.applyBooleanStyleCommand(
+        "doubleStrike",
+      ),
+      true
+    ),
+    smallCaps: (): true => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("smallCaps"),
+      true
+    ),
+    allCaps: (): true => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("allCaps"),
+      true
+    ),
     superscript: (): true => (
       options.keyboardCommandsController.applyBooleanStyleCommand(
         "superscript",

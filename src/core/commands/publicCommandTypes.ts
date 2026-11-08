@@ -66,6 +66,9 @@ export interface OasisCommandPayloads {
   italic: undefined;
   underline: undefined;
   strike: undefined;
+  doubleStrike: undefined;
+  smallCaps: undefined;
+  allCaps: undefined;
   superscript: undefined;
   subscript: undefined;
   link: string | undefined;

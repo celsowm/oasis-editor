@@ -94,6 +94,9 @@ export interface EssentialsFormattingCapability {
   italic: () => boolean;
   underline: () => boolean;
   strike: () => boolean;
+  doubleStrike: () => boolean;
+  smallCaps: () => boolean;
+  allCaps: () => boolean;
   superscript: () => boolean;
   subscript: () => boolean;
   alignLeft: () => boolean;
