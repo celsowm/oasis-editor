@@ -8,6 +8,7 @@ import type {
   EditorParagraphNode,
   EditorTextStyle,
   EditorPageSettings,
+  EditorSectionBreakType,
 } from "@/core/model.js";
 import {
   getBlockParagraphs,
@@ -252,7 +253,7 @@ export function insertPageBreakAtSelection(state: EditorState): EditorState {
 
 export function insertSectionBreakAtSelection(
   state: EditorState,
-  breakType: "nextPage" | "continuous",
+  breakType: EditorSectionBreakType,
 ): EditorState {
   const collapsedState = isSelectionCollapsed(state.selection)
     ? state
