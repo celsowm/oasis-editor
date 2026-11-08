@@ -64,6 +64,7 @@ export interface EssentialsFormattingCapability {
   reopenSelectedComment: () => boolean;
   deleteSelectedComment: () => boolean;
   canDeleteSelectedComment: () => boolean;
+  canManageSelectedComment: () => boolean;
   insertText: (text: string, fontFamily?: string | null) => boolean;
   insertEquation: (expression: EditorMathExpression) => boolean;
   updateEquation: (runId: string, expression: EditorMathExpression) => boolean;

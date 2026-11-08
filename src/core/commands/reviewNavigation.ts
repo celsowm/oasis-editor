@@ -161,49 +161,88 @@ export function getSelectedReviewComment(state: EditorState): EditorComment | nu
   return current ? state.document.comments?.items[current.id] ?? null : null;
 }
 
-/** Keep all comment metadata/anchors intact for DOCX round-trip. */
-export function setSelectedCommentResolved(
-  state: EditorState, resolved: boolean,
+/**
+ * Jump to an anchored comment in the active section/zone. A reply navigates
+ * to its closest anchored ancestor, without changing document text.
+ */
+export function focusReviewCommentById(state: EditorState, id: string): EditorState {
+  const items = state.document.comments?.items;
+  if (!items?.[id]) return state;
+  let current = items[id];
+  const visited = new Set<string>();
+  while (current && !current.start && current.parentId && !visited.has(current.id)) {
+    visited.add(current.id);
+    current = items[current.parentId];
+  }
+  const start = current?.start;
+  const end = current?.end;
+  if (!start || !end) return state;
+  const paragraphs = getParagraphs(state);
+  const pStart = paragraphs.find(p => p.id === start.paragraphId);
+  const pEnd = paragraphs.find(p => p.id === end.paragraphId);
+  if (!pStart || !pEnd) return state;
+  return {
+    ...state,
+    selection: {
+      anchor: paragraphOffsetToPosition(pStart, start.offset),
+      focus: paragraphOffsetToPosition(pEnd, end.offset),
+    },
+  };
+}
+
+export function setReviewCommentResolvedById(
+  state: EditorState, id: string, resolved: boolean,
 ): EditorState {
-  const comment = getSelectedReviewComment(state);
   const registry = state.document.comments;
-  if (!comment || !registry || Boolean(comment.resolved) === resolved) return state;
+  const comment = registry?.items[id];
+  if (!registry || !comment || Boolean(comment.resolved) === resolved) return state;
   return {
     ...state,
     document: {
       ...state.document,
       comments: {
         ...registry,
-        items: {
-          ...registry.items,
-          [comment.id]: { ...comment, resolved },
-        },
+        items: { ...registry.items, [id]: { ...comment, resolved } },
       },
     },
   };
 }
 
-/**
- * Deleting a parent thread deletes all its descendants, preventing dangling
- * parentId pointers in commentsExtended.xml.
- */
-export function deleteSelectedComment(state: EditorState): EditorState {
+/** The selected-comment actions share the same immutable ID based mutations. */
+export function setSelectedCommentResolved(
+  state: EditorState, resolved: boolean,
+): EditorState {
   const comment = getSelectedReviewComment(state);
+  return comment ? setReviewCommentResolvedById(state, comment.id, resolved) : state;
+}
+
+/**
+ * Remove a discussion and all descendants; never leave orphaned parent ids.
+ * This pure model operation intentionally has no knowledge of authenticated
+ * users: the editor command host must check permissions before invoking it.
+ */
+export function deleteReviewCommentById(state: EditorState, id: string): EditorState {
   const registry = state.document.comments;
-  if (!comment || !registry) return state;
-  const removed = new Set<string>([comment.id]);
-  let added = true;
-  while (added) {
-    added = false;
-    for (const entry of Object.values(registry.items)) {
-      if (entry.parentId && removed.has(entry.parentId) && !removed.has(entry.id)) {
-        removed.add(entry.id);
-        added = true;
-      }
+  if (!registry?.items[id]) return state;
+  const removed = new Set<string>([id]);
+  const queue = [id];
+  const childIndex = new Map<string, string[]>();
+  for (const entry of Object.values(registry.items)) {
+    if (!entry.parentId) continue;
+    const children = childIndex.get(entry.parentId) ?? [];
+    children.push(entry.id);
+    childIndex.set(entry.parentId, children);
+  }
+  while (queue.length > 0) {
+    const parent = queue.pop()!;
+    for (const child of childIndex.get(parent) ?? []) {
+      if (removed.has(child)) continue;
+      removed.add(child);
+      queue.push(child);
     }
   }
   const items = Object.fromEntries(
-    Object.entries(registry.items).filter(([id]) => !removed.has(id)),
+    Object.entries(registry.items).filter(([commentId]) => !removed.has(commentId)),
   );
   return {
     ...state,
@@ -212,8 +251,13 @@ export function deleteSelectedComment(state: EditorState): EditorState {
       comments: {
         ...registry,
         items,
-        order: registry.order.filter((id) => !removed.has(id)),
+        order: registry.order.filter((commentId) => !removed.has(commentId)),
       },
     },
   };
+}
+
+export function deleteSelectedComment(state: EditorState): EditorState {
+  const comment = getSelectedReviewComment(state);
+  return comment ? deleteReviewCommentById(state, comment.id) : state;
 }

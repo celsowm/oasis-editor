@@ -36,6 +36,8 @@ function commands(gateEnabled: () => boolean, hasToc: () => boolean, hasRevision
     resolveSelectedComment: vi.fn(() => true),
     reopenSelectedComment: vi.fn(() => true),
     deleteSelectedComment: vi.fn(() => true),
+    canDeleteSelectedComment: () => true,
+    canManageSelectedComment: () => true,
     acceptRevisions: vi.fn(() => true),
     rejectRevisions: vi.fn(() => true),
     isTrackChangesEnabled: () => true,

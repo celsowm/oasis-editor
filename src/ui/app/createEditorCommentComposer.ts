@@ -1,7 +1,11 @@
 import { createSignal } from "solid-js";
 import type { EditorState } from "@/core/model.js";
 import { createEditorNodeId } from "@/core/editorState.js";
-import { getSelectedReviewComment, deleteSelectedComment } from "@/core/commands/reviewNavigation.js";
+import {
+  getSelectedReviewComment,
+  deleteReviewCommentById,
+  setReviewCommentResolvedById,
+} from "@/core/commands/reviewNavigation.js";
 import {
   canEditReviewComment,
   canDeleteReviewThread,
@@ -65,6 +69,11 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
   const canDeleteSelected = (): boolean => {
     const selected = getSelectedReviewComment(deps.state());
     return selected !== null && canDeleteId(selected.id);
+  };
+  const canResolveId = canEditId;
+  const canResolveSelected = (): boolean => {
+    const selected = getSelectedReviewComment(deps.state());
+    return selected !== null && canResolveId(selected.id);
   };
   const authorName = (): string => actor()?.displayName ?? lastAuthor();
   const authorLocked = (): boolean => access() !== undefined;
@@ -180,25 +189,47 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
     return succeeded;
   };
 
-  const deleteSelected = (): boolean => {
-    if (!canDeleteSelected()) return false;
-    const previous = deps.state();
+  const deleteById = (id: string): boolean => {
+    if (!canDeleteId(id)) return false;
+    const before = deps.state();
     let changed = false;
-    deps.applyTransactionalState((current) => {
-      const selected = getSelectedReviewComment(current);
-      if (!selected || current.document !== previous.document ||
-        !canDeleteReviewThread(access(), current.document.comments, selected.id) ||
-        deps.isReadOnly()) return current;
-      const next = deleteSelectedComment(current);
+    deps.applyTransactionalState((current): EditorState => {
+      if (deps.isReadOnly() || current.document !== before.document ||
+        !canDeleteReviewThread(access(), current.document.comments, id)) {
+        return current;
+      }
+      const next = deleteReviewCommentById(current, id);
       changed = next.document !== current.document;
       return next;
     });
     return changed;
   };
+  const deleteSelected = (): boolean => {
+    const selected = getSelectedReviewComment(deps.state());
+    return selected ? deleteById(selected.id) : false;
+  };
+  const resolveById = (id: string, resolved: boolean): boolean => {
+    if (!canResolveId(id)) return false;
+    const before = deps.state();
+    let changed = false;
+    deps.applyTransactionalState((current): EditorState => {
+      if (deps.isReadOnly() || current.document !== before.document ||
+        !canEditReviewComment(access(), current.document.comments?.items[id])) return current;
+      const next = setReviewCommentResolvedById(current, id, resolved);
+      changed = next.document !== current.document;
+      return next;
+    });
+    return changed;
+  };
+  const resolveSelected = (resolved: boolean): boolean => {
+    const selected = getSelectedReviewComment(deps.state());
+    return selected ? resolveById(selected.id, resolved) : false;
+  };
 
   return {
     draft, lastAuthor, canCreate, canReply, canEdit, canEditId,
-    canDeleteId, canDeleteSelected, deleteSelected,
+    canDeleteId, canDeleteSelected, deleteSelected, deleteById,
+    canResolveId, canResolveSelected, resolveSelected, resolveById,
     authorName, authorLocked,
     openNew, openReply, openReplyToId, openEdit, openEditToId, close, submit,
   };

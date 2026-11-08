@@ -279,7 +279,7 @@ export function buildCoreFormattingCommands({
       formatting.resolveSelectedComment,
       (): { isEnabled: boolean } => ({
         isEnabled: gate.isCommandEnabled("resolveComment") &&
-          formatting.hasSelectedComment() && !formatting.isSelectedCommentResolved(),
+          formatting.canManageSelectedComment() && !formatting.isSelectedCommentResolved(),
       }),
     ),
     reopenComment: command(
@@ -287,7 +287,7 @@ export function buildCoreFormattingCommands({
       formatting.reopenSelectedComment,
       (): { isEnabled: boolean } => ({
         isEnabled: gate.isCommandEnabled("reopenComment") &&
-          formatting.hasSelectedComment() && formatting.isSelectedCommentResolved(),
+          formatting.canManageSelectedComment() && formatting.isSelectedCommentResolved(),
       }),
     ),
     deleteComment: command(

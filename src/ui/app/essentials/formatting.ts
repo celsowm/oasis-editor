@@ -21,7 +21,6 @@ import {
   navigateRevision,
   navigateComment,
   getSelectedReviewComment,
-  setSelectedCommentResolved,
 } from "@/core/commands/reviewNavigation.js";
 import {
   insertTableOfContents,
@@ -194,20 +193,9 @@ export function buildEssentialsFormatting(
       getSelectedReviewComment(options.state()) !== null,
     isSelectedCommentResolved: (): boolean =>
       Boolean(getSelectedReviewComment(options.state())?.resolved),
-    resolveSelectedComment: (): boolean => {
-      const before = options.state();
-      if (setSelectedCommentResolved(before, true) === before) return false;
-      options.applyTransactionalState((current) =>
-        setSelectedCommentResolved(current, true));
-      return true;
-    },
-    reopenSelectedComment: (): boolean => {
-      const before = options.state();
-      if (setSelectedCommentResolved(before, false) === before) return false;
-      options.applyTransactionalState((current) =>
-        setSelectedCommentResolved(current, false));
-      return true;
-    },
+    canManageSelectedComment: options.commentComposer.canResolveSelected,
+    resolveSelectedComment: (): boolean => options.commentComposer.resolveSelected(true),
+    reopenSelectedComment: (): boolean => options.commentComposer.resolveSelected(false),
     deleteSelectedComment: options.commentComposer.deleteSelected,
     canDeleteSelectedComment: options.commentComposer.canDeleteSelected,
     insertTableOfContents: (): boolean => {
