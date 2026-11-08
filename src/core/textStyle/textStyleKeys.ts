@@ -14,6 +14,7 @@ export type ToggleableTextStyleKey =
   | "shadow"
   | "emboss"
   | "imprint"
+  | "outline"
   | "noProof"
   | "webHidden"
   | "specVanish"

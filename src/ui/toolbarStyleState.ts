@@ -30,6 +30,7 @@ export type BooleanStyleKey =
   | "shadow"
   | "emboss"
   | "imprint"
+  | "outline"
   | "noProof"
   | "webHidden"
   | "specVanish"
@@ -94,6 +95,7 @@ export interface ToolbarStyleState {
   shadow: boolean;
   emboss: boolean;
   imprint: boolean;
+  outline: boolean;
   noProof: boolean;
   webHidden: boolean;
   specVanish: boolean;
@@ -437,6 +439,7 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     shadow: areAllBooleanStylesEnabled(styles, "shadow"),
     emboss: areAllBooleanStylesEnabled(styles, "emboss"),
     imprint: areAllBooleanStylesEnabled(styles, "imprint"),
+    outline: areAllBooleanStylesEnabled(styles, "outline"),
     noProof: areAllBooleanStylesEnabled(styles, "noProof"),
     webHidden: areAllBooleanStylesEnabled(styles, "webHidden"),
     specVanish: areAllBooleanStylesEnabled(styles, "specVanish"),

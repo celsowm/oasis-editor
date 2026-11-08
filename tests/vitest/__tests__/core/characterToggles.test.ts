@@ -79,4 +79,17 @@ describe("character toggles (format.smallCaps / format.allCaps / format.doubleSt
     const next = toggleTextStyle(state, "imprint");
     expect(getParagraphs(next)[0]!.runs[0]!.styles?.imprint).toBe(true);
   });
+
+  it("enables outline on the selection", () => {
+    const state = buildState("hello");
+    const next = toggleTextStyle(state, "outline");
+    expect(getParagraphs(next)[0]!.runs[0]!.styles?.outline).toBe(true);
+  });
+
+  it("disables outline when it is already uniform", () => {
+    const state = buildState("hello");
+    const on = toggleTextStyle(state, "outline");
+    const off = toggleTextStyle(on, "outline");
+    expect(getParagraphs(off)[0]!.runs[0]!.styles?.outline).toBeUndefined();
+  });
 });
