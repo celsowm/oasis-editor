@@ -3,6 +3,7 @@ import {
   alignSelectedFloatingObject,
   nudgeSelectedFloatingObject,
   setSelectedFloatingFixedPosition,
+  setSelectedFloatingPositionPreset,
   setSelectedFloatingRotation,
   setSelectedFloatingWrapPreset,
 } from "@/core/commands/floatingAlignCommands.js";
@@ -165,6 +166,23 @@ export function buildEssentialsDocument(
         (current): EditorState =>
           setSelectedFloatingWrapPreset(current, preset),
         { mergeKey: MERGE_KEYS.floatingWrap },
+      ),
+    setFloatingPositionPreset: (
+      preset:
+        | "topLeft"
+        | "topCenter"
+        | "topRight"
+        | "middleLeft"
+        | "middleCenter"
+        | "middleRight"
+        | "bottomLeft"
+        | "bottomCenter"
+        | "bottomRight",
+    ): void =>
+      options.applyTransactionalState(
+        (current): EditorState =>
+          setSelectedFloatingPositionPreset(current, preset),
+        { mergeKey: MERGE_KEYS.floatingPositionPreset },
       ),
     setShapePreset: (preset: string): void =>
       options.applyTransactionalState(

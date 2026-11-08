@@ -152,6 +152,22 @@ export function buildDocumentAndBrowserCommands({
           | "front") ?? "square",
       ),
     ),
+    setFloatingPositionPreset: actionCommand(
+      "setFloatingPositionPreset",
+      (p): void =>
+        document.setFloatingPositionPreset(
+          (p as
+            | "topLeft"
+            | "topCenter"
+            | "topRight"
+            | "middleLeft"
+            | "middleCenter"
+            | "middleRight"
+            | "bottomLeft"
+            | "bottomCenter"
+            | "bottomRight") ?? "middleCenter",
+        ),
+    ),
     setShapePreset: actionCommand("setShapePreset", (p): void =>
       document.setShapePreset(p == null ? "rect" : String(p)),
     ),

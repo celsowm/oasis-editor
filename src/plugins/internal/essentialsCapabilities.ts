@@ -196,6 +196,19 @@ export interface EssentialsDocumentCapability {
       | "behind"
       | "front",
   ) => void;
+  /** Move the selected floating object to a preset page position. */
+  setFloatingPositionPreset: (
+    preset:
+      | "topLeft"
+      | "topCenter"
+      | "topRight"
+      | "middleLeft"
+      | "middleCenter"
+      | "middleRight"
+      | "bottomLeft"
+      | "bottomCenter"
+      | "bottomRight",
+  ) => void;
   /** Change the selected shape's DrawingML preset geometry. */
   setShapePreset: (preset: string) => void;
   /** Set the selected text box's text-direction flow. */
