@@ -58,6 +58,11 @@ export interface ImportedRun {
         type: "DATE";
         /** `\@` picture (e.g. "M/d/yyyy"). Absent ⇒ default. */
         dateFormat?: string;
+      }
+    | {
+        type: "REF" | "PAGEREF";
+        /** Target bookmark name the cross-reference points at. */
+        bookmark?: string;
       };
   /** Preserved `w:fldChar` control char (complex fields). Zero-length marker. */
   fieldChar?: {

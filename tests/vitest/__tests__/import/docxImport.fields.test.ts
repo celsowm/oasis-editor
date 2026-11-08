@@ -85,7 +85,7 @@ describe("DOCX import: complex fields (REF / PAGEREF / TOC)", () => {
     );
   });
 
-  it("preserves a REF cross-reference field with its instruction and cached result", async () => {
+  it("collapses a REF cross-reference field into a typed REF run with its bookmark", async () => {
     const { imported, xml, reimported } = await roundTrip(
       `<w:p>
         <w:r><w:fldChar w:fldCharType="begin"/></w:r>
@@ -96,25 +96,29 @@ describe("DOCX import: complex fields (REF / PAGEREF / TOC)", () => {
       </w:p>`,
     );
 
-    expect(fieldCharKinds(imported)).toEqual(["begin", "separate", "end"]);
-    expect(instructions(imported)).toEqual([" REF Target \\h "]);
-    // The cached result survives as a normal run.
+    // REF collapses into a typed field with its bookmark target + cached result.
+    const refRun = allRuns(imported).find((r) => getRunField(r)?.type === "REF");
+    expect(refRun).toBeDefined();
+    expect(getRunField(refRun!)?.bookmark).toBe("Target");
+    expect(refRun!.text).toBe("Result text");
+    // Collapsed: no preserved fldChar markers remain for REF.
+    expect(fieldCharKinds(imported)).toEqual([]);
+
+    // The cached result still survives as the field's displayed text.
     expect(allRuns(imported).some((r) => r.text === "Result text")).toBe(true);
 
-    // Exported XML reproduces the complex-field sequence 1:1.
-    expect(xml).toContain('<w:fldChar w:fldCharType="begin"/>');
+    // Re-export replays the source paragraph (round-trip fidelity, like PAGE),
+    // so the complex field and its bookmark instruction survive verbatim.
     expect(xml).toContain(
       '<w:instrText xml:space="preserve"> REF Target \\h </w:instrText>',
     );
-    expect(xml).toContain('<w:fldChar w:fldCharType="separate"/>');
-    expect(xml).toContain('<w:fldChar w:fldCharType="end"/>');
-
-    // And it survives a second round-trip.
-    expect(fieldCharKinds(reimported)).toEqual(["begin", "separate", "end"]);
-    expect(instructions(reimported)).toEqual([" REF Target \\h "]);
+    // And re-import collapses it back into the same typed REF field.
+    expect(
+      getRunField(allRuns(reimported).find((r) => getRunField(r)?.type === "REF")!),
+    ).toEqual({ type: "REF", bookmark: "Target" });
   });
 
-  it("preserves a PAGEREF field", async () => {
+  it("collapses a PAGEREF field into a typed PAGEREF run with its bookmark", async () => {
     const { imported, xml } = await roundTrip(
       `<w:p>
         <w:r><w:fldChar w:fldCharType="begin"/></w:r>
@@ -124,9 +128,14 @@ describe("DOCX import: complex fields (REF / PAGEREF / TOC)", () => {
         <w:r><w:fldChar w:fldCharType="end"/></w:r>
       </w:p>`,
     );
-    expect(instructions(imported)).toEqual([" PAGEREF _Ref1 \\h "]);
-    // PAGEREF must NOT collapse into a PAGE field.
-    expect(allRuns(imported).some((r) => getRunField(r))).toBe(false);
+    // PAGEREF collapses into its own typed field (not PAGE) with the target.
+    const refRun = allRuns(imported).find(
+      (r) => getRunField(r)?.type === "PAGEREF",
+    );
+    expect(refRun).toBeDefined();
+    expect(getRunField(refRun!)?.bookmark).toBe("_Ref1");
+    expect(fieldCharKinds(imported)).toEqual([]);
+    // Re-export replays the source paragraph, preserving the PAGEREF verbatim.
     expect(xml).toContain(
       '<w:instrText xml:space="preserve"> PAGEREF _Ref1 \\h </w:instrText>',
     );
@@ -210,11 +219,12 @@ describe("DOCX import: complex fields (REF / PAGEREF / TOC)", () => {
         <w:r><w:fldChar w:fldCharType="end"/></w:r>
       </w:p>`,
     );
-    // Bookmark and field both survive the full round-trip.
+    // Bookmark and (now typed) REF field both survive the full round-trip.
     expect(reimported.bookmarks?.order.length).toBe(1);
     const bm = reimported.bookmarks!.items[reimported.bookmarks!.order[0]!]!;
     expect(bm.name).toBe("Target");
-    expect(instructions(reimported)).toEqual([" REF Target \\h "]);
+    const refRun = allRuns(reimported).find((r) => getRunField(r)?.type === "REF");
+    expect(getRunField(refRun!)?.bookmark).toBe("Target");
     expect(xml).toContain('<w:bookmarkStart w:id="0" w:name="Target"/>');
   });
 });

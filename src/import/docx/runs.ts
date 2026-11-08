@@ -42,6 +42,21 @@ export type { ParseNestedBlocks } from "./runs/types.js";
 export { getRunInstructionText } from "./runs/fields.js";
 
 /**
+ * Extract the bookmark target name from a REF / PAGEREF field instruction such
+ * as ` REF _Ref123 \h ` or ` PAGEREF MyBookmark \h `. Handles an optional
+ * comma-separated tag suffix (e.g. `\p`, `\n`) which Word appends; those and
+ * the `\h` hyperlink switch are dropped so only the plain name is kept.
+ */
+function extractBookmarkName(instruction: string): string | undefined {
+  const match = /\b(?:REF|PAGEREF)\s+([^\\]+?)(?:\s+\\|\s*$)/i.exec(
+    instruction,
+  );
+  if (!match) return undefined;
+  const raw = match[1].replace(/^"|"$/g, "").trim();
+  return raw.length > 0 ? raw : undefined;
+}
+
+/**
  * Parse a `w:bookmarkStart` / `w:bookmarkEnd` element into a transient marker.
  * Returns `undefined` when the element has no usable `w:id`.
  */
@@ -329,7 +344,11 @@ export async function parseRunsContainer(
         ? "PAGE"
         : /\bDATE\b/i.test(entry.instruction)
           ? "DATE"
-          : null;
+          : /\bREF\b/i.test(entry.instruction)
+            ? "REF"
+            : /\bPAGEREF\b/i.test(entry.instruction)
+              ? "PAGEREF"
+              : null;
     if (!fieldType) {
       return;
     }
@@ -339,6 +358,11 @@ export async function parseRunsContainer(
     const dateFormat =
       fieldType === "DATE"
         ? /@\s*"([^"]*)"/.exec(entry.instruction)?.[1]
+        : undefined;
+    // Bookmark target for cross-references: `REF name` / `PAGEREF name`.
+    const bookmark =
+      fieldType === "REF" || fieldType === "PAGEREF"
+        ? extractBookmarkName(entry.instruction)
         : undefined;
     const span = runs.slice(entry.beginIndex);
     if (span.some((run): ImportedBookmarkMarker | undefined => run.bookmark)) {
@@ -358,9 +382,11 @@ export async function parseRunsContainer(
         ? dateFormat
           ? { type: "DATE" as const, dateFormat }
           : { type: "DATE" as const }
-        : format
-          ? { type: fieldType as "PAGE" | "NUMPAGES", format }
-          : { type: fieldType as "PAGE" | "NUMPAGES" };
+        : fieldType === "REF" || fieldType === "PAGEREF"
+          ? { type: fieldType as "REF" | "PAGEREF", bookmark }
+          : format
+            ? { type: fieldType as "PAGE" | "NUMPAGES", format }
+            : { type: fieldType as "PAGE" | "NUMPAGES" };
     runs.push({
       text: displayText,
       ...(styles ? { styles } : {}),
@@ -685,11 +711,19 @@ export async function parseRunsContainer(
           ? "PAGE"
           : /\bDATE\b/i.test(instr)
             ? "DATE"
-            : null;
+            : /\bREF\b/i.test(instr)
+              ? "REF"
+              : /\bPAGEREF\b/i.test(instr)
+                ? "PAGEREF"
+                : null;
       const simpleFormat = /\*\s*([A-Za-z]+)/.exec(instr)?.[1];
       const fieldFormat = pageNumberFormatFromSwitch(simpleFormat);
       const simpleDate =
         fieldType === "DATE" ? /@\s*"([^"]*)"/.exec(instr)?.[1] : undefined;
+      const simpleBookmark =
+        fieldType === "REF" || fieldType === "PAGEREF"
+          ? extractBookmarkName(instr)
+          : undefined;
       const fieldRuns = await parseRunsContainer(
         element,
         numberingMaps,
@@ -711,9 +745,17 @@ export async function parseRunsContainer(
             ? simpleDate
               ? { type: "DATE" as const, dateFormat: simpleDate }
               : { type: "DATE" as const }
-            : fieldFormat
-              ? { type: fieldType as "PAGE" | "NUMPAGES", format: fieldFormat }
-              : { type: fieldType as "PAGE" | "NUMPAGES" };
+            : fieldType === "REF" || fieldType === "PAGEREF"
+              ? {
+                  type: fieldType as "REF" | "PAGEREF",
+                  bookmark: simpleBookmark,
+                }
+              : fieldFormat
+                ? {
+                    type: fieldType as "PAGE" | "NUMPAGES",
+                    format: fieldFormat,
+                  }
+                : { type: fieldType as "PAGE" | "NUMPAGES" };
         runs.push({
           text: displayText,
           styles,

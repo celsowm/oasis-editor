@@ -83,7 +83,9 @@ export function serializeRun(
       serializeFieldRun(
         r.field!,
         runProps(),
-        r.field!.type === "DATE" ? r.text : undefined,
+        r.field!.type === "DATE" || r.field!.type === "REF"
+          ? r.text
+          : undefined,
       ),
     textBox: (r): string =>
       serializeTextBoxRun(

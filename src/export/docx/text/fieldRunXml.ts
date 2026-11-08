@@ -11,6 +11,9 @@ export function serializeFieldRun(
   if (field.type === "DATE") {
     const picture = field.dateFormat ?? "M/d/yyyy";
     instr = ` DATE \\@ "${picture}" `;
+  } else if (field.type === "REF" || field.type === "PAGEREF") {
+    // `\h` marks the result as a hyperlink to the bookmarked target.
+    instr = ` ${field.type} ${field.bookmark ?? ""} \\h `;
   } else {
     const base = field.type === "PAGE" ? " PAGE " : " NUMPAGES ";
     const switchText = pageNumberFormatToSwitch(field.format);

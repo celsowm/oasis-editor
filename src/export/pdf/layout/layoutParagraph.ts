@@ -52,9 +52,14 @@ export function resolvePdfRunText(
   context: PdfParagraphTextContext,
 ): string {
   if (run.kind === "field") {
-    // DATE caches its formatted result in run.text at insert/import time, so
-    // it renders as-is; PAGE/NUMPAGES resolve via layout context.
-    if (run.field.type === "DATE") {
+    // DATE, REF and PAGEREF cache their resolved result in run.text at
+    // insert/import time, so they render as-is; PAGE/NUMPAGES resolve via
+    // layout context.
+    if (
+      run.field.type === "DATE" ||
+      run.field.type === "REF" ||
+      run.field.type === "PAGEREF"
+    ) {
       return run.text;
     }
     const value =

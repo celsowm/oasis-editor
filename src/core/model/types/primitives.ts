@@ -254,7 +254,7 @@ export type PageNumberFormat =
   "decimal" | "roman" | "ROMAN" | "alphabetic" | "ALPHABETIC" | "Ordinal";
 
 /** Field types the editor can author/evaluate for display. */
-export type EditorFieldType = "PAGE" | "NUMPAGES" | "DATE";
+export type EditorFieldType = "PAGE" | "NUMPAGES" | "DATE" | "REF" | "PAGEREF";
 
 export interface EditorFieldData {
   type: EditorFieldType;
@@ -262,6 +262,12 @@ export interface EditorFieldData {
   format?: PageNumberFormat;
   /** `\@` picture for DATE fields (e.g. "M/d/yyyy"). Absent ⇒ default. */
   dateFormat?: string;
+  /**
+   * Bookmark name a REF / PAGEREF cross-reference targets. The wordbookmark
+   * name is the link/cross-reference target (e.g. `_Ref12345` or a user
+   * bookmark). Absent for PAGE/NUMPAGES/DATE.
+   */
+  bookmark?: string;
 }
 
 /**
