@@ -47,6 +47,8 @@ export const MERGE_KEYS = {
   tableToText: "tableToText",
   textToTable: "textToTable",
   tableSplitAtRow: "tableSplitAtRow",
+  tableSortAscending: "tableSortAscending",
+  tableSortDescending: "tableSortDescending",
   tableStyleOptions: "tableStyleOptions",
   tableStyleGallery: "tableStyleGallery",
   tableDistribute: "tableDistribute",
