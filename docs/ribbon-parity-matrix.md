@@ -2,7 +2,7 @@
 
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
-**Scope:** Initial 16-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.  
+**Scope:** Initial 18-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.  
 **Oasis baseline:** `e49c1b33e1fd0b76757b42b91e91d674cd0b229f`  
 **WordCraft baseline:** `e53cae3482d4e080a15dc2320eb4929ea7722db2`
 
@@ -12,6 +12,8 @@
 | --- | --- | --- | --- | --- |
 | `home.copy` | `edit.copy` | `copy` | `home/clipboard` | partial |
 | `home.cut` | `edit.cut` | `cut` | `home/clipboard` | partial |
+| `home.formatPainter` | `edit.formatPainter` | `formatPainter` | `home/clipboard` | partial |
+| `home.formatPainterContinuous` | `edit.formatPainter` | `formatPainterContinuous` | `home/clipboard` | partial |
 | `home.paste` | `edit.paste` | `paste` | `home/clipboard` | partial |
 | `home.pasteMerge` | `edit.pasteMerge` | `pasteMergeFormatting` | `home/clipboard` | partial |
 | `home.pasteText` | `edit.pasteText` | `pasteAsPlainText` | `home/clipboard` | partial |
@@ -31,20 +33,22 @@
 
 1. **home.copy:** Clipboard adapter and browser permission behavior require runtime verification.
 2. **home.cut:** Clipboard write must succeed before deletion. Selection snapshots, read-only state and async document replacement have focused tests; browser compatibility, tracked-changes DOCX fidelity and end-to-end undo are still unverified.
-3. **home.paste:** Rich/HTML and text paste implemented through the shared Clipboard API; browser permissions, image-only clipboard, long-document E2E and DOCX fidelity remain to verify.
-4. **home.pasteMerge:** Destination character/paragraph styles are retained while explicit source emphasis and hyperlinks are preserved. Needs browser, mixed-list, nested-table and DOCX round-trip verification.
-5. **home.pasteText:** Paste as plain text is an immediate command independent of the keyboard-only pastePlainText shortcut; unsupported Clipboard API results in a disabled action.
-6. **home.find:** Find pane command is wired; search/replacement interaction still needs E2E verification.
-7. **home.selectAll:** Selections spanning tables and document stories require E2E verification.
-8. **insert.pageBreak:** Pagination and multi-section round-trip are not certified by the Ribbon binding alone.
-9. **references.toc:** TOC creation, fields and export/round-trip remain independently testable.
-10. **references.updateToc:** Eligibility and missing-TOC command states still need refinement.
-11. **review.trackChanges:** Active state is wired to EditorState; tracked content fidelity and UI workflows remain to verify.
-12. **review.accept:** Selection scope and disabled states for documents without revisions need tests.
-13. **review.reject:** Selection scope and disabled states for documents without revisions need tests.
-14. **view.showMargins:** Oasis-specific display option with active state bound to EditorState.
-15. **view.paragraphMarks:** Paragraph-mark display feedback is wired; rendering and accessibility require E2E checks.
-16. **view.preciseFonts:** Oasis precise-font mode; platform font availability still requires coverage.
+3. **home.formatPainter:** Copies the current selection/caret formatting for the next pointer or keyboard target; tests cover ranges, paragraph source, links and one-shot disarm. Full visual/WordCraft behavior and DOCX round-trip remain unverified.
+4. **home.formatPainterContinuous:** Continuous mode applies to multiple finalized targets and stays armed after the editor's own transactional changes. Escape and explicit cancellation disarm; E2E mouse/touch/keyboard testing remains necessary.
+5. **home.paste:** Rich/HTML and text paste implemented through the shared Clipboard API; browser permissions, image-only clipboard, long-document E2E and DOCX fidelity remain to verify.
+6. **home.pasteMerge:** Destination character/paragraph styles are retained while explicit source emphasis and hyperlinks are preserved. Needs browser, mixed-list, nested-table and DOCX round-trip verification.
+7. **home.pasteText:** Paste as plain text is an immediate command independent of the keyboard-only pastePlainText shortcut; unsupported Clipboard API results in a disabled action.
+8. **home.find:** Find pane command is wired; search/replacement interaction still needs E2E verification.
+9. **home.selectAll:** Selections spanning tables and document stories require E2E verification.
+10. **insert.pageBreak:** Pagination and multi-section round-trip are not certified by the Ribbon binding alone.
+11. **references.toc:** TOC creation, fields and export/round-trip remain independently testable.
+12. **references.updateToc:** Eligibility and missing-TOC command states still need refinement.
+13. **review.trackChanges:** Active state is wired to EditorState; tracked content fidelity and UI workflows remain to verify.
+14. **review.accept:** Selection scope and disabled states for documents without revisions need tests.
+15. **review.reject:** Selection scope and disabled states for documents without revisions need tests.
+16. **view.showMargins:** Oasis-specific display option with active state bound to EditorState.
+17. **view.paragraphMarks:** Paragraph-mark display feedback is wired; rendering and accessibility require E2E checks.
+18. **view.preciseFonts:** Oasis precise-font mode; platform font availability still requires coverage.
 
 ## Audit interpretation
 

@@ -6,7 +6,7 @@
     "wordcraftRepository": "storytold/wordcraft",
     "wordcraftCommit": "e53cae3482d4e080a15dc2320eb4929ea7722db2"
   },
-  "scope": "Initial 16-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.",
+  "scope": "Initial 18-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.",
   "features": [
     {
       "id": "home.copy",
@@ -27,6 +27,26 @@
       "group": "clipboard",
       "status": "partial",
       "notes": "Clipboard write must succeed before deletion. Selection snapshots, read-only state and async document replacement have focused tests; browser compatibility, tracked-changes DOCX fidelity and end-to-end undo are still unverified."
+    },
+    {
+      "id": "home.formatPainter",
+      "wordcraftCommand": "edit.formatPainter",
+      "oasisCommand": "formatPainter",
+      "ribbonId": "editor-toolbar-format-painter",
+      "tab": "home",
+      "group": "clipboard",
+      "status": "partial",
+      "notes": "Copies the current selection/caret formatting for the next pointer or keyboard target; tests cover ranges, paragraph source, links and one-shot disarm. Full visual/WordCraft behavior and DOCX round-trip remain unverified."
+    },
+    {
+      "id": "home.formatPainterContinuous",
+      "wordcraftCommand": "edit.formatPainter",
+      "oasisCommand": "formatPainterContinuous",
+      "ribbonId": "editor-toolbar-format-painter-continuous",
+      "tab": "home",
+      "group": "clipboard",
+      "status": "partial",
+      "notes": "Continuous mode applies to multiple finalized targets and stays armed after the editor's own transactional changes. Escape and explicit cancellation disarm; E2E mouse/touch/keyboard testing remains necessary."
     },
     {
       "id": "home.paste",

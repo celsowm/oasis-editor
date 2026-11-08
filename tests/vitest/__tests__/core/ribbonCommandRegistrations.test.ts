@@ -24,6 +24,11 @@ function commands(gateEnabled: () => boolean, hasToc: () => boolean, hasRevision
     isTrackChangesEnabled: () => true,
     areMarginsVisible: () => false,
     areParagraphMarksVisible: () => true,
+    formatPainterOnce: vi.fn(() => true),
+    formatPainterContinuous: vi.fn(() => true),
+    cancelFormatPainter: vi.fn(() => true),
+    formatPainterMode: () => null,
+    canCaptureFormatPainter: () => true,
   } as unknown as EssentialsFormattingCapability;
   const result = buildCoreFormattingCommands({
     gate,
@@ -40,6 +45,30 @@ function commands(gateEnabled: () => boolean, hasToc: () => boolean, hasRevision
 }
 
 describe("Essentials Ribbon command registrations", () => {
+  it("exposes distinct painter modes and blocks capture in read-only mode", () => {
+    let enabled = true;
+    let painterMode: "once" | "continuous" | null = null;
+    let canCapture = true;
+    const { result, formatting } = commands(() => enabled, () => true, () => true);
+    formatting.formatPainterMode = () => painterMode;
+    formatting.canCaptureFormatPainter = () => canCapture;
+    expect(result.formatPainter?.refresh?.().isEnabled).toBe(true);
+    expect(result.formatPainter?.execute()).toBe(true);
+    expect(formatting.formatPainterOnce).toHaveBeenCalledOnce();
+    painterMode = "once";
+    expect(result.formatPainter?.refresh?.().isActive).toBe(true);
+    expect(result.formatPainterContinuous?.refresh?.().isActive).toBe(false);
+    painterMode = "continuous";
+    expect(result.formatPainterContinuous?.refresh?.().isActive).toBe(true);
+    expect(result.cancelFormatPainter?.refresh?.().isEnabled).toBe(true);
+    canCapture = false;
+    expect(result.formatPainter?.refresh?.().isEnabled).toBe(false);
+    enabled = false;
+    expect(result.formatPainterContinuous?.refresh?.().isEnabled).toBe(false);
+    painterMode = null;
+    expect(result.cancelFormatPainter?.refresh?.().isEnabled).toBe(false);
+  });
+
   it("registers both TOC commands as actual executable actions", () => {
     const { result, formatting } = commands(() => true, () => true, () => true);
     expect(result.insertTableOfContents).toBeDefined();
