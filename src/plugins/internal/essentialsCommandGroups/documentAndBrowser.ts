@@ -145,6 +145,9 @@ export function buildDocumentAndBrowserCommands({
       (p): void =>
         document.setTextBoxVerticalAlign((p as "t" | "ctr" | "b") ?? "t"),
     ),
+    editTextBoxAlt: actionCommand("editTextBoxAlt", (p): void =>
+      document.setTextBoxAlt(p == null ? null : String(p)),
+    ),
     openSymbolDialog: actionCommand("openSymbolDialog", (): void =>
       document.openSymbolDialog(),
     ),

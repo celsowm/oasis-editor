@@ -10,6 +10,7 @@ import {
   setSelectedShapePreset,
 } from "@/core/commands/shapeFillCommands.js";
 import {
+  setSelectedTextBoxAlt,
   setSelectedTextBoxTextDirection,
   setSelectedTextBoxVerticalAlign,
 } from "@/core/commands/textBoxBodyCommands.js";
@@ -141,6 +142,11 @@ export function buildEssentialsDocument(
         (current): EditorState =>
           setSelectedTextBoxVerticalAlign(current, anchor),
         { mergeKey: MERGE_KEYS.textBoxVerticalAlign },
+      ),
+    setTextBoxAlt: (alt: string | null): void =>
+      options.applyTransactionalState(
+        (current): EditorState => setSelectedTextBoxAlt(current, alt),
+        { mergeKey: MERGE_KEYS.textBoxAlt },
       ),
   };
 }

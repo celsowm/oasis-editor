@@ -187,6 +187,8 @@ export interface EssentialsDocumentCapability {
   ) => void;
   /** Set the selected text box's vertical text alignment. */
   setTextBoxVerticalAlign: (anchor: "t" | "ctr" | "b") => void;
+  /** Set the selected text box's accessibility alt text. */
+  setTextBoxAlt: (alt: string | null) => void;
 }
 
 export interface EssentialsLinkCapability {
