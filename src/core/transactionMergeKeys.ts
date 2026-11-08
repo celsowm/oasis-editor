@@ -53,6 +53,7 @@ export const MERGE_KEYS = {
   tableRepeatHeaderRows: "tableRepeatHeaderRows",
   tableCellMargins: "tableCellMargins",
   tableFormula: "tableFormula",
+  tableRowHeight: "tableRowHeight",
   tableStyleOptions: "tableStyleOptions",
   tableStyleGallery: "tableStyleGallery",
   tableDistribute: "tableDistribute",

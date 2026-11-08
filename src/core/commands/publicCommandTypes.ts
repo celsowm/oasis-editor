@@ -2,7 +2,7 @@ import type { CommandRef } from "./CommandRef.js";
 import type { EditorPageMargins } from "@/core/model.js";
 import type { SectionPageNumberFormat } from "./pageNumber.js";
 import type { TextCaseMode } from "./text.js";
-import type { TableBorderPreset } from "./table.js";
+import type { TableBorderPreset, TableRowHeight } from "./table.js";
 import type {
   EditorMathExpression,
   EditorPageBorder,
@@ -224,6 +224,7 @@ export interface OasisCommandPayloads {
   tableSelectRow: undefined;
   tableSelectColumn: undefined;
   tableSelectTable: undefined;
+  tableSetRowHeight: TableRowHeight;
   tableSetCellWidth: string | number;
   tableToggleHeaderRow: undefined;
   tableToggleTotalRow: undefined;
