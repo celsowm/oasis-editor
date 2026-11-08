@@ -63,6 +63,8 @@
     "build:all": "npm run wasm:build && npm run build",
     "test": "vitest run",
     "test:word-parity": "vitest run --config vitest.word-parity.config.js",
+    "audit:ribbon": "node scripts/audit-ribbon-parity.mjs --check",
+    "audit:ribbon:write": "node scripts/audit-ribbon-parity.mjs --write",
     "check:imports": "node ./scripts/check-import-graph.mjs",
     "check:native-ui": "node ./scripts/check-native-ui-elements.mjs",
     "typecheck": "tsc --noEmit",

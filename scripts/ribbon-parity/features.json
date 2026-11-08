@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "baseline": {
+    "oasisRepository": "celsowm/oasis-editor",
+    "oasisCommit": "e49c1b33e1fd0b76757b42b91e91d674cd0b229f",
+    "wordcraftRepository": "storytold/wordcraft",
+    "wordcraftCommit": "e53cae3482d4e080a15dc2320eb4929ea7722db2"
+  },
+  "scope": "Initial 12-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.",
+  "features": [
+    {
+      "id": "home.copy",
+      "wordcraftCommand": "edit.copy",
+      "oasisCommand": "copy",
+      "ribbonId": "editor-toolbar-copy",
+      "tab": "home",
+      "group": "clipboard",
+      "status": "partial",
+      "notes": "Clipboard adapter and browser permission behavior require runtime verification."
+    },
+    {
+      "id": "home.find",
+      "wordcraftCommand": "edit.find",
+      "oasisCommand": "find",
+      "ribbonId": "editor-toolbar-find",
+      "tab": "home",
+      "group": "editing",
+      "status": "partial",
+      "notes": "Find pane command is wired; search/replacement interaction still needs E2E verification."
+    },
+    {
+      "id": "home.selectAll",
+      "wordcraftCommand": "select.all",
+      "oasisCommand": "selectAll",
+      "ribbonId": "editor-toolbar-select-all",
+      "tab": "home",
+      "group": "editing",
+      "status": "partial",
+      "notes": "Selections spanning tables and document stories require E2E verification."
+    },
+    {
+      "id": "insert.pageBreak",
+      "wordcraftCommand": "insert.pageBreak",
+      "oasisCommand": "pageBreak",
+      "ribbonId": "editor-toolbar-page-break",
+      "tab": "insert",
+      "group": "pages",
+      "status": "partial",
+      "notes": "Pagination and multi-section round-trip are not certified by the Ribbon binding alone."
+    },
+    {
+      "id": "references.toc",
+      "wordcraftCommand": "references.toc",
+      "oasisCommand": "insertTableOfContents",
+      "ribbonId": "editor-toolbar-insert-toc",
+      "tab": "references",
+      "group": "tableOfContents",
+      "status": "partial",
+      "notes": "TOC creation, fields and export/round-trip remain independently testable."
+    },
+    {
+      "id": "references.updateToc",
+      "wordcraftCommand": "references.updateToc",
+      "oasisCommand": "updateTableOfContents",
+      "ribbonId": "editor-toolbar-update-toc",
+      "tab": "references",
+      "group": "tableOfContents",
+      "status": "partial",
+      "notes": "Eligibility and missing-TOC command states still need refinement."
+    },
+    {
+      "id": "review.trackChanges",
+      "wordcraftCommand": "review.trackChanges",
+      "oasisCommand": "toggleTrackChanges",
+      "ribbonId": "editor-toolbar-track-changes",
+      "tab": "review",
+      "group": "tracking",
+      "status": "partial",
+      "notes": "Active state is wired to EditorState; tracked content fidelity and UI workflows remain to verify."
+    },
+    {
+      "id": "review.accept",
+      "wordcraftCommand": "review.accept",
+      "oasisCommand": "acceptRevisions",
+      "ribbonId": "editor-toolbar-accept-revisions",
+      "tab": "review",
+      "group": "changes",
+      "status": "partial",
+      "notes": "Selection scope and disabled states for documents without revisions need tests."
+    },
+    {
+      "id": "review.reject",
+      "wordcraftCommand": "review.reject",
+      "oasisCommand": "rejectRevisions",
+      "ribbonId": "editor-toolbar-reject-revisions",
+      "tab": "review",
+      "group": "changes",
+      "status": "partial",
+      "notes": "Selection scope and disabled states for documents without revisions need tests."
+    },
+    {
+      "id": "view.showMargins",
+      "wordcraftCommand": null,
+      "oasisCommand": "toggleShowMargins",
+      "ribbonId": "editor-toolbar-show-margins",
+      "tab": "view",
+      "group": "show",
+      "status": "partial",
+      "notes": "Oasis-specific display option with active state bound to EditorState."
+    },
+    {
+      "id": "view.paragraphMarks",
+      "wordcraftCommand": "view.marks",
+      "oasisCommand": "toggleShowParagraphMarks",
+      "ribbonId": "editor-toolbar-show-paragraph-marks",
+      "tab": "view",
+      "group": "show",
+      "status": "partial",
+      "notes": "Paragraph-mark display feedback is wired; rendering and accessibility require E2E checks."
+    },
+    {
+      "id": "view.preciseFonts",
+      "wordcraftCommand": null,
+      "oasisCommand": "togglePreciseFonts",
+      "ribbonId": "editor-toolbar-precise-fonts",
+      "tab": "view",
+      "group": "show",
+      "status": "partial",
+      "notes": "Oasis precise-font mode; platform font availability still requires coverage."
+    }
+  ]
+}
