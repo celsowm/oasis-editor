@@ -57,7 +57,25 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      # Multiple main pushes can queue release jobs. Do not publish an older
+      # snapshot after a newer commit has already become main.
+      - name: Confirm release source is current main
+        id: freshness
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          BASE_SHA="$(git rev-parse HEAD)"
+          echo "base_sha=${BASE_SHA}" >> "$GITHUB_OUTPUT"
+          if [[ "${BASE_SHA}" == "$(git rev-parse origin/main)" ]]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Skipping stale main release; a newer commit will publish."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Decide publish version
+        if: steps.freshness.outputs.publish == 'true'
         id: versioning
         shell: bash
         run: |
@@ -65,16 +83,26 @@ jobs:
           PACKAGE_NAME="$(node -p "require('./package.json').name")"
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
 
-          if LATEST_VERSION="$(npm view "${PACKAGE_NAME}" version 2>/dev/null)"; then
-            node -e "
-              const latest = process.argv[1].split('.').map(Number);
-              if (latest.length !== 3 || latest.some((part) => !Number.isInteger(part))) {
-                throw new Error('Unsupported npm version: ' + process.argv[1]);
-              }
-              latest[2] += 1;
-              console.log(latest.join('.'));
-            " "${LATEST_VERSION}" > .next-version
-            NEXT_VERSION="$(cat .next-version)"
+          # Query all published versions with a fresh registry read, rather
+          # than trusting a possibly stale "latest" dist-tag or npm cache.
+          if VERSIONS_JSON="$(npm view "${PACKAGE_NAME}" versions --json --prefer-online --cache-min=0 2>/dev/null)"; then
+            NEXT_VERSION="$(printf '%s' "${VERSIONS_JSON}" | node -e "
+              let input = '';
+              process.stdin.on('data', chunk => input += chunk);
+              process.stdin.on('end', () => {
+                const versions = JSON.parse(input);
+                const list = Array.isArray(versions) ? versions : [versions];
+                const stable = list
+                  .filter(v => /^\\d+\\.\\d+\\.\\d+$/.test(v))
+                  .map(v => v.split('.').map(Number));
+                if (!stable.length) throw new Error('No stable npm versions found');
+                stable.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]);
+                const next = [...stable[stable.length - 1]];
+                next[2] += 1;
+                process.stdout.write(next.join('.'));
+              });
+            ")"
+
             npm version "${NEXT_VERSION}" -m "chore(release): v%s [skip ci]"
             echo "publish_version=${NEXT_VERSION}" >> "$GITHUB_OUTPUT"
             echo "release_mode=registry-bump" >> "$GITHUB_OUTPUT"
@@ -91,10 +119,28 @@ jobs:
           fi
 
       - name: Build package
+        if: steps.freshness.outputs.publish == 'true'
         run: npm run build:lib
 
+      # The source may have advanced while the package was building.
+      - name: Recheck main before publication
+        if: steps.freshness.outputs.publish == 'true'
+        id: publish_guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          if [[ "$(git rev-parse origin/main)" == "${{ steps.freshness.outputs.base_sha }}" ]]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Skipping publication of superseded source."
+            echo "current=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to npm
+        if: steps.publish_guard.outputs.current == 'true'
         run: npm publish --access public --provenance
 
       - name: Push release commit and tag
+        if: steps.publish_guard.outputs.current == 'true'
         run: git push origin HEAD:main --follow-tags
