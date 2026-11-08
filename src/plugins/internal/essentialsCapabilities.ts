@@ -240,6 +240,9 @@ export interface EssentialsSectionCapability {
     start?: number;
     format?: SectionPageNumberFormat;
   }) => void;
+  getPaperSize: () => { widthPt: number; heightPt: number } | undefined;
+  setPaperSize: (dimensions: { widthPt: number; heightPt: number }) => void;
+  setPaperSizePreset: (presetId: string) => void;
 }
 
 export interface EssentialsHeaderFooterCapability {

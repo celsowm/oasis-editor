@@ -4,6 +4,11 @@ import {
   type EditorPageNumbering,
 } from "@/core/model.js";
 import { setSectionPageNumbering } from "@/core/commands/pageNumber.js";
+import {
+  getActivePaperSize,
+  setSectionPaperSize,
+  setSectionPaperSizePreset,
+} from "@/core/commands/pageSetup.js";
 import type { EssentialsSectionCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
 
@@ -69,6 +74,20 @@ export function buildEssentialsSection(
     setPageNumbering: (numbering): void => {
       options.applyTransactionalState((state) =>
         setSectionPageNumbering(state, numbering),
+      );
+      options.focusInput();
+    },
+    getPaperSize: (): { widthPt: number; heightPt: number } | undefined =>
+      getActivePaperSize(options.state()),
+    setPaperSize: (dimensions): void => {
+      options.applyTransactionalState((state) =>
+        setSectionPaperSize(state, dimensions),
+      );
+      options.focusInput();
+    },
+    setPaperSizePreset: (presetId): void => {
+      options.applyTransactionalState((state) =>
+        setSectionPaperSizePreset(state, presetId),
       );
       options.focusInput();
     },

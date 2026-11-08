@@ -149,6 +149,8 @@ export interface OasisCommandPayloads {
     start?: number;
     format?: SectionPageNumberFormat;
   };
+  setPaperSize: { widthPt: number; heightPt: number };
+  setPaperSizePreset: string;
   editHeader: undefined;
   editFooter: undefined;
   insertPageNumber: undefined;

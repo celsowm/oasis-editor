@@ -157,5 +157,25 @@ export function buildParagraphAndSectionCommands({
         value: section.getPageNumbering(),
       }),
     ),
+    setPaperSize: actionCommand(
+      "setPaperSize",
+      (p): void => {
+        const dims = (p ?? {}) as { widthPt?: number; heightPt?: number };
+        if (dims.widthPt !== undefined && dims.heightPt !== undefined) {
+          section.setPaperSize({
+            widthPt: Number(dims.widthPt),
+            heightPt: Number(dims.heightPt),
+          });
+        }
+      },
+      (): { value: { widthPt: number; heightPt: number } | undefined } => ({
+        value: section.getPaperSize(),
+      }),
+    ),
+    setPaperSizePreset: actionCommand("setPaperSizePreset", (p): void => {
+      if (typeof p === "string" && p.length > 0) {
+        section.setPaperSizePreset(p);
+      }
+    }),
   };
 }
