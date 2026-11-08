@@ -166,7 +166,7 @@
       "tab": "review",
       "group": "comments",
       "status": "partial",
-      "notes": "An editor-scoped discussion drawer lists roots and nested replies; supports search, open/resolved filters, navigation, editing, replies, moderation and confirmation before deletion. Host-supplied stable identity gates mutation; end-to-end browser UX and WordCraft visual equivalence remain partial."
+      "notes": "An editor-scoped discussion drawer lists roots and nested replies, supports text search, open/resolved filters, navigation, moderation and confirmation before deletion. The Activity view shows undoable local comment events for creation, replies, edits, resolve/reopen and deletion; events are not exported to DOCX. Host IDs gate mutations. Visual parity remains partial."
     },
     {
       "id": "review.newComment",

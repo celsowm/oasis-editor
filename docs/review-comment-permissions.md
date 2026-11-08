@@ -59,3 +59,22 @@ introduce a second comment store.
 
 The Ribbon matrix marks these flows `partial` until cross-application DOCX
 fidelity, visual equivalence and broader browser/accessibility testing are complete.
+
+## Local review activity
+
+Successful comment creation, reply, edit, resolve, reopen and delete operations
+record metadata in `EditorDocument.reviewActivity`. The discussion panel has an
+**Activity** view with most-recent-first chronology, event search, actor identity
+and navigation to comments that still exist.
+
+The activity array is **part of the editor document and of its undo/redo
+transactions**. Undoing a comment change also undoes its activity record.
+This is a user-facing edit history, not a tamper-evident, append-only security
+audit. It contains the actor display name and optionally the host's stable ID,
+but does not duplicate comment body text.
+
+The activity array is **not emitted into standard DOCX**. On DOCX import,
+there is no trustworthy record of local activity; author names and Word's
+change-tracking data are not equivalent to an authenticated activity log.
+For compliance, retention or multi-user history, the host must write an
+authenticated, append-only server audit independent of the editor's undo stack.
