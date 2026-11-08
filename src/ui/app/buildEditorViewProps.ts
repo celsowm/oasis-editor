@@ -102,6 +102,7 @@ export interface EditorViewInputInput {
   handleCut: OasisEditorEditorInputHandlers["onCut"];
   handlePaste: OasisEditorEditorInputHandlers["onPaste"];
   handleKeyDown: OasisEditorEditorInputHandlers["onKeyDown"];
+  handleKeyUp?: OasisEditorEditorInputHandlers["onKeyUp"];
 }
 
 /**
@@ -230,6 +231,7 @@ export function buildEditorViewProps(
     onCut: input.handleCut,
     onInput: input.textInput.handleTextInput,
     onKeyDown: input.handleKeyDown,
+    onKeyUp: input.handleKeyUp,
     onPaste: input.handlePaste,
   };
 

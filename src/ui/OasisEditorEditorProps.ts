@@ -145,6 +145,10 @@ export interface OasisEditorEditorInputHandlers {
   onKeyDown: (
     event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
   ) => void;
+  /** Applied after keyboard selection is finalized, not while Shift is held. */
+  onKeyUp?: (
+    event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
+  ) => void;
   onPaste: (
     event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
   ) => void;

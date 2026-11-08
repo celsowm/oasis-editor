@@ -111,6 +111,27 @@ export const defaultMenuItems: MenuItem[] = [
     icon: "clipboard",
   },
   {
+    id: "edit_format_painter",
+    path: "Edit/Format Painter",
+    labelKey: "toolbar.formatPainter",
+    command: "formatPainter",
+    icon: "paintbrush",
+  },
+  {
+    id: "edit_format_painter_continuous",
+    path: "Edit/Format Painter Continuous",
+    labelKey: "toolbar.formatPainterContinuous",
+    command: "formatPainterContinuous",
+    icon: "paintbrush",
+  },
+  {
+    id: "edit_cancel_format_painter",
+    path: "Edit/Cancel Format Painter",
+    labelKey: "toolbar.formatPainterCancel",
+    command: "cancelFormatPainter",
+    icon: "x",
+  },
+  {
     id: "edit_find",
     path: "Edit/Find & Replace",
     labelKey: "find.title",

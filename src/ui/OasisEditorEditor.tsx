@@ -585,6 +585,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
               onFocus={inputHandlers().onInputFocus}
               onInput={inputHandlers().onInput}
               onKeyDown={inputHandlers().onKeyDown}
+              onKeyUp={inputHandlers().onKeyUp}
               onPaste={inputHandlers().onPaste}
             />
             <input

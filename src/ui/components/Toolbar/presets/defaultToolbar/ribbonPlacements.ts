@@ -14,6 +14,7 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-paste": { tab: "home", group: "clipboard", row: 1 },
   "editor-toolbar-copy": { tab: "home", group: "clipboard", row: 1 },
   "editor-toolbar-cut": { tab: "home", group: "clipboard", row: 2 },
+  "editor-toolbar-format-painter": { tab: "home", group: "clipboard", row: 2 },
   "editor-toolbar-find": { tab: "home", group: "editing", row: 1 },
   "editor-toolbar-select-all": { tab: "home", group: "editing", row: 2 },
   "editor-toolbar-page-break": { tab: "insert", group: "pages", row: 1 },

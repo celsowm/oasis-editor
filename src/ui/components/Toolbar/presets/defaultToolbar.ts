@@ -224,6 +224,44 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     },
   });
   items.push({
+    type: "split",
+    id: "editor-toolbar-format-painter",
+    testId: "editor-toolbar-format-painter",
+    iconName: "paintbrush",
+    tooltipKey: "toolbar.formatPainter",
+    command: "formatPainter",
+    ribbonSize: "large",
+    menu: {
+      kind: "items",
+      items: [
+        {
+          type: "button",
+          id: "editor-toolbar-format-painter-once",
+          testId: "editor-toolbar-format-painter-once",
+          iconName: "paintbrush",
+          labelKey: "toolbar.formatPainterOnce",
+          command: "formatPainter",
+        },
+        {
+          type: "button",
+          id: "editor-toolbar-format-painter-continuous",
+          testId: "editor-toolbar-format-painter-continuous",
+          iconName: "paintbrush-2",
+          labelKey: "toolbar.formatPainterContinuous",
+          command: "formatPainterContinuous",
+        },
+        {
+          type: "button",
+          id: "editor-toolbar-format-painter-cancel",
+          testId: "editor-toolbar-format-painter-cancel",
+          iconName: "x",
+          labelKey: "toolbar.formatPainterCancel",
+          command: "cancelFormatPainter",
+        },
+      ],
+    },
+  });
+  items.push({
     type: "button",
     id: "editor-toolbar-cut",
     testId: "editor-toolbar-cut",

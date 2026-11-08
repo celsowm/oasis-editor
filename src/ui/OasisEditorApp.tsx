@@ -401,7 +401,27 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
       handleCopy,
       handleCut,
       handlePaste,
-      handleKeyDown,
+      handleKeyDown: (event): void => {
+        if (event.key === "Escape" && interaction.formatPainter.mode()) {
+          interaction.formatPainter.cancel();
+          event.preventDefault();
+          return;
+        }
+        handleKeyDown(event);
+      },
+      handleKeyUp: (event): void => {
+        if (!interaction.formatPainter.mode()) return;
+        const selectionKeys = [
+          "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+          "Home", "End", "PageUp", "PageDown", "Shift",
+        ];
+        if (
+          selectionKeys.includes(event.key) ||
+          ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a")
+        ) {
+          interaction.formatPainter.applyToSelection("keyboard");
+        }
+      },
     },
   });
 

@@ -10,6 +10,7 @@ const items = createDefaultToolbarPreset(t);
 const exposed = [
   ["editor-toolbar-copy", "copy", "home", "clipboard"],
   ["editor-toolbar-cut", "cut", "home", "clipboard"],
+  ["editor-toolbar-format-painter", "formatPainter", "home", "clipboard"],
   ["editor-toolbar-find", "find", "home", "editing"],
   ["editor-toolbar-select-all", "selectAll", "home", "editing"],
   ["editor-toolbar-page-break", "pageBreak", "insert", "pages"],
@@ -45,6 +46,18 @@ describe("WordCraft Ribbon parity: first Oasis exposure slice", () => {
     expect(paste.menu.items.map((item) =>
       item.type === "button" ? item.command : undefined
     )).toEqual(["paste", "pasteMergeFormatting", "pasteAsPlainText"]);
+  });
+
+  it("provides one-shot, continuous, and cancellation commands in the painter split menu", () => {
+    const painter = items.find((item) => item.id === "editor-toolbar-format-painter");
+    expect(painter?.type).toBe("split");
+    if (painter?.type !== "split") throw new Error("Format painter is missing");
+    expect(painter.command).toBe("formatPainter");
+    expect(painter.menu.kind).toBe("items");
+    if (painter.menu.kind !== "items") throw new Error("Format painter menu is missing");
+    expect(painter.menu.items.map((item) =>
+      item.type === "button" ? item.command : undefined
+    )).toEqual(["formatPainter", "formatPainterContinuous", "cancelFormatPainter"]);
   });
 
   it("shows Review and View only after they have real controls", () => {
