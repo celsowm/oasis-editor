@@ -565,6 +565,16 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   });
   items.push({
     type: "button",
+    id: "editor-toolbar-insert-bookmark",
+    testId: "editor-toolbar-insert-bookmark",
+    iconName: "bookmark",
+    tooltipKey: "toolbar.bookmark",
+    labelKey: "toolbar.bookmark",
+    command: "insertBookmark",
+    ribbonSize: "large",
+  });
+  items.push({
+    type: "button",
     id: "editor-toolbar-footnote",
     testId: "editor-toolbar-footnote",
     iconName: "footnote",

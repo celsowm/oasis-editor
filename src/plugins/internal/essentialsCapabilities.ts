@@ -254,6 +254,20 @@ export interface EssentialsHeaderFooterCapability {
   isInHeaderFooter: () => boolean;
 }
 
+export interface BookmarkDescriptor {
+  id: string;
+  name: string;
+}
+
+export interface EssentialsBookmarkCapability {
+  /** Bookmark the current selection with an optional name. */
+  insert: (name?: string) => void;
+  /** Remove a bookmark by editor-local id. */
+  remove: (id: string) => void;
+  /** Authorable bookmarks, for cross-reference/target pickers. */
+  list: () => BookmarkDescriptor[];
+}
+
 export interface EssentialsDesignCapability {
   applyTheme: (theme: DesignThemeId) => void;
   setColorScheme: (value: string) => void;
@@ -339,4 +353,5 @@ export interface EssentialsPluginDeps {
   headerFooter: EssentialsHeaderFooterCapability;
   table: EssentialsTableCapability;
   design: EssentialsDesignCapability;
+  bookmark: EssentialsBookmarkCapability;
 }

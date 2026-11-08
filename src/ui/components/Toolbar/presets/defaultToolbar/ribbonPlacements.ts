@@ -105,6 +105,11 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-insert-table": { tab: "insert", group: "tables", row: 1 },
   "editor-toolbar-link": { tab: "insert", group: "links", row: 1 },
   "editor-toolbar-unlink": { tab: "insert", group: "links", row: 2 },
+  "editor-toolbar-insert-bookmark": {
+    tab: "insert",
+    group: "links",
+    row: 1,
+  },
   "editor-toolbar-footnote": { tab: "references", group: "footnotes", row: 1 },
   "editor-toolbar-header-footer": {
     tab: "insert",

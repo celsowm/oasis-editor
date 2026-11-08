@@ -30,6 +30,7 @@ export const en = {
   "locale.id": "en",
   "toolbar.table": "Table",
   "toolbar.pageNumber": "Page #",
+  "toolbar.bookmark": "Bookmark",
   "toolbar.totalPages": "Total Pages",
   "toolbar.link": "Link",
   "toolbar.unlink": "Remove Link",

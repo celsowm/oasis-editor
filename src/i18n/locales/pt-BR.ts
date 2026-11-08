@@ -30,6 +30,7 @@ export const ptBR = {
   "locale.id": "pt-BR",
   "toolbar.table": "Tabela",
   "toolbar.pageNumber": "Nº de Página",
+  "toolbar.bookmark": "Marcador",
   "toolbar.totalPages": "Total de Páginas",
   "toolbar.link": "Link",
   "toolbar.unlink": "Remover Link",

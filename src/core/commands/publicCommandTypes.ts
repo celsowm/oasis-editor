@@ -150,6 +150,8 @@ export interface OasisCommandPayloads {
   insertPageNumberXOfY: undefined;
   placePageNumberTop: undefined;
   placePageNumberBottom: undefined;
+  insertBookmark: string | undefined;
+  removeBookmark: string;
   exitHeaderFooter: undefined;
   applyDocumentTheme: DesignThemeId;
   setDocumentColorScheme: string;

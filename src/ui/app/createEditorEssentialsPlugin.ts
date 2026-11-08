@@ -13,6 +13,7 @@ import { buildEssentialsBrowser } from "./essentials/browser.js";
 import { buildEssentialsParagraph } from "./essentials/paragraph.js";
 import { buildEssentialsSection } from "./essentials/section.js";
 import { buildEssentialsHeaderFooter } from "./essentials/headerFooter.js";
+import { buildEssentialsBookmark } from "./essentials/bookmark.js";
 import { buildEssentialsTable } from "./essentials/table.js";
 import { buildEssentialsDesign } from "./essentials/design.js";
 
@@ -36,5 +37,6 @@ export function createEditorEssentialsRuntimePlugin(
     headerFooter: buildEssentialsHeaderFooter(options),
     table: buildEssentialsTable(options),
     design: buildEssentialsDesign(options),
+    bookmark: buildEssentialsBookmark(options),
   });
 }

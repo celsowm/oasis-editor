@@ -381,6 +381,13 @@ export const defaultMenuItems: MenuItem[] = [
     labelKey: "headerFooter.pageNumberBottom",
     command: "placePageNumberBottom",
   },
+  {
+    id: "insert_bookmark",
+    path: "Insert/Bookmark",
+    labelKey: "toolbar.bookmark",
+    command: "insertBookmark",
+    icon: "bookmark",
+  },
   { id: "insert_specialChar", path: "Insert/Special Character", hidden: true },
   { id: "insert_comment", path: "Insert/Comment", hidden: true },
 

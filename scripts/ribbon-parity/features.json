@@ -359,6 +359,16 @@
       "notes": "Places the active section's default footer as a single centered PAGE paragraph (mirrors WordCraft insert.page_number position=bottom story rewrite). Round-trips through DOCX with alignment."
     },
     {
+      "id": "insert.bookmark",
+      "wordcraftCommand": "insert.bookmark",
+      "oasisCommand": "insertBookmark",
+      "ribbonId": "editor-toolbar-insert-bookmark",
+      "tab": "insert",
+      "group": "links",
+      "status": "partial",
+      "notes": "Bookmarks the current selection (single point when collapsed) into the document-level EditorBookmarks registry, exported as w:bookmarkStart/w:bookmarkEnd and round-tripped on import. Cross-reference insertion (PAGEREF/REF with refresh) remains a follow-up."
+    },
+    {
       "id": "insert.exitHeaderFooter",
       "wordcraftCommand": null,
       "oasisCommand": "exitHeaderFooter",
