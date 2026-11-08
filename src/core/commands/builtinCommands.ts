@@ -50,6 +50,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "redo",
   "pageBreak",
   "lineBreak",
+  "columnBreak",
   "splitBlock",
   "setFontFamily",
   "setFontSize",

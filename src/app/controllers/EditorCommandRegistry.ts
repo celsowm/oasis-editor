@@ -3,7 +3,7 @@ import {
   splitBlockAtSelection,
 } from "@/core/commands/block.js";
 import { setSelection } from "@/core/commands/selection.js";
-import { insertTextAtSelection } from "@/core/commands/text.js";
+import { insertTextAtSelection, insertColumnBreakAtSelection } from "@/core/commands/text.js";
 import {
   getParagraphs,
   getParagraphText,
@@ -300,6 +300,24 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
       deps.applyTransactionalState((current): EditorState =>
         deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
           insertTextAtSelection(temp, "\n"),
+        ),
+      );
+      deps.focusInput();
+      return true;
+    },
+  },
+  {
+    id: "columnBreak",
+    command: "columnBreak",
+    key: "Enter",
+    ctrlOrMeta: true,
+    shift: true,
+    execute: (deps): true => {
+      deps.clearPreferredColumn();
+      deps.resetTransactionGrouping();
+      deps.applyTransactionalState((current): EditorState =>
+        deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
+          insertColumnBreakAtSelection(temp),
         ),
       );
       deps.focusInput();

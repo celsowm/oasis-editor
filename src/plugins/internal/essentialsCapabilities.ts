@@ -106,6 +106,7 @@ export interface EssentialsFormattingCapability {
   togglePreciseFonts: () => boolean;
   pageBreak: () => boolean;
   lineBreak: () => boolean;
+  columnBreak: () => boolean;
   splitBlock: () => boolean;
   setFontFamily: (value: string | null) => boolean;
   setFontSize: (value: number | null) => boolean;

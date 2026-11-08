@@ -3,6 +3,7 @@ import {
   splitBlockAtSelection,
 } from "@/core/commands/block.js";
 import {
+  insertColumnBreakAtSelection,
   insertMathAtSelection,
   insertTextAtSelection,
   updateMathRun,
@@ -196,8 +197,10 @@ export function buildEssentialsFormatting(
     isSelectedCommentResolved: (): boolean =>
       Boolean(getSelectedReviewComment(options.state())?.resolved),
     canManageSelectedComment: options.commentComposer.canResolveSelected,
-    resolveSelectedComment: (): boolean => options.commentComposer.resolveSelected(true),
-    reopenSelectedComment: (): boolean => options.commentComposer.resolveSelected(false),
+    resolveSelectedComment: (): boolean =>
+      options.commentComposer.resolveSelected(true),
+    reopenSelectedComment: (): boolean =>
+      options.commentComposer.resolveSelected(false),
     deleteSelectedComment: options.commentComposer.deleteSelected,
     canDeleteSelectedComment: options.commentComposer.canDeleteSelected,
     insertTableOfContents: (): boolean => {
@@ -271,9 +274,11 @@ export function buildEssentialsFormatting(
     ),
     find: (): true => (options.findReplace.setIsOpen(true), true),
     replace: (): true => (options.findReplace.setIsOpen(true), true),
-    isTrackChangesEnabled: (): boolean => Boolean(options.state().trackChangesEnabled),
+    isTrackChangesEnabled: (): boolean =>
+      Boolean(options.state().trackChangesEnabled),
     areMarginsVisible: (): boolean => Boolean(options.state().showMargins),
-    areParagraphMarksVisible: (): boolean => Boolean(options.state().showParagraphMarks),
+    areParagraphMarksVisible: (): boolean =>
+      Boolean(options.state().showParagraphMarks),
     toggleTrackChanges: (): true => (
       options.commandsController.applyToggleTrackChangesCommand(),
       true
@@ -310,6 +315,16 @@ export function buildEssentialsFormatting(
         options.tableOps.applyTableAwareParagraphEdit(
           current,
           (temp): EditorState => insertTextAtSelection(temp, "\n"),
+        ),
+      );
+      options.focusInput();
+      return true;
+    },
+    columnBreak: (): boolean => {
+      options.applyTransactionalState((current): EditorState =>
+        options.tableOps.applyTableAwareParagraphEdit(
+          current,
+          (temp): EditorState => insertColumnBreakAtSelection(temp),
         ),
       );
       options.focusInput();

@@ -90,6 +90,7 @@ export interface OasisCommandPayloads {
   redo: undefined;
   pageBreak: undefined;
   lineBreak: undefined;
+  columnBreak: undefined;
   splitBlock: undefined;
   setFontFamily: string | null;
   setFontSize: SetFontSizePayload | number | string | null;

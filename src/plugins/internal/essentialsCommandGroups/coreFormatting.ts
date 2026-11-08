@@ -90,7 +90,8 @@ export function buildCoreFormattingCommands({
       "formatPainter",
       formatting.formatPainterOnce,
       (): { isEnabled: boolean; isActive: boolean } => ({
-        isEnabled: gate.isCommandEnabled("formatPainter") &&
+        isEnabled:
+          gate.isCommandEnabled("formatPainter") &&
           formatting.canCaptureFormatPainter(),
         isActive: formatting.formatPainterMode() !== null,
       }),
@@ -99,7 +100,8 @@ export function buildCoreFormattingCommands({
       "formatPainterContinuous",
       formatting.formatPainterContinuous,
       (): { isEnabled: boolean; isActive: boolean } => ({
-        isEnabled: gate.isCommandEnabled("formatPainterContinuous") &&
+        isEnabled:
+          gate.isCommandEnabled("formatPainterContinuous") &&
           formatting.canCaptureFormatPainter(),
         isActive: formatting.formatPainterMode() === "continuous",
       }),
@@ -222,7 +224,8 @@ export function buildCoreFormattingCommands({
       "nextRevision",
       formatting.navigateRevisionNext,
       (): { isEnabled: boolean } => ({
-        isEnabled: gate.isCommandEnabled("nextRevision") &&
+        isEnabled:
+          gate.isCommandEnabled("nextRevision") &&
           formatting.hasNavigableRevisions(),
       }),
     ),
@@ -230,7 +233,8 @@ export function buildCoreFormattingCommands({
       "previousRevision",
       formatting.navigateRevisionPrevious,
       (): { isEnabled: boolean } => ({
-        isEnabled: gate.isCommandEnabled("previousRevision") &&
+        isEnabled:
+          gate.isCommandEnabled("previousRevision") &&
           formatting.hasNavigableRevisions(),
       }),
     ),
@@ -238,15 +242,16 @@ export function buildCoreFormattingCommands({
       "newComment",
       formatting.newComment,
       (): { isEnabled: boolean } => ({
-        isEnabled: gate.isCommandEnabled("newComment") &&
-          formatting.canCreateComment(),
+        isEnabled:
+          gate.isCommandEnabled("newComment") && formatting.canCreateComment(),
       }),
     ),
     replyComment: command(
       "replyComment",
       formatting.replyComment,
       (): { isEnabled: boolean } => ({
-        isEnabled: gate.isCommandEnabled("replyComment") &&
+        isEnabled:
+          gate.isCommandEnabled("replyComment") &&
           formatting.canReplyToComment(),
       }),
     ),
@@ -262,15 +267,16 @@ export function buildCoreFormattingCommands({
       "editComment",
       formatting.editComment,
       (): { isEnabled: boolean } => ({
-        isEnabled: gate.isCommandEnabled("editComment") &&
-          formatting.canEditComment(),
+        isEnabled:
+          gate.isCommandEnabled("editComment") && formatting.canEditComment(),
       }),
     ),
     nextComment: command(
       "nextComment",
       formatting.navigateCommentNext,
       (): { isEnabled: boolean } => ({
-        isEnabled: gate.isCommandEnabled("nextComment") &&
+        isEnabled:
+          gate.isCommandEnabled("nextComment") &&
           formatting.hasNavigableComments(),
       }),
     ),
@@ -278,7 +284,8 @@ export function buildCoreFormattingCommands({
       "previousComment",
       formatting.navigateCommentPrevious,
       (): { isEnabled: boolean } => ({
-        isEnabled: gate.isCommandEnabled("previousComment") &&
+        isEnabled:
+          gate.isCommandEnabled("previousComment") &&
           formatting.hasNavigableComments(),
       }),
     ),
@@ -286,23 +293,28 @@ export function buildCoreFormattingCommands({
       "resolveComment",
       formatting.resolveSelectedComment,
       (): { isEnabled: boolean } => ({
-        isEnabled: gate.isCommandEnabled("resolveComment") &&
-          formatting.canManageSelectedComment() && !formatting.isSelectedCommentResolved(),
+        isEnabled:
+          gate.isCommandEnabled("resolveComment") &&
+          formatting.canManageSelectedComment() &&
+          !formatting.isSelectedCommentResolved(),
       }),
     ),
     reopenComment: command(
       "reopenComment",
       formatting.reopenSelectedComment,
       (): { isEnabled: boolean } => ({
-        isEnabled: gate.isCommandEnabled("reopenComment") &&
-          formatting.canManageSelectedComment() && formatting.isSelectedCommentResolved(),
+        isEnabled:
+          gate.isCommandEnabled("reopenComment") &&
+          formatting.canManageSelectedComment() &&
+          formatting.isSelectedCommentResolved(),
       }),
     ),
     deleteComment: command(
       "deleteComment",
       formatting.deleteSelectedComment,
       (): { isEnabled: boolean } => ({
-        isEnabled: gate.isCommandEnabled("deleteComment") &&
+        isEnabled:
+          gate.isCommandEnabled("deleteComment") &&
           formatting.canDeleteSelectedComment(),
       }),
     ),
@@ -338,6 +350,7 @@ export function buildCoreFormattingCommands({
     })),
     pageBreak: command("pageBreak", formatting.pageBreak),
     lineBreak: command("lineBreak", formatting.lineBreak),
+    columnBreak: command("columnBreak", formatting.columnBreak),
     splitBlock: command("splitBlock", formatting.splitBlock),
     setFontFamily: valueCommand(
       "setFontFamily",
