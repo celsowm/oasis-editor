@@ -17,7 +17,7 @@ import {
   getAttributeValue,
 } from "./xmlHelpers.js";
 import { MATH_NS, parseMathExpression } from "./math.js";
-import { PAGE_BREAK_MARKER } from "./units.js";
+import { COLUMN_BREAK_MARKER, PAGE_BREAK_MARKER } from "./units.js";
 import { type AssetRegistry } from "./assetRegistry.js";
 import { type DocxImportTheme } from "./theme.js";
 import { parseRunStyle } from "./runStyle.js";
@@ -226,10 +226,13 @@ export async function parseRunElement(
       } else if (element.localName === "softHyphen") {
         pushText("\u00AD");
       } else if (element.localName === "br") {
+        const brType = getAttributeValue(element, "type");
         pushText(
-          getAttributeValue(element, "type") === "page"
+          brType === "page"
             ? PAGE_BREAK_MARKER
-            : "\n",
+            : brType === "column"
+              ? COLUMN_BREAK_MARKER
+              : "\n",
         );
       } else if (element.localName === "lastRenderedPageBreak") {
         continue;

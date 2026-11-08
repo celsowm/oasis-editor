@@ -7,6 +7,7 @@ export {
   insertTextAtSelection,
   insertPlainTextAtSelection,
   insertMathAtSelection,
+  insertColumnBreakAtSelection,
   updateMathRun,
 } from "./textEditing.js";
 

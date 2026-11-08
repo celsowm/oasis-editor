@@ -5,6 +5,7 @@ import type {
   EditorParagraphNode,
   EditorTextBoxData,
 } from "@/core/model.js";
+import type { EditorLayoutParagraph } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
 import {
   applyMeasuredLineGeometry,
@@ -26,10 +27,51 @@ import { estimateTableBlockHeight } from "./tablePagination.js";
 import type { PaginationTrack, TrackLayoutParams } from "./paginationTrack.js";
 import { collectParagraphFloatingExclusions } from "./floatingObjects.js";
 import { paginateSegments } from "./paginationSegmentEngine.js";
+import { COLUMN_BREAK_MARKER } from "@/core/units.js";
 
 const TEXT_BOX_AUTOFIT_SAFETY_PX = 2;
 /** Subpixel slack so floating-point rounding doesn't push a just-fitting line to the next page. */
 const PARAGRAPH_FIT_HEIGHT_TOLERANCE_PX = 1.5;
+
+/**
+ * Paragraph-relative offsets of every hard column break marker in the
+ * paragraph's runs. Used to split a paragraph's composed lines into column
+ * segments at the same boundaries Word does.
+ */
+function collectColumnBreakOffsets(paragraph: EditorParagraphNode): number[] {
+  const offsets: number[] = [];
+  let offset = 0;
+  for (const run of paragraph.runs) {
+    for (let index = 0; index < run.text.length; index += 1) {
+      if (run.text[index] === COLUMN_BREAK_MARKER) {
+        offsets.push(offset + index);
+      }
+    }
+    offset += run.text.length;
+  }
+  return offsets;
+}
+
+/**
+ * Indices of the composed layout lines that begin immediately after a hard
+ * column break marker. A column break split the paragraph at a line boundary,
+ * so the line starting right after each marker belongs to the next column.
+ */
+function collectColumnBreakStartLineIndexes(
+  paragraph: EditorParagraphNode,
+  layout: EditorLayoutParagraph,
+): Set<number> {
+  const startIndexes = new Set<number>();
+  const offsets = collectColumnBreakOffsets(paragraph);
+  if (offsets.length === 0) return startIndexes;
+  for (let lineIndex = 0; lineIndex < layout.lines.length; lineIndex += 1) {
+    const line = layout.lines[lineIndex]!;
+    if (offsets.some((o) => line.startOffset === o + 1)) {
+      startIndexes.add(lineIndex);
+    }
+  }
+  return startIndexes;
+}
 
 function registerParagraphFloatingExclusions(options: {
   track: PaginationTrack;
@@ -294,6 +336,10 @@ export function paginateParagraphBlock(
   }
 
   let startLineIndex = 0;
+  const columnBreakStartLineIndexes = collectColumnBreakStartLineIndexes(
+    sourceBlock,
+    paragraphLayout,
+  );
 
   // Build a segment block given the resolved line range and height. Closed over
   // collapseWithPrevious / measuredHeights because both can change between
@@ -347,6 +393,16 @@ export function paginateParagraphBlock(
       let segmentHeight = 0;
 
       while (lineEndIndex < paragraphLayout.lines.length) {
+        // A hard column break forces every line before it into the current
+        // column and every line after it onto a fresh track. Stop the segment
+        // at the line that starts right after the marker (unless it is the
+        // very first line, which would make an empty segment).
+        if (
+          columnBreakStartLineIndexes.has(lineEndIndex) &&
+          lineEndIndex > originalStart
+        ) {
+          break;
+        }
         const candidateLines = paragraphLayout.lines.slice(
           originalStart,
           lineEndIndex + 1,

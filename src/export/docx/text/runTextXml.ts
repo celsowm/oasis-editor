@@ -1,4 +1,5 @@
 import { escapeXml } from "@/export/docx/xmlUtils.js";
+import { COLUMN_BREAK_MARKER } from "@/core/units.js";
 
 function needsPreserveSpace(text: string): boolean {
   return /^\s|\s$/.test(text) || text.includes("  ");
@@ -24,6 +25,12 @@ export function serializeRunText(text: string): string {
       result += serializeTextSegment(buffer);
       buffer = "";
       result += "<w:br/>";
+      continue;
+    }
+    if (char === COLUMN_BREAK_MARKER) {
+      result += serializeTextSegment(buffer);
+      buffer = "";
+      result += '<w:br w:type="column"/>';
       continue;
     }
     if (char === "\t") {

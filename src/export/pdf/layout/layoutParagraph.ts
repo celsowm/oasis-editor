@@ -1,6 +1,7 @@
 import type { EditorParagraphNode, EditorTextRun } from "@/core/model.js";
 import { formatPageNumber } from "@/core/format/pageNumberFormat.js";
 import type { PdfTextMeasurer } from "./PdfTextMeasurer.js";
+import { COLUMN_BREAK_MARKER } from "@/core/units.js";
 
 export interface PdfParagraphTextContext {
   pageNumber: number;
@@ -110,28 +111,38 @@ function tokenizeRun(
     options.pxToPt,
   );
 
-  for (const match of text.matchAll(TOKEN_PATTERN)) {
-    const tokenText = match[0];
-    if (tokenText === "\n") {
+  const segments = text.split(COLUMN_BREAK_MARKER);
+  for (let s = 0; s < segments.length; s += 1) {
+    if (s > 0) {
       tokens.push({ run, text: "", width: 0, fontSize, forcedBreak: true });
+    }
+    const segment = segments[s]!;
+    if (segment.length === 0) {
       continue;
     }
-    if (tokenText.length === 0) {
-      continue;
-    }
+    for (const match of segment.matchAll(TOKEN_PATTERN)) {
+      const tokenText = match[0];
+      if (tokenText === "\n") {
+        tokens.push({ run, text: "", width: 0, fontSize, forcedBreak: true });
+        continue;
+      }
+      if (tokenText.length === 0) {
+        continue;
+      }
 
-    tokens.push({
-      run,
-      text: tokenText,
-      width: measurePdfRunTextWidthPt(
+      tokens.push({
         run,
-        tokenText,
-        options.context,
-        options.defaultFontSize,
-        options.pxToPt,
-      ),
-      fontSize,
-    });
+        text: tokenText,
+        width: measurePdfRunTextWidthPt(
+          run,
+          tokenText,
+          options.context,
+          options.defaultFontSize,
+          options.pxToPt,
+        ),
+        fontSize,
+      });
+    }
   }
 
   return tokens;

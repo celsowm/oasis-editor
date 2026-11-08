@@ -14,6 +14,7 @@ export {
   OOXML_ROTATION_UNITS,
 };
 export const PAGE_BREAK_MARKER = "\f";
+export { COLUMN_BREAK_MARKER } from "@/core/units.js";
 export const DOCX_IMPLICIT_SINGLE_LINE_HEIGHT = 1.1;
 
 export function twipsToPx(

@@ -7,6 +7,7 @@ import type {
   EditorMathExpression,
 } from "@/core/model.js";
 import { MATH_OBJECT_REPLACEMENT } from "@/core/model.js";
+import { COLUMN_BREAK_MARKER } from "@/core/units.js";
 import {
   getParagraphLength,
   getParagraphs,
@@ -305,6 +306,10 @@ export function insertTextAtSelection(
       paragraphOffsetToPosition(nextParagraph, offset + text.length),
     ),
   );
+}
+
+export function insertColumnBreakAtSelection(state: EditorState): EditorState {
+  return insertTextAtSelection(state, COLUMN_BREAK_MARKER);
 }
 
 export function insertMathAtSelection(

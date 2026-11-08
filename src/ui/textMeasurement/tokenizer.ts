@@ -14,6 +14,7 @@ import { DEFAULT_FONT_SIZE } from "./constants.js";
 import { measureCharacterWidth } from "./characterWidth.js";
 import type { MeasuredChar, MeasuredToken } from "./types.js";
 import { measureMathExpression } from "@/ui/math/mathPainter.js";
+import { COLUMN_BREAK_MARKER } from "@/core/units.js";
 
 export function buildParagraphFragments(
   paragraph: EditorParagraphNode,
@@ -141,7 +142,7 @@ export function tokenizeMeasuredChars(chars: MeasuredChar[]): MeasuredToken[] {
   };
 
   for (const char of chars) {
-    if (char.char === "\n") {
+    if (char.char === "\n" || char.char === COLUMN_BREAK_MARKER) {
       flush();
       tokens.push({ kind: "newline", chars: [char], width: 0 });
       continue;

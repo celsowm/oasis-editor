@@ -50,3 +50,13 @@ export const OOXML_ROTATION_UNITS = 60000;
  * `14.6667` so layout measurements remain byte-identical.
  */
 export const DEFAULT_FONT_SIZE_PX = 14.6667;
+
+/**
+ * Inline marker for a hard column break (`<w:br w:type="column"/>`), stored as
+ * a literal control character inside `EditorTextRun.text`, exactly like the
+ * line-break `\n` and tab `\t` markers. The vertical-tab codepoint is distinct
+ * from the page-break marker `\u000C` so the two never collide. Shared across
+ * the core (commands), layout, import and export layers so every consumer
+ * references one symbol rather than a magic string.
+ */
+export const COLUMN_BREAK_MARKER = "\u000B";
