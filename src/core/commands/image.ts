@@ -563,6 +563,37 @@ export function setSelectedImageTransparency(
   });
 }
 
+/** True when an image is selected and can be reset to its original picture. */
+export function canResetSelectedImage(state: EditorState): boolean {
+  return getSelectedImageRun(state) !== null;
+}
+
+/**
+ * WordCraft's `picture.reset` (Word's Reset Picture): restores the selected
+ * picture to its original state, discarding every adjustment — source crop,
+ * fit/fill mode, picture mask, transparency, border and rotation/flip — while
+ * keeping its box size and floating position, exactly as Word keeps the frame.
+ * A no-op when no image is selected.
+ */
+export function resetSelectedImage(state: EditorState): EditorState {
+  if (getSelectedImageRun(state) === null) {
+    return state;
+  }
+  return patchSelectedImage(state, (image) => {
+    const next: EditorImageRunData = { ...image };
+    delete next.crop;
+    delete next.cropFit;
+    delete next.cropShape;
+    delete next.transparency;
+    delete next.border;
+    delete next.rotation;
+    delete next.flipH;
+    delete next.flipV;
+    delete next.fillMode;
+    return next;
+  });
+}
+
 export function getSelectedImageWrapPreset(
   state: EditorState,
 ): WrapPreset | null {
