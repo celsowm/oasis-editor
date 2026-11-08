@@ -10,3 +10,4 @@ export * from "./table/tableSplitCommands.js";
 export * from "./table/tableSortCommands.js";
 export * from "./table/tableDeleteCommands.js";
 export * from "./table/tableRepeatHeaderCommands.js";
+export * from "./table/tableCellMarginsCommands.js";
