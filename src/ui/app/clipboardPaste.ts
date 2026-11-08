@@ -1,9 +1,10 @@
 import { insertClipboardParagraphsAtSelection } from "@/core/commands/clipboard.js";
 import { insertPlainTextAtSelection } from "@/core/commands/text.js";
+import { mergeClipboardFormatting } from "@/core/commands/clipboardMergeFormatting.js";
 import type { EditorState } from "@/core/model.js";
 import { parseEditorClipboardHtmlWithDom } from "@/app/clipboard/htmlClipboardParser.js";
 
-export type ClipboardPasteMode = "rich" | "text";
+export type ClipboardPasteMode = "rich" | "text" | "merge";
 
 export interface ClipboardPasteDeps {
   state: () => EditorState;
@@ -45,7 +46,7 @@ async function readClipboard(
       let html = "";
       let text = "";
       for (const item of items) {
-        if (mode === "rich" && item.types.includes("text/html")) {
+        if (mode !== "text" && item.types.includes("text/html")) {
           html = await (await item.getType("text/html")).text();
         }
         if (item.types.includes("text/plain")) {
@@ -92,9 +93,12 @@ export async function pasteFromSystemClipboard(
   if (!content || deps.isReadOnly() || deps.state().document !== snapshot.document) {
     return false;
   }
-  const paragraphs = mode === "rich"
+  const parsed = mode !== "text"
     ? parseEditorClipboardHtmlWithDom(content.html)
     : [];
+  const paragraphs = mode === "merge"
+    ? mergeClipboardFormatting({ ...snapshot, selection }, parsed)
+    : parsed;
   if (paragraphs.length === 0 && content.text.length === 0) return false;
 
   deps.clearPreferredColumn();
