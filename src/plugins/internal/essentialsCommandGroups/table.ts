@@ -48,6 +48,14 @@ export function buildTableCommands({
           gate.isCommandEnabled("tableToText") && table.canConvertToText(),
       }),
     ),
+    textToTable: actionCommand(
+      "textToTable",
+      (): void => table.convertToTable(),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("textToTable") && table.canConvertToTable(),
+      }),
+    ),
     tableInsertColumnBefore: actionCommand(
       "tableInsertColumnBefore",
       (): void => table.insertColumnBefore(),

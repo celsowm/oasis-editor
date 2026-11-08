@@ -1144,6 +1144,18 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     tooltipKey: "table.convertToTextTooltip",
   });
 
+  // Convert the selected tab-separated text into a table (Word's "Convert Text
+  // to Table"). Placed beside Convert to Text in the Layout merge group.
+  items.push({
+    type: "button",
+    id: "editor-toolbar-tbl-text-to-table",
+    testId: "editor-toolbar-tbl-text-to-table",
+    iconName: "textToTable",
+    command: "textToTable",
+    labelKey: "table.convertToTable",
+    tooltipKey: "table.convertToTableTooltip",
+  });
+
   // Cell vertical alignment (Word's Align Top / Center / Bottom) on the
   // Layout tab's alignment group. These are payload commands so they are
   // surfaced explicitly rather than through TABLE_LAYOUT_BUTTONS.

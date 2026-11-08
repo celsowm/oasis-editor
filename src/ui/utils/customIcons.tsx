@@ -192,6 +192,14 @@ const TableToTextIcon: CustomIconRenderer = (): JSX.Element => (
   </SvgIcon>
 );
 
+const TextToTableIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
+    <rect x="4" y="4" width="16" height="16" rx="0.8" />
+    <path d="M9 11v2M13 11v2M7 11h8M7 15h8" />
+    <path d="M10 6l-2 2 2 2M14 6l2 2-2 2" stroke-width={1.6} />
+  </SvgIcon>
+);
+
 const TableWidthIcon: CustomIconRenderer = (): JSX.Element => (
   <TableIcon>
     <path d="M3 21h18M4.5 19.5 3 21l1.5 1.5M19.5 19.5 21 21l-1.5 1.5" />
@@ -299,6 +307,7 @@ const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   tableMerge: TableMergeIcon,
   tableSplit: TableSplitIcon,
   tableToText: TableToTextIcon,
+  textToTable: TextToTableIcon,
   tableWidth: TableWidthIcon,
   tableDistributeRows: TableDistributeRowsIcon,
   tableDistributeColumns: TableDistributeColumnsIcon,

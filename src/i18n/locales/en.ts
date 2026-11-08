@@ -317,6 +317,8 @@ export const en = {
   "table.autoFit": "AutoFit",
   "table.convertToText": "Convert to Text",
   "table.convertToTextTooltip": "Convert the table to body paragraphs",
+  "table.convertToTable": "Convert to Table",
+  "table.convertToTableTooltip": "Convert tab-separated text into a table",
   "table.distributeRows": "Distribute Rows",
   "table.distributeColumns": "Distribute Columns",
   "table.cellWidth": "Cell Width",

@@ -317,6 +317,9 @@ export const ptBR = {
   "table.autoFit": "AutoAjuste",
   "table.convertToText": "Converter em Texto",
   "table.convertToTextTooltip": "Converte a tabela em parágrafos de texto",
+  "table.convertToTable": "Converter em Tabela",
+  "table.convertToTableTooltip":
+    "Converte texto separado por tabulação em tabela",
   "table.distributeRows": "Distribuir Linhas",
   "table.distributeColumns": "Distribuir Colunas",
   "table.cellWidth": "Largura da Célula",

@@ -9,6 +9,8 @@ import {
   setTableStyleValue,
   canConvertActiveTableToText,
   convertActiveTableToText,
+  canConvertActiveTextToTable,
+  convertActiveTextToTable,
 } from "@/core/commands/table.js";
 import {
   findParagraphTablePathLocation,
@@ -231,6 +233,13 @@ export function buildEssentialsTable(
       apply(
         (current): EditorState => convertActiveTableToText(current),
         MERGE_KEYS.tableToText,
+      ),
+    canConvertToTable: (): boolean =>
+      canConvertActiveTextToTable(options.state()),
+    convertToTable: (): void =>
+      apply(
+        (current): EditorState => convertActiveTextToTable(current),
+        MERGE_KEYS.textToTable,
       ),
     merge: (): void =>
       apply(

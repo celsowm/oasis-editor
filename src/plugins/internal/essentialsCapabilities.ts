@@ -368,6 +368,10 @@ export interface EssentialsTableCapability {
   canConvertToText: () => boolean;
   /** Word's Convert Table to Text: flatten the active table into body paragraphs. */
   convertToText: () => void;
+  /** True when the caret can be turned into a table (outside a table, editable). */
+  canConvertToTable: () => boolean;
+  /** Word's Convert Text to Table: tab-separated text into a table at the caret. */
+  convertToTable: () => void;
   merge: () => void;
   split: () => void;
   insertColumnBefore: () => void;
