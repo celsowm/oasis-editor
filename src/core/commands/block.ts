@@ -7,6 +7,7 @@ import type {
   EditorTabStop,
   EditorParagraphNode,
   EditorTextStyle,
+  EditorPageSettings,
 } from "@/core/model.js";
 import {
   getBlockParagraphs,
@@ -357,7 +358,9 @@ export function insertSectionBreakAtSelection(
 export function updateSectionSettings(
   state: EditorState,
   sectionIndex: number,
-  settings: Partial<EditorSection>,
+  settings: Omit<Partial<EditorSection>, "pageSettings"> & {
+    pageSettings?: Partial<EditorPageSettings>;
+  },
 ): EditorState {
   const sections = getDocumentSections(state.document);
   if (sectionIndex < 0 || sectionIndex >= sections.length) {
