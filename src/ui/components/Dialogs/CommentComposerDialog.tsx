@@ -29,7 +29,7 @@ export function CommentComposerDialog(props: CommentComposerDialogProps): JSX.El
     if (!pending()) return;
     setAuthor(pending()?.mode === "edit"
       ? pending()?.commentAuthor ?? ""
-      : props.composer.lastAuthor());
+      : props.composer.authorName());
     setBody(pending()?.mode === "edit" ? pending()?.commentText ?? "" : "");
     queueMicrotask((): void => bodyRef?.focus());
   });
@@ -72,7 +72,7 @@ export function CommentComposerDialog(props: CommentComposerDialogProps): JSX.El
           onChange={setAuthor}
           maxLength={150}
           required
-          disabled={pending()?.mode === "edit"}
+          disabled={pending()?.mode === "edit" || props.composer.authorLocked()}
           data-testid="comment-composer-author"
         />
         <TextAreaField

@@ -22,7 +22,6 @@ import {
   navigateComment,
   getSelectedReviewComment,
   setSelectedCommentResolved,
-  deleteSelectedComment as removeSelectedReviewComment,
 } from "@/core/commands/reviewNavigation.js";
 import {
   insertTableOfContents,
@@ -209,13 +208,8 @@ export function buildEssentialsFormatting(
         setSelectedCommentResolved(current, false));
       return true;
     },
-    deleteSelectedComment: (): boolean => {
-      const before = options.state();
-      if (removeSelectedReviewComment(before) === before) return false;
-      options.applyTransactionalState((current) =>
-        removeSelectedReviewComment(current));
-      return true;
-    },
+    deleteSelectedComment: options.commentComposer.deleteSelected,
+    canDeleteSelectedComment: options.commentComposer.canDeleteSelected,
     insertTableOfContents: (): boolean => {
       options.applyTransactionalState((current): EditorState =>
         insertTableOfContents(current, buildTocPageResolver(current)),

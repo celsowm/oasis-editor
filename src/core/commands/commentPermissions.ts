@@ -1,5 +1,9 @@
 import type { EditorComment, EditorComments } from "@/core/model.js";
-import type { OasisReviewAccess } from "@/ui/OasisEditorAppProps.js";
+/** Policy data is owned by core; UI is a consumer, not a dependency. */
+export interface OasisReviewAccess {
+  identity?: { id: string; displayName: string };
+  canModerate?: boolean;
+}
 
 /**
  * Standalone / not configured: legacy local editing remains permissive.

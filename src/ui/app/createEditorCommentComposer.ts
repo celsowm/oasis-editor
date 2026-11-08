@@ -1,7 +1,12 @@
 import { createSignal } from "solid-js";
 import type { EditorState } from "@/core/model.js";
 import { createEditorNodeId } from "@/core/editorState.js";
-import { getSelectedReviewComment } from "@/core/commands/reviewNavigation.js";
+import { getSelectedReviewComment, deleteSelectedComment } from "@/core/commands/reviewNavigation.js";
+import {
+  canEditReviewComment,
+  canDeleteReviewThread,
+  type OasisReviewAccess,
+} from "@/core/commands/commentPermissions.js";
 import {
   getCommentRangeForSelection,
   insertCommentAtSelection,
@@ -26,6 +31,7 @@ export interface CommentComposerDeps {
   isReadOnly: () => boolean;
   applyTransactionalState: (change: (current: EditorState) => EditorState) => void;
   focusInput: () => void;
+  access?: () => OasisReviewAccess | undefined;
 }
 
 /** One instance per editor; never a global author, dialog, or comment state. */
@@ -33,11 +39,35 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
   const [draft, setDraft] = createSignal<CommentComposerDraft | null>(null);
   const [lastAuthor, setLastAuthor] = createSignal("");
 
+  const access = (): OasisReviewAccess | undefined => deps.access?.();
+  const actor = (): { id: string; displayName: string } | null => {
+    const identity = access()?.identity;
+    return identity?.id.trim() && identity.displayName.trim()
+      ? { id: identity.id.trim(), displayName: identity.displayName.trim() }
+      : null;
+  };
+  const mayWrite = (): boolean =>
+    !deps.isReadOnly() && (!access() || actor() !== null);
   const canCreate = (): boolean =>
-    !deps.isReadOnly() && getCommentRangeForSelection(deps.state()) !== null;
+    mayWrite() && getCommentRangeForSelection(deps.state()) !== null;
   const canReply = (): boolean =>
-    !deps.isReadOnly() && getSelectedReviewComment(deps.state()) !== null;
-  const canEdit = canReply;
+    mayWrite() && getSelectedReviewComment(deps.state()) !== null;
+  const canEditId = (id: string): boolean =>
+    !deps.isReadOnly() &&
+    canEditReviewComment(access(), deps.state().document.comments?.items[id]);
+  const canEdit = (): boolean => {
+    const selected = getSelectedReviewComment(deps.state());
+    return selected !== null && canEditId(selected.id);
+  };
+  const canDeleteId = (id: string): boolean =>
+    !deps.isReadOnly() &&
+    canDeleteReviewThread(access(), deps.state().document.comments, id);
+  const canDeleteSelected = (): boolean => {
+    const selected = getSelectedReviewComment(deps.state());
+    return selected !== null && canDeleteId(selected.id);
+  };
+  const authorName = (): string => actor()?.displayName ?? lastAuthor();
+  const authorLocked = (): boolean => access() !== undefined;
 
   const openNew = (): boolean => {
     if (!canCreate()) return false;
@@ -47,7 +77,7 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
 
   /** Reply to the hovered thread without requiring selection changes. */
   const openReplyToId = (parentId: string): boolean => {
-    if (deps.isReadOnly()) return false;
+    if (!mayWrite()) return false;
     const snapshot = deps.state();
     const parent = snapshot.document.comments?.items[parentId];
     if (!parent) return false;
@@ -69,7 +99,7 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
 
   /** An explicit comment id also allows editing an unanchored nested reply. */
   const openEditToId = (commentId: string): boolean => {
-    if (deps.isReadOnly()) return false;
+    if (!canEditId(commentId)) return false;
     const snapshot = deps.state();
     const comment = snapshot.document.comments?.items[commentId];
     if (!comment) return false;
@@ -97,9 +127,11 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
   const submit = (author: string, text: string): boolean => {
     const pending = draft();
     if (!pending || deps.isReadOnly()) return false;
+    if (pending.mode === "edit" && !canEditId(pending.commentId!)) return false;
+    if (pending.mode !== "edit" && !mayWrite()) return false;
     const name = pending.mode === "edit"
       ? pending.commentAuthor?.trim() ?? ""
-      : author.trim();
+      : actor()?.displayName ?? author.trim();
     const body = text.trim();
     if (!name || !body || deps.state().document !== pending.snapshot.document) {
       return false;
@@ -111,6 +143,7 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
     const content = pending.mode === "edit" ? null : {
       id: createEditorNodeId("comment"),
       author: name,
+      ...(actor() ? { authorId: actor()!.id } : {}),
       text: body,
       date: Date.now(),
     };
@@ -121,6 +154,11 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
       if (deps.isReadOnly() || current.document !== pending.snapshot.document) {
         return current;
       }
+      if (pending.mode === "edit" &&
+        !canEditReviewComment(access(), current.document.comments?.items[pending.commentId!])) {
+        return current;
+      }
+      if (pending.mode !== "edit" && !mayWrite()) return current;
       const next = pending.mode === "edit"
         ? editCommentText(current, pending.commentId!, body)
         : pending.mode === "reply"
@@ -142,8 +180,26 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
     return succeeded;
   };
 
+  const deleteSelected = (): boolean => {
+    if (!canDeleteSelected()) return false;
+    const previous = deps.state();
+    let changed = false;
+    deps.applyTransactionalState((current) => {
+      const selected = getSelectedReviewComment(current);
+      if (!selected || current.document !== previous.document ||
+        !canDeleteReviewThread(access(), current.document.comments, selected.id) ||
+        deps.isReadOnly()) return current;
+      const next = deleteSelectedComment(current);
+      changed = next.document !== current.document;
+      return next;
+    });
+    return changed;
+  };
+
   return {
-    draft, lastAuthor, canCreate, canReply, canEdit,
+    draft, lastAuthor, canCreate, canReply, canEdit, canEditId,
+    canDeleteId, canDeleteSelected, deleteSelected,
+    authorName, authorLocked,
     openNew, openReply, openReplyToId, openEdit, openEditToId, close, submit,
   };
 }

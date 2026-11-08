@@ -67,11 +67,8 @@ export interface OasisEditorAppDocumentProps {
  * Authorization here is UI/client defense-in-depth, not a server security
  * boundary. A collaborative backend must independently enforce the same policy.
  */
-export interface OasisReviewAccess {
-  identity?: { id: string; displayName: string };
-  /** Explicit moderator override for managing another author's comments. */
-  canModerate?: boolean;
-}
+export type { OasisReviewAccess } from "@/core/commands/commentPermissions.js";
+import type { OasisReviewAccess } from "@/core/commands/commentPermissions.js";
 
 /** Runtime configuration properties for the editor app (plugins, customization). */
 export interface OasisEditorAppRuntimeProps {

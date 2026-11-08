@@ -295,7 +295,7 @@ export function buildCoreFormattingCommands({
       formatting.deleteSelectedComment,
       (): { isEnabled: boolean } => ({
         isEnabled: gate.isCommandEnabled("deleteComment") &&
-          formatting.hasSelectedComment(),
+          formatting.canDeleteSelectedComment(),
       }),
     ),
     toggleShowMargins: command(

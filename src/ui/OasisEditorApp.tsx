@@ -265,6 +265,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     isReadOnly,
     applyTransactionalState,
     focusInput,
+    access: () => runtimeOptions().review,
   });
 
   const commandRuntime = createEditorCommandRuntime({
