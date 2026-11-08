@@ -23,7 +23,7 @@ function buildState(text: string): EditorState {
   };
 }
 
-describe("character toggles (format.smallCaps / format.allCaps / format.doubleStrikethrough / format.hidden)", () => {
+describe("character toggles (format.smallCaps / format.allCaps / format.doubleStrikethrough / format.hidden / format.shadow / format.emboss / format.engrave)", () => {
   it("enables small caps on the selection", () => {
     const state = buildState("hello");
     const next = toggleTextStyle(state, "smallCaps");
@@ -60,5 +60,23 @@ describe("character toggles (format.smallCaps / format.allCaps / format.doubleSt
     const on = toggleTextStyle(state, "hidden");
     const off = toggleTextStyle(on, "hidden");
     expect(getParagraphs(off)[0]!.runs[0]!.styles?.hidden).toBeUndefined();
+  });
+
+  it("enables shadow on the selection", () => {
+    const state = buildState("hello");
+    const next = toggleTextStyle(state, "shadow");
+    expect(getParagraphs(next)[0]!.runs[0]!.styles?.shadow).toBe(true);
+  });
+
+  it("enables emboss on the selection", () => {
+    const state = buildState("hello");
+    const next = toggleTextStyle(state, "emboss");
+    expect(getParagraphs(next)[0]!.runs[0]!.styles?.emboss).toBe(true);
+  });
+
+  it("enables engrave (imprint) on the selection", () => {
+    const state = buildState("hello");
+    const next = toggleTextStyle(state, "imprint");
+    expect(getParagraphs(next)[0]!.runs[0]!.styles?.imprint).toBe(true);
   });
 });

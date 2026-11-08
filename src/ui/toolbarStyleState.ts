@@ -27,6 +27,9 @@ export type BooleanStyleKey =
   | "smallCaps"
   | "allCaps"
   | "hidden"
+  | "shadow"
+  | "emboss"
+  | "imprint"
   | "noProof"
   | "webHidden"
   | "specVanish"
@@ -88,6 +91,9 @@ export interface ToolbarStyleState {
   smallCaps: boolean;
   allCaps: boolean;
   hidden: boolean;
+  shadow: boolean;
+  emboss: boolean;
+  imprint: boolean;
   noProof: boolean;
   webHidden: boolean;
   specVanish: boolean;
@@ -428,6 +434,9 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     smallCaps: areAllBooleanStylesEnabled(styles, "smallCaps"),
     allCaps: areAllBooleanStylesEnabled(styles, "allCaps"),
     hidden: areAllBooleanStylesEnabled(styles, "hidden"),
+    shadow: areAllBooleanStylesEnabled(styles, "shadow"),
+    emboss: areAllBooleanStylesEnabled(styles, "emboss"),
+    imprint: areAllBooleanStylesEnabled(styles, "imprint"),
     noProof: areAllBooleanStylesEnabled(styles, "noProof"),
     webHidden: areAllBooleanStylesEnabled(styles, "webHidden"),
     specVanish: areAllBooleanStylesEnabled(styles, "specVanish"),
