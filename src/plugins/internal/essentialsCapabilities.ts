@@ -103,6 +103,7 @@ export interface EssentialsFormattingCapability {
   shadow: () => boolean;
   emboss: () => boolean;
   engrave: () => boolean;
+  outline: () => boolean;
   superscript: () => boolean;
   subscript: () => boolean;
   alignLeft: () => boolean;

@@ -28,6 +28,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "shadow",
   "emboss",
   "engrave",
+  "outline",
   "superscript",
   "subscript",
   "link",

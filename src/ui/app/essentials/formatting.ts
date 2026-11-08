@@ -305,6 +305,10 @@ export function buildEssentialsFormatting(
       options.keyboardCommandsController.applyBooleanStyleCommand("imprint"),
       true
     ),
+    outline: (): true => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("outline"),
+      true
+    ),
     superscript: (): true => (
       options.keyboardCommandsController.applyBooleanStyleCommand(
         "superscript",

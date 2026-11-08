@@ -174,6 +174,13 @@ export function buildCoreFormattingCommands({
         isActive: Boolean(s().imprint),
       }),
     ),
+    outline: command(
+      "outline",
+      formatting.outline,
+      (): { isActive: boolean } => ({
+        isActive: Boolean(s().outline),
+      }),
+    ),
     superscript: command(
       "superscript",
       formatting.superscript,
