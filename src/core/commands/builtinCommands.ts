@@ -147,6 +147,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "tableInsertColumnBefore",
   "tableInsertColumnAfter",
   "tableDeleteColumn",
+  "tableDeleteCells",
   "tableInsertRowBefore",
   "tableInsertRowAfter",
   "tableDeleteRow",

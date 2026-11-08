@@ -196,6 +196,7 @@ export interface OasisCommandPayloads {
   tableInsertColumnBefore: undefined;
   tableInsertColumnAfter: undefined;
   tableDeleteColumn: undefined;
+  tableDeleteCells: undefined;
   tableInsertRowBefore: undefined;
   tableInsertRowAfter: undefined;
   tableDeleteRow: undefined;

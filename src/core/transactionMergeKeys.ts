@@ -50,6 +50,7 @@ export const MERGE_KEYS = {
   tableSortAscending: "tableSortAscending",
   tableSortDescending: "tableSortDescending",
   tableDelete: "tableDelete",
+  deleteTableCell: "deleteTableCell",
   tableRepeatHeaderRows: "tableRepeatHeaderRows",
   tableCellMargins: "tableCellMargins",
   tableFormula: "tableFormula",
