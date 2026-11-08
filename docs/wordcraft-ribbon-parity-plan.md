@@ -362,6 +362,7 @@ Completed command-surface slices (each core + tests, then wiring/parity; pushed 
 - [x] Small caps / all caps / double strikethrough (format.smallCaps / format.allCaps / format.doubleStrikethrough): reachable toggle builtins (smallCaps/allCaps/doubleStrike) with active states, mirroring strike/superscript/subscript; these model keys existed but were only reachable via the Font dialog. Audit → 229.
 - [x] Section vertical alignment (layout.verticalAlign): new core getSectionVerticalAlign / setSectionVerticalAlign commands (w:vAlign: top/center/both/bottom; top is the Word default stored as undefined, null/top clear it) resolved against the active section, exposing the previously round-trip-only field as an authoring command wired as a setSectionVerticalAlign builtin. Audit → 230.
 - [x] Hidden text (format.hidden): reachable hidden toggle builtin with an active state, mirroring strike/small-caps wiring; the hidden model key existed but was only reachable via the Font dialog. Audit → 231.
+- [x] Collapse selection (select.collapse): selection-only selectCollapse command that collapses the selection to a single caret at its earlier (anchor) end (or later/focus end when `end` is true), handling backwards selections; applied via applyState (no undo) and gated read-only-safe. Audit → 232.
 
 **Still open**
 - Picture adjustments (corrections/color/effects/compress/reset) — require an `EditorImageRunData` effects model + OOXML import/export round-trip (no fields exist today).
