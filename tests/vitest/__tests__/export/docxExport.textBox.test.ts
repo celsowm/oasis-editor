@@ -128,7 +128,7 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
     expect(xml).toContain(
       '<wp:positionV relativeFrom="paragraph"><wp:posOffset>87630</wp:posOffset></wp:positionV>',
     );
-    expect(xml).toContain('<wp:wrapSquare wrapText="bothSides"/>');
+    expect(xml).toContain("<wp:wrapSquare/>");
 
     // wps:wsp graphic payload.
     expect(xml).toContain(

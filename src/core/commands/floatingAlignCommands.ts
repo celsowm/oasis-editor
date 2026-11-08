@@ -625,3 +625,104 @@ export function setSelectedFloatingPositionPreset(
     ),
   );
 }
+
+/** The side(s) a Square/Tight/Through floating object's text may flow on,
+ * matching WordCraft's `arrange.wrapText` and OOXML `@wrapText`. */
+export type FloatingWrapSide = "bothSides" | "left" | "right" | "largest";
+
+/** True when a floating object (image or text box) is selected. */
+export function canSetSelectedFloatingWrapText(state: EditorState): boolean {
+  const selected = getSelectedObjectRun(
+    state,
+    (run): boolean => run.kind === "image" || run.kind === "textBox",
+  );
+  return selected !== null;
+}
+
+/** The current wrap side of the selected floating object (defaults to
+ * `bothSides`), or `null` when none selected. */
+export function getSelectedFloatingWrapText(
+  state: EditorState,
+): FloatingWrapSide | null {
+  const selected = getSelectedObjectRun(
+    state,
+    (run): boolean => run.kind === "image" || run.kind === "textBox",
+  );
+  if (!selected) return null;
+  if (selected.run.kind === "image") {
+    return selected.run.image.floating?.wrapText ?? "bothSides";
+  }
+  if (selected.run.kind === "textBox") {
+    return selected.run.textBox.floating?.wrapText ?? "bothSides";
+  }
+  return null;
+}
+
+/**
+ * WordCraft's `arrange.wrapText`: sets which side(s) of the selected Square,
+ * Tight or Through wrapped object text flows on (`bothSides` clears it). A
+ * no-op when no floating object is selected.
+ */
+export function setSelectedFloatingWrapText(
+  state: EditorState,
+  side: FloatingWrapSide,
+): EditorState {
+  const selected = getSelectedObjectRun(
+    state,
+    (run): boolean => run.kind === "image" || run.kind === "textBox",
+  );
+  if (!selected) return state;
+
+  const patchFloating = (
+    floating: EditorImageFloatingLayout | undefined,
+  ): EditorImageFloatingLayout | undefined => {
+    if (!floating) return floating;
+    if (side === "bothSides") {
+      const { wrapText: _removed, ...rest } = floating;
+      return rest;
+    }
+    return { ...floating, wrapText: side };
+  };
+
+  const { paragraphIndex, run: targetRun } = selected;
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map(
+    (candidate, candidateIndex): EditorParagraphNode => {
+      if (candidateIndex !== paragraphIndex) return cloneParagraph(candidate);
+      return {
+        ...cloneParagraph(candidate),
+        runs: candidate.runs.map((run): EditorTextRun => {
+          if (run.id !== targetRun.id) return cloneRun(run);
+          if (run.kind === "image") {
+            return {
+              ...run,
+              image: {
+                ...run.image,
+                floating: patchFloating(run.image.floating),
+              },
+            };
+          }
+          if (run.kind === "textBox") {
+            return {
+              ...run,
+              textBox: {
+                ...run.textBox,
+                floating: patchFloating(run.textBox.floating),
+              },
+            };
+          }
+          return cloneRun(run);
+        }),
+      };
+    },
+  );
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
+  );
+}

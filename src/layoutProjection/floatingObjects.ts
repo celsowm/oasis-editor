@@ -23,6 +23,9 @@ export interface ExclusionPolygonPoint {
 
 export interface FloatingExclusionRect extends FloatingObjectRect {
   wrap: NonNullable<EditorImageFloatingLayout["wrap"]>;
+  /** Which side(s) of the wrapped object text may flow on, for Square/Tight/
+   * Through wraps. Absent (or bothSides) leaves both sides open. */
+  wrapText?: NonNullable<EditorImageFloatingLayout["wrapText"]>;
   sourceRunId: string;
   /** Absolute-layout-coordinate tight/through contour. When present (images
    * with a wrapPolygon and wrap tight/through), the composer carves per-line
@@ -324,6 +327,9 @@ export function collectParagraphFloatingExclusions(options: {
     exclusions.push({
       ...expanded,
       wrap,
+      ...(floating.wrapText && floating.wrapText !== "bothSides"
+        ? { wrapText: floating.wrapText }
+        : {}),
       sourceRunId: fragment.runId,
       ...(polygon ? { polygon } : {}),
     });

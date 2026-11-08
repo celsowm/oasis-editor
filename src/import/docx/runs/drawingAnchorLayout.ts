@@ -72,12 +72,37 @@ export function parseAnchorWrap(
   return undefined;
 }
 
+/** The side(s) of a Square/Tight/Through wrapped object text flows on, from
+ * `@wrapText` ("bothSides" default, "left", "right" or "largest"). */
+function parseAnchorWrapText(
+  anchor: XmlElement,
+): EditorImageFloatingLayout["wrapText"] {
+  const wrapElement =
+    findElementDeep(anchor, "wrapSquare") ??
+    findElementDeep(anchor, "wrapTight") ??
+    findElementDeep(anchor, "wrapThrough");
+  if (!wrapElement) {
+    return undefined;
+  }
+  const raw = wrapElement.getAttribute("wrapText");
+  if (!raw || raw === "bothSides") {
+    return undefined;
+  }
+  return raw === "left" ||
+    raw === "right" ||
+    raw === "largest" ||
+    raw === "bothSides"
+    ? (raw as EditorImageFloatingLayout["wrapText"])
+    : undefined;
+}
+
 export function parseFloatingLayout(
   anchor: XmlElement,
 ): EditorImageFloatingLayout | undefined {
   const positionH = parseAnchorPosition(anchor, "positionH");
   const positionV = parseAnchorPosition(anchor, "positionV");
   const wrap = parseAnchorWrap(anchor);
+  const wrapText = parseAnchorWrapText(anchor);
   const distT = parseOptionalInt(anchor.getAttribute("distT"));
   const distB = parseOptionalInt(anchor.getAttribute("distB"));
   const distL = parseOptionalInt(anchor.getAttribute("distL"));
@@ -105,5 +130,6 @@ export function parseFloatingLayout(
     ...(positionH ? { positionH } : {}),
     ...(positionV ? { positionV } : {}),
     ...(wrap ? { wrap } : {}),
+    ...(wrapText ? { wrapText } : {}),
   };
 }

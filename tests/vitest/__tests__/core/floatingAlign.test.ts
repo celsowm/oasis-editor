@@ -12,13 +12,16 @@ import {
   canSetSelectedFloatingPositionPreset,
   canSetSelectedFloatingRotation,
   canSetSelectedFloatingWrap,
+  canSetSelectedFloatingWrapText,
   getSelectedFloatingWrapPreset,
+  getSelectedFloatingWrapText,
   isSelectedFloatingFixedPosition,
   nudgeSelectedFloatingObject,
   setSelectedFloatingFixedPosition,
   setSelectedFloatingPositionPreset,
   setSelectedFloatingRotation,
   setSelectedFloatingWrapPreset,
+  setSelectedFloatingWrapText,
 } from "@/core/commands/floatingAlignCommands.js";
 import {
   getParagraphs,
@@ -384,6 +387,105 @@ describe("floating object wrap preset", () => {
     const state = buildImageState(baseImage);
     const plain = placeOn(state, 3);
     expect(setSelectedFloatingWrapPreset(plain, "square")).toBe(plain);
+  });
+});
+
+describe("floating object wrap text (arrange.wrapText)", () => {
+  it("defaults to bothSides for a square-wrapped floating image", () => {
+    const state = buildImageState({
+      ...baseImage,
+      floating: {
+        type: "floating",
+        wrap: "square",
+        positionH: { relativeFrom: "column", offset: 0 },
+        positionV: { relativeFrom: "paragraph", offset: 0 },
+      },
+    });
+    expect(getSelectedFloatingWrapText(state)).toBe("bothSides");
+  });
+
+  it("exposes a capability for an inline image selection", () => {
+    expect(canSetSelectedFloatingWrapText(buildImageState(baseImage))).toBe(
+      true,
+    );
+  });
+
+  it("denies the capability for a plain text selection", () => {
+    const state = buildImageState(baseImage);
+    expect(canSetSelectedFloatingWrapText(placeOn(state, 3))).toBe(false);
+  });
+
+  it("reads the stored wrap side", () => {
+    const state = buildImageState({
+      ...baseImage,
+      floating: {
+        type: "floating",
+        wrap: "square",
+        wrapText: "left",
+        positionH: { relativeFrom: "column", offset: 0 },
+        positionV: { relativeFrom: "paragraph", offset: 0 },
+      },
+    });
+    expect(getSelectedFloatingWrapText(state)).toBe("left");
+  });
+
+  it("sets the wrap side on a floating image", () => {
+    const state = buildImageState({
+      ...baseImage,
+      floating: {
+        type: "floating",
+        wrap: "square",
+        positionH: { relativeFrom: "column", offset: 0 },
+        positionV: { relativeFrom: "paragraph", offset: 0 },
+      },
+    });
+    const next = setSelectedFloatingWrapText(state, "right");
+    expect(next).not.toBe(state);
+    const image = getRunImage(getParagraphs(next)[0]!.runs[0]!)!;
+    expect(image.floating?.wrapText).toBe("right");
+    expect(getSelectedFloatingWrapText(next)).toBe("right");
+  });
+
+  it("sets the wrap side on a floating text box", () => {
+    const textBox: EditorTextBoxData = {
+      width: 150,
+      height: 100,
+      blocks: [],
+      floating: {
+        type: "floating",
+        wrap: "tight",
+        positionH: { relativeFrom: "column", offset: 0 },
+        positionV: { relativeFrom: "paragraph", offset: 0 },
+      },
+    };
+    const state = buildTextBoxState(textBox);
+    const next = setSelectedFloatingWrapText(state, "largest");
+    const box = getRunTextBox(getParagraphs(next)[0]!.runs[0]!)!;
+    expect(box.floating?.wrapText).toBe("largest");
+  });
+
+  it("clears the wrap side back to bothSides, preserving the floating layout", () => {
+    const state = buildImageState({
+      ...baseImage,
+      floating: {
+        type: "floating",
+        wrap: "square",
+        wrapText: "left",
+        positionH: { relativeFrom: "column", offset: 0 },
+        positionV: { relativeFrom: "paragraph", offset: 0 },
+      },
+    });
+    const next = setSelectedFloatingWrapText(state, "bothSides");
+    const image = getRunImage(getParagraphs(next)[0]!.runs[0]!)!;
+    expect(image.floating?.wrap).toBe("square");
+    expect(image.floating?.wrapText).toBeUndefined();
+    expect(getSelectedFloatingWrapText(next)).toBe("bothSides");
+  });
+
+  it("leaves the state untouched when no object is selected", () => {
+    const state = buildImageState(baseImage);
+    const plain = placeOn(state, 3);
+    expect(setSelectedFloatingWrapText(plain, "left")).toBe(plain);
   });
 });
 

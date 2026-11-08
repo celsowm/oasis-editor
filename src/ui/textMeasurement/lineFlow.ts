@@ -155,6 +155,29 @@ export function resolveLineFlowBox(options: {
 
   let hasThrough = false;
 
+  const restrictByWrapSide = (
+    x: number,
+    width: number,
+    wrapText: FloatingExclusionRect["wrapText"],
+  ): void => {
+    if (!wrapText || wrapText === "bothSides") return;
+    const objLeft = x;
+    const objRight = x + width;
+    segments = segments.filter((segment): boolean => {
+      if (wrapText === "left") {
+        // Text only on the left of the object.
+        return segment.right <= objLeft + 1;
+      }
+      if (wrapText === "right") {
+        // Text only on the right of the object.
+        return segment.left >= objRight - 1;
+      }
+      // "largest": keep whichever side is wider (handled by the single
+      // widest-segment collapse below), so both candidate sides remain.
+      return true;
+    });
+  };
+
   for (const exclusion of exclusions) {
     const exclusionBottom = exclusion.y + exclusion.height;
 
@@ -184,12 +207,14 @@ export function resolveLineFlowBox(options: {
       )) {
         segments = subtractInterval(segments, interval.left, interval.right);
       }
+      restrictByWrapSide(exclusion.x, exclusion.width, exclusion.wrapText);
     } else {
       segments = subtractInterval(
         segments,
         exclusion.x,
         exclusion.x + exclusion.width,
       );
+      restrictByWrapSide(exclusion.x, exclusion.width, exclusion.wrapText);
     }
   }
 

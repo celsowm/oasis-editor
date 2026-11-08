@@ -217,6 +217,13 @@ export interface EditorImageFloatingLayout {
   positionH?: EditorImageFloatingPosition;
   positionV?: EditorImageFloatingPosition;
   wrap?: "none" | "square" | "tight" | "through" | "topAndBottom";
+  /**
+   * Which side(s) of a Square/Tight/Through wrapped object text flows on,
+   * mapped from OOXML `<wp:wrapSquare|Tight|Through @wrapText>`. Absent (or
+   * `bothSides`) wraps on both sides; `left`/`right` restrict flow to that
+   * side only; `largest` flows text on the side with more room.
+   */
+  wrapText?: "bothSides" | "left" | "right" | "largest";
 }
 
 /** A point on the tight/through wrap contour, fractional (0..1) relative to the

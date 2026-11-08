@@ -12,6 +12,9 @@ export interface FloatingExclusionRect {
   width: number;
   height: number;
   wrap: "none" | "square" | "tight" | "through" | "topAndBottom";
+  /** Which side(s) of the wrapped object text may flow on. Absent/bothSides
+   * leaves both sides open; "left"/"right" restrict flow to that side. */
+  wrapText?: "bothSides" | "left" | "right" | "largest";
   sourceRunId: string;
   /** Absolute-layout-coordinate tight/through contour. When present, the
    * composer carves per-line intervals from this outline instead of the rect. */

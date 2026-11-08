@@ -698,6 +698,68 @@ describe("DOCX export", () => {
     ]);
   });
 
+  it("serializes and round-trips the wrap side (wrapText)", async () => {
+    const pngDataUrl =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const paragraph = createEditorParagraphFromRuns([
+      {
+        text: "￼",
+        image: {
+          src: pngDataUrl,
+          width: 100,
+          height: 50,
+          floating: {
+            type: "floating",
+            wrap: "square",
+            wrapText: "left",
+            positionH: { relativeFrom: "column", offset: 0 },
+            positionV: { relativeFrom: "paragraph", offset: 0 },
+          },
+        },
+      },
+    ]);
+
+    const buffer = await exportEditorDocumentToDocx(
+      createEditorDocument([paragraph]),
+    );
+    const xml = await readDocumentXml(buffer);
+    expect(xml).toContain('<wp:wrapSquare wrapText="left"/>');
+    expect(xml).not.toContain('wrapText="bothSides"');
+
+    const document = await importDocxToEditorDocument(buffer);
+    const imageRun = getDocumentParagraphs(document)[0]!.runs.find((r) =>
+      getRunImage(r),
+    )!;
+    expect(getRunImage(imageRun)?.floating?.wrap).toBe("square");
+    expect(getRunImage(imageRun)?.floating?.wrapText).toBe("left");
+  });
+
+  it("emits no wrapText attribute for the bothSides default", async () => {
+    const pngDataUrl =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const paragraph = createEditorParagraphFromRuns([
+      {
+        text: "￼",
+        image: {
+          src: pngDataUrl,
+          width: 100,
+          height: 50,
+          floating: {
+            type: "floating",
+            wrap: "square",
+            positionH: { relativeFrom: "column", offset: 0 },
+            positionV: { relativeFrom: "paragraph", offset: 0 },
+          },
+        },
+      },
+    ]);
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+    expect(xml).toContain("<wp:wrapSquare/>");
+    expect(xml).not.toContain("wrapText");
+  });
+
   it("serializes and round-trips tile fill mode (a:tile)", async () => {
     const pngDataUrl =
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
@@ -771,7 +833,7 @@ describe("DOCX export", () => {
     expect(xml).toContain(
       '<wp:positionV relativeFrom="paragraph"><wp:posOffset>190500</wp:posOffset></wp:positionV>',
     );
-    expect(xml).toContain('<wp:wrapSquare wrapText="bothSides"/>');
+    expect(xml).toContain("<wp:wrapSquare/>");
 
     const document = await importDocxToEditorDocument(buffer);
     const imageRun = getDocumentParagraphs(document)[0]!.runs.find((r) =>

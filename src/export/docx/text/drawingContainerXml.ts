@@ -111,22 +111,25 @@ function buildWrapPolygonXml(
 
 function buildAnchorWrapXml(
   wrap: EditorImageFloatingLayout["wrap"],
+  wrapText: EditorImageFloatingLayout["wrapText"],
   wrapPolygon?: EditorWrapPolygonPoint[],
 ): string {
+  const wrapTextAttr =
+    wrapText && wrapText !== "bothSides" ? ` wrapText="${wrapText}"` : "";
   switch (wrap) {
     case "square":
-      return '<wp:wrapSquare wrapText="bothSides"/>';
+      return `<wp:wrapSquare${wrapTextAttr}/>`;
     case "tight": {
       const polygon = buildWrapPolygonXml(wrapPolygon);
       return polygon
-        ? `<wp:wrapTight wrapText="bothSides">${polygon}</wp:wrapTight>`
-        : '<wp:wrapTight wrapText="bothSides"/>';
+        ? `<wp:wrapTight${wrapTextAttr}>${polygon}</wp:wrapTight>`
+        : `<wp:wrapTight${wrapTextAttr}/>`;
     }
     case "through": {
       const polygon = buildWrapPolygonXml(wrapPolygon);
       return polygon
-        ? `<wp:wrapThrough wrapText="bothSides">${polygon}</wp:wrapThrough>`
-        : '<wp:wrapThrough wrapText="bothSides"/>';
+        ? `<wp:wrapThrough${wrapTextAttr}>${polygon}</wp:wrapThrough>`
+        : `<wp:wrapThrough${wrapTextAttr}/>`;
     }
     case "topAndBottom":
       return "<wp:wrapTopAndBottom/>";
@@ -166,7 +169,11 @@ export function buildDrawingContainerXml(options: {
     floating.positionV,
     "paragraph",
   );
-  const wrap = buildAnchorWrapXml(floating.wrap, options.wrapPolygon);
+  const wrap = buildAnchorWrapXml(
+    floating.wrap,
+    floating.wrapText,
+    options.wrapPolygon,
+  );
   return `<w:drawing><wp:anchor distT="${distT}" distB="${distB}" distL="${distL}" distR="${distR}" simplePos="${buildAnchorBool(floating.simplePos, false)}" relativeHeight="${floating.relativeHeight ?? 0}" behindDoc="${buildAnchorBool(floating.behindDoc, false)}" locked="${buildAnchorBool(floating.locked, false)}" layoutInCell="${buildAnchorBool(floating.layoutInCell, true)}" allowOverlap="${buildAnchorBool(floating.allowOverlap, true)}"><wp:simplePos x="0" y="0"/>${positionH}${positionV}<wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/>${wrap}<wp:docPr id="${docPrId}" name="${name}"${altAttr}/>${graphicXml}</wp:anchor></w:drawing>`;
 }
 
