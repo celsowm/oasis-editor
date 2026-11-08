@@ -329,6 +329,16 @@
       "notes": "Inserts a PAGE field at the caret inside a header/footer (or body). Field formatting and layout resolution need E2E verification."
     },
     {
+      "id": "insert.pageNumberXOfY",
+      "wordcraftCommand": "insert.pageNumber",
+      "oasisCommand": "insertPageNumberXOfY",
+      "ribbonId": "editor-toolbar-insert-page-number-xofy",
+      "tab": "insert",
+      "group": "headerFooter",
+      "status": "partial",
+      "notes": "Inserts the Page X of Y combination (PAGE + NUMPAGES with literals) at the caret, mirroring WordCraft insert.page_number format=of. Alignment/position placement in a header/footer story remains a follow-up."
+    },
+    {
       "id": "insert.exitHeaderFooter",
       "wordcraftCommand": null,
       "oasisCommand": "exitHeaderFooter",

@@ -491,6 +491,8 @@ export const en = {
   "headerFooter.header": "Header",
   "headerFooter.footer": "Footer",
   "headerFooter.pageNumber": "Page Number",
+  "headerFooter.pageNumberCurrent": "Current Position",
+  "headerFooter.pageNumberXOfY": "Page X of Y",
   "headerFooter.exit": "Close Header/Footer",
   "ribbon.group.accessibility": "Accessibility",
   "ribbon.group.document": "Document",

@@ -109,6 +109,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "editHeader",
   "editFooter",
   "insertPageNumber",
+  "insertPageNumberXOfY",
   "exitHeaderFooter",
   "applyDocumentTheme",
   "setDocumentColorScheme",

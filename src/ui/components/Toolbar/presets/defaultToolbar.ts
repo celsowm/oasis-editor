@@ -616,6 +616,16 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
         },
         {
           type: "button",
+          id: "editor-toolbar-insert-page-number-xofy",
+          testId: "editor-toolbar-insert-page-number-xofy",
+          iconName: "hash",
+          labelKey: "headerFooter.pageNumberXOfY",
+          tooltipKey: "headerFooter.pageNumberXOfY",
+          command: "insertPageNumberXOfY",
+          wide: true,
+        },
+        {
+          type: "button",
           id: "editor-toolbar-exit-header-footer",
           testId: "editor-toolbar-exit-header-footer",
           iconName: "x",

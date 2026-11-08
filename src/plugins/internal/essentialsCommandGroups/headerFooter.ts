@@ -34,6 +34,10 @@ export function buildHeaderFooterCommands({
       headerFooter.insertPageNumber();
       return true;
     }),
+    insertPageNumberXOfY: command("insertPageNumberXOfY", (): boolean => {
+      headerFooter.insertPageNumberXOfY();
+      return true;
+    }),
     exitHeaderFooter: actionCommand(
       "exitHeaderFooter",
       (): void => headerFooter.exit(),
