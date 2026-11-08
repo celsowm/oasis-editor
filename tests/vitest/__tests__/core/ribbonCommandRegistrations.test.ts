@@ -143,6 +143,8 @@ describe("Essentials Ribbon command registrations", () => {
     let resolved = false;
     const { result, formatting } = commands(() => true, () => true, () => true);
     formatting.hasSelectedComment = () => selected;
+    formatting.canManageSelectedComment = () => selected;
+    formatting.canDeleteSelectedComment = () => selected;
     formatting.isSelectedCommentResolved = () => resolved;
     expect(result.resolveComment?.refresh?.().isEnabled).toBe(true);
     expect(result.reopenComment?.refresh?.().isEnabled).toBe(false);

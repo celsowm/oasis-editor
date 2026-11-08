@@ -58,7 +58,7 @@ export function ReviewCommentsPanel(props: ReviewCommentsPanelProps): JSX.Elemen
   return (
     <aside class="oasis-review-comments-panel" aria-label={t("review.commentsPanel")} data-testid="review-comments-panel">
       <div class="oasis-review-comments-heading">
-        <Text as="h3">{t("review.commentsPanel")}</Text>
+        <Text as="strong">{t("review.commentsPanel")}</Text>
         <Button size="sm" variant="ghost" onClick={props.onClose}
           data-testid="review-comments-close" aria-label={t("generic.close")}>
           ✕
