@@ -68,6 +68,11 @@ export function buildParagraphAndSectionCommands({
       (): void => paragraph.toggleWidowControl(),
       (): { isActive: boolean } => ({ isActive: Boolean(s().widowControl) }),
     ),
+    toggleParagraphBidi: actionCommand(
+      "toggleParagraphBidi",
+      (): void => paragraph.setBidi(!s().bidi ? true : null),
+      (): { isActive: boolean } => ({ isActive: Boolean(s().bidi) }),
+    ),
     setSpacingAfter: valueCommand(
       "setSpacingAfter",
       (p): true => (paragraph.setSpacingAfter(numOrNull(p)), true),

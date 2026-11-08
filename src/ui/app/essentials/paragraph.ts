@@ -137,5 +137,7 @@ export function buildEssentialsParagraph(
       canMoveSelectedParagraphs(options.state(), "up"),
     canMoveParagraphsDown: (): boolean =>
       canMoveSelectedParagraphs(options.state(), "down"),
+    setBidi: (enabled: boolean | null): void =>
+      options.commandsController.applyParagraphStyleCommand("bidi", enabled),
   };
 }

@@ -120,6 +120,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "toggleKeepWithNext",
   "toggleKeepLinesTogether",
   "toggleWidowControl",
+  "toggleParagraphBidi",
   "setSpacingAfter",
   "setSpacingBefore",
   "setIndentLeft",

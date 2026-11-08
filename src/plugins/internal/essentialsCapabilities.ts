@@ -346,6 +346,8 @@ export interface EssentialsParagraphCapability {
   /** True when the selected paragraph run can move in the given direction. */
   canMoveParagraphsUp: () => boolean;
   canMoveParagraphsDown: () => boolean;
+  /** Set the selected paragraphs' flow direction (w:bidi, right-to-left). */
+  setBidi: (enabled: boolean | null) => void;
 }
 
 export interface EssentialsSectionCapability {
