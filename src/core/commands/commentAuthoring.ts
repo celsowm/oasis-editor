@@ -123,17 +123,56 @@ export function collectCommentThreadReplies(
   parentId: string,
 ): EditorComment[] {
   if (!comments[parentId]) return [];
-  const entries = Object.values(comments);
+  const children = new Map<string, EditorComment[]>();
+  for (const comment of Object.values(comments)) {
+    if (!comment.parentId) continue;
+    const siblings = children.get(comment.parentId) ?? [];
+    siblings.push(comment);
+    children.set(comment.parentId, siblings);
+  }
   const visited = new Set<string>([parentId]);
   const replies: EditorComment[] = [];
-  const walk = (id: string): void => {
-    for (const child of entries) {
-      if (child.parentId !== id || visited.has(child.id)) continue;
-      visited.add(child.id);
-      replies.push(child);
-      walk(child.id);
+  const stack = [...(children.get(parentId) ?? [])].reverse();
+  while (stack.length > 0) {
+    const reply = stack.pop()!;
+    if (visited.has(reply.id)) continue;
+    visited.add(reply.id);
+    replies.push(reply);
+    const nested = children.get(reply.id) ?? [];
+    for (let index = nested.length - 1; index >= 0; index -= 1) {
+      stack.push(nested[index]!);
     }
-  };
-  walk(parentId);
+  }
   return replies;
+}
+
+/**
+ * Modify only the comment body. Keep its stable id, author, creation date,
+ * anchors, resolved flag and parent id for reliable DOCX round-tripping.
+ * A blank body or identical normalized value produces no transaction.
+ */
+export function editCommentText(
+  state: EditorState,
+  commentId: string,
+  text: string,
+): EditorState {
+  const registry = state.document.comments;
+  const original = registry?.items[commentId];
+  const updatedText = text.trim();
+  if (!registry || !original || !updatedText || original.text === updatedText) {
+    return state;
+  }
+  return {
+    ...state,
+    document: {
+      ...state.document,
+      comments: {
+        ...registry,
+        items: {
+          ...registry.items,
+          [commentId]: { ...original, text: updatedText },
+        },
+      },
+    },
+  };
 }

@@ -18,22 +18,30 @@ export function CommentComposerDialog(props: CommentComposerDialogProps): JSX.El
   const [body, setBody] = createSignal("");
   let bodyRef: HTMLTextAreaElement | undefined;
   const pending = props.composer.draft;
-  const valid = (): boolean => author().trim().length > 0 && body().trim().length > 0;
+  const valid = (): boolean =>
+    (pending()?.mode === "edit" || author().trim().length > 0) &&
+    body().trim().length > 0;
   const submit = (): void => {
     if (valid()) props.composer.submit(author(), body());
   };
 
   createEffect((): void => {
     if (!pending()) return;
-    setAuthor(props.composer.lastAuthor());
-    setBody("");
+    setAuthor(pending()?.mode === "edit"
+      ? pending()?.commentAuthor ?? ""
+      : props.composer.lastAuthor());
+    setBody(pending()?.mode === "edit" ? pending()?.commentText ?? "" : "");
     queueMicrotask((): void => bodyRef?.focus());
   });
 
   return (
     <Dialog
       isOpen={pending() !== null}
-      title={t(pending()?.mode === "reply" ? "toolbar.replyComment" : "toolbar.newComment")}
+      title={t(pending()?.mode === "edit"
+        ? "toolbar.editComment"
+        : pending()?.mode === "reply"
+          ? "toolbar.replyComment"
+          : "toolbar.newComment")}
       onClose={props.composer.close}
       footer={
         <>
@@ -64,6 +72,7 @@ export function CommentComposerDialog(props: CommentComposerDialogProps): JSX.El
           onChange={setAuthor}
           maxLength={150}
           required
+          disabled={pending()?.mode === "edit"}
           data-testid="comment-composer-author"
         />
         <TextAreaField

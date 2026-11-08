@@ -6,15 +6,19 @@ import {
   getCommentRangeForSelection,
   insertCommentAtSelection,
   replyToComment,
+  editCommentText,
 } from "@/core/commands/commentAuthoring.js";
 
 export interface CommentComposerDraft {
-  mode: "new" | "reply";
+  mode: "new" | "reply" | "edit";
   /** Snapshot captured before modal focus steals the editor selection. */
   snapshot: EditorState;
   parentId?: string;
   parentAuthor?: string;
   parentText?: string;
+  commentId?: string;
+  commentAuthor?: string;
+  commentText?: string;
 }
 
 export interface CommentComposerDeps {
@@ -33,6 +37,7 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
     !deps.isReadOnly() && getCommentRangeForSelection(deps.state()) !== null;
   const canReply = (): boolean =>
     !deps.isReadOnly() && getSelectedReviewComment(deps.state()) !== null;
+  const canEdit = canReply;
 
   const openNew = (): boolean => {
     if (!canCreate()) return false;
@@ -62,6 +67,28 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
     return parent ? openReplyToId(parent.id) : false;
   };
 
+  /** An explicit comment id also allows editing an unanchored nested reply. */
+  const openEditToId = (commentId: string): boolean => {
+    if (deps.isReadOnly()) return false;
+    const snapshot = deps.state();
+    const comment = snapshot.document.comments?.items[commentId];
+    if (!comment) return false;
+    setDraft({
+      mode: "edit",
+      snapshot,
+      commentId,
+      commentAuthor: comment.author,
+      commentText: comment.text,
+    });
+    return true;
+  };
+
+  const openEdit = (): boolean => {
+    if (!canEdit()) return false;
+    const selected = getSelectedReviewComment(deps.state());
+    return selected ? openEditToId(selected.id) : false;
+  };
+
   const close = (): void => {
     setDraft(null);
     deps.focusInput();
@@ -70,12 +97,18 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
   const submit = (author: string, text: string): boolean => {
     const pending = draft();
     if (!pending || deps.isReadOnly()) return false;
-    const name = author.trim();
+    const name = pending.mode === "edit"
+      ? pending.commentAuthor?.trim() ?? ""
+      : author.trim();
     const body = text.trim();
     if (!name || !body || deps.state().document !== pending.snapshot.document) {
       return false;
     }
-    const content = {
+    if (pending.mode === "edit" && pending.commentText === body) {
+      close();
+      return true;
+    }
+    const content = pending.mode === "edit" ? null : {
       id: createEditorNodeId("comment"),
       author: name,
       text: body,
@@ -88,26 +121,31 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
       if (deps.isReadOnly() || current.document !== pending.snapshot.document) {
         return current;
       }
-      const next = pending.mode === "reply"
-        ? replyToComment(current, pending.parentId!, content)
-        : insertCommentAtSelection(
-            { ...current, selection: pending.snapshot.selection,
-              activeSectionIndex: pending.snapshot.activeSectionIndex,
-              activeZone: pending.snapshot.activeZone,
-              activeFootnoteId: pending.snapshot.activeFootnoteId },
-            content,
-          );
+      const next = pending.mode === "edit"
+        ? editCommentText(current, pending.commentId!, body)
+        : pending.mode === "reply"
+          ? replyToComment(current, pending.parentId!, content!)
+          : insertCommentAtSelection(
+              { ...current, selection: pending.snapshot.selection,
+                activeSectionIndex: pending.snapshot.activeSectionIndex,
+                activeZone: pending.snapshot.activeZone,
+                activeFootnoteId: pending.snapshot.activeFootnoteId },
+              content!,
+            );
       succeeded = next.document !== current.document;
       return next;
     });
     if (succeeded) {
-      setLastAuthor(name);
+      if (pending.mode !== "edit") setLastAuthor(name);
       close();
     }
     return succeeded;
   };
 
-  return { draft, lastAuthor, canCreate, canReply, openNew, openReply, openReplyToId, close, submit };
+  return {
+    draft, lastAuthor, canCreate, canReply, canEdit,
+    openNew, openReply, openReplyToId, openEdit, openEditToId, close, submit,
+  };
 }
 
 export type EditorCommentComposer = ReturnType<typeof createEditorCommentComposer>;
