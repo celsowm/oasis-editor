@@ -11,8 +11,11 @@ import {
   insertPageNumber,
 } from "@/core/commands/headerFooter.js";
 import { insertTextAtSelection } from "@/core/commands/text.js";
-import { insertPageNumberField } from "@/core/commands/pageNumber.js";
-import { getRunField } from "@/core/model.js";
+import {
+  insertPageNumberField,
+  placePageNumber,
+} from "@/core/commands/pageNumber.js";
+import { getRunField, type EditorParagraphNode } from "@/core/model.js";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
 
@@ -99,5 +102,46 @@ describe("header/footer authoring DOCX round-trip", () => {
     expect(
       getRunField(fieldRun!),
     ).toMatchObject({ type: "PAGE", format: "ROMAN" });
+  });
+
+  it("round-trips a placed footer page number with alignment and format", async () => {
+    const body = createEditorParagraph("Body");
+    const state = createEditorStateFromDocument(
+      createEditorDocument([body]),
+    );
+    // Place a right-aligned, \* ROMAN "Page X of Y" footer.
+    const placed = placePageNumber(state, "bottom", {
+      kind: "xOfY",
+      align: "right",
+      format: "ROMAN",
+    });
+    const story = (placed.document.sections![0]!.footer ?? [])[0] as
+      | EditorParagraphNode
+      | undefined;
+    expect(story).toBeDefined();
+    expect(story!.style).toMatchObject({ styleId: "footer", align: "right" });
+
+    const buffer = await exportEditorDocumentToDocx(placed.document);
+    const zip = await JSZip.loadAsync(buffer);
+    const footerPath = Object.keys(zip.files).find((path) =>
+      /^word\/footer\d+\.xml$/.test(path),
+    );
+    expect(footerPath).toBeDefined();
+    const footerXml = await zip.file(footerPath!)?.async("string");
+    expect(footerXml).toContain('w:val="right"');
+    expect(footerXml).toContain('instr=" PAGE \\* ROMAN "');
+    expect(footerXml).toContain('instr=" NUMPAGES \\* ROMAN "');
+
+    // Re-import reconstructs the footer story with field runs and alignment.
+    const imported = await importDocxToEditorDocument(buffer);
+    const footerParagraphs =
+      (imported.sections?.[0]?.footer as EditorParagraphNode[] | undefined) ??
+      [];
+    expect(footerParagraphs).toHaveLength(1);
+    expect(footerParagraphs[0]!.style?.align).toBe("right");
+    const fieldFormats = footerParagraphs[0]!.runs
+      .filter((run) => getRunField(run)?.type)
+      .map((run) => getRunField(run)?.format);
+    expect(fieldFormats).toContain("ROMAN");
   });
 });

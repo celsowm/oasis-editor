@@ -10,12 +10,15 @@ import {
   type EditorBlockNode,
   type EditorParagraphNode,
   type EditorTextRun,
-} from "@/core/model.js";import { editHeaderFooter } from "@/core/commands/headerFooter.js";
+} from "@/core/model.js";
+import { editHeaderFooter } from "@/core/commands/headerFooter.js";
 import {
   insertPageNumberField,
   isInHeaderOrFooter,
   isPageNumberFieldRun,
+  placePageNumber,
 } from "@/core/commands/pageNumber.js";
+import { getActiveZone } from "@/core/model/editingZones.js";
 
 function paragraphAt(document: {
   sections?: Array<{ blocks: EditorBlockNode[] }>;
@@ -122,5 +125,71 @@ describe("page-number field insertion", () => {
   it("not in a header/footer zone for a plain body state", () => {
     const { state } = fixture();
     expect(isInHeaderOrFooter(state)).toBe(false);
+  });
+});
+
+describe("page-number placement (top/bottom/current)", () => {
+  it("places the page number in the footer story, aligned (default center)", () => {
+    const { state } = fixture();
+    const result = placePageNumber(state, "bottom");
+    const story = (
+      result.document.sections![0]!.footer as EditorBlockNode[]
+    ).map((block) => block as EditorParagraphNode);
+    expect(story).toHaveLength(1);
+    expect(story[0]!.style).toMatchObject({ styleId: "footer", align: "center" });
+    expect(story[0]!.runs.some(isPageNumberFieldRun)).toBe(true);
+    expect(getActiveZone(result)).toBe("footer");
+  });
+
+  it("places the page number in the header story with the requested alignment", () => {
+    const { state } = fixture();
+    const result = placePageNumber(state, "top", {
+      kind: "xOfY",
+      align: "right",
+      format: "ROMAN",
+    });
+    const story = (
+      result.document.sections![0]!.header as EditorBlockNode[]
+    ).map((block) => block as EditorParagraphNode);
+    expect(story[0]!.style).toMatchObject({ styleId: "header", align: "right" });
+    // X-of-Y shape produces both field kinds.
+    const fieldTypes = story[0]!.runs
+      .map(fieldType)
+      .filter((t): t is string => Boolean(t));
+    expect(fieldTypes).toEqual(["PAGE", "NUMPAGES"]);
+    // Format is carried onto the field runs.
+    expect(getRunField(story[0]!.runs[story[0]!.runs.findIndex(isPageNumberFieldRun)])?.format).toBe("ROMAN");
+    expect(getActiveZone(result)).toBe("header");
+  });
+
+  it("overwrites an existing default footer story", () => {
+    const { state } = fixture();
+    const withExisting = placePageNumber(state, "bottom", { align: "left" });
+    const rePlaced = placePageNumber(withExisting, "bottom", { align: "right" });
+    const story = (
+      rePlaced.document.sections![0]!.footer as EditorBlockNode[]
+    ).map((block) => block as EditorParagraphNode);
+    expect(story).toHaveLength(1);
+    expect(story[0]!.style).toMatchObject({ align: "right" });
+  });
+
+  it("keeps the caret in the body for the current position", () => {
+    const { state } = fixture();
+    const result = placePageNumber(state, "current");
+    expect(getActiveZone(result)).toBe("main");
+    // The PAGE field was inserted at the body caret ("Bo" + field + "dy").
+    const runs = bodyRuns(result.document);
+    expect(runs.some(isPageNumberFieldRun)).toBe(true);
+  });
+
+  it("places an xOfY combination in the footer story", () => {
+    const { state } = fixture();
+    const result = placePageNumber(state, "bottom", { kind: "xOfY" });
+    const story = (
+      result.document.sections![0]!.footer as EditorBlockNode[]
+    ).map((block) => block as EditorParagraphNode);
+    const texts = story[0]!.runs.map((run) => run.text);
+    expect(texts.some((t) => t.includes("Page "))).toBe(true);
+    expect(texts.some((t) => t.includes(" of "))).toBe(true);
   });
 });
