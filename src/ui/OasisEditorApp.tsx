@@ -37,6 +37,7 @@ import { createOasisEditorClient } from "@/app/client/OasisEditorClient.js";
 import { createEditorDocumentRuntime } from "./app/createEditorDocumentRuntime.js";
 import { createEditorInteractionRuntime } from "./app/createEditorInteractionRuntime.js";
 import { createEditorCommandRuntime } from "./app/createEditorCommandRuntime.js";
+import { createEditorCommentComposer } from "./app/createEditorCommentComposer.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 import type { OasisEditorUiState } from "@/app/client/OasisEditorClient.js";
@@ -259,9 +260,17 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     handleDrop,
   } = interaction;
 
+  const commentComposer = createEditorCommentComposer({
+    state: (): EditorState => state,
+    isReadOnly,
+    applyTransactionalState,
+    focusInput,
+  });
+
   const commandRuntime = createEditorCommandRuntime({
     document: documentRuntime,
     interaction,
+    commentComposer,
     state: state as EditorState,
     logger,
     isReadOnly,
@@ -484,6 +493,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
         </Show>
 
         <EditorDialogsLayer
+          commentComposer={commentComposer}
           dialogs={{
             linkDialog,
             setLinkDialog,

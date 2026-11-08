@@ -11,6 +11,7 @@ import { connectEditorClientHost } from "./connectEditorClientHost.js";
 import { useEditorRuntimeBootstrap } from "./useEditorRuntimeBootstrap.js";
 import type { createEditorDocumentRuntime } from "./createEditorDocumentRuntime.js";
 import type { createEditorInteractionRuntime } from "./createEditorInteractionRuntime.js";
+import type { EditorCommentComposer } from "./createEditorCommentComposer.js";
 import type {
   OasisEditorAppDocumentProps,
   OasisEditorAppRuntimeProps,
@@ -28,6 +29,7 @@ interface LinkDialogSetter {
 export interface EditorCommandRuntimeDeps {
   document: DocumentRuntime;
   interaction: InteractionRuntime;
+  commentComposer: EditorCommentComposer;
   state: EditorState;
   logger: EditorLogger;
   isReadOnly: () => boolean;
@@ -128,6 +130,7 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
       historyActions: doc.historyActions,
       styleController: interaction.styleController,
       formatPainter: interaction.formatPainter,
+      commentComposer: deps.commentComposer,
       tableOps: interaction.tableOps,
       docIO: doc.docIO,
       importInputRef: deps.importInputRef,
