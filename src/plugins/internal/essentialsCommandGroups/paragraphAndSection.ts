@@ -1,6 +1,7 @@
 import type { OasisPlugin } from "@/core/plugin.js";
 import type { EditorPageMargins, EditorPageNumbering } from "@/core/model.js";
 import type { SectionPageNumberFormat } from "@/core/commands/pageNumber.js";
+import { getColumnLayoutPreset } from "@/core/commands/pageSetup.js";
 import type {
   ActionCommandBuilder,
   ValueCommandBuilder,
@@ -175,6 +176,29 @@ export function buildParagraphAndSectionCommands({
     setPaperSizePreset: actionCommand("setPaperSizePreset", (p): void => {
       if (typeof p === "string" && p.length > 0) {
         section.setPaperSizePreset(p);
+      }
+    }),
+    setColumns: actionCommand("setColumns", (p): void => {
+      const cols = (p ?? {}) as {
+        count?: number;
+        space?: number;
+        separator?: boolean;
+      };
+      if (cols.count !== undefined) {
+        section.setColumns({
+          count: Number(cols.count),
+          ...(cols.space !== undefined ? { space: Number(cols.space) } : {}),
+          ...(cols.separator !== undefined
+            ? { separator: Boolean(cols.separator) }
+            : {}),
+        });
+      }
+    }),
+    setColumnsPreset: actionCommand("setColumnsPreset", (p): void => {
+      if (typeof p === "string" && p.length > 0) {
+        const preset = getColumnLayoutPreset(p);
+        if (!preset) return;
+        section.setColumns({ count: preset.count });
       }
     }),
   };

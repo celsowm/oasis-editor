@@ -1,4 +1,5 @@
 import type {
+  EditorColumnsSettings,
   EditorDocumentDesign,
   EditorImageBorder,
   EditorPageBorder,
@@ -243,6 +244,12 @@ export interface EssentialsSectionCapability {
   getPaperSize: () => { widthPt: number; heightPt: number } | undefined;
   setPaperSize: (dimensions: { widthPt: number; heightPt: number }) => void;
   setPaperSizePreset: (presetId: string) => void;
+  getColumns: () => EditorColumnsSettings | undefined;
+  setColumns: (columns: {
+    count: number;
+    space?: number;
+    separator?: boolean;
+  }) => void;
 }
 
 export interface EssentialsHeaderFooterCapability {

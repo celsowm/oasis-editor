@@ -151,6 +151,12 @@ export interface OasisCommandPayloads {
   };
   setPaperSize: { widthPt: number; heightPt: number };
   setPaperSizePreset: string;
+  setColumns: {
+    count: number;
+    space?: number;
+    separator?: boolean;
+  };
+  setColumnsPreset: string;
   editHeader: undefined;
   editFooter: undefined;
   insertPageNumber: undefined;

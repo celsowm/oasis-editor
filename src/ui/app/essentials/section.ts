@@ -1,11 +1,14 @@
 import {
   getActiveSectionIndex,
+  type EditorColumnsSettings,
   type EditorPageMargins,
   type EditorPageNumbering,
 } from "@/core/model.js";
 import { setSectionPageNumbering } from "@/core/commands/pageNumber.js";
 import {
   getActivePaperSize,
+  getActiveColumns,
+  setSectionColumns,
   setSectionPaperSize,
   setSectionPaperSizePreset,
 } from "@/core/commands/pageSetup.js";
@@ -88,6 +91,14 @@ export function buildEssentialsSection(
     setPaperSizePreset: (presetId): void => {
       options.applyTransactionalState((state) =>
         setSectionPaperSizePreset(state, presetId),
+      );
+      options.focusInput();
+    },
+    getColumns: (): EditorColumnsSettings | undefined =>
+      getActiveColumns(options.state()),
+    setColumns: (columns): void => {
+      options.applyTransactionalState((state) =>
+        setSectionColumns(state, columns),
       );
       options.focusInput();
     },
