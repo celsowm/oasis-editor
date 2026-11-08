@@ -24,6 +24,7 @@ import {
 export * from "./shapeFillCommands.js";
 export * from "./floatingAlignCommands.js";
 export * from "./floatingReorderCommands.js";
+export * from "./textBoxBodyCommands.js";
 
 const SHAPE_DEFAULT_WIDTH = 150;
 const SHAPE_DEFAULT_HEIGHT = 100;

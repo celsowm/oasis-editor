@@ -67,6 +67,9 @@ export const MERGE_KEYS = {
   shapeOutline: "shapeOutline",
   floatingAlign: "floatingAlign",
   floatingReorder: "floatingReorder",
+  shapePreset: "shapePreset",
+  textBoxTextDirection: "textBoxTextDirection",
+  textBoxVerticalAlign: "textBoxVerticalAlign",
 } as const;
 
 export type MergeKey = (typeof MERGE_KEYS)[keyof typeof MERGE_KEYS];

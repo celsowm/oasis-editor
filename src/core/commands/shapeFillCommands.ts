@@ -57,6 +57,21 @@ export function setSelectedShapeOutline(
   }));
 }
 
+/**
+ * Word's "Change Shape" (WordCraft `shape.change`): swaps the selected shape's
+ * DrawingML preset geometry (e.g. "rect" → "ellipse"). A no-op when no shape
+ * is selected.
+ */
+export function setSelectedShapePreset(
+  state: EditorState,
+  preset: string,
+): EditorState {
+  return patchSelectedShape(state, (shape) => ({
+    ...shape,
+    preset,
+  }));
+}
+
 /** Applies `updater` to the shape appearance of the selected shape run. */
 function patchSelectedShape(
   state: EditorState,
