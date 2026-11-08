@@ -351,9 +351,10 @@ Completed command-surface slices (each core + tests, then wiring/parity; pushed 
 - [x] Shape outline width in points (Shape Outline > Weight). Audit → 211.
 - [x] Floating-object exact rotation and wrap preset (arrange.rotation / arrange.wrap) exposed as shared commands. Audit → 213.
 - [x] Floating-object position preset (arrange.position): topLeft…bottomRight positions of the margin area. Audit → 214.
+- [x] Picture transparency (picture.transparency / OOXML a:alphaModFix): model field, import/export round-trip, canvas (globalAlpha) and PDF (ExtGState) rendering, get/set command. Audit → 215.
 
 **Still open**
-- Picture adjustments (corrections/color/effects/transparency) — require an `EditorImageRunData` model + OOXML import/export round-trip (no fields exist today).
+- Picture adjustments (corrections/color/effects/compress/reset) — require an `EditorImageRunData` effects model + OOXML import/export round-trip (no fields exist today).
 - Grouping/connectors, contextual shape-format/equation tabs, equation galleries.
 - Charts/SmartArt native authoring (kept as preservation-only per plan).
 - Phase 5: mail merge, content controls, Quick Parts, custom properties, customizable Ribbon/QAT.
