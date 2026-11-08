@@ -47,6 +47,7 @@ export interface EditorViewLayoutInput {
 export interface EditorViewOverlayInput {
   selectionBoxes: Accessor<SelectionBox[]>;
   commentHighlights: Accessor<CommentHighlightBox[]>;
+  onReplyToComment?: (commentId: string) => void;
   selectedImageBox: Accessor<SelectedImageBox | null>;
   selectedTextBoxBox: Accessor<SelectedTextBoxBox | null>;
   selectedTableBox: Accessor<SelectedTableBox | null>;
@@ -156,6 +157,7 @@ export function buildEditorViewProps(
   const overlays: OasisEditorEditorOverlayProps = {
     selectionBoxes: overlayInput.selectionBoxes,
     commentHighlights: overlayInput.commentHighlights,
+    onReplyToComment: overlayInput.onReplyToComment,
     selectedImageBox: overlayInput.selectedImageBox,
     selectedTextBoxBox: overlayInput.selectedTextBoxBox,
     selectedTableBox: overlayInput.selectedTableBox,

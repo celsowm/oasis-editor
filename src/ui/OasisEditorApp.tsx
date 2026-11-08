@@ -365,6 +365,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     overlays: {
       selectionBoxes,
       commentHighlights,
+      onReplyToComment: (id): void => {
+        commentComposer.openReplyToId(id);
+      },
       selectedImageBox,
       selectedTextBoxBox,
       selectedTableBox,
