@@ -60,6 +60,14 @@ export function buildDocumentAndBrowserCommands({
         isEnabled: gate.isCommandEnabled("pasteAsPlainText") && browser.canPaste(),
       }),
     ),
+    cut: actionCommand(
+      "cut",
+      (): void => browser.cut(),
+      (): { isEnabled: boolean } => ({
+        isEnabled: gate.isCommandEnabled("cut") &&
+          browser.hasSelection() && browser.canCut(),
+      }),
+    ),
     copy: actionCommand(
       "copy",
       (): void => browser.copy(),

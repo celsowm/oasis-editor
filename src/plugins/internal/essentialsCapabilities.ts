@@ -167,6 +167,8 @@ export interface EssentialsImageCapability {
 }
 
 export interface EssentialsBrowserCapability {
+  cut: () => void;
+  canCut: () => boolean;
   paste: () => void;
   pasteAsPlainText: () => void;
   canPaste: () => boolean;

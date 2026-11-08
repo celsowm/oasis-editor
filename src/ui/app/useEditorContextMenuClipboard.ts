@@ -1,9 +1,8 @@
 import type { MergeKey } from "@/core/transactionMergeKeys.js";
 import type { EditorState } from "@/core/model.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
-import { serializeEditorSelectionToHtml } from "@/core/commands/clipboard.js";
 import { getSelectedText as getEditorSelectedText } from "@/core/commands/selection.js";
-import { deleteBackward } from "@/core/commands/text.js";
+import { cutEditorSelection, writeEditorSelectionToClipboard } from "./clipboardWrite.js";
 import { pasteFromSystemClipboard } from "./clipboardPaste.js";
 import type { TranslateFn } from "@/i18n/index.js";
 import type { ContextMenuItem } from "@/ui/components/ContextMenu/ContextMenu.js";
@@ -73,44 +72,22 @@ function createEditorContextMenuClipboardImpl(
 ) {
   const t = deps.t;
   const programmaticCopy = async (): Promise<void> => {
-    const state = deps.state();
-    const text = getEditorSelectedText(state);
-    if (!text) return;
-    const html = serializeEditorSelectionToHtml(state);
-    try {
-      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/plain": new Blob([text], { type: "text/plain" }),
-            "text/html": new Blob([html], { type: "text/html" }),
-          }),
-        ]);
-      } else {
-        await navigator.clipboard.writeText(text);
-      }
-    } catch (err) {
-      deps.logger.warn("contextMenu:copy:failed", { error: String(err) });
-      try {
-        await navigator.clipboard.writeText(text);
-      } catch {
-        /* ignore */
-      }
+    if (!(await writeEditorSelectionToClipboard(deps.state()))) {
+      deps.logger.warn("contextMenu:copy:failed");
     }
   };
 
   const programmaticCut = async (): Promise<void> => {
-    if (deps.isReadOnly()) return;
-    const text = getEditorSelectedText(deps.state());
-    if (!text) return;
-    await programmaticCopy();
-    deps.clearPreferredColumn();
-    deps.resetTransactionGrouping();
-    deps.applyTransactionalState((current): EditorState =>
-      deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-        deleteBackward(temp),
-      ),
-    );
-    deps.focusInput();
+    const success = await cutEditorSelection({
+      state: deps.state,
+      isReadOnly: deps.isReadOnly,
+      clearPreferredColumn: deps.clearPreferredColumn,
+      resetTransactionGrouping: deps.resetTransactionGrouping,
+      applyTransactionalState: deps.applyTransactionalState,
+      applyTableAwareParagraphEdit: deps.applyTableAwareParagraphEdit,
+      focusInput: deps.focusInput,
+    });
+    if (!success) deps.logger.warn("contextMenu:cut:not-completed");
   };
 
   const programmaticPaste = async (): Promise<void> => {
