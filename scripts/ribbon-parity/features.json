@@ -6,7 +6,7 @@
     "wordcraftRepository": "storytold/wordcraft",
     "wordcraftCommit": "e53cae3482d4e080a15dc2320eb4929ea7722db2"
   },
-  "scope": "Initial 28-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.",
+  "scope": "Initial 29-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.",
   "features": [
     {
       "id": "home.copy",
@@ -157,6 +157,16 @@
       "group": "changes",
       "status": "partial",
       "notes": "Cycles forward through tracked text-run changes without editing the document; selection is limited to the active section/zone."
+    },
+    {
+      "id": "review.commentsPanel",
+      "wordcraftCommand": null,
+      "oasisCommand": "toggleCommentsPanel",
+      "ribbonId": "editor-toolbar-comments-panel",
+      "tab": "review",
+      "group": "comments",
+      "status": "partial",
+      "notes": "An editor-scoped discussion drawer lists roots and nested replies; supports search, open/resolved filters, navigation, editing, replies, moderation and confirmation before deletion. Host-supplied stable identity gates mutation; end-to-end browser UX and WordCraft visual equivalence remain partial."
     },
     {
       "id": "review.newComment",
