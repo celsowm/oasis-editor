@@ -98,6 +98,25 @@ describe("per-editor comment composer", () => {
     });
   });
 
+  it("replies to a highlighted thread by id even when it is not selected", () => {
+    createRoot((dispose) => {
+      const app = harness();
+      app.composer.openNew();
+      app.composer.submit("Alice", "Original");
+      const rootId = app.state.document.comments!.order[0]!;
+      app.select(6, 12);
+      expect(app.composer.canReply()).toBe(false);
+      expect(app.composer.openReplyToId(rootId)).toBe(true);
+      expect(app.composer.draft()?.parentId).toBe(rootId);
+      expect(app.composer.submit("Bob", "Reply from popup")).toBe(true);
+      const comments = app.state.document.comments!;
+      const replyId = comments.order[1]!;
+      expect(comments.items[replyId]?.parentId).toBe(rootId);
+      expect(app.composer.openReplyToId("not-a-comment")).toBe(false);
+      dispose();
+    });
+  });
+
   it("denies writes when read-only or the document changed while the dialog was open", () => {
     createRoot((dispose) => {
       const app = harness();

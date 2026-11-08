@@ -6,6 +6,7 @@ import {
 } from "@/core/editorState.js";
 import { paragraphOffsetToPosition } from "@/core/model.js";
 import {
+  collectCommentThreadReplies,
   getCommentRangeForSelection,
   insertCommentAtSelection,
   replyToComment,
@@ -75,6 +76,25 @@ describe("document comment authoring", () => {
     );
     expect(getCommentRangeForSelection(empty)).toBeNull();
     expect(insertCommentAtSelection(empty, root)).toBe(empty);
+  });
+
+  it("projects nested replies in order and protects against cyclic parent ids", () => {
+    const { select } = fixture();
+    const anchored = insertCommentAtSelection(select(0, 5), root);
+    const first = replyToComment(anchored, root.id, reply);
+    const second = replyToComment(first, reply.id, {
+      id: "comment:grandchild",
+      author: "Carol",
+      text: "A nested answer",
+      date: 1760000002000,
+    });
+    const registry = second.document.comments!;
+    expect(collectCommentThreadReplies(registry.items, root.id).map((x) => x.id))
+      .toEqual([reply.id, "comment:grandchild"]);
+    expect(collectCommentThreadReplies(registry.items, "unknown")).toEqual([]);
+    registry.items[root.id]!.parentId = "comment:grandchild";
+    expect(collectCommentThreadReplies(registry.items, root.id).map((x) => x.id))
+      .toEqual([reply.id, "comment:grandchild"]);
   });
 
   it("rejects empty authors/bodies and duplicate ids", () => {
