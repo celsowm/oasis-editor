@@ -166,6 +166,10 @@ export interface OasisCommandPayloads {
   insertBookmark: string | undefined;
   removeBookmark: string;
   insertDateField: undefined;
+  insertCrossReference: {
+    type?: "REF" | "PAGEREF";
+    bookmark: string;
+  };
   exitHeaderFooter: undefined;
   applyDocumentTheme: DesignThemeId;
   setDocumentColorScheme: string;

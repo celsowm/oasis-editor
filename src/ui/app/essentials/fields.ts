@@ -1,4 +1,5 @@
 import { insertDateField } from "@/core/commands/fieldDate.js";
+import { insertCrossReference } from "@/core/commands/crossReference.js";
 import type { EssentialsFieldsCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
 
@@ -14,6 +15,12 @@ export function buildEssentialsFields(
   return {
     insertDate: (): void => {
       options.applyTransactionalState((state) => insertDateField(state));
+      options.focusInput();
+    },
+    insertCrossReference: (xr): void => {
+      options.applyTransactionalState((state) =>
+        insertCrossReference(state, xr),
+      );
       options.focusInput();
     },
   };

@@ -120,6 +120,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "insertBookmark",
   "removeBookmark",
   "insertDateField",
+  "insertCrossReference",
   "exitHeaderFooter",
   "applyDocumentTheme",
   "setDocumentColorScheme",

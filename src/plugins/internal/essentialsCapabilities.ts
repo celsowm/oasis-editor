@@ -8,6 +8,7 @@ import type {
   EditorWatermark,
 } from "@/core/model.js";
 import type { SectionPageNumberFormat } from "@/core/commands/pageNumber.js";
+import type { CrossReferenceType } from "@/core/commands/crossReference.js";
 import type { DesignThemeId } from "@/core/commands/design.js";
 import type { ImageBorderPatch } from "@/core/commands/image.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
@@ -288,6 +289,14 @@ export interface EssentialsBookmarkCapability {
 export interface EssentialsFieldsCapability {
   /** Insert a DATE field at the active caret with the current date. */
   insertDate: () => void;
+  /**
+   * Insert a cross-reference (REF / PAGEREF) to the named bookmark at the
+   * caret. A no-op when the target bookmark is unknown.
+   */
+  insertCrossReference: (options: {
+    type: CrossReferenceType;
+    bookmark: string;
+  }) => void;
 }
 
 export interface EssentialsDesignCapability {
