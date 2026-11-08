@@ -369,6 +369,7 @@ Completed command-surface slices (each core + tests, then wiring/parity; pushed 
 - [x] Outline text effect (format.outline): outline toggle builtin with an active state, mirroring strike/shadow wiring; the outline model key existed but was only reachable via the Font dialog. Audit → 240.
 - [x] Emphasis mark (format.emphasisMark): setEmphasisMark value builtin (w:em: dot/comma/circle/underDot) through the essentials formatting capability and command group, exposing the active mark; the model key existed but was only reachable via the Font dialog / import-export. Audit → 241.
 - [x] Underline convenience toggles (format.doubleUnderline / format.wordUnderline): doubleUnderline / wordUnderline toggle builtins that set underlineStyle to double/words and enable underline, with active states reading the resolved style; mirrors the toolbar split-button behavior. Audit → 243.
+- [x] Paragraph text-direction (para.rtl / para.ltr): toggleParagraphBidi builtin (w:bidi on the selected paragraphs) through the essentials paragraph capability and command group, with an active state reading the resolved flag; the model key existed but was round-trip only. Audit → 244.
 
 **Still open**
 - Picture adjustments (corrections/color/effects/compress/reset) — require an `EditorImageRunData` effects model + OOXML import/export round-trip (no fields exist today).
