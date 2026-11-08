@@ -515,6 +515,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           <ReviewCommentsPanel
             state={(): EditorState => state}
             composer={commentComposer}
+            locale={(): Locale => ui().locale ?? "pt-BR"}
             onClose={commentComposer.closePanel}
             onNavigate={(id): void => {
               const next = focusReviewCommentById(state, id);

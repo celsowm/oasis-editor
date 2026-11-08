@@ -5,6 +5,12 @@ import { insertCommentAtSelection, replyToComment } from "@/core/commands/commen
 import { deleteReviewCommentById, setReviewCommentResolvedById } from "@/core/commands/reviewNavigation.js";
 import { appendReviewActivity, appendReviewChange, getReviewThreadId } from "@/core/commands/reviewActivity.js";
 import { cloneEditorState } from "@/core/cloneState.js";
+import {
+  applyEditorHistoryTransaction,
+  createEmptyEditorHistoryState,
+  takeEditorRedoStep,
+  takeEditorUndoStep,
+} from "@/ui/editorHistory.js";
 
 function fixture() {
   const paragraph = createEditorParagraph("Alpha beta");
@@ -99,5 +105,32 @@ describe("review activity", () => {
     });
     expect(appendReviewActivity(withActivity, withActivity.document.reviewActivity![0]!))
       .toBe(withActivity);
+  });
+
+  it("rides snapshot undo/redo: undoing a comment edit also removes its activity entry", () => {
+    const { state } = fixture();
+    const created = insertCommentAtSelection(state, {
+      id: "root", author: "Alice", text: "Please review", date: 1,
+    });
+    const withActivity = appendReviewChange(state, created, {
+      ...common, id: "event-1", kind: "comment-created", commentId: "root",
+    });
+    expect(withActivity.document.reviewActivity).toHaveLength(1);
+
+    // The comment change and its activity are produced in the SAME transaction,
+    // so history only ever snapshots the pre-transaction document (no activity).
+    const history = applyEditorHistoryTransaction(
+      createEmptyEditorHistoryState(), state, withActivity,
+    );
+    const undone = takeEditorUndoStep(history, withActivity);
+    expect(undone).not.toBeNull();
+    expect(undone!.nextState.document.reviewActivity).toBeUndefined();
+    expect(undone!.nextState.document.comments).toBeUndefined();
+
+    const redone = takeEditorRedoStep(undone!.history, undone!.nextState);
+    expect(redone).not.toBeNull();
+    expect(redone!.nextState.document.reviewActivity).toEqual([
+      expect.objectContaining({ id: "event-1", kind: "comment-created" }),
+    ]);
   });
 });

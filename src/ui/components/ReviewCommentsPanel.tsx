@@ -14,6 +14,7 @@ import type {
 import { collectCommentThreadReplies } from "@/core/commands/commentAuthoring.js";
 import type { EditorCommentComposer } from "@/ui/app/createEditorCommentComposer.js";
 import { useI18n } from "@/i18n/I18nContext.js";
+import type { Locale } from "@/i18n/index.js";
 import { Button } from "@/ui/public/Button.js";
 import { TextField } from "@/ui/public/TextField.js";
 import { Text } from "@/ui/public/Text.js";
@@ -23,6 +24,8 @@ export interface ReviewCommentsPanelProps {
   composer: EditorCommentComposer;
   onNavigate: (id: string) => void;
   onClose: () => void;
+  /** Active UI locale, so timestamps render in the app language, not the OS one. */
+  locale?: () => Locale;
 }
 type Filter = "all" | "open" | "resolved";
 
@@ -94,8 +97,12 @@ export function ReviewCommentsPanel(
         return t("review.activity.deleted");
     }
   };
+  // Matches the I18nProvider fallback so isolated rendering stays pt-BR.
+  const locale = (): Locale => props.locale?.() ?? "pt-BR";
   const eventDate = (timestamp: number): string =>
-    Number.isFinite(timestamp) ? new Date(timestamp).toLocaleString() : "";
+    Number.isFinite(timestamp)
+      ? new Date(timestamp).toLocaleString(locale())
+      : "";
 
   const applyDelete = (id: string): void => {
     if (deleteCandidate() !== id) {

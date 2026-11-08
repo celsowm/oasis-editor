@@ -201,6 +201,9 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
             date: Date.now(),
           };
     let succeeded = false;
+    // `applyTransactionalState` runs its producer synchronously (see
+    // useEditorTransactions), so `succeeded` is valid immediately after the
+    // call returns — no deferred/batched state application is expected here.
     deps.applyTransactionalState((current): EditorState => {
       // An external edit or document reload while the dialog is open invalidates
       // the captured anchors. Never write into a newer document accidentally.

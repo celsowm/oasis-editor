@@ -2,6 +2,11 @@
  * Local review timeline entries, created on successful comment mutations.
  * These are transaction-scoped editor data and are intentionally not emitted
  * as WordprocessingML. The host can persist/export them separately if needed.
+ *
+ * The array is deliberately NOT capped: it rides snapshot-based undo/redo, so
+ * truncating it here would desynchronize history from the document state and
+ * silently drop entries on undo/redo. Long sessions accumulate entries; hosts
+ * that need bounded history should persist/rotate it out-of-band.
  */
 export type EditorReviewActivityKind =
   | "comment-created"

@@ -24,6 +24,11 @@ atomically with the comment change using `applyTransactionalState`.
 Cancelled dialogs, denied operations and no-op edits do not add entries.
 Deleting a discussion does not delete earlier activity entries.
 
+The `EditorDocument.reviewActivity` array is deliberately **not capped** — it
+rides snapshot-based undo/redo, so truncating it in-document would desynchronize
+history from state. Long sessions accumulate entries; hosts that need bounded
+history should persist/rotate it out-of-band.
+
 ## Undo and collaboration
 
 `EditorDocument.reviewActivity` is immutable editor-model data. It follows
