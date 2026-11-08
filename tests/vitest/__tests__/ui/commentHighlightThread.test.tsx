@@ -17,12 +17,14 @@ describe("highlighted comment thread popup", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const onReply = vi.fn();
+    const onEdit = vi.fn();
     const dispose = render(
       () => (
         <CommentHighlightOverlay
           boxes={boxes}
           commentsById={() => comments}
           onReplyToComment={onReply}
+          onEditComment={onEdit}
         />
       ),
       container,
@@ -47,6 +49,58 @@ describe("highlighted comment thread popup", () => {
     expect(replyButton).not.toBeNull();
     replyButton!.click();
     expect(onReply).toHaveBeenCalledWith("root");
+    const editButton = container.querySelector<HTMLButtonElement>(
+      "[data-testid='comment-popup-edit']",
+    );
+    expect(editButton).not.toBeNull();
+    editButton!.click();
+    expect(onEdit).toHaveBeenCalledWith("root");
+    dispose();
+  });
+
+  it("collapses long threads and edits an individual nested answer by id", () => {
+    const longThread: Record<string, EditorComment> = {
+      ...comments,
+      a4: { id: "a4", author: "Dave", text: "Fourth", parentId: "root" },
+      a5: { id: "a5", author: "Eve", text: "Fifth", parentId: "root" },
+      a6: { id: "a6", author: "Fox", text: "Sixth", parentId: "root" },
+    };
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const onEdit = vi.fn();
+    const onReply = vi.fn();
+    const dispose = render(
+      () => (
+        <CommentHighlightOverlay
+          boxes={boxes}
+          commentsById={() => longThread}
+          onEditComment={onEdit}
+          onReplyToComment={onReply}
+        />
+      ), host,
+    );
+    host.querySelector<HTMLSpanElement>("[data-testid='editor-comment-highlight']")!.focus();
+    expect(host.querySelectorAll(".oasis-editor-comment-popup-reply")).toHaveLength(3);
+    const expand = host.querySelector<HTMLButtonElement>(
+      "[data-testid='comment-popup-expand-replies']",
+    )!;
+    expect(expand.getAttribute("aria-expanded")).toBe("false");
+    expand.click();
+    expect(expand.getAttribute("aria-expanded")).toBe("true");
+    expect(host.querySelectorAll(".oasis-editor-comment-popup-reply")).toHaveLength(5);
+    const nested = host.querySelector<HTMLElement>(
+      ".oasis-editor-comment-popup-reply[data-comment-id='nested']",
+    )!;
+    nested.querySelector<HTMLButtonElement>(
+      "[data-testid='comment-popup-edit-reply']",
+    )!.click();
+    expect(onEdit).toHaveBeenCalledWith("nested");
+    nested.querySelector<HTMLButtonElement>(
+      "[data-testid='comment-popup-reply-to-reply']",
+    )!.click();
+    expect(onReply).toHaveBeenCalledWith("nested");
+    expand.click();
+    expect(host.querySelectorAll(".oasis-editor-comment-popup-reply")).toHaveLength(3);
     dispose();
   });
 
@@ -59,6 +113,7 @@ describe("highlighted comment thread popup", () => {
           boxes={boxes}
           commentsById={() => comments}
           onReplyToComment={vi.fn()}
+          onEditComment={vi.fn()}
           readOnly
         />
       ),
@@ -71,6 +126,10 @@ describe("highlighted comment thread popup", () => {
     expect(container.querySelector("[data-testid='editor-comment-popup']"))
       .not.toBeNull();
     expect(container.querySelector("[data-testid='comment-popup-reply']"))
+      .toBeNull();
+    expect(container.querySelector("[data-testid='comment-popup-edit']"))
+      .toBeNull();
+    expect(container.querySelector("[data-testid='comment-popup-edit-reply']"))
       .toBeNull();
     dispose();
   });

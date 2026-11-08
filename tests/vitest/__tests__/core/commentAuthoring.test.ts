@@ -7,6 +7,7 @@ import {
 import { paragraphOffsetToPosition } from "@/core/model.js";
 import {
   collectCommentThreadReplies,
+  editCommentText,
   getCommentRangeForSelection,
   insertCommentAtSelection,
   replyToComment,
@@ -95,6 +96,52 @@ describe("document comment authoring", () => {
     registry.items[root.id]!.parentId = "comment:grandchild";
     expect(collectCommentThreadReplies(registry.items, root.id).map((x) => x.id))
       .toEqual([reply.id, "comment:grandchild"]);
+  });
+
+  it("edits an existing root or reply without changing authors, anchors, dates or thread links", () => {
+    const { select } = fixture();
+    const selected = select(0, 5);
+    const first = insertCommentAtSelection(selected, root);
+    const threaded = replyToComment(first, root.id, reply);
+    const edited = editCommentText(threaded, root.id, "  Updated <root> & details  ");
+    expect(edited.document.comments?.items[root.id]).toMatchObject({
+      id: root.id,
+      text: "Updated <root> & details",
+      author: root.author,
+      date: root.date,
+      start: { offset: 0 },
+      end: { offset: 5 },
+    });
+    const editReply = editCommentText(edited, reply.id, "  Updated answer  ");
+    expect(editReply.document.comments?.items[reply.id]).toMatchObject({
+      text: "Updated answer", author: reply.author, date: reply.date,
+      parentId: root.id,
+    });
+    expect(editReply.document.comments?.order).toEqual([root.id, reply.id]);
+    expect(threaded.document.comments?.items[root.id]?.text).toBe(root.text);
+    expect(editCommentText(edited, root.id, "Updated <root> & details")).toBe(edited);
+    expect(editCommentText(edited, root.id, "    ")).toBe(edited);
+    expect(editCommentText(edited, "unknown", "Anything")).toBe(edited);
+    const xml = buildCommentsPartXml(buildCommentExportPlan(editReply.document)!);
+    expect(xml).toContain("Updated &lt;root&gt; &amp; details");
+    expect(xml).toContain("Updated answer");
+  });
+
+  it("handles very deep reply chains iteratively, without recursive stack growth", () => {
+    const items: Record<string, {
+      id: string; author: string; text: string; parentId?: string;
+    }> = { root: { id: "root", author: "A", text: "Root" } };
+    for (let i = 0; i < 1500; i += 1) {
+      const id = `reply-${i}`;
+      items[id] = {
+        id, author: "A", text: "Answer",
+        parentId: i === 0 ? "root" : `reply-${i - 1}`,
+      };
+    }
+    const results = collectCommentThreadReplies(items, "root");
+    expect(results).toHaveLength(1500);
+    expect(results[0]?.id).toBe("reply-0");
+    expect(results[1499]?.id).toBe("reply-1499");
   });
 
   it("rejects empty authors/bodies and duplicate ids", () => {

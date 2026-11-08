@@ -8,6 +8,7 @@ import {
 import { paragraphOffsetToPosition } from "@/core/model.js";
 import {
   insertCommentAtSelection,
+  editCommentText,
   replyToComment,
 } from "@/core/commands/commentAuthoring.js";
 import { setSelectedCommentResolved } from "@/core/commands/reviewNavigation.js";
@@ -38,15 +39,18 @@ describe("author-created DOCX comment round-trip", () => {
       date: 1760000001000,
     });
     const resolved = setSelectedCommentResolved(withReply, true);
-    const file = await exportEditorDocumentToDocx(resolved.document);
+    const editedRoot = editCommentText(resolved, "comment:root",
+      "Updated <scope> & conditions.");
+    const edited = editCommentText(editedRoot, "comment:reply", "Final response!");
+    const file = await exportEditorDocumentToDocx(edited.document);
     const zip = await JSZip.loadAsync(file);
     const documentXml = await zip.file("word/document.xml")!.async("string");
     const commentsXml = await zip.file("word/comments.xml")!.async("string");
     const extendedXml = await zip.file("word/commentsExtended.xml")!.async("string");
     expect(documentXml).toContain("w:commentRangeStart");
     expect(documentXml).toContain("w:commentRangeEnd");
-    expect(commentsXml).toContain("Clarify &lt;scope&gt; &amp; conditions.");
-    expect(commentsXml).toContain("Clarified; thanks!");
+    expect(commentsXml).toContain("Updated &lt;scope&gt; &amp; conditions.");
+    expect(commentsXml).toContain("Final response!");
     expect(extendedXml).toContain("w15:paraIdParent=");
     expect(extendedXml).toContain('w15:done="1"');
 
@@ -56,12 +60,12 @@ describe("author-created DOCX comment round-trip", () => {
     const original = comments.items[comments.order[0]!]!;
     const answer = comments.items[comments.order[1]!]!;
     expect(original.author).toBe("Reviewer");
-    expect(original.text).toBe("Clarify <scope> & conditions.");
+    expect(original.text).toBe("Updated <scope> & conditions.");
     expect(original.start?.offset).toBe(7);
     expect(original.end?.offset).toBe(13);
     expect(original.resolved).toBe(true);
     expect(answer.author).toBe("Writer");
-    expect(answer.text).toBe("Clarified; thanks!");
+    expect(answer.text).toBe("Final response!");
     expect(answer.parentId).toBe(original.id);
     expect(answer.start).toBeUndefined();
 
@@ -72,6 +76,6 @@ describe("author-created DOCX comment round-trip", () => {
     );
     expect(entries[0]?.resolved).toBe(true);
     expect(entries[1]?.parentId).toBe(entries[0]?.id);
-    expect(entries[1]?.text).toBe("Clarified; thanks!");
+    expect(entries[1]?.text).toBe("Final response!");
   });
 });

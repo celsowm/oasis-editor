@@ -25,6 +25,8 @@ function commands(gateEnabled: () => boolean, hasToc: () => boolean, hasRevision
     canReplyToComment: () => true,
     newComment: vi.fn(() => true),
     replyComment: vi.fn(() => true),
+    editComment: vi.fn(() => true),
+    canEditComment: () => true,
     navigateRevisionNext: vi.fn(() => true),
     navigateRevisionPrevious: vi.fn(() => true),
     navigateCommentNext: vi.fn(() => true),
@@ -79,6 +81,21 @@ describe("Essentials Ribbon command registrations", () => {
     expect(result.newComment?.refresh?.().isEnabled).toBe(false);
     editing = false;
     expect(result.replyComment?.refresh?.().isEnabled).toBe(false);
+  });
+
+  it("exposes Edit Comment only with a selected editable comment", () => {
+    let editable = true;
+    let selected = true;
+    const { result, formatting } = commands(() => editable, () => true, () => true);
+    formatting.canEditComment = () => selected;
+    expect(result.editComment?.refresh?.().isEnabled).toBe(true);
+    expect(result.editComment?.execute()).toBe(true);
+    expect(formatting.editComment).toHaveBeenCalledOnce();
+    selected = false;
+    expect(result.editComment?.refresh?.().isEnabled).toBe(false);
+    selected = true;
+    editable = false;
+    expect(result.editComment?.refresh?.().isEnabled).toBe(false);
   });
 
   it("exposes distinct painter modes and blocks capture in read-only mode", () => {

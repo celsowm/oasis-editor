@@ -117,6 +117,76 @@ describe("per-editor comment composer", () => {
     });
   });
 
+  it("edits a selected comment, preserving its identity and creation author", () => {
+    createRoot((dispose) => {
+      const app = harness();
+      app.composer.openNew();
+      app.composer.submit("Alice", "Initial text");
+      const id = app.state.document.comments!.order[0]!;
+      const before = app.state.document.comments!.items[id]!;
+      app.select(0, 5);
+      expect(app.composer.canEdit()).toBe(true);
+      expect(app.composer.openEdit()).toBe(true);
+      expect(app.composer.draft()).toMatchObject({
+        mode: "edit", commentId: id, commentAuthor: "Alice",
+        commentText: "Initial text",
+      });
+      app.select(6, 12);
+      expect(app.composer.submit("Impostor", "  Corrected text  ")).toBe(true);
+      const after = app.state.document.comments!.items[id]!;
+      expect(after.text).toBe("Corrected text");
+      expect(after.author).toBe(before.author);
+      expect(after.date).toBe(before.date);
+      expect(after.start).toEqual(before.start);
+      expect(after.end).toEqual(before.end);
+      expect(app.transactions).toBe(2);
+      expect(app.composer.lastAuthor()).toBe("Alice");
+      dispose();
+    });
+  });
+
+  it("edits a reply by id and closes an unchanged draft without an extra undo entry", () => {
+    createRoot((dispose) => {
+      const app = harness();
+      app.composer.openNew();
+      app.composer.submit("Alice", "Root");
+      const rootId = app.state.document.comments!.order[0]!;
+      app.composer.openReplyToId(rootId);
+      app.composer.submit("Bob", "Response");
+      const replyId = app.state.document.comments!.order[1]!;
+      app.select(6, 12);
+      expect(app.composer.openEditToId(replyId)).toBe(true);
+      expect(app.composer.draft()?.commentText).toBe("Response");
+      expect(app.composer.submit("Any name", "Updated reply")).toBe(true);
+      expect(app.state.document.comments!.items[replyId]).toMatchObject({
+        text: "Updated reply", author: "Bob", parentId: rootId,
+      });
+      const count = app.transactions;
+      expect(app.composer.openEditToId(replyId)).toBe(true);
+      expect(app.composer.submit("Any name", "Updated reply")).toBe(true);
+      expect(app.transactions).toBe(count);
+      expect(app.composer.draft()).toBeNull();
+      dispose();
+    });
+  });
+
+  it("disallows stale edits and editing in read-only mode", () => {
+    createRoot((dispose) => {
+      const app = harness();
+      app.composer.openNew();
+      app.composer.submit("Alice", "Original");
+      const id = app.state.document.comments!.order[0]!;
+      app.setReadOnly(true);
+      expect(app.composer.openEditToId(id)).toBe(false);
+      app.setReadOnly(false);
+      expect(app.composer.openEditToId(id)).toBe(true);
+      app.replaceDocument();
+      expect(app.composer.submit("Alice", "Stale update")).toBe(false);
+      expect(app.state.document.comments).toBeUndefined();
+      dispose();
+    });
+  });
+
   it("denies writes when read-only or the document changed while the dialog was open", () => {
     createRoot((dispose) => {
       const app = harness();
