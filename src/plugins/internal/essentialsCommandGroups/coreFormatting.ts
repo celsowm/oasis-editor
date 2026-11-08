@@ -220,6 +220,24 @@ export function buildCoreFormattingCommands({
           formatting.hasRevisionsInSelection(),
       }),
     ),
+    acceptAllRevisions: command(
+      "acceptAllRevisions",
+      formatting.acceptAllRevisions,
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("acceptAllRevisions") &&
+          formatting.hasRevisionsInDocument(),
+      }),
+    ),
+    rejectAllRevisions: command(
+      "rejectAllRevisions",
+      formatting.rejectAllRevisions,
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("rejectAllRevisions") &&
+          formatting.hasRevisionsInDocument(),
+      }),
+    ),
     nextRevision: command(
       "nextRevision",
       formatting.navigateRevisionNext,

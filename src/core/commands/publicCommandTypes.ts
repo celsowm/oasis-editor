@@ -72,6 +72,8 @@ export interface OasisCommandPayloads {
   toggleTrackChanges: undefined;
   acceptRevisions: undefined;
   rejectRevisions: undefined;
+  acceptAllRevisions: undefined;
+  rejectAllRevisions: undefined;
   nextRevision: undefined;
   previousRevision: undefined;
   nextComment: undefined;

@@ -32,6 +32,8 @@ export const OASIS_BUILTIN_COMMANDS = [
   "toggleTrackChanges",
   "acceptRevisions",
   "rejectRevisions",
+  "acceptAllRevisions",
+  "rejectAllRevisions",
   "nextRevision",
   "previousRevision",
   "nextComment",

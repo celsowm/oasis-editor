@@ -50,6 +50,8 @@ export interface EssentialsFormattingCapability {
   hasTableOfContents: () => boolean;
   /** True when the current selection intersects revisions this command can resolve. */
   hasRevisionsInSelection: () => boolean;
+  /** True when the whole document contains any resolvable tracked revision. */
+  hasRevisionsInDocument: () => boolean;
   hasNavigableRevisions: () => boolean;
   hasNavigableComments: () => boolean;
   canCreateComment: () => boolean;
@@ -101,6 +103,8 @@ export interface EssentialsFormattingCapability {
   areParagraphMarksVisible: () => boolean;
   acceptRevisions: () => boolean;
   rejectRevisions: () => boolean;
+  acceptAllRevisions: () => boolean;
+  rejectAllRevisions: () => boolean;
   toggleShowMargins: () => boolean;
   toggleShowParagraphMarks: () => boolean;
   togglePreciseFonts: () => boolean;

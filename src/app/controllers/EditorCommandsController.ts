@@ -8,7 +8,9 @@ import {
 } from "@/core/commands/block.js";
 import { insertFootnote } from "@/core/commands/footnotes.js";
 import {
+  acceptAllRevisions,
   acceptRevisionsInSelection,
+  rejectAllRevisions,
   rejectRevisionsInSelection,
   toggleTrackChanges,
 } from "@/core/commands/history.js";
@@ -437,6 +439,14 @@ function createEditorCommandsControllerImpl(
     execState(rejectRevisionsInSelection(state));
   };
 
+  const applyAcceptAllRevisionsCommand = (): void => {
+    execState(acceptAllRevisions(state));
+  };
+
+  const applyRejectAllRevisionsCommand = (): void => {
+    execState(rejectAllRevisions(state));
+  };
+
   const applyLinkCommand = (href: string | null): void => {
     const activeLink = getLinkAtSelection(state);
     if (selectionCollapsed() && !activeLink) {
@@ -603,6 +613,8 @@ function createEditorCommandsControllerImpl(
     applyToggleShowParagraphMarksCommand,
     applyAcceptRevisionsCommand,
     applyRejectRevisionsCommand,
+    applyAcceptAllRevisionsCommand,
+    applyRejectAllRevisionsCommand,
     applyLinkCommand,
     promptForLink,
     removeLinkCommand,

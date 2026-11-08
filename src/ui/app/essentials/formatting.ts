@@ -15,7 +15,10 @@ import {
   type EditorState,
 } from "@/core/model.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
-import { hasRevisionsInSelection } from "@/core/commands/history.js";
+import {
+  hasRevisionsInDocument,
+  hasRevisionsInSelection,
+} from "@/core/commands/history.js";
 import {
   collectNavigableRevisions,
   collectNavigableComments,
@@ -148,6 +151,8 @@ export function buildEssentialsFormatting(
     hasTableOfContents: (): boolean => hasTableOfContents(options.state()),
     hasRevisionsInSelection: (): boolean =>
       hasRevisionsInSelection(options.state()),
+    hasRevisionsInDocument: (): boolean =>
+      hasRevisionsInDocument(options.state()),
     hasNavigableRevisions: (): boolean =>
       collectNavigableRevisions(options.state()).length > 0,
     hasNavigableComments: (): boolean =>
@@ -289,6 +294,14 @@ export function buildEssentialsFormatting(
     ),
     rejectRevisions: (): true => (
       options.commandsController.applyRejectRevisionsCommand(),
+      true
+    ),
+    acceptAllRevisions: (): true => (
+      options.commandsController.applyAcceptAllRevisionsCommand(),
+      true
+    ),
+    rejectAllRevisions: (): true => (
+      options.commandsController.applyRejectAllRevisionsCommand(),
       true
     ),
     toggleShowMargins: (): true => (
