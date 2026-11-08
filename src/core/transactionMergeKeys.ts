@@ -21,6 +21,7 @@ export const MERGE_KEYS = {
   imageResize: "imageResize",
   imageCrop: "imageCrop",
   imageFlip: "imageFlip",
+  imageRotate: "imageRotate",
   layoutWrapPolygon: "layoutWrapPolygon",
   specialIndent: "specialIndent",
   paraBorders: "paraBorders",

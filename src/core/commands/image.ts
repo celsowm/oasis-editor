@@ -452,6 +452,41 @@ export function rotateSelectedImage(
   }));
 }
 
+/** Current rotation (degrees) of the selected image, or `0`. */
+export function getSelectedImageRotation(state: EditorState): number {
+  const selectedImage = getSelectedImageRun(state);
+  const image = selectedImage && getRunImage(selectedImage.run);
+  return image?.rotation ?? 0;
+}
+
+/** True when an image is selected and can be rotated. */
+export function canRotateSelectedImage(state: EditorState): boolean {
+  return getSelectedImageRun(state) !== null;
+}
+
+/**
+ * Word's Rotate Left/Right: rotates the selected image by a fixed step. Left
+ * turns counter-clockwise by `stepDegrees`, right clockwise (using the same
+ * counter-clockwise-positive convention as the interactive rotate session). A
+ * no-op when no image is selected.
+ */
+export function rotateSelectedImageByStep(
+  state: EditorState,
+  direction: "left" | "right",
+  stepDegrees = 90,
+): EditorState {
+  const selectedImage = getSelectedImageRun(state);
+  if (!selectedImage || !getRunImage(selectedImage.run)) return state;
+  const delta = direction === "right" ? -stepDegrees : stepDegrees;
+  const nextRotation = normalizeRotation(
+    getSelectedImageRotation(state) + delta,
+  );
+  return patchSelectedImage(state, (image) => ({
+    ...image,
+    rotation: nextRotation,
+  }));
+}
+
 /** The flip state of the selected image (`null` when none is selected). */
 export function getSelectedImageFlip(
   state: EditorState,
