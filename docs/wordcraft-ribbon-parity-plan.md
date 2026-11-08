@@ -363,6 +363,7 @@ Completed command-surface slices (each core + tests, then wiring/parity; pushed 
 - [x] Section vertical alignment (layout.verticalAlign): new core getSectionVerticalAlign / setSectionVerticalAlign commands (w:vAlign: top/center/both/bottom; top is the Word default stored as undefined, null/top clear it) resolved against the active section, exposing the previously round-trip-only field as an authoring command wired as a setSectionVerticalAlign builtin. Audit → 230.
 - [x] Hidden text (format.hidden): reachable hidden toggle builtin with an active state, mirroring strike/small-caps wiring; the hidden model key existed but was only reachable via the Font dialog. Audit → 231.
 - [x] Collapse selection (select.collapse): selection-only selectCollapse command that collapses the selection to a single caret at its earlier (anchor) end (or later/focus end when `end` is true), handling backwards selections; applied via applyState (no undo) and gated read-only-safe. Audit → 232.
+- [x] Underline color (format.underlineColor): setUnderlineColor value builtin through the essentials formatting capability and command group, exposing the active underline color; the underlineColor model key existed but was only reachable via the Font dialog / import-export. Audit → 233.
 
 **Still open**
 - Picture adjustments (corrections/color/effects/compress/reset) — require an `EditorImageRunData` effects model + OOXML import/export round-trip (no fields exist today).
