@@ -10,6 +10,7 @@ import {
   setSelectedShapePreset,
 } from "@/core/commands/shapeFillCommands.js";
 import {
+  rotateSelectedTextBoxByStep,
   setSelectedTextBoxAlt,
   setSelectedTextBoxTextDirection,
   setSelectedTextBoxVerticalAlign,
@@ -147,6 +148,12 @@ export function buildEssentialsDocument(
       options.applyTransactionalState(
         (current): EditorState => setSelectedTextBoxAlt(current, alt),
         { mergeKey: MERGE_KEYS.textBoxAlt },
+      ),
+    rotateTextBox: (direction: "left" | "right"): void =>
+      options.applyTransactionalState(
+        (current): EditorState =>
+          rotateSelectedTextBoxByStep(current, direction),
+        { mergeKey: MERGE_KEYS.textBoxRotate },
       ),
   };
 }

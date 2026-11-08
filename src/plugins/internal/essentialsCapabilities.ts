@@ -189,6 +189,8 @@ export interface EssentialsDocumentCapability {
   setTextBoxVerticalAlign: (anchor: "t" | "ctr" | "b") => void;
   /** Set the selected text box's accessibility alt text. */
   setTextBoxAlt: (alt: string | null) => void;
+  /** Rotate the selected text box left or right by a fixed step. */
+  rotateTextBox: (direction: "left" | "right") => void;
 }
 
 export interface EssentialsLinkCapability {

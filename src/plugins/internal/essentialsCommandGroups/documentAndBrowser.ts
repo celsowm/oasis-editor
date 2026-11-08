@@ -148,6 +148,9 @@ export function buildDocumentAndBrowserCommands({
     editTextBoxAlt: actionCommand("editTextBoxAlt", (p): void =>
       document.setTextBoxAlt(p == null ? null : String(p)),
     ),
+    rotateTextBox: actionCommand("rotateTextBox", (p): void =>
+      document.rotateTextBox((p as "left" | "right") ?? "left"),
+    ),
     openSymbolDialog: actionCommand("openSymbolDialog", (): void =>
       document.openSymbolDialog(),
     ),
