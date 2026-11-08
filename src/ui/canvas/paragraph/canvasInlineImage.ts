@@ -95,6 +95,8 @@ function drawImageContent(
 ): void {
   const { width, height, crop, fillMode, rotation, flipH, flipV } = image;
   const hasTransform = Boolean(rotation) || Boolean(flipH) || Boolean(flipV);
+  const alpha =
+    image.transparency !== undefined ? 1 - clamp01(image.transparency) : 1;
 
   const sourceRatio = img.naturalWidth / Math.max(1, img.naturalHeight);
   const frameRatio = width / Math.max(1, height);
@@ -119,6 +121,7 @@ function drawImageContent(
       return;
     }
     ctx.save();
+    if (alpha < 1) ctx.globalAlpha = alpha;
     if (hasTransform) {
       ctx.translate(x + width / 2, y + height / 2);
       if (rotation) ctx.rotate(rotation * DEG_TO_RAD);
@@ -151,11 +154,17 @@ function drawImageContent(
 
   const hasShape = Boolean(image.cropShape?.preset);
   if (!hasTransform && !hasShape) {
+    if (alpha < 1) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+    }
     ctx.drawImage(img, sx, sy, sw, sh, x + dx, y + dy, dw, dh);
+    if (alpha < 1) ctx.restore();
     return;
   }
 
   ctx.save();
+  if (alpha < 1) ctx.globalAlpha = alpha;
   ctx.translate(x + width / 2, y + height / 2);
   if (rotation) ctx.rotate(rotation * DEG_TO_RAD);
   ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);

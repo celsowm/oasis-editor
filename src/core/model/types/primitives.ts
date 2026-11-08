@@ -243,6 +243,9 @@ export interface EditorImageRunData {
   rotation?: number;
   flipH?: boolean;
   flipV?: boolean;
+  /** Picture transparency (0..1), the inverse of opacity. Mirrors WordCraft's
+   * `picture.transparency` and OOXML `<a:alphaModFix>` on the blip. */
+  transparency?: number;
   floating?: EditorImageFloatingLayout;
   /** Tight/through wrap outline (fractional 0..1). Auto-traced from the image
    * alpha or round-tripped from OOXML <wp:wrapPolygon>. Absent ⇒ rectangular. */

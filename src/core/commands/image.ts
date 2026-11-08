@@ -525,6 +525,44 @@ export function flipSelectedImage(
   }));
 }
 
+/** The transparency (0..1) of the selected image, `null` when none selected. */
+export function getSelectedImageTransparency(
+  state: EditorState,
+): number | null {
+  const selectedImage = getSelectedImageRun(state);
+  const image = selectedImage && getRunImage(selectedImage.run);
+  if (!image) return null;
+  return image.transparency ?? 0;
+}
+
+/** True when an image is selected and its transparency can be changed. */
+export function canSetSelectedImageTransparency(state: EditorState): boolean {
+  return getSelectedImageRun(state) !== null;
+}
+
+/**
+ * WordCraft's `picture.transparency`: sets the selected image's transparency
+ * (0..1). A value at/below zero removes the transparency entirely and a value
+ * clamped to 1 makes the picture fully transparent. A no-op when no image is
+ * selected.
+ */
+export function setSelectedImageTransparency(
+  state: EditorState,
+  transparency: number,
+): EditorState {
+  if (getSelectedImageRun(state) === null) {
+    return state;
+  }
+  return patchSelectedImage(state, (image) => {
+    if (!Number.isFinite(transparency) || transparency <= 0) {
+      const { transparency: _removed, ...rest } = image;
+      return rest;
+    }
+    const clamped = Math.min(1, transparency);
+    return { ...image, transparency: Math.round(clamped * 1000) / 1000 };
+  });
+}
+
 export function getSelectedImageWrapPreset(
   state: EditorState,
 ): WrapPreset | null {

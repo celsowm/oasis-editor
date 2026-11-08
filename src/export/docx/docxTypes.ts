@@ -53,6 +53,7 @@ export interface DocContext {
     rotation?: number;
     flipH?: boolean;
     flipV?: boolean;
+    transparency?: number;
     floating?: EditorImageFloatingLayout;
     wrapPolygon?: EditorWrapPolygonPoint[];
   }>;

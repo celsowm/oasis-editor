@@ -112,6 +112,7 @@ export async function drawImageObject(
         image.rotation ?? 0,
       )
     : null;
+  const transparency = image.transparency ?? 0;
   // Fit places the complete source inside the frame. When the frame is
   // rotated, the content must rotate around the frame centre as it does on
   // canvas; passing the smaller fit rectangle's rotation to drawImage would
@@ -131,6 +132,9 @@ export async function drawImageObject(
       image.rotation ?? 0,
     );
   }
+  if (transparency > 0) writer.saveGraphicsState(pageIndex);
+  if (transparency > 0)
+    writer.setOpacity(pageIndex, 1 - Math.min(1, transparency));
   writer.drawImage(pageIndex, {
     resourceName,
     x: drawX,
@@ -140,6 +144,7 @@ export async function drawImageObject(
     rotation: rotateFitAroundFrame ? undefined : image.rotation,
     crop: effectiveCrop,
   });
+  if (transparency > 0) writer.restoreGraphicsState(pageIndex);
   if (rotateFitAroundFrame) writer.restoreGraphicsState(pageIndex);
   if (shapePath) writer.restoreGraphicsState(pageIndex);
 

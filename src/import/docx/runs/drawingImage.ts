@@ -63,6 +63,24 @@ function parseSrcRect(picPic: XmlElement): EditorImageRunData["crop"] {
   return crop;
 }
 
+/** `a:alphaModFix/@amt` is per-mille (0..100000); converts to transparency 0..1. */
+function parseAlphaModFix(picPic: XmlElement): number | undefined {
+  const alpha = findElementDeep(picPic, "alphaModFix");
+  if (!alpha) {
+    return undefined;
+  }
+  const raw = alpha.getAttribute("amt");
+  if (raw === null || raw === "") {
+    return undefined;
+  }
+  const value = parseInt(raw, 10);
+  if (!Number.isFinite(value)) {
+    return undefined;
+  }
+  const clamped = Math.max(0, Math.min(OOXML_PERCENT_DENOMINATOR, value));
+  return Math.round((1 - clamped / OOXML_PERCENT_DENOMINATOR) * 1000) / 1000;
+}
+
 /** OOXML wrap polygons use a 0..21600 normalized coordinate space. */
 const WRAP_POLYGON_DENOMINATOR = 21600;
 
@@ -261,6 +279,7 @@ export async function parseDrawingImage(
   const cropShape = parseImageCropShape(drawing);
   const fillMode = parseFillMode(drawing);
   const border = parseImageBorder(drawing);
+  const transparency = parseAlphaModFix(drawing);
   const xfrm = parseXfrm(drawing);
   const floating =
     container?.kind === "anchor"
@@ -279,6 +298,7 @@ export async function parseDrawingImage(
     ...(cropShape ? { cropShape, cropFit: "fill" as const } : {}),
     ...(fillMode ? { fillMode } : {}),
     ...(border ? { border } : {}),
+    ...(transparency !== undefined ? { transparency } : {}),
     ...(xfrm.rotation !== undefined ? { rotation: xfrm.rotation } : {}),
     ...(xfrm.flipH ? { flipH: true } : {}),
     ...(xfrm.flipV ? { flipV: true } : {}),

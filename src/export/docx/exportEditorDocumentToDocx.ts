@@ -89,6 +89,7 @@ function buildPartContext(
         rotation: run.image.rotation,
         flipH: run.image.flipH,
         flipV: run.image.flipV,
+        transparency: run.image.transparency,
         floating: run.image.floating,
         wrapPolygon: run.image.wrapPolygon,
       };
