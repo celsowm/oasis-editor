@@ -244,6 +244,7 @@ export interface OasisCommandPayloads {
   insertShape: string;
   setShapeFill: string | null;
   setShapeOutline: string | null;
+  alignFloatingObject: "left" | "center" | "right";
   openSymbolDialog: undefined;
   openEquationDialog: undefined;
   tableProperties: { activeTab?: "table" | "cell" };
