@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
-import type { EditorState } from "@/core/model.js";
+import type { EditorState, EditorReviewActivityKind } from "@/core/model.js";
 import { createEditorNodeId } from "@/core/editorState.js";
+import { appendReviewChange } from "@/core/commands/reviewActivity.js";
 import {
   getSelectedReviewComment,
   deleteReviewCommentById,
@@ -82,6 +83,29 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
   };
   const authorName = (): string => actor()?.displayName ?? lastAuthor();
   const authorLocked = (): boolean => access() !== undefined;
+  const recordedActor = (fallback = "Local editor"): {
+    actorName: string; actorId?: string;
+  } => {
+    const identity = actor();
+    return identity
+      ? { actorName: identity.displayName, actorId: identity.id }
+      : { actorName: fallback };
+  };
+  const recordChange = (
+    before: EditorState,
+    after: EditorState,
+    kind: EditorReviewActivityKind,
+    commentId: string,
+    fallbackActor?: string,
+    parentId?: string,
+  ): EditorState => appendReviewChange(before, after, {
+    id: createEditorNodeId("review-activity"),
+    kind,
+    commentId,
+    ...recordedActor(fallbackActor),
+    timestamp: Date.now(),
+    ...(parentId ? { parentId } : {}),
+  });
 
   const openNew = (): boolean => {
     if (!canCreate()) return false;
@@ -185,7 +209,17 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
               content!,
             );
       succeeded = next.document !== current.document;
-      return next;
+      if (!succeeded) return next;
+      return recordChange(
+        current,
+        next,
+        pending.mode === "new"
+          ? "comment-created"
+          : pending.mode === "reply" ? "comment-replied" : "comment-edited",
+        pending.mode === "edit" ? pending.commentId! : content!.id,
+        name,
+        pending.mode === "reply" ? pending.parentId : undefined,
+      );
     });
     if (succeeded) {
       if (pending.mode !== "edit") setLastAuthor(name);
@@ -205,7 +239,7 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
       }
       const next = deleteReviewCommentById(current, id);
       changed = next.document !== current.document;
-      return next;
+      return changed ? recordChange(current, next, "comment-deleted", id) : next;
     });
     return changed;
   };
@@ -222,7 +256,9 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
         !canEditReviewComment(access(), current.document.comments?.items[id])) return current;
       const next = setReviewCommentResolvedById(current, id, resolved);
       changed = next.document !== current.document;
-      return next;
+      return changed
+        ? recordChange(current, next, resolved ? "comment-resolved" : "comment-reopened", id)
+        : next;
     });
     return changed;
   };
