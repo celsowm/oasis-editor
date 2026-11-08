@@ -46,6 +46,8 @@ export const en = {
   "comment.author": "Author",
   "comment.body": "Comment",
   "comment.placeholder": "Write your comment…",
+  "comment.showAllReplies": "Show all replies",
+  "comment.showFewerReplies": "Show fewer replies",
   "comment.replyTo": "Replying to",
   "toolbar.nextComment": "Next Comment",
   "toolbar.resolveComment": "Resolve Comment",

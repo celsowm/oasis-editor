@@ -48,6 +48,7 @@ export interface EditorViewOverlayInput {
   selectionBoxes: Accessor<SelectionBox[]>;
   commentHighlights: Accessor<CommentHighlightBox[]>;
   onReplyToComment?: (commentId: string) => void;
+  onEditComment?: (commentId: string) => void;
   selectedImageBox: Accessor<SelectedImageBox | null>;
   selectedTextBoxBox: Accessor<SelectedTextBoxBox | null>;
   selectedTableBox: Accessor<SelectedTableBox | null>;
@@ -158,6 +159,7 @@ export function buildEditorViewProps(
     selectionBoxes: overlayInput.selectionBoxes,
     commentHighlights: overlayInput.commentHighlights,
     onReplyToComment: overlayInput.onReplyToComment,
+    onEditComment: overlayInput.onEditComment,
     selectedImageBox: overlayInput.selectedImageBox,
     selectedTextBoxBox: overlayInput.selectedTextBoxBox,
     selectedTableBox: overlayInput.selectedTableBox,

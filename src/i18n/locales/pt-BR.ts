@@ -46,6 +46,8 @@ export const ptBR = {
   "comment.author": "Autor",
   "comment.body": "Comentário",
   "comment.placeholder": "Escreva seu comentário…",
+  "comment.showAllReplies": "Mostrar todas as respostas",
+  "comment.showFewerReplies": "Mostrar menos respostas",
   "comment.replyTo": "Respondendo a",
   "toolbar.nextComment": "Próximo comentário",
   "toolbar.resolveComment": "Resolver comentário",

@@ -401,6 +401,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
                 boxes={overlays().commentHighlights}
                 commentsById={commentsById}
                 onReplyToComment={overlays().onReplyToComment}
+                onEditComment={overlays().onEditComment}
                 readOnly={Boolean(layout().readOnly)}
               />
             </Show>

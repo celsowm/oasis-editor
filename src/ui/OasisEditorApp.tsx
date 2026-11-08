@@ -368,6 +368,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
       onReplyToComment: (id): void => {
         commentComposer.openReplyToId(id);
       },
+      onEditComment: (id): void => {
+        commentComposer.openEditToId(id);
+      },
       selectedImageBox,
       selectedTextBoxBox,
       selectedTableBox,

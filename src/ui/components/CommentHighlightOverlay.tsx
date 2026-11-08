@@ -12,6 +12,7 @@ export interface CommentHighlightOverlayProps {
   /** Comment bodies keyed by their editor-local id, for the hover popup. */
   commentsById: Accessor<Record<string, EditorComment>>;
   onReplyToComment?: (commentId: string) => void;
+  onEditComment?: (commentId: string) => void;
   readOnly?: boolean;
 }
 
@@ -28,6 +29,9 @@ export function CommentHighlightOverlay(
   const [activeCommentId, setActiveCommentId] = createSignal<string | null>(
     null,
   );
+  const [expandedCommentId, setExpandedCommentId] = createSignal<string | null>(
+    null,
+  );
 
   const activeComment = createMemo<EditorComment | null>(
     (): EditorComment | null => {
@@ -42,6 +46,12 @@ export function CommentHighlightOverlay(
       props.commentsById(),
       activeCommentId() ?? "",
     ),
+  );
+
+  const visibleReplies = createMemo(() =>
+    expandedCommentId() === activeCommentId()
+      ? replies()
+      : replies().slice(0, 3),
   );
 
   // Anchor the popup to the first (top-most) highlight box of the active comment.
@@ -131,7 +141,7 @@ export function CommentHighlightOverlay(
               <div class="oasis-editor-comment-popup-body">{comment.text}</div>
               <Show when={replies().length > 0}>
                 <div class="oasis-editor-comment-popup-replies" data-testid="comment-thread-replies">
-                  <For each={replies()}>
+                  <For each={visibleReplies()}>
                     {(reply): JSX.Element => (
                       <div class="oasis-editor-comment-popup-reply" data-comment-id={reply.id}>
                         <div class="oasis-editor-comment-popup-header">
@@ -146,20 +156,75 @@ export function CommentHighlightOverlay(
                           </Show>
                         </div>
                         <div class="oasis-editor-comment-popup-body">{reply.text}</div>
+                        <Show when={!props.readOnly}>
+                          <div class="oasis-editor-comment-popup-actions">
+                            <Show when={props.onEditComment}>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                data-testid="comment-popup-edit-reply"
+                                onClick={(): void => props.onEditComment?.(reply.id)}
+                              >
+                                {t("toolbar.editComment")}
+                              </Button>
+                            </Show>
+                            <Show when={props.onReplyToComment}>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                data-testid="comment-popup-reply-to-reply"
+                                onClick={(): void => props.onReplyToComment?.(reply.id)}
+                              >
+                                {t("toolbar.replyComment")}
+                              </Button>
+                            </Show>
+                          </div>
+                        </Show>
                       </div>
                     )}
                   </For>
                 </div>
+                <Show when={replies().length > 3}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    aria-expanded={expandedCommentId() === activeCommentId()}
+                    onClick={(): void => setExpandedCommentId(
+                      expandedCommentId() === activeCommentId()
+                        ? null
+                        : activeCommentId(),
+                    )}
+                    data-testid="comment-popup-expand-replies"
+                  >
+                    {expandedCommentId() === activeCommentId()
+                      ? t("comment.showFewerReplies")
+                      : `${t("comment.showAllReplies")} (${replies().length})`}
+                  </Button>
+                </Show>
               </Show>
-              <Show when={props.onReplyToComment && !props.readOnly}>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={(): void => props.onReplyToComment?.(comment.id)}
-                  data-testid="comment-popup-reply"
-                >
-                  {t("toolbar.replyComment")}
-                </Button>
+              <Show when={!props.readOnly}>
+                <div class="oasis-editor-comment-popup-actions">
+                  <Show when={props.onEditComment}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(): void => props.onEditComment?.(comment.id)}
+                      data-testid="comment-popup-edit"
+                    >
+                      {t("toolbar.editComment")}
+                    </Button>
+                  </Show>
+                  <Show when={props.onReplyToComment}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(): void => props.onReplyToComment?.(comment.id)}
+                      data-testid="comment-popup-reply"
+                    >
+                      {t("toolbar.replyComment")}
+                    </Button>
+                  </Show>
+                </div>
               </Show>
             </div>
           );

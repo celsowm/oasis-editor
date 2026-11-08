@@ -443,7 +443,18 @@
 
 .oasis-editor-comment-popup-body {
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   line-height: 1.4;
+}
+.oasis-editor-comment-popup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+.oasis-editor-comment-popup .oasis-editor-ui-button {
+  min-height: 28px;
 }
 
 .oasis-editor-comment-popup-replies {

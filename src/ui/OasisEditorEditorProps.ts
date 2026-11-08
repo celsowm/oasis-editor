@@ -42,6 +42,7 @@ export interface OasisEditorEditorOverlayProps {
   selectionBoxes: Accessor<SelectionBox[]>;
   commentHighlights: Accessor<CommentHighlightBox[]>;
   onReplyToComment?: (commentId: string) => void;
+  onEditComment?: (commentId: string) => void;
   selectedImageBox: Accessor<SelectedImageBox | null>;
   selectedTextBoxBox: Accessor<SelectedTextBoxBox | null>;
   selectedTableBox: Accessor<SelectedTableBox | null>;
