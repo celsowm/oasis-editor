@@ -95,6 +95,11 @@ export default defineConfig(({ mode }) => {
       // keep DOM-dependent UI suites in jsdom without changing core test runtime.
       projects: [
         {
+          extends: false,
+          // Explicit, isolated Vite config: inheriting the root merges include
+          // patterns and accidentally runs all core tests again in jsdom.
+          resolve: { alias: { '@': resolve(__dirname, 'src') } },
+          plugins: [fontBase64Plugin(), solidPlugin()],
           test: {
             name: 'core',
             environment: 'node',
@@ -103,10 +108,14 @@ export default defineConfig(({ mode }) => {
           },
         },
         {
+          extends: false,
+          resolve: { alias: { '@': resolve(__dirname, 'src') } },
+          plugins: [fontBase64Plugin(), solidPlugin()],
           test: {
             name: 'ui',
             environment: 'jsdom',
             include: ['tests/vitest/__tests__/ui/**/*.{test,spec}.{ts,tsx}'],
+            exclude: ['node_modules', 'dist', 'dist-app'],
           },
         },
       ],
