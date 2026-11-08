@@ -116,3 +116,24 @@ export function replyToComment(
     parentId,
   });
 }
+
+/** Render a nested discussion in document insertion order without duplicating anchors. */
+export function collectCommentThreadReplies(
+  comments: Readonly<Record<string, EditorComment>>,
+  parentId: string,
+): EditorComment[] {
+  if (!comments[parentId]) return [];
+  const entries = Object.values(comments);
+  const visited = new Set<string>([parentId]);
+  const replies: EditorComment[] = [];
+  const walk = (id: string): void => {
+    for (const child of entries) {
+      if (child.parentId !== id || visited.has(child.id)) continue;
+      visited.add(child.id);
+      replies.push(child);
+      walk(child.id);
+    }
+  };
+  walk(parentId);
+  return replies;
+}

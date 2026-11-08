@@ -40,10 +40,11 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
     return true;
   };
 
-  const openReply = (): boolean => {
-    if (!canReply()) return false;
+  /** Reply to the hovered thread without requiring selection changes. */
+  const openReplyToId = (parentId: string): boolean => {
+    if (deps.isReadOnly()) return false;
     const snapshot = deps.state();
-    const parent = getSelectedReviewComment(snapshot);
+    const parent = snapshot.document.comments?.items[parentId];
     if (!parent) return false;
     setDraft({
       mode: "reply",
@@ -53,6 +54,12 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
       parentText: parent.text,
     });
     return true;
+  };
+
+  const openReply = (): boolean => {
+    if (!canReply()) return false;
+    const parent = getSelectedReviewComment(deps.state());
+    return parent ? openReplyToId(parent.id) : false;
   };
 
   const close = (): void => {
@@ -100,7 +107,7 @@ export function createEditorCommentComposer(deps: CommentComposerDeps) {
     return succeeded;
   };
 
-  return { draft, lastAuthor, canCreate, canReply, openNew, openReply, close, submit };
+  return { draft, lastAuthor, canCreate, canReply, openNew, openReply, openReplyToId, close, submit };
 }
 
 export type EditorCommentComposer = ReturnType<typeof createEditorCommentComposer>;
