@@ -17,6 +17,7 @@ import {
   sliceRuns,
 } from "@/core/document/paragraphRuns.js";
 import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
+import { resolveAllTrackedRevisions } from "@/core/document/trackedRevisions.js";
 import { preserveSelectionByParagraphOffsets } from "@/core/selection/rangeEditing.js";
 
 export function toggleTrackChanges(state: EditorState): EditorState {
@@ -390,7 +391,6 @@ export function collectSelectedRevisionIds(state: EditorState): Set<string> {
   return revisionIds;
 }
 
-
 /** Only count revision kinds that Accept/Reject currently handle in the selection. */
 export function hasRevisionsInSelection(state: EditorState): boolean {
   return collectSelectedRevisionIds(state).size > 0;
@@ -412,3 +412,116 @@ export function rejectRevisionsInSelection(state: EditorState): EditorState {
   return nextState;
 }
 
+/**
+ * Collect every tracked-revision id in the whole document: across all sections,
+ * header/footer stories, table/row/cell property revisions, section property
+ * revisions, and footnote/endnote stories. Unlike the selection-scoped variant
+ * there is no active zone: Accept All / Reject All operate on the full model.
+ */
+export function collectAllRevisionIds(state: EditorState): Set<string> {
+  const revisionIds = new Set<string>();
+
+  const collectRuns = (runs: EditorTextRun[]): void => {
+    for (const run of runs) {
+      if (run.revision?.id) revisionIds.add(run.revision.id);
+      if (run.revisionRangeMarker?.id)
+        revisionIds.add(run.revisionRangeMarker.id);
+    }
+  };
+
+  const collectBlocks = (blocks: EditorBlockNode[] | undefined): void => {
+    if (!blocks) return;
+    for (const block of blocks) {
+      if (block.type === "paragraph") {
+        collectRuns(block.runs);
+        continue;
+      }
+      if (block.style?.revision) revisionIds.add(block.style.revision.id);
+      if (block.gridRevision) revisionIds.add(block.gridRevision.id);
+      for (const row of block.rows) {
+        if (row.style?.revision) revisionIds.add(row.style.revision.id);
+        if (row.style?.propertyRevision) {
+          revisionIds.add(row.style.propertyRevision.id);
+        }
+        for (const cell of row.cells) {
+          if (cell.style?.revision) revisionIds.add(cell.style.revision.id);
+          if (cell.style?.propertyRevision) {
+            revisionIds.add(cell.style.propertyRevision.id);
+          }
+          if (cell.mergeRevisionState?.revisionId) {
+            revisionIds.add(cell.mergeRevisionState.revisionId);
+          }
+          collectBlocks(cell.blocks);
+        }
+      }
+    }
+  };
+
+  for (const section of getDocumentSections(state.document)) {
+    if (section.propertyRevision) revisionIds.add(section.propertyRevision.id);
+    collectBlocks(section.blocks);
+    collectBlocks(section.header);
+    collectBlocks(section.firstPageHeader);
+    collectBlocks(section.evenPageHeader);
+    collectBlocks(section.footer);
+    collectBlocks(section.firstPageFooter);
+    collectBlocks(section.evenPageFooter);
+  }
+
+  const footnotes = state.document.footnotes?.items ?? {};
+  for (const footnote of Object.values(footnotes)) {
+    collectBlocks(footnote.blocks);
+  }
+  const endnotes = state.document.endnotes?.items ?? {};
+  for (const endnote of Object.values(endnotes)) {
+    collectBlocks(endnote.blocks);
+  }
+
+  return revisionIds;
+}
+
+/** Whether the whole document contains any resolvable tracked revision. */
+export function hasRevisionsInDocument(state: EditorState): boolean {
+  return collectAllRevisionIds(state).size > 0;
+}
+
+function resolveAllInDocument(
+  state: EditorState,
+  action: "accept" | "reject",
+): EditorState {
+  if (!hasRevisionsInDocument(state)) {
+    return state;
+  }
+  const result = resolveAllTrackedRevisions(state.document, action);
+  if (!result.changed) {
+    return state;
+  }
+
+  // Paragraph ids survive the whole-document resolve (cloneSection/cloneBlock
+  // preserve them), so remap the selection by paragraph offsets onto the
+  // resolved paragraphs. If the caret's paragraph was structurally removed,
+  // paragraphOffsetToPosition clamps to the resolved paragraph stream.
+  const paragraphs = getParagraphs({
+    ...state,
+    document: result.document,
+  });
+  const selection = preserveSelectionByParagraphOffsets(
+    paragraphs,
+    normalizeSelection(state),
+  );
+  return {
+    ...state,
+    document: result.document,
+    selection,
+  };
+}
+
+/** Accept every tracked revision in the whole document. */
+export function acceptAllRevisions(state: EditorState): EditorState {
+  return resolveAllInDocument(state, "accept");
+}
+
+/** Reject every tracked revision in the whole document. */
+export function rejectAllRevisions(state: EditorState): EditorState {
+  return resolveAllInDocument(state, "reject");
+}
