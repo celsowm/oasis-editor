@@ -91,6 +91,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "imageRotate",
   "imageBorder",
   "imageTransparency",
+  "resetImage",
   "outdent",
   "indent",
   "togglePageBreakBefore",

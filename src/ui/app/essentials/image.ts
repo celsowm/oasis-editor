@@ -5,6 +5,7 @@ import {
   getSelectedImageBorder,
   getSelectedImageSizeCm,
   getSelectedImageTransparency,
+  canResetSelectedImage,
 } from "@/core/commands/image.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
 
@@ -46,5 +47,7 @@ export function buildEssentialsImage(
       getSelectedImageTransparency(options.state()),
     setTransparency: (transparency): void =>
       options.commandsController.applyImageTransparencyCommand(transparency),
+    reset: (): void => options.commandsController.resetImageCommand(),
+    canReset: (): boolean => canResetSelectedImage(options.state()),
   };
 }

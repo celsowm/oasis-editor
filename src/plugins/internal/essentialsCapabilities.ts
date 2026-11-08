@@ -279,6 +279,10 @@ export interface EssentialsImageCapability {
   getTransparency: () => number | null;
   /** Set the selected picture's transparency (0..1); 0 restores full opacity. */
   setTransparency: (transparency: number | null) => void;
+  /** Restore the selected picture to its original state (drops adjustments). */
+  reset: () => void;
+  /** True when a picture is selected and can be reset. */
+  canReset: () => boolean;
 }
 
 export interface EssentialsBrowserCapability {

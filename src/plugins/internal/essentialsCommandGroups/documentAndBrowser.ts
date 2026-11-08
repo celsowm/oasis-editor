@@ -341,5 +341,10 @@ export function buildDocumentAndBrowserCommands({
         value: image.getTransparency(),
       }),
     ),
+    resetImage: actionCommand(
+      "resetImage",
+      (): void => image.reset(),
+      (): { isEnabled: boolean } => ({ isEnabled: image.canReset() }),
+    ),
   };
 }
