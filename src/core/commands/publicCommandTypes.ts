@@ -209,6 +209,8 @@ export interface OasisCommandPayloads {
   tableAlignLeft: undefined;
   tableAlignCenter: undefined;
   tableAlignRight: undefined;
+  tableSetCellVerticalAlign: "top" | "middle" | "bottom";
+  tableSetCellTextDirection: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV";
   tableSetCellWidth: string | number;
   tableToggleHeaderRow: undefined;
   tableToggleTotalRow: undefined;
