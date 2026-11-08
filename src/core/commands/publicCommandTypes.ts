@@ -123,6 +123,7 @@ export interface OasisCommandPayloads {
   setStyleId: string;
   setCharacterStyleId: string;
   setUnderlineStyle: string | null;
+  setUnderlineColor: string | null;
   documentStyles: undefined;
   print: undefined;
   copy: undefined;

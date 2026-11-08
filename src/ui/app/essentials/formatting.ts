@@ -473,5 +473,14 @@ export function buildEssentialsFormatting(
           value: string | null,
         ) => void
       )("underlineStyle", value),
+    setUnderlineColor: (value: string | null): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "underlineColor",
+          value: string | null,
+        ) => void
+      )("underlineColor", value),
+      true
+    ),
   };
 }

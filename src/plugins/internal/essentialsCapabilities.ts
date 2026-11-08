@@ -139,6 +139,7 @@ export interface EssentialsFormattingCapability {
   setStyleId: (value: string) => boolean;
   setCharacterStyleId: (value: string) => boolean;
   setUnderlineStyle: (value: string | null) => void;
+  setUnderlineColor: (value: string | null) => boolean;
 }
 
 export interface EssentialsDocumentStyleDescriptor {

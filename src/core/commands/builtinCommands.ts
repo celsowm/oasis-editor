@@ -75,6 +75,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setStyleId",
   "setCharacterStyleId",
   "setUnderlineStyle",
+  "setUnderlineColor",
   "documentStyles",
   "print",
   "copy",

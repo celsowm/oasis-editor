@@ -473,5 +473,10 @@ export function buildCoreFormattingCommands({
       (p): true => (formatting.setUnderlineStyle((p as string) || null), true),
       (): string => s().underlineStyle,
     ),
+    setUnderlineColor: valueCommand(
+      "setUnderlineColor",
+      (p): boolean => formatting.setUnderlineColor((p as string) || null),
+      (): string => s().underlineColor,
+    ),
   };
 }
