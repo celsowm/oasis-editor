@@ -207,6 +207,11 @@ export function buildParagraphAndSectionCommands({
       (p): true => (paragraph.setKeepWithNext(boolOrNull(p)), true),
       (): unknown => s().keepWithNext,
     ),
+    setKeepLinesTogether: valueCommand(
+      "setKeepLinesTogether",
+      (p): true => (paragraph.setKeepLinesTogether(boolOrNull(p)), true),
+      (): unknown => s().keepLinesTogether,
+    ),
     setMirrorIndents: valueCommand(
       "setMirrorIndents",
       (p): true => (paragraph.setMirrorIndents(boolOrNull(p)), true),

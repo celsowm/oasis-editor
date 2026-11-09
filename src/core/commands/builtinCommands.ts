@@ -161,6 +161,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setTopLinePunct",
   "setPageBreakBefore",
   "setKeepWithNext",
+  "setKeepLinesTogether",
   "setIndentLeft",
   "setIndentRight",
   "setIndentFirstLine",

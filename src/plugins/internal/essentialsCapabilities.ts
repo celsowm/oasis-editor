@@ -385,6 +385,8 @@ export interface EssentialsParagraphCapability {
   setPageBreakBefore: (value: boolean | null) => void;
   /** Set "Keep with next" (w:keepNext). */
   setKeepWithNext: (value: boolean | null) => void;
+  /** Set "Keep lines together" (w:keepLines). */
+  setKeepLinesTogether: (value: boolean | null) => void;
   /** Set "Don't add space between paragraphs of the same style" (w:contextualSpacing). */
   setContextualSpacing: (value: boolean | null) => void;
   /** Set "Mirror indents" (w:mirrorIndents): swap left/right indents on facing pages. */
