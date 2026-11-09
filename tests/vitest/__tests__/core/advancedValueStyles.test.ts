@@ -62,4 +62,25 @@ describe("advanced value character styles (format.scale / format.spacing / forma
       getParagraphs(cleared)[0]!.runs[0]!.styles?.textEffect,
     ).toBeUndefined();
   });
+
+  it("stores an explicit false for run snap-to-grid (defaults on)", () => {
+    const state = buildState("hello");
+    const next = setTextStyleValue(state, "snapToGrid", false);
+    expect(getParagraphs(next)[0]!.runs[0]!.styles?.snapToGrid).toBe(false);
+  });
+
+  it("stores true for run snap-to-grid", () => {
+    const state = buildState("hello");
+    const next = setTextStyleValue(state, "snapToGrid", true);
+    expect(getParagraphs(next)[0]!.runs[0]!.styles?.snapToGrid).toBe(true);
+  });
+
+  it("clears run snap-to-grid with null (back to the default on)", () => {
+    const state = buildState("hello");
+    const off = setTextStyleValue(state, "snapToGrid", false);
+    const cleared = setTextStyleValue(off, "snapToGrid", null);
+    expect(
+      getParagraphs(cleared)[0]!.runs[0]!.styles?.snapToGrid,
+    ).toBeUndefined();
+  });
 });

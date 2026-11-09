@@ -40,7 +40,8 @@ export type ValueTextStyleKey =
   | "ligatures"
   | "numberSpacing"
   | "numberForm"
-  | "stylisticSet";
+  | "stylisticSet"
+  | "snapToGrid";
 
 export type ValueParagraphStyleKey =
   | "styleId"
