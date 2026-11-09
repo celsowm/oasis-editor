@@ -8,6 +8,7 @@ import {
   selectCollapse,
   selectParagraph,
   selectSentence,
+  selectTextOccurrence,
   selectWord,
 } from "@/core/commands/selectUnit.js";
 import {
@@ -202,5 +203,49 @@ describe("selection-unit commands (select.word / select.sentence / select.paragr
     // focus end (2), the earlier of the two.
     const next = selectCollapse(state);
     expect(next.selection.anchor.offset).toBe(2);
+  });
+});
+
+describe("select text occurrence (select.text)", () => {
+  it("selects the first occurrence of a string by default", () => {
+    const state = buildState(["hello world hello"]); 
+    const next = selectTextOccurrence(state, "hello");
+    expect(selectedSpan(next)).toBe("hello");
+  });
+
+  it("selects the Nth occurrence when requested", () => {
+    const state = buildState(["one two one two one"]);
+    const next = selectTextOccurrence(state, "one", 3);
+    expect(selectedSpan(next)).toBe("one");
+    const paragraphs = getParagraphs(next);
+    // The third "one" in "one two one two one" starts at offset 16.
+    expect(next.selection.anchor.offset).toBe(16);
+    expect(paragraphs[0]!.id).toBe(next.selection.anchor.paragraphId);
+  });
+
+  it("matches case-insensitively across paragraphs", () => {
+    const state = buildState(["hello world", "HELLO again"]);
+    const next = selectTextOccurrence(state, "hello", 2);
+    const paragraphs = getParagraphs(next);
+    // Second "hello" lives in paragraph index 1 ("HELLO again").
+    const fIdx = paragraphs.findIndex(
+      (p) => p.id === next.selection.focus.paragraphId,
+    );
+    expect(fIdx).toBe(1);
+    expect(selectedSpan(next)).toBe("HELLO");
+  });
+
+  it("is a no-op when the string is not found", () => {
+    const state = buildState(["hello world"]);
+    const before = state.selection;
+    const next = selectTextOccurrence(state, "missing");
+    expect(next.selection).toEqual(before);
+  });
+
+  it("is a no-op when the occurrence is beyond the matches", () => {
+    const state = buildState(["one one"]);
+    const before = state.selection;
+    const next = selectTextOccurrence(state, "one", 99);
+    expect(next.selection).toEqual(before);
   });
 });

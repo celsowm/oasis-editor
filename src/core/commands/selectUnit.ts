@@ -17,6 +17,7 @@ import {
 import { normalizeSelection } from "@/core/selection.js";
 import { comparePositions } from "@/core/selection.js";
 import { getFocusParagraph } from "@/core/selection/rangeEditing.js";
+import { findMatchesInDocument } from "./findReplace.js";
 import { setSelection } from "./selection.js";
 
 /** True when a character is part of a word (letter or digit, Unicode). */
@@ -105,6 +106,28 @@ export function selectCollapse(state: EditorState, end = false): EditorState {
   return setSelection(state, {
     anchor: target,
     focus: target,
+  });
+}
+
+/**
+ * Select the Nth occurrence of `text` in the document (`WordCraft select.text`:
+ * Word's "Select Text" navigation). Literal, case-insensitive matching; the
+ * `occurrence` count is 1-based (default 1). A no-op (same state) when the
+ * term is empty or the occurrence isn't found. Selection-only — never mutates
+ * the document, so it's applied via `applyState` with no undo.
+ */
+export function selectTextOccurrence(
+  state: EditorState,
+  text: string,
+  occurrence = 1,
+): EditorState {
+  const match = findMatchesInDocument(state.document, text)[
+    Math.max(1, occurrence) - 1
+  ];
+  if (!match) return state;
+  return setSelection(state, {
+    anchor: match.anchor,
+    focus: match.focus,
   });
 }
 
