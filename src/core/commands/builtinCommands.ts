@@ -149,6 +149,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setSpacingBefore",
   "setContextualSpacing",
   "setMirrorIndents",
+  "setLineRule",
   "setIndentLeft",
   "setIndentRight",
   "setIndentFirstLine",

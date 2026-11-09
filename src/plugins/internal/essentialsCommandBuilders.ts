@@ -74,6 +74,11 @@ export function boolOrNull(payload: unknown): boolean | null {
   return payload === true || payload === "true" || payload === 1;
 }
 
+export function strOrNull(payload: unknown): string | null {
+  if (payload === null || payload === undefined || payload === "") return null;
+  return typeof payload === "string" ? payload : String(payload);
+}
+
 export function numOrNull(payload: unknown): number | null {
   return payload != null && payload !== "" ? Number(payload) : null;
 }

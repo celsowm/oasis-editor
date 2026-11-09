@@ -217,6 +217,7 @@ export interface OasisCommandPayloads {
   setSpacingBefore: number | null;
   setContextualSpacing: boolean | null;
   setMirrorIndents: boolean | null;
+  setLineRule: "auto" | "exact" | "atLeast" | null;
   setIndentLeft: number | null;
   setIndentRight: number | null;
   setIndentFirstLine: number | null;

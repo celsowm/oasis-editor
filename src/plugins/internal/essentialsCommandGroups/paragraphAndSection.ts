@@ -6,7 +6,11 @@ import type {
   ActionCommandBuilder,
   ValueCommandBuilder,
 } from "../essentialsCommandBuilders.js";
-import { numOrNull, boolOrNull } from "../essentialsCommandBuilders.js";
+import {
+  numOrNull,
+  boolOrNull,
+  strOrNull,
+} from "../essentialsCommandBuilders.js";
 import type {
   EssentialsParagraphCapability,
   EssentialsSectionCapability,
@@ -137,6 +141,16 @@ export function buildParagraphAndSectionCommands({
       "setContextualSpacing",
       (p): true => (paragraph.setContextualSpacing(boolOrNull(p)), true),
       (): unknown => s().contextualSpacing,
+    ),
+    setLineRule: valueCommand(
+      "setLineRule",
+      (p): true => (
+        paragraph.setLineRule(
+          strOrNull(p) as "auto" | "exact" | "atLeast" | null,
+        ),
+        true
+      ),
+      (): string => s().lineRule,
     ),
     setMirrorIndents: valueCommand(
       "setMirrorIndents",

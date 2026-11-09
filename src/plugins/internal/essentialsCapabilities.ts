@@ -361,6 +361,8 @@ export interface EssentialsParagraphCapability {
   toggleWidowControl: () => void;
   setSpacingAfter: (value: number | null) => void;
   setSpacingBefore: (value: number | null) => void;
+  /** Set the line spacing rule (auto/exact/atLeast, w:lineRule). */
+  setLineRule: (rule: "auto" | "exact" | "atLeast" | null) => void;
   /** Set "Don't add space between paragraphs of the same style" (w:contextualSpacing). */
   setContextualSpacing: (value: boolean | null) => void;
   /** Set "Mirror indents" (w:mirrorIndents): swap left/right indents on facing pages. */
