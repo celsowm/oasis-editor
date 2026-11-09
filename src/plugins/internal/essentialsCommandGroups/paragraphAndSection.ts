@@ -187,6 +187,11 @@ export function buildParagraphAndSectionCommands({
       (p): true => (paragraph.setAutoSpaceDN(boolOrNull(p)), true),
       (): unknown => s().autoSpaceDN,
     ),
+    setAdjustRightInd: valueCommand(
+      "setAdjustRightInd",
+      (p): true => (paragraph.setAdjustRightInd(boolOrNull(p)), true),
+      (): unknown => s().adjustRightInd,
+    ),
     setMirrorIndents: valueCommand(
       "setMirrorIndents",
       (p): true => (paragraph.setMirrorIndents(boolOrNull(p)), true),

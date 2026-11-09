@@ -20,6 +20,7 @@ import { setParagraphOverflowPunct } from "@/core/commands/paragraphOverflowPunc
 import { setParagraphWordWrap } from "@/core/commands/paragraphWordWrap.js";
 import { setParagraphAutoSpaceDE } from "@/core/commands/paragraphAutoSpaceDE.js";
 import { setParagraphAutoSpaceDN } from "@/core/commands/paragraphAutoSpaceDN.js";
+import { setParagraphAdjustRightInd } from "@/core/commands/paragraphAdjustRightInd.js";
 import { applyHorizontalLine } from "@/core/commands/horizontalLine.js";
 import { hasDropCap, setDropCap } from "@/core/commands/dropCap.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
@@ -84,6 +85,10 @@ export function buildEssentialsParagraph(
     setAutoSpaceDN: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>
         setParagraphAutoSpaceDN(current, value),
+      ),
+    setAdjustRightInd: (value: boolean | null): void =>
+      options.applyTransactionalState((current): EditorState =>
+        setParagraphAdjustRightInd(current, value),
       ),
     setContextualSpacing: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>

@@ -225,6 +225,7 @@ export interface OasisCommandPayloads {
   setWordWrap: boolean | null;
   setAutoSpaceDE: boolean | null;
   setAutoSpaceDN: boolean | null;
+  setAdjustRightInd: boolean | null;
   setIndentLeft: number | null;
   setIndentRight: number | null;
   setIndentFirstLine: number | null;

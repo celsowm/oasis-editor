@@ -377,6 +377,8 @@ export interface EssentialsParagraphCapability {
   setAutoSpaceDE: (value: boolean | null) => void;
   /** Set "Automatically adjust spacing between East Asian text and numbers" (w:autoSpaceDN, default on). */
   setAutoSpaceDN: (value: boolean | null) => void;
+  /** Set "Adjust right indent when grid is defined" (w:adjustRightInd, default on). */
+  setAdjustRightInd: (value: boolean | null) => void;
   /** Set "Don't add space between paragraphs of the same style" (w:contextualSpacing). */
   setContextualSpacing: (value: boolean | null) => void;
   /** Set "Mirror indents" (w:mirrorIndents): swap left/right indents on facing pages. */
