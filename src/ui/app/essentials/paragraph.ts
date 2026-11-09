@@ -25,6 +25,7 @@ import { setParagraphTopLinePunct } from "@/core/commands/paragraphTopLinePunct.
 import { setParagraphPageBreakBefore } from "@/core/commands/paragraphPageBreakBefore.js";
 import { setParagraphKeepWithNext } from "@/core/commands/paragraphKeepWithNext.js";
 import { setParagraphKeepLinesTogether } from "@/core/commands/paragraphKeepLinesTogether.js";
+import { setParagraphWidowControl } from "@/core/commands/paragraphWidowControl.js";
 import { applyHorizontalLine } from "@/core/commands/horizontalLine.js";
 import { hasDropCap, setDropCap } from "@/core/commands/dropCap.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
@@ -109,6 +110,10 @@ export function buildEssentialsParagraph(
     setKeepLinesTogether: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>
         setParagraphKeepLinesTogether(current, value),
+      ),
+    setWidowControl: (value: boolean | null): void =>
+      options.applyTransactionalState((current): EditorState =>
+        setParagraphWidowControl(current, value),
       ),
     setContextualSpacing: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>
