@@ -5,6 +5,7 @@ import type {
   EditorPageBorder,
   EditorPageMargins,
   EditorPageNumbering,
+  EditorPosition,
   EditorWatermark,
 } from "@/core/model.js";
 import type { SectionPageNumberFormat } from "@/core/commands/pageNumber.js";
@@ -56,6 +57,8 @@ export interface EssentialsFormattingCapability {
   selectCollapse: (end?: boolean) => boolean;
   /** Select the Nth occurrence of a search string (literal, case-insensitive). */
   selectText: (text: string, occurrence?: number) => boolean;
+  /** Select an arbitrary range by anchor/focus positions (select.range). */
+  selectRange: (anchor: EditorPosition, focus: EditorPosition) => boolean;
   insertFootnote: () => boolean;
   insertTableOfContents: () => boolean;
   updateTableOfContents: () => boolean;

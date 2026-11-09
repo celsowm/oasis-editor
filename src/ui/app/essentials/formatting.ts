@@ -20,6 +20,7 @@ import {
 import {
   selectCollapse,
   selectParagraph,
+  selectRange,
   selectSentence,
   selectTextOccurrence,
   selectWord,
@@ -150,6 +151,11 @@ export function buildEssentialsFormatting(
       options.applyState(
         selectTextOccurrence(options.state(), text, occurrence),
       );
+      options.focusInput();
+      return true;
+    },
+    selectRange: (anchor, focus): boolean => {
+      options.applyState(selectRange(options.state(), anchor, focus));
       options.focusInput();
       return true;
     },

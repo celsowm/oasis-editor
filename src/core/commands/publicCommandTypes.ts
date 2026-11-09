@@ -1,5 +1,5 @@
 import type { CommandRef } from "./CommandRef.js";
-import type { EditorPageMargins } from "@/core/model.js";
+import type { EditorPageMargins, EditorPosition } from "@/core/model.js";
 import type { SectionPageNumberFormat } from "./pageNumber.js";
 import type { TextCaseMode } from "./text.js";
 import type { TableBorderPreset, TableRowHeight } from "./table.js";
@@ -53,6 +53,7 @@ export interface OasisCommandPayloads {
   selectParagraph: undefined;
   selectCollapse: { end?: boolean } | undefined;
   selectText: { text: string; occurrence?: number } | undefined;
+  selectRange: { anchor: EditorPosition; focus: EditorPosition } | undefined;
   insertFootnote: undefined;
   insertText: string | InsertTextPayload;
   insertEquation: EditorMathExpression;

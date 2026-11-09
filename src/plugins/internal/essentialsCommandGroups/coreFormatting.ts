@@ -64,6 +64,14 @@ export function buildCoreFormattingCommands({
       },
       () => "",
     ),
+    selectRange: actionCommand("selectRange", (p): void => {
+      const payload = (p ?? {}) as {
+        anchor?: import("@/core/model.js").EditorPosition;
+        focus?: import("@/core/model.js").EditorPosition;
+      };
+      if (!payload.anchor || !payload.focus) return;
+      formatting.selectRange(payload.anchor, payload.focus);
+    }),
     insertFootnote: command("insertFootnote", formatting.insertFootnote),
     insertTableOfContents: command(
       "insertTableOfContents",
