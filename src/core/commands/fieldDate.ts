@@ -31,6 +31,7 @@ import {
 } from "@/core/selection/rangeEditing.js";
 import { formatDate } from "@/core/format/dateFormat.js";
 import { getActiveZone } from "@/core/model/editingZones.js";
+import { insertTextAtSelection } from "./textEditing.js";
 
 export const DEFAULT_DATE_PICTURE = "M/d/yyyy";
 
@@ -90,6 +91,23 @@ export function insertDateField(
 
 export function isDateFieldRun(run: EditorTextRun): boolean {
   return run.kind === "field" && run.field.type === "DATE";
+}
+
+/**
+ * Insert the current date as plain text (WordCraft's `insert.dateTime` with
+ * `update: false`): the date is typed like ordinary text and does not update,
+ * unlike a DATE field. A no-op (same state) when the formatted result is empty.
+ */
+export function insertDateTimeText(
+  state: EditorState,
+  dateFormat = DEFAULT_DATE_PICTURE,
+  value = new Date(),
+): EditorState {
+  const text = formatDate(value, dateFormat);
+  if (text.length === 0) {
+    return state;
+  }
+  return insertTextAtSelection(state, text);
 }
 
 /** Whether the active zone is a header or footer (recall DATE fields in them). */
