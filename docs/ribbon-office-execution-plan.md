@@ -1,6 +1,6 @@
 # Execution Plan — Ribbon Quality on Par with WordCraft and Microsoft Office
 
-Date: 2026-11-09. Status: proposed; implementation under this plan has not started.
+Date: 2026-11-09. Status: active; implementation is in progress. See the [delivery ledger](ribbon-office-progress.md) for verified changes, evidence and remaining acceptance.
 
 This document defines the current execution sequence. It complements the [general roadmap](wordcraft-ribbon-parity-plan.md), [command matrix](ribbon-parity-matrix.md), and [OOXML interoperability plan](ooxml-near-full-compatibility-plan.md). Historical assessments in those documents do not replace a current inventory.
 
