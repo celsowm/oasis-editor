@@ -9,6 +9,7 @@ import { stepOutlineLevel } from "@/core/commands/outlineStep.js";
 import { resetParagraphFormatting } from "@/core/commands/paragraphReset.js";
 import { editParagraphTabStops } from "@/core/commands/paragraphTabs.js";
 import { setParagraphOutlineLevel } from "@/core/commands/paragraphOutlineLevel.js";
+import { setParagraphAlign } from "@/core/commands/paragraphAlign.js";
 import { setParagraphListLevel } from "@/core/commands/paragraphListLevel.js";
 import { setParagraphContextualSpacing } from "@/core/commands/paragraphContextualSpacing.js";
 import { setParagraphMirrorIndents } from "@/core/commands/paragraphMirrorIndents.js";
@@ -274,6 +275,13 @@ export function buildEssentialsParagraph(
     },
     setBidi: (enabled: boolean | null): void =>
       options.commandsController.applyParagraphStyleCommand("bidi", enabled),
+    setParagraphAlign: (
+      value: "left" | "center" | "right" | "justify" | null,
+    ): void => {
+      options.applyTransactionalState((current): EditorState =>
+        setParagraphAlign(current, value),
+      );
+    },
     sortParagraphs: (descending = false): void =>
       options.applyTransactionalState((current): EditorState =>
         sortSelectedParagraphs(current, descending),

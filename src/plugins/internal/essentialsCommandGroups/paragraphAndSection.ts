@@ -82,6 +82,16 @@ export function buildParagraphAndSectionCommands({
       (p): true => (paragraph.setBidi(boolOrNull(p)), true),
       (): unknown => s().bidi,
     ),
+    setParagraphAlign: valueCommand(
+      "setParagraphAlign",
+      (p): true => (
+        paragraph.setParagraphAlign(
+          p as "left" | "center" | "right" | "justify" | null,
+        ),
+        true
+      ),
+      (): unknown => s().align,
+    ),
     sortParagraphs: actionCommand("sortParagraphs", (p?: unknown): void =>
       paragraph.sortParagraphs(
         p === true ||

@@ -439,6 +439,10 @@ export interface EssentialsParagraphCapability {
   canMoveParagraphsDown: () => boolean;
   /** Set the selected paragraphs' flow direction (w:bidi, right-to-left). */
   setBidi: (enabled: boolean | null) => void;
+  /** Set the selected paragraphs' General › Alignment (w:jc/@w:val). */
+  setParagraphAlign: (
+    value: "left" | "center" | "right" | "justify" | null,
+  ) => void;
   /** Sort the selected paragraph run (natural order), ascending unless descending. */
   sortParagraphs: (descending?: boolean) => void;
   /** Whether any selected paragraph carries a drop cap (insert.dropCap). */

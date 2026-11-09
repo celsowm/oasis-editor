@@ -211,6 +211,7 @@ export interface OasisCommandPayloads {
   toggleWidowControl: undefined;
   toggleParagraphBidi: undefined;
   setParagraphBidi: boolean | null;
+  setParagraphAlign: "left" | "center" | "right" | "justify" | null;
   sortParagraphs: { descending?: boolean } | boolean | undefined;
   promote: undefined;
   demote: undefined;
