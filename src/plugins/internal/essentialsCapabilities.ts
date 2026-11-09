@@ -53,6 +53,8 @@ export interface EssentialsFormattingCapability {
   selectParagraph: () => boolean;
   /** Collapse the selection to its start (or end when `end` is true). */
   selectCollapse: (end?: boolean) => boolean;
+  /** Select the Nth occurrence of a search string (literal, case-insensitive). */
+  selectText: (text: string, occurrence?: number) => boolean;
   insertFootnote: () => boolean;
   insertTableOfContents: () => boolean;
   updateTableOfContents: () => boolean;

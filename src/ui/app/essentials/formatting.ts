@@ -20,6 +20,7 @@ import {
   selectCollapse,
   selectParagraph,
   selectSentence,
+  selectTextOccurrence,
   selectWord,
 } from "@/core/commands/selectUnit.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
@@ -140,6 +141,14 @@ export function buildEssentialsFormatting(
     selectCollapse: (end = false): boolean => {
       if (options.isReadOnly()) return false;
       options.applyState(selectCollapse(options.state(), end));
+      options.focusInput();
+      return true;
+    },
+    selectText: (text: string, occurrence = 1): boolean => {
+      if (text.length === 0) return false;
+      options.applyState(
+        selectTextOccurrence(options.state(), text, occurrence),
+      );
       options.focusInput();
       return true;
     },

@@ -53,6 +53,17 @@ export function buildCoreFormattingCommands({
       const payload = (p ?? {}) as { end?: boolean };
       formatting.selectCollapse(Boolean(payload.end));
     }),
+    selectText: valueCommand(
+      "selectText",
+      (p): boolean => {
+        const payload = (p ?? {}) as { text?: string; occurrence?: number };
+        return formatting.selectText(
+          payload.text ?? "",
+          payload.occurrence == null ? 1 : Number(payload.occurrence),
+        );
+      },
+      () => "",
+    ),
     insertFootnote: command("insertFootnote", formatting.insertFootnote),
     insertTableOfContents: command(
       "insertTableOfContents",
