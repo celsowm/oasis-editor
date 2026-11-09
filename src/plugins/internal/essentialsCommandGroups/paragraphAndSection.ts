@@ -77,6 +77,11 @@ export function buildParagraphAndSectionCommands({
       (): void => paragraph.setBidi(!s().bidi ? true : null),
       (): { isActive: boolean } => ({ isActive: Boolean(s().bidi) }),
     ),
+    setParagraphBidi: valueCommand(
+      "setParagraphBidi",
+      (p): true => (paragraph.setBidi(boolOrNull(p)), true),
+      (): unknown => s().bidi,
+    ),
     sortParagraphs: actionCommand("sortParagraphs", (p?: unknown): void =>
       paragraph.sortParagraphs(
         p === true ||

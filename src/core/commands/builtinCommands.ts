@@ -139,6 +139,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "toggleKeepLinesTogether",
   "toggleWidowControl",
   "toggleParagraphBidi",
+  "setParagraphBidi",
   "sortParagraphs",
   "promote",
   "demote",

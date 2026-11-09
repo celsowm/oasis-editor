@@ -207,6 +207,7 @@ export interface OasisCommandPayloads {
   toggleKeepLinesTogether: undefined;
   toggleWidowControl: undefined;
   toggleParagraphBidi: undefined;
+  setParagraphBidi: boolean | null;
   sortParagraphs: { descending?: boolean } | boolean | undefined;
   promote: undefined;
   demote: undefined;
