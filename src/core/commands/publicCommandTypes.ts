@@ -188,6 +188,12 @@ export interface OasisCommandPayloads {
   setParagraphShading: string | null;
   applyParagraphBorders: undefined;
   applyHorizontalLine: undefined;
+  setDropCap: {
+    text?: string;
+    lines?: number;
+    type?: "drop" | "margin" | "none";
+    font?: string;
+  } | null;
   setLineHeight: number | null;
   setListFormat: string;
   setListStartAt: number | null;

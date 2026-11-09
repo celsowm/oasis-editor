@@ -148,6 +148,21 @@ export function buildParagraphAndSectionCommands({
     applyHorizontalLine: actionCommand("applyHorizontalLine", (): void =>
       paragraph.addHorizontalLine(),
     ),
+    setDropCap: actionCommand(
+      "setDropCap",
+      (p): void => {
+        const payload = (p ?? {}) as {
+          text?: string;
+          lines?: number;
+          type?: "drop" | "margin" | "none";
+          font?: string;
+        };
+        paragraph.setDropCap(payload);
+      },
+      (): { value: boolean } => ({
+        value: paragraph.hasDropCap(),
+      }),
+    ),
     setLineHeight: valueCommand(
       "setLineHeight",
       (p): true => (paragraph.setLineHeight(numOrNull(p)), true),

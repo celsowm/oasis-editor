@@ -361,6 +361,15 @@ export interface EssentialsParagraphCapability {
   setBidi: (enabled: boolean | null) => void;
   /** Sort the selected paragraph run (natural order), ascending unless descending. */
   sortParagraphs: (descending?: boolean) => void;
+  /** Whether any selected paragraph carries a drop cap (insert.dropCap). */
+  hasDropCap: () => boolean;
+  /** Set/clear a drop cap on the selected paragraphs (insert.dropCap). */
+  setDropCap: (options: {
+    text?: string;
+    lines?: number;
+    type?: "drop" | "margin" | "none";
+    font?: string;
+  }) => void;
 }
 
 export interface EssentialsSectionCapability {

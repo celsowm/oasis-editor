@@ -143,6 +143,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setParagraphShading",
   "applyParagraphBorders",
   "applyHorizontalLine",
+  "setDropCap",
   "setLineHeight",
   "setListFormat",
   "setListStartAt",

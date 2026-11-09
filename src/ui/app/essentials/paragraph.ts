@@ -6,6 +6,7 @@ import {
 } from "@/core/commands/paragraphMove.js";
 import { sortSelectedParagraphs } from "@/core/commands/paragraphSort.js";
 import { applyHorizontalLine } from "@/core/commands/horizontalLine.js";
+import { hasDropCap, setDropCap } from "@/core/commands/dropCap.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
 import type { EssentialsParagraphCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
@@ -152,5 +153,12 @@ export function buildEssentialsParagraph(
       options.applyTransactionalState((current): EditorState =>
         sortSelectedParagraphs(current, descending),
       ),
+    hasDropCap: (): boolean => hasDropCap(options.state()),
+    setDropCap: (payload): void => {
+      options.applyTransactionalState((current): EditorState =>
+        setDropCap(current, payload),
+      );
+      options.focusInput();
+    },
   };
 }
