@@ -41,6 +41,8 @@ import {
   type TableRowHeight,
   canSetActiveTableRowBreakAcrossPages,
   setActiveTableRowBreakAcrossPages,
+  canSetActiveTableRowHeader,
+  setSelectedTableRowHeader,
   canDeleteActiveTableCell,
   deleteActiveTableCell,
   canSetActiveTableAutoFit,
@@ -510,6 +512,13 @@ export function buildEssentialsTable(
         (current): EditorState =>
           setActiveTableRowBreakAcrossPages(current, allow),
         MERGE_KEYS.tableRowHeight,
+      ),
+    canSetActiveTableRowHeader: (): boolean =>
+      canSetActiveTableRowHeader(options.state()),
+    setActiveTableRowHeader: (value: boolean | null): void =>
+      apply(
+        (current): EditorState => setSelectedTableRowHeader(current, value),
+        MERGE_KEYS.tableRepeatHeaderRows,
       ),
     insert: (rows: number, cols: number): void =>
       options.tableOps.insertTableCommand(rows, cols),

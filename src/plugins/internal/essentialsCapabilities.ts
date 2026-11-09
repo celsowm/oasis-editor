@@ -680,6 +680,10 @@ export interface EssentialsTableCapability {
   canSetActiveTableRowBreakAcrossPages: () => boolean;
   /** Word's "Allow row to break across pages": set it on the active row. */
   setActiveTableRowBreakAcrossPages: (allow: boolean | null) => void;
+  /** True when the caret sits inside a table row whose header flag can change. */
+  canSetActiveTableRowHeader: () => boolean;
+  /** Word's "Repeat as header row": set the header flag on the active row. */
+  setActiveTableRowHeader: (value: boolean | null) => void;
   /** True when the caret sits inside a table whose cells can be re-margined. */
   canSetCellMargins: () => boolean;
   /** Word's Cell Margins: set per-edge padding on the selected cells. */

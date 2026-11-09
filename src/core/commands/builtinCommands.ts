@@ -262,6 +262,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "tableSelectTable",
   "tableSetRowHeight",
   "tableSetBreakAcrossPages",
+  "tableSetHeaderRow",
   "tableSetCellWidth",
   "tableSetCellNoWrap",
   "tableSetCellFitText",

@@ -351,6 +351,7 @@ export interface OasisCommandPayloads {
   tableAutoFit: "contents" | "window" | "fixed";
   tableSetRowHeight: TableRowHeight;
   tableSetBreakAcrossPages: boolean | null;
+  tableSetHeaderRow: boolean | null;
   tableSetCellWidth: string | number;
   tableSetCellNoWrap: boolean | null;
   tableSetCellFitText: boolean | null;

@@ -254,6 +254,15 @@ export function buildTableCommands({
           table.canSetActiveTableRowBreakAcrossPages(),
       }),
     ),
+    tableSetHeaderRow: valueCommand(
+      "tableSetHeaderRow",
+      (p): true => (table.setActiveTableRowHeader(boolOrNull(p)), true),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSetHeaderRow") &&
+          table.canSetActiveTableRowHeader(),
+      }),
+    ),
     tableSetCellMargins: actionCommand(
       "tableSetCellMargins",
       (p): void =>
