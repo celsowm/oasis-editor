@@ -369,6 +369,8 @@ export interface EssentialsParagraphCapability {
     clearAll?: boolean;
     default?: number | null;
   }) => void;
+  /** Set the selected paragraphs' outline level (0-8, w:outlineLvl) or return to body text (null). */
+  setOutlineLevel: (level: number | null) => void;
   /** Move the selected paragraphs one step up/down, if possible. */
   moveParagraphsUp: () => void;
   moveParagraphsDown: () => void;

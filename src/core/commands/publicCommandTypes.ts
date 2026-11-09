@@ -199,6 +199,7 @@ export interface OasisCommandPayloads {
   demote: undefined;
   resetParagraphFormatting: undefined;
   setParagraphTabStops: ParagraphTabStopsPayload | undefined;
+  setOutlineLevel: number | null | undefined;
   setSpacingAfter: number | null;
   setSpacingBefore: number | null;
   setIndentLeft: number | null;

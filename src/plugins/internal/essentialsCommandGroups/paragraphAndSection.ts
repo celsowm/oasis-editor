@@ -86,6 +86,25 @@ export function buildParagraphAndSectionCommands({
       "resetParagraphFormatting",
       (): void => paragraph.resetParagraphFormatting(),
     ),
+    setOutlineLevel: actionCommand(
+      "setOutlineLevel",
+      (p): void => {
+        const payload = (p ?? undefined) as number | string | null | undefined;
+        const level =
+          payload === null ||
+          payload === undefined ||
+          payload === "body" ||
+          payload === ""
+            ? null
+            : Number(payload);
+        paragraph.setOutlineLevel(
+          level === null || Number.isNaN(level) ? null : level,
+        );
+      },
+      (): { value: number | null } => ({
+        value: Number(style.state().outlineLevel) || null,
+      }),
+    ),
     setParagraphTabStops: actionCommand("setParagraphTabStops", (p): void => {
       const payload = (p ?? {}) as {
         tabs?: import("@/core/model.js").EditorTabStop[] | null;
