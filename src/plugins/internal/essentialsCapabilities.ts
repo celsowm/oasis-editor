@@ -359,6 +359,8 @@ export interface EssentialsParagraphCapability {
   promote: () => void;
   /** Outline-step down (WordCraft para.demote): heading down one level, list item one level down; body text refused. */
   demote: () => void;
+  /** Reset paragraph formatting (WordCraft para.reset): clear direct paragraph formatting, keeping the named style, list and drop cap. */
+  resetParagraphFormatting: () => void;
   /** Move the selected paragraphs one step up/down, if possible. */
   moveParagraphsUp: () => void;
   moveParagraphsDown: () => void;

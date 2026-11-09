@@ -182,6 +182,7 @@ export interface OasisCommandPayloads {
   sortParagraphs: { descending?: boolean } | boolean | undefined;
   promote: undefined;
   demote: undefined;
+  resetParagraphFormatting: undefined;
   setSpacingAfter: number | null;
   setSpacingBefore: number | null;
   setIndentLeft: number | null;

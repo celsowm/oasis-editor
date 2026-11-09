@@ -6,6 +6,7 @@ import {
 } from "@/core/commands/paragraphMove.js";
 import { sortSelectedParagraphs } from "@/core/commands/paragraphSort.js";
 import { stepOutlineLevel } from "@/core/commands/outlineStep.js";
+import { resetParagraphFormatting } from "@/core/commands/paragraphReset.js";
 import { applyHorizontalLine } from "@/core/commands/horizontalLine.js";
 import { hasDropCap, setDropCap } from "@/core/commands/dropCap.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
@@ -157,6 +158,12 @@ export function buildEssentialsParagraph(
     demote: (): void => {
       options.applyTransactionalState((current): EditorState =>
         stepOutlineLevel(current, false),
+      );
+      options.focusInput();
+    },
+    resetParagraphFormatting: (): void => {
+      options.applyTransactionalState((current): EditorState =>
+        resetParagraphFormatting(current),
       );
       options.focusInput();
     },

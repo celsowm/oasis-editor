@@ -137,6 +137,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "sortParagraphs",
   "promote",
   "demote",
+  "resetParagraphFormatting",
   "setSpacingAfter",
   "setSpacingBefore",
   "setIndentLeft",

@@ -82,6 +82,10 @@ export function buildParagraphAndSectionCommands({
     ),
     promote: actionCommand("promote", (): void => paragraph.promote()),
     demote: actionCommand("demote", (): void => paragraph.demote()),
+    resetParagraphFormatting: actionCommand(
+      "resetParagraphFormatting",
+      (): void => paragraph.resetParagraphFormatting(),
+    ),
     setSpacingAfter: valueCommand(
       "setSpacingAfter",
       (p): true => (paragraph.setSpacingAfter(numOrNull(p)), true),
