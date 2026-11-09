@@ -12,10 +12,55 @@ import {
   updateActiveTableBlocks,
   updateStateSections,
   updateNestedTablesInBlocks,
+  resolveActiveTableLocation,
+  getBlocksForZone,
+  readInnermostTableAtPath,
 } from "./tableCommandUtils.js";
 
 /** Fallback per-column width (pt) when a table has no resolvable grid. */
 const DEFAULT_DISTRIBUTED_COLUMN_PT = 120;
+
+/** True when the caret sits in a table column whose width can change. */
+export function canSetActiveTableColumnWidth(state: EditorState): boolean {
+  return resolveActiveTableLocation(state) !== null;
+}
+
+/**
+ * Word's table column width (Table Layout › Cell Size › Width). Resolves the
+ * innermost table under the caret, finds the visual column of the active cell,
+ * and applies the requested width through `setTableColumnWidths` (which writes
+ * the grid override and any single-spanning cell widths in one undoable step).
+ * A no-op when the caret is not inside a table column.
+ */
+export function setActiveTableColumnWidth(
+  state: EditorState,
+  width: number | string | null,
+): EditorState {
+  const target = resolveActiveTableLocation(state);
+  if (!target) return state;
+  const { activeSectionIndex, loc } = target;
+
+  const blocks = getBlocksForZone(state.document, activeSectionIndex, loc.zone);
+  const table = readInnermostTableAtPath(blocks, loc.tablePath);
+  if (!table) return state;
+
+  const entry = buildTableCellLayout(table).find(
+    (candidate): boolean =>
+      candidate.rowIndex === loc.rowIndex &&
+      candidate.cellIndex === loc.cellIndex,
+  );
+  if (!entry) return state;
+
+  const visualColumnIndex = entry.visualColumnIndex;
+  if (width === null) {
+    // Column widths have no natural "clear": a null payload is a no-op.
+    return state;
+  }
+
+  return setTableColumnWidths(state, table.id, {
+    [visualColumnIndex]: width,
+  });
+}
 
 export function setTableColumnWidths(
   state: EditorState,
