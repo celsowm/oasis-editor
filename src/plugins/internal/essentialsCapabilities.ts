@@ -146,6 +146,10 @@ export interface EssentialsFormattingCapability {
   setFontSize: (value: number | null) => boolean;
   increaseFontSize: () => boolean;
   decreaseFontSize: () => boolean;
+  /** Nudge the selection font size up by exactly 1 point (format.growFont1). */
+  growFont1: () => boolean;
+  /** Nudge the selection font size down by exactly 1 point (format.shrinkFont1). */
+  shrinkFont1: () => boolean;
   changeTextCase: (mode: TextCaseMode) => boolean;
   clearFormatting: () => boolean;
   setColor: (value: string | null) => boolean;

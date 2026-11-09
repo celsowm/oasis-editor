@@ -6,6 +6,7 @@ import {
   insertColumnBreakAtSelection,
   insertMathAtSelection,
   insertTextAtSelection,
+  nudgeFontSize,
   updateMathRun,
 } from "@/core/commands/text.js";
 import { replaceAllInDocument } from "@/core/commands/findReplace.js";
@@ -496,6 +497,20 @@ export function buildEssentialsFormatting(
     ),
     increaseFontSize: (): boolean => stepFontSize("increase"),
     decreaseFontSize: (): boolean => stepFontSize("decrease"),
+    growFont1: (): true => {
+      options.applyTransactionalState((current): EditorState =>
+        nudgeFontSize(current, 1),
+      );
+      options.focusInput();
+      return true;
+    },
+    shrinkFont1: (): true => {
+      options.applyTransactionalState((current): EditorState =>
+        nudgeFontSize(current, -1),
+      );
+      options.focusInput();
+      return true;
+    },
     changeTextCase: (mode: TextCaseMode): true => (
       options.commandsController.applyChangeTextCaseCommand(mode),
       true

@@ -132,6 +132,8 @@ export interface OasisCommandPayloads {
   setFontSize: SetFontSizePayload | number | string | null;
   increaseFontSize: undefined;
   decreaseFontSize: undefined;
+  growFont1: undefined;
+  shrinkFont1: undefined;
   changeTextCase: TextCaseMode;
   clearFormatting: undefined;
   setColor: string | null;

@@ -84,6 +84,8 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setFontSize",
   "increaseFontSize",
   "decreaseFontSize",
+  "growFont1",
+  "shrinkFont1",
   "changeTextCase",
   "clearFormatting",
   "setColor",

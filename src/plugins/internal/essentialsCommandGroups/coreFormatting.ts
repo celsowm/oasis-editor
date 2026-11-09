@@ -517,6 +517,8 @@ export function buildCoreFormattingCommands({
     ),
     increaseFontSize: command("increaseFontSize", formatting.increaseFontSize),
     decreaseFontSize: command("decreaseFontSize", formatting.decreaseFontSize),
+    growFont1: command("growFont1", formatting.growFont1),
+    shrinkFont1: command("shrinkFont1", formatting.shrinkFont1),
     changeTextCase: actionCommand(
       "changeTextCase",
       (p): void => {
