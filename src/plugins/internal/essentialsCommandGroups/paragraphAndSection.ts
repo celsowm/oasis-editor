@@ -138,6 +138,11 @@ export function buildParagraphAndSectionCommands({
       (p): true => (paragraph.setContextualSpacing(boolOrNull(p)), true),
       (): unknown => s().contextualSpacing,
     ),
+    setMirrorIndents: valueCommand(
+      "setMirrorIndents",
+      (p): true => (paragraph.setMirrorIndents(boolOrNull(p)), true),
+      (): unknown => s().mirrorIndents,
+    ),
     setIndentLeft: valueCommand(
       "setIndentLeft",
       (p): true => (paragraph.setIndentLeft(numOrNull(p)), true),
