@@ -631,5 +631,50 @@ export function buildEssentialsFormatting(
       )("emphasisMark", value),
       true
     ),
+    setKerning: (value: number | null): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "kerningThreshold",
+          value: number | null,
+        ) => void
+      )("kerningThreshold", value),
+      true
+    ),
+    setLigatures: (value: string | null): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "ligatures",
+          value: string | null,
+        ) => void
+      )("ligatures", value || null),
+      true
+    ),
+    setNumberSpacing: (value: string | null): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "numberSpacing",
+          value: string | null,
+        ) => void
+      )("numberSpacing", value || null),
+      true
+    ),
+    setNumberForm: (value: string | null): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "numberForm",
+          value: string | null,
+        ) => void
+      )("numberForm", value || null),
+      true
+    ),
+    setStylisticSet: (value: number | null): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "stylisticSet",
+          value: number | null,
+        ) => void
+      )("stylisticSet", value),
+      true
+    ),
   };
 }

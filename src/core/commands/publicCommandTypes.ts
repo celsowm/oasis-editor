@@ -170,6 +170,11 @@ export interface OasisCommandPayloads {
   setCharacterSpacing: number | null;
   setBaselineShift: number | null;
   setEmphasisMark: string | null;
+  setKerning: number | null;
+  setLigatures: string | null;
+  setNumberSpacing: string | null;
+  setNumberForm: string | null;
+  setStylisticSet: number | null;
   documentStyles: undefined;
   print: undefined;
   copy: undefined;

@@ -176,6 +176,16 @@ export interface EssentialsFormattingCapability {
   setCharacterSpacing: (value: number | null) => boolean;
   setBaselineShift: (value: number | null) => boolean;
   setEmphasisMark: (value: string | null) => boolean;
+  /** Set kerning threshold in pt (character-level, w:kern). */
+  setKerning: (value: number | null) => boolean;
+  /** Set ligature style (character-level, w14:ligatures). */
+  setLigatures: (value: string | null) => boolean;
+  /** Set number spacing (default/proportional/tabular). */
+  setNumberSpacing: (value: string | null) => boolean;
+  /** Set number form (default/lining/oldStyle). */
+  setNumberForm: (value: string | null) => boolean;
+  /** Set stylistic set (1-20; character-level, w14:stylisticSets). */
+  setStylisticSet: (value: number | null) => boolean;
 }
 
 export interface EssentialsDocumentStyleDescriptor {

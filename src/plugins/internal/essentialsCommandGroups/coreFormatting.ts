@@ -614,5 +614,30 @@ export function buildCoreFormattingCommands({
       (p): boolean => formatting.setEmphasisMark((p as string) || null),
       (): string => s().emphasisMark,
     ),
+    setKerning: valueCommand(
+      "setKerning",
+      (p): boolean => formatting.setKerning(numOrNull(p)),
+      (): string => s().kerningThreshold,
+    ),
+    setLigatures: valueCommand(
+      "setLigatures",
+      (p): boolean => formatting.setLigatures((p as string) || null),
+      (): string => s().ligatures,
+    ),
+    setNumberSpacing: valueCommand(
+      "setNumberSpacing",
+      (p): boolean => formatting.setNumberSpacing((p as string) || null),
+      (): string => s().numberSpacing,
+    ),
+    setNumberForm: valueCommand(
+      "setNumberForm",
+      (p): boolean => formatting.setNumberForm((p as string) || null),
+      (): string => s().numberForm,
+    ),
+    setStylisticSet: valueCommand(
+      "setStylisticSet",
+      (p): boolean => formatting.setStylisticSet(numOrNull(p)),
+      (): string => s().stylisticSet,
+    ),
   };
 }
