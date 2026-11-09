@@ -445,6 +445,31 @@ export function buildParagraphAndSectionCommands({
         value: section.getVerticalAlign(),
       }),
     ),
+    setSectionStart: actionCommand(
+      "setSectionStart",
+      (p): void => {
+        const breakType = (p ?? undefined) as
+          | "nextPage"
+          | "continuous"
+          | "evenPage"
+          | "oddPage"
+          | "nextColumn"
+          | undefined;
+        if (
+          breakType === undefined ||
+          breakType === "nextPage" ||
+          breakType === "continuous" ||
+          breakType === "evenPage" ||
+          breakType === "oddPage" ||
+          breakType === "nextColumn"
+        ) {
+          section.setSectionStart(breakType ?? "nextPage");
+        }
+      },
+      (): { value: string | undefined } => ({
+        value: section.getSectionStart(),
+      }),
+    ),
     setSectionBidi: actionCommand(
       "setSectionBidi",
       (p): void => {

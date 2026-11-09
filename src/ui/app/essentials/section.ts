@@ -130,6 +130,19 @@ export function buildEssentialsSection(
       );
       options.focusInput();
     },
+    getSectionStart: () => {
+      const idx = getActiveSectionIndex(options.state());
+      return options.state().document.sections?.[idx]?.breakType;
+    },
+    setSectionStart: (breakType): void => {
+      const idx = getActiveSectionIndex(options.state());
+      const target =
+        options.state().document.sections?.[idx] ?? options.state().document;
+      if (!target) return;
+      options.commandsController.applyUpdateSectionSettingsCommand(idx, {
+        breakType,
+      });
+    },
     getBidi: () => getSectionBidi(options.state()),
     setBidi: (enabled): void => {
       options.applyTransactionalState((state) =>

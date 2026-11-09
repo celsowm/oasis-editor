@@ -6,6 +6,7 @@ import type {
   EditorPageMargins,
   EditorPageNumbering,
   EditorPosition,
+  EditorSectionBreakType,
   EditorWatermark,
 } from "@/core/model.js";
 import type { SectionPageNumberFormat } from "@/core/commands/pageNumber.js";
@@ -495,6 +496,10 @@ export interface EssentialsSectionCapability {
   getVerticalAlign: () => "top" | "center" | "both" | "bottom" | undefined;
   /** Set the active section's vertical justification (`w:vAlign`). */
   setVerticalAlign: (align: "top" | "center" | "both" | "bottom") => void;
+  /** Read the active section's start type (`w:type`, Page Setup › Section start). */
+  getSectionStart: () => EditorSectionBreakType | undefined;
+  /** Set the active section's start type (`w:type`, Page Setup › Section start). */
+  setSectionStart: (breakType: EditorSectionBreakType) => void;
   /** Read the active section's right-to-left layout flag (`w:bidi`). */
   getBidi: () => boolean | undefined;
   /** Set the active section's right-to-left layout flag (`w:bidi`). */

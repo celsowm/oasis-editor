@@ -199,6 +199,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setColumns",
   "setColumnsPreset",
   "setSectionVerticalAlign",
+  "setSectionStart",
   "setSectionBidi",
   "setHyphenation",
   "editHeader",

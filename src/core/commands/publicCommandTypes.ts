@@ -279,6 +279,8 @@ export interface OasisCommandPayloads {
   };
   setColumnsPreset: string;
   setSectionVerticalAlign: "top" | "center" | "both" | "bottom" | null;
+  setSectionStart:
+    "nextPage" | "continuous" | "evenPage" | "oddPage" | "nextColumn" | null;
   setSectionBidi: boolean | null;
   setHyphenation: {
     value?: boolean;
