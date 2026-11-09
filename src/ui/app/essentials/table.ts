@@ -7,6 +7,7 @@ import {
   setTableCellStyleValue,
   setTableCellWidth,
   setTableCellNoWrap,
+  setTableCellFitText,
   setTableStyleValue,
   canConvertActiveTableToText,
   convertActiveTableToText,
@@ -448,6 +449,11 @@ export function buildEssentialsTable(
     setCellNoWrap: (value: boolean | null): void =>
       apply(
         (current): EditorState => setTableCellNoWrap(current, value),
+        MERGE_KEYS.tableCellWidth,
+      ),
+    setCellFitText: (value: boolean | null): void =>
+      apply(
+        (current): EditorState => setTableCellFitText(current, value),
         MERGE_KEYS.tableCellWidth,
       ),
     canSetCellMargins: (): boolean => canSetTableCellMargins(options.state()),
