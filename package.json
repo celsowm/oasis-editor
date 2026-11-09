@@ -69,7 +69,10 @@
     "check:native-ui": "node ./scripts/check-native-ui-elements.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "audit:ribbon:icons": "node scripts/audit-ribbon-icons.mjs",
+    "capture:ribbon": "node scripts/capture-ribbon-reference.mjs",
+    "test:ribbon:browser": "node scripts/verify-ribbon-reference.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -6,7 +6,7 @@
     "wordcraftRepository": "storytold/wordcraft",
     "wordcraftCommit": "e53cae3482d4e080a15dc2320eb4929ea7722db2"
   },
-  "scope": "Initial 29-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.",
+  "scope": "38-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog. Baseline SHAs are historical; current visual, semantic and persistence evidence is tracked independently in references.json and docs/ribbon-office-progress.md.",
   "features": [
     {
       "id": "home.copy",

@@ -2,7 +2,7 @@
 
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
-**Scope:** Initial 29-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog.  
+**Scope:** 38-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog. Baseline SHAs are historical; current visual, semantic and persistence evidence is tracked independently in references.json and docs/ribbon-office-progress.md.  
 **Oasis baseline:** `e49c1b33e1fd0b76757b42b91e91d674cd0b229f`  
 **WordCraft baseline:** `e53cae3482d4e080a15dc2320eb4929ea7722db2`
 

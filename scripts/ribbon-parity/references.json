@@ -1,0 +1,732 @@
+{
+  "schemaVersion": 1,
+  "scope": "Reference triage, not a capability-completion matrix. Historical images are local artifacts, not reproducible current baselines.",
+  "statusVocabulary": [
+    "complete",
+    "partial",
+    "core-only",
+    "menu-only",
+    "ui-only",
+    "preservation-only",
+    "missing",
+    "not-applicable",
+    "unverified"
+  ],
+  "references": {
+    "oasisObservedCommit": "8aaa8985937b5c5959e2d8bc0850c0dfcd932856",
+    "wordcraftObservedCommit": "05f781cfdac1d89034c0f4f5824b597ff845f2ef",
+    "word": "Word web in Safari; dark theme; seven tabs; desktop/contextual tools unverified"
+  },
+  "categories": [
+    {
+      "id": "home",
+      "name": "Home",
+      "oasisHistoricalCapture": true,
+      "wordcraftTab": "home",
+      "wordWebTab": "Home",
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "insert",
+      "name": "Insert",
+      "oasisHistoricalCapture": true,
+      "wordcraftTab": "insert",
+      "wordWebTab": "Insert",
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "design",
+      "name": "Design",
+      "oasisHistoricalCapture": true,
+      "wordcraftTab": "design",
+      "wordWebTab": null,
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "layout",
+      "name": "Layout",
+      "oasisHistoricalCapture": true,
+      "wordcraftTab": "layout",
+      "wordWebTab": "Layout",
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "references",
+      "name": "References",
+      "oasisHistoricalCapture": true,
+      "wordcraftTab": "references",
+      "wordWebTab": "References",
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "review",
+      "name": "Review",
+      "oasisHistoricalCapture": true,
+      "wordcraftTab": "review",
+      "wordWebTab": "Review",
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "view",
+      "name": "View",
+      "oasisHistoricalCapture": true,
+      "wordcraftTab": "view",
+      "wordWebTab": "View",
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "tabledesign",
+      "name": "Table Design",
+      "oasisHistoricalCapture": true,
+      "wordcraftTab": "table-design",
+      "wordWebTab": null,
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "tablelayout",
+      "name": "Table Layout",
+      "oasisHistoricalCapture": true,
+      "wordcraftTab": "table-layout",
+      "wordWebTab": null,
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "imageformat",
+      "name": "Picture Format",
+      "oasisHistoricalCapture": true,
+      "wordcraftTab": "picture-format",
+      "wordWebTab": null,
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "file",
+      "name": "File",
+      "oasisHistoricalCapture": true,
+      "wordcraftTab": "file",
+      "wordWebTab": null,
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "plugins",
+      "name": "Plugins",
+      "oasisHistoricalCapture": true,
+      "wordcraftTab": null,
+      "wordWebTab": null,
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "draw",
+      "name": "Draw",
+      "oasisHistoricalCapture": false,
+      "wordcraftTab": "draw",
+      "wordWebTab": null,
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "mailings",
+      "name": "Mailings",
+      "oasisHistoricalCapture": false,
+      "wordcraftTab": "mailings",
+      "wordWebTab": null,
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "developer",
+      "name": "Developer",
+      "oasisHistoricalCapture": false,
+      "wordcraftTab": "developer",
+      "wordWebTab": null,
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "zotero",
+      "name": "Zotero",
+      "oasisHistoricalCapture": false,
+      "wordcraftTab": "zotero",
+      "wordWebTab": null,
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "help",
+      "name": "Help",
+      "oasisHistoricalCapture": false,
+      "wordcraftTab": "help",
+      "wordWebTab": "Help",
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "shapeformat",
+      "name": "Shape Format",
+      "oasisHistoricalCapture": false,
+      "wordcraftTab": "shape-format",
+      "wordWebTab": null,
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "chartdesign",
+      "name": "Chart Design",
+      "oasisHistoricalCapture": false,
+      "wordcraftTab": "chart-design",
+      "wordWebTab": null,
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "smartartdesign",
+      "name": "SmartArt Design",
+      "oasisHistoricalCapture": false,
+      "wordcraftTab": "smartart-design",
+      "wordWebTab": null,
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    },
+    {
+      "id": "equation",
+      "name": "Equation",
+      "oasisHistoricalCapture": false,
+      "wordcraftTab": "equation",
+      "wordWebTab": null,
+      "exposure": "unverified",
+      "semantics": "unverified",
+      "persistence": "unverified",
+      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-01",
+      "tab": "home",
+      "oasisCapture": "home--color-dropdown",
+      "wordcraftCapture": "home--font-color-options",
+      "relationship": "equivalent-command",
+      "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-02",
+      "tab": "home",
+      "oasisCapture": "home--highlight-dropdown",
+      "wordcraftCapture": "home--text-highlight-color-options",
+      "relationship": "equivalent-command",
+      "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-03",
+      "tab": "home",
+      "oasisCapture": "home--underline-dropdown",
+      "wordcraftCapture": "home--underline-options",
+      "relationship": "equivalent-command",
+      "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-04",
+      "tab": "home",
+      "oasisCapture": "home--change-case",
+      "wordcraftCapture": "home--change-case",
+      "relationship": "equivalent-command",
+      "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-05",
+      "tab": "home",
+      "oasisCapture": "home--line-spacing",
+      "wordcraftCapture": "home--line-and-paragraph-spacing",
+      "relationship": "equivalent-command",
+      "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-06",
+      "tab": "home",
+      "oasisCapture": "home--text-shading-dropdown",
+      "wordcraftCapture": "home--shading-options",
+      "relationship": "related-task",
+      "rationale": "Verify whether shading targets text or paragraphs before comparing options.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-07",
+      "tab": "home",
+      "oasisCapture": "home--paste-dropdown",
+      "wordcraftCapture": "home--paste-v",
+      "relationship": "equivalent-command",
+      "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-08",
+      "tab": "home",
+      "oasisCapture": "home--list-options-dropdown",
+      "wordcraftCapture": "home--numbering-options",
+      "relationship": "related-task",
+      "rationale": "Advanced numbering properties versus a quick numbering library.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-09",
+      "tab": "home",
+      "oasisCapture": null,
+      "wordcraftCapture": "home--bullets-options",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-10",
+      "tab": "home",
+      "oasisCapture": "home--style-expand",
+      "wordcraftCapture": "home--paragraph-tools",
+      "relationship": "related-task",
+      "rationale": "Style selection versus paragraph tools; compare presentation only.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-11",
+      "tab": "home",
+      "oasisCapture": null,
+      "wordcraftCapture": "home--text-effects-and-typography--text-fill",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-12",
+      "tab": "insert",
+      "oasisCapture": "insert--header-footer",
+      "wordcraftCapture": "insert--header",
+      "relationship": "related-task",
+      "rationale": "Combined header/footer destinations versus header templates and edit/remove actions.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-13",
+      "tab": "insert",
+      "oasisCapture": "insert--insert-shape",
+      "wordcraftCapture": "insert--shapes",
+      "relationship": "equivalent-command",
+      "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-14",
+      "tab": "insert",
+      "oasisCapture": "insert--symbols",
+      "wordcraftCapture": "insert--symbol",
+      "relationship": "equivalent-command",
+      "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-15",
+      "tab": "insert",
+      "oasisCapture": null,
+      "wordcraftCapture": "insert--add-a-table",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-16",
+      "tab": "insert",
+      "oasisCapture": null,
+      "wordcraftCapture": "insert--add-a-table--quick-tables",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-17",
+      "tab": "insert",
+      "oasisCapture": null,
+      "wordcraftCapture": "insert--page-number",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-18",
+      "tab": "design",
+      "oasisCapture": "design--design-themes",
+      "wordcraftCapture": "design--themes",
+      "relationship": "equivalent-command",
+      "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-19",
+      "tab": "design",
+      "oasisCapture": "design--design-page-color-dropdown",
+      "wordcraftCapture": "design--page-color",
+      "relationship": "equivalent-command",
+      "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-20",
+      "tab": "design",
+      "oasisCapture": "design--design-watermark",
+      "wordcraftCapture": "design--watermark",
+      "relationship": "related-task",
+      "rationale": "Watermark property editor versus presets and customization.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-21",
+      "tab": "design",
+      "oasisCapture": "design--design-page-borders",
+      "wordcraftCapture": null,
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-22",
+      "tab": "layout",
+      "oasisCapture": "layout--margins-dropdown",
+      "wordcraftCapture": "layout--margins",
+      "relationship": "equivalent-command",
+      "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-23",
+      "tab": "layout",
+      "oasisCapture": "layout--section-dropdown",
+      "wordcraftCapture": "layout--orientation",
+      "relationship": "equivalent-command",
+      "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-24",
+      "tab": "layout",
+      "oasisCapture": "layout--metrics-dropdown",
+      "wordcraftCapture": "layout--size",
+      "relationship": "related-task",
+      "rationale": "Paragraph measurements versus paper size; compare units and labels only.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-25",
+      "tab": "references",
+      "oasisCapture": null,
+      "wordcraftCapture": "references--table-of-contents",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-26",
+      "tab": "references",
+      "oasisCapture": null,
+      "wordcraftCapture": "references--insert-citation",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-27",
+      "tab": "review",
+      "oasisCapture": null,
+      "wordcraftCapture": "review--accept",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-28",
+      "tab": "review",
+      "oasisCapture": null,
+      "wordcraftCapture": "review--reject",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-29",
+      "tab": "review",
+      "oasisCapture": null,
+      "wordcraftCapture": "review--display-for-review",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-30",
+      "tab": "view",
+      "oasisCapture": null,
+      "wordcraftCapture": "view--zoom",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-31",
+      "tab": "view",
+      "oasisCapture": null,
+      "wordcraftCapture": "view--outline",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-32",
+      "tab": "tabledesign",
+      "oasisCapture": "tabledesign--tbl-shading-dropdown",
+      "wordcraftCapture": "table-design--shading-options",
+      "relationship": "equivalent-command",
+      "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-33",
+      "tab": "tabledesign",
+      "oasisCapture": "tabledesign--tbl-style-expand",
+      "wordcraftCapture": "table-design--table-styles",
+      "relationship": "related-task",
+      "rationale": "Select table style versus create/modify/delete styles.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-34",
+      "tab": "tabledesign",
+      "oasisCapture": null,
+      "wordcraftCapture": "table-design--borders",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-35",
+      "tab": "tablelayout",
+      "oasisCapture": "tablelayout--editor-ribbon-group-cellsize",
+      "wordcraftCapture": "table-layout--autofit",
+      "relationship": "related-task",
+      "rationale": "Cell dimension group versus AutoFit menu; complementary tasks.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-36",
+      "tab": "tablelayout",
+      "oasisCapture": "tablelayout--editor-ribbon-group-alignment",
+      "wordcraftCapture": null,
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-37",
+      "tab": "tablelayout",
+      "oasisCapture": "tablelayout--editor-ribbon-group-sort",
+      "wordcraftCapture": null,
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-38",
+      "tab": "tablelayout",
+      "oasisCapture": null,
+      "wordcraftCapture": "table-layout--delete",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-39",
+      "tab": "imageformat",
+      "oasisCapture": "imageformat--image-border",
+      "wordcraftCapture": "picture-format--picture-border",
+      "relationship": "equivalent-command",
+      "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-40",
+      "tab": "imageformat",
+      "oasisCapture": "imageformat--image-crop",
+      "wordcraftCapture": null,
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-41",
+      "tab": "imageformat",
+      "oasisCapture": null,
+      "wordcraftCapture": "picture-format--wrap-text",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-42",
+      "tab": "draw",
+      "oasisCapture": null,
+      "wordcraftCapture": "draw--add-pen",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-43",
+      "tab": "draw",
+      "oasisCapture": null,
+      "wordcraftCapture": "draw--color-options",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-44",
+      "tab": "draw",
+      "oasisCapture": null,
+      "wordcraftCapture": "draw--thickness",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-45",
+      "tab": "mailings",
+      "oasisCapture": null,
+      "wordcraftCapture": "mailings--start-mail-merge",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-46",
+      "tab": "mailings",
+      "oasisCapture": null,
+      "wordcraftCapture": "mailings--select-recipients",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-47",
+      "tab": "mailings",
+      "oasisCapture": null,
+      "wordcraftCapture": "mailings--rules",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-48",
+      "tab": "mailings",
+      "oasisCapture": null,
+      "wordcraftCapture": "mailings--finish---merge",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-49",
+      "tab": "shapeformat",
+      "oasisCapture": null,
+      "wordcraftCapture": "shape-format--shape-fill",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-50",
+      "tab": "shapeformat",
+      "oasisCapture": null,
+      "wordcraftCapture": "shape-format--shape-outline",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-51",
+      "tab": "shapeformat",
+      "oasisCapture": null,
+      "wordcraftCapture": "shape-format--align",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-52",
+      "tab": "shapeformat",
+      "oasisCapture": null,
+      "wordcraftCapture": "shape-format--rotate",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    },
+    {
+      "id": "scene-53",
+      "tab": "shapeformat",
+      "oasisCapture": null,
+      "wordcraftCapture": "shape-format--text-effects",
+      "relationship": "no-captured-counterpart",
+      "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
+      "wordVerification": "unverified"
+    }
+  ]
+}
