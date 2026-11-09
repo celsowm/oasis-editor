@@ -225,6 +225,7 @@ export interface OasisCommandPayloads {
   insertBookmark: string | undefined;
   removeBookmark: string;
   insertDateField: undefined;
+  insertDateTime: { dateFormat?: string } | undefined;
   insertCrossReference: {
     type?: "REF" | "PAGEREF";
     bookmark: string;

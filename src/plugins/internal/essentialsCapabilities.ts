@@ -440,6 +440,8 @@ export interface EssentialsBookmarkCapability {
 export interface EssentialsFieldsCapability {
   /** Insert a DATE field at the active caret with the current date. */
   insertDate: () => void;
+  /** Insert the current date as plain text (WordCraft `insert.dateTime`, update:false). */
+  insertDateTime: (dateFormat?: string) => void;
   /**
    * Insert a cross-reference (REF / PAGEREF) to the named bookmark at the
    * caret. A no-op when the target bookmark is unknown.

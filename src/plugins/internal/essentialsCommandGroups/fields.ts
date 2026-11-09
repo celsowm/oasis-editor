@@ -15,6 +15,10 @@ export function buildFieldsCommands({
     insertDateField: actionCommand("insertDateField", (): void => {
       fields.insertDate();
     }),
+    insertDateTime: actionCommand("insertDateTime", (p): void => {
+      const payload = (p ?? {}) as { dateFormat?: string };
+      fields.insertDateTime(payload.dateFormat);
+    }),
     insertCrossReference: actionCommand("insertCrossReference", (p): void => {
       const xr = (p ?? {}) as { type?: string; bookmark?: string };
       if (typeof xr.bookmark !== "string" || xr.bookmark.length === 0) return;
