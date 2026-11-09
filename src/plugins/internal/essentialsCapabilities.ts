@@ -672,6 +672,10 @@ export interface EssentialsTableCapability {
   canSetActiveTableRowHeight: () => boolean;
   /** Word's row height (Cell Size): set the height of the active row. */
   setActiveTableRowHeight: (height: TableRowHeight) => void;
+  /** True when the caret sits inside a table row whose break setting can change. */
+  canSetActiveTableRowBreakAcrossPages: () => boolean;
+  /** Word's "Allow row to break across pages": set it on the active row. */
+  setActiveTableRowBreakAcrossPages: (allow: boolean | null) => void;
   /** True when the caret sits inside a table whose cells can be re-margined. */
   canSetCellMargins: () => boolean;
   /** Word's Cell Margins: set per-edge padding on the selected cells. */

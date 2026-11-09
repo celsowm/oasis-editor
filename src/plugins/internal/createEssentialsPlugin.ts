@@ -82,6 +82,7 @@ export function createEssentialsPlugin(
         gate: deps.gate,
         table: deps.table,
         actionCommand,
+        valueCommand,
       }),
       ...buildDesignCommands({
         design: deps.design,

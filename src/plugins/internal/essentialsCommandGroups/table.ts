@@ -1,6 +1,13 @@
 import type { OasisPlugin } from "@/core/plugin.js";
-import type { ActionCommandBuilder } from "../essentialsCommandBuilders.js";
-import { numOrNull, strOrNull } from "../essentialsCommandBuilders.js";
+import type {
+  ActionCommandBuilder,
+  ValueCommandBuilder,
+} from "../essentialsCommandBuilders.js";
+import {
+  boolOrNull,
+  numOrNull,
+  strOrNull,
+} from "../essentialsCommandBuilders.js";
 import type {
   EssentialsFeatureGate,
   EssentialsTableCapability,
@@ -10,12 +17,14 @@ interface TableGroupDeps {
   gate: EssentialsFeatureGate;
   table: EssentialsTableCapability;
   actionCommand: ActionCommandBuilder;
+  valueCommand: ValueCommandBuilder;
 }
 
 export function buildTableCommands({
   gate,
   table,
   actionCommand,
+  valueCommand,
 }: TableGroupDeps): NonNullable<OasisPlugin["commands"]> {
   return {
     tableContext: actionCommand(
@@ -225,6 +234,18 @@ export function buildTableCommands({
         isEnabled:
           gate.isCommandEnabled("tableSetRowHeight") &&
           table.canSetActiveTableRowHeight(),
+      }),
+    ),
+    tableSetBreakAcrossPages: valueCommand(
+      "tableSetBreakAcrossPages",
+      (p): true => (
+        table.setActiveTableRowBreakAcrossPages(boolOrNull(p)),
+        true
+      ),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSetBreakAcrossPages") &&
+          table.canSetActiveTableRowBreakAcrossPages(),
       }),
     ),
     tableSetCellMargins: actionCommand(

@@ -350,6 +350,7 @@ export interface OasisCommandPayloads {
   tableSelectTable: undefined;
   tableAutoFit: "contents" | "window" | "fixed";
   tableSetRowHeight: TableRowHeight;
+  tableSetBreakAcrossPages: boolean | null;
   tableSetCellWidth: string | number;
   tableToggleHeaderRow: undefined;
   tableToggleTotalRow: undefined;
