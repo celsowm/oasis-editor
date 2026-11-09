@@ -152,6 +152,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setLineRule",
   "setTextDirection",
   "setSuppressAutoHyphens",
+  "setKinsoku",
   "setIndentLeft",
   "setIndentRight",
   "setIndentFirstLine",

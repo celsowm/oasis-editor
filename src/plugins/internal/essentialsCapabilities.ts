@@ -367,6 +367,8 @@ export interface EssentialsParagraphCapability {
   setTextDirection: (direction: string | null) => void;
   /** Set "Don't hyphenate" (w:suppressAutoHyphens). */
   setSuppressAutoHyphens: (value: boolean | null) => void;
+  /** Set "Use kinsoku rules for East Asian line breaking" (w:kinsoku, default on). */
+  setKinsoku: (value: boolean | null) => void;
   /** Set "Don't add space between paragraphs of the same style" (w:contextualSpacing). */
   setContextualSpacing: (value: boolean | null) => void;
   /** Set "Mirror indents" (w:mirrorIndents): swap left/right indents on facing pages. */

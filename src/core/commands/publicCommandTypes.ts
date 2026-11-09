@@ -220,6 +220,7 @@ export interface OasisCommandPayloads {
   setLineRule: "auto" | "exact" | "atLeast" | null;
   setTextDirection: string | null;
   setSuppressAutoHyphens: boolean | null;
+  setKinsoku: boolean | null;
   setIndentLeft: number | null;
   setIndentRight: number | null;
   setIndentFirstLine: number | null;

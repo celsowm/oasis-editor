@@ -150,6 +150,7 @@ export interface ToolbarStyleState {
   bidi: boolean;
   textDirection: string;
   suppressAutoHyphens: boolean;
+  kinsoku: boolean;
 }
 
 function selectionOverlapsRun(
@@ -330,7 +331,8 @@ function resolveUniformParagraphFlag(
     | "contextualSpacing"
     | "mirrorIndents"
     | "bidi"
-    | "suppressAutoHyphens",
+    | "suppressAutoHyphens"
+    | "kinsoku",
 ): boolean {
   return (
     styles.length > 0 && styles.every((style): boolean => style[key] === true)
@@ -546,5 +548,6 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
       paragraphStyles,
       "suppressAutoHyphens",
     ),
+    kinsoku: resolveUniformParagraphFlag(paragraphStyles, "kinsoku"),
   };
 }

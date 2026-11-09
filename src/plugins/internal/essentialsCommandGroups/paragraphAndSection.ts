@@ -162,6 +162,11 @@ export function buildParagraphAndSectionCommands({
       (p): true => (paragraph.setSuppressAutoHyphens(boolOrNull(p)), true),
       (): unknown => s().suppressAutoHyphens,
     ),
+    setKinsoku: valueCommand(
+      "setKinsoku",
+      (p): true => (paragraph.setKinsoku(boolOrNull(p)), true),
+      (): unknown => s().kinsoku,
+    ),
     setMirrorIndents: valueCommand(
       "setMirrorIndents",
       (p): true => (paragraph.setMirrorIndents(boolOrNull(p)), true),
