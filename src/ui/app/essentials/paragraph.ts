@@ -7,6 +7,7 @@ import {
 import { sortSelectedParagraphs } from "@/core/commands/paragraphSort.js";
 import { stepOutlineLevel } from "@/core/commands/outlineStep.js";
 import { resetParagraphFormatting } from "@/core/commands/paragraphReset.js";
+import { editParagraphTabStops } from "@/core/commands/paragraphTabs.js";
 import { applyHorizontalLine } from "@/core/commands/horizontalLine.js";
 import { hasDropCap, setDropCap } from "@/core/commands/dropCap.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
@@ -164,6 +165,13 @@ export function buildEssentialsParagraph(
     resetParagraphFormatting: (): void => {
       options.applyTransactionalState((current): EditorState =>
         resetParagraphFormatting(current),
+      );
+      options.focusInput();
+    },
+    setTabStops: (change): void => {
+      options.applyTransactionalState(
+        (current): EditorState => editParagraphTabStops(current, change),
+        { mergeKey: MERGE_KEYS.paragraphDialog },
       );
       options.focusInput();
     },

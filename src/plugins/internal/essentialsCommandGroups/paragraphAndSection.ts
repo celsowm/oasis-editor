@@ -86,6 +86,24 @@ export function buildParagraphAndSectionCommands({
       "resetParagraphFormatting",
       (): void => paragraph.resetParagraphFormatting(),
     ),
+    setParagraphTabStops: actionCommand("setParagraphTabStops", (p): void => {
+      const payload = (p ?? {}) as {
+        tabs?: import("@/core/model.js").EditorTabStop[] | null;
+        set?: import("@/core/model.js").EditorTabStop[];
+        clear?: number[];
+        clearAll?: boolean;
+        default?: number | null;
+      };
+      paragraph.setTabStops({
+        ...(payload.tabs !== undefined ? { tabs: payload.tabs } : {}),
+        ...(payload.set !== undefined ? { set: payload.set } : {}),
+        ...(payload.clear !== undefined ? { clear: payload.clear } : {}),
+        ...(payload.clearAll !== undefined
+          ? { clearAll: payload.clearAll }
+          : {}),
+        ...(payload.default !== undefined ? { default: payload.default } : {}),
+      });
+    }),
     setSpacingAfter: valueCommand(
       "setSpacingAfter",
       (p): true => (paragraph.setSpacingAfter(numOrNull(p)), true),

@@ -6,6 +6,7 @@ import type { TableBorderPreset, TableRowHeight } from "./table.js";
 import type {
   EditorMathExpression,
   EditorPageBorder,
+  EditorTabStop,
   EditorWatermark,
 } from "@/core/model.js";
 import type { DesignThemeId } from "./design.js";
@@ -28,6 +29,20 @@ export interface SetPageMarginsPayload extends Partial<EditorPageMargins> {}
 export interface SetSpecialIndentPayload {
   kind: "none" | "firstLine" | "hanging";
   value?: number | null;
+}
+
+/** Payload for the `setParagraphTabStops` command (WordCraft para.tabs). */
+export interface ParagraphTabStopsPayload {
+  /** Replace the entire direct tab-stop list (`null` clears every direct stop). */
+  tabs?: EditorTabStop[] | null;
+  /** Add or update these tab stops. */
+  set?: EditorTabStop[];
+  /** Remove the direct stops at these positions (pt); records a `clear` stop over a style-declared one. */
+  clear?: number[];
+  /** Remove every direct stop (recording `clear` stops over style-declared ones). */
+  clearAll?: boolean;
+  /** Set the document default tab interval (pt); `null` restores it. */
+  default?: number | null;
 }
 
 /** Payload for the `replaceAll` command (edit.replaceAll). */
@@ -183,6 +198,7 @@ export interface OasisCommandPayloads {
   promote: undefined;
   demote: undefined;
   resetParagraphFormatting: undefined;
+  setParagraphTabStops: ParagraphTabStopsPayload | undefined;
   setSpacingAfter: number | null;
   setSpacingBefore: number | null;
   setIndentLeft: number | null;

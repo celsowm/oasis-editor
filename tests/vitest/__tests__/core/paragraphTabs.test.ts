@@ -114,6 +114,7 @@ describe("edit paragraph tab stops (para.tabs)", () => {
     p.style!.styleId = "body";
     const withStyle = withNamedStyle(buildState([p]), {
       id: "body",
+      name: "Body Text",
       type: "paragraph",
       paragraphStyle: { tabs: [tab(144)] },
     });
@@ -129,6 +130,7 @@ describe("edit paragraph tab stops (para.tabs)", () => {
     p.style!.styleId = "body";
     const withStyle = withNamedStyle(buildState([p]), {
       id: "body",
+      name: "Body Text",
       type: "paragraph",
       paragraphStyle: { tabs: [tab(144)] },
     });

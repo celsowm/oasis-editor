@@ -22,7 +22,7 @@ import type {
   TableCellMargins,
   TableRowHeight,
 } from "@/core/commands/table.js";
-import type { EditorMathExpression } from "@/core/model.js";
+import type { EditorMathExpression, EditorTabStop } from "@/core/model.js";
 
 // Capability contracts the Essentials plugin operates on. Extracted to a leaf
 // module so `createEssentialsPlugin` (which builds the plugin) and
@@ -361,6 +361,14 @@ export interface EssentialsParagraphCapability {
   demote: () => void;
   /** Reset paragraph formatting (WordCraft para.reset): clear direct paragraph formatting, keeping the named style, list and drop cap. */
   resetParagraphFormatting: () => void;
+  /** Edit the selected paragraphs' tab stops and default interval (WordCraft para.tabs). */
+  setTabStops: (change: {
+    tabs?: EditorTabStop[] | null;
+    set?: EditorTabStop[];
+    clear?: number[];
+    clearAll?: boolean;
+    default?: number | null;
+  }) => void;
   /** Move the selected paragraphs one step up/down, if possible. */
   moveParagraphsUp: () => void;
   moveParagraphsDown: () => void;

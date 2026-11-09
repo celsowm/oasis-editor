@@ -19,10 +19,7 @@ import type {
   EditorState,
   EditorTabStop,
 } from "@/core/model.js";
-import {
-  getParagraphs,
-  resolveNamedParagraphStyle,
-} from "@/core/model.js";
+import { getParagraphs, resolveNamedParagraphStyle } from "@/core/model.js";
 import { cloneParagraph } from "@/core/document/clone.js";
 import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
 import { preserveSelectionByParagraphOffsets } from "@/core/selection/rangeEditing.js";
@@ -98,10 +95,7 @@ export function editParagraphTabStops(
 
       // The stops the paragraph inherits from its named style chain.
       const inherited =
-        resolveNamedParagraphStyle(
-          paragraph.style?.styleId,
-          styles,
-        ).tabs ?? [];
+        resolveNamedParagraphStyle(paragraph.style?.styleId, styles).tabs ?? [];
 
       // The direct stops we start from: the replacement list when given,
       // otherwise the paragraph's current direct stops.
