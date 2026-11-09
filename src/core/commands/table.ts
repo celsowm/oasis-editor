@@ -13,6 +13,7 @@ export * from "./table/tableRepeatHeaderCommands.js";
 export * from "./table/tableCellMarginsCommands.js";
 export * from "./table/tableCellSpacingCommands.js";
 export * from "./table/tableIndentCommands.js";
+export * from "./table/tableAlignmentCommands.js";
 export * from "./table/tableFormulaCommands.js";
 export * from "./table/tableSelectionCommands.js";
 export * from "./table/tableRowHeightCommands.js";
