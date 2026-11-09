@@ -54,6 +54,11 @@ export function setSelectedTableRowStyleValue<
   return updateActiveTableBlocks(state, updateTable);
 }
 
+/** True when the caret sits in a table row whose header flag can change. */
+export function canSetActiveTableRowHeader(state: EditorState): boolean {
+  return resolveActiveTableLocation(state) !== null;
+}
+
 export function setSelectedTableRowHeader(
   state: EditorState,
   value: boolean | null,
