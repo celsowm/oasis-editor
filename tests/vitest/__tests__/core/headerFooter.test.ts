@@ -15,8 +15,12 @@ import {
   editHeaderFooter,
   enableHeaderFooterStory,
   exitHeaderFooter,
+  getHasDifferentFirstPage,
+  getHasDifferentOddEven,
   getHeaderFooterStoryKey,
   insertPageNumber,
+  setHasDifferentFirstPage,
+  setHasDifferentOddEven,
 } from "@/core/commands/headerFooter.js";
 
 function fixture() {
@@ -183,5 +187,59 @@ describe("header/footer story authoring", () => {
     const fieldRun = runs.find((run) => run.kind === "field");
     expect(fieldRun).toMatchObject({ kind: "field", text: "1" });
     expect(withPage.activeZone).toBe("header");
+  });
+});
+
+describe("different first page / different odd & even toggles", () => {
+  it("defaults to off for both flags", () => {
+    const { state } = fixture();
+    expect(getHasDifferentFirstPage(state)).toBe(false);
+    expect(getHasDifferentOddEven(state)).toBe(false);
+  });
+
+  it("enabling different first page seeds both first-page stories", () => {
+    const { state } = fixture();
+    const on = setHasDifferentFirstPage(state, true);
+    expect(getHasDifferentFirstPage(on)).toBe(true);
+    expect(section(on).firstPageHeader).toHaveLength(1);
+    expect(section(on).firstPageFooter).toHaveLength(1);
+    // Default stories stay untouched.
+    expect(section(on).header).toBeUndefined();
+    expect(section(on).footer).toBeUndefined();
+  });
+
+  it("disabling different first page clears both first-page stories", () => {
+    const { state } = fixture();
+    const on = setHasDifferentFirstPage(state, true);
+    const off = setHasDifferentFirstPage(on, false);
+    expect(getHasDifferentFirstPage(off)).toBe(false);
+    expect(section(off).firstPageHeader).toBeUndefined();
+    expect(section(off).firstPageFooter).toBeUndefined();
+  });
+
+  it("leaves existing first-page content intact when already enabled", () => {
+    const { state } = fixture();
+    const on = setHasDifferentFirstPage(state, true);
+    // A repeat enable is a no-op (never overwrites content).
+    expect(setHasDifferentFirstPage(on, true)).toBe(on);
+  });
+
+  it("enabling different odd & even seeds both even-page stories", () => {
+    const { state } = fixture();
+    const on = setHasDifferentOddEven(state, true);
+    expect(getHasDifferentOddEven(on)).toBe(true);
+    expect(section(on).evenPageHeader).toHaveLength(1);
+    expect(section(on).evenPageFooter).toHaveLength(1);
+    expect(section(on).header).toBeUndefined();
+    expect(section(on).footer).toBeUndefined();
+  });
+
+  it("disabling different odd & even clears both even-page stories", () => {
+    const { state } = fixture();
+    const on = setHasDifferentOddEven(state, true);
+    const off = setHasDifferentOddEven(on, false);
+    expect(getHasDifferentOddEven(off)).toBe(false);
+    expect(section(off).evenPageHeader).toBeUndefined();
+    expect(section(off).evenPageFooter).toBeUndefined();
   });
 });

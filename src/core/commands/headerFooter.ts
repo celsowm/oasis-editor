@@ -135,6 +135,63 @@ export function exitHeaderFooter(state: EditorState): EditorState {
   return moveToBodyStart(state);
 }
 
+/** Whether the active section uses a different first-page header/footer. */
+export function getHasDifferentFirstPage(state: EditorState): boolean {
+  const { sections, sectionIndex } = resolveActiveSection(state);
+  const section = sections[sectionIndex];
+  return Boolean(
+    section && (section.firstPageHeader || section.firstPageFooter),
+  );
+}
+
+/**
+ * Enable or disable the active section's different-first-page header/footer
+ * (`w:titlePg`). Enabling seeds empty first-page header and footer stories
+ * (existing content is never overwritten); disabling clears them. The toggle is
+ * a no-op when the flag already matches.
+ */
+export function setHasDifferentFirstPage(
+  state: EditorState,
+  on: boolean,
+): EditorState {
+  if (getHasDifferentFirstPage(state) === on) return state;
+  let next = state;
+  if (on) {
+    next = enableHeaderFooterStory(next, "header", "firstPage");
+    next = enableHeaderFooterStory(next, "footer", "firstPage");
+    return next;
+  }
+  next = clearHeaderFooterStory(next, "header", "firstPage");
+  return clearHeaderFooterStory(next, "footer", "firstPage");
+}
+
+/** Whether the active section uses even/odd (different odd & even) pages. */
+export function getHasDifferentOddEven(state: EditorState): boolean {
+  const { sections, sectionIndex } = resolveActiveSection(state);
+  const section = sections[sectionIndex];
+  return Boolean(section && (section.evenPageHeader || section.evenPageFooter));
+}
+
+/**
+ * Enable or disable the active section's different odd & even pages
+ * (`w:evenAndOddHeaders`). Enabling seeds empty even-page header and footer
+ * stories; disabling clears them. A no-op when the flag already matches.
+ */
+export function setHasDifferentOddEven(
+  state: EditorState,
+  on: boolean,
+): EditorState {
+  if (getHasDifferentOddEven(state) === on) return state;
+  let next = state;
+  if (on) {
+    next = enableHeaderFooterStory(next, "header", "evenPage");
+    next = enableHeaderFooterStory(next, "footer", "evenPage");
+    return next;
+  }
+  next = clearHeaderFooterStory(next, "header", "evenPage");
+  return clearHeaderFooterStory(next, "footer", "evenPage");
+}
+
 function moveToBodyStart(state: EditorState): EditorState {
   const { sections, sectionIndex } = resolveActiveSection(state);
   const firstParagraph = (sections[sectionIndex]?.blocks ?? [])
