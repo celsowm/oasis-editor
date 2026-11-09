@@ -121,6 +121,9 @@ export interface EssentialsFormattingCapability {
   smallCaps: () => boolean;
   allCaps: () => boolean;
   hidden: () => boolean;
+  noProof: () => boolean;
+  webHidden: () => boolean;
+  specVanish: () => boolean;
   toggleCharacterBorder: () => boolean;
   shadow: () => boolean;
   emboss: () => boolean;

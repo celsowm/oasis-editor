@@ -362,6 +362,18 @@ export function buildEssentialsFormatting(
       options.keyboardCommandsController.applyBooleanStyleCommand("hidden"),
       true
     ),
+    noProof: (): true => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("noProof"),
+      true
+    ),
+    webHidden: (): true => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("webHidden"),
+      true
+    ),
+    specVanish: (): true => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("specVanish"),
+      true
+    ),
     toggleCharacterBorder: (): true => (
       options.keyboardCommandsController.applyToggleCharacterBorderCommand(),
       true

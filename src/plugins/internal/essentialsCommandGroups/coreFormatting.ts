@@ -223,6 +223,27 @@ export function buildCoreFormattingCommands({
     hidden: command("hidden", formatting.hidden, (): { isActive: boolean } => ({
       isActive: Boolean(s().hidden),
     })),
+    noProof: command(
+      "noProof",
+      formatting.noProof,
+      (): { isActive: boolean } => ({
+        isActive: Boolean(s().noProof),
+      }),
+    ),
+    webHidden: command(
+      "webHidden",
+      formatting.webHidden,
+      (): { isActive: boolean } => ({
+        isActive: Boolean(s().webHidden),
+      }),
+    ),
+    specVanish: command(
+      "specVanish",
+      formatting.specVanish,
+      (): { isActive: boolean } => ({
+        isActive: Boolean(s().specVanish),
+      }),
+    ),
     characterBorder: command(
       "characterBorder",
       formatting.toggleCharacterBorder,
