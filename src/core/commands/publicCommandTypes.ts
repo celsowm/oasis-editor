@@ -232,6 +232,8 @@ export interface OasisCommandPayloads {
     type?: "REF" | "PAGEREF";
     bookmark: string;
   };
+  setDifferentFirstPage: boolean | null;
+  setDifferentOddEven: boolean | null;
   exitHeaderFooter: undefined;
   applyDocumentTheme: DesignThemeId;
   setDocumentColorScheme: string;

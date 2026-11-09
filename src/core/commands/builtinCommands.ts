@@ -178,6 +178,8 @@ export const OASIS_BUILTIN_COMMANDS = [
   "insertDateTime",
   "insertCrossReference",
   "exitHeaderFooter",
+  "setDifferentFirstPage",
+  "setDifferentOddEven",
   "applyDocumentTheme",
   "setDocumentColorScheme",
   "setDocumentFontScheme",

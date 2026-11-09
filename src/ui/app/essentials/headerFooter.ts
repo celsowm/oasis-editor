@@ -1,7 +1,11 @@
 import {
   editHeaderFooter,
   exitHeaderFooter,
+  getHasDifferentFirstPage,
+  getHasDifferentOddEven,
   insertPageNumber,
+  setHasDifferentFirstPage,
+  setHasDifferentOddEven,
 } from "@/core/commands/headerFooter.js";
 import {
   insertPageNumberField,
@@ -53,5 +57,12 @@ export function buildEssentialsHeaderFooter(
       const zone = options.state().activeZone;
       return zone === "header" || zone === "footer";
     },
+    getDifferentFirstPage: (): boolean =>
+      getHasDifferentFirstPage(options.state()),
+    setDifferentFirstPage: (on): void =>
+      transactional((state) => setHasDifferentFirstPage(state, on)),
+    getDifferentOddEven: (): boolean => getHasDifferentOddEven(options.state()),
+    setDifferentOddEven: (on): void =>
+      transactional((state) => setHasDifferentOddEven(state, on)),
   };
 }

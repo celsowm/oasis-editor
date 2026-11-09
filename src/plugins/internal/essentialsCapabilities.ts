@@ -428,6 +428,14 @@ export interface EssentialsHeaderFooterCapability {
   exit: () => void;
   /** Whether the caret currently edits a header or footer zone. */
   isInHeaderFooter: () => boolean;
+  /** Whether the active section uses a different first-page header/footer. */
+  getDifferentFirstPage: () => boolean;
+  /** Set the active section's different-first-page header/footer flag. */
+  setDifferentFirstPage: (on: boolean) => void;
+  /** Whether the active section uses different odd & even pages. */
+  getDifferentOddEven: () => boolean;
+  /** Set the active section's different odd & even pages flag. */
+  setDifferentOddEven: (on: boolean) => void;
 }
 
 export interface BookmarkDescriptor {

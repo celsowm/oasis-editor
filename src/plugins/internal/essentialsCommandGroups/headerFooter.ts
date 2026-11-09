@@ -71,5 +71,25 @@ export function buildHeaderFooterCommands({
           headerFooter.isInHeaderFooter(),
       }),
     ),
+    setDifferentFirstPage: actionCommand(
+      "setDifferentFirstPage",
+      (p): void => {
+        const on = (p ?? undefined) as boolean | undefined;
+        headerFooter.setDifferentFirstPage(on ?? true);
+      },
+      (): { value: boolean | undefined } => ({
+        value: headerFooter.getDifferentFirstPage(),
+      }),
+    ),
+    setDifferentOddEven: actionCommand(
+      "setDifferentOddEven",
+      (p): void => {
+        const on = (p ?? undefined) as boolean | undefined;
+        headerFooter.setDifferentOddEven(on ?? true);
+      },
+      (): { value: boolean | undefined } => ({
+        value: headerFooter.getDifferentOddEven(),
+      }),
+    ),
   };
 }
