@@ -222,6 +222,9 @@ export function buildTableCommands({
     tableSetCellWidth: actionCommand("tableSetCellWidth", (p): void =>
       table.setCellWidth(String(p)),
     ),
+    tableSetCellNoWrap: actionCommand("tableSetCellNoWrap", (p): void =>
+      table.setCellNoWrap(boolOrNull(p)),
+    ),
     tableSetRowHeight: actionCommand(
       "tableSetRowHeight",
       (p): void =>

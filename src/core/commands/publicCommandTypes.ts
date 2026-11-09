@@ -352,6 +352,7 @@ export interface OasisCommandPayloads {
   tableSetRowHeight: TableRowHeight;
   tableSetBreakAcrossPages: boolean | null;
   tableSetCellWidth: string | number;
+  tableSetCellNoWrap: boolean | null;
   tableToggleHeaderRow: undefined;
   tableToggleTotalRow: undefined;
   tableToggleBandedRows: undefined;

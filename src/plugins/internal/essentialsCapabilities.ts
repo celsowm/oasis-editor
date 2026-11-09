@@ -668,6 +668,8 @@ export interface EssentialsTableCapability {
     value: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV",
   ) => void;
   setCellWidth: (width: string) => void;
+  /** Word's cell "Wrap text": set the no-wrap flag on the selected/active cell. */
+  setCellNoWrap: (value: boolean | null) => void;
   /** True when the caret sits inside a table row whose height can be changed. */
   canSetActiveTableRowHeight: () => boolean;
   /** Word's row height (Cell Size): set the height of the active row. */
