@@ -242,6 +242,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "tableSetCellMargins",
   "tableSetCellSpacing",
   "tableSetTableIndent",
+  "tableSetAlignment",
   "tableFormula",
   "tableSelectCell",
   "tableSelectRow",

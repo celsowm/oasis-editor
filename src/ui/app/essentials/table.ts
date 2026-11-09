@@ -27,6 +27,8 @@ import {
   setActiveTableCellSpacing,
   canSetActiveTableIndent,
   setActiveTableIndent,
+  canSetActiveTableAlignment,
+  setActiveTableAlignment,
   canEvaluateActiveTableFormula,
   evaluateActiveTableFormula,
   canSelectActiveTable,
@@ -457,6 +459,17 @@ export function buildEssentialsTable(
     setTableIndent: (value: number | null): void =>
       apply(
         (current): EditorState => setActiveTableIndent(current, value),
+        MERGE_KEYS.tableCellMargins,
+      ),
+    canSetTableAlignment: (): boolean =>
+      canSetActiveTableAlignment(options.state()),
+    setTableAlignment: (alignment: "left" | "center" | "right" | null): void =>
+      apply(
+        (current): EditorState =>
+          setActiveTableAlignment(
+            current,
+            alignment as Parameters<typeof setActiveTableAlignment>[1],
+          ),
         MERGE_KEYS.tableCellMargins,
       ),
     canEvaluateTableFormula: (): boolean =>

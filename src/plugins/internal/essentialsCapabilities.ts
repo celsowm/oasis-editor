@@ -662,6 +662,10 @@ export interface EssentialsTableCapability {
   canSetTableIndent: () => boolean;
   /** Word's Indent from Left: set the horizontal offset of the active table. */
   setTableIndent: (value: number | null) => void;
+  /** True when the caret sits inside a table whose alignment can be set. */
+  canSetTableAlignment: () => boolean;
+  /** Word's table Alignment: set the left/center/right position of the active table. */
+  setTableAlignment: (alignment: "left" | "center" | "right" | null) => void;
   /** True when the caret sits inside a table cell that can hold a formula result. */
   canEvaluateTableFormula: () => boolean;
   /** Word's Formula: evaluate a supported aggregate over a direction and

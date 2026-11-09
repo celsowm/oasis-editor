@@ -330,6 +330,7 @@ export interface OasisCommandPayloads {
   tableSetCellMargins: undefined;
   tableSetCellSpacing: number | null;
   tableSetTableIndent: number | null;
+  tableSetAlignment: "left" | "center" | "right" | null;
   tableFormula: undefined;
   tableSelectCell: undefined;
   tableSelectRow: undefined;

@@ -1,6 +1,6 @@
 import type { OasisPlugin } from "@/core/plugin.js";
 import type { ActionCommandBuilder } from "../essentialsCommandBuilders.js";
-import { numOrNull } from "../essentialsCommandBuilders.js";
+import { numOrNull, strOrNull } from "../essentialsCommandBuilders.js";
 import type {
   EssentialsFeatureGate,
   EssentialsTableCapability,
@@ -255,6 +255,18 @@ export function buildTableCommands({
         isEnabled:
           gate.isCommandEnabled("tableSetTableIndent") &&
           table.canSetTableIndent(),
+      }),
+    ),
+    tableSetAlignment: actionCommand(
+      "tableSetAlignment",
+      (p): void =>
+        table.setTableAlignment(
+          strOrNull(p) as "left" | "center" | "right" | null,
+        ),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSetAlignment") &&
+          table.canSetTableAlignment(),
       }),
     ),
     tableFormula: actionCommand(
