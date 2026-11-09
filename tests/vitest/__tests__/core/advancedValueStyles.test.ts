@@ -50,4 +50,16 @@ describe("advanced value character styles (format.scale / format.spacing / forma
       getParagraphs(cleared)[0]!.runs[0]!.styles?.characterScale,
     ).toBeUndefined();
   });
+
+  it("sets and clears the text effect (w:effect)", () => {
+    const state = buildState("hello");
+    const next = setTextStyleValue(state, "textEffect", "sparkleText");
+    expect(
+      getParagraphs(next)[0]!.runs[0]!.styles?.textEffect,
+    ).toBe("sparkleText");
+    const cleared = setTextStyleValue(next, "textEffect", null);
+    expect(
+      getParagraphs(cleared)[0]!.runs[0]!.styles?.textEffect,
+    ).toBeUndefined();
+  });
 });
