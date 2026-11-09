@@ -16,6 +16,7 @@ import { setParagraphMirrorIndents } from "@/core/commands/paragraphMirrorIndent
 import { setParagraphLineRule } from "@/core/commands/paragraphLineRule.js";
 import { setParagraphTextDirection } from "@/core/commands/paragraphTextDirection.js";
 import { setParagraphSuppressAutoHyphens } from "@/core/commands/paragraphSuppressAutoHyphens.js";
+import { setParagraphSuppressLineNumbers } from "@/core/commands/paragraphSuppressLineNumbers.js";
 import { setParagraphKinsoku } from "@/core/commands/paragraphKinsoku.js";
 import { setParagraphOverflowPunct } from "@/core/commands/paragraphOverflowPunct.js";
 import { setParagraphWordWrap } from "@/core/commands/paragraphWordWrap.js";
@@ -71,6 +72,10 @@ export function buildEssentialsParagraph(
     setSuppressAutoHyphens: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>
         setParagraphSuppressAutoHyphens(current, value),
+      ),
+    setSuppressLineNumbers: (value: boolean | null): void =>
+      options.applyTransactionalState((current): EditorState =>
+        setParagraphSuppressLineNumbers(current, value),
       ),
     setKinsoku: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>

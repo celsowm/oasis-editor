@@ -158,6 +158,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setLineRule",
   "setTextDirection",
   "setSuppressAutoHyphens",
+  "setSuppressLineNumbers",
   "setKinsoku",
   "setOverflowPunct",
   "setWordWrap",

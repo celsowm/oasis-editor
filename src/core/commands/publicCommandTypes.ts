@@ -226,6 +226,7 @@ export interface OasisCommandPayloads {
   setLineRule: "auto" | "exact" | "atLeast" | null;
   setTextDirection: string | null;
   setSuppressAutoHyphens: boolean | null;
+  setSuppressLineNumbers: boolean | null;
   setKinsoku: boolean | null;
   setOverflowPunct: boolean | null;
   setWordWrap: boolean | null;

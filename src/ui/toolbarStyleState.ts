@@ -150,6 +150,7 @@ export interface ToolbarStyleState {
   bidi: boolean;
   textDirection: string;
   suppressAutoHyphens: boolean;
+  suppressLineNumbers: boolean;
   kinsoku: boolean;
   overflowPunct: boolean;
   wordWrap: boolean;
@@ -338,6 +339,7 @@ function resolveUniformParagraphFlag(
     | "mirrorIndents"
     | "bidi"
     | "suppressAutoHyphens"
+    | "suppressLineNumbers"
     | "kinsoku"
     | "overflowPunct"
     | "wordWrap"
@@ -559,6 +561,10 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     suppressAutoHyphens: resolveUniformParagraphFlag(
       paragraphStyles,
       "suppressAutoHyphens",
+    ),
+    suppressLineNumbers: resolveUniformParagraphFlag(
+      paragraphStyles,
+      "suppressLineNumbers",
     ),
     kinsoku: resolveUniformParagraphFlag(paragraphStyles, "kinsoku"),
     overflowPunct: resolveUniformParagraphFlag(

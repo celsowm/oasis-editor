@@ -372,6 +372,8 @@ export interface EssentialsParagraphCapability {
   setTextDirection: (direction: string | null) => void;
   /** Set "Don't hyphenate" (w:suppressAutoHyphens). */
   setSuppressAutoHyphens: (value: boolean | null) => void;
+  /** Set the paragraph's "Suppress line numbers" (w:suppressLineNumbers). */
+  setSuppressLineNumbers: (value: boolean | null) => void;
   /** Set "Use kinsoku rules for East Asian line breaking" (w:kinsoku, default on). */
   setKinsoku: (value: boolean | null) => void;
   /** Set "Allow punctuation to overflow margin" (w:overflowPunct, default on). */

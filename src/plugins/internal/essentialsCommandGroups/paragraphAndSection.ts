@@ -177,6 +177,11 @@ export function buildParagraphAndSectionCommands({
       (p): true => (paragraph.setSuppressAutoHyphens(boolOrNull(p)), true),
       (): unknown => s().suppressAutoHyphens,
     ),
+    setSuppressLineNumbers: valueCommand(
+      "setSuppressLineNumbers",
+      (p): true => (paragraph.setSuppressLineNumbers(boolOrNull(p)), true),
+      (): unknown => s().suppressLineNumbers,
+    ),
     setKinsoku: valueCommand(
       "setKinsoku",
       (p): true => (paragraph.setKinsoku(boolOrNull(p)), true),
