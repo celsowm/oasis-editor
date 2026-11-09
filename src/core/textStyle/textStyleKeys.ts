@@ -41,7 +41,8 @@ export type ValueTextStyleKey =
   | "numberSpacing"
   | "numberForm"
   | "stylisticSet"
-  | "snapToGrid";
+  | "snapToGrid"
+  | "fitText";
 
 export type ValueParagraphStyleKey =
   | "styleId"

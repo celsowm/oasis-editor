@@ -83,4 +83,14 @@ describe("advanced value character styles (format.scale / format.spacing / forma
       getParagraphs(cleared)[0]!.runs[0]!.styles?.snapToGrid,
     ).toBeUndefined();
   });
+
+  it("sets and clears the fit-text target width (w:fitText)", () => {
+    const state = buildState("hello");
+    const next = setTextStyleValue(state, "fitText", 200);
+    expect(getParagraphs(next)[0]!.runs[0]!.styles?.fitText).toBe(200);
+    const cleared = setTextStyleValue(next, "fitText", null);
+    expect(
+      getParagraphs(cleared)[0]!.runs[0]!.styles?.fitText,
+    ).toBeUndefined();
+  });
 });

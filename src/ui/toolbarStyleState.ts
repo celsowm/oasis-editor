@@ -57,7 +57,8 @@ export type ValueStyleKey =
   | "ligatures"
   | "numberSpacing"
   | "numberForm"
-  | "stylisticSet";
+  | "stylisticSet"
+  | "fitText";
 export type ParagraphStyleKey =
   | "styleId"
   | "align"
@@ -106,6 +107,7 @@ export interface ToolbarStyleState {
   characterScale: string;
   characterSpacing: string;
   baselineShift: string;
+  fitText: string;
   emphasisMark: string;
   kerningThreshold: string;
   ligatures: string;
@@ -496,6 +498,7 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     characterScale: resolveUniformStyleValue(styles, "characterScale"),
     characterSpacing: resolveUniformStyleValue(styles, "characterSpacing"),
     baselineShift: resolveUniformStyleValue(styles, "baselineShift"),
+    fitText: resolveUniformStyleValue(styles, "fitText"),
     emphasisMark: resolveUniformStyleValue(styles, "emphasisMark"),
     kerningThreshold: resolveUniformStyleValue(styles, "kerningThreshold"),
     ligatures: resolveUniformStyleValue(styles, "ligatures"),
