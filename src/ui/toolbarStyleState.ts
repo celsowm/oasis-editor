@@ -15,6 +15,7 @@ import {
 } from "@/core/model.js";
 import { clampPosition, normalizeSelection } from "@/core/selection.js";
 import type { NormalizedEditorSelection } from "@/core/selection.js";
+import type { ValueTextStyleKey } from "@/core/textStyle/textStyleKeys.js";
 
 export type BooleanStyleKey =
   | "bold"
@@ -119,6 +120,7 @@ export interface ToolbarStyleState {
   textShading: string;
   textEffect: string;
   link: string;
+  snapToGrid: boolean | undefined;
   styleId: string;
   characterStyleId: string;
   align: string;
@@ -272,6 +274,28 @@ function areAllBooleanStylesEnabled(
   return (
     styles.length > 0 && styles.every((style): boolean => Boolean(style[key]))
   );
+}
+
+/**
+ * Resolve a run-level boolean style to its uniform value, preserving an
+ * explicit `false` (used by default-on flags like `w:snapToGrid`, where the
+ * absence of the key means "on"). Returns `undefined` when the runs are empty,
+ * not uniform, or all unset.
+ */
+function resolveUniformRunBoolean(
+  styles: EditorTextStyle[],
+  key: ValueTextStyleKey,
+): boolean | undefined {
+  if (styles.length === 0) {
+    return undefined;
+  }
+  const first = styles[0]?.[key];
+  if (typeof first !== "boolean") {
+    return undefined;
+  }
+  return styles.every((style): boolean => style[key] === first)
+    ? first
+    : undefined;
 }
 
 function resolveUniformStyleValue<K extends ValueStyleKey>(
@@ -489,6 +513,7 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     textShading: resolveUniformStyleValue(styles, "shading"),
     textEffect: resolveUniformStyleValue(styles, "textEffect"),
     link: resolveUniformStyleValue(styles, "link"),
+    snapToGrid: resolveUniformRunBoolean(styles, "snapToGrid"),
     styleId: resolveUniformParagraphStyleValue(paragraphStyles, "styleId"),
     characterStyleId: resolveUniformStyleValue(styles, "styleId"),
     align: resolveUniformParagraphStyleValue(paragraphStyles, "align"),

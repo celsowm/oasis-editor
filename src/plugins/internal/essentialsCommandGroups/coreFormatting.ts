@@ -5,7 +5,7 @@ import type {
   CommandBuilder,
   ValueCommandBuilder,
 } from "../essentialsCommandBuilders.js";
-import { numOrNull } from "../essentialsCommandBuilders.js";
+import { numOrNull, boolOrNull } from "../essentialsCommandBuilders.js";
 import { formatFontSizePt, parseFontSizePtToPx } from "@/ui/fontSizeUnits.js";
 import {
   isPreciseFontModeEnabled,
@@ -631,6 +631,11 @@ export function buildCoreFormattingCommands({
       "setCharacterSpacing",
       (p): boolean => formatting.setCharacterSpacing(numOrNull(p)),
       (): string => s().characterSpacing,
+    ),
+    setRunSnapToGrid: valueCommand(
+      "setRunSnapToGrid",
+      (p): boolean => formatting.setRunSnapToGrid(boolOrNull(p)),
+      (): unknown => s().snapToGrid,
     ),
     setBaselineShift: valueCommand(
       "setBaselineShift",

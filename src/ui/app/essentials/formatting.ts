@@ -631,6 +631,15 @@ export function buildEssentialsFormatting(
       )("characterSpacing", value),
       true
     ),
+    setRunSnapToGrid: (value: boolean | null): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "snapToGrid",
+          value: boolean | null,
+        ) => void
+      )("snapToGrid", value),
+      true
+    ),
     setBaselineShift: (value: number | null): true => (
       (
         options.styleController.applyToolbarValueStyleCommand as (

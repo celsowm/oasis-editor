@@ -172,6 +172,7 @@ export interface OasisCommandPayloads {
   setUnderlineColor: string | null;
   setCharacterScale: number | null;
   setCharacterSpacing: number | null;
+  setRunSnapToGrid: boolean | null;
   setBaselineShift: number | null;
   setEmphasisMark: string | null;
   setTextEffect: string | null;

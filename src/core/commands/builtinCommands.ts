@@ -101,6 +101,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setUnderlineColor",
   "setCharacterScale",
   "setCharacterSpacing",
+  "setRunSnapToGrid",
   "setBaselineShift",
   "setEmphasisMark",
   "setTextEffect",

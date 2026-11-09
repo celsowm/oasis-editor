@@ -185,6 +185,8 @@ export interface EssentialsFormattingCapability {
   setTextEffect: (value: string | null) => boolean;
   /** Set kerning threshold in pt (character-level, w:kern). */
   setKerning: (value: number | null) => boolean;
+  /** Set the selected runs' snap-to-grid flag (w:snapToGrid, defaults on). */
+  setRunSnapToGrid: (value: boolean | null) => boolean;
   /** Set ligature style (character-level, w14:ligatures). */
   setLigatures: (value: string | null) => boolean;
   /** Set number spacing (default/proportional/tabular). */
