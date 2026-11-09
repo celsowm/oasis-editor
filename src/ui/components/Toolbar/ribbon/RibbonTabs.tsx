@@ -24,6 +24,21 @@ export interface RibbonTabsProps {
 }
 
 export function RibbonTabs(props: RibbonTabsProps): JSX.Element {
+  let tablistRef: HTMLDivElement | undefined;
+
+  const revealTab = (id: RibbonTabId, focus = false): void => {
+    const button = tablistRef?.querySelector<HTMLButtonElement>(
+      `#oasis-editor-ribbon-tab-${id}`,
+    );
+    if (focus) button?.focus({ preventScroll: true });
+    button?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  };
+
+  createEffect((): void => {
+    const selected = props.activeTab();
+    queueMicrotask(() => revealTab(selected));
+  });
+
   // Reactive: contextual tabs (e.g. table tools) enter/leave the strip as the
   // gating command state changes on selection.
   const tabs = createMemo<RibbonTabDefinition[]>(() =>
@@ -46,11 +61,14 @@ export function RibbonTabs(props: RibbonTabsProps): JSX.Element {
     const list = tabs();
     const index = list.findIndex((tab): boolean => tab.id === current);
     const next = list[(index + delta + list.length) % list.length];
-    if (next) props.setActiveTab(next.id);
+    if (next) {
+      props.setActiveTab(next.id);
+      revealTab(next.id, true);
+    }
   };
 
   return (
-    <div class="oasis-editor-ribbon-tabs" role="tablist">
+    <div ref={tablistRef} class="oasis-editor-ribbon-tabs" role="tablist">
       <For each={tabs()}>
         {(tab): JSX.Element => (
           <button
@@ -77,10 +95,12 @@ export function RibbonTabs(props: RibbonTabsProps): JSX.Element {
               } else if (event.key === "Home") {
                 event.preventDefault();
                 props.setActiveTab(tabs()[0]!.id);
+                revealTab(tabs()[0]!.id, true);
               } else if (event.key === "End") {
                 event.preventDefault();
                 const list = tabs();
                 props.setActiveTab(list[list.length - 1]!.id);
+                revealTab(list[list.length - 1]!.id, true);
               }
             }}
           >
