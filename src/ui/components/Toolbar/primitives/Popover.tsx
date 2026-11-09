@@ -1,4 +1,10 @@
-import { Show, type JSX } from "solid-js";
+import {
+  Show,
+  createEffect,
+  createSignal,
+  onCleanup,
+  type JSX,
+} from "solid-js";
 import { Portal } from "solid-js/web";
 import {
   usePopoverPosition,
@@ -41,6 +47,35 @@ export interface PopoverProps {
 export function Popover(props: PopoverProps): JSX.Element {
   let anchorRef: HTMLElement | undefined;
   let panelRef: HTMLDivElement | undefined;
+  const [theme, setTheme] = createSignal<string>();
+  const [themeStyle, setThemeStyle] = createSignal<JSX.CSSProperties>({});
+
+  // Portals leave the editor DOM subtree. Carry the owning instance's tokens,
+  // including host overrides, rather than inheriting another editor's theme.
+  createEffect((): void => {
+    if (!props.open || !anchorRef) return;
+    const anchor = anchorRef;
+    const owner = anchor.closest<HTMLElement>("[data-theme]");
+    const syncTheme = (): void => {
+      const computed = getComputedStyle(anchor);
+      const values: Record<string, string> = {};
+      for (const property of Array.from(computed)) {
+        if (property.startsWith("--oasis-"))
+          values[property] = computed.getPropertyValue(property);
+      }
+      values["color-scheme"] = computed.colorScheme;
+      setTheme(owner?.dataset.theme);
+      setThemeStyle(values);
+    };
+    syncTheme();
+    if (!owner) return;
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(owner, {
+      attributes: true,
+      attributeFilter: ["data-theme", "style", "class"],
+    });
+    onCleanup(() => observer.disconnect());
+  });
 
   const coords = usePopoverPosition({
     anchor: (): HTMLElement | undefined => anchorRef,
@@ -87,7 +122,15 @@ export function Popover(props: PopoverProps): JSX.Element {
         toggle: (): void => props.onOpenChange(!props.open),
       })}
       <Show when={props.open}>
-        <Portal>{panel(true)}</Portal>
+        <Portal>
+          <div
+            class="oasis-editor-portal-theme"
+            data-theme={theme()}
+            style={themeStyle()}
+          >
+            {panel(true)}
+          </div>
+        </Portal>
       </Show>
       <Show when={!props.open && props.keepMounted}>{panel(false)}</Show>
     </>

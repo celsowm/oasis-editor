@@ -3,6 +3,8 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  onMount,
+  onCleanup,
   type JSX,
 } from "solid-js";
 import type {
@@ -57,6 +59,19 @@ export interface StyleGalleryProps {
 
 export function StyleGallery(props: StyleGalleryProps): JSX.Element {
   const [open, setOpen] = createSignal(false);
+  const [visibleSlots, setVisibleSlots] = createSignal(1);
+  let stripRef: HTMLDivElement | undefined;
+  onMount((): void => {
+    const strip = stripRef;
+    if (!strip) return;
+    const measure = (): void => {
+      setVisibleSlots(Math.max(0, Math.floor(strip.clientWidth / 106)));
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(strip);
+    measure();
+    onCleanup(() => observer.disconnect());
+  });
   const panelTestId = `${props.item.testId ?? props.item.id}-panel`;
   const expandTestId = `${props.item.testId ?? props.item.id}-expand`;
   const styles = createMemo((): ToolbarDocumentStyle[] =>
@@ -142,8 +157,8 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
     buttons[Math.min(buttons.length - 1, Math.max(0, next))]?.focus();
   };
 
-  const cards = (): JSX.Element => (
-    <For each={styles()}>
+  const cards = (items: ToolbarDocumentStyle[]): JSX.Element => (
+    <For each={items}>
       {(style): JSX.Element => (
         <button
           type="button"
@@ -151,14 +166,20 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
           classList={{
             "oasis-editor-style-gallery-card-active": isActive(style),
           }}
-          style={previewStyle(style)}
           title={style.name}
           role="option"
           aria-selected={isActive(style)}
           data-style-id={style.id}
           onClick={(): void => apply(style)}
         >
-          <span>{style.name}</span>
+          <span
+            class="oasis-editor-style-gallery-sample"
+            style={previewStyle(style)}
+            aria-hidden="true"
+          >
+            AaBb
+          </span>
+          <span class="oasis-editor-style-gallery-name">{style.name}</span>
         </button>
       )}
     </For>
@@ -194,8 +215,13 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
             </For>
           </Select>
           <div class="oasis-editor-style-gallery-ribbon">
-            <div class="oasis-editor-style-gallery-strip" role="listbox">
-              {cards()}
+            <div
+              ref={stripRef}
+              class="oasis-editor-style-gallery-strip"
+              role="listbox"
+              aria-label={props.api.t("toolbar.style")}
+            >
+              {cards(styles().slice(0, visibleSlots()))}
             </div>
             <button
               type="button"
@@ -214,7 +240,7 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
       )}
     >
       <div class="oasis-editor-style-gallery-grid" onKeyDown={onPanelKeyDown}>
-        {cards()}
+        {cards(styles())}
       </div>
     </Popover>
   );

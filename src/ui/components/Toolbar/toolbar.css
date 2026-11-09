@@ -2186,8 +2186,8 @@
   display: flex;
   width: clamp(360px, 48vw, 640px);
   height: 58px;
-  border: 1px solid #9a9a9a;
-  background: #f7f7f7;
+  border: 1px solid var(--oasis-ribbon-border, #9a9a9a);
+  background: var(--oasis-ribbon-panel-bg, #fff);
   box-sizing: border-box;
 }
 
@@ -2202,43 +2202,53 @@
   overflow: hidden;
 }
 
-.oasis-editor-ribbon-group-compact .oasis-editor-style-gallery-strip {
-  flex: 0 0 calc(var(--oasis-ribbon-group-compact-width, 132px) - 26px);
-  width: calc(var(--oasis-ribbon-group-compact-width, 132px) - 26px);
-  max-width: calc(var(--oasis-ribbon-group-compact-width, 132px) - 26px);
-}
-
 .oasis-editor-style-gallery-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
   flex: 0 0 106px;
   min-width: 0;
   height: 56px;
-  padding: 0 4px;
+  padding: 2px 4px;
   border: 2px solid transparent;
-  border-right-width: 6px;
-  background: #f7f7f7;
+  box-sizing: border-box;
+  color: var(--oasis-ribbon-text, #222);
+  background: var(--oasis-ribbon-panel-bg, #fff);
   text-align: center;
   cursor: pointer;
-  overflow: hidden;
-  white-space: nowrap;
 }
 
-.oasis-editor-style-gallery-card span {
+/* Samples represent the printed page, while labels belong to themed chrome. */
+.oasis-editor-style-gallery-sample {
   display: block;
-  overflow: hidden;
-  text-overflow: clip;
+  height: 29px;
+  line-height: 29px;
+  color: #222;
+  background: #fff;
   white-space: nowrap;
 }
 
-.oasis-editor-style-gallery-card:hover,
+.oasis-editor-style-gallery-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font: 11px/12px system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.oasis-editor-style-gallery-card:hover {
+  background: var(--oasis-ribbon-hover, #e7f1fb);
+}
+
 .oasis-editor-style-gallery-card:focus-visible {
-  background: #e7f1fb;
-  border-color: #7aa7d3;
-  outline: none;
+  outline: 2px solid var(--oasis-focus, #4c8bf5);
+  outline-offset: -2px;
 }
 
 .oasis-editor-style-gallery-card-active {
-  border-color: #737373;
-  box-shadow: inset 0 0 0 1px #ffffff;
+  border-color: var(--oasis-ribbon-active-text, #737373);
 }
 
 .oasis-editor-style-gallery-expand {
@@ -2251,16 +2261,16 @@
   box-sizing: border-box;
   padding: 0;
   border: 0;
-  border-left: 1px solid #9a9a9a;
-  background: #ededed;
-  color: #333333;
+  border-left: 1px solid var(--oasis-ribbon-border, #9a9a9a);
+  background: var(--oasis-ribbon-hover, #ededed);
+  color: var(--oasis-ribbon-text, #333);
   cursor: pointer;
 }
 
 .oasis-editor-style-gallery-expand:hover,
 .oasis-editor-style-gallery-expand:focus-visible {
-  background: #dcecf9;
-  outline: 2px solid #4c8bf5;
+  background: var(--oasis-ribbon-hover, #dcecf9);
+  outline: 2px solid var(--oasis-focus, #4c8bf5);
   outline-offset: -2px;
 }
 
@@ -2269,8 +2279,9 @@
   width: min(660px, calc(100vw - 16px));
   max-height: min(420px, calc(100vh - 88px));
   padding: 4px;
-  border: 1px solid #777777;
-  background: #2b2b2b;
+  border: 1px solid var(--oasis-ribbon-border, #777);
+  color: var(--oasis-ribbon-text, #222);
+  background: var(--oasis-ribbon-panel-bg, #fff);
   box-shadow: 0 6px 18px rgb(0 0 0 / 28%);
   overflow: auto;
   box-sizing: border-box;
@@ -2278,15 +2289,12 @@
 
 .oasis-editor-style-gallery-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(98px, 1fr));
   gap: 7px 8px;
 }
 
 .oasis-editor-style-gallery-panel .oasis-editor-style-gallery-card {
   width: 100%;
-  height: 49px;
-  border-right-width: 2px;
-  background: #f7f7f7;
 }
 
 /* Table Design uses a purpose-built gallery: unlike paragraph style names, a
@@ -2528,8 +2536,8 @@
   background: var(--oasis-ribbon-group-border, #dcdcdc);
 }
 
-.oasis-editor-app[data-theme="dark"] .oasis-editor-tool-button,
-.oasis-editor-app[data-theme="dark"] .oasis-editor-tool-select {
+:is(.oasis-editor-app, .oasis-editor-portal-theme)[data-theme="dark"] .oasis-editor-tool-button,
+:is(.oasis-editor-app, .oasis-editor-portal-theme)[data-theme="dark"] .oasis-editor-tool-select {
   color: var(--oasis-ribbon-text);
 }
 
@@ -2731,8 +2739,8 @@
   background: #fff;
 }
 
-.oasis-editor-app[data-theme="dark"] .oasis-editor-design-gallery-panel,
-.oasis-editor-app[data-theme="dark"]
+:is(.oasis-editor-app, .oasis-editor-portal-theme)[data-theme="dark"] .oasis-editor-design-gallery-panel,
+:is(.oasis-editor-app, .oasis-editor-portal-theme)[data-theme="dark"]
   .oasis-editor-design-background-panel-wrap {
   color: var(--oasis-ribbon-text);
   background: var(--oasis-ribbon-panel-bg);
