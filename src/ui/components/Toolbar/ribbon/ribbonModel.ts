@@ -181,6 +181,7 @@ const RIBBON_GROUP_ORDER: Partial<Record<RibbonTabId, Record<string, number>>> =
       table: 10,
       rowsColumns: 20,
       merge: 30,
+      sort: 35,
       cellSize: 40,
       alignment: 50,
     },
@@ -303,6 +304,11 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
       priority: 30,
       states: ["full", "collapsed"],
       collapsedIcon: "combine",
+    },
+    sort: {
+      priority: 35,
+      states: ["full", "collapsed"],
+      collapsedIcon: "arrow-down",
     },
     cellSize: {
       priority: 40,
