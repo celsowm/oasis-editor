@@ -7,6 +7,7 @@ import {
 import {
   selectCollapse,
   selectParagraph,
+  selectRange,
   selectSentence,
   selectTextOccurrence,
   selectWord,
@@ -247,5 +248,31 @@ describe("select text occurrence (select.text)", () => {
     const before = state.selection;
     const next = selectTextOccurrence(state, "one", 99);
     expect(next.selection).toEqual(before);
+  });
+});
+
+describe("select range (select.range)", () => {
+  it("sets the selection to the given anchor and focus positions", () => {
+    const base = buildState(["one two three"]);
+    const p = getParagraphs(base)[0]!;
+    const next = selectRange(
+      base,
+      paragraphOffsetToPosition(p, 1),
+      paragraphOffsetToPosition(p, 5),
+    );
+    expect(next.selection.anchor.offset).toBe(1);
+    expect(next.selection.focus.offset).toBe(5);
+    expect(selectedSpan(next)).toBe("ne t");
+  });
+
+  it("clamps out-of-range offsets to the paragraph length", () => {
+    const base = buildState(["abc"]);
+    const p = getParagraphs(base)[0]!;
+    const next = selectRange(
+      base,
+      paragraphOffsetToPosition(p, 0),
+      paragraphOffsetToPosition(p, 99),
+    );
+    expect(next.selection.focus.offset).toBe(getParagraphText(p).length);
   });
 });

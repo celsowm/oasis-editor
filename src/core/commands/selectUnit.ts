@@ -7,7 +7,11 @@
  * they are applied via `applyState` (no undo) and always act on the flattened
  * paragraph stream of the active editing zone, mirroring `selectAll`.
  */
-import type { EditorParagraphNode, EditorState } from "@/core/model.js";
+import type {
+  EditorParagraphNode,
+  EditorPosition,
+  EditorState,
+} from "@/core/model.js";
 import {
   getParagraphLength,
   getParagraphText,
@@ -129,6 +133,19 @@ export function selectTextOccurrence(
     anchor: match.anchor,
     focus: match.focus,
   });
+}
+
+/**
+ * Select an arbitrary range (`select.range`): sets the selection to the given
+ * anchor/focus positions, clamped to valid offsets. Selection-only — never
+ * mutates the document, so it's applied via `applyState` with no undo.
+ */
+export function selectRange(
+  state: EditorState,
+  anchor: EditorPosition,
+  focus: EditorPosition,
+): EditorState {
+  return setSelection(state, { anchor, focus });
 }
 
 export type { EditorParagraphNode };
