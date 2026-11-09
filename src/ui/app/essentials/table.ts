@@ -45,6 +45,8 @@ import {
   setSelectedTableRowHeader,
   canSetActiveTableColumnWidth,
   setActiveTableColumnWidth,
+  canSetActiveTableWidth,
+  setActiveTableWidth,
   canDeleteActiveTableCell,
   deleteActiveTableCell,
   canSetActiveTableAutoFit,
@@ -528,6 +530,13 @@ export function buildEssentialsTable(
       apply(
         (current): EditorState => setActiveTableColumnWidth(current, width),
         MERGE_KEYS.tableColumnWidth,
+      ),
+    canSetActiveTableWidth: (): boolean =>
+      canSetActiveTableWidth(options.state()),
+    setActiveTableWidth: (width: number | string | null): void =>
+      apply(
+        (current): EditorState => setActiveTableWidth(current, width),
+        MERGE_KEYS.tableWidth,
       ),
     insert: (rows: number, cols: number): void =>
       options.tableOps.insertTableCommand(rows, cols),

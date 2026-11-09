@@ -353,6 +353,7 @@ export interface OasisCommandPayloads {
   tableSetBreakAcrossPages: boolean | null;
   tableSetHeaderRow: boolean | null;
   tableSetColumnWidth: number | string | null;
+  tableSetTableWidth: number | string | null;
   tableSetCellWidth: string | number;
   tableSetCellNoWrap: boolean | null;
   tableSetCellFitText: boolean | null;

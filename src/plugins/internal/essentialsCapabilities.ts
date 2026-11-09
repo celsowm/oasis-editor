@@ -688,6 +688,10 @@ export interface EssentialsTableCapability {
   canSetActiveTableColumnWidth: () => boolean;
   /** Word's column width (Cell Size): set the width of the active column. */
   setActiveTableColumnWidth: (width: number | string | null) => void;
+  /** True when the caret sits inside a table whose preferred width can change. */
+  canSetActiveTableWidth: () => boolean;
+  /** Word's table preferred width (Table Properties): set it on the active table. */
+  setActiveTableWidth: (width: number | string | null) => void;
   /** True when the caret sits inside a table whose cells can be re-margined. */
   canSetCellMargins: () => boolean;
   /** Word's Cell Margins: set per-edge padding on the selected cells. */

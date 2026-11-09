@@ -275,6 +275,18 @@ export function buildTableCommands({
           table.canSetActiveTableColumnWidth(),
       }),
     ),
+    tableSetTableWidth: valueCommand(
+      "tableSetTableWidth",
+      (p): true => (
+        table.setActiveTableWidth(p as unknown as number | string | null),
+        true
+      ),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSetTableWidth") &&
+          table.canSetActiveTableWidth(),
+      }),
+    ),
     tableSetCellMargins: actionCommand(
       "tableSetCellMargins",
       (p): void =>
