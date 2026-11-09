@@ -272,3 +272,26 @@ export function setSectionVerticalAlign(
       : align;
   return updateSectionSettings(state, sectionIndex, { verticalAlignment });
 }
+
+/** Read the active section's right-to-left layout flag (`w:bidi`). */
+export function getSectionBidi(state: EditorState): boolean | undefined {
+  const sectionIndex = resolveActiveSectionIndex(state);
+  if (sectionIndex < 0) return undefined;
+  return getDocumentSections(state.document)[sectionIndex].bidi;
+}
+
+/**
+ * Set the active section's right-to-left layout flag (`w:bidi`, WordCraft's
+ * `layout.sectionRtl`). `false`/`null`/`undefined` clears the flag. Returns the
+ * same state when there's no section.
+ */
+export function setSectionBidi(
+  state: EditorState,
+  enabled: boolean | null | undefined,
+): EditorState {
+  const sectionIndex = resolveActiveSectionIndex(state);
+  if (sectionIndex < 0) return state;
+  return updateSectionSettings(state, sectionIndex, {
+    bidi: enabled ? true : undefined,
+  });
+}
