@@ -5,7 +5,12 @@ import type {
   EditorParagraphNode,
   EditorTextRun,
 } from "@/core/model.js";
-import { getParagraphLength, getParagraphs } from "@/core/model.js";
+import {
+  getParagraphLength,
+  getParagraphs,
+  resolveEffectiveTextStyleForParagraph,
+} from "@/core/model.js";
+import { PT_PER_PX, DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
 import { normalizeSelection } from "@/core/selection.js";
 import type {
   ToggleableTextStyleKey,
@@ -169,6 +174,65 @@ export function setTextStyleValue<K extends ValueTextStyleKey>(
         ...run,
         styles: setValueStyle(run.styles, key, value),
       }));
+    },
+  );
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+  );
+}
+
+/**
+ * Nudge the font size of the selected runs by a fixed delta in points
+ * (WordCraft's `format.growFont1` / `format.shrinkFont1`, Word's Ctrl+]
+ * / Ctrl+[). Unlike the stepping grow/shrink commands these change each
+ * run's effective size by exactly `deltaPt`, clamped to Word's 1-1638 pt
+ * range. A no-op on a collapsed selection.
+ */
+export function nudgeFontSize(
+  state: EditorState,
+  deltaPt: number,
+): EditorState {
+  const normalized = normalizeSelection(state);
+  if (normalized.isCollapsed) {
+    return state;
+  }
+
+  const paragraphs = getParagraphs(state);
+  const docStyles = state.document.styles;
+  const nextParagraphs = paragraphs.map(
+    (paragraph, paragraphIndex): EditorParagraphNode => {
+      if (
+        paragraphIndex < normalized.startIndex ||
+        paragraphIndex > normalized.endIndex
+      ) {
+        return paragraph;
+      }
+
+      const startOffset =
+        paragraphIndex === normalized.startIndex
+          ? normalized.startParagraphOffset
+          : 0;
+      const endOffset =
+        paragraphIndex === normalized.endIndex
+          ? normalized.endParagraphOffset
+          : getParagraphLength(paragraph);
+
+      return mapRunsInRange(paragraph, startOffset, endOffset, (run) => {
+        const currentPt =
+          (resolveEffectiveTextStyleForParagraph(
+            run.styles,
+            paragraph.style?.styleId,
+            docStyles,
+          ).fontSize ?? DEFAULT_FONT_SIZE_PX) * PT_PER_PX;
+        const nextPt = Math.max(1, Math.min(1638, currentPt + deltaPt));
+        return {
+          ...run,
+          styles: setValueStyle(run.styles, "fontSize", nextPt / PT_PER_PX),
+        };
+      });
     },
   );
 

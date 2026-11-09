@@ -22,6 +22,7 @@ export {
   toggleCharacterBorder,
   clearSelectedTextFormatting,
   setTextStyleValue,
+  nudgeFontSize,
 } from "./textFormatting.js";
 
 export {
