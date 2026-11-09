@@ -4,43 +4,79 @@ import {
   createEditorParagraphFromRuns,
   createEditorStateFromDocument,
 } from "@/core/editorState.js";
-import { setParagraphStyle } from "@/core/commands/block.js";
-import { getParagraphs } from "@/core/model.js";
+import type { EditorParagraphNode, EditorState } from "@/core/model.js";
+import { getParagraphs, paragraphOffsetToPosition } from "@/core/model.js";
+import { setParagraphBidi } from "@/core/commands/paragraphBidi.js";
 
-function buildState(): ReturnType<typeof createEditorStateFromDocument> {
-  const paragraph = createEditorParagraphFromRuns([{ text: "hello" }]);
-  const state = createEditorStateFromDocument(createEditorDocument([paragraph]));
-  // Put the caret inside the single paragraph.
+function buildState(paragraphs: EditorParagraphNode[]): EditorState {
+  const state = createEditorStateFromDocument(
+    createEditorDocument(paragraphs),
+  );
+  const first = paragraphs[0]!;
+  const text = first.runs.map((r) => r.text).join("");
   return {
     ...state,
     selection: {
-      anchor: { paragraphId: paragraph.id, runId: paragraph.runs[0]!.id, offset: 1 },
-      focus: { paragraphId: paragraph.id, runId: paragraph.runs[0]!.id, offset: 2 },
+      anchor: paragraphOffsetToPosition(first, 0),
+      focus: paragraphOffsetToPosition(first, text.length),
     },
   };
 }
 
-function paraBidi(
-  state: ReturnType<typeof createEditorStateFromDocument>,
-): boolean | undefined {
-  return getParagraphs(state)[0]!.style?.bidi;
+function selectRange(state: EditorState, lo: number, hi: number): EditorState {
+  const paragraphs = getParagraphs(state);
+  return {
+    ...state,
+    selection: {
+      anchor: paragraphOffsetToPosition(paragraphs[lo]!, 0),
+      focus: paragraphOffsetToPosition(
+        paragraphs[hi]!,
+        paragraphs[hi]!.runs.map((r) => r.text).join("").length,
+      ),
+    },
+  };
 }
 
-describe("paragraph text direction (para.rtl / para.ltr)", () => {
-  it("defaults to undefined (left-to-right is the Word default)", () => {
-    expect(paraBidi(buildState())).toBeUndefined();
+function paragraph(text: string, bidi?: boolean): EditorParagraphNode {
+  const p = createEditorParagraphFromRuns([{ text }]);
+  if (bidi !== undefined) {
+    p.style = { ...(p.style ?? {}), bidi };
+  }
+  return p;
+}
+
+describe("set paragraph bidi (w:bidi)", () => {
+  it("turns bidi on for the selected paragraph", () => {
+    const next = setParagraphBidi(buildState([paragraph("hi")]), true);
+    expect(getParagraphs(next)[0]!.style?.bidi).toBe(true);
   });
 
-  it("sets right-to-left (bidi true)", () => {
-    const state = buildState();
-    const next = setParagraphStyle(state, "bidi", true);
-    expect(paraBidi(next)).toBe(true);
+  it("stores an explicit false", () => {
+    const next = setParagraphBidi(buildState([paragraph("hi", true)]), false);
+    expect(getParagraphs(next)[0]!.style?.bidi).toBe(false);
   });
 
-  it("clears right-to-left back to left-to-right (null)", () => {
-    const rtl = setParagraphStyle(buildState(), "bidi", true);
-    expect(paraBidi(rtl)).toBe(true);
-    const ltr = setParagraphStyle(rtl, "bidi", null);
-    expect(paraBidi(ltr)).toBeUndefined();
+  it("clears the key when null is passed (default off)", () => {
+    const next = setParagraphBidi(buildState([paragraph("hi", true)]), null);
+    expect(getParagraphs(next)[0]!.style?.bidi).toBeUndefined();
+  });
+
+  it("is a no-op when the value is unchanged", () => {
+    const on = buildState([paragraph("hi", true)]);
+    expect(setParagraphBidi(on, true)).toBe(on);
+    const off = buildState([paragraph("hi")]);
+    expect(setParagraphBidi(off, null)).toBe(off);
+  });
+
+  it("applies only to the selected paragraphs", () => {
+    const p1 = paragraph("a");
+    const p2 = paragraph("b");
+    const p3 = paragraph("c");
+    const state = selectRange(buildState([p1, p2, p3]), 0, 1);
+    const next = setParagraphBidi(state, true);
+    const all = getParagraphs(next);
+    expect(all[0]!.style?.bidi).toBe(true);
+    expect(all[1]!.style?.bidi).toBe(true);
+    expect(all[2]!.style?.bidi).toBeUndefined();
   });
 });
