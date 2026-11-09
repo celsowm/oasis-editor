@@ -60,6 +60,19 @@ export interface EssentialsFormattingCapability {
   /** Select an arbitrary range by anchor/focus positions (select.range). */
   selectRange: (anchor: EditorPosition, focus: EditorPosition) => boolean;
   insertFootnote: () => boolean;
+  /** Set document-wide footnote/endnote options (references.noteOptions). */
+  setNoteOptions: (options: {
+    kind: "footnote" | "endnote";
+    numberFormat?: string | null;
+    startAt?: number | null;
+    restart?: string | null;
+  }) => void;
+  /** Read the footnote or endnote options in effect. */
+  getNoteOptions: (kind: "footnote" | "endnote") => {
+    numberFormat?: string;
+    startAt?: number;
+    restart?: string;
+  };
   insertTableOfContents: () => boolean;
   updateTableOfContents: () => boolean;
   /** True only when the active section contains an updateable TOC field. */

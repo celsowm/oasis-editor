@@ -186,6 +186,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "insertDateField",
   "insertDateTime",
   "insertCrossReference",
+  "setNoteOptions",
   "exitHeaderFooter",
   "setDifferentFirstPage",
   "setDifferentOddEven",

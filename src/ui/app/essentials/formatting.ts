@@ -11,6 +11,10 @@ import {
 } from "@/core/commands/text.js";
 import { replaceAllInDocument } from "@/core/commands/findReplace.js";
 import { insertSpecialCharacter } from "@/core/commands/specialChar.js";
+import {
+  getNoteOptions,
+  setNoteOptions as setNoteOptionsCore,
+} from "@/core/commands/noteOptions.js";
 import { MERGE_KEYS } from "@/core/transactionMergeKeys.js";
 import {
   getDocumentParagraphs,
@@ -164,6 +168,34 @@ export function buildEssentialsFormatting(
       options.commandsController.applyInsertFootnoteCommand(),
       true
     ),
+    setNoteOptions: (optionsInput): void => {
+      options.applyTransactionalState((current): EditorState =>
+        setNoteOptionsCore(current, {
+          kind: optionsInput.kind,
+          ...(optionsInput.numberFormat !== undefined
+            ? {
+                numberFormat:
+                  optionsInput.numberFormat === null
+                    ? null
+                    : (optionsInput.numberFormat as import("@/core/model.js").EditorFootnoteNumberFormat),
+              }
+            : {}),
+          ...(optionsInput.startAt !== undefined
+            ? { startAt: optionsInput.startAt }
+            : {}),
+          ...(optionsInput.restart !== undefined
+            ? {
+                restart:
+                  optionsInput.restart === null
+                    ? null
+                    : (optionsInput.restart as import("@/core/model.js").EditorFootnoteRestart),
+              }
+            : {}),
+        }),
+      );
+      options.focusInput();
+    },
+    getNoteOptions: (kind) => getNoteOptions(options.state(), kind),
     insertText: (text: string, fontFamily?: string | null): boolean => {
       if (text.length === 0) return false;
       const styleOverride = fontFamily ? { fontFamily } : undefined;

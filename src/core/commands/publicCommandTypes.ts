@@ -45,6 +45,14 @@ export interface ParagraphTabStopsPayload {
   default?: number | null;
 }
 
+/** Payload for the `setNoteOptions` command (WordCraft references.noteOptions). */
+export interface NoteOptionsPayload {
+  kind: "footnote" | "endnote";
+  numberFormat?: string | null;
+  startAt?: number | null;
+  restart?: string | null;
+}
+
 /** Payload for the `replaceAll` command (edit.replaceAll). */
 export interface ReplaceAllPayload {
   search: string;
@@ -266,6 +274,7 @@ export interface OasisCommandPayloads {
     type?: "REF" | "PAGEREF";
     bookmark: string;
   };
+  setNoteOptions: NoteOptionsPayload;
   setDifferentFirstPage: boolean | null;
   setDifferentOddEven: boolean | null;
   exitHeaderFooter: undefined;

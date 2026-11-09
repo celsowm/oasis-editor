@@ -73,6 +73,35 @@ export function buildCoreFormattingCommands({
       formatting.selectRange(payload.anchor, payload.focus);
     }),
     insertFootnote: command("insertFootnote", formatting.insertFootnote),
+    setNoteOptions: actionCommand(
+      "setNoteOptions",
+      (p): void => {
+        const payload = (p ?? {}) as {
+          kind?: "footnote" | "endnote";
+          numberFormat?: string | null;
+          startAt?: unknown;
+          restart?: string | null;
+        };
+        const kind = payload.kind === "endnote" ? "endnote" : "footnote";
+        formatting.setNoteOptions({
+          kind,
+          ...(payload.numberFormat !== undefined
+            ? { numberFormat: payload.numberFormat }
+            : {}),
+          ...(payload.startAt !== undefined
+            ? { startAt: numOrNull(payload.startAt) }
+            : {}),
+          ...(payload.restart !== undefined
+            ? { restart: payload.restart }
+            : {}),
+        });
+      },
+      (): {
+        value: { numberFormat?: string; startAt?: number; restart?: string };
+      } => ({
+        value: formatting.getNoteOptions("footnote"),
+      }),
+    ),
     insertTableOfContents: command(
       "insertTableOfContents",
       formatting.insertTableOfContents,

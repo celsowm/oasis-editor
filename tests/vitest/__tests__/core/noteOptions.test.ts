@@ -10,7 +10,7 @@ import {
 } from "@/core/commands/noteOptions.js";
 
 function buildState(): EditorState {
-  return createEditorStateFromDocument(createEditorDocument([], "doc"));
+  return createEditorStateFromDocument(createEditorDocument([]));
 }
 
 describe("set note options (references.noteOptions)", () => {
