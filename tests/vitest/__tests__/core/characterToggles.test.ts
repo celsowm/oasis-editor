@@ -95,6 +95,31 @@ describe("character toggles (format.smallCaps / format.allCaps / format.doubleSt
     const off = toggleTextStyle(on, "outline");
     expect(getParagraphs(off)[0]!.runs[0]!.styles?.outline).toBeUndefined();
   });
+
+  it("enables do-not-check-spelling (noProof) on the selection", () => {
+    const state = buildState("hello");
+    const next = toggleTextStyle(state, "noProof");
+    expect(getParagraphs(next)[0]!.runs[0]!.styles?.noProof).toBe(true);
+  });
+
+  it("disables noProof when it is already uniform", () => {
+    const state = buildState("hello");
+    const on = toggleTextStyle(state, "noProof");
+    const off = toggleTextStyle(on, "noProof");
+    expect(getParagraphs(off)[0]!.runs[0]!.styles?.noProof).toBeUndefined();
+  });
+
+  it("enables web hidden (webHidden) on the selection", () => {
+    const state = buildState("hello");
+    const next = toggleTextStyle(state, "webHidden");
+    expect(getParagraphs(next)[0]!.runs[0]!.styles?.webHidden).toBe(true);
+  });
+
+  it("enables vanish (specVanish) on the selection", () => {
+    const state = buildState("hello");
+    const next = toggleTextStyle(state, "specVanish");
+    expect(getParagraphs(next)[0]!.runs[0]!.styles?.specVanish).toBe(true);
+  });
 });
 
 describe("character border (format.border)", () => {
