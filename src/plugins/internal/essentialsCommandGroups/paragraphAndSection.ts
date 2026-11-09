@@ -167,6 +167,11 @@ export function buildParagraphAndSectionCommands({
       (p): true => (paragraph.setKinsoku(boolOrNull(p)), true),
       (): unknown => s().kinsoku,
     ),
+    setOverflowPunct: valueCommand(
+      "setOverflowPunct",
+      (p): true => (paragraph.setOverflowPunct(boolOrNull(p)), true),
+      (): unknown => s().overflowPunct,
+    ),
     setMirrorIndents: valueCommand(
       "setMirrorIndents",
       (p): true => (paragraph.setMirrorIndents(boolOrNull(p)), true),

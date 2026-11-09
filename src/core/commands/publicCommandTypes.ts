@@ -221,6 +221,7 @@ export interface OasisCommandPayloads {
   setTextDirection: string | null;
   setSuppressAutoHyphens: boolean | null;
   setKinsoku: boolean | null;
+  setOverflowPunct: boolean | null;
   setIndentLeft: number | null;
   setIndentRight: number | null;
   setIndentFirstLine: number | null;

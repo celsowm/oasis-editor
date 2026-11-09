@@ -16,6 +16,7 @@ import { setParagraphLineRule } from "@/core/commands/paragraphLineRule.js";
 import { setParagraphTextDirection } from "@/core/commands/paragraphTextDirection.js";
 import { setParagraphSuppressAutoHyphens } from "@/core/commands/paragraphSuppressAutoHyphens.js";
 import { setParagraphKinsoku } from "@/core/commands/paragraphKinsoku.js";
+import { setParagraphOverflowPunct } from "@/core/commands/paragraphOverflowPunct.js";
 import { applyHorizontalLine } from "@/core/commands/horizontalLine.js";
 import { hasDropCap, setDropCap } from "@/core/commands/dropCap.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
@@ -64,6 +65,10 @@ export function buildEssentialsParagraph(
     setKinsoku: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>
         setParagraphKinsoku(current, value),
+      ),
+    setOverflowPunct: (value: boolean | null): void =>
+      options.applyTransactionalState((current): EditorState =>
+        setParagraphOverflowPunct(current, value),
       ),
     setContextualSpacing: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>
