@@ -74,6 +74,8 @@ const GROUP_LABEL_KEYS: Record<string, TranslationKey> = {
   symbols: "ribbon.group.symbols",
   tables: "ribbon.group.tables",
   links: "ribbon.group.links",
+  headerFooter: "ribbon.group.headerFooter",
+  sort: "ribbon.group.sort",
   footnotes: "ribbon.group.footnotes",
   accessibility: "ribbon.group.accessibility",
   documentFormatting: "ribbon.group.documentFormatting",
@@ -383,7 +385,36 @@ function mergeRibbonGroupResizePolicy(
 
 export function ribbonGroupLabel(group: string, t: TranslateFn): string {
   const key = GROUP_LABEL_KEYS[group];
-  return key ? t(key) : group;
+  // Unknown contributions must not leak camelCase/internal identifiers.
+  return key ? t(key) : t("ribbon.group.general");
+}
+
+/** Filter reactive visibility before grouping, without hiding disabled actions. */
+export function visibleRibbonItems(
+  items: ToolbarItem[],
+  api: ToolbarActionApi,
+): ToolbarItem[] {
+  return items.flatMap((item): ToolbarItem[] => {
+    if (item.isVisible?.(api) === false) return [];
+    if (item.type !== "group") return [item];
+    const children = trimRibbonSeparators(visibleRibbonItems(item.items, api));
+    return children.length ? [{ ...item, items: children }] : [];
+  });
+}
+
+/** Separators only separate actions; they never create a group by themselves. */
+function trimRibbonSeparators(items: ToolbarItem[]): ToolbarItem[] {
+  const result: ToolbarItem[] = [];
+  for (const item of items) {
+    if (
+      item.type === "separator" &&
+      (!result.length || result[result.length - 1]!.type === "separator")
+    )
+      continue;
+    result.push(item);
+  }
+  if (result[result.length - 1]?.type === "separator") result.pop();
+  return result;
 }
 
 export function buildRibbonGroups(
@@ -405,7 +436,7 @@ export function buildRibbonGroups(
     if (!group) {
       group = {
         id: groupId,
-        label: ribbonGroupLabel(groupId, t),
+        label: item.groupLabel?.trim() || ribbonGroupLabel(groupId, t),
         largeItems: [],
         rows: { 1: [], 2: [] },
         order: groupOrder,
@@ -417,6 +448,7 @@ export function buildRibbonGroups(
       };
       groups.set(groupId, group);
     }
+    if (item.groupLabel?.trim()) group.label = item.groupLabel.trim();
     group.order = Math.min(group.order, groupOrder);
     group.resizePolicy = {
       ...group.resizePolicy,
@@ -436,7 +468,20 @@ export function buildRibbonGroups(
     }
   });
 
-  return Array.from(groups.values()).sort((a, b): number => a.order - b.order);
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      rows: {
+        1: trimRibbonSeparators(group.rows[1]),
+        2: trimRibbonSeparators(group.rows[2]),
+      },
+    }))
+    .filter(
+      (group) =>
+        group.largeItems.length + group.rows[1].length + group.rows[2].length >
+        0,
+    )
+    .sort((a, b): number => a.order - b.order);
 }
 
 function estimatedRibbonGroupWidths(group: RibbonGroupModel): RibbonGroupWidth {

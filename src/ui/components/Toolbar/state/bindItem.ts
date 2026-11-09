@@ -36,7 +36,7 @@ export function bindItem(
     disabled: (): boolean =>
       overrides?.isDisabled?.(api) ?? !cmdState().isEnabled,
     value: (): unknown => overrides?.value?.(api) ?? cmdState().value,
-    visible: (): boolean => overrides?.isVisible?.(api) ?? true,
+    visible: (): boolean => item.isVisible?.(api) ?? true,
   };
 }
 

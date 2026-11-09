@@ -526,6 +526,7 @@ export const ptBR = {
   "ribbon.group.document": "Documento",
   "ribbon.group.table": "Tabela",
   "ribbon.group.section": "Seção",
+  "ribbon.group.sort": "Classificar",
   "ribbon.group.general": "Geral",
   "ribbon.group.tableStyleOptions": "Opções de Estilo de Tabela",
   "ribbon.group.tableStyles": "Estilos de Tabela",

@@ -87,7 +87,8 @@ export interface ItemReactiveOverrides {
    */
   value?: (api: ToolbarActionApi) => unknown;
   /**
-   * Contextual visibility — item stays mounted; the renderer toggles display.
+   * Contextual visibility. Compact controls toggle display; the Ribbon
+   * recomposes visible groups so hidden actions do not reserve space.
    * @param api - The toolbar action API.
    * @returns Whether the item should be visible.
    */
@@ -101,6 +102,8 @@ interface ToolbarItemBase extends ItemReactiveOverrides {
   tab?: RibbonTabId;
   /** Logical section id (used for grouping/ordering, not rendering layout). */
   group?: string;
+  /** Human-readable contribution label; unknown groups otherwise use General. */
+  groupLabel?: string;
   /** Two-row ribbon placement. Missing values default to row 1. */
   row?: RibbonRow;
   /** Ribbon-only visual scale. Large items span both toolbar rows. */
@@ -233,6 +236,8 @@ export interface SeparatorItem {
   order?: number;
   tab?: RibbonTabId;
   group?: string;
+  /** Human-readable contribution label; unknown groups otherwise use General. */
+  groupLabel?: string;
   row?: RibbonRow;
   ribbonGroupResize?: RibbonGroupResizePolicy;
   /**

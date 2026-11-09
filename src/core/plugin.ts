@@ -109,6 +109,8 @@ export interface PluginAction {
   icon?: string;
   tab?: RibbonTabId;
   group?: string;
+  /** Human-readable group label, localized by the contributing plugin. */
+  groupLabel?: string;
   row?: RibbonRow;
   ribbonSize?: RibbonSize;
   ribbonGroupResize?: RibbonGroupResizePolicy;

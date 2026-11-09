@@ -53,6 +53,7 @@ export function useEditorRuntimePlugins(
         iconName: item.icon,
         tab: item.tab ?? "plugins",
         group: item.group ?? "general",
+        groupLabel: item.groupLabel,
         row: item.row ?? 1,
         ribbonSize: item.ribbonSize,
         ribbonGroupResize: item.ribbonGroupResize,

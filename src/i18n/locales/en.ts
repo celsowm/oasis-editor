@@ -521,6 +521,7 @@ export const en = {
   "ribbon.group.document": "Document",
   "ribbon.group.table": "Table",
   "ribbon.group.section": "Section",
+  "ribbon.group.sort": "Sort",
   "ribbon.group.general": "General",
   "ribbon.group.tableStyleOptions": "Table Style Options",
   "ribbon.group.tableStyles": "Table Styles",

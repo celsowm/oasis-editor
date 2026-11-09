@@ -21,6 +21,7 @@ import type {
   ToolbarViewMode,
 } from "@/ui/OasisEditorAppProps.js";
 import { RibbonTabs } from "./ribbon/RibbonTabs.js";
+import { visibleRibbonItems } from "./ribbon/ribbonModel.js";
 import { RibbonPanel } from "./ribbon/RibbonPanel.js";
 import { CONTEXTUAL_TABS, type RibbonTabId } from "./schema/items.js";
 import type { ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
@@ -93,6 +94,8 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
     return ordered;
   });
 
+  const ribbonItems = createMemo(() => visibleRibbonItems(items(), api));
+
   const view = (): ToolbarViewMode => props.view ?? "ribbon";
   const layout = (): ToolbarLayoutMode => props.layout ?? "overflow";
   const renderItems = (): JSX.Element => (
@@ -123,9 +126,9 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             api={api}
-            items={items}
+            items={ribbonItems}
           />
-          <RibbonPanel activeTab={activeTab} items={items} api={api} />
+          <RibbonPanel activeTab={activeTab} items={ribbonItems} api={api} />
         </>
       ) : layout() === "overflow" ? (
         <ToolbarOverflowManager>{renderItems()}</ToolbarOverflowManager>
