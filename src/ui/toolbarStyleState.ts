@@ -156,6 +156,7 @@ export interface ToolbarStyleState {
   autoSpaceDE: boolean;
   autoSpaceDN: boolean;
   adjustRightInd: boolean;
+  topLinePunct: boolean;
 }
 
 function selectionOverlapsRun(
@@ -342,7 +343,8 @@ function resolveUniformParagraphFlag(
     | "wordWrap"
     | "autoSpaceDE"
     | "autoSpaceDN"
-    | "adjustRightInd",
+    | "adjustRightInd"
+    | "topLinePunct",
 ): boolean {
   return (
     styles.length > 0 && styles.every((style): boolean => style[key] === true)
@@ -570,5 +572,6 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
       paragraphStyles,
       "adjustRightInd",
     ),
+    topLinePunct: resolveUniformParagraphFlag(paragraphStyles, "topLinePunct"),
   };
 }

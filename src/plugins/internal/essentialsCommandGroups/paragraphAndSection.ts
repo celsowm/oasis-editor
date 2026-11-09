@@ -192,6 +192,11 @@ export function buildParagraphAndSectionCommands({
       (p): true => (paragraph.setAdjustRightInd(boolOrNull(p)), true),
       (): unknown => s().adjustRightInd,
     ),
+    setTopLinePunct: valueCommand(
+      "setTopLinePunct",
+      (p): true => (paragraph.setTopLinePunct(boolOrNull(p)), true),
+      (): unknown => s().topLinePunct,
+    ),
     setMirrorIndents: valueCommand(
       "setMirrorIndents",
       (p): true => (paragraph.setMirrorIndents(boolOrNull(p)), true),
