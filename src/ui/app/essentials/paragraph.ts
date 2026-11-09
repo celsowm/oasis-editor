@@ -23,6 +23,7 @@ import { setParagraphAutoSpaceDN } from "@/core/commands/paragraphAutoSpaceDN.js
 import { setParagraphAdjustRightInd } from "@/core/commands/paragraphAdjustRightInd.js";
 import { setParagraphTopLinePunct } from "@/core/commands/paragraphTopLinePunct.js";
 import { setParagraphPageBreakBefore } from "@/core/commands/paragraphPageBreakBefore.js";
+import { setParagraphKeepWithNext } from "@/core/commands/paragraphKeepWithNext.js";
 import { applyHorizontalLine } from "@/core/commands/horizontalLine.js";
 import { hasDropCap, setDropCap } from "@/core/commands/dropCap.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
@@ -99,6 +100,10 @@ export function buildEssentialsParagraph(
     setPageBreakBefore: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>
         setParagraphPageBreakBefore(current, value),
+      ),
+    setKeepWithNext: (value: boolean | null): void =>
+      options.applyTransactionalState((current): EditorState =>
+        setParagraphKeepWithNext(current, value),
       ),
     setContextualSpacing: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>

@@ -202,6 +202,11 @@ export function buildParagraphAndSectionCommands({
       (p): true => (paragraph.setPageBreakBefore(boolOrNull(p)), true),
       (): unknown => s().pageBreakBefore,
     ),
+    setKeepWithNext: valueCommand(
+      "setKeepWithNext",
+      (p): true => (paragraph.setKeepWithNext(boolOrNull(p)), true),
+      (): unknown => s().keepWithNext,
+    ),
     setMirrorIndents: valueCommand(
       "setMirrorIndents",
       (p): true => (paragraph.setMirrorIndents(boolOrNull(p)), true),

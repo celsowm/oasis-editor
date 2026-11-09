@@ -228,6 +228,7 @@ export interface OasisCommandPayloads {
   setAdjustRightInd: boolean | null;
   setTopLinePunct: boolean | null;
   setPageBreakBefore: boolean | null;
+  setKeepWithNext: boolean | null;
   setIndentLeft: number | null;
   setIndentRight: number | null;
   setIndentFirstLine: number | null;
