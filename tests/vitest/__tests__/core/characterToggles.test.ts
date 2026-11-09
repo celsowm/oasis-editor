@@ -120,6 +120,23 @@ describe("character toggles (format.smallCaps / format.allCaps / format.doubleSt
     const next = toggleTextStyle(state, "specVanish");
     expect(getParagraphs(next)[0]!.runs[0]!.styles?.specVanish).toBe(true);
   });
+
+  it("enables contextual alternates on the selection", () => {
+    const state = buildState("hello");
+    const next = toggleTextStyle(state, "contextualAlternates");
+    expect(
+      getParagraphs(next)[0]!.runs[0]!.styles?.contextualAlternates,
+    ).toBe(true);
+  });
+
+  it("disables contextual alternates when it is already uniform", () => {
+    const state = buildState("hello");
+    const on = toggleTextStyle(state, "contextualAlternates");
+    const off = toggleTextStyle(on, "contextualAlternates");
+    expect(
+      getParagraphs(off)[0]!.runs[0]!.styles?.contextualAlternates,
+    ).toBeUndefined();
+  });
 });
 
 describe("character border (format.border)", () => {
