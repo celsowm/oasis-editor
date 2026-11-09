@@ -10,6 +10,7 @@ import { resetParagraphFormatting } from "@/core/commands/paragraphReset.js";
 import { editParagraphTabStops } from "@/core/commands/paragraphTabs.js";
 import { setParagraphOutlineLevel } from "@/core/commands/paragraphOutlineLevel.js";
 import { setParagraphListLevel } from "@/core/commands/paragraphListLevel.js";
+import { setParagraphContextualSpacing } from "@/core/commands/paragraphContextualSpacing.js";
 import { applyHorizontalLine } from "@/core/commands/horizontalLine.js";
 import { hasDropCap, setDropCap } from "@/core/commands/dropCap.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
@@ -39,6 +40,10 @@ export function buildEssentialsParagraph(
       options.commandsController.applyParagraphStyleCommand(
         "spacingBefore",
         value,
+      ),
+    setContextualSpacing: (value: boolean | null): void =>
+      options.applyTransactionalState((current): EditorState =>
+        setParagraphContextualSpacing(current, value),
       ),
     setIndentLeft: (value: number | null): void =>
       options.commandsController.applyParagraphStyleCommand(

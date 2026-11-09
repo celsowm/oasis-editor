@@ -69,6 +69,11 @@ export function createActionCommandBuilder(
   });
 }
 
+export function boolOrNull(payload: unknown): boolean | null {
+  if (payload === null || payload === undefined || payload === "") return null;
+  return payload === true || payload === "true" || payload === 1;
+}
+
 export function numOrNull(payload: unknown): number | null {
   return payload != null && payload !== "" ? Number(payload) : null;
 }

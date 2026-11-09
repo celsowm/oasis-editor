@@ -361,6 +361,8 @@ export interface EssentialsParagraphCapability {
   toggleWidowControl: () => void;
   setSpacingAfter: (value: number | null) => void;
   setSpacingBefore: (value: number | null) => void;
+  /** Set "Don't add space between paragraphs of the same style" (w:contextualSpacing). */
+  setContextualSpacing: (value: boolean | null) => void;
   setIndentLeft: (value: number | null) => void;
   setIndentRight: (value: number | null) => void;
   setIndentFirstLine: (value: number | null) => void;

@@ -147,6 +147,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setOutlineLevel",
   "setSpacingAfter",
   "setSpacingBefore",
+  "setContextualSpacing",
   "setIndentLeft",
   "setIndentRight",
   "setIndentFirstLine",

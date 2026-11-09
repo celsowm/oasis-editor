@@ -215,6 +215,7 @@ export interface OasisCommandPayloads {
   setOutlineLevel: number | null | undefined;
   setSpacingAfter: number | null;
   setSpacingBefore: number | null;
+  setContextualSpacing: boolean | null;
   setIndentLeft: number | null;
   setIndentRight: number | null;
   setIndentFirstLine: number | null;

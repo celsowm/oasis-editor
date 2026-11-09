@@ -6,7 +6,7 @@ import type {
   ActionCommandBuilder,
   ValueCommandBuilder,
 } from "../essentialsCommandBuilders.js";
-import { numOrNull } from "../essentialsCommandBuilders.js";
+import { numOrNull, boolOrNull } from "../essentialsCommandBuilders.js";
 import type {
   EssentialsParagraphCapability,
   EssentialsSectionCapability,
@@ -132,6 +132,11 @@ export function buildParagraphAndSectionCommands({
       "setSpacingBefore",
       (p): true => (paragraph.setSpacingBefore(numOrNull(p)), true),
       (): string => s().spacingBefore,
+    ),
+    setContextualSpacing: valueCommand(
+      "setContextualSpacing",
+      (p): true => (paragraph.setContextualSpacing(boolOrNull(p)), true),
+      (): unknown => s().contextualSpacing,
     ),
     setIndentLeft: valueCommand(
       "setIndentLeft",
