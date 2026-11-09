@@ -365,6 +365,8 @@ export interface EssentialsParagraphCapability {
   setLineRule: (rule: "auto" | "exact" | "atLeast" | null) => void;
   /** Set the paragraph text flow (w:textDirection, vertical text). */
   setTextDirection: (direction: string | null) => void;
+  /** Set "Don't hyphenate" (w:suppressAutoHyphens). */
+  setSuppressAutoHyphens: (value: boolean | null) => void;
   /** Set "Don't add space between paragraphs of the same style" (w:contextualSpacing). */
   setContextualSpacing: (value: boolean | null) => void;
   /** Set "Mirror indents" (w:mirrorIndents): swap left/right indents on facing pages. */

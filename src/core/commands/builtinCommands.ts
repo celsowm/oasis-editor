@@ -151,6 +151,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setMirrorIndents",
   "setLineRule",
   "setTextDirection",
+  "setSuppressAutoHyphens",
   "setIndentLeft",
   "setIndentRight",
   "setIndentFirstLine",

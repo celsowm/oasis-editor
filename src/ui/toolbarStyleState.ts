@@ -149,6 +149,7 @@ export interface ToolbarStyleState {
   widowControl: boolean;
   bidi: boolean;
   textDirection: string;
+  suppressAutoHyphens: boolean;
 }
 
 function selectionOverlapsRun(
@@ -328,7 +329,8 @@ function resolveUniformParagraphFlag(
     | "widowControl"
     | "contextualSpacing"
     | "mirrorIndents"
-    | "bidi",
+    | "bidi"
+    | "suppressAutoHyphens",
 ): boolean {
   return (
     styles.length > 0 && styles.every((style): boolean => style[key] === true)
@@ -539,6 +541,10 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     textDirection: resolveUniformParagraphStyleValue(
       paragraphStyles,
       "textDirection",
+    ),
+    suppressAutoHyphens: resolveUniformParagraphFlag(
+      paragraphStyles,
+      "suppressAutoHyphens",
     ),
   };
 }

@@ -157,6 +157,11 @@ export function buildParagraphAndSectionCommands({
       (p): true => (paragraph.setTextDirection(strOrNull(p)), true),
       (): string => s().textDirection,
     ),
+    setSuppressAutoHyphens: valueCommand(
+      "setSuppressAutoHyphens",
+      (p): true => (paragraph.setSuppressAutoHyphens(boolOrNull(p)), true),
+      (): unknown => s().suppressAutoHyphens,
+    ),
     setMirrorIndents: valueCommand(
       "setMirrorIndents",
       (p): true => (paragraph.setMirrorIndents(boolOrNull(p)), true),

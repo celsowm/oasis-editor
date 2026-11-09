@@ -219,6 +219,7 @@ export interface OasisCommandPayloads {
   setMirrorIndents: boolean | null;
   setLineRule: "auto" | "exact" | "atLeast" | null;
   setTextDirection: string | null;
+  setSuppressAutoHyphens: boolean | null;
   setIndentLeft: number | null;
   setIndentRight: number | null;
   setIndentFirstLine: number | null;
