@@ -371,6 +371,8 @@ export interface EssentialsParagraphCapability {
   setKinsoku: (value: boolean | null) => void;
   /** Set "Allow punctuation to overflow margin" (w:overflowPunct, default on). */
   setOverflowPunct: (value: boolean | null) => void;
+  /** Set "Allow Latin text to wrap in the middle of a word" (w:wordWrap, default on). */
+  setWordWrap: (value: boolean | null) => void;
   /** Set "Don't add space between paragraphs of the same style" (w:contextualSpacing). */
   setContextualSpacing: (value: boolean | null) => void;
   /** Set "Mirror indents" (w:mirrorIndents): swap left/right indents on facing pages. */

@@ -172,6 +172,11 @@ export function buildParagraphAndSectionCommands({
       (p): true => (paragraph.setOverflowPunct(boolOrNull(p)), true),
       (): unknown => s().overflowPunct,
     ),
+    setWordWrap: valueCommand(
+      "setWordWrap",
+      (p): true => (paragraph.setWordWrap(boolOrNull(p)), true),
+      (): unknown => s().wordWrap,
+    ),
     setMirrorIndents: valueCommand(
       "setMirrorIndents",
       (p): true => (paragraph.setMirrorIndents(boolOrNull(p)), true),

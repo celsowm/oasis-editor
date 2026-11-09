@@ -154,6 +154,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setSuppressAutoHyphens",
   "setKinsoku",
   "setOverflowPunct",
+  "setWordWrap",
   "setIndentLeft",
   "setIndentRight",
   "setIndentFirstLine",
