@@ -658,6 +658,10 @@ export interface EssentialsTableCapability {
   canSetCellSpacing: () => boolean;
   /** Word's Cell Spacing: set the gap between adjacent cells on the active table. */
   setCellSpacing: (value: number | null) => void;
+  /** True when the caret sits inside a table whose indent can be set. */
+  canSetTableIndent: () => boolean;
+  /** Word's Indent from Left: set the horizontal offset of the active table. */
+  setTableIndent: (value: number | null) => void;
   /** True when the caret sits inside a table cell that can hold a formula result. */
   canEvaluateTableFormula: () => boolean;
   /** Word's Formula: evaluate a supported aggregate over a direction and

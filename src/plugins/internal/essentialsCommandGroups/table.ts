@@ -248,6 +248,15 @@ export function buildTableCommands({
           table.canSetCellSpacing(),
       }),
     ),
+    tableSetTableIndent: actionCommand(
+      "tableSetTableIndent",
+      (p): void => table.setTableIndent(numOrNull(p)),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSetTableIndent") &&
+          table.canSetTableIndent(),
+      }),
+    ),
     tableFormula: actionCommand(
       "tableFormula",
       (p): void => table.evaluateTableFormula(String(p)),

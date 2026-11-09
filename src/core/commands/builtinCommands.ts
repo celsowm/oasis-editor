@@ -241,6 +241,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "tableRepeatHeaderRows",
   "tableSetCellMargins",
   "tableSetCellSpacing",
+  "tableSetTableIndent",
   "tableFormula",
   "tableSelectCell",
   "tableSelectRow",
