@@ -177,6 +177,11 @@ export function buildParagraphAndSectionCommands({
       (p): true => (paragraph.setWordWrap(boolOrNull(p)), true),
       (): unknown => s().wordWrap,
     ),
+    setAutoSpaceDE: valueCommand(
+      "setAutoSpaceDE",
+      (p): true => (paragraph.setAutoSpaceDE(boolOrNull(p)), true),
+      (): unknown => s().autoSpaceDE,
+    ),
     setMirrorIndents: valueCommand(
       "setMirrorIndents",
       (p): true => (paragraph.setMirrorIndents(boolOrNull(p)), true),

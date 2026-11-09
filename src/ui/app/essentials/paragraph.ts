@@ -18,6 +18,7 @@ import { setParagraphSuppressAutoHyphens } from "@/core/commands/paragraphSuppre
 import { setParagraphKinsoku } from "@/core/commands/paragraphKinsoku.js";
 import { setParagraphOverflowPunct } from "@/core/commands/paragraphOverflowPunct.js";
 import { setParagraphWordWrap } from "@/core/commands/paragraphWordWrap.js";
+import { setParagraphAutoSpaceDE } from "@/core/commands/paragraphAutoSpaceDE.js";
 import { applyHorizontalLine } from "@/core/commands/horizontalLine.js";
 import { hasDropCap, setDropCap } from "@/core/commands/dropCap.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
@@ -74,6 +75,10 @@ export function buildEssentialsParagraph(
     setWordWrap: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>
         setParagraphWordWrap(current, value),
+      ),
+    setAutoSpaceDE: (value: boolean | null): void =>
+      options.applyTransactionalState((current): EditorState =>
+        setParagraphAutoSpaceDE(current, value),
       ),
     setContextualSpacing: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>

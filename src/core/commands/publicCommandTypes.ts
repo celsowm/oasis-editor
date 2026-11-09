@@ -223,6 +223,7 @@ export interface OasisCommandPayloads {
   setKinsoku: boolean | null;
   setOverflowPunct: boolean | null;
   setWordWrap: boolean | null;
+  setAutoSpaceDE: boolean | null;
   setIndentLeft: number | null;
   setIndentRight: number | null;
   setIndentFirstLine: number | null;
