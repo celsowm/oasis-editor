@@ -101,6 +101,7 @@ export interface OasisCommandPayloads {
   noProof: undefined;
   webHidden: undefined;
   specVanish: undefined;
+  contextualAlternates: undefined;
   characterBorder: undefined;
   shadow: undefined;
   emboss: undefined;

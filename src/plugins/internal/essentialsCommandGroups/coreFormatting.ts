@@ -244,6 +244,13 @@ export function buildCoreFormattingCommands({
         isActive: Boolean(s().specVanish),
       }),
     ),
+    contextualAlternates: command(
+      "contextualAlternates",
+      formatting.contextualAlternates,
+      (): { isActive: boolean } => ({
+        isActive: Boolean(s().contextualAlternates),
+      }),
+    ),
     characterBorder: command(
       "characterBorder",
       formatting.toggleCharacterBorder,

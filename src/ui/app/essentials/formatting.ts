@@ -374,6 +374,12 @@ export function buildEssentialsFormatting(
       options.keyboardCommandsController.applyBooleanStyleCommand("specVanish"),
       true
     ),
+    contextualAlternates: (): true => (
+      options.keyboardCommandsController.applyBooleanStyleCommand(
+        "contextualAlternates",
+      ),
+      true
+    ),
     toggleCharacterBorder: (): true => (
       options.keyboardCommandsController.applyToggleCharacterBorderCommand(),
       true

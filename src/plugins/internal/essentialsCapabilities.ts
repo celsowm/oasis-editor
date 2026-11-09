@@ -124,6 +124,7 @@ export interface EssentialsFormattingCapability {
   noProof: () => boolean;
   webHidden: () => boolean;
   specVanish: () => boolean;
+  contextualAlternates: () => boolean;
   toggleCharacterBorder: () => boolean;
   shadow: () => boolean;
   emboss: () => boolean;

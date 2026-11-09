@@ -32,6 +32,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "noProof",
   "webHidden",
   "specVanish",
+  "contextualAlternates",
   "characterBorder",
   "shadow",
   "emboss",
