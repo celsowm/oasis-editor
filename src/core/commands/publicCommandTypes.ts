@@ -186,6 +186,7 @@ export interface OasisCommandPayloads {
   setSpecialIndent: SetSpecialIndentPayload;
   setParagraphShading: string | null;
   applyParagraphBorders: undefined;
+  applyHorizontalLine: undefined;
   setLineHeight: number | null;
   setListFormat: string;
   setListStartAt: number | null;

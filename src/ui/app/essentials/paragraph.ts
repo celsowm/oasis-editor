@@ -5,6 +5,7 @@ import {
   moveSelectedParagraphs,
 } from "@/core/commands/paragraphMove.js";
 import { sortSelectedParagraphs } from "@/core/commands/paragraphSort.js";
+import { applyHorizontalLine } from "@/core/commands/horizontalLine.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
 import type { EssentialsParagraphCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
@@ -89,6 +90,13 @@ export function buildEssentialsParagraph(
           next = setParagraphStyle(next, "borderLeft", border);
           return next;
         },
+        { mergeKey: MERGE_KEYS.paraBorders },
+      );
+      options.focusInput();
+    },
+    addHorizontalLine: (): void => {
+      options.applyTransactionalState(
+        (current): EditorState => applyHorizontalLine(current),
         { mergeKey: MERGE_KEYS.paraBorders },
       );
       options.focusInput();

@@ -341,6 +341,8 @@ export interface EssentialsParagraphCapability {
   ) => void;
   setShading: (value: string | null) => void;
   applyBorders: () => void;
+  /** Apply a horizontal line (single 1.5pt bottom border) to the selection. */
+  addHorizontalLine: () => void;
   setLineHeight: (value: number | null) => void;
   setListFormat: (format: string) => void;
   setListStartAt: (value: number | null) => void;

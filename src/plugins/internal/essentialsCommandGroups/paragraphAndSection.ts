@@ -145,6 +145,9 @@ export function buildParagraphAndSectionCommands({
     applyParagraphBorders: actionCommand("applyParagraphBorders", (): void =>
       paragraph.applyBorders(),
     ),
+    applyHorizontalLine: actionCommand("applyHorizontalLine", (): void =>
+      paragraph.addHorizontalLine(),
+    ),
     setLineHeight: valueCommand(
       "setLineHeight",
       (p): true => (paragraph.setLineHeight(numOrNull(p)), true),

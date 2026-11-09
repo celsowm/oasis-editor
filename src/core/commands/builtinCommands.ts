@@ -141,6 +141,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setSpecialIndent",
   "setParagraphShading",
   "applyParagraphBorders",
+  "applyHorizontalLine",
   "setLineHeight",
   "setListFormat",
   "setListStartAt",
