@@ -94,6 +94,7 @@ export interface ToolbarStyleState {
   smallCaps: boolean;
   allCaps: boolean;
   hidden: boolean;
+  characterBorder: boolean;
   shadow: boolean;
   emboss: boolean;
   imprint: boolean;
@@ -441,6 +442,8 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     smallCaps: areAllBooleanStylesEnabled(styles, "smallCaps"),
     allCaps: areAllBooleanStylesEnabled(styles, "allCaps"),
     hidden: areAllBooleanStylesEnabled(styles, "hidden"),
+    characterBorder:
+      styles.length > 0 && styles.every((s) => Boolean(s.textBorder)),
     shadow: areAllBooleanStylesEnabled(styles, "shadow"),
     emboss: areAllBooleanStylesEnabled(styles, "emboss"),
     imprint: areAllBooleanStylesEnabled(styles, "imprint"),

@@ -4,8 +4,7 @@ import {
   createEditorParagraphFromRuns,
   createEditorStateFromDocument,
 } from "@/core/editorState.js";
-import { toggleTextStyle } from "@/core/commands/textFormatting.js";
-import {
+import { toggleCharacterBorder, toggleTextStyle } from "@/core/commands/textFormatting.js";import {
   getParagraphs,
   paragraphOffsetToPosition,
   type EditorState,
@@ -91,5 +90,42 @@ describe("character toggles (format.smallCaps / format.allCaps / format.doubleSt
     const on = toggleTextStyle(state, "outline");
     const off = toggleTextStyle(on, "outline");
     expect(getParagraphs(off)[0]!.runs[0]!.styles?.outline).toBeUndefined();
+  });
+});
+
+describe("character border (format.border)", () => {
+  it("applies the default character border on the selection", () => {
+    const state = buildState("hello");
+    const next = toggleCharacterBorder(state);
+    expect(getParagraphs(next)[0]!.runs[0]!.styles?.textBorder).toEqual({
+      width: 0.5,
+      type: "solid",
+      color: "#000000",
+    });
+  });
+
+  it("clears the character border when it is already uniform", () => {
+    const state = buildState("hello");
+    const on = toggleCharacterBorder(state);
+    const off = toggleCharacterBorder(on);
+    expect(getParagraphs(off)[0]!.runs[0]!.styles?.textBorder).toBeUndefined();
+  });
+
+  it("is a no-op on a collapsed selection", () => {
+    const paragraph = createEditorParagraphFromRuns([{ text: "hello" }]);
+    const state = createEditorStateFromDocument(
+      createEditorDocument([paragraph]),
+    );
+    const collapsed = {
+      ...state,
+      selection: {
+        anchor: paragraphOffsetToPosition(paragraph, 0),
+        focus: paragraphOffsetToPosition(paragraph, 0),
+      },
+    };
+    const next = toggleCharacterBorder(collapsed);
+    expect(
+      getParagraphs(next)[0]!.runs[0]!.styles?.textBorder,
+    ).toBeUndefined();
   });
 });

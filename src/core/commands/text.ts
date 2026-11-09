@@ -19,6 +19,7 @@ export {
 
 export {
   toggleTextStyle,
+  toggleCharacterBorder,
   clearSelectedTextFormatting,
   setTextStyleValue,
 } from "./textFormatting.js";
