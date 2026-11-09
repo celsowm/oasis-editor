@@ -148,6 +148,7 @@ export interface ToolbarStyleState {
   keepLinesTogether: boolean;
   widowControl: boolean;
   bidi: boolean;
+  textDirection: string;
 }
 
 function selectionOverlapsRun(
@@ -298,10 +299,9 @@ function getSelectedParagraphStyles(
     );
 }
 
-function resolveUniformParagraphStyleValue<K extends ParagraphStyleKey>(
-  styles: EditorParagraphStyle[],
-  key: K,
-): string {
+function resolveUniformParagraphStyleValue<
+  K extends keyof EditorParagraphStyle,
+>(styles: EditorParagraphStyle[], key: K): string {
   if (styles.length === 0) {
     return "";
   }
@@ -536,5 +536,9 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     ),
     widowControl: resolveUniformParagraphFlag(paragraphStyles, "widowControl"),
     bidi: resolveUniformParagraphFlag(paragraphStyles, "bidi"),
+    textDirection: resolveUniformParagraphStyleValue(
+      paragraphStyles,
+      "textDirection",
+    ),
   };
 }

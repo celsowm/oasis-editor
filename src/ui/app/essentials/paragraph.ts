@@ -13,6 +13,7 @@ import { setParagraphListLevel } from "@/core/commands/paragraphListLevel.js";
 import { setParagraphContextualSpacing } from "@/core/commands/paragraphContextualSpacing.js";
 import { setParagraphMirrorIndents } from "@/core/commands/paragraphMirrorIndents.js";
 import { setParagraphLineRule } from "@/core/commands/paragraphLineRule.js";
+import { setParagraphTextDirection } from "@/core/commands/paragraphTextDirection.js";
 import { applyHorizontalLine } from "@/core/commands/horizontalLine.js";
 import { hasDropCap, setDropCap } from "@/core/commands/dropCap.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
@@ -46,6 +47,13 @@ export function buildEssentialsParagraph(
     setLineRule: (rule: "auto" | "exact" | "atLeast" | null): void =>
       options.applyTransactionalState((current): EditorState =>
         setParagraphLineRule(current, rule),
+      ),
+    setTextDirection: (direction: string | null): void =>
+      options.applyTransactionalState((current): EditorState =>
+        setParagraphTextDirection(
+          current,
+          direction as Parameters<typeof setParagraphTextDirection>[1],
+        ),
       ),
     setContextualSpacing: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>

@@ -152,6 +152,11 @@ export function buildParagraphAndSectionCommands({
       ),
       (): string => s().lineRule,
     ),
+    setTextDirection: valueCommand(
+      "setTextDirection",
+      (p): true => (paragraph.setTextDirection(strOrNull(p)), true),
+      (): string => s().textDirection,
+    ),
     setMirrorIndents: valueCommand(
       "setMirrorIndents",
       (p): true => (paragraph.setMirrorIndents(boolOrNull(p)), true),
