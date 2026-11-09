@@ -640,6 +640,15 @@ export function buildEssentialsFormatting(
       )("snapToGrid", value),
       true
     ),
+    setFitText: (value: number | null): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "fitText",
+          value: number | null,
+        ) => void
+      )("fitText", value),
+      true
+    ),
     setBaselineShift: (value: number | null): true => (
       (
         options.styleController.applyToolbarValueStyleCommand as (

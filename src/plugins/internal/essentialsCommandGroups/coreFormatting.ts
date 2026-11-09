@@ -637,6 +637,11 @@ export function buildCoreFormattingCommands({
       (p): boolean => formatting.setRunSnapToGrid(boolOrNull(p)),
       (): unknown => s().snapToGrid,
     ),
+    setFitText: valueCommand(
+      "setFitText",
+      (p): boolean => formatting.setFitText(numOrNull(p)),
+      (): string => s().fitText,
+    ),
     setBaselineShift: valueCommand(
       "setBaselineShift",
       (p): boolean => formatting.setBaselineShift(numOrNull(p)),

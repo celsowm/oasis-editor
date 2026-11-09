@@ -187,6 +187,8 @@ export interface EssentialsFormattingCapability {
   setKerning: (value: number | null) => boolean;
   /** Set the selected runs' snap-to-grid flag (w:snapToGrid, defaults on). */
   setRunSnapToGrid: (value: boolean | null) => boolean;
+  /** Set the selected runs' fit-text target width in pt (w:fitText). */
+  setFitText: (value: number | null) => boolean;
   /** Set ligature style (character-level, w14:ligatures). */
   setLigatures: (value: string | null) => boolean;
   /** Set number spacing (default/proportional/tabular). */
