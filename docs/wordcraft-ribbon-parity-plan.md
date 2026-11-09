@@ -7,6 +7,8 @@
 > **Scope:** General-purpose document editing; Ribbon and the underlying feature stack  
 > **Relationship:** Complements `docs/ooxml-near-full-compatibility-plan.md`. That plan governs OOXML interoperability; this one governs discoverability, authoring workflows, parity, and end-to-end proof.
 
+> **Execution update (2026-11-09):** See [the current ribbon execution plan](ribbon-office-execution-plan.md), based on the visual audit and current UI. The initial gap analysis below is historical; reconcile it with the generated matrix before starting a slice.
+
 ## 1. Objective and product boundaries
 
 Make Oasis Editor a feature-complete, accessible, extensible, general-purpose word processor with a discoverable Ribbon that is competitive with WordCraft. **Do not optimize the core or default UI for any particular consuming application, industry, or document workflow.** Application-specific behavior belongs in integrations and plugins.
