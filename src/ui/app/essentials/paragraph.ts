@@ -9,6 +9,7 @@ import { stepOutlineLevel } from "@/core/commands/outlineStep.js";
 import { resetParagraphFormatting } from "@/core/commands/paragraphReset.js";
 import { editParagraphTabStops } from "@/core/commands/paragraphTabs.js";
 import { setParagraphOutlineLevel } from "@/core/commands/paragraphOutlineLevel.js";
+import { setParagraphListLevel } from "@/core/commands/paragraphListLevel.js";
 import { applyHorizontalLine } from "@/core/commands/horizontalLine.js";
 import { hasDropCap, setDropCap } from "@/core/commands/dropCap.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
@@ -119,6 +120,12 @@ export function buildEssentialsParagraph(
       ),
     setListStartAt: (value: number | null): void =>
       options.commandsController.handleListStartAtChange(value),
+    setListLevel: (level: number): void => {
+      options.applyTransactionalState((current): EditorState =>
+        setParagraphListLevel(current, level),
+      );
+      options.focusInput();
+    },
     outdent: (): undefined =>
       void options.commandsController.handleListTab("outdent"),
     indent: (): undefined =>

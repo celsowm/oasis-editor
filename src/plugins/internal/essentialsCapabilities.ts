@@ -376,6 +376,8 @@ export interface EssentialsParagraphCapability {
   setLineHeight: (value: number | null) => void;
   setListFormat: (format: string) => void;
   setListStartAt: (value: number | null) => void;
+  /** Set the selected list paragraphs' explicit list level (0-8, WordCraft para.listLevel). */
+  setListLevel: (level: number) => void;
   outdent: () => void;
   indent: () => void;
   /** Outline-step the click (WordCraft para.promote): heading up one level, body→preceding heading, list item one level up. */

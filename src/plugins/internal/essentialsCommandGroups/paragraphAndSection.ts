@@ -217,6 +217,9 @@ export function buildParagraphAndSectionCommands({
     setListStartAt: actionCommand("setListStartAt", (p): void =>
       paragraph.setListStartAt(numOrNull(p)),
     ),
+    setListLevel: actionCommand("setListLevel", (p): void =>
+      paragraph.setListLevel(numOrNull(p) ?? 0),
+    ),
     toggleOrientation: actionCommand(
       "toggleOrientation",
       (): void => section.toggleOrientation(),

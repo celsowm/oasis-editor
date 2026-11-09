@@ -159,6 +159,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setLineHeight",
   "setListFormat",
   "setListStartAt",
+  "setListLevel",
   "toggleOrientation",
   "setOrientation",
   "sectionBreakNextPage",
