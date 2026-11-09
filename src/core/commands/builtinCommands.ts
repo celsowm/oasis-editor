@@ -27,6 +27,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "smallCaps",
   "allCaps",
   "hidden",
+  "characterBorder",
   "shadow",
   "emboss",
   "engrave",

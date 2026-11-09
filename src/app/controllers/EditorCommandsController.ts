@@ -50,6 +50,7 @@ import {
   changeSelectedTextCase,
   clearSelectedTextFormatting,
   setTextStyleValue,
+  toggleCharacterBorder,
   toggleTextStyle,
 } from "@/core/commands/text.js";
 import {
@@ -306,6 +307,13 @@ function createEditorCommandsControllerImpl(
       `toggleStyle:${key} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}..${sel.focus.offset}]${selectionTableLocation()}`,
     );
     execText((current): EditorState => toggleTextStyle(current, key));
+  };
+
+  const applyToggleCharacterBorderCommand = (): void => {
+    if (selectionCollapsed()) {
+      return;
+    }
+    execText((current): EditorState => toggleCharacterBorder(current));
   };
 
   const applyValueStyleCommand = <
@@ -638,6 +646,7 @@ function createEditorCommandsControllerImpl(
 
   return {
     applyBooleanStyleCommand,
+    applyToggleCharacterBorderCommand,
     applyValueStyleCommand,
     applyChangeTextCaseCommand,
     applyClearFormattingCommand,

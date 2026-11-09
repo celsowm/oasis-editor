@@ -313,6 +313,10 @@ export function buildEssentialsFormatting(
       options.keyboardCommandsController.applyBooleanStyleCommand("hidden"),
       true
     ),
+    toggleCharacterBorder: (): true => (
+      options.keyboardCommandsController.applyToggleCharacterBorderCommand(),
+      true
+    ),
     shadow: (): true => (
       options.keyboardCommandsController.applyBooleanStyleCommand("shadow"),
       true

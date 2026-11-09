@@ -175,6 +175,13 @@ export function buildCoreFormattingCommands({
     hidden: command("hidden", formatting.hidden, (): { isActive: boolean } => ({
       isActive: Boolean(s().hidden),
     })),
+    characterBorder: command(
+      "characterBorder",
+      formatting.toggleCharacterBorder,
+      (): { isActive: boolean } => ({
+        isActive: Boolean(s().characterBorder),
+      }),
+    ),
     shadow: command("shadow", formatting.shadow, (): { isActive: boolean } => ({
       isActive: Boolean(s().shadow),
     })),
