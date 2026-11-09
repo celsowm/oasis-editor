@@ -9,6 +9,7 @@ import {
   updateMathRun,
 } from "@/core/commands/text.js";
 import { replaceAllInDocument } from "@/core/commands/findReplace.js";
+import { insertSpecialCharacter } from "@/core/commands/specialChar.js";
 import { MERGE_KEYS } from "@/core/transactionMergeKeys.js";
 import {
   getDocumentParagraphs,
@@ -461,6 +462,16 @@ export function buildEssentialsFormatting(
         options.tableOps.applyTableAwareParagraphEdit(
           current,
           (temp): EditorState => splitBlockAtSelection(temp),
+        ),
+      );
+      options.focusInput();
+      return true;
+    },
+    insertSpecialChar: (kind): boolean => {
+      options.applyTransactionalState((current): EditorState =>
+        options.tableOps.applyTableAwareParagraphEdit(
+          current,
+          (temp): EditorState => insertSpecialCharacter(temp, kind),
         ),
       );
       options.focusInput();

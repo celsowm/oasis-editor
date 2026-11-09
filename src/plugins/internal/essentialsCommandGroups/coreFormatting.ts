@@ -461,6 +461,30 @@ export function buildCoreFormattingCommands({
     lineBreak: command("lineBreak", formatting.lineBreak),
     columnBreak: command("columnBreak", formatting.columnBreak),
     splitBlock: command("splitBlock", formatting.splitBlock),
+    insertNonBreakingSpace: command("insertNonBreakingSpace", (): boolean =>
+      formatting.insertSpecialChar("nbsp"),
+    ),
+    insertNonBreakingHyphen: command("insertNonBreakingHyphen", (): boolean =>
+      formatting.insertSpecialChar("nbHyphen"),
+    ),
+    insertOptionalHyphen: command("insertOptionalHyphen", (): boolean =>
+      formatting.insertSpecialChar("optionalHyphen"),
+    ),
+    insertEmDash: command("insertEmDash", (): boolean =>
+      formatting.insertSpecialChar("emDash"),
+    ),
+    insertEllipsis: command("insertEllipsis", (): boolean =>
+      formatting.insertSpecialChar("ellipsis"),
+    ),
+    insertCopyright: command("insertCopyright", (): boolean =>
+      formatting.insertSpecialChar("copyright"),
+    ),
+    insertRegistered: command("insertRegistered", (): boolean =>
+      formatting.insertSpecialChar("registered"),
+    ),
+    insertTrademark: command("insertTrademark", (): boolean =>
+      formatting.insertSpecialChar("trademark"),
+    ),
     setFontFamily: valueCommand(
       "setFontFamily",
       (p): boolean => formatting.setFontFamily((p as string) || null),

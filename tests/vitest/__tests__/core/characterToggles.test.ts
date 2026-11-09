@@ -4,7 +4,11 @@ import {
   createEditorParagraphFromRuns,
   createEditorStateFromDocument,
 } from "@/core/editorState.js";
-import { toggleCharacterBorder, toggleTextStyle } from "@/core/commands/textFormatting.js";import {
+import {
+  toggleCharacterBorder,
+  toggleTextStyle,
+} from "@/core/commands/textFormatting.js";
+import {
   getParagraphs,
   paragraphOffsetToPosition,
   type EditorState,

@@ -119,6 +119,14 @@ export interface OasisCommandPayloads {
   lineBreak: undefined;
   columnBreak: undefined;
   splitBlock: undefined;
+  insertNonBreakingSpace: undefined;
+  insertNonBreakingHyphen: undefined;
+  insertOptionalHyphen: undefined;
+  insertEmDash: undefined;
+  insertEllipsis: undefined;
+  insertCopyright: undefined;
+  insertRegistered: undefined;
+  insertTrademark: undefined;
   setFontFamily: string | null;
   setFontSize: SetFontSizePayload | number | string | null;
   increaseFontSize: undefined;
