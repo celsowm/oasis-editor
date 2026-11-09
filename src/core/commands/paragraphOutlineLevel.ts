@@ -39,7 +39,10 @@ export function setParagraphOutlineLevel(
   const resolved =
     level === null || level === undefined
       ? null
-      : Math.min(MAX_OUTLINE_LEVEL, Math.max(MIN_OUTLINE_LEVEL, Math.round(level)));
+      : Math.min(
+          MAX_OUTLINE_LEVEL,
+          Math.max(MIN_OUTLINE_LEVEL, Math.round(level)),
+        );
 
   let changed = false;
   const nextParagraphs = paragraphs.map(
@@ -66,8 +69,7 @@ export function setParagraphOutlineLevel(
         nextStyle.outlineLevel = resolved;
       }
       const next = cloneParagraph(paragraph);
-      next.style =
-        Object.keys(nextStyle).length > 0 ? nextStyle : undefined;
+      next.style = Object.keys(nextStyle).length > 0 ? nextStyle : undefined;
       return next;
     },
   );
