@@ -154,6 +154,7 @@ export interface ToolbarStyleState {
   overflowPunct: boolean;
   wordWrap: boolean;
   autoSpaceDE: boolean;
+  autoSpaceDN: boolean;
 }
 
 function selectionOverlapsRun(
@@ -338,7 +339,8 @@ function resolveUniformParagraphFlag(
     | "kinsoku"
     | "overflowPunct"
     | "wordWrap"
-    | "autoSpaceDE",
+    | "autoSpaceDE"
+    | "autoSpaceDN",
 ): boolean {
   return (
     styles.length > 0 && styles.every((style): boolean => style[key] === true)
@@ -561,5 +563,6 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     ),
     wordWrap: resolveUniformParagraphFlag(paragraphStyles, "wordWrap"),
     autoSpaceDE: resolveUniformParagraphFlag(paragraphStyles, "autoSpaceDE"),
+    autoSpaceDN: resolveUniformParagraphFlag(paragraphStyles, "autoSpaceDN"),
   };
 }

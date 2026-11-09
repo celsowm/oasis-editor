@@ -182,6 +182,11 @@ export function buildParagraphAndSectionCommands({
       (p): true => (paragraph.setAutoSpaceDE(boolOrNull(p)), true),
       (): unknown => s().autoSpaceDE,
     ),
+    setAutoSpaceDN: valueCommand(
+      "setAutoSpaceDN",
+      (p): true => (paragraph.setAutoSpaceDN(boolOrNull(p)), true),
+      (): unknown => s().autoSpaceDN,
+    ),
     setMirrorIndents: valueCommand(
       "setMirrorIndents",
       (p): true => (paragraph.setMirrorIndents(boolOrNull(p)), true),

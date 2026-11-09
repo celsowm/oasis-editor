@@ -19,6 +19,7 @@ import { setParagraphKinsoku } from "@/core/commands/paragraphKinsoku.js";
 import { setParagraphOverflowPunct } from "@/core/commands/paragraphOverflowPunct.js";
 import { setParagraphWordWrap } from "@/core/commands/paragraphWordWrap.js";
 import { setParagraphAutoSpaceDE } from "@/core/commands/paragraphAutoSpaceDE.js";
+import { setParagraphAutoSpaceDN } from "@/core/commands/paragraphAutoSpaceDN.js";
 import { applyHorizontalLine } from "@/core/commands/horizontalLine.js";
 import { hasDropCap, setDropCap } from "@/core/commands/dropCap.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
@@ -79,6 +80,10 @@ export function buildEssentialsParagraph(
     setAutoSpaceDE: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>
         setParagraphAutoSpaceDE(current, value),
+      ),
+    setAutoSpaceDN: (value: boolean | null): void =>
+      options.applyTransactionalState((current): EditorState =>
+        setParagraphAutoSpaceDN(current, value),
       ),
     setContextualSpacing: (value: boolean | null): void =>
       options.applyTransactionalState((current): EditorState =>

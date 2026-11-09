@@ -156,6 +156,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setOverflowPunct",
   "setWordWrap",
   "setAutoSpaceDE",
+  "setAutoSpaceDN",
   "setIndentLeft",
   "setIndentRight",
   "setIndentFirstLine",

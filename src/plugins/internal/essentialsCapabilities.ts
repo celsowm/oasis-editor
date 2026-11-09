@@ -375,6 +375,8 @@ export interface EssentialsParagraphCapability {
   setWordWrap: (value: boolean | null) => void;
   /** Set "Automatically adjust spacing between East Asian and Latin text" (w:autoSpaceDE, default on). */
   setAutoSpaceDE: (value: boolean | null) => void;
+  /** Set "Automatically adjust spacing between East Asian text and numbers" (w:autoSpaceDN, default on). */
+  setAutoSpaceDN: (value: boolean | null) => void;
   /** Set "Don't add space between paragraphs of the same style" (w:contextualSpacing). */
   setContextualSpacing: (value: boolean | null) => void;
   /** Set "Mirror indents" (w:mirrorIndents): swap left/right indents on facing pages. */
