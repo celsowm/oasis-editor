@@ -5,6 +5,7 @@ import {
   moveSelectedParagraphs,
 } from "@/core/commands/paragraphMove.js";
 import { sortSelectedParagraphs } from "@/core/commands/paragraphSort.js";
+import { stepOutlineLevel } from "@/core/commands/outlineStep.js";
 import { applyHorizontalLine } from "@/core/commands/horizontalLine.js";
 import { hasDropCap, setDropCap } from "@/core/commands/dropCap.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
@@ -147,6 +148,18 @@ export function buildEssentialsParagraph(
       canMoveSelectedParagraphs(options.state(), "up"),
     canMoveParagraphsDown: (): boolean =>
       canMoveSelectedParagraphs(options.state(), "down"),
+    promote: (): void => {
+      options.applyTransactionalState((current): EditorState =>
+        stepOutlineLevel(current, true),
+      );
+      options.focusInput();
+    },
+    demote: (): void => {
+      options.applyTransactionalState((current): EditorState =>
+        stepOutlineLevel(current, false),
+      );
+      options.focusInput();
+    },
     setBidi: (enabled: boolean | null): void =>
       options.commandsController.applyParagraphStyleCommand("bidi", enabled),
     sortParagraphs: (descending = false): void =>

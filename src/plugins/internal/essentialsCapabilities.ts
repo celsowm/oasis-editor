@@ -355,6 +355,10 @@ export interface EssentialsParagraphCapability {
   setListStartAt: (value: number | null) => void;
   outdent: () => void;
   indent: () => void;
+  /** Outline-step the click (WordCraft para.promote): heading up one level, body→preceding heading, list item one level up. */
+  promote: () => void;
+  /** Outline-step down (WordCraft para.demote): heading down one level, list item one level down; body text refused. */
+  demote: () => void;
   /** Move the selected paragraphs one step up/down, if possible. */
   moveParagraphsUp: () => void;
   moveParagraphsDown: () => void;

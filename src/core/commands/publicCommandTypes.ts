@@ -180,6 +180,8 @@ export interface OasisCommandPayloads {
   toggleWidowControl: undefined;
   toggleParagraphBidi: undefined;
   sortParagraphs: { descending?: boolean } | boolean | undefined;
+  promote: undefined;
+  demote: undefined;
   setSpacingAfter: number | null;
   setSpacingBefore: number | null;
   setIndentLeft: number | null;

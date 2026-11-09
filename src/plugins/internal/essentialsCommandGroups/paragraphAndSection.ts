@@ -80,6 +80,8 @@ export function buildParagraphAndSectionCommands({
           Boolean((p as { descending?: boolean })?.descending),
       ),
     ),
+    promote: actionCommand("promote", (): void => paragraph.promote()),
+    demote: actionCommand("demote", (): void => paragraph.demote()),
     setSpacingAfter: valueCommand(
       "setSpacingAfter",
       (p): true => (paragraph.setSpacingAfter(numOrNull(p)), true),
