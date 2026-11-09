@@ -643,6 +643,15 @@ export function buildEssentialsFormatting(
       )("emphasisMark", value),
       true
     ),
+    setTextEffect: (value: string | null): true => (
+      (
+        options.styleController.applyToolbarValueStyleCommand as (
+          key: "textEffect",
+          value: string | null,
+        ) => void
+      )("textEffect", value),
+      true
+    ),
     setKerning: (value: number | null): true => (
       (
         options.styleController.applyToolbarValueStyleCommand as (

@@ -635,6 +635,11 @@ export function buildCoreFormattingCommands({
       (p): boolean => formatting.setEmphasisMark((p as string) || null),
       (): string => s().emphasisMark,
     ),
+    setTextEffect: valueCommand(
+      "setTextEffect",
+      (p): boolean => formatting.setTextEffect((p as string) || null),
+      (): string => s().textEffect,
+    ),
     setKerning: valueCommand(
       "setKerning",
       (p): boolean => formatting.setKerning(numOrNull(p)),

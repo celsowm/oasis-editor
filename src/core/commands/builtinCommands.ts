@@ -102,6 +102,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setCharacterSpacing",
   "setBaselineShift",
   "setEmphasisMark",
+  "setTextEffect",
   "setKerning",
   "setLigatures",
   "setNumberSpacing",

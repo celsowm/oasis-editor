@@ -179,6 +179,8 @@ export interface EssentialsFormattingCapability {
   setCharacterSpacing: (value: number | null) => boolean;
   setBaselineShift: (value: number | null) => boolean;
   setEmphasisMark: (value: string | null) => boolean;
+  /** Set the selected runs' text effect (w:effect/@w:val). */
+  setTextEffect: (value: string | null) => boolean;
   /** Set kerning threshold in pt (character-level, w:kern). */
   setKerning: (value: number | null) => boolean;
   /** Set ligature style (character-level, w14:ligatures). */
