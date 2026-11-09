@@ -397,6 +397,10 @@ export interface EssentialsSectionCapability {
   getVerticalAlign: () => "top" | "center" | "both" | "bottom" | undefined;
   /** Set the active section's vertical justification (`w:vAlign`). */
   setVerticalAlign: (align: "top" | "center" | "both" | "bottom") => void;
+  /** Read the active section's right-to-left layout flag (`w:bidi`). */
+  getBidi: () => boolean | undefined;
+  /** Set the active section's right-to-left layout flag (`w:bidi`). */
+  setBidi: (enabled: boolean) => void;
 }
 
 export interface EssentialsHeaderFooterCapability {

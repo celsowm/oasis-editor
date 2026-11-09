@@ -213,6 +213,7 @@ export interface OasisCommandPayloads {
   };
   setColumnsPreset: string;
   setSectionVerticalAlign: "top" | "center" | "both" | "bottom" | null;
+  setSectionBidi: boolean | null;
   editHeader: undefined;
   editFooter: undefined;
   editFirstPageHeader: undefined;

@@ -275,5 +275,15 @@ export function buildParagraphAndSectionCommands({
         value: section.getVerticalAlign(),
       }),
     ),
+    setSectionBidi: actionCommand(
+      "setSectionBidi",
+      (p): void => {
+        const enabled = (p ?? undefined) as boolean | undefined;
+        section.setBidi(enabled ?? true);
+      },
+      (): { value: boolean | undefined } => ({
+        value: section.getBidi(),
+      }),
+    ),
   };
 }

@@ -8,7 +8,9 @@ import { setSectionPageNumbering } from "@/core/commands/pageNumber.js";
 import {
   getActivePaperSize,
   getActiveColumns,
+  getSectionBidi,
   getSectionVerticalAlign,
+  setSectionBidi,
   setSectionColumns,
   setSectionMarginsPreset,
   setSectionPaperSize,
@@ -121,6 +123,13 @@ export function buildEssentialsSection(
     setVerticalAlign: (align): void => {
       options.applyTransactionalState((state) =>
         setSectionVerticalAlign(state, align),
+      );
+      options.focusInput();
+    },
+    getBidi: () => getSectionBidi(options.state()),
+    setBidi: (enabled): void => {
+      options.applyTransactionalState((state) =>
+        setSectionBidi(state, enabled),
       );
       options.focusInput();
     },
