@@ -43,6 +43,8 @@ import {
   setActiveTableRowBreakAcrossPages,
   canSetActiveTableRowHeader,
   setSelectedTableRowHeader,
+  canSetActiveTableColumnWidth,
+  setActiveTableColumnWidth,
   canDeleteActiveTableCell,
   deleteActiveTableCell,
   canSetActiveTableAutoFit,
@@ -519,6 +521,13 @@ export function buildEssentialsTable(
       apply(
         (current): EditorState => setSelectedTableRowHeader(current, value),
         MERGE_KEYS.tableRepeatHeaderRows,
+      ),
+    canSetActiveTableColumnWidth: (): boolean =>
+      canSetActiveTableColumnWidth(options.state()),
+    setActiveTableColumnWidth: (width: number | string | null): void =>
+      apply(
+        (current): EditorState => setActiveTableColumnWidth(current, width),
+        MERGE_KEYS.tableColumnWidth,
       ),
     insert: (rows: number, cols: number): void =>
       options.tableOps.insertTableCommand(rows, cols),

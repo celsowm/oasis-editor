@@ -684,6 +684,10 @@ export interface EssentialsTableCapability {
   canSetActiveTableRowHeader: () => boolean;
   /** Word's "Repeat as header row": set the header flag on the active row. */
   setActiveTableRowHeader: (value: boolean | null) => void;
+  /** True when the caret sits inside a table column whose width can change. */
+  canSetActiveTableColumnWidth: () => boolean;
+  /** Word's column width (Cell Size): set the width of the active column. */
+  setActiveTableColumnWidth: (width: number | string | null) => void;
   /** True when the caret sits inside a table whose cells can be re-margined. */
   canSetCellMargins: () => boolean;
   /** Word's Cell Margins: set per-edge padding on the selected cells. */

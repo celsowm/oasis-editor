@@ -50,6 +50,7 @@ export const MERGE_KEYS = {
   tableCellVerticalAlign: "tableCellVerticalAlign",
   tableCellTextDirection: "tableCellTextDirection",
   tableCellWidth: "tableCellWidth",
+  tableColumnWidth: "tableColumnWidth",
   tableToText: "tableToText",
   textToTable: "textToTable",
   tableSplitAtRow: "tableSplitAtRow",
