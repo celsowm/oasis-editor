@@ -12,6 +12,9 @@ import {
   createTableRevisionMetadata,
   updateNestedTablesInBlocks,
   updateStateSections,
+  resolveActiveTableLocation,
+  getBlocksForZone,
+  readInnermostTableAtPath,
 } from "./tableCommandUtils.js";
 
 function collectLinearSelectedParagraphIds(state: EditorState): Set<string> {
@@ -108,4 +111,30 @@ export function setActiveTableStyleValue<K extends keyof EditorTableStyle>(
   return updateStateSections(state, (blocks): EditorBlockNode[] =>
     updateNestedTablesInBlocks(blocks, updateTable),
   );
+}
+
+/** True when the caret sits in a table whose preferred width can change. */
+export function canSetActiveTableWidth(state: EditorState): boolean {
+  return resolveActiveTableLocation(state) !== null;
+}
+
+/**
+ * Word's table preferred width (Table Properties › Preferred width, w:tblW).
+ * Resolves the innermost table under the caret and applies the requested
+ * width to its style through `setActiveTableStyleValue`. A no-op when the
+ * caret is not inside a table; a null payload clears the explicit width.
+ */
+export function setActiveTableWidth(
+  state: EditorState,
+  width: number | string | null,
+): EditorState {
+  const target = resolveActiveTableLocation(state);
+  if (!target) return state;
+  const { activeSectionIndex, loc } = target;
+
+  const blocks = getBlocksForZone(state.document, activeSectionIndex, loc.zone);
+  const table = readInnermostTableAtPath(blocks, loc.tablePath);
+  if (!table) return state;
+
+  return setActiveTableStyleValue(state, table.id, "width", width);
 }
