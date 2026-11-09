@@ -197,6 +197,11 @@ export function buildParagraphAndSectionCommands({
       (p): true => (paragraph.setTopLinePunct(boolOrNull(p)), true),
       (): unknown => s().topLinePunct,
     ),
+    setPageBreakBefore: valueCommand(
+      "setPageBreakBefore",
+      (p): true => (paragraph.setPageBreakBefore(boolOrNull(p)), true),
+      (): unknown => s().pageBreakBefore,
+    ),
     setMirrorIndents: valueCommand(
       "setMirrorIndents",
       (p): true => (paragraph.setMirrorIndents(boolOrNull(p)), true),

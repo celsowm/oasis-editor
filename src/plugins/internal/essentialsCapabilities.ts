@@ -381,6 +381,8 @@ export interface EssentialsParagraphCapability {
   setAdjustRightInd: (value: boolean | null) => void;
   /** Set "Compress punctuation at start of a line" (w:topLinePunct). */
   setTopLinePunct: (value: boolean | null) => void;
+  /** Set "Page break before" (w:pageBreakBefore). */
+  setPageBreakBefore: (value: boolean | null) => void;
   /** Set "Don't add space between paragraphs of the same style" (w:contextualSpacing). */
   setContextualSpacing: (value: boolean | null) => void;
   /** Set "Mirror indents" (w:mirrorIndents): swap left/right indents on facing pages. */

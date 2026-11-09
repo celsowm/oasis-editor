@@ -159,6 +159,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setAutoSpaceDN",
   "setAdjustRightInd",
   "setTopLinePunct",
+  "setPageBreakBefore",
   "setIndentLeft",
   "setIndentRight",
   "setIndentFirstLine",
