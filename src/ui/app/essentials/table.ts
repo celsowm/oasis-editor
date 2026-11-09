@@ -23,6 +23,8 @@ import {
   canSetTableCellMargins,
   setActiveTableCellMargins,
   type TableCellMargins,
+  canSetActiveTableCellSpacing,
+  setActiveTableCellSpacing,
   canEvaluateActiveTableFormula,
   evaluateActiveTableFormula,
   canSelectActiveTable,
@@ -440,6 +442,13 @@ export function buildEssentialsTable(
     setCellMargins: (margins: TableCellMargins): void =>
       apply(
         (current): EditorState => setActiveTableCellMargins(current, margins),
+        MERGE_KEYS.tableCellMargins,
+      ),
+    canSetCellSpacing: (): boolean =>
+      canSetActiveTableCellSpacing(options.state()),
+    setCellSpacing: (value: number | null): void =>
+      apply(
+        (current): EditorState => setActiveTableCellSpacing(current, value),
         MERGE_KEYS.tableCellMargins,
       ),
     canEvaluateTableFormula: (): boolean =>

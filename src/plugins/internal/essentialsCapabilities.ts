@@ -654,6 +654,10 @@ export interface EssentialsTableCapability {
   canSetCellMargins: () => boolean;
   /** Word's Cell Margins: set per-edge padding on the selected cells. */
   setCellMargins: (margins: TableCellMargins) => void;
+  /** True when the caret sits inside a table whose cell spacing can be set. */
+  canSetCellSpacing: () => boolean;
+  /** Word's Cell Spacing: set the gap between adjacent cells on the active table. */
+  setCellSpacing: (value: number | null) => void;
   /** True when the caret sits inside a table cell that can hold a formula result. */
   canEvaluateTableFormula: () => boolean;
   /** Word's Formula: evaluate a supported aggregate over a direction and

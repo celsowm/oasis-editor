@@ -328,6 +328,7 @@ export interface OasisCommandPayloads {
   tableDelete: undefined;
   tableRepeatHeaderRows: undefined;
   tableSetCellMargins: undefined;
+  tableSetCellSpacing: number | null;
   tableFormula: undefined;
   tableSelectCell: undefined;
   tableSelectRow: undefined;

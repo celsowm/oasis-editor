@@ -1,5 +1,6 @@
 import type { OasisPlugin } from "@/core/plugin.js";
 import type { ActionCommandBuilder } from "../essentialsCommandBuilders.js";
+import { numOrNull } from "../essentialsCommandBuilders.js";
 import type {
   EssentialsFeatureGate,
   EssentialsTableCapability,
@@ -236,6 +237,15 @@ export function buildTableCommands({
         isEnabled:
           gate.isCommandEnabled("tableSetCellMargins") &&
           table.canSetCellMargins(),
+      }),
+    ),
+    tableSetCellSpacing: actionCommand(
+      "tableSetCellSpacing",
+      (p): void => table.setCellSpacing(numOrNull(p)),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("tableSetCellSpacing") &&
+          table.canSetCellSpacing(),
       }),
     ),
     tableFormula: actionCommand(
