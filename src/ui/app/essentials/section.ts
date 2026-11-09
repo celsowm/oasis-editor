@@ -17,6 +17,10 @@ import {
   setSectionPaperSizePreset,
   setSectionVerticalAlign,
 } from "@/core/commands/pageSetup.js";
+import {
+  getHyphenationSettings,
+  setHyphenationSettings,
+} from "@/core/commands/hyphenation.js";
 import type { EssentialsSectionCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
 
@@ -130,6 +134,13 @@ export function buildEssentialsSection(
     setBidi: (enabled): void => {
       options.applyTransactionalState((state) =>
         setSectionBidi(state, enabled),
+      );
+      options.focusInput();
+    },
+    getHyphenation: () => getHyphenationSettings(options.state()),
+    setHyphenation: (input): void => {
+      options.applyTransactionalState((state) =>
+        setHyphenationSettings(state, input),
       );
       options.focusInput();
     },

@@ -401,6 +401,20 @@ export interface EssentialsSectionCapability {
   getBidi: () => boolean | undefined;
   /** Set the active section's right-to-left layout flag (`w:bidi`). */
   setBidi: (enabled: boolean) => void;
+  /** Read the document's automatic hyphenation settings (layout.hyphenation). */
+  getHyphenation: () => {
+    value: boolean;
+    zone?: number;
+    caps?: boolean;
+    limit?: number;
+  };
+  /** Set the document's automatic hyphenation settings (layout.hyphenation). */
+  setHyphenation: (input: {
+    value?: boolean;
+    zone?: number;
+    caps?: boolean;
+    limit?: number;
+  }) => void;
 }
 
 export interface EssentialsHeaderFooterCapability {

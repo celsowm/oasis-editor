@@ -214,6 +214,12 @@ export interface OasisCommandPayloads {
   setColumnsPreset: string;
   setSectionVerticalAlign: "top" | "center" | "both" | "bottom" | null;
   setSectionBidi: boolean | null;
+  setHyphenation: {
+    value?: boolean;
+    zone?: number;
+    caps?: boolean;
+    limit?: number;
+  } | null;
   editHeader: undefined;
   editFooter: undefined;
   editFirstPageHeader: undefined;

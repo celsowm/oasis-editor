@@ -285,5 +285,20 @@ export function buildParagraphAndSectionCommands({
         value: section.getBidi(),
       }),
     ),
+    setHyphenation: actionCommand(
+      "setHyphenation",
+      (p): void => {
+        const payload = (p ?? {}) as {
+          value?: boolean;
+          zone?: number;
+          caps?: boolean;
+          limit?: number;
+        };
+        section.setHyphenation(payload);
+      },
+      (): { value: boolean } => ({
+        value: section.getHyphenation().value,
+      }),
+    ),
   };
 }
