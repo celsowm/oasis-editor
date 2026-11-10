@@ -309,12 +309,18 @@ function collectMenuCommands() {
 
 export function renderMatrix(data) {
   const code = (value) => "`" + value + "`";
+  const dimension = (feature, key) =>
+    feature[key] ??
+    (key === "exposure" && feature.ribbonId ? "partial" : "unverified");
   const rows = data.features.map((feature) =>
     "| " + code(feature.id) +
     " | " + (feature.wordcraftCommand ? code(feature.wordcraftCommand) : "—") +
     " | " + code(feature.oasisCommand) +
-    " | " + code(feature.tab + "/" + feature.group) +
-    " | " + feature.status + " |"
+    " | " + (feature.ribbonId ? code(feature.tab + "/" + feature.group) : "—") +
+    " | " + feature.status +
+    " | " + dimension(feature, "exposure") +
+    " | " + dimension(feature, "semantics") +
+    " | " + dimension(feature, "persistence") + " |"
   ).join("\n");
   const questions = data.features.map((feature, index) =>
     (index + 1) + ". **" + feature.id + ":** " + feature.notes
@@ -329,10 +335,10 @@ export function renderMatrix(data) {
     "**Oasis baseline:** " + code(data.baseline.oasisCommit) + "<br>",
     "**WordCraft baseline:** " + code(data.baseline.wordcraftCommit),
     "",
-    "`partial` means a command and Ribbon entry are statically bound. It does **not** certify complete semantics, DOCX round-trip, PDF/layout, accessibility or browser behavior.",
+    "The three dimensions below are independent of overall status. A legacy Ribbon-bound row defaults to `partial` exposure from its audited wiring; missing semantics or persistence evidence stays `unverified`. `core-only` means the command is registered but has no statically observed default Ribbon or menubar path. No status alone certifies complete DOCX round-trip, PDF/layout, accessibility or browser behavior.",
     "",
-    "| Feature | WordCraft command | Oasis command | Ribbon placement | Status |",
-    "| --- | --- | --- | --- | --- |",
+    "| Feature | WordCraft command | Oasis command | Ribbon placement | Status | Exposure | Semantics | Persistence |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- |",
     rows,
     "",
     "## Open verification questions",
@@ -362,6 +368,17 @@ function main() {
     "no-captured-counterpart",
   ]);
   const sceneCaptureStatuses = new Set(["required", "captured", "not-applicable"]);
+  const dimensionStatuses = new Set([
+    "complete",
+    "partial",
+    "core-only",
+    "menu-only",
+    "ui-only",
+    "preservation-only",
+    "missing",
+    "not-applicable",
+    "unverified",
+  ]);
   const sceneIds = new Set();
   const requiredSceneCaptures = scenes.filter((scene) => scene.wordCaptureStatus === "required").length;
   const capturedSceneCaptures = scenes.filter((scene) => scene.wordCaptureStatus === "captured").length;
@@ -458,6 +475,24 @@ function main() {
     }
     if (!registered.has(feature.oasisCommand)) {
       errors.push(feature.id + ": command has no Essentials registration: " + feature.oasisCommand);
+    }
+    for (const dimension of ["exposure", "semantics", "persistence"]) {
+      if (feature[dimension] !== undefined && !dimensionStatuses.has(feature[dimension])) {
+        errors.push(feature.id + ": invalid " + dimension + " classification");
+      }
+    }
+    if (feature.status === "core-only") {
+      if (feature.exposure !== "core-only") {
+        errors.push(feature.id + ": core-only status needs an explicit exposure classification");
+      }
+      if (feature.ribbonId || [...toolbar.values()].some((item) =>
+        (item.ribbonCommands ?? []).includes(feature.oasisCommand))) {
+        errors.push(feature.id + ": core-only command is reachable from a Ribbon item");
+      }
+      if (menu.has(feature.oasisCommand)) {
+        errors.push(feature.id + ": core-only command is reachable from the menubar");
+      }
+      continue;
     }
     const item = toolbar.get(feature.ribbonId);
     if (!item) errors.push(feature.id + ": missing Ribbon item " + feature.ribbonId);

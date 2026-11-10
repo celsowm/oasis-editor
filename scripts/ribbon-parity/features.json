@@ -6,7 +6,7 @@
     "wordcraftRepository": "storytold/wordcraft",
     "wordcraftCommit": "05f781cfdac1d89034c0f4f5824b597ff845f2ef"
   },
-  "scope": "76-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Category-level exposure, semantics, and persistence evidence is tracked separately in references.json and docs/ribbon-office-progress.md.",
+  "scope": "77-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.",
   "features": [
     {
       "id": "home.copy",
@@ -387,6 +387,19 @@
       "group": "styles",
       "status": "partial",
       "notes": "The Home style gallery dispatches paragraph styles through setStyleId. Style coverage, built-in IDs, preview fidelity, selection behavior and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.sortParagraphs",
+      "wordcraftCommand": "para.sort",
+      "oasisCommand": "sortParagraphs",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "The registered sortParagraphs command sorts a contiguous run of sibling paragraphs by natural number/text order and refuses ranges containing tables or footnote content. WordCraft para.sort serves the same paragraph-sorting task, but collates using the document language while Oasis currently uses runtime localeCompare. No default Ribbon or menubar entry exposes the command; DOCX/PDF reorder behavior and multilingual equivalence remain unverified."
     },
     {
       "id": "insert.pageBreak",

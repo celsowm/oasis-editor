@@ -450,6 +450,18 @@ Evidence: counted the 22 historical `word-web-*.png` files and inspected the tab
 
 Limits: B04 closes only the classification and identification requirement. Direct Word submenu captures, desktop/contextual references, and browser/VoiceOver workflows remain open under M5; no menu is treated as visually verified.
 
+## Delivery 26 — Home paragraph sort crosswalk
+
+Date: 2026-11-10. B01 and D03 remain **partial**.
+
+Reviewed WordCraft's `Home/Paragraph → Sort` source row (`para.sort`) against Oasis's registered `sortParagraphs` command and selection reducer. Oasis implements natural numeric/text ordering on a contiguous sibling-paragraph range; table-spanning and footnote-zone ranges are refused. WordCraft similarly requires a single paragraph container and refuses table sorting, but uses the document language for text collation while Oasis currently uses runtime `localeCompare`.
+
+Added `home.sortParagraphs` to the structured crosswalk with independent classifications: exposure `core-only`, semantics `partial`, persistence `unverified`. The command is registered but has no default Ribbon or menubar entry. The generated parity matrix now displays Exposure, Semantics, and Persistence separately; legacy Ribbon-bound rows default to partial exposure from audited wiring, while semantics and persistence remain unverified until classified. The parity auditor validates explicit dimension vocabularies and rejects a `core-only` row if its command appears in a scanned Ribbon item or the default menubar. Regenerated the pinned catalog links and parity matrix; 70 of 521 WordCraft source rows now link to Oasis capabilities.
+
+Evidence: inspected WordCraft `crates/engine/src/cmd/para.rs` and `cmd/para/outline.rs`, Oasis `core/commands/paragraphSort.ts`, the `sortParagraphs` Essentials registration and the static Ribbon/menubar scans. `npm run audit:ribbon` confirms the command is built in, registered, and linked to source row 86 without a Ribbon item. The command's format round-trip and language-specific ordering remain unverified.
+
+Limits: this closes one Home source row's exposure classification only. It does not add a Sort button or complete the Home paragraph workflow; 451 WordCraft rows remain without an Oasis crosswalk, and D03 remains open.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

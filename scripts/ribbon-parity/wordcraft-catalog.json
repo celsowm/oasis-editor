@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 69
+    "linkedRows": 70
   },
   "defaultTabs": [
     "File",
@@ -1004,7 +1004,9 @@
       "group": "Paragraph",
       "name": "Sort",
       "command": "para.sort",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.sortParagraphs"
+      ]
     },
     {
       "index": 87,
