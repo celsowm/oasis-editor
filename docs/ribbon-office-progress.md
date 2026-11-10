@@ -368,6 +368,18 @@ Evidence: inspected WordCraft `crates/engine/src/cmd/insert.rs`, `equation.rs`, 
 
 Limits: table targeting and export, image selection and round-trip, hyperlink selection and undo, equation editing/interoperability, reference workflows and the broader Insert tab remain open. D04 and M2 remain incomplete.
 
+## Delivery 19 — Home formatting and paragraph crosswalk
+
+Date: 2026-11-10. B01 and D01 remain **partial**.
+
+Added 18 Home capability rows covering font family/size and size steps, case conversion, clear formatting, strikethrough, font color, highlight, character shading, bullets, numbering and restart, justification, line spacing, paragraph spacing before/after, and styles. The mappings point to existing Oasis controls. Notes record the known differences and evidence still needed, including capitalization modes, numbering behavior, WordCraft's exact/at-least line spacing, one-click paragraph spacing, and style IDs.
+
+The crosswalk now contains 76 Oasis capabilities and links 69 of the 521 WordCraft catalog rows; 452 source rows remain unclassified. Extended the source audit to recognize paragraph/character commands declared on a style gallery, alongside commands dispatched by statically imported custom controls. No Safari window was opened for this delivery.
+
+Evidence: checked the pinned WordCraft command registrations and Home UI in `crates/engine/src/cmd/{format,para}.rs` and `crates/ui-egui/src/ribbon/home.rs`, plus Oasis's default toolbar placements and Essentials registrations. Regenerated the WordCraft source-link snapshot and parity matrix; the Ribbon audit passes.
+
+Limits: these are command and exposure mappings, not workflow equivalence. Mixed selections, keyboard/focus behavior, accessibility, external-format round-trips and actual Safari behavior remain unverified. B01 and D01 remain incomplete.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

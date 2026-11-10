@@ -6,7 +6,7 @@
     "wordcraftRepository": "storytold/wordcraft",
     "wordcraftCommit": "05f781cfdac1d89034c0f4f5824b597ff845f2ef"
   },
-  "scope": "58-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Category-level exposure, semantics, and persistence evidence is tracked separately in references.json and docs/ribbon-office-progress.md.",
+  "scope": "76-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Category-level exposure, semantics, and persistence evidence is tracked separately in references.json and docs/ribbon-office-progress.md.",
   "features": [
     {
       "id": "home.copy",
@@ -207,6 +207,186 @@
       "group": "paragraph",
       "status": "partial",
       "notes": "Align Right is bound to the Home Paragraph button. Mixed/multiple paragraph selection, table cells, keyboard behavior, undo and DOCX/PDF output need workflow verification."
+    },
+    {
+      "id": "home.fontFamily",
+      "wordcraftCommand": "format.font",
+      "oasisCommand": "setFontFamily",
+      "ribbonId": "editor-toolbar-font-family",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "The Home font-family selector applies a font to the current text selection. East Asian font selection, fallback behavior, selection preservation and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.fontSize",
+      "wordcraftCommand": "format.size",
+      "oasisCommand": "setFontSize",
+      "ribbonId": "editor-toolbar-font-size",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "The Home font-size selector applies a size to selected text. Mixed-size selection, units, keyboard editing and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.growFont",
+      "wordcraftCommand": "format.growFont",
+      "oasisCommand": "increaseFontSize",
+      "ribbonId": "editor-toolbar-font-increase",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "Increase Font Size is bound to the Home Font button. Step sizes, selection preservation and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.shrinkFont",
+      "wordcraftCommand": "format.shrinkFont",
+      "oasisCommand": "decreaseFontSize",
+      "ribbonId": "editor-toolbar-font-decrease",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "Decrease Font Size is bound to the Home Font button. Step sizes, selection preservation and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.changeCase",
+      "wordcraftCommand": "format.changeCase",
+      "oasisCommand": "changeTextCase",
+      "ribbonId": "editor-toolbar-case-toggle",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "The Change Case menu exposes sentence, lower, upper, capitalize and toggle actions. Oasis capitalize and WordCraft title modes may differ; Unicode, locale-specific casing, undo and selection behavior need workflow verification."
+    },
+    {
+      "id": "home.clearFormatting",
+      "wordcraftCommand": "format.clear",
+      "oasisCommand": "clearFormatting",
+      "ribbonId": "editor-toolbar-clear-formatting",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "Clear All Formatting is bound to the Home Font button. Character versus paragraph formatting, collapsed-caret behavior, style inheritance and undo need workflow verification."
+    },
+    {
+      "id": "home.strikethrough",
+      "wordcraftCommand": "format.strikethrough",
+      "oasisCommand": "strike",
+      "ribbonId": "editor-toolbar-strike",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "Strikethrough is bound to the Home Font button. Mixed selections, inherited styles, undo and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.fontColor",
+      "wordcraftCommand": "format.color",
+      "oasisCommand": "setColor",
+      "ribbonId": "editor-toolbar-color",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "Font Color is bound to the Home Font color picker. Automatic color, theme colors, recent-color behavior and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.textHighlight",
+      "wordcraftCommand": "format.highlight",
+      "oasisCommand": "setHighlight",
+      "ribbonId": "editor-toolbar-highlight",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "Text Highlight Color is bound to the Home Font highlight picker. Palette equivalence, clearing, mixed selections and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.characterShading",
+      "wordcraftCommand": "format.shading",
+      "oasisCommand": "setTextShading",
+      "ribbonId": "editor-toolbar-text-shading",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "Character Shading maps to the Home text-shading picker. Color values, clearing, distinction from text highlighting and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.bullets",
+      "wordcraftCommand": "para.bullets",
+      "oasisCommand": "bulletList",
+      "ribbonId": "editor-toolbar-list-bullet",
+      "tab": "home",
+      "group": "paragraph",
+      "status": "partial",
+      "notes": "Bullets is bound to the Home Paragraph button. Bullet libraries and per-list marker choices are separate workflows; mixed selections, nesting, numbering preservation and DOCX interoperability need verification."
+    },
+    {
+      "id": "home.numbering",
+      "wordcraftCommand": "para.numbering",
+      "oasisCommand": "orderedList",
+      "ribbonId": "editor-toolbar-list-ordered",
+      "tab": "home",
+      "group": "paragraph",
+      "status": "partial",
+      "notes": "Numbering is bound to the Home Paragraph button. Numbering formats, list continuation, mixed selections, nesting and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.restartNumbering",
+      "wordcraftCommand": "para.restartNumbering",
+      "oasisCommand": "setListStartAt",
+      "ribbonId": "editor-toolbar-list-options",
+      "tab": "home",
+      "group": "paragraph",
+      "status": "partial",
+      "notes": "The list options control can set a numbering start value, including 1. WordCraft provides a dedicated restart action; shared-list continuation and DOCX behavior need workflow verification."
+    },
+    {
+      "id": "home.justify",
+      "wordcraftCommand": "para.justify",
+      "oasisCommand": "alignJustify",
+      "ribbonId": "editor-toolbar-align-justify",
+      "tab": "home",
+      "group": "paragraph",
+      "status": "partial",
+      "notes": "Justify is bound to the Home Paragraph button. Mixed/multiple paragraph selection, table cells, keyboard behavior, undo and DOCX/PDF output need workflow verification."
+    },
+    {
+      "id": "home.lineSpacing",
+      "wordcraftCommand": "para.lineSpacing",
+      "oasisCommand": "setLineHeight",
+      "ribbonId": "editor-toolbar-line-spacing-control",
+      "tab": "home",
+      "group": "paragraph",
+      "status": "partial",
+      "notes": "The line-spacing menu exposes multiple line-height presets and a dialog. WordCraft also supports at-least and exact point values; these modes, spacing, mixed selections and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.spaceBefore",
+      "wordcraftCommand": "para.addSpaceBefore",
+      "oasisCommand": "setSpacingBefore",
+      "ribbonId": "editor-toolbar-line-spacing-control",
+      "tab": "home",
+      "group": "paragraph",
+      "status": "partial",
+      "notes": "The line-spacing dialog accepts a spacing-before value. WordCraft exposes a one-click toggle; entering its default value in Oasis is a related workflow, and units, selection and DOCX interoperability need verification."
+    },
+    {
+      "id": "home.spaceAfter",
+      "wordcraftCommand": "para.removeSpaceAfter",
+      "oasisCommand": "setSpacingAfter",
+      "ribbonId": "editor-toolbar-line-spacing-control",
+      "tab": "home",
+      "group": "paragraph",
+      "status": "partial",
+      "notes": "The line-spacing dialog accepts a spacing-after value. WordCraft exposes a one-click removal; entering zero in Oasis is a related workflow, and units, selection and DOCX interoperability need verification."
+    },
+    {
+      "id": "home.style",
+      "wordcraftCommand": "para.style",
+      "oasisCommand": "setStyleId",
+      "ribbonId": "editor-toolbar-style",
+      "tab": "home",
+      "group": "styles",
+      "status": "partial",
+      "notes": "The Home style gallery dispatches paragraph styles through setStyleId. Style coverage, built-in IDs, preview fidelity, selection behavior and DOCX interoperability need workflow verification."
     },
     {
       "id": "insert.pageBreak",

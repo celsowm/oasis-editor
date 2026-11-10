@@ -221,11 +221,18 @@ function collectPresetItems() {
       : contentKind === "custom"
         ? findImportedComponentSource(contentRender, componentImports)
         : undefined;
+    const customCommands = componentSource
+      ? collectExecutedCommands(componentSource)
+      : [];
+    const ribbonCommands = [
+      getCommand(getExpression(node, "command")),
+      getCommand(getExpression(node, "paragraphCommand")),
+      getCommand(getExpression(node, "characterCommand")),
+      ...customCommands,
+    ].filter(Boolean);
     items.set(id, {
       command: getCommand(getExpression(node, "command")),
-      customCommands: componentSource
-        ? collectExecutedCommands(componentSource)
-        : [],
+      ribbonCommands,
       kind,
       source: "preset",
       parentId,
@@ -261,7 +268,12 @@ function collectPresetItems() {
       const command = getCommand(getExpression(node, "command"));
       if (!id || !command) throw new Error("Malformed static button spec: " + variable);
       if (items.has(id)) throw new Error("Duplicate toolbar item: " + id);
-      items.set(id, { command, kind: "button/toggle", source: variable });
+      items.set(id, {
+        command,
+        ribbonCommands: [command],
+        kind: "button/toggle",
+        source: variable,
+      });
     }
   }
   return items;
@@ -328,7 +340,7 @@ export function renderMatrix(data) {
     "",
     "## Audit interpretation",
     "",
-    "The audit scans the built-in command array, direct default-toolbar objects, the three active static button-spec arrays, literal commands executed by statically imported custom preset controls, Ribbon placement definitions and the default menubar. Dynamic command expressions and plugin contributions still require runtime coverage. The tool reports direct Ribbon, visible menu or unverified core reachability; it never upgrades a feature to `complete` automatically.",
+    "The audit scans the built-in command array, direct default-toolbar objects, style-gallery command declarations, the three active static button-spec arrays, literal commands executed by statically imported custom preset controls, Ribbon placement definitions and the default menubar. Dynamic command expressions and plugin contributions still require runtime coverage. The tool reports direct Ribbon, visible menu or unverified core reachability; it never upgrades a feature to `complete` automatically.",
     "",
     "**Next:** expand the mapping from WordCraft `crates/engine/src/catalog.rs`, `crates/ui-egui/src/ribbon/*.rs` and the Oasis runtime; capture UI-only, core-only, menu-only, preservation-only and not-applicable cases. Use the coverage and acceptance ladder in `docs/wordcraft-ribbon-parity-plan.md` before claiming parity.",
     "",
@@ -416,10 +428,7 @@ function main() {
     }
     const item = toolbar.get(feature.ribbonId);
     if (!item) errors.push(feature.id + ": missing Ribbon item " + feature.ribbonId);
-    else if (
-      item.command !== feature.oasisCommand &&
-      !(item.customCommands ?? []).includes(feature.oasisCommand)
-    ) {
+    else if (!(item.ribbonCommands ?? []).includes(feature.oasisCommand)) {
       errors.push(feature.id + ": wrong command " + (item.command ?? "<none>"));
     }
     const placement = placements.get(feature.ribbonId) ??
@@ -432,7 +441,7 @@ function main() {
   const reachable = [...builtin].map((command) => ({
     command,
     channel: [...toolbar.values()].some((i) =>
-      i.command === command || i.customCommands?.includes(command))
+      i.ribbonCommands?.includes(command))
       ? "direct-ribbon"
       : menu.has(command) ? "visible-menu" : "not-statically-verified",
   }));

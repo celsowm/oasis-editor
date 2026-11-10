@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 51
+    "linkedRows": 69
   },
   "defaultTabs": [
     "File",
@@ -548,7 +548,9 @@
       "group": "Font",
       "name": "Font",
       "command": "format.font",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.fontFamily"
+      ]
     },
     {
       "index": 41,
@@ -557,7 +559,9 @@
       "group": "Font",
       "name": "Font Size",
       "command": "format.size",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.fontSize"
+      ]
     },
     {
       "index": 42,
@@ -566,7 +570,9 @@
       "group": "Font",
       "name": "Increase Font Size",
       "command": "format.growFont",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.growFont"
+      ]
     },
     {
       "index": 43,
@@ -575,7 +581,9 @@
       "group": "Font",
       "name": "Decrease Font Size",
       "command": "format.shrinkFont",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.shrinkFont"
+      ]
     },
     {
       "index": 44,
@@ -584,7 +592,9 @@
       "group": "Font",
       "name": "Change Case",
       "command": "format.changeCase",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.changeCase"
+      ]
     },
     {
       "index": 45,
@@ -593,7 +603,9 @@
       "group": "Font",
       "name": "Clear All Formatting",
       "command": "format.clear",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.clearFormatting"
+      ]
     },
     {
       "index": 46,
@@ -655,7 +667,9 @@
       "group": "Font",
       "name": "Strikethrough",
       "command": "format.strikethrough",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.strikethrough"
+      ]
     },
     {
       "index": 52,
@@ -713,7 +727,9 @@
       "group": "Font",
       "name": "Text Highlight Color",
       "command": "format.highlight",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.textHighlight"
+      ]
     },
     {
       "index": 58,
@@ -722,7 +738,9 @@
       "group": "Font",
       "name": "Font Color",
       "command": "format.color",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.fontColor"
+      ]
     },
     {
       "index": 59,
@@ -731,7 +749,9 @@
       "group": "Font",
       "name": "Character Shading",
       "command": "format.shading",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.characterShading"
+      ]
     },
     {
       "index": 60,
@@ -866,7 +886,9 @@
       "group": "Paragraph",
       "name": "Bullets",
       "command": "para.bullets",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.bullets"
+      ]
     },
     {
       "index": 75,
@@ -875,7 +897,9 @@
       "group": "Paragraph",
       "name": "Numbering",
       "command": "para.numbering",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.numbering"
+      ]
     },
     {
       "index": 76,
@@ -920,7 +944,9 @@
       "group": "Paragraph",
       "name": "Restart Numbering",
       "command": "para.restartNumbering",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.restartNumbering"
+      ]
     },
     {
       "index": 81,
@@ -1031,7 +1057,9 @@
       "group": "Paragraph",
       "name": "Justify",
       "command": "para.justify",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.justify"
+      ]
     },
     {
       "index": 92,
@@ -1049,7 +1077,9 @@
       "group": "Paragraph",
       "name": "Line Spacing",
       "command": "para.lineSpacing",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.lineSpacing"
+      ]
     },
     {
       "index": 94,
@@ -1058,7 +1088,9 @@
       "group": "Paragraph",
       "name": "Add Space Before",
       "command": "para.addSpaceBefore",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.spaceBefore"
+      ]
     },
     {
       "index": 95,
@@ -1067,7 +1099,9 @@
       "group": "Paragraph",
       "name": "Remove Space After",
       "command": "para.removeSpaceAfter",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.spaceAfter"
+      ]
     },
     {
       "index": 96,
@@ -1202,7 +1236,9 @@
       "group": "Styles",
       "name": "Styles Gallery",
       "command": "para.style",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.style"
+      ]
     },
     {
       "index": 111,
