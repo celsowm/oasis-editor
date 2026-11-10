@@ -106,8 +106,11 @@ export function connectEditorClientHost(
     getSelection: (): EditorSelection => snapshot().selection,
     setSelection: (selection): void => {
       deps.applyState({
-        ...snapshot(),
-        selection,
+        ...deps.getStateSnapshot(),
+        selection: {
+          anchor: { ...selection.anchor },
+          focus: { ...selection.focus },
+        },
       });
       deps.focusInput();
     },
