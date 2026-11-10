@@ -1,4 +1,5 @@
 import type { EditorTextStyle } from "@/core/model.js";
+import { absoluteCssLengthToPx } from "./absoluteCssLength.js";
 import { isAllowedHtmlHref } from "./safeHtmlHref.js";
 
 export function parseInlineStyles(
@@ -58,12 +59,9 @@ function parseFontAndColor(
     result.fontFamily = fontFamily;
   }
 
-  const fontSize = style.fontSize.trim();
-  if (fontSize.endsWith("px")) {
-    const parsed = Number.parseFloat(fontSize);
-    if (Number.isFinite(parsed)) {
-      result.fontSize = parsed;
-    }
+  const fontSize = absoluteCssLengthToPx(style.fontSize);
+  if (fontSize !== undefined) {
+    result.fontSize = fontSize;
   }
 
   const color = style.color.trim();
