@@ -604,6 +604,16 @@ The matrix now contains 172 Oasis capability rows and links 146 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` verifies the registered size and paragraph commands plus each Paragraph dialog control token; `ParagraphDialog.tsx` exposes the recorded indents/spacing fields. The catalog snapshot reports 146 linked rows.
 
+## Delivery 41 — Advanced character-format command paths
+
+Date: 2026-11-10. B01 and D02 remain **partial**.
+
+Linked double strikethrough, character border, emphasis mark and text effects to the registered Oasis command surface. Kept the double-strikethrough command and its Font dialog control as separate exposure records: the dialog applies through its aggregate state adapter rather than dispatching the shared `doubleStrike` command. The other three capabilities have no default UI path in the inspected toolbar/dialog source. Character-border styling is narrower than WordCraft's configurable border control; the other values, rendering, selection, undo and DOCX behavior remain to verify. Phonetic Guide and Enclose Characters remain unlinked for individual review.
+
+The matrix now contains 177 Oasis capability rows and links 150 of 521 WordCraft source rows; 371 remain unlinked. Four source rows gained mappings, and every new command's semantic and persistence status remains partial/unverified.
+
+Evidence: `npm run audit:ribbon` verifies the four registered commands and the Font dialog's double-strikethrough evidence token; `useFontDialogBridge.ts` confirms the aggregate dialog state path. The catalog snapshot reports 150 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

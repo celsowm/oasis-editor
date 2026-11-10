@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `172` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `177` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -183,6 +183,11 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `layout.paragraphLineHeight` | `para.spacing` | `setLineHeight` | Context menu > Paragraph > Spacing > Line spacing at | menu-only | menu-only | partial | unverified |
 | `layout.paragraphLineRule` | `para.spacing` | `setLineRule` | Context menu > Paragraph > Spacing > Line spacing mode | menu-only | menu-only | partial | unverified |
 | `layout.paragraphContextualSpacing` | `para.spacing` | `setContextualSpacing` | Context menu > Paragraph > Spacing > Contextual spacing | menu-only | menu-only | partial | unverified |
+| `home.doubleStrikethroughCommand` | `format.doubleStrikethrough` | `doubleStrike` | — | core-only | core-only | partial | unverified |
+| `home.doubleStrikethroughDialog` | `format.doubleStrikethrough` | — | Home > Font dialog > Font > Double strikethrough | ui-only | ui-only | partial | unverified |
+| `home.characterBorder` | `format.border` | `characterBorder` | — | core-only | core-only | partial | unverified |
+| `home.emphasisMark` | `format.emphasisMark` | `setEmphasisMark` | — | core-only | core-only | partial | unverified |
+| `home.textEffects` | `format.textEffects` | `setTextEffect` | — | core-only | core-only | partial | unverified |
 
 ## Open verification questions
 
@@ -358,6 +363,11 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 170. **layout.paragraphLineHeight:** The Paragraph dialog exposes a numeric line-spacing amount; its mode determines whether the value is multiple, exact or minimum spacing. Unit conversion, mode/value interaction, mixed selection, pagination, undo and DOCX output need workflow verification.
 171. **layout.paragraphLineRule:** The Paragraph dialog exposes line-spacing modes and a corresponding line-rule command. Its options include single, 1.5, double, minimum, exact and multiple modes; mapping, selection, pagination, undo and DOCX output need workflow verification.
 172. **layout.paragraphContextualSpacing:** The Paragraph dialog exposes contextual spacing. The catalog row only identifies the broader spacing task, so style interaction, mixed selections, pagination, undo and DOCX behavior need workflow verification.
+173. **home.doubleStrikethroughCommand:** Oasis registers the shared double-strike command, but no default command-backed Ribbon or menubar path was found. The Font dialog has a separate aggregate apply path recorded as home.doubleStrikethroughDialog. Selection, undo and DOCX interoperability need workflow verification.
+174. **home.doubleStrikethroughDialog:** The Font dialog exposes double strikethrough but applies it through the aggregate Font dialog state adapter, not the shared doubleStrike command. This records UI exposure separately from command registration; selection retention, undo and DOCX interoperability need workflow verification.
+175. **home.characterBorder:** Oasis registers a toggle that applies or clears a black, solid 0.5 pt character border, but no default UI path was found. WordCraft exposes border configuration, so this is a narrower related task; selection scope, rendering, undo and DOCX output need verification.
+176. **home.emphasisMark:** Oasis registers a value command for emphasis marks, but no default UI path was found. Supported mark values, rendering, mixed selection, undo and DOCX interoperability need workflow verification.
+177. **home.textEffects:** Oasis registers a generic text-effect value command, but no default UI path was found. Effect coverage, rendering, mixed selection, undo and DOCX interoperability need workflow verification.
 
 ## Audit interpretation
 

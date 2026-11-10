@@ -2205,6 +2205,76 @@
         "token": "editor-paragraph-dialog-contextual-spacing"
       },
       "notes": "The Paragraph dialog exposes contextual spacing. The catalog row only identifies the broader spacing task, so style interaction, mixed selections, pagination, undo and DOCX behavior need workflow verification."
+    },
+    {
+      "id": "home.doubleStrikethroughCommand",
+      "wordcraftCommand": "format.doubleStrikethrough",
+      "oasisCommand": "doubleStrike",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers the shared double-strike command, but no default command-backed Ribbon or menubar path was found. The Font dialog has a separate aggregate apply path recorded as home.doubleStrikethroughDialog. Selection, undo and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.doubleStrikethroughDialog",
+      "wordcraftCommand": "format.doubleStrikethrough",
+      "oasisCommand": null,
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Home > Font dialog > Font > Double strikethrough",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/font-dialog/FontTab.tsx",
+        "token": "editor-font-dialog-double-strike"
+      },
+      "notes": "The Font dialog exposes double strikethrough but applies it through the aggregate Font dialog state adapter, not the shared doubleStrike command. This records UI exposure separately from command registration; selection retention, undo and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.characterBorder",
+      "wordcraftCommand": "format.border",
+      "oasisCommand": "characterBorder",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers a toggle that applies or clears a black, solid 0.5 pt character border, but no default UI path was found. WordCraft exposes border configuration, so this is a narrower related task; selection scope, rendering, undo and DOCX output need verification."
+    },
+    {
+      "id": "home.emphasisMark",
+      "wordcraftCommand": "format.emphasisMark",
+      "oasisCommand": "setEmphasisMark",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers a value command for emphasis marks, but no default UI path was found. Supported mark values, rendering, mixed selection, undo and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.textEffects",
+      "wordcraftCommand": "format.textEffects",
+      "oasisCommand": "setTextEffect",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers a generic text-effect value command, but no default UI path was found. Effect coverage, rendering, mixed selection, undo and DOCX interoperability need workflow verification."
     }
   ]
 }

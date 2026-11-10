@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 146
+    "linkedRows": 150
   },
   "defaultTabs": [
     "File",
@@ -739,7 +739,9 @@
       "group": "Font",
       "name": "Text Effects and Typography",
       "command": "format.textEffects",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.textEffects"
+      ]
     },
     {
       "index": 57,
@@ -792,7 +794,10 @@
       "group": "Font",
       "name": "Double Strikethrough",
       "command": "format.doubleStrikethrough",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.doubleStrikethroughCommand",
+        "home.doubleStrikethroughDialog"
+      ]
     },
     {
       "index": 62,
@@ -812,7 +817,9 @@
       "group": "Font",
       "name": "Emphasis Mark",
       "command": "format.emphasisMark",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.emphasisMark"
+      ]
     },
     {
       "index": 64,
@@ -898,7 +905,9 @@
       "group": "Font",
       "name": "Character Border",
       "command": "format.border",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.characterBorder"
+      ]
     },
     {
       "index": 72,
