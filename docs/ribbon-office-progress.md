@@ -584,6 +584,16 @@ The matrix now contains 153 Oasis capability rows and links 136 of 521 WordCraft
 
 Evidence: the audit checks the Exit menu token and the core registrations, and confirms no default Ribbon or menubar exposure for the three page settings. The catalog snapshot reports 136 linked rows.
 
+## Delivery 39 — Line numbering and floating-object arrangement paths
+
+Date: 2026-11-10. B01 and D04 remain **partial**.
+
+Linked WordCraft's Line Numbers catalog entry to Oasis's per-paragraph suppress-line-numbers command as a related task, since Oasis has no section line-numbering modes. Linked six Layout > Arrange commands to registered core-only Oasis capabilities for object positioning, wrapping, front/behind-text ordering, horizontal margin alignment and exact-angle rotation. Oasis's ordering operation moves an object across the text layer rather than one z-order step, and its alignment covers one object and three horizontal margin positions. Selection Pane and Group remain unlinked and unclassified pending individual review.
+
+The matrix now contains 160 Oasis capability rows and links 143 of 521 WordCraft source rows; 378 remain unlinked. All seven new paths are core-only, with semantics partial and persistence unverified. Selection scope, undo, layout and DOCX/PDF output still need workflow evidence.
+
+Evidence: `npm run audit:ribbon` verifies the seven built-in registrations and confirms no default Ribbon or menubar exposure; source comments in `paragraphSuppressLineNumbers.ts`, `floatingAlignCommands.ts` and `floatingReorderCommands.ts` establish the scoped behaviors. The catalog snapshot reports 143 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

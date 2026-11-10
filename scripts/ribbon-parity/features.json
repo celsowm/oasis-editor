@@ -1908,6 +1908,97 @@
       "semantics": "partial",
       "persistence": "unverified",
       "notes": "Oasis registers the different-odd/even-pages setting, but no default UI control was found. Story creation/inheritance, document-wide scope, pagination and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "layout.suppressLineNumbers",
+      "wordcraftCommand": "layout.lineNumbers",
+      "oasisCommand": "setSuppressLineNumbers",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "pageSetup",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers a per-paragraph suppress-line-numbers flag, not section line-numbering modes; this is a related-task mapping. No default Ribbon or menubar path was found. Paragraph scope, undo and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "layout.objectPosition",
+      "wordcraftCommand": "arrange.position",
+      "oasisCommand": "setFloatingPositionPreset",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "arrange",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers nine positions anchored to page margins and promotes an inline image/text box to a square-wrapped floating object. No default UI path was found. Selection, anchor behavior, pagination and DOCX/PDF output need workflow verification."
+    },
+    {
+      "id": "layout.objectWrap",
+      "wordcraftCommand": "arrange.wrap",
+      "oasisCommand": "setFloatingWrapPreset",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "arrange",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers inline, square, tight, through, top/bottom, behind and front wrap presets for a selected image/text box, but no default UI path was found. Text-side wrapping is a separate command without a catalog row. Layout, undo and DOCX/PDF output need workflow verification."
+    },
+    {
+      "id": "layout.objectBringForward",
+      "wordcraftCommand": "arrange.bringForward",
+      "oasisCommand": "reorderFloatingObject",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "arrange",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers a front-layer move for a selected image/text box, but no default UI path was found. It moves the object in front of the text layer rather than advancing one object layer, so this is a related-task mapping; z-order and DOCX/PDF rendering need workflow verification."
+    },
+    {
+      "id": "layout.objectSendBackward",
+      "wordcraftCommand": "arrange.sendBackward",
+      "oasisCommand": "reorderFloatingObject",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "arrange",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers a behind-text-layer move for a selected image/text box, but no default UI path was found. It sends the object behind text rather than back one object layer, so this is a related-task mapping; z-order and DOCX/PDF rendering need workflow verification."
+    },
+    {
+      "id": "layout.objectAlign",
+      "wordcraftCommand": "arrange.align",
+      "oasisCommand": "alignFloatingObject",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "arrange",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers left/center/right alignment of one selected image/text box relative to the margin; no default UI path was found. This narrower control is a related-task mapping. Selection, anchor behavior and DOCX/PDF output need workflow verification."
+    },
+    {
+      "id": "layout.objectRotate",
+      "wordcraftCommand": "arrange.rotate",
+      "oasisCommand": "setFloatingRotation",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "arrange",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers an exact-angle rotation command for a selected image/text box, but no default UI path was found. Rotation state, rendering, undo and DOCX/PDF output need workflow verification."
     }
   ]
 }

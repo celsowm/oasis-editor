@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 136
+    "linkedRows": 143
   },
   "defaultTabs": [
     "File",
@@ -2348,7 +2348,9 @@
       "group": "Page Setup",
       "name": "Line Numbers",
       "command": "layout.lineNumbers",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.suppressLineNumbers"
+      ]
     },
     {
       "index": 216,
@@ -2437,7 +2439,9 @@
       "group": "Arrange",
       "name": "Position",
       "command": "arrange.position",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.objectPosition"
+      ]
     },
     {
       "index": 225,
@@ -2446,7 +2450,9 @@
       "group": "Arrange",
       "name": "Wrap Text",
       "command": "arrange.wrap",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.objectWrap"
+      ]
     },
     {
       "index": 226,
@@ -2455,7 +2461,9 @@
       "group": "Arrange",
       "name": "Bring Forward",
       "command": "arrange.bringForward",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.objectBringForward"
+      ]
     },
     {
       "index": 227,
@@ -2464,7 +2472,9 @@
       "group": "Arrange",
       "name": "Send Backward",
       "command": "arrange.sendBackward",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.objectSendBackward"
+      ]
     },
     {
       "index": 228,
@@ -2482,7 +2492,9 @@
       "group": "Arrange",
       "name": "Align",
       "command": "arrange.align",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.objectAlign"
+      ]
     },
     {
       "index": 230,
@@ -2500,7 +2512,9 @@
       "group": "Arrange",
       "name": "Rotate",
       "command": "arrange.rotate",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.objectRotate"
+      ]
     },
     {
       "index": 232,

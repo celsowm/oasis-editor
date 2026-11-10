@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `153` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `160` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -164,6 +164,13 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `insert.pageNumberFormat` | `layout.pageNumberFormat` | `setSectionPageNumbering` | — | core-only | core-only | partial | unverified |
 | `insert.differentFirstPage` | `layout.differentFirstPage` | `setDifferentFirstPage` | — | core-only | core-only | partial | unverified |
 | `insert.differentOddEven` | `layout.differentOddEven` | `setDifferentOddEven` | — | core-only | core-only | partial | unverified |
+| `layout.suppressLineNumbers` | `layout.lineNumbers` | `setSuppressLineNumbers` | — | core-only | core-only | partial | unverified |
+| `layout.objectPosition` | `arrange.position` | `setFloatingPositionPreset` | — | core-only | core-only | partial | unverified |
+| `layout.objectWrap` | `arrange.wrap` | `setFloatingWrapPreset` | — | core-only | core-only | partial | unverified |
+| `layout.objectBringForward` | `arrange.bringForward` | `reorderFloatingObject` | — | core-only | core-only | partial | unverified |
+| `layout.objectSendBackward` | `arrange.sendBackward` | `reorderFloatingObject` | — | core-only | core-only | partial | unverified |
+| `layout.objectAlign` | `arrange.align` | `alignFloatingObject` | — | core-only | core-only | partial | unverified |
+| `layout.objectRotate` | `arrange.rotate` | `setFloatingRotation` | — | core-only | core-only | partial | unverified |
 
 ## Open verification questions
 
@@ -320,6 +327,13 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 151. **insert.pageNumberFormat:** Oasis registers section page-number format/start settings, but no default Ribbon, menu or dialog control was found. Format coverage, continue-from-previous semantics, section scope, pagination and DOCX/PDF output need workflow verification.
 152. **insert.differentFirstPage:** Oasis registers the separate-first-page header/footer flag, but no default UI control was found. Story creation/inheritance, active-section scope, pagination and DOCX interoperability need workflow verification.
 153. **insert.differentOddEven:** Oasis registers the different-odd/even-pages setting, but no default UI control was found. Story creation/inheritance, document-wide scope, pagination and DOCX interoperability need workflow verification.
+154. **layout.suppressLineNumbers:** Oasis registers a per-paragraph suppress-line-numbers flag, not section line-numbering modes; this is a related-task mapping. No default Ribbon or menubar path was found. Paragraph scope, undo and DOCX interoperability need workflow verification.
+155. **layout.objectPosition:** Oasis registers nine positions anchored to page margins and promotes an inline image/text box to a square-wrapped floating object. No default UI path was found. Selection, anchor behavior, pagination and DOCX/PDF output need workflow verification.
+156. **layout.objectWrap:** Oasis registers inline, square, tight, through, top/bottom, behind and front wrap presets for a selected image/text box, but no default UI path was found. Text-side wrapping is a separate command without a catalog row. Layout, undo and DOCX/PDF output need workflow verification.
+157. **layout.objectBringForward:** Oasis registers a front-layer move for a selected image/text box, but no default UI path was found. It moves the object in front of the text layer rather than advancing one object layer, so this is a related-task mapping; z-order and DOCX/PDF rendering need workflow verification.
+158. **layout.objectSendBackward:** Oasis registers a behind-text-layer move for a selected image/text box, but no default UI path was found. It sends the object behind text rather than back one object layer, so this is a related-task mapping; z-order and DOCX/PDF rendering need workflow verification.
+159. **layout.objectAlign:** Oasis registers left/center/right alignment of one selected image/text box relative to the margin; no default UI path was found. This narrower control is a related-task mapping. Selection, anchor behavior and DOCX/PDF output need workflow verification.
+160. **layout.objectRotate:** Oasis registers an exact-angle rotation command for a selected image/text box, but no default UI path was found. Rotation state, rendering, undo and DOCX/PDF output need workflow verification.
 
 ## Audit interpretation
 
