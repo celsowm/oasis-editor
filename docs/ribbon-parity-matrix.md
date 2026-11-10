@@ -3,13 +3,13 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** 77-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `81` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `100` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
-The three dimensions below are independent of overall status. A legacy Ribbon-bound row defaults to `partial` exposure from its audited wiring; missing semantics or persistence evidence stays `unverified`. `core-only` means the command is registered but has no statically observed default Ribbon or menubar path. No status alone certifies complete DOCX round-trip, PDF/layout, accessibility or browser behavior.
+The three dimensions below are independent of overall status. A legacy Ribbon-bound row defaults to `partial` exposure from its audited wiring; missing semantics or persistence evidence stays `unverified`. `core-only` means the command is registered but has no statically observed default Ribbon or menubar path. `menu-only` records a secondary path such as a dialog; each row supplies a UI path and source token that the audit checks. No status alone certifies complete DOCX round-trip, PDF/layout, accessibility or browser behavior.
 
-| Feature | WordCraft command | Oasis command | Ribbon placement | Status | Exposure | Semantics | Persistence |
+| Feature | WordCraft command | Oasis command | Oasis surface | Status | Exposure | Semantics | Persistence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `home.copy` | `edit.copy` | `copy` | `home/clipboard` | partial | partial | unverified | unverified |
 | `home.cut` | `edit.cut` | `cut` | `home/clipboard` | partial | partial | unverified | unverified |
@@ -92,6 +92,25 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `insert.nonbreakingSpace` | `text.nbsp` | `insertNonBreakingSpace` | — | core-only | core-only | partial | unverified |
 | `insert.nonbreakingHyphen` | `text.nbHyphen` | `insertNonBreakingHyphen` | — | core-only | core-only | partial | partial |
 | `layout.hyphenation` | `layout.hyphenation` | `setHyphenation` | — | core-only | core-only | partial | partial |
+| `home.underlineColor` | `format.underlineColor` | `setUnderlineColor` | Home > Font dialog > Font > Underline color | menu-only | menu-only | partial | partial |
+| `home.smallCaps` | `format.smallCaps` | `smallCaps` | Home > Font dialog > Font > Small Caps | menu-only | menu-only | partial | partial |
+| `home.allCaps` | `format.allCaps` | `allCaps` | Home > Font dialog > Font > All Caps | menu-only | menu-only | partial | partial |
+| `home.hiddenText` | `format.hidden` | `hidden` | Home > Font dialog > Font > Hidden | menu-only | menu-only | partial | partial |
+| `home.characterSpacing` | `format.spacing` | `setCharacterSpacing` | Home > Font dialog > Advanced > Character spacing | menu-only | menu-only | partial | partial |
+| `home.characterScale` | `format.scale` | `setCharacterScale` | Home > Font dialog > Advanced > Scale | menu-only | menu-only | partial | partial |
+| `home.characterPosition` | `format.position` | `setBaselineShift` | Home > Font dialog > Advanced > Position | menu-only | menu-only | partial | partial |
+| `home.keepWithNext` | `para.keepNext` | `setKeepWithNext` | Layout > Paragraph dialog > Line and Page Breaks > Keep with next | menu-only | menu-only | partial | partial |
+| `home.keepLinesTogether` | `para.keepLines` | `toggleKeepLinesTogether` | Layout > Paragraph dialog > Line and Page Breaks > Keep lines together | menu-only | menu-only | partial | partial |
+| `home.pageBreakBefore` | `para.pageBreakBefore` | `setPageBreakBefore` | Layout > Paragraph dialog > Line and Page Breaks > Page break before | menu-only | menu-only | partial | partial |
+| `home.widowControl` | `para.widowControl` | `toggleWidowControl` | Layout > Paragraph dialog > Line and Page Breaks > Widow/Orphan control | menu-only | menu-only | partial | partial |
+| `home.outlineLevel` | `para.outlineLevel` | `setOutlineLevel` | Layout > Paragraph dialog > Indents and Spacing > Outline level | menu-only | menu-only | partial | partial |
+| `home.tabs` | `para.tabs` | — | Layout > Paragraph dialog > Tabs | ui-only | ui-only | partial | unverified |
+| `home.textEffectsOutline` | `format.outline` | `outline` | — | core-only | core-only | partial | unverified |
+| `home.textEffectsShadow` | `format.shadow` | `shadow` | — | core-only | core-only | partial | unverified |
+| `home.emboss` | `format.emboss` | `emboss` | — | core-only | core-only | partial | unverified |
+| `home.engrave` | `format.engrave` | `engrave` | — | core-only | core-only | partial | unverified |
+| `home.rtlDirection` | `para.rtl` | `setTextDirection` | — | core-only | core-only | partial | partial |
+| `home.ltrDirection` | `para.ltr` | `setTextDirection` | — | core-only | core-only | partial | partial |
 
 ## Open verification questions
 
@@ -176,6 +195,25 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 79. **insert.nonbreakingSpace:** Both commands insert a nonbreaking space at the current editing position. The Oasis command is registered without a default Ribbon or menubar entry; selection replacement, caret behavior and DOCX/PDF round-trip need direct workflow evidence.
 80. **insert.nonbreakingHyphen:** Both commands insert U+2011 at the current editing position. Oasis has no default Ribbon or menubar entry; DOCX serialization/import recognizes w:noBreakHyphen, but selection, caret and end-to-end round-trip behavior still need workflow verification.
 81. **layout.hyphenation:** Both implementations model automatic hyphenation, zone, capital-word handling and consecutive-line limit. Oasis applies settings to layout and imports/exports the corresponding DOCX settings; no default Ribbon or menubar entry exposes the command, and rendered pagination plus complete round-trip behavior still need workflow evidence.
+82. **home.underlineColor:** The Font dialog exposes an underline color field; WordCraft also accepts automatic color that follows the text color. Mixed values, the automatic-color mapping, dialog focus/selection, undo and DOCX output need direct workflow verification.
+83. **home.smallCaps:** Small Caps is available in the Font dialog, not as a direct Home control. The dialog applies a combined font-settings transaction; mixed-state rendering, command-boundary consistency, selection retention, undo and DOCX round-trip need verification.
+84. **home.allCaps:** All Caps is available in the Font dialog, not as a direct Home control. The dialog applies a combined font-settings transaction; mixed-state rendering, command-boundary consistency, selection retention, undo and DOCX round-trip need verification.
+85. **home.hiddenText:** Hidden text is available in the Font dialog. Visibility rules, mixed-state rendering, command-boundary consistency, selection retention, undo and DOCX round-trip need workflow verification.
+86. **home.characterSpacing:** Advanced Font exposes normal, expanded and condensed spacing with an amount. WordCraft's command accepts a signed point value; unit conversion, range, mixed state, selection retention, undo and DOCX rendering need verification.
+87. **home.characterScale:** Character scale is available in Advanced Font as percentage presets. The control's range and preset coverage, mixed state, selection retention, undo and DOCX rendering need verification against WordCraft's numeric percentage command.
+88. **home.characterPosition:** Advanced Font offers normal, raised and lowered position with an amount. Point units, numeric range, mixed state, selection retention, undo and DOCX rendering need workflow verification.
+89. **home.keepWithNext:** The Paragraph dialog exposes Keep with next; Oasis has a registered value command. The dialog commits several paragraph fields together, so per-command dispatch, mixed selections, pagination, undo and DOCX behavior need verification.
+90. **home.keepLinesTogether:** The Paragraph dialog exposes Keep lines together; Oasis has a registered toggle command. Dialog transaction behavior, mixed selections, pagination, undo and DOCX behavior need verification.
+91. **home.pageBreakBefore:** The Paragraph dialog exposes Page break before; Oasis has a registered value command. Dialog transaction behavior, mixed selections, pagination, undo and DOCX behavior need verification.
+92. **home.widowControl:** The Paragraph dialog exposes Widow/Orphan control; Oasis has a registered toggle command. Dialog transaction behavior, mixed selections, pagination, undo and DOCX behavior need verification.
+93. **home.outlineLevel:** Outline level is available in the Paragraph dialog. The command and selector accept levels, but built-in style interaction, mixed selections, navigation outline, undo and DOCX interoperability need verification.
+94. **home.tabs:** Oasis provides a Tabs dialog, but no registered shared command for WordCraft's set/clear/default tab-stop payload is wired here. Mutation, undo, default stops and DOCX round-trip remain unverified.
+95. **home.textEffectsOutline:** Oasis registers an outline character-style command but no default Ribbon, menu or dialog control was found. Rendering, selection behavior, undo and DOCX preservation need verification.
+96. **home.textEffectsShadow:** Oasis registers a shadow character-style command but no default Ribbon, menu or dialog control was found. Rendering, selection behavior, undo and DOCX preservation need verification.
+97. **home.emboss:** Oasis registers an emboss character-style command but no default Ribbon, menu or dialog control was found. Rendering, selection behavior, undo and DOCX preservation need verification.
+98. **home.engrave:** Oasis registers an engrave character-style command but no default Ribbon, menu or dialog control was found. Rendering, selection behavior, undo and DOCX preservation need verification.
+99. **home.rtlDirection:** Oasis registers a text-direction value command but no default Ribbon or menu control was found. Direction scope, mixed selections, RTL shaping and DOCX interoperability need workflow verification.
+100. **home.ltrDirection:** Oasis registers a text-direction value command but no default Ribbon or menu control was found. Direction scope, mixed selections, RTL shaping and DOCX interoperability need workflow verification.
 
 ## Audit interpretation
 

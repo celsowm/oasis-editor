@@ -312,11 +312,14 @@ export function renderMatrix(data) {
   const dimension = (feature, key) =>
     feature[key] ??
     (key === "exposure" && feature.ribbonId ? "partial" : "unverified");
+  const surface = (feature) =>
+    feature.uiPath ??
+    (feature.ribbonId ? code(feature.tab + "/" + feature.group) : "—");
   const rows = data.features.map((feature) =>
     "| " + code(feature.id) +
     " | " + (feature.wordcraftCommand ? code(feature.wordcraftCommand) : "—") +
-    " | " + code(feature.oasisCommand) +
-    " | " + (feature.ribbonId ? code(feature.tab + "/" + feature.group) : "—") +
+    " | " + (feature.oasisCommand ? code(feature.oasisCommand) : "—") +
+    " | " + surface(feature) +
     " | " + feature.status +
     " | " + dimension(feature, "exposure") +
     " | " + dimension(feature, "semantics") +
@@ -335,9 +338,9 @@ export function renderMatrix(data) {
     "**Oasis baseline:** " + code(data.baseline.oasisCommit) + "<br>",
     "**WordCraft baseline:** " + code(data.baseline.wordcraftCommit),
     "",
-    "The three dimensions below are independent of overall status. A legacy Ribbon-bound row defaults to `partial` exposure from its audited wiring; missing semantics or persistence evidence stays `unverified`. `core-only` means the command is registered but has no statically observed default Ribbon or menubar path. No status alone certifies complete DOCX round-trip, PDF/layout, accessibility or browser behavior.",
+    "The three dimensions below are independent of overall status. A legacy Ribbon-bound row defaults to `partial` exposure from its audited wiring; missing semantics or persistence evidence stays `unverified`. `core-only` means the command is registered but has no statically observed default Ribbon or menubar path. `menu-only` records a secondary path such as a dialog; each row supplies a UI path and source token that the audit checks. No status alone certifies complete DOCX round-trip, PDF/layout, accessibility or browser behavior.",
     "",
-    "| Feature | WordCraft command | Oasis command | Ribbon placement | Status | Exposure | Semantics | Persistence |",
+    "| Feature | WordCraft command | Oasis command | Oasis surface | Status | Exposure | Semantics | Persistence |",
     "| --- | --- | --- | --- | --- | --- | --- | --- |",
     rows,
     "",
@@ -353,6 +356,24 @@ export function renderMatrix(data) {
     "",
   ].join("\n");
 }
+
+function validateUiEvidence(root, feature, errors) {
+  if (!feature.uiPath?.trim()) {
+    errors.push(feature.id + ": UI surface status needs an explicit UI path");
+  }
+  const evidence = feature.uiEvidence;
+  if (!evidence?.file || !evidence?.token) {
+    errors.push(feature.id + ": UI surface status needs source-file evidence");
+    return;
+  }
+  const evidencePath = resolve(root, evidence.file);
+  if (!existsSync(evidencePath)) {
+    errors.push(feature.id + ": missing UI evidence file " + evidence.file);
+  } else if (!readFileSync(evidencePath, "utf8").includes(evidence.token)) {
+    errors.push(feature.id + ": UI evidence token not found: " + evidence.token);
+  }
+}
+
 function main() {
   const builtin = collectBuiltinCommands();
   const registered = collectRegisteredCommands();
@@ -464,17 +485,22 @@ function main() {
   }
   const linkedRows = wordcraft.rows.filter((row) => row.oasisFeatureIds.length > 0).length;
   if (wordcraft.counts?.linkedRows !== linkedRows) errors.push("WordCraft snapshot linked-row count is inconsistent");
+  const commandlessStatuses = new Set(["ui-only"]);
   for (const feature of catalog.features) {
     if (ids.has(feature.id)) errors.push("Duplicate feature ID: " + feature.id);
     ids.add(feature.id);
     if (feature.wordcraftCommand && !wordcraftCommands.has(feature.wordcraftCommand)) {
       errors.push(feature.id + ": WordCraft command is absent from pinned catalog: " + feature.wordcraftCommand);
     }
-    if (!builtin.has(feature.oasisCommand)) {
-      errors.push(feature.id + ": missing built-in command " + feature.oasisCommand);
-    }
-    if (!registered.has(feature.oasisCommand)) {
-      errors.push(feature.id + ": command has no Essentials registration: " + feature.oasisCommand);
+    if (feature.oasisCommand) {
+      if (!builtin.has(feature.oasisCommand)) {
+        errors.push(feature.id + ": missing built-in command " + feature.oasisCommand);
+      }
+      if (!registered.has(feature.oasisCommand)) {
+        errors.push(feature.id + ": command has no Essentials registration: " + feature.oasisCommand);
+      }
+    } else if (!commandlessStatuses.has(feature.status)) {
+      errors.push(feature.id + ": status requires an Oasis command");
     }
     for (const dimension of ["exposure", "semantics", "persistence"]) {
       if (feature[dimension] !== undefined && !dimensionStatuses.has(feature[dimension])) {
@@ -485,13 +511,36 @@ function main() {
       if (feature.exposure !== "core-only") {
         errors.push(feature.id + ": core-only status needs an explicit exposure classification");
       }
-      if (feature.ribbonId || [...toolbar.values()].some((item) =>
+      if (feature.ribbonId || feature.uiPath || [...toolbar.values()].some((item) =>
         (item.ribbonCommands ?? []).includes(feature.oasisCommand))) {
-        errors.push(feature.id + ": core-only command is reachable from a Ribbon item");
+        errors.push(feature.id + ": core-only status conflicts with an observed UI path");
       }
       if (menu.has(feature.oasisCommand)) {
         errors.push(feature.id + ": core-only command is reachable from the menubar");
       }
+      continue;
+    }
+    if (feature.status === "menu-only") {
+      if (feature.exposure !== "menu-only") {
+        errors.push(feature.id + ": menu-only status needs an explicit exposure classification");
+      }
+      if (feature.ribbonId) {
+        errors.push(feature.id + ": menu-only status cannot claim a direct Ribbon item");
+      }
+      validateUiEvidence(root, feature, errors);
+      continue;
+    }
+    if (feature.status === "ui-only") {
+      if (feature.exposure !== "ui-only") {
+        errors.push(feature.id + ": ui-only status needs an explicit exposure classification");
+      }
+      if (feature.oasisCommand) {
+        errors.push(feature.id + ": ui-only status cannot claim a shared Oasis command");
+      }
+      if (feature.ribbonId) {
+        errors.push(feature.id + ": ui-only status cannot claim a command-backed Ribbon item");
+      }
+      validateUiEvidence(root, feature, errors);
       continue;
     }
     const item = toolbar.get(feature.ribbonId);

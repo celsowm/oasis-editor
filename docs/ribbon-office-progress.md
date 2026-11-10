@@ -472,6 +472,16 @@ Added four crosswalk rows with concrete reasons and limits rather than inferring
 
 Limits: these classifications do not add visible controls or establish complete workflow parity. Selection/caret behavior, undo, visual output and interoperability remain open where noted; D03 and the affected Insert/Layout deliveries remain partial.
 
+## Delivery 28 — classify Home dialog and core-only capabilities
+
+Date: 2026-11-10. B01 remains **partial**.
+
+Reviewed 19 additional Home source rows against the pinned WordCraft catalog and Oasis command/UI sources: seven Font-dialog settings, five Paragraph-dialog settings, the Tabs dialog, four unexposed text effects and the two text-direction commands. Added explicit `menu-only` rows for controls in Font and Paragraph dialogs, `ui-only` for Tabs because the UI exists without a registered shared command, and `core-only` for registered capabilities with no observed default control. Each dialog-only row records its path and a test/control token; the Ribbon audit checks that token in the cited source file instead of requiring a fictitious direct Ribbon command.
+
+The generated matrix now uses an Oasis-surface column to distinguish Ribbon placement, dialog paths and unexposed commands. It contains 100 Oasis capability rows and links 93 of 521 WordCraft source rows, leaving 428 rows for review. `npm run audit:ribbon` validates command registration where present, source catalog links, UI-evidence paths and tokens, and static Ribbon placement for directly exposed rows.
+
+Limits: dialog presence does not establish equivalent command dispatch, mixed-selection behavior, pagination/rendering, undo or DOCX persistence. D02/D03 and B01 remain open; the UI-only Tabs path needs a shared-command and round-trip review.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

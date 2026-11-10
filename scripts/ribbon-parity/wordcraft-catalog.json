@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 74
+    "linkedRows": 93
   },
   "defaultTabs": [
     "File",
@@ -658,7 +658,9 @@
       "group": "Font",
       "name": "Underline Color",
       "command": "format.underlineColor",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.underlineColor"
+      ]
     },
     {
       "index": 51,
@@ -700,7 +702,9 @@
       "group": "Font",
       "name": "Text Effects Outline",
       "command": "format.outline",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.textEffectsOutline"
+      ]
     },
     {
       "index": 55,
@@ -709,7 +713,9 @@
       "group": "Font",
       "name": "Text Effects Shadow",
       "command": "format.shadow",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.textEffectsShadow"
+      ]
     },
     {
       "index": 56,
@@ -778,7 +784,9 @@
       "group": "Font",
       "name": "Small Caps",
       "command": "format.smallCaps",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.smallCaps"
+      ]
     },
     {
       "index": 63,
@@ -796,7 +804,9 @@
       "group": "Font",
       "name": "All Caps",
       "command": "format.allCaps",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.allCaps"
+      ]
     },
     {
       "index": 65,
@@ -805,7 +815,9 @@
       "group": "Font",
       "name": "Hidden",
       "command": "format.hidden",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.hiddenText"
+      ]
     },
     {
       "index": 66,
@@ -814,7 +826,9 @@
       "group": "Font",
       "name": "Emboss",
       "command": "format.emboss",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.emboss"
+      ]
     },
     {
       "index": 67,
@@ -823,7 +837,9 @@
       "group": "Font",
       "name": "Engrave",
       "command": "format.engrave",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.engrave"
+      ]
     },
     {
       "index": 68,
@@ -832,7 +848,9 @@
       "group": "Font",
       "name": "Character Spacing",
       "command": "format.spacing",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.characterSpacing"
+      ]
     },
     {
       "index": 69,
@@ -841,7 +859,9 @@
       "group": "Font",
       "name": "Character Scale",
       "command": "format.scale",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.characterScale"
+      ]
     },
     {
       "index": 70,
@@ -850,7 +870,9 @@
       "group": "Font",
       "name": "Character Position",
       "command": "format.position",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.characterPosition"
+      ]
     },
     {
       "index": 71,
@@ -1150,7 +1172,9 @@
       "group": "Paragraph",
       "name": "Tabs",
       "command": "para.tabs",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.tabs"
+      ]
     },
     {
       "index": 101,
@@ -1159,7 +1183,9 @@
       "group": "Paragraph",
       "name": "Keep with Next",
       "command": "para.keepNext",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.keepWithNext"
+      ]
     },
     {
       "index": 102,
@@ -1168,7 +1194,9 @@
       "group": "Paragraph",
       "name": "Keep Lines Together",
       "command": "para.keepLines",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.keepLinesTogether"
+      ]
     },
     {
       "index": 103,
@@ -1177,7 +1205,9 @@
       "group": "Paragraph",
       "name": "Page Break Before",
       "command": "para.pageBreakBefore",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.pageBreakBefore"
+      ]
     },
     {
       "index": 104,
@@ -1186,7 +1216,9 @@
       "group": "Paragraph",
       "name": "Widow/Orphan Control",
       "command": "para.widowControl",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.widowControl"
+      ]
     },
     {
       "index": 105,
@@ -1195,7 +1227,9 @@
       "group": "Paragraph",
       "name": "Outline Level",
       "command": "para.outlineLevel",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.outlineLevel"
+      ]
     },
     {
       "index": 106,
@@ -1213,7 +1247,9 @@
       "group": "Paragraph",
       "name": "Right-to-Left Text Direction",
       "command": "para.rtl",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.rtlDirection"
+      ]
     },
     {
       "index": 108,
@@ -1222,7 +1258,9 @@
       "group": "Paragraph",
       "name": "Left-to-Right Text Direction",
       "command": "para.ltr",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.ltrDirection"
+      ]
     },
     {
       "index": 109,

@@ -832,6 +832,318 @@
       "semantics": "partial",
       "persistence": "partial",
       "notes": "Both implementations model automatic hyphenation, zone, capital-word handling and consecutive-line limit. Oasis applies settings to layout and imports/exports the corresponding DOCX settings; no default Ribbon or menubar entry exposes the command, and rendered pagination plus complete round-trip behavior still need workflow evidence."
+    },
+    {
+      "id": "home.underlineColor",
+      "wordcraftCommand": "format.underlineColor",
+      "oasisCommand": "setUnderlineColor",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "uiPath": "Home > Font dialog > Font > Underline color",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/font-dialog/FontTab.tsx",
+        "token": "editor-font-dialog-underline-color"
+      },
+      "notes": "The Font dialog exposes an underline color field; WordCraft also accepts automatic color that follows the text color. Mixed values, the automatic-color mapping, dialog focus/selection, undo and DOCX output need direct workflow verification."
+    },
+    {
+      "id": "home.smallCaps",
+      "wordcraftCommand": "format.smallCaps",
+      "oasisCommand": "smallCaps",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "uiPath": "Home > Font dialog > Font > Small Caps",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/font-dialog/FontTab.tsx",
+        "token": "editor-font-dialog-small-caps"
+      },
+      "notes": "Small Caps is available in the Font dialog, not as a direct Home control. The dialog applies a combined font-settings transaction; mixed-state rendering, command-boundary consistency, selection retention, undo and DOCX round-trip need verification."
+    },
+    {
+      "id": "home.allCaps",
+      "wordcraftCommand": "format.allCaps",
+      "oasisCommand": "allCaps",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "uiPath": "Home > Font dialog > Font > All Caps",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/font-dialog/FontTab.tsx",
+        "token": "editor-font-dialog-all-caps"
+      },
+      "notes": "All Caps is available in the Font dialog, not as a direct Home control. The dialog applies a combined font-settings transaction; mixed-state rendering, command-boundary consistency, selection retention, undo and DOCX round-trip need verification."
+    },
+    {
+      "id": "home.hiddenText",
+      "wordcraftCommand": "format.hidden",
+      "oasisCommand": "hidden",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "uiPath": "Home > Font dialog > Font > Hidden",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/font-dialog/FontTab.tsx",
+        "token": "editor-font-dialog-hidden"
+      },
+      "notes": "Hidden text is available in the Font dialog. Visibility rules, mixed-state rendering, command-boundary consistency, selection retention, undo and DOCX round-trip need workflow verification."
+    },
+    {
+      "id": "home.characterSpacing",
+      "wordcraftCommand": "format.spacing",
+      "oasisCommand": "setCharacterSpacing",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "uiPath": "Home > Font dialog > Advanced > Character spacing",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/font-dialog/AdvancedFontTab.tsx",
+        "token": "editor-font-dialog-advanced-spacing-amount"
+      },
+      "notes": "Advanced Font exposes normal, expanded and condensed spacing with an amount. WordCraft's command accepts a signed point value; unit conversion, range, mixed state, selection retention, undo and DOCX rendering need verification."
+    },
+    {
+      "id": "home.characterScale",
+      "wordcraftCommand": "format.scale",
+      "oasisCommand": "setCharacterScale",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "uiPath": "Home > Font dialog > Advanced > Scale",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/font-dialog/AdvancedFontTab.tsx",
+        "token": "editor-font-dialog-advanced-scale"
+      },
+      "notes": "Character scale is available in Advanced Font as percentage presets. The control's range and preset coverage, mixed state, selection retention, undo and DOCX rendering need verification against WordCraft's numeric percentage command."
+    },
+    {
+      "id": "home.characterPosition",
+      "wordcraftCommand": "format.position",
+      "oasisCommand": "setBaselineShift",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "uiPath": "Home > Font dialog > Advanced > Position",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/font-dialog/AdvancedFontTab.tsx",
+        "token": "editor-font-dialog-advanced-position-amount"
+      },
+      "notes": "Advanced Font offers normal, raised and lowered position with an amount. Point units, numeric range, mixed state, selection retention, undo and DOCX rendering need workflow verification."
+    },
+    {
+      "id": "home.keepWithNext",
+      "wordcraftCommand": "para.keepNext",
+      "oasisCommand": "setKeepWithNext",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "uiPath": "Layout > Paragraph dialog > Line and Page Breaks > Keep with next",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-keep-with-next"
+      },
+      "notes": "The Paragraph dialog exposes Keep with next; Oasis has a registered value command. The dialog commits several paragraph fields together, so per-command dispatch, mixed selections, pagination, undo and DOCX behavior need verification."
+    },
+    {
+      "id": "home.keepLinesTogether",
+      "wordcraftCommand": "para.keepLines",
+      "oasisCommand": "toggleKeepLinesTogether",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "uiPath": "Layout > Paragraph dialog > Line and Page Breaks > Keep lines together",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-keep-lines-together"
+      },
+      "notes": "The Paragraph dialog exposes Keep lines together; Oasis has a registered toggle command. Dialog transaction behavior, mixed selections, pagination, undo and DOCX behavior need verification."
+    },
+    {
+      "id": "home.pageBreakBefore",
+      "wordcraftCommand": "para.pageBreakBefore",
+      "oasisCommand": "setPageBreakBefore",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "uiPath": "Layout > Paragraph dialog > Line and Page Breaks > Page break before",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-page-break-before"
+      },
+      "notes": "The Paragraph dialog exposes Page break before; Oasis has a registered value command. Dialog transaction behavior, mixed selections, pagination, undo and DOCX behavior need verification."
+    },
+    {
+      "id": "home.widowControl",
+      "wordcraftCommand": "para.widowControl",
+      "oasisCommand": "toggleWidowControl",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "uiPath": "Layout > Paragraph dialog > Line and Page Breaks > Widow/Orphan control",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-widow-control"
+      },
+      "notes": "The Paragraph dialog exposes Widow/Orphan control; Oasis has a registered toggle command. Dialog transaction behavior, mixed selections, pagination, undo and DOCX behavior need verification."
+    },
+    {
+      "id": "home.outlineLevel",
+      "wordcraftCommand": "para.outlineLevel",
+      "oasisCommand": "setOutlineLevel",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "uiPath": "Layout > Paragraph dialog > Indents and Spacing > Outline level",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-outline-level"
+      },
+      "notes": "Outline level is available in the Paragraph dialog. The command and selector accept levels, but built-in style interaction, mixed selections, navigation outline, undo and DOCX interoperability need verification."
+    },
+    {
+      "id": "home.tabs",
+      "wordcraftCommand": "para.tabs",
+      "oasisCommand": null,
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Layout > Paragraph dialog > Tabs",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-tabs"
+      },
+      "notes": "Oasis provides a Tabs dialog, but no registered shared command for WordCraft's set/clear/default tab-stop payload is wired here. Mutation, undo, default stops and DOCX round-trip remain unverified."
+    },
+    {
+      "id": "home.textEffectsOutline",
+      "wordcraftCommand": "format.outline",
+      "oasisCommand": "outline",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers an outline character-style command but no default Ribbon, menu or dialog control was found. Rendering, selection behavior, undo and DOCX preservation need verification."
+    },
+    {
+      "id": "home.textEffectsShadow",
+      "wordcraftCommand": "format.shadow",
+      "oasisCommand": "shadow",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers a shadow character-style command but no default Ribbon, menu or dialog control was found. Rendering, selection behavior, undo and DOCX preservation need verification."
+    },
+    {
+      "id": "home.emboss",
+      "wordcraftCommand": "format.emboss",
+      "oasisCommand": "emboss",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers an emboss character-style command but no default Ribbon, menu or dialog control was found. Rendering, selection behavior, undo and DOCX preservation need verification."
+    },
+    {
+      "id": "home.engrave",
+      "wordcraftCommand": "format.engrave",
+      "oasisCommand": "engrave",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "font",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers an engrave character-style command but no default Ribbon, menu or dialog control was found. Rendering, selection behavior, undo and DOCX preservation need verification."
+    },
+    {
+      "id": "home.rtlDirection",
+      "wordcraftCommand": "para.rtl",
+      "oasisCommand": "setTextDirection",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Oasis registers a text-direction value command but no default Ribbon or menu control was found. Direction scope, mixed selections, RTL shaping and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.ltrDirection",
+      "wordcraftCommand": "para.ltr",
+      "oasisCommand": "setTextDirection",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Oasis registers a text-direction value command but no default Ribbon or menu control was found. Direction scope, mixed selections, RTL shaping and DOCX interoperability need workflow verification."
     }
   ]
 }
