@@ -1,4 +1,11 @@
-import { createSignal } from "solid-js";
+import {
+  batch,
+  createEffect,
+  createSignal,
+  getOwner,
+  onCleanup,
+} from "solid-js";
+import type { Accessor } from "solid-js";
 import type { EditorState } from "@/core/model.js";
 import { getParagraphs } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
@@ -11,12 +18,24 @@ import {
 
 export type FormatPainterMode = "once" | "continuous" | null;
 
+export interface EditorFormatPainter {
+  mode: Accessor<FormatPainterMode>;
+  canCapture: () => boolean;
+  armOnce: () => boolean;
+  armContinuous: () => boolean;
+  cancel: () => void;
+  applyToSelection: (origin: "pointer" | "keyboard") => boolean;
+}
+
 export interface EditorFormatPainterDeps {
   state: () => EditorState;
   isReadOnly: () => boolean;
-  applyTransactionalState: (transform: (state: EditorState) => EditorState) => void;
+  applyTransactionalState: (
+    transform: (state: EditorState) => EditorState,
+  ) => void;
   applyTableAwareParagraphEdit: (
-    state: EditorState, transform: (state: EditorState) => EditorState,
+    state: EditorState,
+    transform: (state: EditorState) => EditorState,
   ) => EditorState;
   clearPreferredColumn: () => void;
   resetTransactionGrouping: () => void;
@@ -30,8 +49,10 @@ function selectionKey(state: EditorState): string {
   return [
     state.activeSectionIndex ?? 0,
     state.activeZone ?? "main",
-    range.start.paragraphId, range.startParagraphOffset,
-    range.end.paragraphId, range.endParagraphOffset,
+    range.start.paragraphId,
+    range.startParagraphOffset,
+    range.end.paragraphId,
+    range.endParagraphOffset,
   ].join(":");
 }
 
@@ -40,7 +61,9 @@ function selectionKey(state: EditorState): string {
  * Pointer selection is committed only after pointerup (never during drag),
  * and keyboard selection only on keyup.
  */
-export function createEditorFormatPainter(deps: EditorFormatPainterDeps) {
+export function createEditorFormatPainter(
+  deps: EditorFormatPainterDeps,
+): EditorFormatPainter {
   const [mode, setMode] = createSignal<FormatPainterMode>(null);
   let source: FormatPainterSnapshot | null = null;
   let sourceDocument: EditorState["document"] | null = null;
@@ -52,6 +75,17 @@ export function createEditorFormatPainter(deps: EditorFormatPainterDeps) {
     sourceSelectionKey = "";
     setMode(null);
   };
+
+  if (getOwner()) {
+    createEffect((): void => {
+      if (
+        mode() &&
+        (deps.isReadOnly() || deps.state().document !== sourceDocument)
+      )
+        cancel();
+    });
+    onCleanup(cancel);
+  }
 
   const canCapture = (): boolean =>
     !deps.isReadOnly() && getParagraphs(deps.state()).length > 0;
@@ -83,22 +117,26 @@ export function createEditorFormatPainter(deps: EditorFormatPainterDeps) {
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
     let didChange = false;
-    deps.applyTransactionalState((current): EditorState => {
-      if (deps.isReadOnly() || current.document !== sourceDocument) return current;
-      const next = deps.applyTableAwareParagraphEdit(
-        { ...current, selection: target.selection },
-        (editing): EditorState => applyCapturedFormatPainter(editing, source!),
-      );
-      didChange = next.document !== current.document;
-      return next;
+    batch((): void => {
+      deps.applyTransactionalState((current): EditorState => {
+        if (deps.isReadOnly() || current.document !== sourceDocument)
+          return current;
+        const next = deps.applyTableAwareParagraphEdit(
+          { ...current, selection: target.selection },
+          (editing): EditorState =>
+            applyCapturedFormatPainter(editing, source!),
+        );
+        didChange = next.document !== current.document;
+        return next;
+      });
+      if (mode() === "once") {
+        cancel();
+      } else if (didChange) {
+        // Keep the continuous painter armed across its own undoable mutations.
+        // An external document replacement still invalidates the snapshot.
+        sourceDocument = deps.state().document;
+      }
     });
-    if (mode() === "once") {
-      cancel();
-    } else if (didChange) {
-      // Keep the continuous painter armed across its own undoable mutations.
-      // An external document replacement still invalidates the snapshot.
-      sourceDocument = deps.state().document;
-    }
     if (didChange) deps.focusInput();
     return didChange;
   };
@@ -112,5 +150,3 @@ export function createEditorFormatPainter(deps: EditorFormatPainterDeps) {
     applyToSelection,
   };
 }
-
-export type EditorFormatPainter = ReturnType<typeof createEditorFormatPainter>;
