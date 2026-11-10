@@ -123,6 +123,21 @@ export function materializeRunStyle(
     propertyRevision: run.styles?.propertyRevision,
   };
 
+  // Defaults need no explicit-off XML; direct resets and inherited on-values do.
+  const inherited = resolveEffectiveTextStyleForParagraph(
+    run.styles?.styleId ? { styleId: run.styles.styleId } : undefined,
+    paragraphStyleId,
+    styles,
+  );
+  for (const key of Object.keys(materialized) as (keyof EditorTextStyle)[]) {
+    if (
+      materialized[key] === false &&
+      run.styles?.[key] !== false &&
+      inherited[key] !== true
+    )
+      delete materialized[key];
+  }
+
   if (run.styles?.link) {
     materialized.link = run.styles.link;
   }

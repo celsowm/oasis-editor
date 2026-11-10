@@ -197,8 +197,13 @@ export function normalizeImportedRunStyle(
     styleId: style.styleId,
     bold: hd(style.bold, effective.bold, defaultEffective.bold),
     italic: hd(style.italic, effective.italic, defaultEffective.italic),
-    underline: dd(effective.underline, defaultEffective.underline),
-    underlineStyle: dd(
+    underline: hd(
+      style.underline,
+      effective.underline,
+      defaultEffective.underline,
+    ),
+    underlineStyle: hd(
+      style.underlineStyle,
       effective.underlineStyle,
       defaultEffective.underlineStyle,
     ),
@@ -212,8 +217,16 @@ export function normalizeImportedRunStyle(
       effective.doubleStrike,
       defaultEffective.doubleStrike,
     ),
-    superscript: dd(effective.superscript, defaultEffective.superscript),
-    subscript: dd(effective.subscript, defaultEffective.subscript),
+    superscript: hd(
+      style.superscript,
+      effective.superscript,
+      defaultEffective.superscript,
+    ),
+    subscript: hd(
+      style.subscript,
+      effective.subscript,
+      defaultEffective.subscript,
+    ),
     smallCaps: hd(
       style.smallCaps,
       effective.smallCaps,
@@ -268,7 +281,8 @@ export function normalizeImportedRunStyle(
     numberSpacing: dd(effective.numberSpacing, defaultEffective.numberSpacing),
     numberForm: dd(effective.numberForm, defaultEffective.numberForm),
     stylisticSet: dd(effective.stylisticSet, defaultEffective.stylisticSet),
-    contextualAlternates: dd(
+    contextualAlternates: hd(
+      style.contextualAlternates,
       effective.contextualAlternates,
       defaultEffective.contextualAlternates,
     ),
@@ -527,18 +541,18 @@ export function parseRunStyle(
     if (getFirstChildByTagNameNS(runProperties, WORD14_NS, "cntxtAlts")) {
       styles.contextualAlternates = true;
     }
-  } else if (isWordTrue(contextualAlternates)) {
-    styles.contextualAlternates = true;
+  } else {
+    styles.contextualAlternates = isWordTrue(contextualAlternates);
   }
 
   const underline = getFirstChildByTagNameNS(runProperties, WORD_NS, "u");
   const underlineValue = getAttributeValue(underline, "val");
-  if (underline && underlineValue !== "none") {
-    styles.underline = true;
-    if (underlineValue && underlineValue !== "single") {
-      styles.underlineStyle =
-        underlineValue as EditorTextStyle["underlineStyle"];
-    }
+  if (underline) {
+    styles.underline = underlineValue !== "none";
+    styles.underlineStyle =
+      underlineValue === "none"
+        ? null
+        : ((underlineValue || "single") as EditorTextStyle["underlineStyle"]);
     const underlineColor = getAttributeValue(underline, "color");
     if (underlineColor && underlineColor !== "auto") {
       styles.underlineColor = normalizeImportedHexColor(underlineColor);
@@ -551,11 +565,13 @@ export function parseRunStyle(
     "vertAlign",
   );
   const vertAlignValue = getAttributeValue(vertAlign, "val");
-  if (vertAlignValue === "superscript") {
-    styles.superscript = true;
-  }
-  if (vertAlignValue === "subscript") {
-    styles.subscript = true;
+  if (
+    vertAlignValue === "superscript" ||
+    vertAlignValue === "subscript" ||
+    vertAlignValue === "baseline"
+  ) {
+    styles.superscript = vertAlignValue === "superscript";
+    styles.subscript = vertAlignValue === "subscript";
   }
 
   const fonts = getFirstChildByTagNameNS(runProperties, WORD_NS, "rFonts");

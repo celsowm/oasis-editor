@@ -10,6 +10,7 @@ import type {
   EditorParagraphNode,
   EditorUnderlineStyle,
 } from "@/core/model.js";
+import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
 import { UNDERLINE_STYLE_OPTIONS } from "@/ui/components/Toolbar/underlineStyles.js";
 
 async function readDocumentXml(buffer: ArrayBuffer): Promise<string> {
@@ -68,13 +69,13 @@ describe("DOCX underline style", () => {
       expect(firstParagraph).toBeDefined();
 
       const run = firstParagraph!.runs[0]!;
-      expect(run.styles?.underline).toBe(true);
-      if (style === "single") {
-        // "single" is the default and may be stripped from the model.
-        expect(run.styles?.underlineStyle ?? null).toBeNull();
-      } else {
-        expect(run.styles?.underlineStyle).toBe(style);
-      }
+      const effective = resolveEffectiveTextStyleForParagraph(
+        run.styles,
+        firstParagraph!.style?.styleId,
+        reimported.styles,
+      );
+      expect(effective.underline).toBe(true);
+      expect(effective.underlineStyle ?? "single").toBe(style);
     });
   }
 

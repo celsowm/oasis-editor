@@ -276,27 +276,37 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
   }
 
   const parts: string[] = [];
-  if (styles.bold) parts.push("<w:b/>", "<w:bCs/>");
-  if (styles.italic) parts.push("<w:i/>", "<w:iCs/>");
+  const toggle = (
+    value: boolean | null | undefined,
+    ...names: string[]
+  ): void => {
+    if (value == null) return;
+    for (const name of names)
+      parts.push(value ? `<w:${name}/>` : `<w:${name} w:val="0"/>`);
+  };
+  toggle(styles.bold, "b", "bCs");
+  toggle(styles.italic, "i", "iCs");
   if (styles.underline) {
     const underlineVal = styles.underlineStyle ?? "single";
     const underlineColor = styles.underlineColor
       ? ` w:color="${escapeXml(styles.underlineColor.replace(/^#/, ""))}"`
       : "";
     parts.push(`<w:u w:val="${escapeXml(underlineVal)}"${underlineColor}/>`);
+  } else if (styles.underline === false) {
+    parts.push('<w:u w:val="none"/>');
   }
-  if (styles.strike) parts.push("<w:strike/>");
-  if (styles.doubleStrike) parts.push("<w:dstrike/>");
-  if (styles.outline) parts.push("<w:outline/>");
-  if (styles.shadow) parts.push("<w:shadow/>");
-  if (styles.emboss) parts.push("<w:emboss/>");
-  if (styles.imprint) parts.push("<w:imprint/>");
-  if (styles.smallCaps) parts.push("<w:smallCaps/>");
-  if (styles.allCaps) parts.push("<w:caps/>");
-  if (styles.hidden) parts.push("<w:vanish/>");
-  if (styles.noProof) parts.push("<w:noProof/>");
-  if (styles.webHidden) parts.push("<w:webHidden/>");
-  if (styles.specVanish) parts.push("<w:specVanish/>");
+  toggle(styles.strike, "strike");
+  toggle(styles.doubleStrike, "dstrike");
+  toggle(styles.outline, "outline");
+  toggle(styles.shadow, "shadow");
+  toggle(styles.emboss, "emboss");
+  toggle(styles.imprint, "imprint");
+  toggle(styles.smallCaps, "smallCaps");
+  toggle(styles.allCaps, "caps");
+  toggle(styles.hidden, "vanish");
+  toggle(styles.noProof, "noProof");
+  toggle(styles.webHidden, "webHidden");
+  toggle(styles.specVanish, "specVanish");
   // `w:snapToGrid` defaults on; only emit an explicit-off override.
   if (styles.snapToGrid === false) parts.push('<w:snapToGrid w:val="0"/>');
   if (styles.textEffect) {
@@ -353,13 +363,17 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
   if (stylisticSet) {
     parts.push(`<w14:stylisticSets w14:val="${stylisticSet}"/>`);
   }
-  if (styles.contextualAlternates) {
-    parts.push('<w14:cntxtAlts w14:val="1"/>');
+  if (styles.contextualAlternates !== undefined) {
+    parts.push(
+      `<w14:cntxtAlts w14:val="${styles.contextualAlternates ? 1 : 0}"/>`,
+    );
   }
   if (styles.superscript) {
     parts.push('<w:vertAlign w:val="superscript"/>');
   } else if (styles.subscript) {
     parts.push('<w:vertAlign w:val="subscript"/>');
+  } else if (styles.superscript === false || styles.subscript === false) {
+    parts.push('<w:vertAlign w:val="baseline"/>');
   }
   if (styles.fontFamily) {
     parts.push(
@@ -417,8 +431,8 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
       parts.push(`<w:fitText w:val="${twips}"/>`);
     }
   }
-  if (styles.rtl) parts.push("<w:rtl/>");
-  if (styles.complexScript) parts.push("<w:cs/>");
+  toggle(styles.rtl, "rtl");
+  toggle(styles.complexScript, "cs");
   if (styles.emphasisMark) {
     parts.push(`<w:em w:val="${escapeXml(styles.emphasisMark)}"/>`);
   }
