@@ -54,6 +54,7 @@ try {
   await run("scripts/verify-ribbon-icons.mjs");
   await run("scripts/verify-ribbon-editing.mjs");
   await run("scripts/verify-ribbon-clipboard.mjs");
+  await run("scripts/verify-ribbon-painter.mjs");
 } finally {
   server.kill("SIGTERM");
 }
