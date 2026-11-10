@@ -2626,6 +2626,179 @@
       "semantics": "partial",
       "persistence": "unverified",
       "notes": "The Table Design Border Painter button toggles Oasis's table-border drawing mode. Pointer targeting, selected border presets, keyboard behavior, undo and DOCX output need workflow verification."
+    },
+    {
+      "id": "table.properties",
+      "wordcraftCommand": "table.properties",
+      "oasisCommand": "tableProperties",
+      "ribbonId": null,
+      "tab": "tableLayout",
+      "group": "table",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Editor context menu > Table Properties",
+      "uiEvidence": {
+        "file": "src/ui/app/useEditorContextMenuClipboard.ts",
+        "token": "editor-context-menu-table-properties"
+      },
+      "notes": "The context menu opens the Table Properties dialog, and the registered tableProperties command opens the same dialog. The menu currently invokes the dialog bridge directly; focus, active tab, selection, apply/undo and keyboard behavior need workflow verification."
+    },
+    {
+      "id": "table.altText",
+      "wordcraftCommand": "table.altText",
+      "oasisCommand": null,
+      "ribbonId": null,
+      "tab": "tableLayout",
+      "group": "table",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Editor context menu > Table Properties > Alt Text",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/table-properties/AltTextTabPanel.tsx",
+        "token": "editor-table-properties-alt-title"
+      },
+      "notes": "The Table Properties dialog exposes table alternative-text title and description fields, with no dedicated Oasis alt-text command. Accessibility naming, apply/undo, screen-reader behavior and DOCX preservation need workflow verification."
+    },
+    {
+      "id": "table.deleteCells",
+      "wordcraftCommand": "table.deleteCells",
+      "oasisCommand": "tableDeleteCells",
+      "ribbonId": null,
+      "tab": "tableLayout",
+      "group": "rowsColumns",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers a cell-deletion command but no default Ribbon, menu or dialog path was found. Delete mode choices, selected-cell handling, content recovery, undo and DOCX round-trip need workflow verification."
+    },
+    {
+      "id": "table.rowHeight",
+      "wordcraftCommand": "table.rowHeight",
+      "oasisCommand": "tableSetRowHeight",
+      "ribbonId": null,
+      "tab": "tableLayout",
+      "group": "cellSize",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Editor context menu > Table Properties > Row > Height",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/table-properties/RowTabPanel.tsx",
+        "token": "editor-table-properties-row-height"
+      },
+      "notes": "The Row tab exposes height and automatic/at-least/exact rules. The dialog applies through an aggregate state update rather than dispatching tableSetRowHeight; rules, units, row selection, pagination, undo and DOCX behavior need workflow verification."
+    },
+    {
+      "id": "table.columnWidth",
+      "wordcraftCommand": "table.columnWidth",
+      "oasisCommand": "tableSetColumnWidth",
+      "ribbonId": null,
+      "tab": "tableLayout",
+      "group": "cellSize",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Editor context menu > Table Properties > Column > Width",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/table-properties/ColumnTabPanel.tsx",
+        "token": "editor-table-properties-column-width"
+      },
+      "notes": "The Column tab exposes a width field. The dialog applies through an aggregate state update rather than dispatching tableSetColumnWidth; units, selected columns, autofit, undo and DOCX layout need workflow verification."
+    },
+    {
+      "id": "table.cellAlignTop",
+      "wordcraftCommand": "table.cellAlign",
+      "oasisCommand": "tableSetCellVerticalAlign",
+      "ribbonId": "editor-toolbar-tbl-valign-top",
+      "tab": "tableLayout",
+      "group": "alignment",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "The Table Layout Align Top button sets selected cell content to top alignment; the Cell tab also exposes this value. Selection scope, inherited states, row sizing, undo and DOCX rendering need workflow verification."
+    },
+    {
+      "id": "table.cellAlignMiddle",
+      "wordcraftCommand": "table.cellAlign",
+      "oasisCommand": "tableSetCellVerticalAlign",
+      "ribbonId": "editor-toolbar-tbl-valign-middle",
+      "tab": "tableLayout",
+      "group": "alignment",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "The Table Layout Align Middle button sets selected cell content to middle alignment; the Cell tab also exposes this value. Selection scope, inherited states, row sizing, undo and DOCX rendering need workflow verification."
+    },
+    {
+      "id": "table.cellAlignBottom",
+      "wordcraftCommand": "table.cellAlign",
+      "oasisCommand": "tableSetCellVerticalAlign",
+      "ribbonId": "editor-toolbar-tbl-valign-bottom",
+      "tab": "tableLayout",
+      "group": "alignment",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "The Table Layout Align Bottom button sets selected cell content to bottom alignment; the Cell tab also exposes this value. Selection scope, inherited states, row sizing, undo and DOCX rendering need workflow verification."
+    },
+    {
+      "id": "table.textDirection",
+      "wordcraftCommand": "table.textDirection",
+      "oasisCommand": "tableSetCellTextDirection",
+      "ribbonId": null,
+      "tab": "tableLayout",
+      "group": "alignment",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Editor context menu > Table Properties > Cell > Text Direction",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/table-properties/CellTabPanel.tsx",
+        "token": "editor-table-properties-cell-direction"
+      },
+      "notes": "The Cell tab exposes five text-flow values. The dialog applies through an aggregate state update rather than dispatching tableSetCellTextDirection; selection, vertical layout, rendering, undo and DOCX output need workflow verification."
+    },
+    {
+      "id": "table.cellMargins",
+      "wordcraftCommand": "table.cellMargins",
+      "oasisCommand": "tableSetCellMargins",
+      "ribbonId": null,
+      "tab": "tableLayout",
+      "group": "alignment",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Editor context menu > Table Properties > Cell > Margins",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/table-properties/CellTabPanel.tsx",
+        "token": "editor-table-properties-margin-top"
+      },
+      "notes": "The Cell tab exposes four per-edge margins. The dialog applies through an aggregate state update rather than dispatching tableSetCellMargins; units, selected cells, defaults, undo and DOCX layout need workflow verification."
+    },
+    {
+      "id": "table.formula",
+      "wordcraftCommand": "table.formula",
+      "oasisCommand": "tableFormula",
+      "ribbonId": null,
+      "tab": "tableLayout",
+      "group": "data",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers a formula evaluator for the active cell but no default UI path was found. Supported formulas, cell references, number formatting, recalculation, undo and DOCX field behavior need workflow verification."
     }
   ]
 }

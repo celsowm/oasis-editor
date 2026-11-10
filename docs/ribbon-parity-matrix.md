@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `204` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `215` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -215,6 +215,17 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `table.shading` | `table.shading` | `tableCellShading` | `tableDesign/borders` | partial | partial | partial | unverified |
 | `table.borders` | `table.borders` | `tableApplyBorderPreset` | `tableDesign/borders` | partial | partial | partial | unverified |
 | `table.borderPainter` | `table.borderPainter` | `toggleTableDrawBorders` | `tableDesign/borders` | partial | partial | partial | unverified |
+| `table.properties` | `table.properties` | `tableProperties` | Editor context menu > Table Properties | menu-only | menu-only | partial | not-applicable |
+| `table.altText` | `table.altText` | — | Editor context menu > Table Properties > Alt Text | ui-only | ui-only | partial | unverified |
+| `table.deleteCells` | `table.deleteCells` | `tableDeleteCells` | — | core-only | core-only | partial | unverified |
+| `table.rowHeight` | `table.rowHeight` | `tableSetRowHeight` | Editor context menu > Table Properties > Row > Height | menu-only | menu-only | partial | unverified |
+| `table.columnWidth` | `table.columnWidth` | `tableSetColumnWidth` | Editor context menu > Table Properties > Column > Width | menu-only | menu-only | partial | unverified |
+| `table.cellAlignTop` | `table.cellAlign` | `tableSetCellVerticalAlign` | `tableLayout/alignment` | partial | partial | partial | unverified |
+| `table.cellAlignMiddle` | `table.cellAlign` | `tableSetCellVerticalAlign` | `tableLayout/alignment` | partial | partial | partial | unverified |
+| `table.cellAlignBottom` | `table.cellAlign` | `tableSetCellVerticalAlign` | `tableLayout/alignment` | partial | partial | partial | unverified |
+| `table.textDirection` | `table.textDirection` | `tableSetCellTextDirection` | Editor context menu > Table Properties > Cell > Text Direction | menu-only | menu-only | partial | unverified |
+| `table.cellMargins` | `table.cellMargins` | `tableSetCellMargins` | Editor context menu > Table Properties > Cell > Margins | menu-only | menu-only | partial | unverified |
+| `table.formula` | `table.formula` | `tableFormula` | — | core-only | core-only | partial | unverified |
 
 ## Open verification questions
 
@@ -422,6 +433,17 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 202. **table.shading:** The Table Design shading color control sets cell fill on the active cell selection. Mixed cells, clearing, theme colors, table-style precedence, undo and DOCX output need workflow verification.
 203. **table.borders:** The Table Design Borders menu applies named border presets to the active cell selection. Side selection, styles, colors, mixed cells, undo and DOCX output need workflow verification.
 204. **table.borderPainter:** The Table Design Border Painter button toggles Oasis's table-border drawing mode. Pointer targeting, selected border presets, keyboard behavior, undo and DOCX output need workflow verification.
+205. **table.properties:** The context menu opens the Table Properties dialog, and the registered tableProperties command opens the same dialog. The menu currently invokes the dialog bridge directly; focus, active tab, selection, apply/undo and keyboard behavior need workflow verification.
+206. **table.altText:** The Table Properties dialog exposes table alternative-text title and description fields, with no dedicated Oasis alt-text command. Accessibility naming, apply/undo, screen-reader behavior and DOCX preservation need workflow verification.
+207. **table.deleteCells:** Oasis registers a cell-deletion command but no default Ribbon, menu or dialog path was found. Delete mode choices, selected-cell handling, content recovery, undo and DOCX round-trip need workflow verification.
+208. **table.rowHeight:** The Row tab exposes height and automatic/at-least/exact rules. The dialog applies through an aggregate state update rather than dispatching tableSetRowHeight; rules, units, row selection, pagination, undo and DOCX behavior need workflow verification.
+209. **table.columnWidth:** The Column tab exposes a width field. The dialog applies through an aggregate state update rather than dispatching tableSetColumnWidth; units, selected columns, autofit, undo and DOCX layout need workflow verification.
+210. **table.cellAlignTop:** The Table Layout Align Top button sets selected cell content to top alignment; the Cell tab also exposes this value. Selection scope, inherited states, row sizing, undo and DOCX rendering need workflow verification.
+211. **table.cellAlignMiddle:** The Table Layout Align Middle button sets selected cell content to middle alignment; the Cell tab also exposes this value. Selection scope, inherited states, row sizing, undo and DOCX rendering need workflow verification.
+212. **table.cellAlignBottom:** The Table Layout Align Bottom button sets selected cell content to bottom alignment; the Cell tab also exposes this value. Selection scope, inherited states, row sizing, undo and DOCX rendering need workflow verification.
+213. **table.textDirection:** The Cell tab exposes five text-flow values. The dialog applies through an aggregate state update rather than dispatching tableSetCellTextDirection; selection, vertical layout, rendering, undo and DOCX output need workflow verification.
+214. **table.cellMargins:** The Cell tab exposes four per-edge margins. The dialog applies through an aggregate state update rather than dispatching tableSetCellMargins; units, selected cells, defaults, undo and DOCX layout need workflow verification.
+215. **table.formula:** Oasis registers a formula evaluator for the active cell but no default UI path was found. Supported formulas, cell references, number formatting, recalculation, undo and DOCX field behavior need workflow verification.
 
 ## Audit interpretation
 

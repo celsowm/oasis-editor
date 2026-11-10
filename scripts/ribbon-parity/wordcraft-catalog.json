@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 171
+    "linkedRows": 180
   },
   "defaultTabs": [
     "File",
@@ -3809,7 +3809,9 @@
       "group": "Table",
       "name": "Properties",
       "command": "table.properties",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.properties"
+      ]
     },
     {
       "index": 368,
@@ -3818,7 +3820,9 @@
       "group": "Table",
       "name": "Alt Text",
       "command": "table.altText",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.altText"
+      ]
     },
     {
       "index": 369,
@@ -3854,7 +3858,9 @@
       "group": "Rows & Columns",
       "name": "Delete Cells",
       "command": "table.deleteCells",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.deleteCells"
+      ]
     },
     {
       "index": 373,
@@ -3984,7 +3990,9 @@
       "group": "Cell Size",
       "name": "Row Height",
       "command": "table.rowHeight",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.rowHeight"
+      ]
     },
     {
       "index": 385,
@@ -3993,7 +4001,9 @@
       "group": "Cell Size",
       "name": "Column Width",
       "command": "table.columnWidth",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.columnWidth"
+      ]
     },
     {
       "index": 386,
@@ -4024,7 +4034,11 @@
       "group": "Alignment",
       "name": "Alignment",
       "command": "table.cellAlign",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.cellAlignTop",
+        "table.cellAlignMiddle",
+        "table.cellAlignBottom"
+      ]
     },
     {
       "index": 389,
@@ -4033,7 +4047,9 @@
       "group": "Alignment",
       "name": "Text Direction",
       "command": "table.textDirection",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.textDirection"
+      ]
     },
     {
       "index": 390,
@@ -4042,7 +4058,9 @@
       "group": "Alignment",
       "name": "Cell Margins",
       "command": "table.cellMargins",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.cellMargins"
+      ]
     },
     {
       "index": 391,
@@ -4085,7 +4103,9 @@
       "group": "Data",
       "name": "Formula",
       "command": "table.formula",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.formula"
+      ]
     },
     {
       "index": 395,

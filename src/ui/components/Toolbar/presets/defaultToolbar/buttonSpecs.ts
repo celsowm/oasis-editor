@@ -155,6 +155,33 @@ export const TABLE_LAYOUT_BUTTONS: Array<{
   },
 ];
 
+/** Payload buttons for cell vertical alignment on the Table Layout tab. */
+export const TABLE_VERTICAL_ALIGN_BUTTONS: Array<{
+  id: string;
+  command: string;
+  value: "top" | "middle" | "bottom";
+  labelKey: TranslationKey;
+}> = [
+  {
+    id: "editor-toolbar-tbl-valign-top",
+    command: "tableSetCellVerticalAlign",
+    value: "top",
+    labelKey: "table.valignTop",
+  },
+  {
+    id: "editor-toolbar-tbl-valign-middle",
+    command: "tableSetCellVerticalAlign",
+    value: "middle",
+    labelKey: "table.valignMiddle",
+  },
+  {
+    id: "editor-toolbar-tbl-valign-bottom",
+    command: "tableSetCellVerticalAlign",
+    value: "bottom",
+    labelKey: "table.valignBottom",
+  },
+];
+
 /** tblLook conditional-formatting toggles on the Table Design tab. */
 export const TABLE_DESIGN_TOGGLES: Array<{
   id: string;

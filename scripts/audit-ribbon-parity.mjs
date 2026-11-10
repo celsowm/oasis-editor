@@ -270,7 +270,12 @@ function collectPresetItems() {
 
   // These arrays are currently rendered by active loops in the preset.
   const specsFile = parse("src/ui/components/Toolbar/presets/defaultToolbar/buttonSpecs.ts");
-  for (const variable of ["ALIGN_BUTTONS", "LIST_BUTTONS", "TABLE_LAYOUT_BUTTONS"]) {
+  for (const variable of [
+    "ALIGN_BUTTONS",
+    "LIST_BUTTONS",
+    "TABLE_LAYOUT_BUTTONS",
+    "TABLE_VERTICAL_ALIGN_BUTTONS",
+  ]) {
     for (const node of findArrayVariable(specsFile, variable).elements) {
       const id = getString(getExpression(node, "id")) ?? getString(getExpression(node, "testId"));
       const command = getCommand(getExpression(node, "command"));

@@ -634,6 +634,16 @@ The matrix now contains 204 Oasis capability rows and links 171 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` verifies all 10 capability paths, their shared custom-control commands and contextual placements; `TableStyleOptions.tsx`, `TableStyleGallery.tsx` and `TableBordersMenu.tsx` provide the control implementations. The catalog snapshot reports 171 linked rows.
 
+## Delivery 44 — Table Properties, sizing and alignment
+
+Date: 2026-11-10. B01 and D08 remain **partial**.
+
+Mapped the Table Properties launcher and alt-text panel, cell deletion, row height, column width, cell vertical alignment, cell text direction, cell margins and table formula. Recorded dialog-backed fields separately from direct Ribbon controls: Table Properties currently applies several values through one aggregate state update rather than dispatching each registered command. Extracted the three payload-based vertical-alignment buttons into the static button-spec catalog so the Ribbon audit can verify their commands and placements.
+
+The matrix now contains 215 Oasis capability rows and links 180 of 521 WordCraft source rows; 341 remain unlinked. Table direction, drawing/eraser tools, row/column selection and cell-selection paths remain unlinked for further reconciliation. Dialog apply behavior, selection scope, undo, accessibility, layout and DOCX output still need workflow evidence.
+
+Evidence: `npm run audit:ribbon` verifies 11 capability paths, including the context-menu Table Properties token, the direct vertical-alignment buttons and core-only registrations. The catalog snapshot reports 180 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
