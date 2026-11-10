@@ -19,20 +19,30 @@ import {
 
 function documentWithTwoParagraphs() {
   const source = createEditorParagraphFromRuns([
-    { text: "Source", styles: {
-      bold: true, italic: true, color: "#aa0000",
-      fontFamily: "Source Serif", fontSize: 22,
-      link: "https://source.invalid",
-    }},
+    {
+      text: "Source",
+      styles: {
+        bold: true,
+        italic: true,
+        color: "#aa0000",
+        fontFamily: "Source Serif",
+        fontSize: 22,
+        link: "https://source.invalid",
+      },
+    },
   ]);
   source.style = { align: "right", spacingAfter: 20 };
   source.list = { kind: "bullet", level: 0 };
   const destination = createEditorParagraphFromRuns([
-    { text: "Target", styles: {
-      fontFamily: "Destination Sans", color: "#112233",
-      link: "https://destination.invalid",
-    }},
-    { text: " rest", styles: { fontFamily: "Destination Sans" }},
+    {
+      text: "Target",
+      styles: {
+        fontFamily: "Destination Sans",
+        color: "#112233",
+        link: "https://destination.invalid",
+      },
+    },
+    { text: " rest", styles: { fontFamily: "Destination Sans" } },
   ]);
   destination.style = { align: "left", spacingAfter: 5 };
   const state = createEditorStateFromDocument(
@@ -70,6 +80,61 @@ describe("Format Painter immutable core", () => {
     expect(captured?.copyParagraph).toBe(false);
   });
 
+  it("captures inherited paragraph and character appearance with direct overrides", () => {
+    const { state, source, destination } = documentWithTwoParagraphs();
+    source.style = { styleId: "SourceHeading" };
+    source.runs[0]!.styles = {
+      styleId: "SourceEmphasis",
+      fontSize: 24,
+      link: "https://source.invalid",
+    };
+    state.document.styles = {
+      ...state.document.styles,
+      SourceBase: {
+        id: "SourceBase",
+        name: "Base",
+        type: "paragraph",
+        textStyle: { fontFamily: "Inherited Serif", color: "#123456" },
+      },
+      SourceHeading: {
+        id: "SourceHeading",
+        name: "Heading",
+        type: "paragraph",
+        basedOn: "SourceBase",
+        textStyle: { fontSize: 30, bold: true },
+      },
+      SourceEmphasis: {
+        id: "SourceEmphasis",
+        name: "Emphasis",
+        type: "character",
+        textStyle: { italic: true },
+      },
+    };
+    const captured = captureFormatPainter(select(state, source, 1, 4))!;
+    expect(captured.text).toMatchObject({
+      fontFamily: "Inherited Serif",
+      color: "#123456",
+      fontSize: 24,
+      bold: true,
+      italic: true,
+    });
+    expect(captured.text?.link).toBeUndefined();
+    const next = applyCapturedFormatPainter(
+      select(state, destination, 0, 6),
+      captured,
+    );
+    expect(
+      getDocumentParagraphs(next.document)[1]!.runs[0]!.styles,
+    ).toMatchObject({
+      fontFamily: "Inherited Serif",
+      color: "#123456",
+      fontSize: 24,
+      bold: true,
+      italic: true,
+      link: "https://destination.invalid",
+    });
+  });
+
   it("copies paragraph formatting only for whole-paragraph or caret sources", () => {
     const { state, source } = documentWithTwoParagraphs();
     const partial = captureFormatPainter(select(state, source, 0, 3));
@@ -91,7 +156,9 @@ describe("Format Painter immutable core", () => {
     const paragraphs = getDocumentParagraphs(next.document);
     expect(getParagraphText(paragraphs[0]!)).toBe("Source");
     expect(getParagraphText(paragraphs[1]!)).toBe("Target rest");
-    const styled = paragraphs[1]!.runs.find((run) => run.text.includes("Target"))!;
+    const styled = paragraphs[1]!.runs.find((run) =>
+      run.text.includes("Target"),
+    )!;
     expect(styled.styles).toMatchObject({
       fontFamily: "Source Serif",
       fontSize: 22,
@@ -100,7 +167,9 @@ describe("Format Painter immutable core", () => {
       italic: true,
       link: "https://destination.invalid",
     });
-    const unchanged = paragraphs[1]!.runs.find((run) => run.text.includes(" rest"))!;
+    const unchanged = paragraphs[1]!.runs.find((run) =>
+      run.text.includes(" rest"),
+    )!;
     expect(unchanged.styles?.fontFamily).toBe("Destination Sans");
     expect(paragraphs[1]?.style?.align).toBe("left");
     expect(next.selection.anchor.paragraphId).toBe(destination.id);
@@ -110,7 +179,10 @@ describe("Format Painter immutable core", () => {
   it("applies paragraph and list styles only when target paragraphs are fully selected", () => {
     const { state, source, destination } = documentWithTwoParagraphs();
     const captured = captureFormatPainter(select(state, source, 0, 6))!;
-    const result = applyCapturedFormatPainter(select(state, destination, 0, 11), captured);
+    const result = applyCapturedFormatPainter(
+      select(state, destination, 0, 11),
+      captured,
+    );
     const painted = getDocumentParagraphs(result.document)[1]!;
     expect(painted.style).toMatchObject({ align: "right", spacingAfter: 20 });
     expect(painted.list?.kind).toBe("bullet");

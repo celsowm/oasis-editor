@@ -10,12 +10,10 @@ import {
   getParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
+  resolveEffectiveTextStyleForParagraph,
 } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
-import {
-  getStyleAtOffset,
-  sliceRuns,
-} from "@/core/document/paragraphRuns.js";
+import { getStyleAtOffset, sliceRuns } from "@/core/document/paragraphRuns.js";
 import {
   cloneParagraphStyle,
   cloneStyle,
@@ -41,7 +39,9 @@ export interface FormatPainterSnapshot {
 }
 
 /** Semantic metadata is never painted, even if it lives inside run styles. */
-function paintedTextStyle(style?: EditorTextStyle): EditorTextStyle | undefined {
+function paintedTextStyle(
+  style?: EditorTextStyle,
+): EditorTextStyle | undefined {
   const copied = cloneStyle(style);
   if (!copied) return undefined;
   delete copied.link;
@@ -67,11 +67,17 @@ export function captureFormatPainter(
           ? range.endParagraphOffset
           : getParagraphLength(paragraph),
       );
-  const firstText = selectedRuns.find((run) => run.kind === "text" && run.text.length > 0);
+  const firstText = selectedRuns.find(
+    (run) => run.kind === "text" && run.text.length > 0,
+  );
   const text = paintedTextStyle(
-    firstText
-      ? firstText.styles
-      : getStyleAtOffset(paragraph, range.startParagraphOffset),
+    resolveEffectiveTextStyleForParagraph(
+      firstText
+        ? firstText.styles
+        : getStyleAtOffset(paragraph, range.startParagraphOffset),
+      paragraph.style?.styleId,
+      state.document.styles,
+    ),
   );
   const copyParagraph =
     range.isCollapsed ||
@@ -99,7 +105,10 @@ export function resolveFormatPainterTarget(
   if (!expandCaretToWord) return null;
   const paragraph = paragraphs[range.startIndex];
   if (!paragraph) return null;
-  const word = resolveWordSelection(getParagraphText(paragraph), range.startParagraphOffset);
+  const word = resolveWordSelection(
+    getParagraphText(paragraph),
+    range.startParagraphOffset,
+  );
   if (word.end <= word.start) return null;
   return {
     ...state,
@@ -117,7 +126,8 @@ function hasWholeParagraph(
 ): boolean {
   return (
     (index > range.startIndex || range.startParagraphOffset === 0) &&
-    (index < range.endIndex || range.endParagraphOffset === getParagraphLength(paragraph))
+    (index < range.endIndex ||
+      range.endParagraphOffset === getParagraphLength(paragraph))
   );
 }
 
@@ -136,53 +146,64 @@ export function applyCapturedFormatPainter(
   if (range.isCollapsed) return state;
   let changed = false;
 
-  const nextParagraphs = paragraphs.map((paragraph, index): EditorParagraphNode => {
-    if (index < range.startIndex || index > range.endIndex) return paragraph;
-    const start = index === range.startIndex ? range.startParagraphOffset : 0;
-    const end = index === range.endIndex
-      ? range.endParagraphOffset : getParagraphLength(paragraph);
-    const wholeParagraph = captured.copyParagraph && hasWholeParagraph(paragraph, index, range);
+  const nextParagraphs = paragraphs.map(
+    (paragraph, index): EditorParagraphNode => {
+      if (index < range.startIndex || index > range.endIndex) return paragraph;
+      const start = index === range.startIndex ? range.startParagraphOffset : 0;
+      const end =
+        index === range.endIndex
+          ? range.endParagraphOffset
+          : getParagraphLength(paragraph);
+      const wholeParagraph =
+        captured.copyParagraph && hasWholeParagraph(paragraph, index, range);
 
-    const nextParagraphStyle = wholeParagraph
-      ? cloneParagraphStyle(captured.paragraph)
-      : paragraph.style;
-    const nextList = wholeParagraph
-      ? captured.list ? { ...captured.list } : undefined
-      : paragraph.list;
-    const paragraphChanged = wholeParagraph &&
-      (JSON.stringify(nextParagraphStyle) !== JSON.stringify(paragraph.style) ||
-        JSON.stringify(nextList) !== JSON.stringify(paragraph.list));
-    const runsChanged = start < end && sliceRuns(paragraph, start, end).some((run) => {
-      if (run.kind !== "text" || run.text.length === 0) return false;
-      const nextStyle: EditorTextStyle = cloneStyle(captured.text) ?? {};
-      if (run.styles?.link !== undefined) nextStyle.link = run.styles.link;
-      if (run.styles?.propertyRevision !== undefined) {
-        nextStyle.propertyRevision = run.styles.propertyRevision;
-      }
-      const value = Object.keys(nextStyle).length ? nextStyle : undefined;
-      return !stylesEqual(run.styles, value);
-    });
-    if (!paragraphChanged && !runsChanged) return paragraph;
-    changed = true;
-    let next = runsChanged
-      ? mapRunsInRange(paragraph, start, end, (run) => {
-          if (run.kind !== "text") return run;
-          const style: EditorTextStyle = cloneStyle(captured.text) ?? {};
-          if (run.styles?.link !== undefined) style.link = run.styles.link;
+      const nextParagraphStyle = wholeParagraph
+        ? cloneParagraphStyle(captured.paragraph)
+        : paragraph.style;
+      const nextList = wholeParagraph
+        ? captured.list
+          ? { ...captured.list }
+          : undefined
+        : paragraph.list;
+      const paragraphChanged =
+        wholeParagraph &&
+        (JSON.stringify(nextParagraphStyle) !==
+          JSON.stringify(paragraph.style) ||
+          JSON.stringify(nextList) !== JSON.stringify(paragraph.list));
+      const runsChanged =
+        start < end &&
+        sliceRuns(paragraph, start, end).some((run) => {
+          if (run.kind !== "text" || run.text.length === 0) return false;
+          const nextStyle: EditorTextStyle = cloneStyle(captured.text) ?? {};
+          if (run.styles?.link !== undefined) nextStyle.link = run.styles.link;
           if (run.styles?.propertyRevision !== undefined) {
-            style.propertyRevision = run.styles.propertyRevision;
+            nextStyle.propertyRevision = run.styles.propertyRevision;
           }
-          return {
-            ...run,
-            styles: Object.keys(style).length ? style : undefined,
-          };
-        })
-      : paragraph;
-    if (wholeParagraph) {
-      next = { ...next, style: nextParagraphStyle, list: nextList };
-    }
-    return next;
-  });
+          const value = Object.keys(nextStyle).length ? nextStyle : undefined;
+          return !stylesEqual(run.styles, value);
+        });
+      if (!paragraphChanged && !runsChanged) return paragraph;
+      changed = true;
+      let next = runsChanged
+        ? mapRunsInRange(paragraph, start, end, (run) => {
+            if (run.kind !== "text") return run;
+            const style: EditorTextStyle = cloneStyle(captured.text) ?? {};
+            if (run.styles?.link !== undefined) style.link = run.styles.link;
+            if (run.styles?.propertyRevision !== undefined) {
+              style.propertyRevision = run.styles.propertyRevision;
+            }
+            return {
+              ...run,
+              styles: Object.keys(style).length ? style : undefined,
+            };
+          })
+        : paragraph;
+      if (wholeParagraph) {
+        next = { ...next, style: nextParagraphStyle, list: nextList };
+      }
+      return next;
+    },
+  );
 
   if (!changed) return state;
   return cloneStateWithParagraphs(
