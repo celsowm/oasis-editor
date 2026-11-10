@@ -54,6 +54,10 @@ export function Popover(props: PopoverProps): JSX.Element {
   const branch: PopoverBranch = {
     open: () => props.open,
     children: new Set(),
+    closeAll: (): void => {
+      props.onOpenChange(false);
+      parent?.closeAll();
+    },
     contains: (target) =>
       props.open &&
       Boolean(

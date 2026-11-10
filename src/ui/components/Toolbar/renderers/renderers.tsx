@@ -1,4 +1,12 @@
-import { For, Show, createSignal, type Component, type JSX } from "solid-js";
+import {
+  For,
+  Show,
+  createSignal,
+  useContext,
+  type Component,
+  type JSX,
+} from "solid-js";
+import { PopoverBranchContext } from "../primitives/popoverBranch.js";
 import { Dynamic } from "solid-js/web";
 import type { EditorImageBorder } from "@/core/model.js";
 import type {
@@ -69,6 +77,7 @@ function RenderActionButton(
   props: RendererProps<ButtonItem | ToggleItem>,
 ): JSX.Element {
   const b = bindItem(props.item, props.api);
+  const menuPath = useContext(PopoverBranchContext);
   return (
     <Button
       icon={props.item.iconName}
@@ -79,7 +88,11 @@ function RenderActionButton(
       disabled={b.disabled()}
       data-testid={props.item.testId}
       tooltip={resolveTooltip(props.item, props.api)}
-      onClick={(): void => runItem(props.item, props.api)}
+      onClick={(): void => {
+        if (b.disabled()) return;
+        runItem(props.item, props.api);
+        menuPath?.closeAll();
+      }}
     />
   );
 }
@@ -105,6 +118,7 @@ function RenderMenu(props: RendererProps<MenuItem>): JSX.Element {
 }
 
 function RenderSplit(props: RendererProps<SplitItem>): JSX.Element {
+  const menuPath = useContext(PopoverBranchContext);
   const [open, setOpen] = createSignal(false);
   const b = bindItem(props.item, props.api);
   return (
@@ -119,7 +133,11 @@ function RenderSplit(props: RendererProps<SplitItem>): JSX.Element {
       menuDisabled={b.disabled()}
       ribbonSize={props.item.ribbonSize}
       mainPressed={b.active()}
-      onMain={(): void => runItem(props.item, props.api)}
+      onMain={(): void => {
+        if (b.disabled()) return;
+        runItem(props.item, props.api);
+        menuPath?.closeAll();
+      }}
       menuTestId={
         props.item.testId ? `${props.item.testId}-dropdown` : undefined
       }
