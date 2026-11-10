@@ -694,6 +694,14 @@ The matrix now contains 237 Oasis capability rows and links 201 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` and `npm run audit:ribbon:wordcraft` pass; the pinned catalog reports 201 linked rows.
 
+## Delivery 50 — Chromium SVG review-sheet verification
+
+Date: 2026-11-10. I02/I07 remain **partial**.
+
+Ran the icon review sheet in Chromium against eight SVG candidates across light/dark themes and button/menu/collapsed surfaces, at 16/20/24 px and normal/active/disabled states. All 48 scenes passed checks for resolved SVGs, non-empty in-bounds paths, stable node counts, accessibility names, and no font-dependent glyphs or page errors. This verifies rendering and geometry in the review sheet, not visual recognition in every real Ribbon group or plugin contribution.
+
+Evidence: `npm run test:ribbon:icons`; manifest SHA `8b5daa89461cc50d1d4eeef557b38c2bc66bc0f8`, `dirty:false`. PNGs and `verification.json` are retained under the gitignored `debug_artifacts/ribbon-icons-chromium/` directory.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
