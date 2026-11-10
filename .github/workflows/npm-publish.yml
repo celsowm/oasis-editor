@@ -86,26 +86,45 @@ jobs:
           # Query all published versions with a fresh registry read, rather
           # than trusting a possibly stale "latest" dist-tag or npm cache.
           if VERSIONS_JSON="$(npm view "${PACKAGE_NAME}" versions --json --prefer-online --cache-min=0 2>/dev/null)"; then
-            NEXT_VERSION="$(printf '%s' "${VERSIONS_JSON}" | node -e "
-              let input = '';
-              process.stdin.on('data', chunk => input += chunk);
-              process.stdin.on('end', () => {
+            NEXT_VERSION="$(printf '%s' "${VERSIONS_JSON}" | PACKAGE_VERSION="${PACKAGE_VERSION}" node -e '
+              let input = "";
+              process.stdin.on("data", chunk => input += chunk);
+              process.stdin.on("end", () => {
                 const versions = JSON.parse(input);
                 const list = Array.isArray(versions) ? versions : [versions];
-                const stable = list
-                  .filter(v => /^\\d+\\.\\d+\\.\\d+$/.test(v))
-                  .map(v => v.split('.').map(Number));
-                if (!stable.length) throw new Error('No stable npm versions found');
-                stable.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]);
-                const next = [...stable[stable.length - 1]];
+                const stable = list.filter(v => /^\d+\.\d+\.\d+$/.test(v));
+                if (!stable.length) throw new Error("No stable npm versions found");
+                const compare = (a, b) => {
+                  const left = a.split(".").map(Number);
+                  const right = b.split(".").map(Number);
+                  return left[0] - right[0] || left[1] - right[1] || left[2] - right[2];
+                };
+                stable.sort(compare);
+                const latest = stable[stable.length - 1];
+                const current = process.env.PACKAGE_VERSION;
+                const currentIsPublished = stable.includes(current);
+                if (!currentIsPublished && compare(current, latest) > 0) {
+                  // A prior run may have pushed the version commit before npm
+                  // finished processing its publication. Reuse that pending
+                  // version instead of attempting npm version with no change.
+                  process.stdout.write(current);
+                  return;
+                }
+                const next = latest.split(".").map(Number);
                 next[2] += 1;
-                process.stdout.write(next.join('.'));
+                process.stdout.write(next.join("."));
               });
-            ")"
+            ' )"
 
-            npm version "${NEXT_VERSION}" -m "chore(release): v%s [skip ci]"
+            if [[ "${PACKAGE_VERSION}" != "${NEXT_VERSION}" ]]; then
+              npm version "${NEXT_VERSION}" -m "chore(release): v%s [skip ci]"
+              RELEASE_MODE="registry-bump"
+            else
+              echo "::notice::Reusing pending release version ${NEXT_VERSION}."
+              RELEASE_MODE="resume-pending"
+            fi
             echo "publish_version=${NEXT_VERSION}" >> "$GITHUB_OUTPUT"
-            echo "release_mode=registry-bump" >> "$GITHUB_OUTPUT"
+            echo "release_mode=${RELEASE_MODE}" >> "$GITHUB_OUTPUT"
           else
             git add package.json package-lock.json
             if ! git diff --cached --quiet; then
@@ -139,7 +158,43 @@ jobs:
 
       - name: Publish to npm
         if: steps.publish_guard.outputs.current == 'true'
-        run: npm publish --access public --provenance
+        env:
+          PUBLISH_VERSION: ${{ steps.versioning.outputs.publish_version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACKAGE_NAME="$(node -p "require('./package.json').name")"
+
+          # The workflow pushes this tag only after npm accepts the publish.
+          # It is authoritative when the registry read API is still catching up.
+          if git ls-remote --exit-code --tags origin "refs/tags/v${PUBLISH_VERSION}" >/dev/null 2>&1; then
+            echo "::notice::Release tag v${PUBLISH_VERSION} confirms the npm publish already succeeded."
+            exit 0
+          fi
+
+          # npm can accept a publish before the version appears in its read API.
+          # Avoid republishing an available version; if a duplicate publish is
+          # rejected, wait for that exact version to become readable before
+          # treating it as an already completed release.
+          if npm view "${PACKAGE_NAME}@${PUBLISH_VERSION}" version --json --prefer-online >/dev/null 2>&1; then
+            echo "::notice::${PACKAGE_NAME}@${PUBLISH_VERSION} is already available on npm."
+            exit 0
+          fi
+
+          if npm publish --access public --provenance; then
+            exit 0
+          fi
+
+          for attempt in {1..12}; do
+            if npm view "${PACKAGE_NAME}@${PUBLISH_VERSION}" version --json --prefer-online >/dev/null 2>&1; then
+              echo "::notice::${PACKAGE_NAME}@${PUBLISH_VERSION} was accepted by npm and is now available."
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "::error::npm did not confirm ${PACKAGE_NAME}@${PUBLISH_VERSION} after publish."
+          exit 1
 
       - name: Push release commit and tag
         if: steps.publish_guard.outputs.current == 'true'
