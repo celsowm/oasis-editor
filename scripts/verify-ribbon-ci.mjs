@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /** Run browser guards with an owned Vite process and synthetic reference host. */
+import { basename } from "node:path";
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 const baseUrl = "http://127.0.0.1:5174";
@@ -23,7 +24,7 @@ const run = (script) =>
         ...process.env,
         RIBBON_BASE_URL: baseUrl,
         RIBBON_BROWSER: "chromium",
-        RIBBON_OUTPUT: `test-results/ribbon/${script.includes("resize") ? "resize" : "gallery"}`,
+        RIBBON_OUTPUT: `test-results/ribbon/${basename(script, ".mjs").replace("verify-ribbon-", "")}`,
       },
     });
     child.on("error", reject);
@@ -49,6 +50,8 @@ try {
   if (!ready) throw new Error("Reference server startup timed out");
   await run("scripts/verify-ribbon-reference.mjs");
   await run("scripts/verify-ribbon-resize.mjs");
+  await run("scripts/verify-ribbon-contexts.mjs");
+  await run("scripts/verify-ribbon-icons.mjs");
 } finally {
   server.kill("SIGTERM");
 }

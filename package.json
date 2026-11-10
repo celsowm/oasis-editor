@@ -74,7 +74,9 @@
     "capture:ribbon": "node scripts/capture-ribbon-reference.mjs",
     "test:ribbon:browser": "node scripts/verify-ribbon-reference.mjs",
     "test:ribbon:resize": "node scripts/verify-ribbon-resize.mjs",
-    "test:ribbon:ci": "node scripts/verify-ribbon-ci.mjs"
+    "test:ribbon:ci": "node scripts/verify-ribbon-ci.mjs",
+    "test:ribbon:contexts": "node scripts/verify-ribbon-contexts.mjs",
+    "test:ribbon:icons": "node scripts/verify-ribbon-icons.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
 import assert from "node:assert/strict";
 import { chromium, firefox, webkit } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -23,9 +24,7 @@ try {
       await page.goto(
         `${base}/tests/browser/ribbon/?theme=${theme}&locale=${locale}`,
       );
-      await page.waitForFunction(
-        () => document.documentElement.dataset.referenceReady === "true",
-      );
+      await waitForRibbonReference(page);
       await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(150);
       const cards = page.locator(

@@ -9,6 +9,13 @@
     "deleteTable",
     "footnote",
     "lineSpacing",
+    "pageCount",
+    "pageFooter",
+    "pageHeader",
+    "pageHeaderFooter",
+    "pageNumber",
+    "pageNumberBottom",
+    "pageNumberTop",
     "repeatHeaderRow",
     "sortAscending",
     "sortDescending",
@@ -467,50 +474,50 @@
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 601,
       "role": "iconName",
-      "name": "panel-top",
-      "origin": "lucide"
+      "name": "pageHeaderFooter",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 612,
       "role": "iconName",
-      "name": "panel-top",
-      "origin": "lucide"
+      "name": "pageHeader",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 622,
       "role": "iconName",
-      "name": "panel-bottom",
-      "origin": "lucide"
+      "name": "pageFooter",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 632,
       "role": "iconName",
-      "name": "hash",
-      "origin": "lucide"
+      "name": "pageNumber",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 642,
       "role": "iconName",
-      "name": "hash",
-      "origin": "lucide"
+      "name": "pageCount",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 652,
       "role": "iconName",
-      "name": "panel-top",
-      "origin": "lucide"
+      "name": "pageNumberTop",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 662,
       "role": "iconName",
-      "name": "panel-bottom",
-      "origin": "lucide"
+      "name": "pageNumberBottom",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",

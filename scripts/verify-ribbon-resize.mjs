@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
 import assert from "node:assert/strict";
 import { chromium, firefox, webkit } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -57,7 +58,7 @@ try {
       await page.goto(
         `${base}/tests/browser/ribbon/?theme=${theme}&locale=${locale}`,
       );
-      await page.waitForFunction(() => window.ribbonReference);
+      await waitForRibbonReference(page);
       await page.evaluate(() => document.fonts.ready);
       const original = await page.evaluate(() => ({
         version: window.ribbonReference.client.document.version(),
@@ -171,7 +172,7 @@ try {
       await page.setViewportSize({ width: 960, height: 900 });
       await snapshot(page);
       await page.reload();
-      await page.waitForFunction(() => window.ribbonReference);
+      await waitForRibbonReference(page);
       const direct = await snapshot(page);
       validate(direct);
       assert.deepEqual(

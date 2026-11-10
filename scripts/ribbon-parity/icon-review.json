@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "reference": "Classic Word document-story semantics; original Oasis vectors, not copied product assets.",
+  "sizes": [
+    16,
+    20,
+    24
+  ],
+  "surfaces": [
+    "button",
+    "menu",
+    "collapsed"
+  ],
+  "states": [
+    "normal",
+    "active",
+    "disabled"
+  ],
+  "candidates": [
+    {
+      "id": "header-footer",
+      "command": null,
+      "before": "panel-top",
+      "after": "pageHeaderFooter",
+      "decision": "replace",
+      "defect": "An application-panel metaphor does not distinguish page stories or show both destinations.",
+      "result": "A page silhouette with two target regions; the menu retains explicit labels.",
+      "menuId": "editor-toolbar-header-footer",
+      "action": "Header and Footer destinations"
+    },
+    {
+      "id": "header",
+      "command": "editHeader",
+      "before": "panel-top",
+      "after": "pageHeader",
+      "decision": "replace",
+      "defect": "The generic panel icon lacks document geometry.",
+      "result": "Page outline and upper-region accent."
+    },
+    {
+      "id": "footer",
+      "command": "editFooter",
+      "before": "panel-bottom",
+      "after": "pageFooter",
+      "decision": "replace",
+      "defect": "The generic panel icon lacks document geometry.",
+      "result": "Same page family with a distinct lower-region accent."
+    },
+    {
+      "id": "page-number",
+      "command": "insertPageNumber",
+      "before": "hash",
+      "after": "pageNumber",
+      "decision": "replace",
+      "defect": "A bare hash does not identify a document field or distinguish its page context.",
+      "result": "Page silhouette containing an original vector numeral."
+    },
+    {
+      "id": "page-count",
+      "command": "insertPageNumberXOfY",
+      "before": "hash",
+      "after": "pageCount",
+      "decision": "replace",
+      "defect": "The old icon is identical to the single page-number command.",
+      "result": "Multiple-page silhouette distinguishes count-aware numbering; the label specifies X of Y."
+    },
+    {
+      "id": "page-number-top",
+      "command": "placePageNumberTop",
+      "before": "panel-top",
+      "after": "pageNumberTop",
+      "decision": "replace",
+      "defect": "The old icon is identical to Edit Header despite a different action.",
+      "result": "Numeral in the upper page region, distinguishable from the filled Header target."
+    },
+    {
+      "id": "page-number-bottom",
+      "command": "placePageNumberBottom",
+      "before": "panel-bottom",
+      "after": "pageNumberBottom",
+      "decision": "replace",
+      "defect": "The old icon is identical to Edit Footer despite a different action.",
+      "result": "Numeral in the lower page region, distinguishable from the filled Footer target."
+    },
+    {
+      "id": "footnote",
+      "command": "insertFootnote",
+      "before": "legacyFootnote",
+      "after": "footnote",
+      "decision": "refine",
+      "defect": "SVG text depends on platform font metrics; the fixed dark-red superscript has no theme adaptation.",
+      "result": "Original paths for ab and superscript 1 with a theme accent; no SVG text or external font."
+    }
+  ],
+  "remainingReview": [
+    "Clipboard optical weights",
+    "Font color/highlight/shading",
+    "Margins/orientation",
+    "Table operation grids",
+    "Distribution/AutoFit",
+    "Alignment/sort",
+    "Themes/styles",
+    "Future Shape/Draw/Equation/Reference capabilities"
+  ]
+}

@@ -1,0 +1,16 @@
+body { margin: 0; font: 14px/1.4 system-ui, sans-serif; }
+.icon-review { display: block; height: auto; min-height: 0; padding: 24px; box-sizing: border-box; color: var(--oasis-text); background: var(--oasis-bg); }
+.icon-review h1 { margin-top: 0; }
+.icon-review nav { display: flex; flex-wrap: wrap; gap: 18px; }
+.icon-review select { margin-inline-start: 6px; font: inherit; padding: 4px; }
+.icon-review-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.icon-review-comparison section { min-width: 0; padding: 14px; border: 1px solid var(--oasis-border-color); background: var(--oasis-ribbon-panel-bg, #fff); }
+.icon-review-heading, .icon-review-row { display: grid; grid-template-columns: 40px repeat(3, minmax(0, 1fr)); gap: 8px; align-items: center; margin-block: 12px; }
+.icon-review-row .icon-review-sample { min-width: 0; min-height: 42px; gap: 6px; justify-content: center; }
+.icon-review-sample > svg { width: var(--review-icon-size); height: var(--review-icon-size); flex: 0 0 var(--review-icon-size); }
+.icon-review-sample.icon-review-collapsed { flex-direction: column; min-height: 78px; }
+.icon-review-sample.icon-review-menu { justify-content: start; min-height: 44px; }
+.icon-review-sample span { min-width: 0; overflow-wrap: anywhere; font-size: 11px; }
+.icon-review-note { color: var(--oasis-text-muted); max-width: 900px; }
+
+.icon-review .oasis-editor-tool-button { transition: none; }
