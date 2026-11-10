@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `149` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `153` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -160,6 +160,10 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `layout.verticalAlign` | `layout.verticalAlign` | `setSectionVerticalAlign` | — | core-only | core-only | partial | unverified |
 | `layout.sectionDirection` | `layout.sectionRtl` | `setSectionBidi` | — | core-only | core-only | partial | unverified |
 | `layout.textDirection` | `layout.textDirection` | `setTextDirection` | — | core-only | core-only | partial | unverified |
+| `insert.closeHeader` | `insert.closeHeader` | `exitHeaderFooter` | Insert > Header & Footer > Close Header and Footer | menu-only | menu-only | partial | not-applicable |
+| `insert.pageNumberFormat` | `layout.pageNumberFormat` | `setSectionPageNumbering` | — | core-only | core-only | partial | unverified |
+| `insert.differentFirstPage` | `layout.differentFirstPage` | `setDifferentFirstPage` | — | core-only | core-only | partial | unverified |
+| `insert.differentOddEven` | `layout.differentOddEven` | `setDifferentOddEven` | — | core-only | core-only | partial | unverified |
 
 ## Open verification questions
 
@@ -312,6 +316,10 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 147. **layout.verticalAlign:** Oasis registers top, center and bottom section alignment but no default UI; WordCraft also supports justified/both distribution across the page. Section scope, pagination and DOCX/PDF output need workflow verification.
 148. **layout.sectionDirection:** Oasis registers the section bidirectional-layout flag but no default Ribbon or menu control was found. WordCraft defines RTL section columns; column order, mixed sections, pagination and DOCX interoperability need workflow verification.
 149. **layout.textDirection:** Oasis registers paragraph vertical-text flow values but no default UI. WordCraft applies text direction to section(s), table cells or text boxes as well as paragraphs, so target scope and rotated text rendering remain partial; DOCX interoperability needs verification.
+150. **insert.closeHeader:** Oasis exposes Exit Header/Footer in the Insert Header & Footer menu. WordCraft's close command returns from the active story; the two products differ in the observed close path. Focus restoration, current-story transitions and keyboard behavior need workflow verification.
+151. **insert.pageNumberFormat:** Oasis registers section page-number format/start settings, but no default Ribbon, menu or dialog control was found. Format coverage, continue-from-previous semantics, section scope, pagination and DOCX/PDF output need workflow verification.
+152. **insert.differentFirstPage:** Oasis registers the separate-first-page header/footer flag, but no default UI control was found. Story creation/inheritance, active-section scope, pagination and DOCX interoperability need workflow verification.
+153. **insert.differentOddEven:** Oasis registers the different-odd/even-pages setting, but no default UI control was found. Story creation/inheritance, document-wide scope, pagination and DOCX interoperability need workflow verification.
 
 ## Audit interpretation
 

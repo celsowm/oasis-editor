@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 132
+    "linkedRows": 136
   },
   "defaultTabs": [
     "File",
@@ -1887,7 +1887,9 @@
       "group": "Header & Footer",
       "name": "Format Page Numbers",
       "command": "layout.pageNumberFormat",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.pageNumberFormat"
+      ]
     },
     {
       "index": 168,
@@ -1896,7 +1898,9 @@
       "group": "Header & Footer",
       "name": "Close Header and Footer",
       "command": "insert.closeHeader",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.closeHeader"
+      ]
     },
     {
       "index": 169,
@@ -1905,7 +1909,9 @@
       "group": "Header & Footer",
       "name": "Different First Page",
       "command": "layout.differentFirstPage",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.differentFirstPage"
+      ]
     },
     {
       "index": 170,
@@ -1914,7 +1920,9 @@
       "group": "Header & Footer",
       "name": "Different Odd & Even",
       "command": "layout.differentOddEven",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.differentOddEven"
+      ]
     },
     {
       "index": 171,

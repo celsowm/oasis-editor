@@ -574,6 +574,16 @@ The matrix now contains 149 Oasis capability rows and links 132 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` validates margins/orientation and section-break UI tokens, direct page-break placement and registered core-only commands; the catalog snapshot reports 132 linked rows.
 
+## Delivery 38 — Header/footer and page numbering paths
+
+Date: 2026-11-10. B01, D04 and P04 remain **partial**.
+
+Mapped Close Header/Footer to Oasis's Exit command in the Insert Header & Footer menu. Recorded registered core-only commands for page-number format/start, different first page and different odd/even pages. Oasis exposes some of these editing behaviors through commands but has no default control for the page-number settings or page-story options; remove-header/footer and link-to-previous still have no mapped Oasis path.
+
+The matrix now contains 153 Oasis capability rows and links 136 of 521 WordCraft source rows; 385 remain unlinked. Section/page-story inheritance, numbering continuation, pagination, undo and DOCX/PDF output need workflow verification.
+
+Evidence: the audit checks the Exit menu token and the core registrations, and confirms no default Ribbon or menubar exposure for the three page settings. The catalog snapshot reports 136 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

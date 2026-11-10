@@ -1851,6 +1851,63 @@
       "semantics": "partial",
       "persistence": "unverified",
       "notes": "Oasis registers paragraph vertical-text flow values but no default UI. WordCraft applies text direction to section(s), table cells or text boxes as well as paragraphs, so target scope and rotated text rendering remain partial; DOCX interoperability needs verification."
+    },
+    {
+      "id": "insert.closeHeader",
+      "wordcraftCommand": "insert.closeHeader",
+      "oasisCommand": "exitHeaderFooter",
+      "ribbonId": null,
+      "tab": "insert",
+      "group": "headerFooter",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Insert > Header & Footer > Close Header and Footer",
+      "uiEvidence": {
+        "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+        "token": "editor-toolbar-exit-header-footer"
+      },
+      "notes": "Oasis exposes Exit Header/Footer in the Insert Header & Footer menu. WordCraft's close command returns from the active story; the two products differ in the observed close path. Focus restoration, current-story transitions and keyboard behavior need workflow verification."
+    },
+    {
+      "id": "insert.pageNumberFormat",
+      "wordcraftCommand": "layout.pageNumberFormat",
+      "oasisCommand": "setSectionPageNumbering",
+      "ribbonId": null,
+      "tab": "insert",
+      "group": "headerFooter",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers section page-number format/start settings, but no default Ribbon, menu or dialog control was found. Format coverage, continue-from-previous semantics, section scope, pagination and DOCX/PDF output need workflow verification."
+    },
+    {
+      "id": "insert.differentFirstPage",
+      "wordcraftCommand": "layout.differentFirstPage",
+      "oasisCommand": "setDifferentFirstPage",
+      "ribbonId": null,
+      "tab": "insert",
+      "group": "headerFooter",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers the separate-first-page header/footer flag, but no default UI control was found. Story creation/inheritance, active-section scope, pagination and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "insert.differentOddEven",
+      "wordcraftCommand": "layout.differentOddEven",
+      "oasisCommand": "setDifferentOddEven",
+      "ribbonId": null,
+      "tab": "insert",
+      "group": "headerFooter",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers the different-odd/even-pages setting, but no default UI control was found. Story creation/inheritance, document-wide scope, pagination and DOCX interoperability need workflow verification."
     }
   ]
 }
