@@ -2864,6 +2864,32 @@
       "semantics": "partial",
       "persistence": "not-applicable",
       "notes": "Oasis registers a command to expand the active table selection to the whole table, but no default Ribbon, menu or dialog control was found. Caret targeting, focus, keyboard behavior and undo integration need workflow verification."
+    },
+    {
+      "id": "review.acceptAll",
+      "wordcraftCommand": "review.acceptAll",
+      "oasisCommand": "acceptAllRevisions",
+      "ribbonId": null,
+      "tab": "review",
+      "group": "changes",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers Accept All Changes but no default Ribbon, menu or dialog control was found. Confirmation, protected revisions, comment anchors, undo and DOCX round-trip need workflow verification."
+    },
+    {
+      "id": "review.rejectAll",
+      "wordcraftCommand": "review.rejectAll",
+      "oasisCommand": "rejectAllRevisions",
+      "ribbonId": null,
+      "tab": "review",
+      "group": "changes",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers Reject All Changes but no default Ribbon, menu or dialog control was found. Confirmation, protected revisions, comment anchors, undo and DOCX round-trip need workflow verification."
     }
   ]
 }

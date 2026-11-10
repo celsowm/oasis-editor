@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `220` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `222` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -231,6 +231,8 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `table.selectRow` | `table.selectRow` | `tableSelectRow` | — | core-only | core-only | partial | not-applicable |
 | `table.selectColumn` | `table.selectColumn` | `tableSelectColumn` | — | core-only | core-only | partial | not-applicable |
 | `table.selectTable` | `table.selectTable` | `tableSelectTable` | — | core-only | core-only | partial | not-applicable |
+| `review.acceptAll` | `review.acceptAll` | `acceptAllRevisions` | — | core-only | core-only | partial | unverified |
+| `review.rejectAll` | `review.rejectAll` | `rejectAllRevisions` | — | core-only | core-only | partial | unverified |
 
 ## Open verification questions
 
@@ -454,6 +456,8 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 218. **table.selectRow:** Oasis registers a command to expand the active table selection to a row, but no default Ribbon, menu or dialog control was found. Caret targeting, focus, keyboard behavior and undo integration need workflow verification.
 219. **table.selectColumn:** Oasis registers a command to expand the active table selection to a column, but no default Ribbon, menu or dialog control was found. Caret targeting, focus, keyboard behavior and undo integration need workflow verification.
 220. **table.selectTable:** Oasis registers a command to expand the active table selection to the whole table, but no default Ribbon, menu or dialog control was found. Caret targeting, focus, keyboard behavior and undo integration need workflow verification.
+221. **review.acceptAll:** Oasis registers Accept All Changes but no default Ribbon, menu or dialog control was found. Confirmation, protected revisions, comment anchors, undo and DOCX round-trip need workflow verification.
+222. **review.rejectAll:** Oasis registers Reject All Changes but no default Ribbon, menu or dialog control was found. Confirmation, protected revisions, comment anchors, undo and DOCX round-trip need workflow verification.
 
 ## Audit interpretation
 

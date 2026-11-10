@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 185
+    "linkedRows": 187
   },
   "defaultTabs": [
     "File",
@@ -3205,7 +3205,9 @@
       "group": "Changes",
       "name": "Accept All",
       "command": "review.acceptAll",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.acceptAll"
+      ]
     },
     {
       "index": 303,
@@ -3214,7 +3216,9 @@
       "group": "Changes",
       "name": "Reject All",
       "command": "review.rejectAll",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.rejectAll"
+      ]
     },
     {
       "index": 304,

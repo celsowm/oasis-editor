@@ -654,6 +654,16 @@ The matrix now contains 220 Oasis capability rows and links 185 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` validates the gridline menu command and all four registered core-only selection commands; the catalog snapshot reports 185 linked rows.
 
+## Delivery 46 — Accept/reject all revision paths
+
+Date: 2026-11-10. B01 and P01 remain **partial**.
+
+Mapped WordCraft Accept All and Reject All to the existing Oasis bulk-revision commands. Neither command has a default Ribbon, menu or dialog path, so both are recorded as core-only. Confirmation, protected changes, comments anchored to revised content, undo and DOCX round-trip still need workflow evidence.
+
+The matrix now contains 222 Oasis capability rows and links 187 of 521 WordCraft source rows; 334 remain unlinked. Current/selected revision controls are tracked separately from these bulk actions.
+
+Evidence: `npm run audit:ribbon` validates both built-in and Essentials command registrations and confirms no default UI path; the catalog snapshot reports 187 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
