@@ -51,13 +51,13 @@
 
 ## Open verification questions
 
-1. **home.copy:** Clipboard adapter and browser permission behavior require runtime verification.
-2. **home.cut:** Clipboard write must succeed before deletion. Selection snapshots, read-only state and async document replacement have focused tests; browser compatibility, tracked-changes DOCX fidelity and end-to-end undo are still unverified.
+1. **home.copy:** Model selection is copied without document mutation. Browser checks use deterministic write adapters; native OS permissions/clipboard and full Safari workflows remain unverified. Access failures provide localized keyboard guidance.
+2. **home.cut:** Clipboard write must succeed before deletion, including the native event path. Tests cover denied writes, superseded async requests, read-only state and document replacement; browser adapters verify selection and one-step undo. Native OS/Safari permissions, tracked changes and DOCX fidelity remain unverified.
 3. **home.formatPainter:** Copies the current selection/caret formatting for the next pointer or keyboard target; tests cover ranges, paragraph source, links and one-shot disarm. Full visual/WordCraft behavior and DOCX round-trip remain unverified.
 4. **home.formatPainterContinuous:** Continuous mode applies to multiple finalized targets and stays armed after the editor's own transactional changes. Escape and explicit cancellation disarm; E2E mouse/touch/keyboard testing remains necessary.
-5. **home.paste:** Rich/HTML and text paste implemented through the shared Clipboard API; browser permissions, image-only clipboard, long-document E2E and DOCX fidelity remain to verify.
-6. **home.pasteMerge:** Destination character/paragraph styles are retained while explicit source emphasis and hyperlinks are preserved. Needs browser, mixed-list, nested-table and DOCX round-trip verification.
-7. **home.pasteText:** Paste as plain text is an immediate command independent of the keyboard-only pastePlainText shortcut; unsupported Clipboard API results in a disabled action.
+5. **home.paste:** Shared rich/HTML paste preserves the captured API target, with localized failure feedback and a one-use native keyboard fallback. Chromium/Firefox/WebKit use deterministic clipboard adapters and synthetic native events; real OS prompts, image-only behavior, long-document workflows and DOCX fidelity remain unverified.
+6. **home.pasteMerge:** Destination character/paragraph styles and source emphasis/links are retained. Deterministic browser adapters and synthetic native events exercise merge and one-step undo. Real OS/Safari behavior, mixed lists/nested tables and DOCX round-trips remain unverified.
+7. **home.pasteText:** Immediate text-only action; unavailable or rejected Clipboard API offers localized keyboard guidance instead of a silent disabled action. A single native paste consumes the text-only choice; document replacement/dismissal expires it. Real OS/Safari behavior remains unverified.
 8. **home.find:** Find pane command is wired; search/replacement interaction still needs E2E verification.
 9. **home.selectAll:** Selections spanning tables and document stories require E2E verification.
 10. **insert.pageBreak:** Pagination and multi-section round-trip are not certified by the Ribbon binding alone.

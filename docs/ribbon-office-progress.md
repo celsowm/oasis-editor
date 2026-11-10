@@ -149,6 +149,27 @@ Evidence:
 
 Limits: no real-Safari/VoiceOver claim; no Word-open/repair validation or PDF claim. Named-style inheritance, mixed-state presentation, all font/color controls, invalid input, subsequent typing/IME, other selection types and remaining D02 requirements stay open. This does not complete M2.
 
+## Delivery 5 — Clipboard feedback, native recovery and safe Cut
+
+Date: 2026-11-10. D01 and A03/A04 remain **partial**. This closes concrete failure/recovery gaps while preserving the full execution plan.
+
+Ribbon and context-menu Clipboard actions now share one controller per editor. Failed reads/writes produce localized, dismissible, nonmodal feedback and return focus to the document for a keyboard attempt. Empty, unsupported and changed-document outcomes have distinct messages. Paste/Cut remain reachable when the programmatic browser API is unavailable, so the user can discover the keyboard path. The reference catalog's earlier “unsupported API disables Paste” note is superseded.
+
+A refused text-only or merge paste preserves that choice for one native paste event. Dismissal, another Clipboard action or document replacement invalidates the choice. Older requests cannot replace a newer notice or mutate its target; editor disposal cancels pending mutations. Native Copy/Cut only proceed with writable event data, and Cut retains content if writing fails. Existing API reads still target the captured selection and reject changed documents.
+
+A narrow Ribbon exposed an interaction defect: a portalled child action closed its immediate menu but left its collapsed ancestor over the new feedback. Generic command buttons and split-button primary actions now close their logical menu path after dispatch. Child triggers and Escape retain their separate navigation behavior; this does not certify every custom control's dismissal policy.
+
+Evidence:
+
+- Nine focused controller/adapter scenarios cover denied/empty/image-only reads, text/merge native recovery, expiry, superseded requests, disposal, per-editor isolation and safe Cut when event writes are absent/rejected. Existing Clipboard and read-only tests continue to pass.
+- `npm run test:ribbon:clipboard`: 24 workflows per engine across three paste modes, two themes, two locales and 1440/640 px. Chromium, Firefox and WebKit exercise real Ribbon controls, original targets, failure without history/content changes, visible feedback, native-event recovery, success formatting and one-step undo. Eight additional Cut/Copy paths per engine verify Copy does not mutate and Cut is undoable only after a successful adapter write.
+- The browser tests explicitly use deterministic Clipboard API adapters and synthetic paste events. They do not access the OS clipboard or validate trusted user gestures/permission dialogs. Firefox requires an explicitly supplied event-data property for this synthetic path; an untrusted `ClipboardEvent` does not expose its supplied data there.
+- Feedback captures exclude document pixels and stay in gitignored `debug_artifacts/ribbon-clipboard-{engine}/`. The review checked the dark pt-BR/640 px message after ancestor menus were closed. The live region stays mounted, uses theme tokens and public text/icon-button primitives, and positions within the visible viewport without resizing the Ribbon.
+- TypeScript and changed-source ESLint pass. Full local Vitest: 314 files / 1,806 tests passed; one file/test skipped. Global lint has 305 errors and 20 warnings outside changed source files. Static Ribbon/icon inventories pass after regeneration.
+- The owned Chromium CI runner now includes the Clipboard suite and retains evidence under `test-results/ribbon/clipboard/`, alongside reference, resize, contexts, icons and editing.
+
+Remaining D01 acceptance includes actual Safari/macOS and other native permission/gesture flows, VoiceOver, clipboard images, mixed/nested lists/tables, painter one-shot/sticky workflows and applicable DOCX/PDF evidence. The browser adapters and synthetic events are not substitutes for those checks. No milestone is completed by this delivery.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

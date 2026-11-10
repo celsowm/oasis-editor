@@ -25,9 +25,9 @@
       "wordcraftTab": "home",
       "wordWebTab": "Home",
       "exposure": "partial",
-      "semantics": "unverified",
-      "persistence": "unverified",
-      "nextEvidence": "Execute the relevant command workflows, verify mutation/undo, and exercise export/reimport. Presentation and context checks do not certify those dimensions.",
+      "semantics": "partial",
+      "persistence": "partial",
+      "nextEvidence": "Complete Home/Clipboard/Font/Paragraph acceptance, including native Safari/OS clipboard prompts, painter, mixed/inherited styles, typing/IME, lists and required formats. These scoped workflows do not certify the whole tab.",
       "evidence": {
         "suite": "scripts/verify-ribbon-contexts.mjs",
         "fixtures": [
@@ -50,6 +50,16 @@
         ],
         "semanticMutation": "unverified",
         "persistence": "unverified"
+      },
+      "workflowEvidence": {
+        "underline": {
+          "suite": "scripts/verify-ribbon-editing.mjs",
+          "scope": "Direct multirun underline application/removal, one-step undo/redo, read-only controls, DOCX XML and self-reimport; Word/PDF/inherited styles and real Safari unverified."
+        },
+        "clipboard": {
+          "suite": "scripts/verify-ribbon-clipboard.mjs",
+          "scope": "Deterministic Clipboard API adapters and synthetic native events in three engines: rich/text/merge, failure feedback, original targets, Cut/Copy and one-step undo. Real OS permission/gesture, Word, DOCX/PDF and image-only flows unverified."
+        }
       }
     },
     {
