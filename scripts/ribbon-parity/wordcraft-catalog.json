@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 122
+    "linkedRows": 125
   },
   "defaultTabs": [
     "File",
@@ -486,7 +486,10 @@
       "group": "Clipboard",
       "name": "Paste Special",
       "command": "edit.pasteSpecial",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.pasteSpecialFormatted",
+        "home.pasteSpecialText"
+      ]
     },
     {
       "index": 34,
@@ -529,7 +532,9 @@
       "group": "Clipboard",
       "name": "Copy Formatting",
       "command": "edit.copyFormat",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.copyFormat"
+      ]
     },
     {
       "index": 38,
@@ -538,7 +543,9 @@
       "group": "Clipboard",
       "name": "Paste Formatting",
       "command": "edit.pasteFormat",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.pasteFormat"
+      ]
     },
     {
       "index": 39,

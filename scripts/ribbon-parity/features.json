@@ -1644,6 +1644,63 @@
         "token": "fr.replaceAll"
       },
       "notes": "Replace all runs through the dialog controller and supports match-case and whole-word filters. The separate Oasis replaceAll command is not dispatched by this UI; WordCraft also supports regex/special codes and a wider option set. A single undo step, formatting, selection and DOCX behavior need workflow verification."
+    },
+    {
+      "id": "home.pasteSpecialFormatted",
+      "wordcraftCommand": "edit.pasteSpecial",
+      "oasisCommand": "paste",
+      "ribbonId": "editor-toolbar-paste",
+      "tab": "home",
+      "group": "clipboard",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis Paste covers the formatted/HTML paste path from WordCraft Paste Special. WordCraft also offers direct RTF and picture formats; Oasis's browser clipboard path and image-only behavior need separate verification."
+    },
+    {
+      "id": "home.pasteSpecialText",
+      "wordcraftCommand": "edit.pasteSpecial",
+      "oasisCommand": "pasteAsPlainText",
+      "ribbonId": "editor-toolbar-paste-plain",
+      "tab": "home",
+      "group": "clipboard",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis Paste as Plain Text covers WordCraft Paste Special's text-only format. RTF/picture variants and native clipboard permissions are not covered; selection replacement, one-step undo and DOCX output need workflow verification."
+    },
+    {
+      "id": "home.copyFormat",
+      "wordcraftCommand": "edit.copyFormat",
+      "oasisCommand": "formatPainter",
+      "ribbonId": "editor-toolbar-format-painter",
+      "tab": "home",
+      "group": "clipboard",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis's one-shot Format Painter captures the selected source formatting when armed, covering WordCraft Copy Formatting as part of a combined interaction. Source capture, selection scope, hyperlinks and complex stories need workflow verification."
+    },
+    {
+      "id": "home.pasteFormat",
+      "wordcraftCommand": "edit.pasteFormat",
+      "oasisCommand": null,
+      "ribbonId": null,
+      "tab": "home",
+      "group": "clipboard",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Home > Format Painter > select destination text",
+      "uiEvidence": {
+        "file": "src/ui/app/createEditorFormatPainter.ts",
+        "token": "const applyToSelection = (origin: \"pointer\" | \"keyboard\")"
+      },
+      "notes": "After Format Painter is armed, Oasis applies the captured style when the destination selection is finalized; WordCraft exposes Paste Formatting as a separate command. This is a related UI task with different event timing and no shared command for the apply step; pointer/keyboard coverage, undo and DOCX behavior need verification."
     }
   ]
 }

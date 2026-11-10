@@ -554,6 +554,16 @@ The matrix now contains 135 Oasis capability rows and links 122 of 521 WordCraft
 
 Evidence: the audit validates the Home Find binding and the four FindReplaceDialog source tokens; the catalog snapshot reports 122 linked rows.
 
+## Delivery 36 — Paste Special and Format Painter phases
+
+Date: 2026-11-10. B01 and D02 remain **partial**.
+
+Mapped Paste Special's formatted/HTML and text-only paths to Oasis Paste and Paste as Plain Text; RTF and picture format selection are not represented as explicit options and need verification. Split WordCraft Copy Formatting and Paste Formatting into Oasis's combined Format Painter capture action and its selection-finalized apply path. Oasis applies on pointer-up or keyboard selection completion, while WordCraft exposes separate commands.
+
+The matrix now contains 139 Oasis capability rows and links 125 of 521 WordCraft source rows; 396 remain unlinked. Format coverage, clipboard formats and permissions, selection timing, undo and DOCX/PDF output require workflow evidence.
+
+Evidence: Ribbon audit validates the two Paste controls and Format Painter button; `createEditorFormatPainter.ts` verifies that the apply path supports both pointer and keyboard selection. The catalog snapshot reports 125 linked source rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

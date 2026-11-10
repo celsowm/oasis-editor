@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `135` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `139` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -146,6 +146,10 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `home.findPrevious` | `edit.findPrevious` | — | Home > Find dialog > Previous match | ui-only | ui-only | partial | not-applicable |
 | `home.replaceOne` | `edit.replace` | — | Home > Find dialog > Replace | ui-only | ui-only | partial | unverified |
 | `home.replaceAll` | `edit.replaceAll` | — | Home > Find dialog > Replace all | ui-only | ui-only | partial | unverified |
+| `home.pasteSpecialFormatted` | `edit.pasteSpecial` | `paste` | `home/clipboard` | partial | partial | partial | unverified |
+| `home.pasteSpecialText` | `edit.pasteSpecial` | `pasteAsPlainText` | `home/clipboard` | partial | partial | partial | unverified |
+| `home.copyFormat` | `edit.copyFormat` | `formatPainter` | `home/clipboard` | partial | partial | partial | unverified |
+| `home.pasteFormat` | `edit.pasteFormat` | — | Home > Format Painter > select destination text | ui-only | ui-only | partial | unverified |
 
 ## Open verification questions
 
@@ -284,6 +288,10 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 133. **home.findPrevious:** The Find dialog moves to the previous match through its controller, and Shift+Enter invokes the same action. Oasis has no shared find-previous command; wraparound, selection retention and parity with WordCraft's additional search options need workflow verification.
 134. **home.replaceOne:** Replace one applies the replacement term to the active match through the dialog controller. WordCraft's edit.replace accepts a direct search/replacement payload with advanced options; Oasis has no shared command bound to this UI action. Selection, formatting preservation, undo and DOCX behavior need workflow verification.
 135. **home.replaceAll:** Replace all runs through the dialog controller and supports match-case and whole-word filters. The separate Oasis replaceAll command is not dispatched by this UI; WordCraft also supports regex/special codes and a wider option set. A single undo step, formatting, selection and DOCX behavior need workflow verification.
+136. **home.pasteSpecialFormatted:** Oasis Paste covers the formatted/HTML paste path from WordCraft Paste Special. WordCraft also offers direct RTF and picture formats; Oasis's browser clipboard path and image-only behavior need separate verification.
+137. **home.pasteSpecialText:** Oasis Paste as Plain Text covers WordCraft Paste Special's text-only format. RTF/picture variants and native clipboard permissions are not covered; selection replacement, one-step undo and DOCX output need workflow verification.
+138. **home.copyFormat:** Oasis's one-shot Format Painter captures the selected source formatting when armed, covering WordCraft Copy Formatting as part of a combined interaction. Source capture, selection scope, hyperlinks and complex stories need workflow verification.
+139. **home.pasteFormat:** After Format Painter is armed, Oasis applies the captured style when the destination selection is finalized; WordCraft exposes Paste Formatting as a separate command. This is a related UI task with different event timing and no shared command for the apply step; pointer/keyboard coverage, undo and DOCX behavior need verification.
 
 ## Audit interpretation
 
