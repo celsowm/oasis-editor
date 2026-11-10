@@ -16,27 +16,23 @@ function componentName(name: string): string {
   return camel.charAt(0).toUpperCase() + camel.slice(1);
 }
 
-function renderIcon(element: Element): void {
-  const name = element.getAttribute("data-lucide");
-  const icon = name
-    ? icons[componentName(name) as keyof typeof icons]
-    : undefined;
+/** Create a node that a reactive renderer can own without replacing its DOM. */
+export function createLucideSvg(
+  name: string,
+  attributes: Record<string, string> = {},
+): SVGElement | undefined {
+  const icon = icons[componentName(name) as keyof typeof icons];
   if (!icon) {
     logger.warn("Unknown Lucide icon", { name });
-    return;
+    return undefined;
   }
-  const attributes = Object.fromEntries(
-    Array.from(element.attributes, (attribute) => [
-      attribute.name,
-      attribute.value,
-    ]),
-  );
   const hasAccessibleName = Object.keys(attributes).some(
     (key) => key.startsWith("aria-") || key === "role" || key === "title",
   );
-  const svg = createElement(icon, {
+  return createElement(icon, {
     ...(hasAccessibleName ? {} : { "aria-hidden": "true" }),
     ...attributes,
+    "data-lucide": name,
     class: [
       ...new Set([
         "lucide",
@@ -47,7 +43,19 @@ function renderIcon(element: Element): void {
       .filter(Boolean)
       .join(" "),
   });
-  element.replaceWith(svg);
+}
+
+function renderIcon(element: Element): void {
+  const name = element.getAttribute("data-lucide");
+  if (!name) return;
+  const attributes = Object.fromEntries(
+    Array.from(element.attributes, (attribute) => [
+      attribute.name,
+      attribute.value,
+    ]),
+  );
+  const svg = createLucideSvg(name, attributes);
+  if (svg) element.replaceWith(svg);
 }
 
 /** Resolve placeholders once. Existing SVGs retain their identity on DOM changes. */

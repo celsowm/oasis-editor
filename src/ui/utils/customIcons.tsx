@@ -1,4 +1,6 @@
-import { Show, type JSX } from "solid-js";
+import { Show, createMemo, type JSX } from "solid-js";
+
+import { createLucideSvg } from "./IconManager.js";
 
 /**
  * Custom inline-SVG icons that can't be expressed with lucide's monochrome,
@@ -52,29 +54,113 @@ export function SvgIcon(props: SvgIconProps): JSX.Element {
   );
 }
 
-/** Word-style footnote glyph: "ab" in the current color with a red superscript "1". */
+/** Original path glyphs keep superscript metrics independent of system fonts. */
 const FootnoteIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon fill="none">
-    <text
-      x="2"
-      y="18"
-      font-family="'Segoe UI', Arial, sans-serif"
-      font-size="14"
-      font-weight="700"
-      fill="currentColor"
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.8}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M8.5 12.5c-1.4-1.8-5.5-1.2-5.5 2.9 0 4.4 4.4 4.9 5.5 2.5M8.5 12v8M12 6v14m0-7c1.4-1.8 5.8-1.6 5.8 2.9 0 4.2-4.1 5-5.8 2.5" />
+    <path
+      d="m18 4.8 2-1.3V10m-1.8 0h3.5"
+      stroke="var(--oasis-accent, #1a73e8)"
+    />
+  </SvgIcon>
+);
+
+/** Document-story icons share a page silhouette and distinct target regions. */
+function PageStoryIcon(props: {
+  target: "header" | "footer" | "both";
+  numbered?: boolean;
+}): JSX.Element {
+  const top = props.target !== "footer";
+  const bottom = props.target !== "header";
+  return (
+    <SvgIcon
+      stroke="currentColor"
+      stroke-width={1.7}
+      stroke-linecap="round"
+      stroke-linejoin="round"
     >
-      ab
-    </text>
-    <text
-      x="15.5"
-      y="11"
-      font-family="'Segoe UI', Arial, sans-serif"
-      font-size="10"
-      font-weight="700"
-      fill="#c00000"
-    >
-      1
-    </text>
+      <rect x="5" y="2.5" width="14" height="19" rx="1.2" />
+      <path d="M8 10h8m-8 3h8" opacity={0.65} />
+      <Show
+        when={props.numbered}
+        fallback={
+          <>
+            <Show when={top}>
+              <rect
+                x="7.5"
+                y="4.5"
+                width="9"
+                height="2.5"
+                rx="0.5"
+                fill="var(--oasis-accent, #1a73e8)"
+                stroke="none"
+              />
+            </Show>
+            <Show when={bottom}>
+              <rect
+                x="7.5"
+                y="17"
+                width="9"
+                height="2.5"
+                rx="0.5"
+                fill="var(--oasis-accent, #1a73e8)"
+                stroke="none"
+              />
+            </Show>
+          </>
+        }
+      >
+        <path
+          d={top ? "m10.5 5.5 1.5-1v4m-1.5 0h3" : "m10.5 16.5 1.5-1v4m-1.5 0h3"}
+          stroke="var(--oasis-accent, #1a73e8)"
+        />
+      </Show>
+    </SvgIcon>
+  );
+}
+const PageHeaderIcon: CustomIconRenderer = () => (
+  <PageStoryIcon target="header" />
+);
+const PageFooterIcon: CustomIconRenderer = () => (
+  <PageStoryIcon target="footer" />
+);
+const PageHeaderFooterIcon: CustomIconRenderer = () => (
+  <PageStoryIcon target="both" />
+);
+const PageNumberTopIcon: CustomIconRenderer = () => (
+  <PageStoryIcon target="header" numbered />
+);
+const PageNumberBottomIcon: CustomIconRenderer = () => (
+  <PageStoryIcon target="footer" numbered />
+);
+const PageNumberIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="5" y="2.5" width="14" height="19" rx="1.2" />
+    <path d="M8 6h8m-8 3h6" opacity={0.65} />
+    <path d="m10.5 14 1.5-1v5m-1.5 0h3" stroke="var(--oasis-accent, #1a73e8)" />
+  </SvgIcon>
+);
+const PageCountIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M15 4V2.5H3.5v16H6" opacity={0.65} />
+    <rect x="7" y="5.5" width="13.5" height="16" rx="1.2" />
+    <path d="M10 9h7m-7 3h5" opacity={0.65} />
+    <path d="m12 16 1.5-1v4m-1.5 0h3" stroke="var(--oasis-accent, #1a73e8)" />
   </SvgIcon>
 );
 
@@ -336,6 +422,13 @@ export const CheckIcon = (props: { size?: number }): JSX.Element => (
 
 const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   footnote: FootnoteIcon,
+  pageHeader: PageHeaderIcon,
+  pageFooter: PageFooterIcon,
+  pageHeaderFooter: PageHeaderFooterIcon,
+  pageNumber: PageNumberIcon,
+  pageNumberTop: PageNumberTopIcon,
+  pageNumberBottom: PageNumberBottomIcon,
+  pageCount: PageCountIcon,
   specialIndentFirstLine: SpecialIndentFirstLineIcon,
   lineSpacing: LineSpacingIcon,
   tableInsertRowAbove: TableInsertRowAboveIcon,
@@ -369,17 +462,27 @@ export function getCustomIcon(name?: string): CustomIconRenderer | undefined {
   return name ? CUSTOM_ICONS[name] : undefined;
 }
 
-/**
- * Renders an icon by name: a registered custom inline SVG when available,
- * otherwise a lucide `<i data-lucide>` placeholder resolved by the icon observer.
- */
+function LucideToolIcon(props: { name: string }): JSX.Element {
+  const icon = createMemo(() => createLucideSvg(props.name));
+  return (
+    <Show when={icon()} fallback={<i data-lucide={props.name} />}>
+      {(svg): JSX.Element => svg()}
+    </Show>
+  );
+}
+
+/** Custom vectors and Lucide nodes remain owned by Solid across name changes. */
 export function ToolIcon(props: { name: string }): JSX.Element {
   return (
-    <Show
-      when={getCustomIcon(props.name)}
-      fallback={<i data-lucide={props.name} />}
-    >
-      {(render): JSX.Element => render()()}
+    <Show when={props.name} keyed>
+      {(name): JSX.Element => (
+        <Show
+          when={getCustomIcon(name)}
+          fallback={<LucideToolIcon name={name} />}
+        >
+          {(render): JSX.Element => render()()}
+        </Show>
+      )}
     </Show>
   );
 }
