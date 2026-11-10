@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "baseline": {
     "oasisRepository": "celsowm/oasis-editor",
-    "oasisCommit": "e49c1b33e1fd0b76757b42b91e91d674cd0b229f",
+    "oasisCommit": "1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9",
     "wordcraftRepository": "storytold/wordcraft",
-    "wordcraftCommit": "e53cae3482d4e080a15dc2320eb4929ea7722db2"
+    "wordcraftCommit": "05f781cfdac1d89034c0f4f5824b597ff845f2ef"
   },
-  "scope": "38-feature executable Ribbon exposure slice; NOT the complete WordCraft feature catalog. Baseline SHAs are historical; current visual, semantic and persistence evidence is tracked independently in references.json and docs/ribbon-office-progress.md.",
+  "scope": "38-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Category-level exposure, semantics, and persistence evidence is tracked separately in references.json and docs/ribbon-office-progress.md.",
   "features": [
     {
       "id": "home.copy",
@@ -370,7 +370,7 @@
     },
     {
       "id": "insert.date",
-      "wordcraftCommand": "insert.date_time",
+      "wordcraftCommand": "insert.dateTime",
       "oasisCommand": "insertDateField",
       "ribbonId": "editor-toolbar-insert-date",
       "tab": "insert",

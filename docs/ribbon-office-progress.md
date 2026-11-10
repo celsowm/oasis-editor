@@ -8,7 +8,7 @@ Reference: classic Office group naming and navigation; the historical WordCraft/
 
 | Ticket | Status | Implemented / evidence | Remaining acceptance |
 | --- | --- | --- | --- |
-| B01 | partial | Corrected the stale 29-feature scope to the current 38-feature static slice. `scripts/ribbon-parity/references.json` triages all 21 historical categories with separate exposure/semantics/persistence fields. Historical SHAs remain historical. | Inspect current command paths and assign verified capability-specific statuses; do not promote features from registration alone. |
+| B01 | partial | Added a pinned snapshot of WordCraft's 521 catalog entries from `05f781cfdac1d89034c0f4f5824b597ff845f2ef`: 25 populated surfaces and 108 groups, alongside 13 default tabs, seven contextual tabs and seven auxiliary surfaces. `Zotero` and `Help` are default tabs with no catalog rows. The current Oasis crosswalk is 38 capability rows, linked to 20 source entries; unmatched entries remain unclassified. The catalog audit now rejects crosswalk command IDs absent from the pinned source. It caught and corrected `insert.date` → `insert.dateTime`. The 21 `references.json` categories remain the historical screenshot taxonomy. | Expand the crosswalk across all source rows; assign exposure, semantics and persistence independently with capability-level evidence. Review UI-only, core-only, menu-only, preservation-only and not-applicable cases instead of inferring them from absent source commands. |
 | B02 | partial | `tests/browser/ribbon/` mounts the actual editor without site/sidebar padding. `scripts/capture-ribbon-reference.mjs` rejects width mismatches and records SHA, dirty state, scenario, browser, theme, locale, DPR, fonts, measured width, group sizes and unresolved placeholders. 180 Chromium ribbons across nine tabs, five actual widths, two themes and two locales. | Contextual tabs, every popup, late fonts, scale/zoom and repeatable performance baselines. |
 | B03 | partial | Synthetic HTML fixtures for styled text, links, lists, tables and an inline image; persistence and remote web fonts disabled in the reference host. | Section/review fixtures, deterministic selection/context setup, font fingerprint and fixture content hashing. Only the text fixture has been exercised by the automated capture matrix. |
 | B04 | complete | All 53 historical scenes classified as equivalent command, related task, or no captured counterpart in `references.json`. All 53 explicitly require direct Word verification; no submenu is certified from its screenshot. | Actual Word submenu captures belong to subsequent evidence gathering. |
@@ -266,6 +266,21 @@ Evidence:
 - Full local Vitest: 324 files / 1,889 tests passed; one file/test skipped. TypeScript, changed-file ESLint, Prettier, and both static Ribbon/icon audits pass.
 
 Limits: Opaque sRGB is not full CSS Color 4 or a color-management pipeline; alpha, P3/Lab/other spaces and the full cascade remain open. DOCX self-reimport is not Word-open/repair certification. Real-Safari workflows, VoiceOver, IME and broader document stories remain in the execution queue.
+
+## Delivery 11 — pinned full WordCraft catalog baseline
+
+Date: 2026-11-10. B01 remains **partial**.
+
+The 38-row executable Oasis crosswalk was not a full reference inventory. A repeatable snapshot now records every row of WordCraft's `catalog.rs` at commit `05f781cfdac1d89034c0f4f5824b597ff845f2ef`, with source-file SHA-256 digests and the tab definitions from `ribbon.rs`. It contains 521 entries across 25 populated surfaces and 108 groups. The source declares 13 default tabs and seven contextual tabs; seven more populated surfaces are QAT, title-bar, mode, or tool surfaces. `Zotero` and `Help` are default tabs with no rows in this command catalog. These are distinct from the 21 historical screenshot categories in `references.json`.
+
+The full snapshot links the existing 38 Oasis capability rows to 20 exact WordCraft command entries where a crosswalk exists. The audit rejects crosswalk IDs absent from the pinned source. It exposed a stale `insert.date` mapping to `insert.date_time`; the actual WordCraft ID is `insert.dateTime`, now corrected. An absent crosswalk remains unclassified; it does not mean the capability is missing or not applicable.
+
+Evidence:
+
+- `npm run audit:ribbon:wordcraft:write` regenerates from the sibling WordCraft checkout (or `WORDCRAFT_ROOT`); `npm run audit:ribbon:wordcraft` checks it against the checkout. `npm run audit:ribbon` validates snapshot structure, pinned SHA, per-surface counts, all crosswalk links, and current Oasis command/placement wiring.
+- The generated [parity matrix](ribbon-parity-matrix.md) states the 521-entry reference scope beside the narrower 38-capability Oasis crosswalk.
+
+Limits: this is source inventory and command-ID evidence only. The remaining 501 rows have no direct crosswalk row; equivalence, `core-only`/`menu-only`/UI-only/preservation-only/not-applicable status, semantics, and persistence require individual review. B01 and the full M0–M5 plan remain open.
 
 ## Remaining execution queue
 

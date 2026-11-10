@@ -1,0 +1,4914 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "storytold/wordcraft",
+    "commit": "05f781cfdac1d89034c0f4f5824b597ff845f2ef",
+    "catalogPath": "crates/engine/src/catalog.rs",
+    "catalogSha256": "0d0ea247c7fefdf5177fc0c91dc00c142cd1a3a8cca97b453155b7d61ec71eba",
+    "ribbonPath": "crates/engine/src/ribbon.rs",
+    "ribbonSha256": "2c307ca095a217536abc4a03fa2213fe742b3c470d9af1187e72cc6947c12893"
+  },
+  "interpretation": "Source inventory only. A linked Oasis feature is an existing command crosswalk, not proof of semantic, persistence, layout, or accessibility parity. Empty links remain unclassified, not missing.",
+  "counts": {
+    "features": 521,
+    "surfaces": 25,
+    "defaultTabs": 13,
+    "contextualTabs": 7,
+    "representedDefaultTabs": 11,
+    "representedContextualTabs": 7,
+    "auxiliarySurfaces": 7,
+    "groups": 108,
+    "linkedRows": 20
+  },
+  "defaultTabs": [
+    "File",
+    "Home",
+    "Insert",
+    "Draw",
+    "Design",
+    "Layout",
+    "References",
+    "Mailings",
+    "Review",
+    "View",
+    "Developer",
+    "Zotero",
+    "Help"
+  ],
+  "contextualTabs": [
+    "Table Design",
+    "Table Layout",
+    "Picture Format",
+    "Shape Format",
+    "Equation",
+    "Chart Design",
+    "SmartArt Design"
+  ],
+  "unrepresentedDefaultTabs": [
+    "Zotero",
+    "Help"
+  ],
+  "unrepresentedContextualTabs": [],
+  "surfaces": {
+    "File": {
+      "features": 23,
+      "groups": 2,
+      "kind": "default-tab"
+    },
+    "Quick Access": {
+      "features": 5,
+      "groups": 1,
+      "kind": "auxiliary-surface"
+    },
+    "Title Bar": {
+      "features": 1,
+      "groups": 1,
+      "kind": "auxiliary-surface"
+    },
+    "Home": {
+      "features": 106,
+      "groups": 7,
+      "kind": "default-tab"
+    },
+    "Insert": {
+      "features": 53,
+      "groups": 10,
+      "kind": "default-tab"
+    },
+    "Draw": {
+      "features": 11,
+      "groups": 5,
+      "kind": "default-tab"
+    },
+    "Design": {
+      "features": 10,
+      "groups": 2,
+      "kind": "default-tab"
+    },
+    "Layout": {
+      "features": 22,
+      "groups": 3,
+      "kind": "default-tab"
+    },
+    "References": {
+      "features": 25,
+      "groups": 8,
+      "kind": "default-tab"
+    },
+    "Mailings": {
+      "features": 23,
+      "groups": 5,
+      "kind": "default-tab"
+    },
+    "Review": {
+      "features": 31,
+      "groups": 10,
+      "kind": "default-tab"
+    },
+    "View": {
+      "features": 29,
+      "groups": 9,
+      "kind": "default-tab"
+    },
+    "Read Mode": {
+      "features": 3,
+      "groups": 1,
+      "kind": "auxiliary-surface"
+    },
+    "Developer": {
+      "features": 11,
+      "groups": 1,
+      "kind": "default-tab"
+    },
+    "Table Design": {
+      "features": 8,
+      "groups": 3,
+      "kind": "contextual-tab"
+    },
+    "Table Layout": {
+      "features": 33,
+      "groups": 7,
+      "kind": "contextual-tab"
+    },
+    "Equation": {
+      "features": 22,
+      "groups": 5,
+      "kind": "contextual-tab"
+    },
+    "Outlining": {
+      "features": 13,
+      "groups": 2,
+      "kind": "auxiliary-surface"
+    },
+    "Picture Format": {
+      "features": 14,
+      "groups": 4,
+      "kind": "contextual-tab"
+    },
+    "Shape Format": {
+      "features": 13,
+      "groups": 4,
+      "kind": "contextual-tab"
+    },
+    "SmartArt Design": {
+      "features": 7,
+      "groups": 4,
+      "kind": "contextual-tab"
+    },
+    "Chart Design": {
+      "features": 5,
+      "groups": 3,
+      "kind": "contextual-tab"
+    },
+    "Header & Footer": {
+      "features": 5,
+      "groups": 2,
+      "kind": "auxiliary-surface"
+    },
+    "Editing": {
+      "features": 41,
+      "groups": 4,
+      "kind": "auxiliary-surface"
+    },
+    "Tools": {
+      "features": 7,
+      "groups": 5,
+      "kind": "auxiliary-surface"
+    }
+  },
+  "rows": [
+    {
+      "index": 1,
+      "sourceLine": 11,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "New",
+      "command": "file.new",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 2,
+      "sourceLine": 12,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Open",
+      "command": "file.open",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 3,
+      "sourceLine": 13,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Save",
+      "command": "file.save",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 4,
+      "sourceLine": 14,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Save As",
+      "command": "file.saveAs",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 5,
+      "sourceLine": 15,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Print",
+      "command": "file.print",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 6,
+      "sourceLine": 16,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Print Markup",
+      "command": "file.printMarkup",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 7,
+      "sourceLine": 17,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Close",
+      "command": "file.close",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 8,
+      "sourceLine": 18,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Info",
+      "command": "file.info",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 9,
+      "sourceLine": 19,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Properties",
+      "command": "file.properties",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 10,
+      "sourceLine": 20,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Export PDF",
+      "command": "file.exportPdf",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 11,
+      "sourceLine": 21,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Export Image",
+      "command": "file.exportPng",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 12,
+      "sourceLine": 22,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Options",
+      "command": "file.options",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 13,
+      "sourceLine": 23,
+      "tab": "File",
+      "group": "Options",
+      "name": "Numerals",
+      "command": "view.numeral",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 14,
+      "sourceLine": 24,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Share",
+      "command": "file.share",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 15,
+      "sourceLine": 25,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Protect Document",
+      "command": "file.protect",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 16,
+      "sourceLine": 26,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Inspect Document",
+      "command": "file.inspect",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 17,
+      "sourceLine": 27,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Check Accessibility",
+      "command": "file.accessibility",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 18,
+      "sourceLine": 28,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Check Compatibility",
+      "command": "file.compatibility",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 19,
+      "sourceLine": 29,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Version History",
+      "command": "file.versions",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 20,
+      "sourceLine": 30,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Recover Unsaved",
+      "command": "file.recover",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 21,
+      "sourceLine": 31,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "New from Template",
+      "command": "file.newFromTemplate",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 22,
+      "sourceLine": 32,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Save as Template",
+      "command": "file.saveTemplate",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 23,
+      "sourceLine": 33,
+      "tab": "File",
+      "group": "Backstage",
+      "name": "Personal Templates",
+      "command": "file.listTemplates",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 24,
+      "sourceLine": 34,
+      "tab": "Quick Access",
+      "group": "Toolbar",
+      "name": "Undo",
+      "command": "edit.undo",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 25,
+      "sourceLine": 35,
+      "tab": "Quick Access",
+      "group": "Toolbar",
+      "name": "Undo List",
+      "command": "edit.undoTo",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 26,
+      "sourceLine": 36,
+      "tab": "Quick Access",
+      "group": "Toolbar",
+      "name": "Redo",
+      "command": "edit.redo",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 27,
+      "sourceLine": 37,
+      "tab": "Quick Access",
+      "group": "Toolbar",
+      "name": "Repeat",
+      "command": "edit.repeat",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 28,
+      "sourceLine": 38,
+      "tab": "Quick Access",
+      "group": "Toolbar",
+      "name": "AutoSave",
+      "command": "file.autosave",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 29,
+      "sourceLine": 39,
+      "tab": "Title Bar",
+      "group": "Search",
+      "name": "Search (Tell Me)",
+      "command": "tools.search",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 30,
+      "sourceLine": 40,
+      "tab": "Home",
+      "group": "Clipboard",
+      "name": "Paste",
+      "command": "edit.paste",
+      "oasisFeatureIds": [
+        "home.paste"
+      ]
+    },
+    {
+      "index": 31,
+      "sourceLine": 41,
+      "tab": "Home",
+      "group": "Clipboard",
+      "name": "Paste Keep Text Only",
+      "command": "edit.pasteText",
+      "oasisFeatureIds": [
+        "home.pasteText"
+      ]
+    },
+    {
+      "index": 32,
+      "sourceLine": 42,
+      "tab": "Home",
+      "group": "Clipboard",
+      "name": "Paste Merge Formatting",
+      "command": "edit.pasteMerge",
+      "oasisFeatureIds": [
+        "home.pasteMerge"
+      ]
+    },
+    {
+      "index": 33,
+      "sourceLine": 43,
+      "tab": "Home",
+      "group": "Clipboard",
+      "name": "Paste Special",
+      "command": "edit.pasteSpecial",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 34,
+      "sourceLine": 44,
+      "tab": "Home",
+      "group": "Clipboard",
+      "name": "Cut",
+      "command": "edit.cut",
+      "oasisFeatureIds": [
+        "home.cut"
+      ]
+    },
+    {
+      "index": 35,
+      "sourceLine": 45,
+      "tab": "Home",
+      "group": "Clipboard",
+      "name": "Copy",
+      "command": "edit.copy",
+      "oasisFeatureIds": [
+        "home.copy"
+      ]
+    },
+    {
+      "index": 36,
+      "sourceLine": 46,
+      "tab": "Home",
+      "group": "Clipboard",
+      "name": "Format Painter",
+      "command": "edit.formatPainter",
+      "oasisFeatureIds": [
+        "home.formatPainter",
+        "home.formatPainterContinuous"
+      ]
+    },
+    {
+      "index": 37,
+      "sourceLine": 47,
+      "tab": "Home",
+      "group": "Clipboard",
+      "name": "Copy Formatting",
+      "command": "edit.copyFormat",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 38,
+      "sourceLine": 48,
+      "tab": "Home",
+      "group": "Clipboard",
+      "name": "Paste Formatting",
+      "command": "edit.pasteFormat",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 39,
+      "sourceLine": 49,
+      "tab": "Home",
+      "group": "Clipboard",
+      "name": "Clipboard Pane",
+      "command": "edit.clipboardPane",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 40,
+      "sourceLine": 50,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Font",
+      "command": "format.font",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 41,
+      "sourceLine": 51,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Font Size",
+      "command": "format.size",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 42,
+      "sourceLine": 52,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Increase Font Size",
+      "command": "format.growFont",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 43,
+      "sourceLine": 53,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Decrease Font Size",
+      "command": "format.shrinkFont",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 44,
+      "sourceLine": 54,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Change Case",
+      "command": "format.changeCase",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 45,
+      "sourceLine": 55,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Clear All Formatting",
+      "command": "format.clear",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 46,
+      "sourceLine": 56,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Bold",
+      "command": "format.bold",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 47,
+      "sourceLine": 57,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Italic",
+      "command": "format.italic",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 48,
+      "sourceLine": 58,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Underline",
+      "command": "format.underline",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 49,
+      "sourceLine": 59,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Double Underline",
+      "command": "format.doubleUnderline",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 50,
+      "sourceLine": 60,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Underline Color",
+      "command": "format.underlineColor",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 51,
+      "sourceLine": 61,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Strikethrough",
+      "command": "format.strikethrough",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 52,
+      "sourceLine": 62,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Subscript",
+      "command": "format.subscript",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 53,
+      "sourceLine": 63,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Superscript",
+      "command": "format.superscript",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 54,
+      "sourceLine": 64,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Text Effects Outline",
+      "command": "format.outline",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 55,
+      "sourceLine": 65,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Text Effects Shadow",
+      "command": "format.shadow",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 56,
+      "sourceLine": 66,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Text Effects and Typography",
+      "command": "format.textEffects",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 57,
+      "sourceLine": 67,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Text Highlight Color",
+      "command": "format.highlight",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 58,
+      "sourceLine": 68,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Font Color",
+      "command": "format.color",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 59,
+      "sourceLine": 69,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Character Shading",
+      "command": "format.shading",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 60,
+      "sourceLine": 70,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Font Dialog",
+      "command": "format.fontDialog",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 61,
+      "sourceLine": 71,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Double Strikethrough",
+      "command": "format.doubleStrikethrough",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 62,
+      "sourceLine": 72,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Small Caps",
+      "command": "format.smallCaps",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 63,
+      "sourceLine": 73,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Emphasis Mark",
+      "command": "format.emphasisMark",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 64,
+      "sourceLine": 74,
+      "tab": "Home",
+      "group": "Font",
+      "name": "All Caps",
+      "command": "format.allCaps",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 65,
+      "sourceLine": 75,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Hidden",
+      "command": "format.hidden",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 66,
+      "sourceLine": 76,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Emboss",
+      "command": "format.emboss",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 67,
+      "sourceLine": 77,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Engrave",
+      "command": "format.engrave",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 68,
+      "sourceLine": 78,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Character Spacing",
+      "command": "format.spacing",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 69,
+      "sourceLine": 79,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Character Scale",
+      "command": "format.scale",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 70,
+      "sourceLine": 80,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Character Position",
+      "command": "format.position",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 71,
+      "sourceLine": 81,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Character Border",
+      "command": "format.border",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 72,
+      "sourceLine": 82,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Phonetic Guide",
+      "command": "format.phonetic",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 73,
+      "sourceLine": 83,
+      "tab": "Home",
+      "group": "Font",
+      "name": "Enclose Characters",
+      "command": "format.enclose",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 74,
+      "sourceLine": 84,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Bullets",
+      "command": "para.bullets",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 75,
+      "sourceLine": 85,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Numbering",
+      "command": "para.numbering",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 76,
+      "sourceLine": 86,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Multilevel List",
+      "command": "para.multilevel",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 77,
+      "sourceLine": 87,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Define New Multilevel List",
+      "command": "list.define",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 78,
+      "sourceLine": 88,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Multilevel List Library",
+      "command": "list.multilevelPreset",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 79,
+      "sourceLine": 89,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Change List Level",
+      "command": "para.listLevel",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 80,
+      "sourceLine": 90,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Restart Numbering",
+      "command": "para.restartNumbering",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 81,
+      "sourceLine": 91,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Define New Bullet",
+      "command": "para.defineBullet",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 82,
+      "sourceLine": 92,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Define New Number Format",
+      "command": "para.defineNumber",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 83,
+      "sourceLine": 93,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Set Numbering Value",
+      "command": "para.setNumberingValue",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 84,
+      "sourceLine": 94,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Decrease Indent",
+      "command": "para.outdent",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 85,
+      "sourceLine": 95,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Increase Indent",
+      "command": "para.indent",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 86,
+      "sourceLine": 96,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Sort",
+      "command": "para.sort",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 87,
+      "sourceLine": 97,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Show/Hide Marks",
+      "command": "view.marks",
+      "oasisFeatureIds": [
+        "view.paragraphMarks"
+      ]
+    },
+    {
+      "index": 88,
+      "sourceLine": 98,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Align Left",
+      "command": "para.alignLeft",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 89,
+      "sourceLine": 99,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Center",
+      "command": "para.alignCenter",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 90,
+      "sourceLine": 100,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Align Right",
+      "command": "para.alignRight",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 91,
+      "sourceLine": 101,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Justify",
+      "command": "para.justify",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 92,
+      "sourceLine": 102,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Distributed",
+      "command": "para.distribute",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 93,
+      "sourceLine": 103,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Line Spacing",
+      "command": "para.lineSpacing",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 94,
+      "sourceLine": 104,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Add Space Before",
+      "command": "para.addSpaceBefore",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 95,
+      "sourceLine": 105,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Remove Space After",
+      "command": "para.removeSpaceAfter",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 96,
+      "sourceLine": 106,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Shading",
+      "command": "para.shading",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 97,
+      "sourceLine": 107,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Borders",
+      "command": "para.borders",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 98,
+      "sourceLine": 108,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Horizontal Line",
+      "command": "insert.horizontalLine",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 99,
+      "sourceLine": 109,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Paragraph Dialog",
+      "command": "para.dialog",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 100,
+      "sourceLine": 110,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Tabs",
+      "command": "para.tabs",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 101,
+      "sourceLine": 111,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Keep with Next",
+      "command": "para.keepNext",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 102,
+      "sourceLine": 112,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Keep Lines Together",
+      "command": "para.keepLines",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 103,
+      "sourceLine": 113,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Page Break Before",
+      "command": "para.pageBreakBefore",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 104,
+      "sourceLine": 114,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Widow/Orphan Control",
+      "command": "para.widowControl",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 105,
+      "sourceLine": 115,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Outline Level",
+      "command": "para.outlineLevel",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 106,
+      "sourceLine": 116,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Hanging Indent",
+      "command": "para.hangingIndent",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 107,
+      "sourceLine": 117,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Right-to-Left Text Direction",
+      "command": "para.rtl",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 108,
+      "sourceLine": 118,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Left-to-Right Text Direction",
+      "command": "para.ltr",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 109,
+      "sourceLine": 119,
+      "tab": "Home",
+      "group": "Paragraph",
+      "name": "Asian Typography",
+      "command": "para.asianTypography",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 110,
+      "sourceLine": 120,
+      "tab": "Home",
+      "group": "Styles",
+      "name": "Styles Gallery",
+      "command": "para.style",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 111,
+      "sourceLine": 121,
+      "tab": "Home",
+      "group": "Styles",
+      "name": "Normal",
+      "command": "para.normal",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 112,
+      "sourceLine": 122,
+      "tab": "Home",
+      "group": "Styles",
+      "name": "Heading 1",
+      "command": "para.heading1",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 113,
+      "sourceLine": 123,
+      "tab": "Home",
+      "group": "Styles",
+      "name": "Heading 2",
+      "command": "para.heading2",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 114,
+      "sourceLine": 124,
+      "tab": "Home",
+      "group": "Styles",
+      "name": "Heading 3",
+      "command": "para.heading3",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 115,
+      "sourceLine": 125,
+      "tab": "Home",
+      "group": "Styles",
+      "name": "Create a Style",
+      "command": "styles.create",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 116,
+      "sourceLine": 126,
+      "tab": "Home",
+      "group": "Styles",
+      "name": "Modify Style",
+      "command": "styles.modify",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 117,
+      "sourceLine": 127,
+      "tab": "Home",
+      "group": "Styles",
+      "name": "Update Style to Match",
+      "command": "styles.updateToMatch",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 118,
+      "sourceLine": 128,
+      "tab": "Home",
+      "group": "Styles",
+      "name": "Delete Style",
+      "command": "styles.delete",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 119,
+      "sourceLine": 129,
+      "tab": "Home",
+      "group": "Styles",
+      "name": "Styles Pane",
+      "command": "styles.pane",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 120,
+      "sourceLine": 130,
+      "tab": "Home",
+      "group": "Styles",
+      "name": "Style Inspector",
+      "command": "styles.inspector",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 121,
+      "sourceLine": 131,
+      "tab": "Home",
+      "group": "Styles",
+      "name": "Manage Styles",
+      "command": "styles.manage",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 122,
+      "sourceLine": 132,
+      "tab": "Home",
+      "group": "Styles",
+      "name": "Apply Styles",
+      "command": "styles.apply",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 123,
+      "sourceLine": 133,
+      "tab": "Home",
+      "group": "Styles",
+      "name": "Character Style",
+      "command": "format.charStyle",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 124,
+      "sourceLine": 134,
+      "tab": "Home",
+      "group": "Editing",
+      "name": "Find",
+      "command": "edit.find",
+      "oasisFeatureIds": [
+        "home.find"
+      ]
+    },
+    {
+      "index": 125,
+      "sourceLine": 135,
+      "tab": "Home",
+      "group": "Editing",
+      "name": "Find Next",
+      "command": "edit.findNext",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 126,
+      "sourceLine": 136,
+      "tab": "Home",
+      "group": "Editing",
+      "name": "Find Previous",
+      "command": "edit.findPrevious",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 127,
+      "sourceLine": 137,
+      "tab": "Home",
+      "group": "Editing",
+      "name": "Advanced Find",
+      "command": "edit.advancedFind",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 128,
+      "sourceLine": 138,
+      "tab": "Home",
+      "group": "Editing",
+      "name": "Replace",
+      "command": "edit.replace",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 129,
+      "sourceLine": 139,
+      "tab": "Home",
+      "group": "Editing",
+      "name": "Replace All",
+      "command": "edit.replaceAll",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 130,
+      "sourceLine": 140,
+      "tab": "Home",
+      "group": "Editing",
+      "name": "Go To",
+      "command": "edit.goto",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 131,
+      "sourceLine": 141,
+      "tab": "Home",
+      "group": "Editing",
+      "name": "Select All",
+      "command": "select.all",
+      "oasisFeatureIds": [
+        "home.selectAll"
+      ]
+    },
+    {
+      "index": 132,
+      "sourceLine": 142,
+      "tab": "Home",
+      "group": "Editing",
+      "name": "Select Objects",
+      "command": "select.objects",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 133,
+      "sourceLine": 143,
+      "tab": "Home",
+      "group": "Editing",
+      "name": "Select Similar Formatting",
+      "command": "select.similar",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 134,
+      "sourceLine": 144,
+      "tab": "Home",
+      "group": "Voice",
+      "name": "Dictate",
+      "command": "tools.dictate",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 135,
+      "sourceLine": 145,
+      "tab": "Home",
+      "group": "Editor",
+      "name": "Editor",
+      "command": "review.editor",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 136,
+      "sourceLine": 146,
+      "tab": "Insert",
+      "group": "Pages",
+      "name": "Cover Page",
+      "command": "insert.coverPage",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 137,
+      "sourceLine": 147,
+      "tab": "Insert",
+      "group": "Pages",
+      "name": "Blank Page",
+      "command": "insert.blankPage",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 138,
+      "sourceLine": 148,
+      "tab": "Insert",
+      "group": "Pages",
+      "name": "Page Break",
+      "command": "insert.pageBreak",
+      "oasisFeatureIds": [
+        "insert.pageBreak"
+      ]
+    },
+    {
+      "index": 139,
+      "sourceLine": 149,
+      "tab": "Insert",
+      "group": "Tables",
+      "name": "Insert Table",
+      "command": "insert.table",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 140,
+      "sourceLine": 150,
+      "tab": "Insert",
+      "group": "Tables",
+      "name": "Draw Table",
+      "command": "table.draw",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 141,
+      "sourceLine": 151,
+      "tab": "Insert",
+      "group": "Tables",
+      "name": "Convert Text to Table",
+      "command": "table.fromText",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 142,
+      "sourceLine": 152,
+      "tab": "Insert",
+      "group": "Tables",
+      "name": "Excel Spreadsheet",
+      "command": "insert.spreadsheet",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 143,
+      "sourceLine": 153,
+      "tab": "Insert",
+      "group": "Tables",
+      "name": "Quick Tables",
+      "command": "table.quick",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 144,
+      "sourceLine": 154,
+      "tab": "Insert",
+      "group": "Illustrations",
+      "name": "Pictures",
+      "command": "insert.picture",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 145,
+      "sourceLine": 155,
+      "tab": "Insert",
+      "group": "Illustrations",
+      "name": "Online Pictures",
+      "command": "insert.onlinePicture",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 146,
+      "sourceLine": 156,
+      "tab": "Insert",
+      "group": "Illustrations",
+      "name": "Shapes",
+      "command": "insert.shape",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 147,
+      "sourceLine": 157,
+      "tab": "Insert",
+      "group": "Illustrations",
+      "name": "Icons",
+      "command": "insert.icon",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 148,
+      "sourceLine": 158,
+      "tab": "Insert",
+      "group": "Illustrations",
+      "name": "3D Models",
+      "command": "insert.model3d",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 149,
+      "sourceLine": 159,
+      "tab": "Insert",
+      "group": "Illustrations",
+      "name": "SmartArt",
+      "command": "insert.smartArt",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 150,
+      "sourceLine": 160,
+      "tab": "Insert",
+      "group": "Illustrations",
+      "name": "Chart",
+      "command": "insert.chart",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 151,
+      "sourceLine": 161,
+      "tab": "Insert",
+      "group": "Illustrations",
+      "name": "Screenshot",
+      "command": "insert.screenshot",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 152,
+      "sourceLine": 162,
+      "tab": "Insert",
+      "group": "Illustrations",
+      "name": "Drawing Canvas",
+      "command": "insert.canvas",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 153,
+      "sourceLine": 163,
+      "tab": "Insert",
+      "group": "Add-ins",
+      "name": "Get Add-ins",
+      "command": "addins.get",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 154,
+      "sourceLine": 164,
+      "tab": "Insert",
+      "group": "Media",
+      "name": "Online Video",
+      "command": "insert.video",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 155,
+      "sourceLine": 165,
+      "tab": "Insert",
+      "group": "Links",
+      "name": "Link",
+      "command": "insert.link",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 156,
+      "sourceLine": 166,
+      "tab": "Insert",
+      "group": "Links",
+      "name": "Remove Link",
+      "command": "insert.removeLink",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 157,
+      "sourceLine": 167,
+      "tab": "Insert",
+      "group": "Links",
+      "name": "Bookmark",
+      "command": "insert.bookmark",
+      "oasisFeatureIds": [
+        "insert.bookmark"
+      ]
+    },
+    {
+      "index": 158,
+      "sourceLine": 168,
+      "tab": "Insert",
+      "group": "Links",
+      "name": "Cross-reference",
+      "command": "insert.crossReference",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 159,
+      "sourceLine": 169,
+      "tab": "Insert",
+      "group": "Comments",
+      "name": "Comment",
+      "command": "review.newComment",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 160,
+      "sourceLine": 170,
+      "tab": "Insert",
+      "group": "Header & Footer",
+      "name": "Header",
+      "command": "insert.header",
+      "oasisFeatureIds": [
+        "insert.header"
+      ]
+    },
+    {
+      "index": 161,
+      "sourceLine": 171,
+      "tab": "Insert",
+      "group": "Header & Footer",
+      "name": "Footer",
+      "command": "insert.footer",
+      "oasisFeatureIds": [
+        "insert.footer"
+      ]
+    },
+    {
+      "index": 162,
+      "sourceLine": 172,
+      "tab": "Insert",
+      "group": "Header & Footer",
+      "name": "Page Number",
+      "command": "insert.pageNumber",
+      "oasisFeatureIds": [
+        "insert.pageNumber",
+        "insert.pageNumberXOfY",
+        "insert.pageNumberTop",
+        "insert.pageNumberBottom"
+      ]
+    },
+    {
+      "index": 163,
+      "sourceLine": 173,
+      "tab": "Insert",
+      "group": "Header & Footer",
+      "name": "Edit Header",
+      "command": "insert.editHeader",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 164,
+      "sourceLine": 174,
+      "tab": "Insert",
+      "group": "Header & Footer",
+      "name": "Edit Footer",
+      "command": "insert.editFooter",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 165,
+      "sourceLine": 175,
+      "tab": "Insert",
+      "group": "Header & Footer",
+      "name": "Remove Header",
+      "command": "insert.removeHeader",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 166,
+      "sourceLine": 176,
+      "tab": "Insert",
+      "group": "Header & Footer",
+      "name": "Remove Footer",
+      "command": "insert.removeFooter",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 167,
+      "sourceLine": 177,
+      "tab": "Insert",
+      "group": "Header & Footer",
+      "name": "Format Page Numbers",
+      "command": "layout.pageNumberFormat",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 168,
+      "sourceLine": 178,
+      "tab": "Insert",
+      "group": "Header & Footer",
+      "name": "Close Header and Footer",
+      "command": "insert.closeHeader",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 169,
+      "sourceLine": 179,
+      "tab": "Insert",
+      "group": "Header & Footer",
+      "name": "Different First Page",
+      "command": "layout.differentFirstPage",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 170,
+      "sourceLine": 180,
+      "tab": "Insert",
+      "group": "Header & Footer",
+      "name": "Different Odd & Even",
+      "command": "layout.differentOddEven",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 171,
+      "sourceLine": 181,
+      "tab": "Insert",
+      "group": "Header & Footer",
+      "name": "Link to Previous",
+      "command": "layout.linkToPrevious",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 172,
+      "sourceLine": 182,
+      "tab": "Insert",
+      "group": "Text",
+      "name": "Text Box",
+      "command": "insert.textBox",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 173,
+      "sourceLine": 183,
+      "tab": "Insert",
+      "group": "Text",
+      "name": "Quick Parts",
+      "command": "insert.quickParts",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 174,
+      "sourceLine": 184,
+      "tab": "Insert",
+      "group": "Text",
+      "name": "AutoText",
+      "command": "insert.autoText",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 175,
+      "sourceLine": 185,
+      "tab": "Insert",
+      "group": "Text",
+      "name": "Document Property",
+      "command": "insert.docProperty",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 176,
+      "sourceLine": 186,
+      "tab": "Insert",
+      "group": "Text",
+      "name": "Field",
+      "command": "insert.field",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 177,
+      "sourceLine": 187,
+      "tab": "Insert",
+      "group": "Text",
+      "name": "WordArt",
+      "command": "insert.wordArt",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 178,
+      "sourceLine": 188,
+      "tab": "Insert",
+      "group": "Text",
+      "name": "Drop Cap",
+      "command": "insert.dropCap",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 179,
+      "sourceLine": 189,
+      "tab": "Insert",
+      "group": "Text",
+      "name": "Signature Line",
+      "command": "insert.signatureLine",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 180,
+      "sourceLine": 190,
+      "tab": "Insert",
+      "group": "Text",
+      "name": "Date & Time",
+      "command": "insert.dateTime",
+      "oasisFeatureIds": [
+        "insert.date"
+      ]
+    },
+    {
+      "index": 181,
+      "sourceLine": 191,
+      "tab": "Insert",
+      "group": "Text",
+      "name": "Object",
+      "command": "insert.object",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 182,
+      "sourceLine": 192,
+      "tab": "Insert",
+      "group": "Text",
+      "name": "Text from File",
+      "command": "insert.textFromFile",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 183,
+      "sourceLine": 193,
+      "tab": "Insert",
+      "group": "Symbols",
+      "name": "Equation",
+      "command": "insert.equation",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 184,
+      "sourceLine": 194,
+      "tab": "Insert",
+      "group": "Symbols",
+      "name": "Ink Equation",
+      "command": "insert.inkEquation",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 185,
+      "sourceLine": 195,
+      "tab": "Insert",
+      "group": "Symbols",
+      "name": "Symbol",
+      "command": "insert.symbol",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 186,
+      "sourceLine": 196,
+      "tab": "Insert",
+      "group": "Symbols",
+      "name": "Nonbreaking Space",
+      "command": "text.nbsp",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 187,
+      "sourceLine": 197,
+      "tab": "Insert",
+      "group": "Symbols",
+      "name": "Nonbreaking Hyphen",
+      "command": "text.nbHyphen",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 188,
+      "sourceLine": 198,
+      "tab": "Insert",
+      "group": "Symbols",
+      "name": "Optional Hyphen",
+      "command": "text.optionalHyphen",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 189,
+      "sourceLine": 199,
+      "tab": "Draw",
+      "group": "Tools",
+      "name": "Select",
+      "command": "draw.select",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 190,
+      "sourceLine": 200,
+      "tab": "Draw",
+      "group": "Tools",
+      "name": "Lasso Select",
+      "command": "draw.lasso",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 191,
+      "sourceLine": 201,
+      "tab": "Draw",
+      "group": "Tools",
+      "name": "Eraser",
+      "command": "draw.eraser",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 192,
+      "sourceLine": 202,
+      "tab": "Draw",
+      "group": "Pens",
+      "name": "Pen",
+      "command": "draw.pen",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 193,
+      "sourceLine": 203,
+      "tab": "Draw",
+      "group": "Pens",
+      "name": "Pencil",
+      "command": "draw.pencil",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 194,
+      "sourceLine": 204,
+      "tab": "Draw",
+      "group": "Pens",
+      "name": "Highlighter",
+      "command": "draw.highlighter",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 195,
+      "sourceLine": 205,
+      "tab": "Draw",
+      "group": "Pens",
+      "name": "Add Pen",
+      "command": "draw.addPen",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 196,
+      "sourceLine": 206,
+      "tab": "Draw",
+      "group": "Convert",
+      "name": "Ink to Shape",
+      "command": "draw.inkToShape",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 197,
+      "sourceLine": 207,
+      "tab": "Draw",
+      "group": "Convert",
+      "name": "Ink to Math",
+      "command": "draw.inkToMath",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 198,
+      "sourceLine": 208,
+      "tab": "Draw",
+      "group": "Insert",
+      "name": "Drawing Canvas",
+      "command": "insert.canvas",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 199,
+      "sourceLine": 209,
+      "tab": "Draw",
+      "group": "Replay",
+      "name": "Ink Replay",
+      "command": "draw.replay",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 200,
+      "sourceLine": 210,
+      "tab": "Design",
+      "group": "Document Formatting",
+      "name": "Themes",
+      "command": "design.theme",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 201,
+      "sourceLine": 211,
+      "tab": "Design",
+      "group": "Document Formatting",
+      "name": "Style Set",
+      "command": "design.styleSet",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 202,
+      "sourceLine": 212,
+      "tab": "Design",
+      "group": "Document Formatting",
+      "name": "Colors",
+      "command": "design.themeColors",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 203,
+      "sourceLine": 213,
+      "tab": "Design",
+      "group": "Document Formatting",
+      "name": "Fonts",
+      "command": "design.themeFonts",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 204,
+      "sourceLine": 214,
+      "tab": "Design",
+      "group": "Document Formatting",
+      "name": "Paragraph Spacing",
+      "command": "design.paragraphSpacing",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 205,
+      "sourceLine": 215,
+      "tab": "Design",
+      "group": "Document Formatting",
+      "name": "Effects",
+      "command": "design.effects",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 206,
+      "sourceLine": 216,
+      "tab": "Design",
+      "group": "Document Formatting",
+      "name": "Set as Default",
+      "command": "design.setDefault",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 207,
+      "sourceLine": 217,
+      "tab": "Design",
+      "group": "Page Background",
+      "name": "Watermark",
+      "command": "design.watermark",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 208,
+      "sourceLine": 218,
+      "tab": "Design",
+      "group": "Page Background",
+      "name": "Page Color",
+      "command": "design.pageColor",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 209,
+      "sourceLine": 219,
+      "tab": "Design",
+      "group": "Page Background",
+      "name": "Page Borders",
+      "command": "design.pageBorders",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 210,
+      "sourceLine": 220,
+      "tab": "Layout",
+      "group": "Page Setup",
+      "name": "Margins",
+      "command": "layout.margins",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 211,
+      "sourceLine": 221,
+      "tab": "Layout",
+      "group": "Page Setup",
+      "name": "Orientation",
+      "command": "layout.orientation",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 212,
+      "sourceLine": 222,
+      "tab": "Layout",
+      "group": "Page Setup",
+      "name": "Size",
+      "command": "layout.size",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 213,
+      "sourceLine": 223,
+      "tab": "Layout",
+      "group": "Page Setup",
+      "name": "Columns",
+      "command": "layout.columns",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 214,
+      "sourceLine": 224,
+      "tab": "Layout",
+      "group": "Page Setup",
+      "name": "Breaks",
+      "command": "layout.break",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 215,
+      "sourceLine": 225,
+      "tab": "Layout",
+      "group": "Page Setup",
+      "name": "Line Numbers",
+      "command": "layout.lineNumbers",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 216,
+      "sourceLine": 226,
+      "tab": "Layout",
+      "group": "Page Setup",
+      "name": "Hyphenation",
+      "command": "layout.hyphenation",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 217,
+      "sourceLine": 227,
+      "tab": "Layout",
+      "group": "Page Setup",
+      "name": "Page Setup Dialog",
+      "command": "layout.pageSetup",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 218,
+      "sourceLine": 228,
+      "tab": "Layout",
+      "group": "Page Setup",
+      "name": "Vertical Alignment",
+      "command": "layout.verticalAlign",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 219,
+      "sourceLine": 229,
+      "tab": "Layout",
+      "group": "Page Setup",
+      "name": "Document Grid",
+      "command": "layout.documentGrid",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 220,
+      "sourceLine": 230,
+      "tab": "Layout",
+      "group": "Page Setup",
+      "name": "Section Direction",
+      "command": "layout.sectionRtl",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 221,
+      "sourceLine": 231,
+      "tab": "Layout",
+      "group": "Page Setup",
+      "name": "Text Direction",
+      "command": "layout.textDirection",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 222,
+      "sourceLine": 232,
+      "tab": "Layout",
+      "group": "Paragraph",
+      "name": "Indent",
+      "command": "para.indents",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 223,
+      "sourceLine": 233,
+      "tab": "Layout",
+      "group": "Paragraph",
+      "name": "Spacing",
+      "command": "para.spacing",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 224,
+      "sourceLine": 234,
+      "tab": "Layout",
+      "group": "Arrange",
+      "name": "Position",
+      "command": "arrange.position",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 225,
+      "sourceLine": 235,
+      "tab": "Layout",
+      "group": "Arrange",
+      "name": "Wrap Text",
+      "command": "arrange.wrap",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 226,
+      "sourceLine": 236,
+      "tab": "Layout",
+      "group": "Arrange",
+      "name": "Bring Forward",
+      "command": "arrange.bringForward",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 227,
+      "sourceLine": 237,
+      "tab": "Layout",
+      "group": "Arrange",
+      "name": "Send Backward",
+      "command": "arrange.sendBackward",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 228,
+      "sourceLine": 238,
+      "tab": "Layout",
+      "group": "Arrange",
+      "name": "Selection Pane",
+      "command": "arrange.selectionPane",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 229,
+      "sourceLine": 239,
+      "tab": "Layout",
+      "group": "Arrange",
+      "name": "Align",
+      "command": "arrange.align",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 230,
+      "sourceLine": 240,
+      "tab": "Layout",
+      "group": "Arrange",
+      "name": "Group",
+      "command": "arrange.group",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 231,
+      "sourceLine": 241,
+      "tab": "Layout",
+      "group": "Arrange",
+      "name": "Rotate",
+      "command": "arrange.rotate",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 232,
+      "sourceLine": 242,
+      "tab": "References",
+      "group": "Table of Contents",
+      "name": "Table of Contents",
+      "command": "references.toc",
+      "oasisFeatureIds": [
+        "references.toc"
+      ]
+    },
+    {
+      "index": 233,
+      "sourceLine": 243,
+      "tab": "References",
+      "group": "Table of Contents",
+      "name": "Add Text",
+      "command": "references.addText",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 234,
+      "sourceLine": 244,
+      "tab": "References",
+      "group": "Table of Contents",
+      "name": "Update Table",
+      "command": "references.updateToc",
+      "oasisFeatureIds": [
+        "references.updateToc"
+      ]
+    },
+    {
+      "index": 235,
+      "sourceLine": 245,
+      "tab": "References",
+      "group": "Table of Contents",
+      "name": "Remove Table of Contents",
+      "command": "references.removeToc",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 236,
+      "sourceLine": 246,
+      "tab": "References",
+      "group": "Footnotes",
+      "name": "Insert Footnote",
+      "command": "references.footnote",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 237,
+      "sourceLine": 247,
+      "tab": "References",
+      "group": "Footnotes",
+      "name": "Insert Endnote",
+      "command": "references.endnote",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 238,
+      "sourceLine": 248,
+      "tab": "References",
+      "group": "Footnotes",
+      "name": "Next Footnote",
+      "command": "references.nextFootnote",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 239,
+      "sourceLine": 249,
+      "tab": "References",
+      "group": "Footnotes",
+      "name": "Show Notes",
+      "command": "references.notes",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 240,
+      "sourceLine": 250,
+      "tab": "References",
+      "group": "Footnotes",
+      "name": "Footnote Options",
+      "command": "references.noteOptions",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 241,
+      "sourceLine": 251,
+      "tab": "References",
+      "group": "Research",
+      "name": "Researcher",
+      "command": "references.researcher",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 242,
+      "sourceLine": 252,
+      "tab": "References",
+      "group": "Citations",
+      "name": "Insert Citation",
+      "command": "references.citation",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 243,
+      "sourceLine": 253,
+      "tab": "References",
+      "group": "Citations",
+      "name": "Manage Sources",
+      "command": "references.sources",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 244,
+      "sourceLine": 254,
+      "tab": "References",
+      "group": "Citations",
+      "name": "Style",
+      "command": "references.citationStyle",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 245,
+      "sourceLine": 255,
+      "tab": "References",
+      "group": "Citations",
+      "name": "Bibliography",
+      "command": "references.bibliography",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 246,
+      "sourceLine": 256,
+      "tab": "References",
+      "group": "Captions",
+      "name": "Insert Caption",
+      "command": "references.caption",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 247,
+      "sourceLine": 257,
+      "tab": "References",
+      "group": "Captions",
+      "name": "Insert Table of Figures",
+      "command": "references.tableOfFigures",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 248,
+      "sourceLine": 258,
+      "tab": "References",
+      "group": "Captions",
+      "name": "Update Table of Figures",
+      "command": "references.updateFigures",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 249,
+      "sourceLine": 259,
+      "tab": "References",
+      "group": "Captions",
+      "name": "Cross-reference",
+      "command": "insert.crossReference",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 250,
+      "sourceLine": 260,
+      "tab": "References",
+      "group": "Index",
+      "name": "Mark Entry",
+      "command": "references.markEntry",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 251,
+      "sourceLine": 261,
+      "tab": "References",
+      "group": "Index",
+      "name": "Insert Index",
+      "command": "references.index",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 252,
+      "sourceLine": 262,
+      "tab": "References",
+      "group": "Index",
+      "name": "Update Index",
+      "command": "references.updateIndex",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 253,
+      "sourceLine": 263,
+      "tab": "References",
+      "group": "Table of Authorities",
+      "name": "Mark Citation",
+      "command": "references.markCitation",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 254,
+      "sourceLine": 264,
+      "tab": "References",
+      "group": "Table of Authorities",
+      "name": "Insert Table of Authorities",
+      "command": "references.tableOfAuthorities",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 255,
+      "sourceLine": 265,
+      "tab": "References",
+      "group": "Table of Authorities",
+      "name": "Update Table",
+      "command": "references.updateAuthorities",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 256,
+      "sourceLine": 266,
+      "tab": "References",
+      "group": "Fields",
+      "name": "Update Fields",
+      "command": "references.updateFields",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 257,
+      "sourceLine": 267,
+      "tab": "Mailings",
+      "group": "Create",
+      "name": "Envelopes",
+      "command": "mailings.envelopes",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 258,
+      "sourceLine": 268,
+      "tab": "Mailings",
+      "group": "Create",
+      "name": "Labels",
+      "command": "mailings.labels",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 259,
+      "sourceLine": 269,
+      "tab": "Mailings",
+      "group": "Start Mail Merge",
+      "name": "Start Mail Merge",
+      "command": "mailings.start",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 260,
+      "sourceLine": 270,
+      "tab": "Mailings",
+      "group": "Start Mail Merge",
+      "name": "Select Recipients",
+      "command": "mailings.recipients",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 261,
+      "sourceLine": 271,
+      "tab": "Mailings",
+      "group": "Start Mail Merge",
+      "name": "Edit Recipient List",
+      "command": "mailings.editRecipients",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 262,
+      "sourceLine": 272,
+      "tab": "Mailings",
+      "group": "Start Mail Merge",
+      "name": "Filter Recipients",
+      "command": "mailings.filterRecipients",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 263,
+      "sourceLine": 273,
+      "tab": "Mailings",
+      "group": "Start Mail Merge",
+      "name": "Sort Recipients",
+      "command": "mailings.sortRecipients",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 264,
+      "sourceLine": 274,
+      "tab": "Mailings",
+      "group": "Write & Insert Fields",
+      "name": "Highlight Merge Fields",
+      "command": "mailings.highlightFields",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 265,
+      "sourceLine": 275,
+      "tab": "Mailings",
+      "group": "Write & Insert Fields",
+      "name": "Address Block",
+      "command": "mailings.addressBlock",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 266,
+      "sourceLine": 276,
+      "tab": "Mailings",
+      "group": "Write & Insert Fields",
+      "name": "Greeting Line",
+      "command": "mailings.greetingLine",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 267,
+      "sourceLine": 277,
+      "tab": "Mailings",
+      "group": "Write & Insert Fields",
+      "name": "Insert Merge Field",
+      "command": "mailings.insertField",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 268,
+      "sourceLine": 278,
+      "tab": "Mailings",
+      "group": "Write & Insert Fields",
+      "name": "Rules",
+      "command": "mailings.rules",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 269,
+      "sourceLine": 279,
+      "tab": "Mailings",
+      "group": "Write & Insert Fields",
+      "name": "Match Fields",
+      "command": "mailings.matchFields",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 270,
+      "sourceLine": 280,
+      "tab": "Mailings",
+      "group": "Preview Results",
+      "name": "Preview Results",
+      "command": "mailings.preview",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 271,
+      "sourceLine": 281,
+      "tab": "Mailings",
+      "group": "Preview Results",
+      "name": "Next Record",
+      "command": "mailings.next",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 272,
+      "sourceLine": 282,
+      "tab": "Mailings",
+      "group": "Preview Results",
+      "name": "Previous Record",
+      "command": "mailings.previous",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 273,
+      "sourceLine": 283,
+      "tab": "Mailings",
+      "group": "Preview Results",
+      "name": "First Record",
+      "command": "mailings.first",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 274,
+      "sourceLine": 284,
+      "tab": "Mailings",
+      "group": "Preview Results",
+      "name": "Last Record",
+      "command": "mailings.last",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 275,
+      "sourceLine": 285,
+      "tab": "Mailings",
+      "group": "Preview Results",
+      "name": "Go to Record",
+      "command": "mailings.goToRecord",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 276,
+      "sourceLine": 286,
+      "tab": "Mailings",
+      "group": "Preview Results",
+      "name": "Find Recipient",
+      "command": "mailings.findRecipient",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 277,
+      "sourceLine": 287,
+      "tab": "Mailings",
+      "group": "Preview Results",
+      "name": "Check for Errors",
+      "command": "mailings.checkErrors",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 278,
+      "sourceLine": 288,
+      "tab": "Mailings",
+      "group": "Finish",
+      "name": "Finish & Merge",
+      "command": "mailings.finish",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 279,
+      "sourceLine": 289,
+      "tab": "Mailings",
+      "group": "Finish",
+      "name": "Print Documents",
+      "command": "mailings.printDocuments",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 280,
+      "sourceLine": 290,
+      "tab": "Review",
+      "group": "Proofing",
+      "name": "Spelling & Grammar",
+      "command": "review.spelling",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 281,
+      "sourceLine": 291,
+      "tab": "Review",
+      "group": "Proofing",
+      "name": "Thesaurus",
+      "command": "review.thesaurus",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 282,
+      "sourceLine": 292,
+      "tab": "Review",
+      "group": "Proofing",
+      "name": "Word Count",
+      "command": "review.wordCount",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 283,
+      "sourceLine": 293,
+      "tab": "Review",
+      "group": "Speech",
+      "name": "Read Aloud",
+      "command": "review.readAloud",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 284,
+      "sourceLine": 294,
+      "tab": "Review",
+      "group": "Accessibility",
+      "name": "Check Accessibility",
+      "command": "file.accessibility",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 285,
+      "sourceLine": 295,
+      "tab": "Review",
+      "group": "Accessibility",
+      "name": "Alt Text",
+      "command": "view.altTextPane",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 286,
+      "sourceLine": 296,
+      "tab": "Review",
+      "group": "Language",
+      "name": "Translate",
+      "command": "review.translate",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 287,
+      "sourceLine": 297,
+      "tab": "Review",
+      "group": "Language",
+      "name": "Language",
+      "command": "review.language",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 288,
+      "sourceLine": 298,
+      "tab": "Review",
+      "group": "Comments",
+      "name": "New Comment",
+      "command": "review.newComment",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 289,
+      "sourceLine": 299,
+      "tab": "Review",
+      "group": "Comments",
+      "name": "Delete",
+      "command": "review.deleteComment",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 290,
+      "sourceLine": 300,
+      "tab": "Review",
+      "group": "Comments",
+      "name": "Previous",
+      "command": "review.previousComment",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 291,
+      "sourceLine": 301,
+      "tab": "Review",
+      "group": "Comments",
+      "name": "Next",
+      "command": "review.nextComment",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 292,
+      "sourceLine": 302,
+      "tab": "Review",
+      "group": "Comments",
+      "name": "Show Comments",
+      "command": "review.comments",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 293,
+      "sourceLine": 303,
+      "tab": "Review",
+      "group": "Comments",
+      "name": "Resolve",
+      "command": "review.resolveComment",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 294,
+      "sourceLine": 304,
+      "tab": "Review",
+      "group": "Comments",
+      "name": "Reply",
+      "command": "review.reply",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 295,
+      "sourceLine": 305,
+      "tab": "Review",
+      "group": "Tracking",
+      "name": "Track Changes",
+      "command": "review.trackChanges",
+      "oasisFeatureIds": [
+        "review.trackChanges"
+      ]
+    },
+    {
+      "index": 296,
+      "sourceLine": 306,
+      "tab": "Review",
+      "group": "Tracking",
+      "name": "Display for Review",
+      "command": "review.markup",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 297,
+      "sourceLine": 307,
+      "tab": "Review",
+      "group": "Tracking",
+      "name": "Show Markup",
+      "command": "review.showMarkup",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 298,
+      "sourceLine": 308,
+      "tab": "Review",
+      "group": "Tracking",
+      "name": "Reviewing Pane",
+      "command": "review.changes",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 299,
+      "sourceLine": 309,
+      "tab": "Review",
+      "group": "Tracking",
+      "name": "Track Changes Options",
+      "command": "review.trackingOptions",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 300,
+      "sourceLine": 310,
+      "tab": "Review",
+      "group": "Changes",
+      "name": "Accept",
+      "command": "review.accept",
+      "oasisFeatureIds": [
+        "review.accept"
+      ]
+    },
+    {
+      "index": 301,
+      "sourceLine": 311,
+      "tab": "Review",
+      "group": "Changes",
+      "name": "Reject",
+      "command": "review.reject",
+      "oasisFeatureIds": [
+        "review.reject"
+      ]
+    },
+    {
+      "index": 302,
+      "sourceLine": 312,
+      "tab": "Review",
+      "group": "Changes",
+      "name": "Accept All",
+      "command": "review.acceptAll",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 303,
+      "sourceLine": 313,
+      "tab": "Review",
+      "group": "Changes",
+      "name": "Reject All",
+      "command": "review.rejectAll",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 304,
+      "sourceLine": 314,
+      "tab": "Review",
+      "group": "Changes",
+      "name": "Previous Change",
+      "command": "review.previousChange",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 305,
+      "sourceLine": 315,
+      "tab": "Review",
+      "group": "Changes",
+      "name": "Next Change",
+      "command": "review.nextChange",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 306,
+      "sourceLine": 316,
+      "tab": "Review",
+      "group": "Compare",
+      "name": "Compare",
+      "command": "review.compare",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 307,
+      "sourceLine": 317,
+      "tab": "Review",
+      "group": "Compare",
+      "name": "Combine",
+      "command": "review.combine",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 308,
+      "sourceLine": 318,
+      "tab": "Review",
+      "group": "Protect",
+      "name": "Block Authors",
+      "command": "review.blockAuthors",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 309,
+      "sourceLine": 319,
+      "tab": "Review",
+      "group": "Protect",
+      "name": "Restrict Editing",
+      "command": "review.restrict",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 310,
+      "sourceLine": 320,
+      "tab": "Review",
+      "group": "Ink",
+      "name": "Hide Ink",
+      "command": "review.hideInk",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 311,
+      "sourceLine": 321,
+      "tab": "View",
+      "group": "Views",
+      "name": "Read Mode",
+      "command": "view.readMode",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 312,
+      "sourceLine": 322,
+      "tab": "View",
+      "group": "Views",
+      "name": "Print Layout",
+      "command": "view.printLayout",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 313,
+      "sourceLine": 323,
+      "tab": "View",
+      "group": "Views",
+      "name": "Web Layout",
+      "command": "view.webLayout",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 314,
+      "sourceLine": 324,
+      "tab": "View",
+      "group": "Views",
+      "name": "Outline",
+      "command": "view.outline",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 315,
+      "sourceLine": 325,
+      "tab": "View",
+      "group": "Views",
+      "name": "Draft",
+      "command": "view.draft",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 316,
+      "sourceLine": 326,
+      "tab": "View",
+      "group": "Immersive",
+      "name": "Focus",
+      "command": "view.focus",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 317,
+      "sourceLine": 327,
+      "tab": "View",
+      "group": "Immersive",
+      "name": "Immersive Reader",
+      "command": "view.immersive",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 318,
+      "sourceLine": 328,
+      "tab": "View",
+      "group": "Page Movement",
+      "name": "Vertical",
+      "command": "view.vertical",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 319,
+      "sourceLine": 329,
+      "tab": "View",
+      "group": "Page Movement",
+      "name": "Side to Side",
+      "command": "view.sideToSide",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 320,
+      "sourceLine": 330,
+      "tab": "View",
+      "group": "Show",
+      "name": "Ruler",
+      "command": "view.ruler",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 321,
+      "sourceLine": 331,
+      "tab": "View",
+      "group": "Show",
+      "name": "Gridlines",
+      "command": "view.gridlines",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 322,
+      "sourceLine": 332,
+      "tab": "View",
+      "group": "Show",
+      "name": "Navigation Pane",
+      "command": "view.navigationPane",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 323,
+      "sourceLine": 333,
+      "tab": "View",
+      "group": "Zoom",
+      "name": "Zoom",
+      "command": "view.zoom",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 324,
+      "sourceLine": 334,
+      "tab": "View",
+      "group": "Zoom",
+      "name": "100%",
+      "command": "view.zoom100",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 325,
+      "sourceLine": 335,
+      "tab": "View",
+      "group": "Zoom",
+      "name": "One Page",
+      "command": "view.onePage",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 326,
+      "sourceLine": 336,
+      "tab": "View",
+      "group": "Zoom",
+      "name": "Multiple Pages",
+      "command": "view.multiplePages",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 327,
+      "sourceLine": 337,
+      "tab": "View",
+      "group": "Zoom",
+      "name": "Page Width",
+      "command": "view.pageWidth",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 328,
+      "sourceLine": 338,
+      "tab": "View",
+      "group": "Zoom",
+      "name": "Zoom In",
+      "command": "view.zoomIn",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 329,
+      "sourceLine": 339,
+      "tab": "View",
+      "group": "Zoom",
+      "name": "Zoom Out",
+      "command": "view.zoomOut",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 330,
+      "sourceLine": 340,
+      "tab": "View",
+      "group": "Dark Mode",
+      "name": "Switch Modes",
+      "command": "view.darkMode",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 331,
+      "sourceLine": 341,
+      "tab": "View",
+      "group": "Window",
+      "name": "New Window",
+      "command": "view.newWindow",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 332,
+      "sourceLine": 342,
+      "tab": "View",
+      "group": "Window",
+      "name": "Arrange All",
+      "command": "view.arrangeAll",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 333,
+      "sourceLine": 343,
+      "tab": "View",
+      "group": "Window",
+      "name": "Split",
+      "command": "view.split",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 334,
+      "sourceLine": 344,
+      "tab": "View",
+      "group": "Window",
+      "name": "View Side by Side",
+      "command": "view.sideBySide",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 335,
+      "sourceLine": 345,
+      "tab": "View",
+      "group": "Window",
+      "name": "Synchronous Scrolling",
+      "command": "view.syncScroll",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 336,
+      "sourceLine": 346,
+      "tab": "View",
+      "group": "Window",
+      "name": "Switch Windows",
+      "command": "view.switchWindows",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 337,
+      "sourceLine": 347,
+      "tab": "View",
+      "group": "Macros",
+      "name": "Macros",
+      "command": "tools.macros",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 338,
+      "sourceLine": 348,
+      "tab": "View",
+      "group": "Macros",
+      "name": "Record Macro",
+      "command": "tools.recordMacro",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 339,
+      "sourceLine": 349,
+      "tab": "View",
+      "group": "SharePoint",
+      "name": "Properties",
+      "command": "file.properties",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 340,
+      "sourceLine": 350,
+      "tab": "Read Mode",
+      "group": "View",
+      "name": "Column Width",
+      "command": "view.readColumnWidth",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 341,
+      "sourceLine": 351,
+      "tab": "Read Mode",
+      "group": "View",
+      "name": "Page Color",
+      "command": "view.readPageColor",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 342,
+      "sourceLine": 352,
+      "tab": "Read Mode",
+      "group": "View",
+      "name": "Layout",
+      "command": "view.readLayout",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 343,
+      "sourceLine": 353,
+      "tab": "Developer",
+      "group": "Controls",
+      "name": "Rich Text Content Control",
+      "command": "developer.richText",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 344,
+      "sourceLine": 354,
+      "tab": "Developer",
+      "group": "Controls",
+      "name": "Plain Text Content Control",
+      "command": "developer.plainText",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 345,
+      "sourceLine": 355,
+      "tab": "Developer",
+      "group": "Controls",
+      "name": "Picture Content Control",
+      "command": "developer.picture",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 346,
+      "sourceLine": 356,
+      "tab": "Developer",
+      "group": "Controls",
+      "name": "Building Block Gallery Content Control",
+      "command": "developer.buildingBlock",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 347,
+      "sourceLine": 357,
+      "tab": "Developer",
+      "group": "Controls",
+      "name": "Check Box Content Control",
+      "command": "developer.checkBox",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 348,
+      "sourceLine": 358,
+      "tab": "Developer",
+      "group": "Controls",
+      "name": "Combo Box Content Control",
+      "command": "developer.comboBox",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 349,
+      "sourceLine": 359,
+      "tab": "Developer",
+      "group": "Controls",
+      "name": "Drop-Down List Content Control",
+      "command": "developer.dropDown",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 350,
+      "sourceLine": 360,
+      "tab": "Developer",
+      "group": "Controls",
+      "name": "Date Picker Content Control",
+      "command": "developer.datePicker",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 351,
+      "sourceLine": 361,
+      "tab": "Developer",
+      "group": "Controls",
+      "name": "Repeating Section Content Control",
+      "command": "developer.repeatingSection",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 352,
+      "sourceLine": 362,
+      "tab": "Developer",
+      "group": "Controls",
+      "name": "Design Mode",
+      "command": "developer.designMode",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 353,
+      "sourceLine": 363,
+      "tab": "Developer",
+      "group": "Controls",
+      "name": "Properties",
+      "command": "developer.properties",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 354,
+      "sourceLine": 364,
+      "tab": "Table Design",
+      "group": "Table Style Options",
+      "name": "Table Style Options",
+      "command": "table.look",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 355,
+      "sourceLine": 365,
+      "tab": "Table Design",
+      "group": "Table Styles",
+      "name": "Table Styles",
+      "command": "table.style",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 356,
+      "sourceLine": 366,
+      "tab": "Table Design",
+      "group": "Table Styles",
+      "name": "New Table Style",
+      "command": "table.newStyle",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 357,
+      "sourceLine": 367,
+      "tab": "Table Design",
+      "group": "Table Styles",
+      "name": "Modify Table Style",
+      "command": "table.modifyStyle",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 358,
+      "sourceLine": 368,
+      "tab": "Table Design",
+      "group": "Table Styles",
+      "name": "Delete Table Style",
+      "command": "table.deleteStyle",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 359,
+      "sourceLine": 369,
+      "tab": "Table Design",
+      "group": "Table Styles",
+      "name": "Shading",
+      "command": "table.shading",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 360,
+      "sourceLine": 370,
+      "tab": "Table Design",
+      "group": "Borders",
+      "name": "Borders",
+      "command": "table.borders",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 361,
+      "sourceLine": 371,
+      "tab": "Table Design",
+      "group": "Borders",
+      "name": "Border Painter",
+      "command": "table.borderPainter",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 362,
+      "sourceLine": 372,
+      "tab": "Table Layout",
+      "group": "Table",
+      "name": "Select Table",
+      "command": "table.selectTable",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 363,
+      "sourceLine": 373,
+      "tab": "Table Layout",
+      "group": "Table",
+      "name": "Select Row",
+      "command": "table.selectRow",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 364,
+      "sourceLine": 374,
+      "tab": "Table Layout",
+      "group": "Table",
+      "name": "Select Column",
+      "command": "table.selectColumn",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 365,
+      "sourceLine": 375,
+      "tab": "Table Layout",
+      "group": "Table",
+      "name": "Select Cell",
+      "command": "table.selectCell",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 366,
+      "sourceLine": 376,
+      "tab": "Table Layout",
+      "group": "Table",
+      "name": "View Gridlines",
+      "command": "table.viewGridlines",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 367,
+      "sourceLine": 377,
+      "tab": "Table Layout",
+      "group": "Table",
+      "name": "Properties",
+      "command": "table.properties",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 368,
+      "sourceLine": 378,
+      "tab": "Table Layout",
+      "group": "Table",
+      "name": "Alt Text",
+      "command": "table.altText",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 369,
+      "sourceLine": 379,
+      "tab": "Table Layout",
+      "group": "Table",
+      "name": "Table Direction",
+      "command": "table.rtl",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 370,
+      "sourceLine": 380,
+      "tab": "Table Layout",
+      "group": "Draw",
+      "name": "Draw Table",
+      "command": "table.draw",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 371,
+      "sourceLine": 381,
+      "tab": "Table Layout",
+      "group": "Draw",
+      "name": "Eraser",
+      "command": "table.eraser",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 372,
+      "sourceLine": 382,
+      "tab": "Table Layout",
+      "group": "Rows & Columns",
+      "name": "Delete Cells",
+      "command": "table.deleteCells",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 373,
+      "sourceLine": 383,
+      "tab": "Table Layout",
+      "group": "Rows & Columns",
+      "name": "Delete Rows",
+      "command": "table.deleteRow",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 374,
+      "sourceLine": 384,
+      "tab": "Table Layout",
+      "group": "Rows & Columns",
+      "name": "Delete Columns",
+      "command": "table.deleteColumn",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 375,
+      "sourceLine": 385,
+      "tab": "Table Layout",
+      "group": "Rows & Columns",
+      "name": "Delete Table",
+      "command": "table.deleteTable",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 376,
+      "sourceLine": 386,
+      "tab": "Table Layout",
+      "group": "Rows & Columns",
+      "name": "Insert Above",
+      "command": "table.insertRowAbove",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 377,
+      "sourceLine": 387,
+      "tab": "Table Layout",
+      "group": "Rows & Columns",
+      "name": "Insert Below",
+      "command": "table.insertRowBelow",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 378,
+      "sourceLine": 388,
+      "tab": "Table Layout",
+      "group": "Rows & Columns",
+      "name": "Insert Left",
+      "command": "table.insertColumnLeft",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 379,
+      "sourceLine": 389,
+      "tab": "Table Layout",
+      "group": "Rows & Columns",
+      "name": "Insert Right",
+      "command": "table.insertColumnRight",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 380,
+      "sourceLine": 390,
+      "tab": "Table Layout",
+      "group": "Merge",
+      "name": "Merge Cells",
+      "command": "table.merge",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 381,
+      "sourceLine": 391,
+      "tab": "Table Layout",
+      "group": "Merge",
+      "name": "Split Cells",
+      "command": "table.split",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 382,
+      "sourceLine": 392,
+      "tab": "Table Layout",
+      "group": "Merge",
+      "name": "Split Table",
+      "command": "table.splitTable",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 383,
+      "sourceLine": 393,
+      "tab": "Table Layout",
+      "group": "Cell Size",
+      "name": "AutoFit",
+      "command": "table.autofit",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 384,
+      "sourceLine": 394,
+      "tab": "Table Layout",
+      "group": "Cell Size",
+      "name": "Row Height",
+      "command": "table.rowHeight",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 385,
+      "sourceLine": 395,
+      "tab": "Table Layout",
+      "group": "Cell Size",
+      "name": "Column Width",
+      "command": "table.columnWidth",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 386,
+      "sourceLine": 396,
+      "tab": "Table Layout",
+      "group": "Cell Size",
+      "name": "Distribute Rows",
+      "command": "table.distributeRows",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 387,
+      "sourceLine": 397,
+      "tab": "Table Layout",
+      "group": "Cell Size",
+      "name": "Distribute Columns",
+      "command": "table.distributeColumns",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 388,
+      "sourceLine": 398,
+      "tab": "Table Layout",
+      "group": "Alignment",
+      "name": "Alignment",
+      "command": "table.cellAlign",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 389,
+      "sourceLine": 399,
+      "tab": "Table Layout",
+      "group": "Alignment",
+      "name": "Text Direction",
+      "command": "table.textDirection",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 390,
+      "sourceLine": 400,
+      "tab": "Table Layout",
+      "group": "Alignment",
+      "name": "Cell Margins",
+      "command": "table.cellMargins",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 391,
+      "sourceLine": 401,
+      "tab": "Table Layout",
+      "group": "Data",
+      "name": "Sort",
+      "command": "table.sort",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 392,
+      "sourceLine": 402,
+      "tab": "Table Layout",
+      "group": "Data",
+      "name": "Repeat Header Rows",
+      "command": "table.repeatHeader",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 393,
+      "sourceLine": 403,
+      "tab": "Table Layout",
+      "group": "Data",
+      "name": "Convert to Text",
+      "command": "table.toText",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 394,
+      "sourceLine": 404,
+      "tab": "Table Layout",
+      "group": "Data",
+      "name": "Formula",
+      "command": "table.formula",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 395,
+      "sourceLine": 405,
+      "tab": "Equation",
+      "group": "Tools",
+      "name": "Equation",
+      "command": "insert.equation",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 396,
+      "sourceLine": 406,
+      "tab": "Equation",
+      "group": "Tools",
+      "name": "Ink Equation",
+      "command": "insert.inkEquation",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 397,
+      "sourceLine": 407,
+      "tab": "Equation",
+      "group": "Conversions",
+      "name": "Unicode",
+      "command": "equation.inputFormat",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 398,
+      "sourceLine": 408,
+      "tab": "Equation",
+      "group": "Conversions",
+      "name": "LaTeX",
+      "command": "equation.inputFormat",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 399,
+      "sourceLine": 409,
+      "tab": "Equation",
+      "group": "Conversions",
+      "name": "Convert",
+      "command": "equation.convert",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 400,
+      "sourceLine": 410,
+      "tab": "Equation",
+      "group": "Conversions",
+      "name": "Normal Text",
+      "command": "equation.normalText",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 401,
+      "sourceLine": 411,
+      "tab": "Equation",
+      "group": "Symbols",
+      "name": "Symbols",
+      "command": "equation.insertSymbol",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 402,
+      "sourceLine": 412,
+      "tab": "Equation",
+      "group": "Structures",
+      "name": "Fraction",
+      "command": "equation.insertStructure",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 403,
+      "sourceLine": 413,
+      "tab": "Equation",
+      "group": "Structures",
+      "name": "Script",
+      "command": "equation.insertStructure",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 404,
+      "sourceLine": 414,
+      "tab": "Equation",
+      "group": "Structures",
+      "name": "Radical",
+      "command": "equation.insertStructure",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 405,
+      "sourceLine": 415,
+      "tab": "Equation",
+      "group": "Structures",
+      "name": "Integral",
+      "command": "equation.insertStructure",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 406,
+      "sourceLine": 416,
+      "tab": "Equation",
+      "group": "Structures",
+      "name": "Large Operator",
+      "command": "equation.insertStructure",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 407,
+      "sourceLine": 417,
+      "tab": "Equation",
+      "group": "Structures",
+      "name": "Bracket",
+      "command": "equation.insertStructure",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 408,
+      "sourceLine": 418,
+      "tab": "Equation",
+      "group": "Structures",
+      "name": "Function",
+      "command": "equation.insertStructure",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 409,
+      "sourceLine": 419,
+      "tab": "Equation",
+      "group": "Structures",
+      "name": "Accent",
+      "command": "equation.insertStructure",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 410,
+      "sourceLine": 420,
+      "tab": "Equation",
+      "group": "Structures",
+      "name": "Limit and Log",
+      "command": "equation.insertStructure",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 411,
+      "sourceLine": 421,
+      "tab": "Equation",
+      "group": "Structures",
+      "name": "Operator",
+      "command": "equation.insertStructure",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 412,
+      "sourceLine": 422,
+      "tab": "Equation",
+      "group": "Structures",
+      "name": "Matrix",
+      "command": "equation.insertStructure",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 413,
+      "sourceLine": 423,
+      "tab": "Equation",
+      "group": "Equation Options",
+      "name": "Change to Inline / Display",
+      "command": "equation.display",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 414,
+      "sourceLine": 424,
+      "tab": "Equation",
+      "group": "Equation Options",
+      "name": "Justification",
+      "command": "equation.justify",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 415,
+      "sourceLine": 425,
+      "tab": "Equation",
+      "group": "Equation Options",
+      "name": "Equation Number (#)",
+      "command": "equation.number",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 416,
+      "sourceLine": 426,
+      "tab": "Equation",
+      "group": "Equation Options",
+      "name": "Structure Commands",
+      "command": "equation.structure",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 417,
+      "sourceLine": 427,
+      "tab": "Outlining",
+      "group": "Outline Tools",
+      "name": "Promote to Heading 1",
+      "command": "outline.promoteToHeading1",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 418,
+      "sourceLine": 428,
+      "tab": "Outlining",
+      "group": "Outline Tools",
+      "name": "Promote",
+      "command": "outline.promote",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 419,
+      "sourceLine": 429,
+      "tab": "Outlining",
+      "group": "Outline Tools",
+      "name": "Outline Level",
+      "command": "outline.level",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 420,
+      "sourceLine": 430,
+      "tab": "Outlining",
+      "group": "Outline Tools",
+      "name": "Demote",
+      "command": "outline.demote",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 421,
+      "sourceLine": 431,
+      "tab": "Outlining",
+      "group": "Outline Tools",
+      "name": "Demote to Body Text",
+      "command": "outline.demoteToBody",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 422,
+      "sourceLine": 432,
+      "tab": "Outlining",
+      "group": "Outline Tools",
+      "name": "Move Up",
+      "command": "outline.moveUp",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 423,
+      "sourceLine": 433,
+      "tab": "Outlining",
+      "group": "Outline Tools",
+      "name": "Move Down",
+      "command": "outline.moveDown",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 424,
+      "sourceLine": 434,
+      "tab": "Outlining",
+      "group": "Outline Tools",
+      "name": "Expand",
+      "command": "outline.expand",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 425,
+      "sourceLine": 435,
+      "tab": "Outlining",
+      "group": "Outline Tools",
+      "name": "Collapse",
+      "command": "outline.collapse",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 426,
+      "sourceLine": 436,
+      "tab": "Outlining",
+      "group": "Outline Tools",
+      "name": "Show Level",
+      "command": "outline.showLevel",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 427,
+      "sourceLine": 437,
+      "tab": "Outlining",
+      "group": "Outline Tools",
+      "name": "Show Text Formatting",
+      "command": "outline.showFormatting",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 428,
+      "sourceLine": 438,
+      "tab": "Outlining",
+      "group": "Outline Tools",
+      "name": "Show First Line Only",
+      "command": "outline.firstLineOnly",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 429,
+      "sourceLine": 439,
+      "tab": "Outlining",
+      "group": "Close",
+      "name": "Close Outline View",
+      "command": "outline.close",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 430,
+      "sourceLine": 440,
+      "tab": "Picture Format",
+      "group": "Adjust",
+      "name": "Remove Background",
+      "command": "picture.removeBackground",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 431,
+      "sourceLine": 441,
+      "tab": "Picture Format",
+      "group": "Adjust",
+      "name": "Corrections",
+      "command": "picture.corrections",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 432,
+      "sourceLine": 442,
+      "tab": "Picture Format",
+      "group": "Adjust",
+      "name": "Color",
+      "command": "picture.color",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 433,
+      "sourceLine": 443,
+      "tab": "Picture Format",
+      "group": "Adjust",
+      "name": "Artistic Effects",
+      "command": "picture.effects",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 434,
+      "sourceLine": 444,
+      "tab": "Picture Format",
+      "group": "Adjust",
+      "name": "Transparency",
+      "command": "picture.transparency",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 435,
+      "sourceLine": 445,
+      "tab": "Picture Format",
+      "group": "Adjust",
+      "name": "Compress Pictures",
+      "command": "picture.compress",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 436,
+      "sourceLine": 446,
+      "tab": "Picture Format",
+      "group": "Adjust",
+      "name": "Change Picture",
+      "command": "picture.change",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 437,
+      "sourceLine": 447,
+      "tab": "Picture Format",
+      "group": "Adjust",
+      "name": "Reset Picture",
+      "command": "picture.reset",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 438,
+      "sourceLine": 448,
+      "tab": "Picture Format",
+      "group": "Picture Styles",
+      "name": "Picture Styles",
+      "command": "picture.style",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 439,
+      "sourceLine": 449,
+      "tab": "Picture Format",
+      "group": "Picture Styles",
+      "name": "Picture Border",
+      "command": "picture.border",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 440,
+      "sourceLine": 450,
+      "tab": "Picture Format",
+      "group": "Accessibility",
+      "name": "Alt Text",
+      "command": "picture.altText",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 441,
+      "sourceLine": 451,
+      "tab": "Shape Format",
+      "group": "Accessibility",
+      "name": "Alt Text",
+      "command": "object.altText",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 442,
+      "sourceLine": 452,
+      "tab": "Picture Format",
+      "group": "Size",
+      "name": "Crop",
+      "command": "picture.crop",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 443,
+      "sourceLine": 453,
+      "tab": "Picture Format",
+      "group": "Size",
+      "name": "Size",
+      "command": "picture.size",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 444,
+      "sourceLine": 454,
+      "tab": "Picture Format",
+      "group": "Size",
+      "name": "Rotation",
+      "command": "arrange.rotation",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 445,
+      "sourceLine": 455,
+      "tab": "SmartArt Design",
+      "group": "Create Graphic",
+      "name": "Add Shape",
+      "command": "smartArt.addShape",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 446,
+      "sourceLine": 456,
+      "tab": "SmartArt Design",
+      "group": "Create Graphic",
+      "name": "Promote",
+      "command": "smartArt.promote",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 447,
+      "sourceLine": 457,
+      "tab": "SmartArt Design",
+      "group": "Create Graphic",
+      "name": "Demote",
+      "command": "smartArt.demote",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 448,
+      "sourceLine": 458,
+      "tab": "SmartArt Design",
+      "group": "Create Graphic",
+      "name": "Text Pane",
+      "command": "smartArt.textPane",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 449,
+      "sourceLine": 459,
+      "tab": "SmartArt Design",
+      "group": "Layouts",
+      "name": "Layouts",
+      "command": "smartArt.layout",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 450,
+      "sourceLine": 460,
+      "tab": "SmartArt Design",
+      "group": "SmartArt Styles",
+      "name": "Change Colors",
+      "command": "smartArt.colors",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 451,
+      "sourceLine": 461,
+      "tab": "SmartArt Design",
+      "group": "Reset",
+      "name": "Reset Graphic",
+      "command": "smartArt.reset",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 452,
+      "sourceLine": 462,
+      "tab": "Chart Design",
+      "group": "Type",
+      "name": "Change Chart Type",
+      "command": "chart.type",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 453,
+      "sourceLine": 463,
+      "tab": "Chart Design",
+      "group": "Data",
+      "name": "Edit Data",
+      "command": "chart.editData",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 454,
+      "sourceLine": 464,
+      "tab": "Chart Design",
+      "group": "Chart Layouts",
+      "name": "Chart Title",
+      "command": "chart.title",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 455,
+      "sourceLine": 465,
+      "tab": "Chart Design",
+      "group": "Chart Layouts",
+      "name": "Legend",
+      "command": "chart.legend",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 456,
+      "sourceLine": 466,
+      "tab": "Chart Design",
+      "group": "Chart Layouts",
+      "name": "Data Labels",
+      "command": "chart.dataLabels",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 457,
+      "sourceLine": 467,
+      "tab": "Shape Format",
+      "group": "Shape Styles",
+      "name": "Shape Fill",
+      "command": "shape.fill",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 458,
+      "sourceLine": 468,
+      "tab": "Shape Format",
+      "group": "Shape Styles",
+      "name": "Shape Fill Gradient",
+      "command": "shape.fill",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 459,
+      "sourceLine": 469,
+      "tab": "Shape Format",
+      "group": "Shape Styles",
+      "name": "Format Shape Pane",
+      "command": "view.formatShapePane",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 460,
+      "sourceLine": 470,
+      "tab": "Shape Format",
+      "group": "Shape Styles",
+      "name": "Shape Outline",
+      "command": "shape.outline",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 461,
+      "sourceLine": 471,
+      "tab": "Shape Format",
+      "group": "Shape Styles",
+      "name": "Shape Effects",
+      "command": "shape.effects",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 462,
+      "sourceLine": 472,
+      "tab": "Shape Format",
+      "group": "WordArt Styles",
+      "name": "WordArt Quick Styles",
+      "command": "wordArt.style",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 463,
+      "sourceLine": 473,
+      "tab": "Shape Format",
+      "group": "WordArt Styles",
+      "name": "Text Fill",
+      "command": "wordArt.textFill",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 464,
+      "sourceLine": 474,
+      "tab": "Shape Format",
+      "group": "WordArt Styles",
+      "name": "Text Outline",
+      "command": "wordArt.textOutline",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 465,
+      "sourceLine": 475,
+      "tab": "Shape Format",
+      "group": "WordArt Styles",
+      "name": "Text Effects Transform",
+      "command": "wordArt.transform",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 466,
+      "sourceLine": 476,
+      "tab": "Shape Format",
+      "group": "Text",
+      "name": "Text Direction",
+      "command": "shape.textDirection",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 467,
+      "sourceLine": 477,
+      "tab": "Shape Format",
+      "group": "Text",
+      "name": "Align Text",
+      "command": "shape.alignText",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 468,
+      "sourceLine": 478,
+      "tab": "Shape Format",
+      "group": "Text",
+      "name": "Create Link",
+      "command": "shape.link",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 469,
+      "sourceLine": 479,
+      "tab": "Header & Footer",
+      "group": "Navigation",
+      "name": "Go to Header",
+      "command": "insert.editHeader",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 470,
+      "sourceLine": 480,
+      "tab": "Header & Footer",
+      "group": "Navigation",
+      "name": "Go to Footer",
+      "command": "insert.editFooter",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 471,
+      "sourceLine": 481,
+      "tab": "Header & Footer",
+      "group": "Navigation",
+      "name": "Previous Section",
+      "command": "hf.previous",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 472,
+      "sourceLine": 482,
+      "tab": "Header & Footer",
+      "group": "Navigation",
+      "name": "Next Section",
+      "command": "hf.next",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 473,
+      "sourceLine": 483,
+      "tab": "Header & Footer",
+      "group": "Position",
+      "name": "Header from Top",
+      "command": "hf.position",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 474,
+      "sourceLine": 484,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Type Text",
+      "command": "text.insert",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 475,
+      "sourceLine": 485,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "New Paragraph",
+      "command": "text.newParagraph",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 476,
+      "sourceLine": 486,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Line Break",
+      "command": "text.lineBreak",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 477,
+      "sourceLine": 487,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Column Break",
+      "command": "text.columnBreak",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 478,
+      "sourceLine": 488,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Tab",
+      "command": "text.tab",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 479,
+      "sourceLine": 489,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Tab Character",
+      "command": "text.insertTab",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 480,
+      "sourceLine": 490,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Backspace",
+      "command": "text.backspace",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 481,
+      "sourceLine": 491,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Delete",
+      "command": "text.delete",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 482,
+      "sourceLine": 492,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Delete Previous Word",
+      "command": "text.deleteWordBack",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 483,
+      "sourceLine": 493,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Delete Next Word",
+      "command": "text.deleteWordForward",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 484,
+      "sourceLine": 494,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Move Paragraph Up",
+      "command": "para.moveUp",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 485,
+      "sourceLine": 495,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Move Paragraph Down",
+      "command": "para.moveDown",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 486,
+      "sourceLine": 496,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Promote",
+      "command": "para.promote",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 487,
+      "sourceLine": 497,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Demote",
+      "command": "para.demote",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 488,
+      "sourceLine": 498,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Toggle Unicode Character",
+      "command": "text.toggleUnicode",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 489,
+      "sourceLine": 499,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Spike",
+      "command": "edit.spike",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 490,
+      "sourceLine": 500,
+      "tab": "Editing",
+      "group": "Keyboard",
+      "name": "Insert Spike",
+      "command": "edit.insertSpike",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 491,
+      "sourceLine": 501,
+      "tab": "Editing",
+      "group": "Navigation",
+      "name": "Word Left",
+      "command": "caret.wordLeft",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 492,
+      "sourceLine": 502,
+      "tab": "Editing",
+      "group": "Navigation",
+      "name": "Word Right",
+      "command": "caret.wordRight",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 493,
+      "sourceLine": 503,
+      "tab": "Editing",
+      "group": "Navigation",
+      "name": "Line Start",
+      "command": "caret.home",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 494,
+      "sourceLine": 504,
+      "tab": "Editing",
+      "group": "Navigation",
+      "name": "Line End",
+      "command": "caret.end",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 495,
+      "sourceLine": 505,
+      "tab": "Editing",
+      "group": "Navigation",
+      "name": "Paragraph Up",
+      "command": "caret.paraUp",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 496,
+      "sourceLine": 506,
+      "tab": "Editing",
+      "group": "Navigation",
+      "name": "Paragraph Down",
+      "command": "caret.paraDown",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 497,
+      "sourceLine": 507,
+      "tab": "Editing",
+      "group": "Navigation",
+      "name": "Document Start",
+      "command": "caret.docStart",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 498,
+      "sourceLine": 508,
+      "tab": "Editing",
+      "group": "Navigation",
+      "name": "Document End",
+      "command": "caret.docEnd",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 499,
+      "sourceLine": 509,
+      "tab": "Editing",
+      "group": "Navigation",
+      "name": "Page Up",
+      "command": "caret.pageUp",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 500,
+      "sourceLine": 510,
+      "tab": "Editing",
+      "group": "Navigation",
+      "name": "Page Down",
+      "command": "caret.pageDown",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 501,
+      "sourceLine": 511,
+      "tab": "Editing",
+      "group": "Navigation",
+      "name": "Go Back",
+      "command": "edit.goBack",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 502,
+      "sourceLine": 512,
+      "tab": "Editing",
+      "group": "Selection",
+      "name": "Select Word",
+      "command": "select.word",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 503,
+      "sourceLine": 513,
+      "tab": "Editing",
+      "group": "Selection",
+      "name": "Select Sentence",
+      "command": "select.sentence",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 504,
+      "sourceLine": 514,
+      "tab": "Editing",
+      "group": "Selection",
+      "name": "Select Paragraph",
+      "command": "select.paragraph",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 505,
+      "sourceLine": 515,
+      "tab": "Editing",
+      "group": "Selection",
+      "name": "Extend Selection (F8)",
+      "command": "select.extend",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 506,
+      "sourceLine": 516,
+      "tab": "Editing",
+      "group": "Selection",
+      "name": "Column Selection",
+      "command": "select.column",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 507,
+      "sourceLine": 517,
+      "tab": "Editing",
+      "group": "Fields",
+      "name": "Show Field Codes",
+      "command": "view.fieldCodes",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 508,
+      "sourceLine": 518,
+      "tab": "Editing",
+      "group": "Fields",
+      "name": "Toggle Field Codes",
+      "command": "fields.toggleCode",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 509,
+      "sourceLine": 519,
+      "tab": "Editing",
+      "group": "Fields",
+      "name": "Edit Field Code",
+      "command": "fields.setCode",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 510,
+      "sourceLine": 520,
+      "tab": "Editing",
+      "group": "Fields",
+      "name": "Unlink Fields",
+      "command": "fields.unlink",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 511,
+      "sourceLine": 521,
+      "tab": "Editing",
+      "group": "Fields",
+      "name": "Lock Fields",
+      "command": "fields.lock",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 512,
+      "sourceLine": 522,
+      "tab": "Editing",
+      "group": "Fields",
+      "name": "Unlock Fields",
+      "command": "fields.unlock",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 513,
+      "sourceLine": 523,
+      "tab": "Editing",
+      "group": "Fields",
+      "name": "Next Field",
+      "command": "fields.next",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 514,
+      "sourceLine": 524,
+      "tab": "Editing",
+      "group": "Fields",
+      "name": "Previous Field",
+      "command": "fields.previous",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 515,
+      "sourceLine": 525,
+      "tab": "Tools",
+      "group": "Proofing",
+      "name": "AutoCorrect Options",
+      "command": "tools.autocorrect",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 516,
+      "sourceLine": 526,
+      "tab": "Tools",
+      "group": "Proofing",
+      "name": "Set Proofing Language",
+      "command": "review.language",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 517,
+      "sourceLine": 527,
+      "tab": "Tools",
+      "group": "Customize",
+      "name": "Customize Ribbon",
+      "command": "tools.customizeRibbon",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 518,
+      "sourceLine": 528,
+      "tab": "Tools",
+      "group": "Customize",
+      "name": "Customize Keyboard",
+      "command": "tools.customizeKeyboard",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 519,
+      "sourceLine": 529,
+      "tab": "Tools",
+      "group": "Protection",
+      "name": "Encrypt with Password",
+      "command": "file.encrypt",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 520,
+      "sourceLine": 530,
+      "tab": "Tools",
+      "group": "Templates",
+      "name": "Templates and Add-ins",
+      "command": "tools.templates",
+      "oasisFeatureIds": []
+    },
+    {
+      "index": 521,
+      "sourceLine": 531,
+      "tab": "Tools",
+      "group": "Views",
+      "name": "Full Screen View",
+      "command": "view.fullScreenView",
+      "oasisFeatureIds": []
+    }
+  ]
+}

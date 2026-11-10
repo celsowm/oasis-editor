@@ -17,6 +17,7 @@ import ts from "typescript";
 const root = resolve(import.meta.dirname, "..");
 const source = (path) => readFileSync(resolve(root, path), "utf8");
 const catalog = JSON.parse(source("scripts/ribbon-parity/features.json"));
+const wordcraft = JSON.parse(source("scripts/ribbon-parity/wordcraft-catalog.json"));
 
 const getName = (name) =>
   ts.isIdentifier(name) || ts.isStringLiteral(name) ? name.text : undefined;
@@ -221,6 +222,7 @@ export function renderMatrix(data) {
     "> Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.",
     "",
     "**Scope:** " + data.scope + "<br>",
+    "**Pinned WordCraft inventory:** " + code(`${wordcraft.counts.features} entries / ${wordcraft.counts.surfaces} surfaces`) + "; this crosswalk maps " + code(data.features.length) + " Oasis capabilities and does not classify unmatched source rows as missing.<br>",
     "**Oasis baseline:** " + code(data.baseline.oasisCommit) + "<br>",
     "**WordCraft baseline:** " + code(data.baseline.wordcraftCommit),
     "",
@@ -250,9 +252,72 @@ function main() {
   const menu = collectMenuCommands();
   const errors = [];
   const ids = new Set();
+  const crosswalkByWordcraftCommand = new Map();
+  for (const feature of catalog.features) {
+    if (!feature.wordcraftCommand) continue;
+    const linked = crosswalkByWordcraftCommand.get(feature.wordcraftCommand) ?? [];
+    linked.push(feature.id);
+    crosswalkByWordcraftCommand.set(feature.wordcraftCommand, linked);
+  }
+  const wordcraftCommands = new Set();
+  const wordcraftRowsByIndex = new Map();
+  const computedSurfaces = new Map();
+  for (const [offset, row] of wordcraft.rows.entries()) {
+    if (row.index !== offset + 1 || !Number.isInteger(row.sourceLine) || !row.tab || !row.group || !row.name || !row.command || !Array.isArray(row.oasisFeatureIds)) {
+      errors.push("Malformed WordCraft snapshot row");
+      continue;
+    }
+    if (wordcraftRowsByIndex.has(row.index)) errors.push("Duplicate WordCraft source row: " + row.index);
+    wordcraftRowsByIndex.set(row.index, row);
+    wordcraftCommands.add(row.command);
+    const surface = computedSurfaces.get(row.tab) ?? { features: 0, groups: new Set() };
+    surface.features += 1;
+    surface.groups.add(row.group);
+    computedSurfaces.set(row.tab, surface);
+    const expectedLinks = crosswalkByWordcraftCommand.get(row.command) ?? [];
+    if (JSON.stringify(row.oasisFeatureIds) !== JSON.stringify(expectedLinks)) {
+      errors.push(`Stale crosswalk links on WordCraft row ${row.index}`);
+    }
+  }
+  if (wordcraft.schemaVersion !== 1) errors.push("Unsupported WordCraft snapshot schema");
+  if (wordcraft.source?.repository !== "storytold/wordcraft") errors.push("Unexpected WordCraft snapshot repository");
+  if (!/^[0-9a-f]{40}$/.test(wordcraft.source?.commit ?? "")) errors.push("WordCraft snapshot commit is not a pinned Git SHA");
+  if (!/^[0-9a-f]{64}$/.test(wordcraft.source?.catalogSha256 ?? "") || !/^[0-9a-f]{64}$/.test(wordcraft.source?.ribbonSha256 ?? "")) {
+    errors.push("WordCraft snapshot source digests are invalid");
+  }
+  if (wordcraft.source?.commit !== catalog.baseline.wordcraftCommit) errors.push("WordCraft snapshot commit differs from the feature catalog baseline");
+  if (wordcraft.rows.length !== wordcraft.counts?.features) errors.push("WordCraft snapshot feature count is inconsistent");
+  if (wordcraftRowsByIndex.size !== wordcraft.rows.length) errors.push("WordCraft snapshot source row indexes are not unique");
+  if (wordcraft.counts?.surfaces !== Object.keys(wordcraft.surfaces ?? {}).length) errors.push("WordCraft snapshot surface count is inconsistent");
+  if (JSON.stringify(Object.keys(wordcraft.surfaces ?? {}).sort()) !== JSON.stringify([...computedSurfaces.keys()].sort())) {
+    errors.push("WordCraft snapshot surface names are inconsistent");
+  }
+  const computedGroupCount = [...computedSurfaces.values()].reduce((sum, surface) => sum + surface.groups.size, 0);
+  if (wordcraft.counts?.groups !== computedGroupCount) errors.push("WordCraft snapshot group count is inconsistent");
+  if (wordcraft.counts?.defaultTabs !== wordcraft.defaultTabs?.length ||
+      wordcraft.counts?.contextualTabs !== wordcraft.contextualTabs?.length ||
+      wordcraft.counts?.representedDefaultTabs !== wordcraft.defaultTabs.filter((tab) => computedSurfaces.has(tab)).length ||
+      wordcraft.counts?.representedContextualTabs !== wordcraft.contextualTabs.filter((tab) => computedSurfaces.has(tab)).length ||
+      wordcraft.counts?.auxiliarySurfaces !== wordcraft.counts?.surfaces - wordcraft.counts?.representedDefaultTabs - wordcraft.counts?.representedContextualTabs ||
+      JSON.stringify(wordcraft.unrepresentedDefaultTabs) !== JSON.stringify(wordcraft.defaultTabs.filter((tab) => !computedSurfaces.has(tab))) ||
+      JSON.stringify(wordcraft.unrepresentedContextualTabs) !== JSON.stringify(wordcraft.contextualTabs.filter((tab) => !computedSurfaces.has(tab)))) {
+    errors.push("WordCraft snapshot tab/surface counts are inconsistent");
+  }
+  for (const [tab, computed] of computedSurfaces) {
+    const recorded = wordcraft.surfaces?.[tab];
+    const expectedKind = wordcraft.defaultTabs.includes(tab) ? "default-tab" : wordcraft.contextualTabs.includes(tab) ? "contextual-tab" : "auxiliary-surface";
+    if (recorded?.features !== computed.features || recorded?.groups !== computed.groups.size || recorded?.kind !== expectedKind) {
+      errors.push("WordCraft snapshot surface summary is inconsistent: " + tab);
+    }
+  }
+  const linkedRows = wordcraft.rows.filter((row) => row.oasisFeatureIds.length > 0).length;
+  if (wordcraft.counts?.linkedRows !== linkedRows) errors.push("WordCraft snapshot linked-row count is inconsistent");
   for (const feature of catalog.features) {
     if (ids.has(feature.id)) errors.push("Duplicate feature ID: " + feature.id);
     ids.add(feature.id);
+    if (feature.wordcraftCommand && !wordcraftCommands.has(feature.wordcraftCommand)) {
+      errors.push(feature.id + ": WordCraft command is absent from pinned catalog: " + feature.wordcraftCommand);
+    }
     if (!builtin.has(feature.oasisCommand)) {
       errors.push(feature.id + ": missing built-in command " + feature.oasisCommand);
     }
@@ -288,13 +353,20 @@ function main() {
     process.stdout.write(JSON.stringify({
       schemaVersion: 1,
       catalogFeatures: catalog.features.length,
+      wordcraftCatalog: {
+        commit: wordcraft.source.commit,
+        features: wordcraft.counts.features,
+        surfaces: wordcraft.counts.surfaces,
+        groups: wordcraft.counts.groups,
+        linkedRows,
+      },
       builtinCommands: builtin.size,
       registeredCommands: registered.size,
       toolbarItemsScanned: toolbar.size,
       records: reachable,
     }, null, 2) + "\n");
   } else {
-    console.log(`Ribbon audit: ${catalog.features.length} mapped features; ${builtin.size} built-ins; ${toolbar.size} statically scanned items.`);
+    console.log(`Ribbon audit: ${catalog.features.length} Oasis crosswalk features against ${wordcraft.counts.features} pinned WordCraft entries (${linkedRows} linked rows); ${builtin.size} built-ins; ${toolbar.size} statically scanned items.`);
   }
   if (errors.length) {
     for (const error of errors) console.error("ERROR: " + error);
