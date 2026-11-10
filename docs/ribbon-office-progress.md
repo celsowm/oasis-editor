@@ -594,6 +594,16 @@ The matrix now contains 160 Oasis capability rows and links 143 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` verifies the seven built-in registrations and confirms no default Ribbon or menubar exposure; source comments in `paragraphSuppressLineNumbers.ts`, `floatingAlignCommands.ts` and `floatingReorderCommands.ts` establish the scoped behaviors. The catalog snapshot reports 143 linked rows.
 
+## Delivery 40 — Page size and paragraph indents/spacing
+
+Date: 2026-11-10. B01 and D04 remain **partial**.
+
+Linked the Layout Size source row to Oasis's registered preset and custom page-size commands. Mapped the paragraph indents and spacing rows to their separate Oasis commands, recording whether each is exposed from the context-menu Paragraph dialog or only as a core capability. The dialog combines several field edits into one apply operation; its mixed-selection behavior, command granularity, units, pagination, undo and DOCX output still need workflow evidence.
+
+The matrix now contains 172 Oasis capability rows and links 146 of 521 WordCraft source rows; 375 remain unlinked. Page-size commands have no default UI path, while all paragraph fields are secondary UI through the Paragraph dialog. The source inventory's Page Setup dialog and Document Grid rows remain unlinked for further reconciliation.
+
+Evidence: `npm run audit:ribbon` verifies the registered size and paragraph commands plus each Paragraph dialog control token; `ParagraphDialog.tsx` exposes the recorded indents/spacing fields. The catalog snapshot reports 146 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

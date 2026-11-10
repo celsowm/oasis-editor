@@ -1999,6 +1999,212 @@
       "semantics": "partial",
       "persistence": "unverified",
       "notes": "Oasis registers an exact-angle rotation command for a selected image/text box, but no default UI path was found. Rotation state, rendering, undo and DOCX/PDF output need workflow verification."
+    },
+    {
+      "id": "layout.paperSizePreset",
+      "wordcraftCommand": "layout.size",
+      "oasisCommand": "setPaperSizePreset",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "pageSetup",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers page-size presets but no default UI path was found. Preset coverage, active-section scope, pagination and DOCX/PDF output need workflow verification against WordCraft's Size control."
+    },
+    {
+      "id": "layout.paperSizeCustom",
+      "wordcraftCommand": "layout.size",
+      "oasisCommand": "setPaperSize",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "pageSetup",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers exact page dimensions but no default UI path was found. Units, validation, active-section scope, pagination and DOCX/PDF output need workflow verification against WordCraft's Size control."
+    },
+    {
+      "id": "layout.paragraphIndentLeft",
+      "wordcraftCommand": "para.indents",
+      "oasisCommand": "setIndentLeft",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Context menu > Paragraph > Indents > Left",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-indent-left"
+      },
+      "notes": "The Paragraph dialog exposes a left-indent field; it is opened from the editor context menu, not the Layout Ribbon. Units, mixed selection, dialog commit/undo and DOCX layout need workflow verification."
+    },
+    {
+      "id": "layout.paragraphIndentRight",
+      "wordcraftCommand": "para.indents",
+      "oasisCommand": "setIndentRight",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Context menu > Paragraph > Indents > Right",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-indent-right"
+      },
+      "notes": "The Paragraph dialog exposes a right-indent field; it is opened from the editor context menu, not the Layout Ribbon. Units, mixed selection, dialog commit/undo and DOCX layout need workflow verification."
+    },
+    {
+      "id": "layout.paragraphIndentFirstLine",
+      "wordcraftCommand": "para.indents",
+      "oasisCommand": "setIndentFirstLine",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Context menu > Paragraph > Indents > First line",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-special-by"
+      },
+      "notes": "The Paragraph dialog exposes first-line indentation through its special-indent mode and amount; it is opened from the editor context menu, not the Layout Ribbon. Mode, units, mixed selection, dialog commit/undo and DOCX layout need workflow verification."
+    },
+    {
+      "id": "layout.paragraphIndentHanging",
+      "wordcraftCommand": "para.indents",
+      "oasisCommand": "setIndentHanging",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Context menu > Paragraph > Indents > Hanging",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-special-by"
+      },
+      "notes": "The Paragraph dialog exposes hanging indentation through its special-indent mode and amount; it is opened from the editor context menu, not the Layout Ribbon. Mode, units, mixed selection, dialog commit/undo and DOCX layout need workflow verification."
+    },
+    {
+      "id": "layout.paragraphMirrorIndents",
+      "wordcraftCommand": "para.indents",
+      "oasisCommand": "setMirrorIndents",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Context menu > Paragraph > Indents > Mirror indents",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-mirror-indents"
+      },
+      "notes": "Oasis exposes paragraph mirror-indents in the Paragraph dialog, opened from the editor context menu. The catalog row only identifies the broader indents task, so equivalence of mirrored-page behavior, mixed selection, undo and DOCX output remains unverified."
+    },
+    {
+      "id": "layout.paragraphSpacingBefore",
+      "wordcraftCommand": "para.spacing",
+      "oasisCommand": "setSpacingBefore",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Context menu > Paragraph > Spacing > Before",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-spacing-before"
+      },
+      "notes": "The Paragraph dialog exposes spacing before, and the Line Spacing dialog also exposes it. Both paths are secondary UI; paragraph-style interaction, mixed selection, pagination, dialog commit/undo and DOCX output need workflow verification."
+    },
+    {
+      "id": "layout.paragraphSpacingAfter",
+      "wordcraftCommand": "para.spacing",
+      "oasisCommand": "setSpacingAfter",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Context menu > Paragraph > Spacing > After",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-spacing-after"
+      },
+      "notes": "The Paragraph dialog exposes spacing after, and the Line Spacing dialog also exposes it. Both paths are secondary UI; paragraph-style interaction, mixed selection, pagination, dialog commit/undo and DOCX output need workflow verification."
+    },
+    {
+      "id": "layout.paragraphLineHeight",
+      "wordcraftCommand": "para.spacing",
+      "oasisCommand": "setLineHeight",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Context menu > Paragraph > Spacing > Line spacing at",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-line-at"
+      },
+      "notes": "The Paragraph dialog exposes a numeric line-spacing amount; its mode determines whether the value is multiple, exact or minimum spacing. Unit conversion, mode/value interaction, mixed selection, pagination, undo and DOCX output need workflow verification."
+    },
+    {
+      "id": "layout.paragraphLineRule",
+      "wordcraftCommand": "para.spacing",
+      "oasisCommand": "setLineRule",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Context menu > Paragraph > Spacing > Line spacing mode",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-line-mode"
+      },
+      "notes": "The Paragraph dialog exposes line-spacing modes and a corresponding line-rule command. Its options include single, 1.5, double, minimum, exact and multiple modes; mapping, selection, pagination, undo and DOCX output need workflow verification."
+    },
+    {
+      "id": "layout.paragraphContextualSpacing",
+      "wordcraftCommand": "para.spacing",
+      "oasisCommand": "setContextualSpacing",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Context menu > Paragraph > Spacing > Contextual spacing",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-contextual-spacing"
+      },
+      "notes": "The Paragraph dialog exposes contextual spacing. The catalog row only identifies the broader spacing task, so style interaction, mixed selections, pagination, undo and DOCX behavior need workflow verification."
     }
   ]
 }
