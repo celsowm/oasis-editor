@@ -8147,13 +8147,13 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 			styleId: e.styleId,
 			bold: i(e.bold, r.bold, n.bold),
 			italic: i(e.italic, r.italic, n.italic),
-			underline: o(r.underline, n.underline),
-			underlineStyle: o(r.underlineStyle, n.underlineStyle),
+			underline: i(e.underline, r.underline, n.underline),
+			underlineStyle: i(e.underlineStyle, r.underlineStyle, n.underlineStyle),
 			underlineColor: o(r.underlineColor, n.underlineColor),
 			strike: i(e.strike, r.strike, n.strike),
 			doubleStrike: i(e.doubleStrike, r.doubleStrike, n.doubleStrike),
-			superscript: o(r.superscript, n.superscript),
-			subscript: o(r.subscript, n.subscript),
+			superscript: i(e.superscript, r.superscript, n.superscript),
+			subscript: i(e.subscript, r.subscript, n.subscript),
 			smallCaps: i(e.smallCaps, r.smallCaps, n.smallCaps),
 			allCaps: i(e.allCaps, r.allCaps, n.allCaps),
 			hidden: i(e.hidden, r.hidden, n.hidden),
@@ -8179,7 +8179,7 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 			numberSpacing: o(r.numberSpacing, n.numberSpacing),
 			numberForm: o(r.numberForm, n.numberForm),
 			stylisticSet: o(r.stylisticSet, n.stylisticSet),
-			contextualAlternates: o(r.contextualAlternates, n.contextualAlternates),
+			contextualAlternates: i(e.contextualAlternates, r.contextualAlternates, n.contextualAlternates),
 			fontFamily: i(e.fontFamily, r.fontFamily, n.fontFamily),
 			fontSize: i(e.fontSize, r.fontSize, n.fontSize),
 			color: o(r.color, n.color),
@@ -8286,15 +8286,15 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 			}
 		}
 		const B = Pe(Re(e, ke, "cntxtAlts"), "val");
-		null === B ? Re(e, "http://schemas.microsoft.com/office/word/2010/wordml", "cntxtAlts") && (r.contextualAlternates = !0) : Le(B) && (r.contextualAlternates = !0);
+		null === B ? Re(e, "http://schemas.microsoft.com/office/word/2010/wordml", "cntxtAlts") && (r.contextualAlternates = !0) : r.contextualAlternates = Le(B);
 		const U = Re(e, Se, "u"), z = Pe(U, "val");
-		if (U && "none" !== z) {
-			r.underline = !0, z && "single" !== z && (r.underlineStyle = z);
+		if (U) {
+			r.underline = "none" !== z, r.underlineStyle = "none" === z ? null : z || "single";
 			const e = Pe(U, "color");
 			e && "auto" !== e && (r.underlineColor = Je(e));
 		}
 		const H = Pe(Re(e, Se, "vertAlign"), "val");
-		"superscript" === H && (r.superscript = !0), "subscript" === H && (r.subscript = !0);
+		"superscript" !== H && "subscript" !== H && "baseline" !== H || (r.superscript = "superscript" === H, r.subscript = "subscript" === H);
 		const j = Re(e, Se, "rFonts"), q = Pe(j, "ascii") ?? Pe(j, "hAnsi") ?? Pe(j, "cs") ?? Pe(j, "eastAsia") ?? function(e, t) {
 			const r = Pe(e, "asciiTheme") ?? Pe(e, "hAnsiTheme") ?? Pe(e, "eastAsiaTheme") ?? Pe(e, "cstheme");
 			if (!r) return;
@@ -12574,17 +12574,19 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 	};
 	function Pi(e) {
 		if (!e) return "";
-		const t = [];
-		if (e.bold && t.push("<w:b/>", "<w:bCs/>"), e.italic && t.push("<w:i/>", "<w:iCs/>"), e.underline) {
+		const t = [], r = (e, ...r) => {
+			if (null != e) for (const n of r) t.push(e ? `<w:${n}/>` : `<w:${n} w:val="0"/>`);
+		};
+		if (r(e.bold, "b", "bCs"), r(e.italic, "i", "iCs"), e.underline) {
 			const r = e.underlineStyle ?? "single", n = e.underlineColor ? ` w:color="${ro(e.underlineColor.replace(/^#/, ""))}"` : "";
 			t.push(`<w:u w:val="${ro(r)}"${n}/>`);
-		}
-		if (e.strike && t.push("<w:strike/>"), e.doubleStrike && t.push("<w:dstrike/>"), e.outline && t.push("<w:outline/>"), e.shadow && t.push("<w:shadow/>"), e.emboss && t.push("<w:emboss/>"), e.imprint && t.push("<w:imprint/>"), e.smallCaps && t.push("<w:smallCaps/>"), e.allCaps && t.push("<w:caps/>"), e.hidden && t.push("<w:vanish/>"), e.noProof && t.push("<w:noProof/>"), e.webHidden && t.push("<w:webHidden/>"), e.specVanish && t.push("<w:specVanish/>"), !1 === e.snapToGrid && t.push("<w:snapToGrid w:val=\"0\"/>"), e.textEffect && t.push(`<w:effect w:val="${ro(e.textEffect)}"/>`), e.textBorder && t.push(`<w:bdr ${mo(e.textBorder)}`), void 0 !== e.characterScale && null !== e.characterScale && Number.isFinite(e.characterScale) && t.push(`<w:w w:val="${Math.max(1, Math.round(e.characterScale))}"/>`), void 0 !== e.characterSpacing && null !== e.characterSpacing) {
+		} else !1 === e.underline && t.push("<w:u w:val=\"none\"/>");
+		if (r(e.strike, "strike"), r(e.doubleStrike, "dstrike"), r(e.outline, "outline"), r(e.shadow, "shadow"), r(e.emboss, "emboss"), r(e.imprint, "imprint"), r(e.smallCaps, "smallCaps"), r(e.allCaps, "caps"), r(e.hidden, "vanish"), r(e.noProof, "noProof"), r(e.webHidden, "webHidden"), r(e.specVanish, "specVanish"), !1 === e.snapToGrid && t.push("<w:snapToGrid w:val=\"0\"/>"), e.textEffect && t.push(`<w:effect w:val="${ro(e.textEffect)}"/>`), e.textBorder && t.push(`<w:bdr ${mo(e.textBorder)}`), void 0 !== e.characterScale && null !== e.characterScale && Number.isFinite(e.characterScale) && t.push(`<w:w w:val="${Math.max(1, Math.round(e.characterScale))}"/>`), void 0 !== e.characterSpacing && null !== e.characterSpacing) {
 			const r = $i(e.characterSpacing);
 			null !== r && t.push(`<w:spacing w:val="${r}"/>`);
 		}
 		void 0 !== e.baselineShift && null !== e.baselineShift && Number.isFinite(e.baselineShift) && t.push(`<w:position w:val="${Math.round(2 * e.baselineShift)}"/>`), void 0 !== e.kerningThreshold && null !== e.kerningThreshold && Number.isFinite(e.kerningThreshold) && t.push(`<w:kern w:val="${Math.max(0, Math.round(2 * e.kerningThreshold))}"/>`);
-		const r = function(e) {
+		const n = function(e) {
 			switch (e) {
 				case "none": return "none";
 				case "standard": return "standard";
@@ -12594,27 +12596,27 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 				default: return null;
 			}
 		}(e.ligatures);
-		r && t.push(`<w14:ligatures w14:val="${r}"/>`);
-		const n = function(e) {
+		n && t.push(`<w14:ligatures w14:val="${n}"/>`);
+		const o = function(e) {
 			switch (e) {
 				case "proportional": return "proportional";
 				case "tabular": return "tabular";
 				default: return null;
 			}
 		}(e.numberSpacing);
-		n && t.push(`<w14:numSpacing w14:val="${n}"/>`);
-		const o = function(e) {
+		o && t.push(`<w14:numSpacing w14:val="${o}"/>`);
+		const i = function(e) {
 			switch (e) {
 				case "lining": return "lining";
 				case "oldStyle": return "oldStyle";
 				default: return null;
 			}
 		}(e.numberForm);
-		o && t.push(`<w14:numForm w14:val="${o}"/>`);
-		const i = function(e) {
+		i && t.push(`<w14:numForm w14:val="${i}"/>`);
+		const a = function(e) {
 			return "number" != typeof e || e < 1 || e > 20 ? null : (1 << e - 1).toString(16).toUpperCase().padStart(8, "0");
 		}(e.stylisticSet);
-		if (i && t.push(`<w14:stylisticSets w14:val="${i}"/>`), e.contextualAlternates && t.push("<w14:cntxtAlts w14:val=\"1\"/>"), e.superscript ? t.push("<w:vertAlign w:val=\"superscript\"/>") : e.subscript && t.push("<w:vertAlign w:val=\"subscript\"/>"), e.fontFamily && t.push(`<w:rFonts w:ascii="${ro(e.fontFamily)}" w:hAnsi="${ro(e.fontFamily)}" w:cs="${ro(e.fontFamily)}"/>`), void 0 !== e.fontSize && null !== e.fontSize) {
+		if (a && t.push(`<w14:stylisticSets w14:val="${a}"/>`), void 0 !== e.contextualAlternates && t.push(`<w14:cntxtAlts w14:val="${e.contextualAlternates ? 1 : 0}"/>`), e.superscript ? t.push("<w:vertAlign w:val=\"superscript\"/>") : e.subscript ? t.push("<w:vertAlign w:val=\"subscript\"/>") : !1 !== e.superscript && !1 !== e.subscript || t.push("<w:vertAlign w:val=\"baseline\"/>"), e.fontFamily && t.push(`<w:rFonts w:ascii="${ro(e.fontFamily)}" w:hAnsi="${ro(e.fontFamily)}" w:cs="${ro(e.fontFamily)}"/>`), void 0 !== e.fontSize && null !== e.fontSize) {
 			const r = function(e) {
 				return null != e && Number.isFinite(e) ? Math.round(e / 96 * 72 * 2) : null;
 			}(e.fontSize);
@@ -12655,7 +12657,7 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 			const r = $i(e.fitText);
 			null !== r && r > 0 && t.push(`<w:fitText w:val="${r}"/>`);
 		}
-		if (e.rtl && t.push("<w:rtl/>"), e.complexScript && t.push("<w:cs/>"), e.emphasisMark && t.push(`<w:em w:val="${ro(e.emphasisMark)}"/>`), e.language) {
+		if (r(e.rtl, "rtl"), r(e.complexScript, "cs"), e.emphasisMark && t.push(`<w:em w:val="${ro(e.emphasisMark)}"/>`), e.language) {
 			const r = [];
 			e.language.value && r.push(`w:val="${ro(e.language.value)}"`), e.language.eastAsia && r.push(`w:eastAsia="${ro(e.language.eastAsia)}"`), e.language.bidi && r.push(`w:bidi="${ro(e.language.bidi)}"`), r.length > 0 && t.push(`<w:lang ${r.join(" ")}/>`);
 		}
@@ -13057,7 +13059,8 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 				shading: n.shading,
 				language: n.language,
 				propertyRevision: e.styles?.propertyRevision
-			};
+			}, i = oe(e.styles?.styleId ? { styleId: e.styles.styleId } : void 0, t, r);
+			for (const a of Object.keys(o)) !1 === o[a] && !1 !== e.styles?.[a] && !0 !== i[a] && delete o[a];
 			return e.styles?.link && (o.link = e.styles.link), o;
 		}(e, r, n), s = () => Pi(a), l = () => `<w:r>${s()}${Oi(e.text)}</w:r>`;
 		return fa(e, z(e, {
