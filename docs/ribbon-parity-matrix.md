@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `177` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `194` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -188,6 +188,23 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `home.characterBorder` | `format.border` | `characterBorder` | — | core-only | core-only | partial | unverified |
 | `home.emphasisMark` | `format.emphasisMark` | `setEmphasisMark` | — | core-only | core-only | partial | unverified |
 | `home.textEffects` | `format.textEffects` | `setTextEffect` | — | core-only | core-only | partial | unverified |
+| `table.mergeCells` | `table.merge` | `tableMerge` | `tableLayout/merge` | partial | partial | partial | unverified |
+| `table.splitCells` | `table.split` | `tableSplit` | `tableLayout/merge` | partial | partial | partial | unverified |
+| `table.insertRowAbove` | `table.insertRowAbove` | `tableInsertRowBefore` | `tableLayout/rowsColumns` | partial | partial | partial | unverified |
+| `table.insertRowBelow` | `table.insertRowBelow` | `tableInsertRowAfter` | `tableLayout/rowsColumns` | partial | partial | partial | unverified |
+| `table.deleteRows` | `table.deleteRow` | `tableDeleteRow` | `tableLayout/rowsColumns` | partial | partial | partial | unverified |
+| `table.insertColumnLeft` | `table.insertColumnLeft` | `tableInsertColumnBefore` | `tableLayout/rowsColumns` | partial | partial | partial | unverified |
+| `table.insertColumnRight` | `table.insertColumnRight` | `tableInsertColumnAfter` | `tableLayout/rowsColumns` | partial | partial | partial | unverified |
+| `table.deleteColumns` | `table.deleteColumn` | `tableDeleteColumn` | `tableLayout/rowsColumns` | partial | partial | partial | unverified |
+| `table.splitTable` | `table.splitTable` | `tableSplitAtRow` | `tableLayout/merge` | partial | partial | partial | unverified |
+| `table.autoFit` | `table.autofit` | `tableToggleAutoFit` | `tableLayout/cellSize` | partial | partial | partial | unverified |
+| `table.distributeRows` | `table.distributeRows` | `tableDistributeRows` | `tableLayout/cellSize` | partial | partial | partial | unverified |
+| `table.distributeColumns` | `table.distributeColumns` | `tableDistributeColumns` | `tableLayout/cellSize` | partial | partial | partial | unverified |
+| `table.deleteTable` | `table.deleteTable` | `tableDelete` | `tableLayout/rowsColumns` | partial | partial | partial | unverified |
+| `table.repeatHeaderRows` | `table.repeatHeader` | `tableRepeatHeaderRows` | `tableLayout/merge` | partial | partial | partial | unverified |
+| `table.sortAscending` | `table.sort` | `tableSortAscending` | `tableLayout/sort` | partial | partial | partial | unverified |
+| `table.sortDescending` | `table.sort` | `tableSortDescending` | `tableLayout/sort` | partial | partial | partial | unverified |
+| `table.convertToText` | `table.toText` | `tableToText` | `tableLayout/merge` | partial | partial | partial | unverified |
 
 ## Open verification questions
 
@@ -368,6 +385,23 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 175. **home.characterBorder:** Oasis registers a toggle that applies or clears a black, solid 0.5 pt character border, but no default UI path was found. WordCraft exposes border configuration, so this is a narrower related task; selection scope, rendering, undo and DOCX output need verification.
 176. **home.emphasisMark:** Oasis registers a value command for emphasis marks, but no default UI path was found. Supported mark values, rendering, mixed selection, undo and DOCX interoperability need workflow verification.
 177. **home.textEffects:** Oasis registers a generic text-effect value command, but no default UI path was found. Effect coverage, rendering, mixed selection, undo and DOCX interoperability need workflow verification.
+178. **table.mergeCells:** The Table Layout Merge button dispatches tableMerge. Adjacent-cell selection, merged content, undo and DOCX round-trip need workflow verification.
+179. **table.splitCells:** The Table Layout Split button dispatches tableSplit. Split dimensions, selected-cell behavior, undo and DOCX round-trip need workflow verification.
+180. **table.insertRowAbove:** The Table Layout Insert Above button inserts before the active row. Caret/selection scope, inherited cell formatting, undo and DOCX round-trip need workflow verification.
+181. **table.insertRowBelow:** The Table Layout Insert Below button inserts after the active row. Caret/selection scope, inherited cell formatting, undo and DOCX round-trip need workflow verification.
+182. **table.deleteRows:** The Table Layout Delete Row button dispatches tableDeleteRow. Multi-row selection, last-row behavior, undo and DOCX round-trip need workflow verification.
+183. **table.insertColumnLeft:** The Table Layout Insert Left button inserts before the active column. Selection scope, inherited cell formatting, undo and DOCX round-trip need workflow verification.
+184. **table.insertColumnRight:** The Table Layout Insert Right button inserts after the active column. Selection scope, inherited cell formatting, undo and DOCX round-trip need workflow verification.
+185. **table.deleteColumns:** The Table Layout Delete Column button dispatches tableDeleteColumn. Multi-column selection, last-column behavior, undo and DOCX round-trip need workflow verification.
+186. **table.splitTable:** The Table Layout Split Table button splits at the active caret row. Boundary rows, copied table properties, undo and DOCX round-trip need workflow verification.
+187. **table.autoFit:** The Table Layout AutoFit toggle switches between fixed and autofit sizing. WordCraft's content/window sizing choices are not established by this toggle; width recalculation, undo and DOCX layout need workflow verification.
+188. **table.distributeRows:** The Table Layout Distribute Rows button equalizes selected table row heights. Selection range, minimum/maximum constraints, undo and DOCX layout need workflow verification.
+189. **table.distributeColumns:** The Table Layout Distribute Columns button equalizes selected table column widths. Selection range, minimum/maximum constraints, undo and DOCX layout need workflow verification.
+190. **table.deleteTable:** The Table Layout Delete Table button removes the active table. Caret resolution, surrounding paragraph preservation, undo and DOCX round-trip need workflow verification.
+191. **table.repeatHeaderRows:** The Table Layout Repeat Header Rows toggle applies to the active table's first row. Multi-row selection, pagination, undo and DOCX output need workflow verification.
+192. **table.sortAscending:** The Table Layout Sort Ascending button sorts body rows by the caret column. Sort keys, header handling, locale-aware values, undo and DOCX preservation need workflow verification.
+193. **table.sortDescending:** The Table Layout Sort Descending button sorts body rows by the caret column. Sort keys, header handling, locale-aware values, undo and DOCX preservation need workflow verification.
+194. **table.convertToText:** The Table Layout Convert to Text button flattens the active table to body paragraphs. Delimiter choice, nested content, selection, undo and formatting retention need workflow verification.
 
 ## Audit interpretation
 

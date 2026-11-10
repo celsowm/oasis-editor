@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 150
+    "linkedRows": 166
   },
   "defaultTabs": [
     "File",
@@ -3848,7 +3848,9 @@
       "group": "Rows & Columns",
       "name": "Delete Rows",
       "command": "table.deleteRow",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.deleteRows"
+      ]
     },
     {
       "index": 374,
@@ -3857,7 +3859,9 @@
       "group": "Rows & Columns",
       "name": "Delete Columns",
       "command": "table.deleteColumn",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.deleteColumns"
+      ]
     },
     {
       "index": 375,
@@ -3866,7 +3870,9 @@
       "group": "Rows & Columns",
       "name": "Delete Table",
       "command": "table.deleteTable",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.deleteTable"
+      ]
     },
     {
       "index": 376,
@@ -3875,7 +3881,9 @@
       "group": "Rows & Columns",
       "name": "Insert Above",
       "command": "table.insertRowAbove",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.insertRowAbove"
+      ]
     },
     {
       "index": 377,
@@ -3884,7 +3892,9 @@
       "group": "Rows & Columns",
       "name": "Insert Below",
       "command": "table.insertRowBelow",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.insertRowBelow"
+      ]
     },
     {
       "index": 378,
@@ -3893,7 +3903,9 @@
       "group": "Rows & Columns",
       "name": "Insert Left",
       "command": "table.insertColumnLeft",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.insertColumnLeft"
+      ]
     },
     {
       "index": 379,
@@ -3902,7 +3914,9 @@
       "group": "Rows & Columns",
       "name": "Insert Right",
       "command": "table.insertColumnRight",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.insertColumnRight"
+      ]
     },
     {
       "index": 380,
@@ -3911,7 +3925,9 @@
       "group": "Merge",
       "name": "Merge Cells",
       "command": "table.merge",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.mergeCells"
+      ]
     },
     {
       "index": 381,
@@ -3920,7 +3936,9 @@
       "group": "Merge",
       "name": "Split Cells",
       "command": "table.split",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.splitCells"
+      ]
     },
     {
       "index": 382,
@@ -3929,7 +3947,9 @@
       "group": "Merge",
       "name": "Split Table",
       "command": "table.splitTable",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.splitTable"
+      ]
     },
     {
       "index": 383,
@@ -3938,7 +3958,9 @@
       "group": "Cell Size",
       "name": "AutoFit",
       "command": "table.autofit",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.autoFit"
+      ]
     },
     {
       "index": 384,
@@ -3965,7 +3987,9 @@
       "group": "Cell Size",
       "name": "Distribute Rows",
       "command": "table.distributeRows",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.distributeRows"
+      ]
     },
     {
       "index": 387,
@@ -3974,7 +3998,9 @@
       "group": "Cell Size",
       "name": "Distribute Columns",
       "command": "table.distributeColumns",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.distributeColumns"
+      ]
     },
     {
       "index": 388,
@@ -4010,7 +4036,10 @@
       "group": "Data",
       "name": "Sort",
       "command": "table.sort",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.sortAscending",
+        "table.sortDescending"
+      ]
     },
     {
       "index": 392,
@@ -4019,7 +4048,9 @@
       "group": "Data",
       "name": "Repeat Header Rows",
       "command": "table.repeatHeader",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.repeatHeaderRows"
+      ]
     },
     {
       "index": 393,
@@ -4028,7 +4059,9 @@
       "group": "Data",
       "name": "Convert to Text",
       "command": "table.toText",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.convertToText"
+      ]
     },
     {
       "index": 394,

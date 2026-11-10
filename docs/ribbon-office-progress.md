@@ -614,6 +614,16 @@ The matrix now contains 177 Oasis capability rows and links 150 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` verifies the four registered commands and the Font dialog's double-strikethrough evidence token; `useFontDialogBridge.ts` confirms the aggregate dialog state path. The catalog snapshot reports 150 linked rows.
 
+## Delivery 42 — Table Layout editing paths
+
+Date: 2026-11-10. B01 and D08 remain **partial**.
+
+Mapped Table Layout's merge/split cells, row/column insertion and deletion, table split/deletion, AutoFit, row/column distribution, repeated headers, sorting and table-to-text conversion to their existing Ribbon controls. WordCraft's single Sort entry is represented by separate ascending and descending Oasis actions. AutoFit currently toggles fixed/autofit; table selection scopes, content preservation, pagination, undo and DOCX round-trip still need workflow evidence.
+
+The matrix now contains 194 Oasis capability rows and links 166 of 521 WordCraft source rows; 355 remain unlinked. The Table Layout selection, cell-deletion, cell-size and other contextual workflows still need individual reconciliation.
+
+Evidence: `npm run audit:ribbon` verifies command registration, direct Ribbon IDs, command bindings and contextual placements for all 17 capability rows; the WordCraft catalog snapshot reports 166 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
