@@ -67,6 +67,10 @@
         "inheritedFont": {
           "suite": "scripts/verify-ribbon-inherited-formatting.mjs",
           "scope": "Inherited Bold/Italic/Underline off and Single replacement, range preservation, one-step undo/redo, caret typing, explicit DOCX reset XML and self-reimport in three engines. Other properties, mixed-state presentation, IME, Word/PDF and real Safari workflows unverified."
+        },
+        "fontValues": {
+          "suite": "scripts/verify-ribbon-font-values.mjs",
+          "scope": "Point-valued HTML, mixed size/family fields, partial multirun apply, separate undo/redo, invalid-size nonmutation, read-only fields and DOCX self-reimport in three engines. Full CSS cascade, mixed boolean UI, arbitrary-size entry, IME, Word/PDF and trusted Safari workflows unverified."
         }
       }
     },

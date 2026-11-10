@@ -227,6 +227,26 @@ Evidence:
 
 Limits: targeted Safari DOM/pixel evidence does not certify trusted keyboard/pointer workflows, permissions or VoiceOver. All remaining layout families, themes/states, units, accessibility and M0–M5 criteria stay in scope.
 
+## Delivery 9 — point-sized HTML and reliable Font value fields
+
+Date: 2026-11-10. D01/D02 and P06 remain **partial**.
+
+An HTML probe using `font-size:12pt` and `18pt` unexpectedly reported the default 11 pt in Home. The shared inline parser recognized only `px`, discarding point sizes during import and rich paste. It now resolves all seven absolute CSS length units with the canonical core conversion constants, retaining fractional sizes without integer rounding. The factors follow [CSS absolute lengths](https://www.w3.org/TR/css-values-4/#absolute-lengths). Relative sizes and external stylesheets still require separate resolution; this does not claim a complete CSS cascade.
+
+Further Font checks reproduced two independent defects: a malformed size was converted to null and cleared direct formatting, and the generic select renderer failed to bind the command's disabled state. Invalid nonempty sizes now return failure without changing content, history or selection; explicit null/empty resets remain supported. Overflow or underflow during conversion is rejected. Native Font and other command-bound selects now follow their shared disabled binding, including read-only transitions.
+
+Evidence:
+
+- Twenty core/integration scenarios cover absolute conversions, unsupported/invalid lengths, inherited inline sizes and nested overrides, link retention, rich insertion without changing surrounding formatting, HTML self-reimport and DOCX self-reimport.
+- Two additional point-boundary tests retain 10.5 pt and reject numeric overflow/underflow.
+- `npm run test:ribbon:font-values` passes eight workflows per engine in Chromium, Firefox and WebKit: two themes/locales and actual 1440/640 px. Imported 10.5/18 pt runs produce blank mixed size/family fields. Choosing 16 pt and Arial affects only the original multirun target, preserves its links and outside text, and supports separate undo/redo. Seven invalid payload cases leave a complete model/history/selection snapshot unchanged. Read-only fields disable and re-enable; a blocked command cannot edit content. Resulting DOCX retains target sizes, primary font names, links and outside text after self-reimport.
+- Actual Safari 27.0.1, visible at 1440 px, confirms imported 10.5/18 pt become 14/24 CSS px, mixed value fields are blank and both Font selectors disable in read-only mode. This is targeted programmatic DOM/state evidence, retained under `debug_artifacts/ribbon-font-values-safari/`, not trusted input or VoiceOver certification.
+- Live edits compare exact font-family values. The DOCX check compares primary names because the format stores font names and import reconstructs generic CSS fallbacks; adding `sans-serif` is not treated as a content-font change.
+- Gitignored evidence is under `debug_artifacts/ribbon-font-values-{engine}/`; the owned CI runner adds a ninth suite under `test-results/ribbon/font-values/`. The final owned Chromium run passes all nine suites, including the measured-width assertions in this workflow.
+- TypeScript and changed-source ESLint pass. Full local Vitest: 318 files / 1,859 tests passed; one file/test skipped. Both static audits pass after regenerating the line-based icon inventory.
+
+Limits: blank mixed value fields are verified, but mixed boolean accessibility/presentation remains open. The current size selector is not an editable arbitrary-size combobox; numeric command validation is independent of future text-entry UX. IME, relative CSS units/cascade, actual native clipboard permissions, Word-open/repair, PDF and VoiceOver remain in the execution queue.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
@@ -235,7 +255,7 @@ All requirements in the execution plan remain in scope. The next sequence is:
 2. Complete the remaining I03/I04 icon families and A01/A02 contextual/custom layout acceptance.
 3. A03/A04: action/menu/launcher semantics, short viewports, spatial matrices and contextual popup transitions.
 4. R01–R05: close late-font, zoom, pointer/IME, invalidation and performance evidence across remaining contexts.
-5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence.
+5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Next inspect the remaining color/highlight/shading pickers and galleries for disabled-state and open-popup transitions; select fields alone do not close that requirement.
 6. P01–P06: Review, References, View, File, search/QAT and interoperability.
 7. All M4 families: Shapes, Equations, Draw, advanced References, Mailings, Developer/Forms, Charts/SmartArt, integrations and Help, each with the plan's minimum functional delivery.
 8. M5: required cross-browser, keyboard, VoiceOver, language/theme, selection, persistence and performance scenarios with retained evidence.
