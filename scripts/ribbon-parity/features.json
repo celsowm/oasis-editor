@@ -389,6 +389,19 @@
       "notes": "The Home style gallery dispatches paragraph styles through setStyleId. Style coverage, built-in IDs, preview fidelity, selection behavior and DOCX interoperability need workflow verification."
     },
     {
+      "id": "home.stylePaneRelated",
+      "wordcraftCommand": "styles.pane",
+      "oasisCommand": "setStyleId",
+      "ribbonId": "editor-toolbar-style",
+      "tab": "home",
+      "group": "styles",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Related task: Oasis exposes a Home style gallery that applies paragraph styles, while WordCraft's Styles Pane is a separate management surface. The gallery does not establish style creation, modification, inspection or management parity; style coverage and DOCX round-trip need workflow verification."
+    },
+    {
       "id": "home.sortParagraphs",
       "wordcraftCommand": "para.sort",
       "oasisCommand": "sortParagraphs",

@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 201
+    "linkedRows": 202
   },
   "defaultTabs": [
     "File",
@@ -1416,7 +1416,9 @@
       "group": "Styles",
       "name": "Styles Pane",
       "command": "styles.pane",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.stylePaneRelated"
+      ]
     },
     {
       "index": 120,

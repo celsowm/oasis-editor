@@ -702,6 +702,16 @@ Ran the icon review sheet in Chromium against eight SVG candidates across light/
 
 Evidence: `npm run test:ribbon:icons`; manifest SHA `8b5daa89461cc50d1d4eeef557b38c2bc66bc0f8`, `dirty:false`. PNGs and `verification.json` are retained under the gitignored `debug_artifacts/ribbon-icons-chromium/` directory.
 
+## Delivery 51 — Styles Pane related task
+
+Date: 2026-11-10. B01 and D02 remain **partial**.
+
+Linked WordCraft Styles Pane to the Oasis Home Style Gallery as a related task because both provide paragraph-style application. The gallery does not expose the pane's create, modify, inspect or manage workflows, so those commands remain unlinked.
+
+The matrix now contains 238 Oasis capability rows and links 202 of 521 WordCraft source rows; 319 remain unlinked.
+
+Evidence: `npm run audit:ribbon` and `npm run audit:ribbon:wordcraft` pass; the pinned catalog reports 202 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
