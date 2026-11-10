@@ -6,7 +6,7 @@
     "wordcraftRepository": "storytold/wordcraft",
     "wordcraftCommit": "05f781cfdac1d89034c0f4f5824b597ff845f2ef"
   },
-  "scope": "49-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Category-level exposure, semantics, and persistence evidence is tracked separately in references.json and docs/ribbon-office-progress.md.",
+  "scope": "53-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Category-level exposure, semantics, and persistence evidence is tracked separately in references.json and docs/ribbon-office-progress.md.",
   "features": [
     {
       "id": "home.copy",
@@ -217,6 +217,46 @@
       "group": "pages",
       "status": "partial",
       "notes": "Pagination and multi-section round-trip are not certified by the Ribbon binding alone."
+    },
+    {
+      "id": "insert.table",
+      "wordcraftCommand": "insert.table",
+      "oasisCommand": "insertTable",
+      "ribbonId": "editor-toolbar-insert-table",
+      "tab": "insert",
+      "group": "tables",
+      "status": "partial",
+      "notes": "The Insert grid picker dispatches row and column counts to the shared table command. Draw Table, text conversion, Quick Tables and spreadsheet insertion are separate WordCraft tasks; table selection, accessibility and DOCX round-trip remain independently unverified."
+    },
+    {
+      "id": "insert.picture",
+      "wordcraftCommand": "insert.picture",
+      "oasisCommand": "insertImage",
+      "ribbonId": "editor-toolbar-insert-image",
+      "tab": "insert",
+      "group": "illustrations",
+      "status": "partial",
+      "notes": "Inserts a local image through the host file picker and the shared image command. Online pictures, screenshots, 3D models, icons and SmartArt are distinct WordCraft tasks; format, size and round-trip workflows remain open."
+    },
+    {
+      "id": "insert.link",
+      "wordcraftCommand": "insert.link",
+      "oasisCommand": "link",
+      "ribbonId": "editor-toolbar-link",
+      "tab": "insert",
+      "group": "links",
+      "status": "partial",
+      "notes": "Opens the URL dialog for the selected range. In-document target selection, keyboard/focus behavior, undo and DOCX hyperlink round-trip remain independently unverified."
+    },
+    {
+      "id": "insert.removeLink",
+      "wordcraftCommand": "insert.removeLink",
+      "oasisCommand": "unlink",
+      "ribbonId": "editor-toolbar-unlink",
+      "tab": "insert",
+      "group": "links",
+      "status": "partial",
+      "notes": "Removes the hyperlink from the selected linked text through the shared command. Mixed ranges, selection retention, undo and DOCX round-trip remain independently unverified."
     },
     {
       "id": "references.toc",

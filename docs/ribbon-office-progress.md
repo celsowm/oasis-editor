@@ -356,6 +356,18 @@ Evidence: inspected WordCraft `crates/engine/src/cmd/review.rs`, `review/changes
 
 Limits: this does not complete Review workflows or P01. Accept/reject scope, revision navigation parity, comments anchors/authorship and external Word round-trips still require capability-level verification.
 
+## Delivery 18 — Insert command crosswalk
+
+Date: 2026-11-10. B01 and D04 remain **partial**.
+
+Added capability rows for Insert Table, Pictures, Link, and Remove Hyperlink. Each maps an existing Oasis command and Ribbon control to the corresponding WordCraft catalog command. The notes retain their boundaries: Oasis's table grid is not Draw Table, Quick Tables, text conversion or spreadsheet insertion; image insertion uses the local host picker and does not cover online pictures or other illustration types; the Link dialog does not yet establish all in-document target paths. Remove Hyperlink remains a separate action from link creation.
+
+The crosswalk now contains 53 Oasis capabilities and links 45 of the 521 WordCraft catalog rows, leaving 476 source rows unclassified. These links record candidate command relationships and do not certify complete workflows or persistence.
+
+Evidence: inspected WordCraft `crates/engine/src/cmd/insert.rs` and Oasis's Insert placements and Essentials command handlers for table, image, link and unlink. The static audits verify command IDs, toolbar exposure and the generated catalog links.
+
+Limits: table targeting and export, image selection and round-trip, hyperlink selection and undo, and the broader Insert tab workflows remain open. D04 and M2 remain incomplete.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

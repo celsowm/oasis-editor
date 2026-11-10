@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 41
+    "linkedRows": 45
   },
   "defaultTabs": [
     "File",
@@ -1469,7 +1469,9 @@
       "group": "Tables",
       "name": "Insert Table",
       "command": "insert.table",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.table"
+      ]
     },
     {
       "index": 140,
@@ -1514,7 +1516,9 @@
       "group": "Illustrations",
       "name": "Pictures",
       "command": "insert.picture",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.picture"
+      ]
     },
     {
       "index": 145,
@@ -1613,7 +1617,9 @@
       "group": "Links",
       "name": "Link",
       "command": "insert.link",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.link"
+      ]
     },
     {
       "index": 156,
@@ -1622,7 +1628,9 @@
       "group": "Links",
       "name": "Remove Link",
       "command": "insert.removeLink",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.removeLink"
+      ]
     },
     {
       "index": 157,
