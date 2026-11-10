@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
 import assert from "node:assert/strict";
-import { chromium, firefox, webkit } from "@playwright/test";
+import { chromium, firefox, webkit, expect } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
@@ -67,9 +67,14 @@ try {
         path: resolve(output, `${theme}-${locale}-styles.png`),
       });
       await page.keyboard.press("Escape");
-      await page.waitForTimeout(30);
-      assert.equal(await panel.count(), 0);
-      assert.ok(await expand.evaluate((el) => el === document.activeElement));
+      await expect(
+        panel,
+        `${theme}/${locale}: Escape closes the gallery`,
+      ).toHaveCount(0);
+      await expect(
+        expand,
+        `${theme}/${locale}: Escape restores the gallery trigger`,
+      ).toBeFocused();
       await page.getByTestId("editor-ribbon-tab-insert").click();
       assert.equal(
         await page.locator('[data-ribbon-group="accessibility"]').count(),
