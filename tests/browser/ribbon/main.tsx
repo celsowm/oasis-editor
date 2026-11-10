@@ -2,7 +2,12 @@ import { render } from "solid-js/web";
 import { OasisEditorApp } from "@/ui/OasisEditorApp.js";
 import type { OasisEditorClient } from "@/app/client/OasisEditorClient.js";
 import { setWelcomeSeen } from "@/app/services/userPreferences.js";
-import { ribbonFixtures } from "./fixtures.js";
+import {
+  canonicalReferenceDocument,
+  referenceFonts,
+  sha256,
+} from "./fixtureMetadata.js";
+import { prepareRibbonFixture, ribbonFixtures } from "./fixtures.js";
 import type { RibbonFixture } from "./fixtures.js";
 import "@/styles/oasis-editor.css";
 
@@ -24,6 +29,13 @@ declare global {
       theme: "light" | "dark";
       locale: "pt-BR" | "en";
       fixture: RibbonFixture;
+      fingerprintFonts: () => Promise<{ fonts: object; fontSha256: string }>;
+      metadata: {
+        documentSha256: string;
+        definitionSha256: string;
+        fonts: object;
+        fontSha256: string;
+      };
     };
   }
 }
@@ -42,9 +54,47 @@ render(
       document={{ persistenceEnabled: false, remoteWebFonts: false }}
       runtime={{
         onReady: async (client) => {
-          await client.import.html(ribbonFixtures[fixture]);
-          window.ribbonReference = { client, theme, locale, fixture };
-          document.documentElement.dataset.referenceReady = "true";
+          try {
+            await prepareRibbonFixture(client, fixture);
+            await document.fonts.ready;
+            const fonts = referenceFonts();
+            const metadata = {
+              documentSha256: await sha256(
+                canonicalReferenceDocument(client.document.get()),
+              ),
+              definitionSha256: await sha256(
+                JSON.stringify({
+                  version: 1,
+                  fixture,
+                  html: ribbonFixtures[fixture],
+                }),
+              ),
+              fonts,
+              fontSha256: await sha256(JSON.stringify(fonts)),
+            };
+            window.ribbonReference = {
+              client,
+              theme,
+              locale,
+              fixture,
+              metadata,
+              fingerprintFonts: async () => {
+                await document.fonts.ready;
+                const fonts = referenceFonts();
+                return {
+                  fonts,
+                  fontSha256: await sha256(JSON.stringify(fonts)),
+                };
+              },
+            };
+            document.documentElement.dataset.referenceReady = "true";
+          } catch (error) {
+            document.documentElement.dataset.referenceError =
+              error instanceof Error
+                ? `${error.name}: ${error.message}`
+                : String(error);
+            throw error;
+          }
         },
       }}
     />
