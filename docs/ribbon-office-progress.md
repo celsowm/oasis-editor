@@ -131,6 +131,24 @@ The actual Safari editor page remained hidden and its fixture setup did not comp
 
 Comment/revision mutation, style application, clipboard permissions, DOCX/PDF round-trips and the professional/advanced workflows remain to be demonstrated as specified in the execution plan.
 
+## Delivery 4 — atomic underline editing from Home
+
+Date: 2026-11-10. D02 remains **partial**; this delivery closes a reproduced history defect, not the entire Font workflow.
+
+Choosing Double underline previously dispatched a variant change and a separate toggle. One Undo removed the visible underline but left `underlineStyle: double` on the original selection, with another undo step still available. Choosing Single or Remove also depended on multiple independent commands.
+
+The new core `applyUnderlineStyle` selection operation sets/removes the boolean and variant together. A separate wiring change adds the typed shared command and routes the split button and convenience double/word commands through one edit. Single underline clears a previous direct variant. At a caret, the style controller stores a pending override without modifying document content, including an explicit null variant to override the style under the caret. Main, expansion and menu actions reflect command availability in read-only mode.
+
+Evidence:
+
+- Core tests cover mixed direct underline variants, partial multirun ranges, unaffected outside characters, preserved emphasis/selection and collapsed-selection no-op.
+- A controller test verifies pending Single/Remove overrides on a caret inside directly double-underlined text, without document mutation. Actual subsequent typing/IME still needs separate evidence.
+- `npm run test:ribbon:editing` exercises eight workflows per engine: light/dark, en/pt-BR, actual 1440/640 px. Actions use the real Font and History controls, including collapsed groups. It asserts the original target, one-step apply/remove undo and redo, Single replacement, convenience command behavior, read-only controls, DOCX underline XML and reimported text/formatting.
+- Chromium, Firefox and WebKit pass the exercised workflows. Synthetic DOCX files and checks remain in gitignored `debug_artifacts/ribbon-editing-{engine}/`; CI retains the Chromium set under `test-results/ribbon/editing/`.
+- TypeScript, changed-source ESLint and both Ribbon audits pass. Full local Vitest: 313 files / 1,797 tests passed; one file/test skipped. The existing global lint failures remain outside the changed source files.
+
+Limits: no real-Safari/VoiceOver claim; no Word-open/repair validation or PDF claim. Named-style inheritance, mixed-state presentation, all font/color controls, invalid input, subsequent typing/IME, other selection types and remaining D02 requirements stay open. This does not complete M2.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
