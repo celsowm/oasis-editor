@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 200
+    "linkedRows": 201
   },
   "defaultTabs": [
     "File",
@@ -1597,7 +1597,9 @@
       "group": "Pages",
       "name": "Blank Page",
       "command": "insert.blankPage",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.blankPageRelated"
+      ]
     },
     {
       "index": 138,

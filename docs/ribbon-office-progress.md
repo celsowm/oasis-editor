@@ -684,6 +684,16 @@ The matrix now contains 236 Oasis capability rows and links 200 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` and `npm run audit:ribbon:wordcraft` pass; the pinned catalog reports 200 linked rows.
 
+## Delivery 49 — Blank-page relationship
+
+Date: 2026-11-10. B01 and D04 remain **partial**.
+
+Recorded Oasis's Insert > Page Break as a related task for WordCraft's Insert > Blank Page. The Oasis action starts following content on a new page but does not guarantee a whole blank page, so this mapping does not claim command equivalence. Pagination and DOCX behavior remain unverified.
+
+The matrix now contains 237 Oasis capability rows and links 201 of 521 WordCraft source rows; 320 remain unlinked.
+
+Evidence: `npm run audit:ribbon` and `npm run audit:ribbon:wordcraft` pass; the pinned catalog reports 201 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

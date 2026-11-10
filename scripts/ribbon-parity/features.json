@@ -425,6 +425,19 @@
       "notes": "Pagination and multi-section round-trip are not certified by the Ribbon binding alone."
     },
     {
+      "id": "insert.blankPageRelated",
+      "wordcraftCommand": "insert.blankPage",
+      "oasisCommand": "pageBreak",
+      "ribbonId": "editor-toolbar-page-break",
+      "tab": "insert",
+      "group": "pages",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Related task only: Oasis exposes a page break on Insert, while WordCraft Blank Page inserts a blank page. A page break starts following content on a new page but does not by itself guarantee a full blank page; pagination and DOCX behavior need workflow verification."
+    },
+    {
       "id": "insert.table",
       "wordcraftCommand": "insert.table",
       "oasisCommand": "insertTable",
