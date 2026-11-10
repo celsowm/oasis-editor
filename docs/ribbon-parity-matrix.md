@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** 77-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `77` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `81` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -50,6 +50,7 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `home.spaceAfter` | `para.removeSpaceAfter` | `setSpacingAfter` | `home/paragraph` | partial | partial | unverified | unverified |
 | `home.style` | `para.style` | `setStyleId` | `home/styles` | partial | partial | unverified | unverified |
 | `home.sortParagraphs` | `para.sort` | `sortParagraphs` | — | core-only | core-only | partial | unverified |
+| `home.horizontalLine` | `insert.horizontalLine` | `applyHorizontalLine` | — | core-only | core-only | partial | unverified |
 | `insert.pageBreak` | `insert.pageBreak` | `pageBreak` | `insert/pages` | partial | partial | unverified | unverified |
 | `insert.table` | `insert.table` | `insertTable` | `insert/tables` | partial | partial | unverified | unverified |
 | `insert.picture` | `insert.picture` | `insertImage` | `insert/illustrations` | partial | partial | unverified | unverified |
@@ -88,6 +89,9 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `insert.bookmark` | `insert.bookmark` | `insertBookmark` | `insert/links` | partial | partial | unverified | unverified |
 | `insert.date` | `insert.dateTime` | `insertDateField` | `insert/links` | partial | partial | unverified | unverified |
 | `insert.exitHeaderFooter` | — | `exitHeaderFooter` | `insert/headerFooter` | partial | partial | unverified | unverified |
+| `insert.nonbreakingSpace` | `text.nbsp` | `insertNonBreakingSpace` | — | core-only | core-only | partial | unverified |
+| `insert.nonbreakingHyphen` | `text.nbHyphen` | `insertNonBreakingHyphen` | — | core-only | core-only | partial | partial |
+| `layout.hyphenation` | `layout.hyphenation` | `setHyphenation` | — | core-only | core-only | partial | partial |
 
 ## Open verification questions
 
@@ -130,44 +134,48 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 37. **home.spaceAfter:** The line-spacing dialog accepts a spacing-after value. WordCraft exposes a one-click removal; entering zero in Oasis is a related workflow, and units, selection and DOCX interoperability need verification.
 38. **home.style:** The Home style gallery dispatches paragraph styles through setStyleId. Style coverage, built-in IDs, preview fidelity, selection behavior and DOCX interoperability need workflow verification.
 39. **home.sortParagraphs:** The registered sortParagraphs command sorts a contiguous run of sibling paragraphs by natural number/text order and refuses ranges containing tables or footnote content. WordCraft para.sort serves the same paragraph-sorting task, but collates using the document language while Oasis currently uses runtime localeCompare. No default Ribbon or menubar entry exposes the command; DOCX/PDF reorder behavior and multilingual equivalence remain unverified.
-40. **insert.pageBreak:** Pagination and multi-section round-trip are not certified by the Ribbon binding alone.
-41. **insert.table:** The Insert grid picker dispatches row and column counts to the shared table command. Draw Table, text conversion, Quick Tables and spreadsheet insertion are separate WordCraft tasks; table selection, accessibility and DOCX round-trip remain independently unverified.
-42. **insert.picture:** Inserts a local image through the host file picker and the shared image command. Online pictures, screenshots, 3D models, icons and SmartArt are distinct WordCraft tasks; format, size and round-trip workflows remain open.
-43. **insert.link:** Opens the URL dialog for the selected range. In-document target selection, keyboard/focus behavior, undo and DOCX hyperlink round-trip remain independently unverified.
-44. **insert.removeLink:** Removes the hyperlink from the selected linked text through the shared command. Mixed ranges, selection retention, undo and DOCX round-trip remain independently unverified.
-45. **insert.shape:** The Shape Gallery inserts Oasis's supported preset subset through the shared shape command. Broader WordCraft shape kinds, geometry editing, arrangement, accessibility, rendering and DOCX round-trip remain open.
-46. **insert.symbol:** Related task: the Oasis Symbols menu inserts its curated symbol/number subset as text and opens a broader symbol dialog. Per-symbol font selection and the full WordCraft symbol command contract are not established.
-47. **insert.equation:** Equation templates in the Insert/Symbols menu dispatch the shared equation command. WordCraft also lists this command on its contextual Equation tab; Oasis does not yet expose an equivalent contextual surface. Full editing, navigation, rendering and OMML interoperability remain unverified.
-48. **references.toc:** TOC creation, fields and export/round-trip remain independently testable.
-49. **references.updateToc:** Eligibility and missing-TOC command states still need refinement.
-50. **references.footnote:** The References action inserts a footnote at the current editing position. Focus restoration, multi-section behavior and DOCX interoperability remain independently unverified.
-51. **references.caption:** Related task: Oasis exposes image caption insertion only when an image is selected, under Insert/Accessibility. WordCraft's caption command also covers tables and is placed under References; placement and target coverage differ.
-52. **review.trackChanges:** Active state is wired to EditorState; tracked content fidelity and UI workflows remain to verify.
-53. **review.previousRevision:** Related task to WordCraft Previous Change. Oasis cycles backward through text-run revisions in the active editing story; structural, table and section changes need separate navigation support. Pure selection navigation; parity remains partial.
-54. **review.nextRevision:** Related task to WordCraft Next Change. Oasis cycles forward through tracked text-run revisions in the active editing story; structural, table and section changes need separate navigation support. Pure selection navigation; parity remains partial.
-55. **review.commentsPanel:** Related task to WordCraft Show Comments: Oasis toggles an editor-scoped discussion drawer, while WordCraft's command returns the comment list. The drawer lists roots and nested replies, supports text search, open/resolved filters, navigation, moderation and confirmation before deletion. The Activity view shows undoable local comment events, which are not exported to DOCX. Host IDs gate mutations; visual parity remains partial.
-56. **review.newComment:** Creates an authored comment anchored to selected text or a caret word, through a per-editor modal. Uses native comment registry and is undoable; visual E2E and full DOCX import/export fidelity are pending. WordCraft also places this action on Insert; Oasis currently exposes it on Review only, so placement parity remains open.
-57. **review.replyComment:** Creates a threaded reply linked to its parent comment; Oasis stores the reply in an unanchored comment story linked by parentId. DOCX commentsExtended XML parent relationship has unit coverage; cross-application round-trip remains unverified.
-58. **review.editComment:** Edits only the selected existing comment's text in a transactional modal; ID, author, creation time, anchors, resolved state and reply links are preserved. Popup actions support editing individual nested replies. DOCX export/reimport and read-only gating have tests; full visual WordCraft parity remains unverified.
-59. **review.previousComment:** Navigates to the prior anchored comment in the active story, skipping unanchored replies and wrapping.
-60. **review.nextComment:** Navigates to the next anchored comment without changing the document; Mapped to WordCraft `review.nextComment`; semantic and persistence parity remain unverified.
-61. **review.resolveComment:** Marks the comment under the selection as resolved, retaining the DOCX comment id, author, anchors and thread metadata. Needs round-trip E2E.
-62. **review.reopenComment:** Reopens a resolved comment under the selection. Enabled only when the selected comment is resolved.
-63. **review.deleteComment:** Removes an anchored comment and recursively removes replies to prevent orphan thread parent ids. Undo and DOCX source-package E2E remain to verify.
-64. **review.accept:** Selection scope and disabled states for documents without revisions need tests.
-65. **review.reject:** Selection scope and disabled states for documents without revisions need tests.
-66. **view.showMargins:** Oasis-specific display option with active state bound to EditorState.
-67. **view.paragraphMarks:** Paragraph-mark display feedback is wired; rendering and accessibility require E2E checks.
-68. **view.preciseFonts:** Oasis precise-font mode; platform font availability still requires coverage.
-69. **insert.header:** Enters the default header editing zone for the active section. First/even-page variant in-place editing and brand-new header part export remain follow-ups.
-70. **insert.footer:** Enters the default footer editing zone for the active section. Variant in-place editing and brand-new footer part export remain follow-ups.
-71. **insert.pageNumber:** Inserts a PAGE field at the caret inside a header/footer (or body). Field formatting (\* roman etc.) resolves in layout and round-trips through DOCX. Per-section start/format (w:pgNumType) is set via the setSectionPageNumbering payload command. Layout resolution E2E verification remains.
-72. **insert.pageNumberXOfY:** Inserts the Page X of Y combination (PAGE + NUMPAGES with literals) at the caret, mirroring WordCraft insert.page_number format=of, with an optional \* number format.
-73. **insert.pageNumberTop:** Places the active section's default header as a single centered PAGE paragraph (mirrors WordCraft insert.page_number position=top story rewrite). Alignment gallery is not yet exposed in UI.
-74. **insert.pageNumberBottom:** Places the active section's default footer as a single centered PAGE paragraph (mirrors WordCraft insert.page_number position=bottom story rewrite). Round-trips through DOCX with alignment.
-75. **insert.bookmark:** Bookmarks the current selection (single point when collapsed) into the document-level EditorBookmarks registry, exported as w:bookmarkStart/w:bookmarkEnd and round-tripped on import. Cross-reference insertion (PAGEREF/REF with refresh) remains a follow-up.
-76. **insert.date:** Inserts a typed DATE field at the caret with a \@ picture (default M/d/yyyy), caching the formatted result in the run text and round-tripping through DOCX. The DATE_FORMATS picture gallery and TIME fields remain follow-ups.
-77. **insert.exitHeaderFooter:** Returns the caret to the section body when editing a header/footer zone. Enabled only while the active zone is a header or footer.
+40. **home.horizontalLine:** Both commands apply a single 1.5 pt bottom border to paragraphs in the selection. The Oasis command has no default Ribbon or menubar entry; selection scope, border-color behavior, undo and DOCX/PDF round-trip still need workflow verification.
+41. **insert.pageBreak:** Pagination and multi-section round-trip are not certified by the Ribbon binding alone.
+42. **insert.table:** The Insert grid picker dispatches row and column counts to the shared table command. Draw Table, text conversion, Quick Tables and spreadsheet insertion are separate WordCraft tasks; table selection, accessibility and DOCX round-trip remain independently unverified.
+43. **insert.picture:** Inserts a local image through the host file picker and the shared image command. Online pictures, screenshots, 3D models, icons and SmartArt are distinct WordCraft tasks; format, size and round-trip workflows remain open.
+44. **insert.link:** Opens the URL dialog for the selected range. In-document target selection, keyboard/focus behavior, undo and DOCX hyperlink round-trip remain independently unverified.
+45. **insert.removeLink:** Removes the hyperlink from the selected linked text through the shared command. Mixed ranges, selection retention, undo and DOCX round-trip remain independently unverified.
+46. **insert.shape:** The Shape Gallery inserts Oasis's supported preset subset through the shared shape command. Broader WordCraft shape kinds, geometry editing, arrangement, accessibility, rendering and DOCX round-trip remain open.
+47. **insert.symbol:** Related task: the Oasis Symbols menu inserts its curated symbol/number subset as text and opens a broader symbol dialog. Per-symbol font selection and the full WordCraft symbol command contract are not established.
+48. **insert.equation:** Equation templates in the Insert/Symbols menu dispatch the shared equation command. WordCraft also lists this command on its contextual Equation tab; Oasis does not yet expose an equivalent contextual surface. Full editing, navigation, rendering and OMML interoperability remain unverified.
+49. **references.toc:** TOC creation, fields and export/round-trip remain independently testable.
+50. **references.updateToc:** Eligibility and missing-TOC command states still need refinement.
+51. **references.footnote:** The References action inserts a footnote at the current editing position. Focus restoration, multi-section behavior and DOCX interoperability remain independently unverified.
+52. **references.caption:** Related task: Oasis exposes image caption insertion only when an image is selected, under Insert/Accessibility. WordCraft's caption command also covers tables and is placed under References; placement and target coverage differ.
+53. **review.trackChanges:** Active state is wired to EditorState; tracked content fidelity and UI workflows remain to verify.
+54. **review.previousRevision:** Related task to WordCraft Previous Change. Oasis cycles backward through text-run revisions in the active editing story; structural, table and section changes need separate navigation support. Pure selection navigation; parity remains partial.
+55. **review.nextRevision:** Related task to WordCraft Next Change. Oasis cycles forward through tracked text-run revisions in the active editing story; structural, table and section changes need separate navigation support. Pure selection navigation; parity remains partial.
+56. **review.commentsPanel:** Related task to WordCraft Show Comments: Oasis toggles an editor-scoped discussion drawer, while WordCraft's command returns the comment list. The drawer lists roots and nested replies, supports text search, open/resolved filters, navigation, moderation and confirmation before deletion. The Activity view shows undoable local comment events, which are not exported to DOCX. Host IDs gate mutations; visual parity remains partial.
+57. **review.newComment:** Creates an authored comment anchored to selected text or a caret word, through a per-editor modal. Uses native comment registry and is undoable; visual E2E and full DOCX import/export fidelity are pending. WordCraft also places this action on Insert; Oasis currently exposes it on Review only, so placement parity remains open.
+58. **review.replyComment:** Creates a threaded reply linked to its parent comment; Oasis stores the reply in an unanchored comment story linked by parentId. DOCX commentsExtended XML parent relationship has unit coverage; cross-application round-trip remains unverified.
+59. **review.editComment:** Edits only the selected existing comment's text in a transactional modal; ID, author, creation time, anchors, resolved state and reply links are preserved. Popup actions support editing individual nested replies. DOCX export/reimport and read-only gating have tests; full visual WordCraft parity remains unverified.
+60. **review.previousComment:** Navigates to the prior anchored comment in the active story, skipping unanchored replies and wrapping.
+61. **review.nextComment:** Navigates to the next anchored comment without changing the document; Mapped to WordCraft `review.nextComment`; semantic and persistence parity remain unverified.
+62. **review.resolveComment:** Marks the comment under the selection as resolved, retaining the DOCX comment id, author, anchors and thread metadata. Needs round-trip E2E.
+63. **review.reopenComment:** Reopens a resolved comment under the selection. Enabled only when the selected comment is resolved.
+64. **review.deleteComment:** Removes an anchored comment and recursively removes replies to prevent orphan thread parent ids. Undo and DOCX source-package E2E remain to verify.
+65. **review.accept:** Selection scope and disabled states for documents without revisions need tests.
+66. **review.reject:** Selection scope and disabled states for documents without revisions need tests.
+67. **view.showMargins:** Oasis-specific display option with active state bound to EditorState.
+68. **view.paragraphMarks:** Paragraph-mark display feedback is wired; rendering and accessibility require E2E checks.
+69. **view.preciseFonts:** Oasis precise-font mode; platform font availability still requires coverage.
+70. **insert.header:** Enters the default header editing zone for the active section. First/even-page variant in-place editing and brand-new header part export remain follow-ups.
+71. **insert.footer:** Enters the default footer editing zone for the active section. Variant in-place editing and brand-new footer part export remain follow-ups.
+72. **insert.pageNumber:** Inserts a PAGE field at the caret inside a header/footer (or body). Field formatting (\* roman etc.) resolves in layout and round-trips through DOCX. Per-section start/format (w:pgNumType) is set via the setSectionPageNumbering payload command. Layout resolution E2E verification remains.
+73. **insert.pageNumberXOfY:** Inserts the Page X of Y combination (PAGE + NUMPAGES with literals) at the caret, mirroring WordCraft insert.page_number format=of, with an optional \* number format.
+74. **insert.pageNumberTop:** Places the active section's default header as a single centered PAGE paragraph (mirrors WordCraft insert.page_number position=top story rewrite). Alignment gallery is not yet exposed in UI.
+75. **insert.pageNumberBottom:** Places the active section's default footer as a single centered PAGE paragraph (mirrors WordCraft insert.page_number position=bottom story rewrite). Round-trips through DOCX with alignment.
+76. **insert.bookmark:** Bookmarks the current selection (single point when collapsed) into the document-level EditorBookmarks registry, exported as w:bookmarkStart/w:bookmarkEnd and round-tripped on import. Cross-reference insertion (PAGEREF/REF with refresh) remains a follow-up.
+77. **insert.date:** Inserts a typed DATE field at the caret with a \@ picture (default M/d/yyyy), caching the formatted result in the run text and round-tripping through DOCX. The DATE_FORMATS picture gallery and TIME fields remain follow-ups.
+78. **insert.exitHeaderFooter:** Returns the caret to the section body when editing a header/footer zone. Enabled only while the active zone is a header or footer.
+79. **insert.nonbreakingSpace:** Both commands insert a nonbreaking space at the current editing position. The Oasis command is registered without a default Ribbon or menubar entry; selection replacement, caret behavior and DOCX/PDF round-trip need direct workflow evidence.
+80. **insert.nonbreakingHyphen:** Both commands insert U+2011 at the current editing position. Oasis has no default Ribbon or menubar entry; DOCX serialization/import recognizes w:noBreakHyphen, but selection, caret and end-to-end round-trip behavior still need workflow verification.
+81. **layout.hyphenation:** Both implementations model automatic hyphenation, zone, capital-word handling and consecutive-line limit. Oasis applies settings to layout and imports/exports the corresponding DOCX settings; no default Ribbon or menubar entry exposes the command, and rendered pagination plus complete round-trip behavior still need workflow evidence.
 
 ## Audit interpretation
 

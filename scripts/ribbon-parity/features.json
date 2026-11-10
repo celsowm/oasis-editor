@@ -402,6 +402,19 @@
       "notes": "The registered sortParagraphs command sorts a contiguous run of sibling paragraphs by natural number/text order and refuses ranges containing tables or footnote content. WordCraft para.sort serves the same paragraph-sorting task, but collates using the document language while Oasis currently uses runtime localeCompare. No default Ribbon or menubar entry exposes the command; DOCX/PDF reorder behavior and multilingual equivalence remain unverified."
     },
     {
+      "id": "home.horizontalLine",
+      "wordcraftCommand": "insert.horizontalLine",
+      "oasisCommand": "applyHorizontalLine",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Both commands apply a single 1.5 pt bottom border to paragraphs in the selection. The Oasis command has no default Ribbon or menubar entry; selection scope, border-color behavior, undo and DOCX/PDF round-trip still need workflow verification."
+    },
+    {
       "id": "insert.pageBreak",
       "wordcraftCommand": "insert.pageBreak",
       "oasisCommand": "pageBreak",
@@ -780,6 +793,45 @@
       "group": "headerFooter",
       "status": "partial",
       "notes": "Returns the caret to the section body when editing a header/footer zone. Enabled only while the active zone is a header or footer."
+    },
+    {
+      "id": "insert.nonbreakingSpace",
+      "wordcraftCommand": "text.nbsp",
+      "oasisCommand": "insertNonBreakingSpace",
+      "ribbonId": null,
+      "tab": "insert",
+      "group": "symbols",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Both commands insert a nonbreaking space at the current editing position. The Oasis command is registered without a default Ribbon or menubar entry; selection replacement, caret behavior and DOCX/PDF round-trip need direct workflow evidence."
+    },
+    {
+      "id": "insert.nonbreakingHyphen",
+      "wordcraftCommand": "text.nbHyphen",
+      "oasisCommand": "insertNonBreakingHyphen",
+      "ribbonId": null,
+      "tab": "insert",
+      "group": "symbols",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Both commands insert U+2011 at the current editing position. Oasis has no default Ribbon or menubar entry; DOCX serialization/import recognizes w:noBreakHyphen, but selection, caret and end-to-end round-trip behavior still need workflow verification."
+    },
+    {
+      "id": "layout.hyphenation",
+      "wordcraftCommand": "layout.hyphenation",
+      "oasisCommand": "setHyphenation",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "pageSetup",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Both implementations model automatic hyphenation, zone, capital-word handling and consecutive-line limit. Oasis applies settings to layout and imports/exports the corresponding DOCX settings; no default Ribbon or menubar entry exposes the command, and rendered pagination plus complete round-trip behavior still need workflow evidence."
     }
   ]
 }

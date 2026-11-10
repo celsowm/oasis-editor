@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 70
+    "linkedRows": 74
   },
   "defaultTabs": [
     "File",
@@ -1130,7 +1130,9 @@
       "group": "Paragraph",
       "name": "Horizontal Line",
       "command": "insert.horizontalLine",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.horizontalLine"
+      ]
     },
     {
       "index": 99,
@@ -1959,7 +1961,9 @@
       "group": "Symbols",
       "name": "Nonbreaking Space",
       "command": "text.nbsp",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.nonbreakingSpace"
+      ]
     },
     {
       "index": 187,
@@ -1968,7 +1972,9 @@
       "group": "Symbols",
       "name": "Nonbreaking Hyphen",
       "command": "text.nbHyphen",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.nonbreakingHyphen"
+      ]
     },
     {
       "index": 188,
@@ -2229,7 +2235,9 @@
       "group": "Page Setup",
       "name": "Hyphenation",
       "command": "layout.hyphenation",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.hyphenation"
+      ]
     },
     {
       "index": 217,
