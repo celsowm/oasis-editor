@@ -80,6 +80,11 @@ export function SplitButton(props: SplitButtonProps): JSX.Element {
             disabled={props.menuDisabled}
             onClick={(): void => api.toggle()}
           >
+            <Show when={props.mainLabel}>
+              <span class="oasis-editor-color-split-menu-label">
+                {props.mainLabel}
+              </span>
+            </Show>
             <DropdownChevron />
           </button>
         </div>

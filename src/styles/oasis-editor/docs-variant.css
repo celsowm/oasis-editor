@@ -94,7 +94,7 @@
 .oasis-editor-docs
   .oasis-editor-toolbar-view-compact
   .oasis-editor-tool-button
-  svg {
+  svg:where(:not(.oasis-editor-dropdown-chevron)) {
   width: 18px;
   height: 18px;
 }

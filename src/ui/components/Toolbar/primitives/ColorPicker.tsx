@@ -62,6 +62,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
       onPanelMouseLeave={(): null => setPreviewColor(null)}
       mainTestId={props.testId}
       mainAriaLabel={props.tooltip}
+      mainLabel={props.label}
       onMain={(): void => applyColor(directApplyColor())}
       menuTestId={`${props.testId}-dropdown`}
       menuAriaLabel={`${props.tooltip} menu`}
@@ -77,9 +78,6 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
               style={{ "background-color": displayColor() ?? undefined }}
             />
           </span>
-          <Show when={props.label}>
-            <span>{props.label}</span>
-          </Show>
         </>
       }
     >

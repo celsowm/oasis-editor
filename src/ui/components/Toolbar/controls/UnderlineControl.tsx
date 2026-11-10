@@ -45,8 +45,6 @@ export function UnderlineControl(props: {
     api.commands.execute("applyUnderlineStyle", null);
   };
 
-  const indicatorStyle = (): string =>
-    (currentStyle() || lastUnderlineStyle() || "single").toLowerCase();
   const activeStyleValue = (): string =>
     (currentStyle() || (active() ? "single" : "")).toLowerCase();
 
@@ -69,10 +67,7 @@ export function UnderlineControl(props: {
           <span class="oasis-editor-underline-split-glyph" aria-hidden="true">
             U
           </span>
-          <span
-            class="oasis-editor-underline-split-indicator"
-            data-style={indicatorStyle()}
-          />
+          <span class="oasis-editor-underline-split-indicator" />
         </span>
       }
     >

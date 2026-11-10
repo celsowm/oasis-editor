@@ -1,4 +1,5 @@
 .oasis-editor-toolbar {
+  --oasis-dropdown-chevron-size: 12px;
   display: flex;
   align-items: center;
   padding: 6px 10px;
@@ -285,7 +286,9 @@
   font-size: 11px;
 }
 
-.oasis-editor-ribbon-group-three-rows > .oasis-editor-ribbon-normal-rows svg {
+.oasis-editor-ribbon-group-three-rows
+  > .oasis-editor-ribbon-normal-rows
+  svg:where(:not(.oasis-editor-dropdown-chevron)) {
   width: var(--oasis-ribbon-small-icon);
   height: var(--oasis-ribbon-small-icon);
 }
@@ -293,7 +296,7 @@
 .oasis-editor-ribbon-group-three-rows
   > .oasis-editor-ribbon-normal-rows
   .oasis-editor-tool-button
-  > svg {
+  > svg:where(:not(.oasis-editor-dropdown-chevron)) {
   flex-basis: var(--oasis-ribbon-small-icon);
 }
 
@@ -384,42 +387,101 @@
 .oasis-editor-toolbar-view-ribbon
   .oasis-editor-tool-button-ribbon-large
   .oasis-editor-dropdown-chevron {
-  width: 12px;
-  height: 12px;
+  flex: 0 0 var(--oasis-dropdown-chevron-size, 12px);
+  width: var(--oasis-dropdown-chevron-size, 12px);
+  height: var(--oasis-dropdown-chevron-size, 12px);
   margin-left: 0;
 }
 
+/* Large actions use the same icon/caption/chevron bands, including split actions. */
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-tool-button-ribbon-large.oasis-editor-tool-button-dropdown:has(
+    > .oasis-editor-dropdown-chevron
+  ),
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-toolbar-item-ribbon-large
+  .oasis-editor-tool-button-dropdown:has(> .oasis-editor-dropdown-chevron),
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-toolbar-item-ribbon-large
+  .oasis-editor-table-borders-trigger {
+  display: grid;
+  grid-template-rows: 24px minmax(0, 1fr) var(
+      --oasis-dropdown-chevron-size,
+      12px
+    );
+  justify-items: center;
+  align-items: center;
+  gap: 0;
+  padding: 3px 4px 2px;
+}
 .oasis-editor-toolbar-view-ribbon .oasis-editor-color-split-ribbon-large {
+  display: grid;
+  grid-template-rows: 26px minmax(0, 1fr);
   min-width: 64px;
   max-width: 96px;
   min-height: 63px;
   height: 63px;
 }
-
 .oasis-editor-toolbar-view-ribbon
   .oasis-editor-color-split-ribbon-large
   .oasis-editor-color-split-main {
-  flex: 1;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  width: auto;
-  padding: 5px 4px 3px;
+  width: 100%;
+  height: 26px;
+  min-height: 0;
+  padding: 2px 0 0;
+  box-sizing: border-box;
+}
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-color-split-ribbon-large
+  .oasis-editor-color-split-main
+  > svg {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+}
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-color-split-ribbon-large
+  .oasis-editor-color-split-main
+  > .oasis-editor-color-split-label {
+  display: none;
+}
+.oasis-editor-color-split-menu-label {
+  display: none;
+}
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-color-split-ribbon-large
+  .oasis-editor-color-split-menu-button
+  > .oasis-editor-dropdown-chevron {
+  grid-row: 2;
+}
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-toolbar-item-ribbon-large
+  .oasis-editor-table-borders-trigger
+  > .oasis-editor-ui-text {
+  font: inherit;
+  line-height: 11px;
 }
 
 .oasis-editor-toolbar-view-ribbon
   .oasis-editor-color-split-ribbon-large
   .oasis-editor-color-split-menu-button {
-  align-self: stretch;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) var(--oasis-dropdown-chevron-size, 12px);
+  justify-items: center;
+  align-items: center;
+  width: 100%;
   height: auto;
+  min-height: 0;
+  padding: 0 3px 1px;
+  border: 0;
+  box-sizing: border-box;
 }
-
 .oasis-editor-toolbar-view-ribbon
   .oasis-editor-color-split-ribbon-large
-  .oasis-editor-color-split-main
-  > span:not(.oasis-editor-color-split-icon) {
+  .oasis-editor-color-split-menu-label {
   display: -webkit-box;
-  max-width: 100%;
+  width: 100%;
+  max-height: 22px;
   overflow: hidden;
   text-align: center;
   white-space: normal;
@@ -475,8 +537,8 @@
 }
 
 .oasis-editor-toolbar-view-ribbon .oasis-editor-tool-select-small {
-  min-width: 54px;
-  max-width: 54px;
+  min-width: 64px;
+  max-width: 64px;
 }
 
 .oasis-editor-ribbon-group-compact .oasis-editor-tool-button {
@@ -651,13 +713,15 @@
   justify-content: center;
 }
 
-.oasis-editor-tool-button > svg {
+.oasis-editor-tool-button > svg:where(:not(.oasis-editor-dropdown-chevron)) {
   flex: 0 0 18px;
   width: 18px;
   height: 18px;
 }
 
-.oasis-editor-toolbar-view-ribbon .oasis-editor-tool-button-ribbon-large > svg {
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-tool-button-ribbon-large
+  > svg:where(:not(.oasis-editor-dropdown-chevron)) {
   flex-basis: 24px;
   width: 24px;
   height: 24px;
@@ -1046,17 +1110,17 @@
   align-items: center;
   justify-content: center;
   width: 20px;
-  height: 24px;
-  font-size: 20px;
+  height: 18px;
+  font-size: 16.5px;
   font-weight: 400;
   line-height: 1;
   font-family: Calibri, Arial, sans-serif;
-  transform: translateY(1px);
+  transform: translateY(-1px);
 }
 
 .oasis-editor-underline-split-icon {
-  height: 22px;
-  padding-bottom: 5px;
+  height: 18px;
+  padding-bottom: 0;
 }
 
 .oasis-editor-color-split-indicator {
@@ -1403,11 +1467,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  width: 13px;
-  height: 13px;
+  flex: 0 0 var(--oasis-dropdown-chevron-size, 12px);
+  width: var(--oasis-dropdown-chevron-size, 12px);
+  height: var(--oasis-dropdown-chevron-size, 12px);
   opacity: 1;
-  margin-left: 2px;
+  margin-left: 0;
 }
 
 .oasis-editor-toolbar-dropdown-menu {
@@ -1930,61 +1994,10 @@
   position: absolute;
   left: 3px;
   right: 3px;
-  bottom: 0;
+  bottom: 2.25px;
   height: 0;
   border-bottom: 1px solid currentColor;
   box-sizing: border-box;
-}
-
-.oasis-editor-underline-split-indicator[data-style="double"] {
-  border-bottom-style: double;
-  border-bottom-width: 3px;
-}
-
-.oasis-editor-underline-split-indicator[data-style="thick"] {
-  border-bottom-width: 2px;
-}
-
-.oasis-editor-underline-split-indicator[data-style="dotted"],
-.oasis-editor-underline-split-indicator[data-style="dottedheavy"] {
-  border-bottom-style: dotted;
-}
-
-.oasis-editor-underline-split-indicator[data-style="dash"],
-.oasis-editor-underline-split-indicator[data-style="dashedheavy"],
-.oasis-editor-underline-split-indicator[data-style="dashlong"],
-.oasis-editor-underline-split-indicator[data-style="dashlongheavy"],
-.oasis-editor-underline-split-indicator[data-style="dotdash"],
-.oasis-editor-underline-split-indicator[data-style="dashdotheavy"],
-.oasis-editor-underline-split-indicator[data-style="dotdotdash"],
-.oasis-editor-underline-split-indicator[data-style="dashdotdotheavy"] {
-  border-bottom-style: dashed;
-}
-
-.oasis-editor-underline-split-indicator[data-style="wave"],
-.oasis-editor-underline-split-indicator[data-style="wavyheavy"],
-.oasis-editor-underline-split-indicator[data-style="wavydouble"] {
-  border-bottom-style: solid;
-  border-bottom-width: 0;
-  background-image:
-    linear-gradient(
-      135deg,
-      transparent 0 40%,
-      currentColor 40% 60%,
-      transparent 60%
-    ),
-    linear-gradient(
-      45deg,
-      transparent 0 40%,
-      currentColor 40% 60%,
-      transparent 60%
-    );
-  background-repeat: repeat-x;
-  background-size: 4px 3px;
-  background-position:
-    0 100%,
-    2px 100%;
-  height: 3px;
 }
 
 /* Underline split button — dropdown menu list */
@@ -2586,9 +2599,7 @@
 }
 
 .oasis-editor-table-borders-trigger .oasis-editor-dropdown-chevron {
-  position: absolute;
-  right: 3px;
-  bottom: 3px;
+  position: static;
 }
 
 .oasis-editor-table-borders-menu {
@@ -2927,4 +2938,44 @@
   white-space: normal;
   overflow-wrap: anywhere;
   text-overflow: clip;
+}
+
+/* Native choice behavior with the same affordance and trailing slot as buttons. */
+.oasis-editor-tool-select-control {
+  display: inline-flex;
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  vertical-align: middle;
+}
+.oasis-editor-tool-select-control > .oasis-editor-tool-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-end: 22px;
+  background-image: none;
+}
+.oasis-editor-tool-select-control > .oasis-editor-tool-select-chevron {
+  position: absolute;
+  inset-inline-end: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+  pointer-events: none;
+}
+.oasis-editor-tool-select-control:has(> select:disabled)
+  > .oasis-editor-dropdown-chevron {
+  opacity: 0.45;
+}
+.oasis-editor-tool-select-ribbon-large-wrap
+  > .oasis-editor-tool-select-control {
+  width: 100%;
+}
+.oasis-editor-style-gallery > .oasis-editor-tool-select-control {
+  display: none;
+}
+.oasis-editor-toolbar-view-compact
+  .oasis-editor-style-gallery
+  > .oasis-editor-tool-select-control {
+  display: inline-flex;
 }

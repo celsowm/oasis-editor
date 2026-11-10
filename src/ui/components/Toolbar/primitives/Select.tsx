@@ -1,3 +1,4 @@
+import { DropdownChevron } from "./DropdownChevron.js";
 import { createEffect, Show, splitProps, type JSX } from "solid-js";
 
 export interface ToolbarSelectProps extends JSX.SelectHTMLAttributes<HTMLSelectElement> {
@@ -39,21 +40,24 @@ export function Select(props: ToolbarSelectProps): JSX.Element {
   });
 
   const select = (): JSX.Element => (
-    <select
-      ref={selectRef}
-      class={`oasis-editor-tool-select ${local.class || ""}`}
-      classList={{
-        "oasis-editor-tool-select-wide": local.wide,
-        "oasis-editor-tool-select-small": local.small,
-        "oasis-editor-tool-select-ribbon-large": local.ribbonSize === "large",
-      }}
-      title={local.tooltip}
-      aria-label={ariaLabel()}
-      value={local.value as string | number | string[] | undefined}
-      {...others}
-    >
-      {others.children}
-    </select>
+    <div class="oasis-editor-tool-select-control">
+      <select
+        ref={selectRef}
+        class={`oasis-editor-tool-select ${local.class || ""}`}
+        classList={{
+          "oasis-editor-tool-select-wide": local.wide,
+          "oasis-editor-tool-select-small": local.small,
+          "oasis-editor-tool-select-ribbon-large": local.ribbonSize === "large",
+        }}
+        title={local.tooltip}
+        aria-label={ariaLabel()}
+        value={local.value as string | number | string[] | undefined}
+        {...others}
+      >
+        {others.children}
+      </select>
+      <DropdownChevron class="oasis-editor-tool-select-chevron" />
+    </div>
   );
 
   return (

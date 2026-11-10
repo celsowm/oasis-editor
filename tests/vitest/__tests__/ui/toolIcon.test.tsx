@@ -1,5 +1,6 @@
+import { DropdownChevron } from "@/ui/components/Toolbar/primitives/DropdownChevron.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createSignal } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import { render } from "solid-js/web";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
 import { startIconObserver, stopIconObserver } from "@/ui/utils/IconManager.js";
@@ -55,6 +56,44 @@ describe("reactive Ribbon artwork", () => {
     setName("undo");
     await settle();
     expect(root.querySelector("svg")?.getAttribute("data-lucide")).toBe("undo");
+  });
+  it("keeps one chevron through class changes and conditional menu disposal", async () => {
+    const root = document.createElement("div");
+    document.body.append(root);
+    const [visible, setVisible] = createSignal(true);
+    const [extraClass, setExtraClass] = createSignal("first-affordance");
+    startIconObserver(root);
+    const dispose = render(
+      () => (
+        <button>
+          <Show when={visible()}>
+            <DropdownChevron class={extraClass()} />
+          </Show>
+          <span>Menu label</span>
+        </button>
+      ),
+      root,
+    );
+    cleanups.push(() => {
+      dispose();
+      stopIconObserver(root);
+    });
+    await settle();
+    expect(root.querySelectorAll("svg")).toHaveLength(1);
+    expect(root.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+    setExtraClass("second-affordance");
+    await settle();
+    expect(root.querySelectorAll("svg")).toHaveLength(1);
+    expect(
+      root.querySelector("svg")?.classList.contains("second-affordance"),
+    ).toBe(true);
+    setVisible(false);
+    await settle();
+    expect(root.querySelector("svg")).toBeNull();
+    expect(root.textContent).toBe("Menu label");
+    setVisible(true);
+    await settle();
+    expect(root.querySelectorAll("svg")).toHaveLength(1);
   });
   it("renders distinct page-story and footnote paths without font-dependent SVG text", async () => {
     const root = document.createElement("div");
