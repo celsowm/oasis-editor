@@ -49,9 +49,45 @@ The host is at `/tests/browser/ribbon/?theme=dark&locale=pt-BR&fixture=text`. Su
 
 ### Known remaining regressions
 
-The current capture matrix still reproduces Paragraph collapsing at 1200 px and returning at 960 px in pt-BR. Editing can also regain a less reduced state at a narrower width. Widths are now verified, so these are genuine policy/measurement findings. `RibbonPanel` still measures only the full state and caches by group ID; R01–R05 are not complete.
+Delivery 1 established that Paragraph collapsed at 1200 px and returned at 960 px, while Editing could regain a less reduced state at narrower widths. Delivery 2 replaces that policy and measurement path; the regression is absent in its executed scenarios. Contextual selections, IME, zoom, late fonts and all professional/advanced workflows still require their own evidence.
 
-Other open foundations: large Paste plus three-command stack, group arrangement in collapsed popups, nested popup dismissal, overflow below the minimum, complete icon review/replacements, and measured layout tokens.
+## Delivery 2 — measured layouts and predictable reduction
+
+Reference: classic Office action hierarchy, Word web's emphasis on direct formatting access, and explicit Oasis task priorities. This delivery changes presentation/navigation; it does not add document commands.
+
+| Ticket | Status | Implemented / evidence | Remaining acceptance |
+| --- | --- | --- | --- |
+| A01/A02 | partial | Optional neutral `RibbonGroupLayout`, third-row placement, shared height/stack/icon tokens, compatible two-row defaults and split labels. A large Paste sits beside Cut/Copy/Painter; history has its own group. Core contract tests and the default preset guard cover adoption. | Review optical icon families, every contextual layout, custom gallery contributions, long labels and host customization. |
+| A04 | partial | Collapsed groups retain large actions and their two/three-row arrangement. A logical popup ownership tree keeps portalled children inside their parent for outside-click handling. Escape closes the deepest open menu and restores its trigger focus. | Short viewport heights, inline flyouts, contextual transitions with menus open, matrix alignment controls and VoiceOver. |
+| R01 | partial | Full/compact/collapsed DOM copies are inert, hidden, stripped of IDs/test IDs, measured in one batched write/read task and removed synchronously. No additional Solid controllers are mounted for measurement. Browser assertions compare rendered widths with planned outer widths. | Every contextual/custom-control family and dimensional override. |
+| R02 | partial | Widths belong to the exact current group composition. Tab/group ID reuse cannot reuse measurements; item, language and extension changes rebuild the context. Font completion, owner theme/style changes and viewport changes schedule measurement. | Real late font loads, zoom/DPR transitions, nested selection changes and externally injected stylesheet changes. |
+| R03 | partial | Fixed reduction ladder: compact states before collapse; lower priority first, then right-to-left for ties. No restorative pass. Home priorities preserve Font/Paragraph until secondary groups reduce. Only actual style galleries can receive whole-card slack from a budget assuming other groups full. | Review all tab priorities with task evidence, contextual selections and other group families. |
+| R04 | partial | Groups never shrink beneath the measured state to silently absorb a deficit. Below their minimum, visible left/right buttons and a focusable horizontal scroll area expose all groups. Tested at 320 px; default supported capture widths remain 640–1440 px. | Full keyboard action walkthrough, touch, assistive technology and every oversized contextual popup. |
+| R05 | partial | Coalesced animation-frame scheduling, stable mounted controls during width changes, focus handoff to a collapsed trigger, observer cleanup and no idle measurement loop in executed scenarios. | Continuous drag/late-font profiling and pointer/IME interactions across all browser/context combinations. |
+| D01 | ui-only | Large labeled Paste plus small Cut/Copy/Painter stack; history separated. The existing shared clipboard and painter commands are reused. | Safari permissions/failure paths, rich/text/merge paste, selection/undo and one-shot/sticky painter workflow evidence remain as specified in the plan. |
+| I02/I07 | partial | Icon observation now resolves new placeholders without recreating existing SVGs on unrelated DOM changes. Per-root subscription counts support shared editors; explicit icon-name changes retain accessibility attributes. Three DOM tests cover identity, naming and shared ownership. Static inventory: 125 names, 165 literal uses, 11 dynamic expressions. | All dynamic `ToolIcon` names, SVG clipping/visibility, custom families, icon review sheet and replacements. |
+
+A pre-existing icon-observer behavior recreated every Lucide SVG on any DOM insertion. The new measuring copies exposed a feedback loop between icon replacement and Ribbon observation. The selective observer removes that loop; browser verification observes zero measuring-copy insertions during a settled idle interval.
+
+The narrow-screen toolbar padding previously reduced the Ribbon's actual panel width; it now applies to compact mode. The isolated host also suppresses outer document scrolling. Safari exposed a second narrow-screen padding rule that consumed 16 px; both padding rules now apply only to compact mode.
+
+### Reduction contract and reproduction
+
+See [Ribbon layout and reduction contracts](ribbon-layout-contract.md). Run `npm run test:ribbon:resize` with the Vite reference host running. `RIBBON_BROWSER=firefox` or `webkit` selects another engine.
+
+`npm run test:ribbon:ci` owns its Vite process and runs the Chromium gallery/resize guards without relying on an existing developer server. PR and push workflows run the icon inventory and these guards, and upload synthetic evidence from `test-results/ribbon/`.
+
+The browser suite checks 68 shrinking/expanding layouts per engine across two themes/two locales, plus fresh loading at 960 px, actual/planned widths, below-minimum navigation, stable focused controls, collapsed focus handoff, nested popup dismissal, tab isolation, extension addition/removal, language changes, document/selection preservation and idle observation. This is 204 recorded layouts across the three engines, not a claim to cover every scenario in the execution plan.
+
+### Validation recorded
+
+- TypeScript and changed-file ESLint: passed.
+- Non-UI Vitest: 250 passed files, one skipped; 1,464 passed tests, one skipped.
+- Targeted DOM/registry/preset suites: 49 tests passed. These suites execute successfully; this does not certify the other TSX harness suites.
+- Ribbon wiring and icon inventories: passed.
+- Chromium, Firefox and WebKit: resize scenarios passed; gallery/composition/keyboard checks also passed in all four theme/locale combinations per engine.
+- Actual Safari 27.0.1: panel and viewport both measured at 1440, 1200, 960, 800 and 640 px; states retained in local evidence; Font/Paragraph do not reverse their reduction, and Escape dismisses the underline child while retaining the Font popup. This is targeted Safari DOM/event evidence, not a VoiceOver pass.
+- Global lint retains pre-existing failures outside the changed files.
 
 ## Remaining execution queue
 
