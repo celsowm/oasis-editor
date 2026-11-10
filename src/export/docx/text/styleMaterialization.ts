@@ -72,6 +72,7 @@ export function materializeRunStyle(
   );
 
   const materialized: EditorTextStyle = {
+    styleId: run.styles?.styleId,
     bold: effective.bold,
     italic: effective.italic,
     underline: effective.underline,
@@ -130,6 +131,16 @@ export function materializeRunStyle(
     styles,
   );
   for (const key of Object.keys(materialized) as (keyof EditorTextStyle)[]) {
+    if (
+      key !== "styleId" &&
+      run.styles?.styleId &&
+      styles?.[run.styles.styleId]?.type === "character" &&
+      run.styles[key] === undefined &&
+      materialized[key] === inherited[key]
+    ) {
+      delete materialized[key];
+      continue;
+    }
     if (
       materialized[key] === false &&
       run.styles?.[key] !== false &&

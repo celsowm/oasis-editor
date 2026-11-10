@@ -109,7 +109,7 @@ describe("DOCX underline style", () => {
     const xml = await readDocumentXml(
       await exportEditorDocumentToDocx(document),
     );
-    expect(xml).toContain('<w:u w:val="single" w:color="ff0000"/>');
+    expect(xml).toContain('<w:u w:val="single" w:color="FF0000"/>');
     expect(xml).toContain("<w:dstrike/>");
     expect(xml).toContain("<w:smallCaps/>");
     expect(xml).toContain("<w:caps/>");

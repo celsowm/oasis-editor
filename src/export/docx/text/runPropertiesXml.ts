@@ -20,7 +20,10 @@ import {
   OOXML_ROTATION_UNITS,
 } from "./constants.js";
 import { serializeDocxBorderAttrs } from "@/export/docx/borders.js";
-import { parseHexColorToRgb255 } from "@/core/color.js";
+import {
+  normalizeOpaqueRgbColor,
+  parseHexColorToRgb255,
+} from "@/core/color.js";
 import { serializeRevisionMetadataAttributes } from "./revisionXml.js";
 
 const MC_NS = "http://schemas.openxmlformats.org/markup-compatibility/2006";
@@ -225,13 +228,16 @@ function normalizeHighlightForDocx(highlight: string): string {
     return highlight;
   }
 
-  const normalizedHex = highlight.trim().replace(/^#/, "").toLowerCase();
+  const normalizedHex = (normalizeOpaqueRgbColor(highlight) ?? highlight)
+    .trim()
+    .replace(/^#/, "")
+    .toLowerCase();
   const directAlias = DOCX_HIGHLIGHT_HEX_ALIASES[normalizedHex];
   if (directAlias) {
     return directAlias;
   }
 
-  const rgb = parseHexColor(highlight);
+  const rgb = parseHexColor(normalizedHex);
   if (!rgb) {
     return "yellow";
   }
@@ -276,6 +282,8 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
   }
 
   const parts: string[] = [];
+  if (styles.styleId)
+    parts.push(`<w:rStyle w:val="${escapeXml(styles.styleId)}"/>`);
   const toggle = (
     value: boolean | null | undefined,
     ...names: string[]
@@ -289,7 +297,7 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
   if (styles.underline) {
     const underlineVal = styles.underlineStyle ?? "single";
     const underlineColor = styles.underlineColor
-      ? ` w:color="${escapeXml(styles.underlineColor.replace(/^#/, ""))}"`
+      ? ` w:color="${normalizeDocxColor(styles.underlineColor, "auto")}"`
       : "";
     parts.push(`<w:u w:val="${escapeXml(underlineVal)}"${underlineColor}/>`);
   } else if (styles.underline === false) {
@@ -392,7 +400,7 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
     parts.push(serializeTextFillMC(styles.textFill, fallback ?? null));
   } else if (styles.color) {
     parts.push(
-      `<w:color w:val="${escapeXml(styles.color.replace(/^#/, ""))}"/>`,
+      `<w:color w:val="${normalizeDocxColor(styles.color, "auto")}"/>`,
     );
   }
   if (styles.textOutline) {
