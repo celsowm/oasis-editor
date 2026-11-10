@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 180
+    "linkedRows": 185
   },
   "defaultTabs": [
     "File",
@@ -3764,7 +3764,9 @@
       "group": "Table",
       "name": "Select Table",
       "command": "table.selectTable",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.selectTable"
+      ]
     },
     {
       "index": 363,
@@ -3773,7 +3775,9 @@
       "group": "Table",
       "name": "Select Row",
       "command": "table.selectRow",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.selectRow"
+      ]
     },
     {
       "index": 364,
@@ -3782,7 +3786,9 @@
       "group": "Table",
       "name": "Select Column",
       "command": "table.selectColumn",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.selectColumn"
+      ]
     },
     {
       "index": 365,
@@ -3791,7 +3797,9 @@
       "group": "Table",
       "name": "Select Cell",
       "command": "table.selectCell",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.selectCell"
+      ]
     },
     {
       "index": 366,
@@ -3800,7 +3808,9 @@
       "group": "Table",
       "name": "View Gridlines",
       "command": "table.viewGridlines",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.viewGridlines"
+      ]
     },
     {
       "index": 367,

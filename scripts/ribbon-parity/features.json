@@ -2799,6 +2799,71 @@
       "semantics": "partial",
       "persistence": "unverified",
       "notes": "Oasis registers a formula evaluator for the active cell but no default UI path was found. Supported formulas, cell references, number formatting, recalculation, undo and DOCX field behavior need workflow verification."
+    },
+    {
+      "id": "table.viewGridlines",
+      "wordcraftCommand": "table.viewGridlines",
+      "oasisCommand": "toggleTableGridlines",
+      "ribbonId": "editor-toolbar-tbl-borders",
+      "tab": "tableDesign",
+      "group": "borders",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "notes": "The Table Design Borders menu toggles table gridline visibility. This is an editing aid rather than a printed border; active-table scope, display behavior and keyboard access need workflow verification."
+    },
+    {
+      "id": "table.selectCell",
+      "wordcraftCommand": "table.selectCell",
+      "oasisCommand": "tableSelectCell",
+      "ribbonId": null,
+      "tab": "tableLayout",
+      "group": "table",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "notes": "Oasis registers a command to expand the active table selection to a cell, but no default Ribbon, menu or dialog control was found. Caret targeting, focus, keyboard behavior and undo integration need workflow verification."
+    },
+    {
+      "id": "table.selectRow",
+      "wordcraftCommand": "table.selectRow",
+      "oasisCommand": "tableSelectRow",
+      "ribbonId": null,
+      "tab": "tableLayout",
+      "group": "table",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "notes": "Oasis registers a command to expand the active table selection to a row, but no default Ribbon, menu or dialog control was found. Caret targeting, focus, keyboard behavior and undo integration need workflow verification."
+    },
+    {
+      "id": "table.selectColumn",
+      "wordcraftCommand": "table.selectColumn",
+      "oasisCommand": "tableSelectColumn",
+      "ribbonId": null,
+      "tab": "tableLayout",
+      "group": "table",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "notes": "Oasis registers a command to expand the active table selection to a column, but no default Ribbon, menu or dialog control was found. Caret targeting, focus, keyboard behavior and undo integration need workflow verification."
+    },
+    {
+      "id": "table.selectTable",
+      "wordcraftCommand": "table.selectTable",
+      "oasisCommand": "tableSelectTable",
+      "ribbonId": null,
+      "tab": "tableLayout",
+      "group": "table",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "notes": "Oasis registers a command to expand the active table selection to the whole table, but no default Ribbon, menu or dialog control was found. Caret targeting, focus, keyboard behavior and undo integration need workflow verification."
     }
   ]
 }

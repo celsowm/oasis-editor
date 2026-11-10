@@ -644,6 +644,16 @@ The matrix now contains 215 Oasis capability rows and links 180 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` verifies 11 capability paths, including the context-menu Table Properties token, the direct vertical-alignment buttons and core-only registrations. The catalog snapshot reports 180 linked rows.
 
+## Delivery 45 — Table selection and gridline paths
+
+Date: 2026-11-10. B01 and D08 remain **partial**.
+
+Mapped View Gridlines to the Table Design Borders menu and mapped WordCraft's Select Cell/Row/Column/Table entries to the matching registered Oasis selection commands. Oasis does not expose those four selection commands in the default Ribbon, menu or dialog, so they remain core-only capabilities with selection, focus and keyboard behavior unverified. Draw Table, Eraser and Table Direction remain unlinked for individual review.
+
+The matrix now contains 220 Oasis capability rows and links 185 of 521 WordCraft source rows; 336 remain unlinked. Gridlines are display-only and should not be confused with exported cell borders. Table selection commands do not alter document content, so persistence is not applicable.
+
+Evidence: `npm run audit:ribbon` validates the gridline menu command and all four registered core-only selection commands; the catalog snapshot reports 185 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

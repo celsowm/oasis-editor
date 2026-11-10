@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `215` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `220` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -226,6 +226,11 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `table.textDirection` | `table.textDirection` | `tableSetCellTextDirection` | Editor context menu > Table Properties > Cell > Text Direction | menu-only | menu-only | partial | unverified |
 | `table.cellMargins` | `table.cellMargins` | `tableSetCellMargins` | Editor context menu > Table Properties > Cell > Margins | menu-only | menu-only | partial | unverified |
 | `table.formula` | `table.formula` | `tableFormula` | — | core-only | core-only | partial | unverified |
+| `table.viewGridlines` | `table.viewGridlines` | `toggleTableGridlines` | `tableDesign/borders` | partial | partial | partial | not-applicable |
+| `table.selectCell` | `table.selectCell` | `tableSelectCell` | — | core-only | core-only | partial | not-applicable |
+| `table.selectRow` | `table.selectRow` | `tableSelectRow` | — | core-only | core-only | partial | not-applicable |
+| `table.selectColumn` | `table.selectColumn` | `tableSelectColumn` | — | core-only | core-only | partial | not-applicable |
+| `table.selectTable` | `table.selectTable` | `tableSelectTable` | — | core-only | core-only | partial | not-applicable |
 
 ## Open verification questions
 
@@ -444,6 +449,11 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 213. **table.textDirection:** The Cell tab exposes five text-flow values. The dialog applies through an aggregate state update rather than dispatching tableSetCellTextDirection; selection, vertical layout, rendering, undo and DOCX output need workflow verification.
 214. **table.cellMargins:** The Cell tab exposes four per-edge margins. The dialog applies through an aggregate state update rather than dispatching tableSetCellMargins; units, selected cells, defaults, undo and DOCX layout need workflow verification.
 215. **table.formula:** Oasis registers a formula evaluator for the active cell but no default UI path was found. Supported formulas, cell references, number formatting, recalculation, undo and DOCX field behavior need workflow verification.
+216. **table.viewGridlines:** The Table Design Borders menu toggles table gridline visibility. This is an editing aid rather than a printed border; active-table scope, display behavior and keyboard access need workflow verification.
+217. **table.selectCell:** Oasis registers a command to expand the active table selection to a cell, but no default Ribbon, menu or dialog control was found. Caret targeting, focus, keyboard behavior and undo integration need workflow verification.
+218. **table.selectRow:** Oasis registers a command to expand the active table selection to a row, but no default Ribbon, menu or dialog control was found. Caret targeting, focus, keyboard behavior and undo integration need workflow verification.
+219. **table.selectColumn:** Oasis registers a command to expand the active table selection to a column, but no default Ribbon, menu or dialog control was found. Caret targeting, focus, keyboard behavior and undo integration need workflow verification.
+220. **table.selectTable:** Oasis registers a command to expand the active table selection to the whole table, but no default Ribbon, menu or dialog control was found. Caret targeting, focus, keyboard behavior and undo integration need workflow verification.
 
 ## Audit interpretation
 
