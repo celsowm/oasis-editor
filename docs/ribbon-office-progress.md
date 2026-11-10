@@ -674,6 +674,16 @@ The matrix now contains 230 Oasis capability rows and links 194 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon`, `npm run audit:ribbon:wordcraft` and `npm run audit:ribbon:icons` pass; the pinned catalog reports 194 linked rows.
 
+## Delivery 48 — Shape Format command paths
+
+Date: 2026-11-10. B01 and the M4 shape work remain **partial**.
+
+Mapped Shape Format's object Alt Text task to Oasis's text-box alt-text command, and mapped Shape Fill, Shape Outline color/width, Text Direction and vertical Align Text to their registered core commands. These have no default Ribbon, menu or dialog paths. The fill mapping also covers WordCraft's second `shape.fill` row, while explicitly leaving gradient behavior unsupported. Other unmatched Shape Format entries include the properties pane, shape effects, WordArt styling, text fill/outline/transform and shape link.
+
+The matrix now contains 236 Oasis capability rows and links 200 of 521 WordCraft source rows; 321 remain unlinked. Command registration does not verify runtime text-box selection, keyboard behavior, rendering, undo or DOCX round-trip.
+
+Evidence: `npm run audit:ribbon` and `npm run audit:ribbon:wordcraft` pass; the pinned catalog reports 200 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

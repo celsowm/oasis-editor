@@ -2994,6 +2994,84 @@
       "semantics": "partial",
       "persistence": "unverified",
       "notes": "Oasis registers exact-angle rotation for selected images and text boxes, but has no default contextual Ribbon or menu control. Angle entry, rendering, undo and DOCX/PDF interoperability need workflow verification."
+    },
+    {
+      "id": "shape.altText",
+      "wordcraftCommand": "object.altText",
+      "oasisCommand": "editTextBoxAlt",
+      "ribbonId": null,
+      "tab": "shapeFormat",
+      "group": "accessibility",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers alt-text editing for selected text boxes but has no default Ribbon, menu or dialog path. WordCraft's object-level task also covers other objects; text-box scope, accessibility metadata and DOCX round-trip need workflow verification."
+    },
+    {
+      "id": "shape.fill",
+      "wordcraftCommand": "shape.fill",
+      "oasisCommand": "setShapeFill",
+      "ribbonId": null,
+      "tab": "shapeFormat",
+      "group": "shapeStyles",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers solid fill color for selected text boxes but has no default Ribbon, menu or dialog path. WordCraft also lists a gradient-fill task under the same command; gradient behavior is not represented by this Oasis command. Shape scope, rendering and DOCX round-trip need verification."
+    },
+    {
+      "id": "shape.outlineColor",
+      "wordcraftCommand": "shape.outline",
+      "oasisCommand": "setShapeOutline",
+      "ribbonId": null,
+      "tab": "shapeFormat",
+      "group": "shapeStyles",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers selected-text-box outline color changes but has no default Ribbon, menu or dialog path. Width and line-style choices are separate tasks; shape targeting, rendering and DOCX round-trip need verification."
+    },
+    {
+      "id": "shape.outlineWidth",
+      "wordcraftCommand": "shape.outline",
+      "oasisCommand": "setShapeOutlineWidth",
+      "ribbonId": null,
+      "tab": "shapeFormat",
+      "group": "shapeStyles",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers selected-text-box outline width changes but has no default Ribbon, menu or dialog path. Line styles, dashes and width preset coverage remain unverified; rendering and DOCX round-trip need verification."
+    },
+    {
+      "id": "shape.textDirection",
+      "wordcraftCommand": "shape.textDirection",
+      "oasisCommand": "setTextBoxTextDirection",
+      "ribbonId": null,
+      "tab": "shapeFormat",
+      "group": "text",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers horizontal, vertical, rotated and stacked text-box direction values but has no default Ribbon, menu or dialog path. Glyph layout, mixed scripts, focus, rendering and DOCX round-trip need workflow verification."
+    },
+    {
+      "id": "shape.textAlignment",
+      "wordcraftCommand": "shape.alignText",
+      "oasisCommand": "setTextBoxVerticalAlign",
+      "ribbonId": null,
+      "tab": "shapeFormat",
+      "group": "text",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers top, middle or bottom vertical anchoring for text-box content but has no default Ribbon, menu or dialog path. Interaction with padding, vertical text, resizing and DOCX round-trip needs verification."
     }
   ]
 }

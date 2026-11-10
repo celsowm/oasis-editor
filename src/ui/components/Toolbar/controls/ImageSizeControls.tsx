@@ -148,7 +148,7 @@ export function ImageCropMenu(props: { api: ToolbarActionApi }): JSX.Element {
   const apply = (command: CropCommand, payload?: string): void => {
     switch (command) {
       case "imageCrop":
-        props.api.commands.execute("imageCrop");
+        props.api.commands.execute("imageCrop", undefined);
         break;
       case "imageCropShape":
         props.api.commands.execute("imageCropShape", payload ?? "");
@@ -157,13 +157,13 @@ export function ImageCropMenu(props: { api: ToolbarActionApi }): JSX.Element {
         props.api.commands.execute("imageCropAspect", payload ?? "");
         break;
       case "imageCropFill":
-        props.api.commands.execute("imageCropFill");
+        props.api.commands.execute("imageCropFill", undefined);
         break;
       case "imageCropFit":
-        props.api.commands.execute("imageCropFit");
+        props.api.commands.execute("imageCropFit", undefined);
         break;
       case "imageCropReset":
-        props.api.commands.execute("imageCropReset");
+        props.api.commands.execute("imageCropReset", undefined);
         break;
     }
     setSubmenu(null);

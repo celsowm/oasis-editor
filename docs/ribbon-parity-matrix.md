@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `230` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `236` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -241,6 +241,12 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `image.reset` | `picture.reset` | `resetImage` | — | core-only | core-only | partial | unverified |
 | `image.transparency` | `picture.transparency` | `imageTransparency` | — | core-only | core-only | partial | unverified |
 | `image.rotation` | `arrange.rotation` | `setFloatingRotation` | — | core-only | core-only | partial | unverified |
+| `shape.altText` | `object.altText` | `editTextBoxAlt` | — | core-only | core-only | partial | unverified |
+| `shape.fill` | `shape.fill` | `setShapeFill` | — | core-only | core-only | partial | unverified |
+| `shape.outlineColor` | `shape.outline` | `setShapeOutline` | — | core-only | core-only | partial | unverified |
+| `shape.outlineWidth` | `shape.outline` | `setShapeOutlineWidth` | — | core-only | core-only | partial | unverified |
+| `shape.textDirection` | `shape.textDirection` | `setTextBoxTextDirection` | — | core-only | core-only | partial | unverified |
+| `shape.textAlignment` | `shape.alignText` | `setTextBoxVerticalAlign` | — | core-only | core-only | partial | unverified |
 
 ## Open verification questions
 
@@ -474,6 +480,12 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 228. **image.reset:** Oasis registers Reset Picture without a default Ribbon, menu or dialog path. Its implementation clears crop, mask, transparency, border, rotation and flip while retaining the image frame size and floating position; confirmation, undo and DOCX round-trip need workflow verification.
 229. **image.transparency:** Oasis registers a selected-image transparency value from zero to one, but has no default Ribbon, menu or dialog control. Preset and slider UI, rendering, undo and DOCX/PDF interoperability need verification.
 230. **image.rotation:** Oasis registers exact-angle rotation for selected images and text boxes, but has no default contextual Ribbon or menu control. Angle entry, rendering, undo and DOCX/PDF interoperability need workflow verification.
+231. **shape.altText:** Oasis registers alt-text editing for selected text boxes but has no default Ribbon, menu or dialog path. WordCraft's object-level task also covers other objects; text-box scope, accessibility metadata and DOCX round-trip need workflow verification.
+232. **shape.fill:** Oasis registers solid fill color for selected text boxes but has no default Ribbon, menu or dialog path. WordCraft also lists a gradient-fill task under the same command; gradient behavior is not represented by this Oasis command. Shape scope, rendering and DOCX round-trip need verification.
+233. **shape.outlineColor:** Oasis registers selected-text-box outline color changes but has no default Ribbon, menu or dialog path. Width and line-style choices are separate tasks; shape targeting, rendering and DOCX round-trip need verification.
+234. **shape.outlineWidth:** Oasis registers selected-text-box outline width changes but has no default Ribbon, menu or dialog path. Line styles, dashes and width preset coverage remain unverified; rendering and DOCX round-trip need verification.
+235. **shape.textDirection:** Oasis registers horizontal, vertical, rotated and stacked text-box direction values but has no default Ribbon, menu or dialog path. Glyph layout, mixed scripts, focus, rendering and DOCX round-trip need workflow verification.
+236. **shape.textAlignment:** Oasis registers top, middle or bottom vertical anchoring for text-box content but has no default Ribbon, menu or dialog path. Interaction with padding, vertical text, resizing and DOCX round-trip needs verification.
 
 ## Audit interpretation
 

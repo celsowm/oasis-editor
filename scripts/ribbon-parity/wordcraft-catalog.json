@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 194
+    "linkedRows": 200
   },
   "defaultTabs": [
     "File",
@@ -4552,7 +4552,9 @@
       "group": "Accessibility",
       "name": "Alt Text",
       "command": "object.altText",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "shape.altText"
+      ]
     },
     {
       "index": 442,
@@ -4703,7 +4705,9 @@
       "group": "Shape Styles",
       "name": "Shape Fill",
       "command": "shape.fill",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "shape.fill"
+      ]
     },
     {
       "index": 458,
@@ -4712,7 +4716,9 @@
       "group": "Shape Styles",
       "name": "Shape Fill Gradient",
       "command": "shape.fill",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "shape.fill"
+      ]
     },
     {
       "index": 459,
@@ -4730,7 +4736,10 @@
       "group": "Shape Styles",
       "name": "Shape Outline",
       "command": "shape.outline",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "shape.outlineColor",
+        "shape.outlineWidth"
+      ]
     },
     {
       "index": 461,
@@ -4784,7 +4793,9 @@
       "group": "Text",
       "name": "Text Direction",
       "command": "shape.textDirection",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "shape.textDirection"
+      ]
     },
     {
       "index": 467,
@@ -4793,7 +4804,9 @@
       "group": "Text",
       "name": "Align Text",
       "command": "shape.alignText",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "shape.textAlignment"
+      ]
     },
     {
       "index": 468,
