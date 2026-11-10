@@ -1,3 +1,5 @@
+import type { ClipboardPasteMode } from "@/ui/app/clipboardPaste.js";
+import { mergeClipboardFormatting } from "@/core/commands/clipboardMergeFormatting.js";
 import {
   insertClipboardParagraphsAtSelection,
   serializeEditorSelectionToHtml,
@@ -16,6 +18,8 @@ export interface EditorClipboardDeps {
   state: () => EditorState;
   isReadOnly: () => boolean;
   forcePlainTextPaste: () => boolean;
+  consumePasteMode?: () => ClipboardPasteMode | undefined;
+  onNativeClipboardSuccess?: () => void;
   setForcePlainTextPaste: (value: boolean) => void;
   clearPreferredColumn: () => void;
   resetTransactionGrouping: () => void;
@@ -55,11 +59,17 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
     }
 
     event.preventDefault();
-    event.clipboardData?.setData("text/plain", text);
-    event.clipboardData?.setData(
-      "text/html",
-      serializeEditorSelectionToHtml(deps.state()),
-    );
+    if (!event.clipboardData) return;
+    try {
+      event.clipboardData.setData("text/plain", text);
+      event.clipboardData.setData(
+        "text/html",
+        serializeEditorSelectionToHtml(deps.state()),
+      );
+    } catch {
+      return;
+    }
+    deps.onNativeClipboardSuccess?.();
   };
 
   const handleCut = (
@@ -75,11 +85,17 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
     }
 
     event.preventDefault();
-    event.clipboardData?.setData("text/plain", text);
-    event.clipboardData?.setData(
-      "text/html",
-      serializeEditorSelectionToHtml(deps.state()),
-    );
+    if (!event.clipboardData) return;
+    try {
+      event.clipboardData.setData("text/plain", text);
+      event.clipboardData.setData(
+        "text/html",
+        serializeEditorSelectionToHtml(deps.state()),
+      );
+    } catch {
+      return;
+    }
+    deps.onNativeClipboardSuccess?.();
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
     deps.applyTransactionalState((current): EditorState =>
@@ -97,7 +113,8 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
       event.preventDefault();
       return;
     }
-    if (deps.forcePlainTextPaste()) {
+    const fallbackMode = deps.consumePasteMode?.();
+    if (deps.forcePlainTextPaste() || fallbackMode === "text") {
       deps.setForcePlainTextPaste(false);
       const text = event.clipboardData?.getData("text/plain") ?? "";
       if (text.length === 0) {
@@ -118,7 +135,10 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
       return;
     }
 
-    const imageFile = findImageFileFromTransfer(event.clipboardData);
+    const imageFile =
+      fallbackMode !== "merge"
+        ? findImageFileFromTransfer(event.clipboardData)
+        : null;
     if (imageFile) {
       event.preventDefault();
       deps.clearPreferredColumn();
@@ -130,7 +150,11 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
     }
 
     const html = event.clipboardData?.getData("text/html") ?? "";
-    const paragraphs = parseEditorClipboardHtmlWithDom(html);
+    const parsed = parseEditorClipboardHtmlWithDom(html);
+    const paragraphs =
+      fallbackMode === "merge"
+        ? mergeClipboardFormatting(deps.state(), parsed)
+        : parsed;
     if (paragraphs.length > 0) {
       event.preventDefault();
       deps.clearPreferredColumn();

@@ -2,7 +2,7 @@ import { serializeEditorSelectionToHtml } from "@/core/commands/clipboard.js";
 import { getSelectedText } from "@/core/commands/selection.js";
 import { deleteBackward } from "@/core/commands/text.js";
 import type { EditorState } from "@/core/model.js";
-import type { ClipboardPasteDeps } from "./clipboardPaste.js";
+import type { ClipboardIssue, ClipboardPasteDeps } from "./clipboardPaste.js";
 
 /** Clipboard writes must be initiated from the user's gesture. */
 export function canWriteSystemClipboard(): boolean {
@@ -15,7 +15,10 @@ export function canWriteSystemClipboard(): boolean {
 }
 
 function fallbackCopy(text: string): boolean {
-  if (typeof document === "undefined" || typeof document.execCommand !== "function") {
+  if (
+    typeof document === "undefined" ||
+    typeof document.execCommand !== "function"
+  ) {
     return false;
   }
   const previous = document.activeElement;
@@ -33,12 +36,14 @@ function fallbackCopy(text: string): boolean {
     return false;
   } finally {
     field.remove();
-    if (previous instanceof HTMLElement) previous.focus({ preventScroll: true });
+    if (previous instanceof HTMLElement)
+      previous.focus({ preventScroll: true });
   }
 }
 
 function writePlainText(text: string): Promise<boolean> {
-  const api = typeof navigator !== "undefined" ? navigator.clipboard : undefined;
+  const api =
+    typeof navigator !== "undefined" ? navigator.clipboard : undefined;
   if (api?.writeText) {
     try {
       return api.writeText(text).then(
@@ -56,12 +61,20 @@ function writePlainText(text: string): Promise<boolean> {
  * A rejected write always returns false. In particular, Cut must not delete
  * text because an asynchronous Clipboard API call was merely attempted.
  */
-export function writeEditorSelectionToClipboard(
+export async function writeEditorSelectionToClipboard(
   snapshot: EditorState,
+  onIssue?: (issue: ClipboardIssue) => void,
 ): Promise<boolean> {
+  const copied = await writeSelection(snapshot);
+  if (!copied && getSelectedText(snapshot)) onIssue?.("access-denied");
+  return copied;
+}
+
+function writeSelection(snapshot: EditorState): Promise<boolean> {
   const text = getSelectedText(snapshot);
   if (!text) return Promise.resolve(false);
-  const api = typeof navigator !== "undefined" ? navigator.clipboard : undefined;
+  const api =
+    typeof navigator !== "undefined" ? navigator.clipboard : undefined;
   if (api?.write && typeof ClipboardItem !== "undefined") {
     try {
       const html = serializeEditorSelectionToHtml(snapshot);
@@ -87,8 +100,10 @@ export async function cutEditorSelection(
   if (deps.isReadOnly()) return false;
   const snapshot = deps.state();
   if (!getSelectedText(snapshot)) return false;
-  const copied = await writeEditorSelectionToClipboard(snapshot);
-  if (!copied || deps.isReadOnly() || deps.state().document !== snapshot.document) {
+  const copied = await writeEditorSelectionToClipboard(snapshot, deps.onIssue);
+  if (!copied || deps.isReadOnly()) return false;
+  if (deps.state().document !== snapshot.document) {
+    deps.onIssue?.("document-changed");
     return false;
   }
 
@@ -100,10 +115,12 @@ export async function cutEditorSelection(
   deps.clearPreferredColumn();
   deps.resetTransactionGrouping();
   deps.applyTransactionalState((current): EditorState => {
-    if (deps.isReadOnly() || current.document !== snapshot.document) return current;
+    if (deps.isReadOnly() || current.document !== snapshot.document)
+      return current;
     const positioned = { ...current, selection };
     const next = deps.applyTableAwareParagraphEdit(
-      positioned, (editing): EditorState => deleteBackward(editing),
+      positioned,
+      (editing): EditorState => deleteBackward(editing),
     );
     changed = next.document !== current.document;
     return next;
