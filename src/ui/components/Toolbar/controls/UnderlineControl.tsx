@@ -2,6 +2,7 @@ import { For, Show, createSignal, type JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import type { EditorUnderlineStyle } from "@/core/model.js";
 import { SplitButton } from "@/ui/components/Toolbar/primitives/SplitButton.js";
+import { toolbarChoice } from "../state/toolbarChoice.js";
 import { UNDERLINE_STYLE_OPTIONS } from "@/ui/components/Toolbar/underlineStyles.js";
 
 import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
@@ -19,8 +20,11 @@ export function UnderlineControl(props: {
   const t = useI18n();
   const underlineButtonTooltip = `${t("toolbar.underline")} (${mod}+U)`;
   const api = props.api;
-  const [lastUnderlineStyle, setLastUnderlineStyle] =
-    createSignal<EditorUnderlineStyle>("single");
+  const [lastUnderlineStyle, setLastUnderlineStyle] = toolbarChoice(
+    api,
+    "underline-style",
+    "single",
+  );
   const [open, setOpen] = createSignal(false);
 
   const active = (): boolean => api.commands.state("underline").isActive;
@@ -58,6 +62,7 @@ export function UnderlineControl(props: {
       mainPressed={active()}
       mainDisabled={!enabled()}
       menuDisabled={!enabled()}
+      onUnavailableFocus={api.focusEditor}
       onMain={toggleUnderline}
       menuTestId={`${TEST_ID}-dropdown`}
       panelClass="oasis-editor-color-menu oasis-editor-underline-menu"

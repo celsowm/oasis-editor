@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
+import { createSignal } from "solid-js";
 import {
   StyleGallery,
   getQuickStyles,
@@ -50,6 +51,105 @@ afterEach(() => {
 });
 
 describe("StyleGallery", () => {
+  it("disables each style family and closes a focused gallery when no action remains", async () => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(private callback: () => void) {}
+        observe(target: HTMLElement) {
+          Object.defineProperty(target, "clientWidth", { value: 318 });
+          this.callback();
+        }
+        disconnect() {}
+      },
+    );
+    const [paragraphEnabled, setParagraphEnabled] = createSignal(false);
+    const [characterEnabled, setCharacterEnabled] = createSignal(true);
+    const enabled = (name: string) =>
+      name === "setStyleId" ? paragraphEnabled() : characterEnabled();
+    const focusEditor = vi.fn(),
+      execute = vi.fn();
+    const api = {
+      commands: {
+        state: (name: string) => ({
+          isEnabled: enabled(name),
+          isActive: false,
+          value: "normal",
+        }),
+        canExecute: enabled,
+        execute,
+      },
+      focusEditor,
+      t: () => "Styles",
+    } as unknown as ToolbarActionApi;
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const dispose = render(
+      () => (
+        <StyleGallery
+          api={api}
+          item={{
+            type: "styleGallery",
+            id: "styles",
+            testId: "styles",
+            styles: () => styles,
+            paragraphCommand: "setStyleId",
+            characterCommand: "setCharacterStyleId",
+          }}
+        />
+      ),
+      host,
+    );
+    expect(
+      host.querySelector<HTMLButtonElement>('[data-style-id="normal"]')!
+        .disabled,
+    ).toBe(true);
+    expect(
+      host.querySelector<HTMLButtonElement>('[data-style-id="emphasis"]')!
+        .disabled,
+    ).toBe(false);
+    const expand = host.querySelector<HTMLButtonElement>(
+      '[data-testid="styles-expand"]',
+    )!;
+    expand.click();
+    await Promise.resolve();
+    const panel = document.querySelector<HTMLElement>(
+      '[data-testid="styles-panel"]',
+    )!;
+    expect((document.activeElement as HTMLElement).dataset.styleId).toBe(
+      "emphasis",
+    );
+    panel.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "End", bubbles: true }),
+    );
+    expect((document.activeElement as HTMLElement).dataset.styleId).toBe(
+      "emphasis",
+    );
+    setCharacterEnabled(false);
+    await Promise.resolve();
+    expect(document.querySelector('[data-testid="styles-panel"]')).toBeNull();
+    expect(
+      host.querySelector<HTMLButtonElement>('[data-testid="styles-expand"]')!
+        .disabled,
+    ).toBe(true);
+    expect(focusEditor).toHaveBeenCalledTimes(1);
+    expect(host.querySelector<HTMLSelectElement>("select")!.disabled).toBe(
+      true,
+    );
+    expect(execute).not.toHaveBeenCalled();
+    setParagraphEnabled(true);
+    expect(
+      host.querySelector<HTMLButtonElement>('[data-testid="styles-expand"]')!
+        .disabled,
+    ).toBe(false);
+    expect(
+      host
+        .querySelector<HTMLButtonElement>('[data-testid="styles-expand"]')!
+        .getAttribute("aria-expanded"),
+    ).toBe("false");
+    dispose();
+  });
+
   it("filters and orders DOCX quick styles, with a legacy fallback", () => {
     expect(getQuickStyles(styles).map((style) => style.id)).toEqual([
       "normal",

@@ -42,6 +42,7 @@ import { GridPicker } from "@/ui/components/Toolbar/primitives/GridPicker.js";
 import { SplitButton } from "@/ui/components/Toolbar/primitives/SplitButton.js";
 import { DEFAULT_PALETTE } from "@/ui/components/Toolbar/presets/defaultPalette.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
+import { toolbarChoice } from "../state/toolbarChoice.js";
 import { StyleGallery } from "@/ui/components/Toolbar/StyleGallery.js";
 import { PictureBorderPicker } from "@/ui/components/Toolbar/primitives/PictureBorderPicker.js";
 import type { ImageBorderPatch } from "@/core/commands/image.js";
@@ -131,6 +132,7 @@ function RenderSplit(props: RendererProps<SplitItem>): JSX.Element {
       mainAriaLabel={resolveTooltip(props.item, props.api)}
       mainDisabled={b.disabled()}
       menuDisabled={b.disabled()}
+      onUnavailableFocus={props.api.focusEditor}
       ribbonSize={props.item.ribbonSize}
       mainPressed={b.active()}
       onMain={(): void => {
@@ -202,11 +204,20 @@ function RenderStyleGallery(
 }
 
 function RenderColorPicker(props: RendererProps<ColorPickerItem>): JSX.Element {
-  const [lastValue, setLastValue] = createSignal(props.item.defaultValue);
+  const [lastValue, setLastValue] = toolbarChoice(
+    props.api,
+    `color:${props.item.id}`,
+    props.item.defaultValue,
+  );
   const b = bindItem(props.item, props.api);
+  const menuPath = useContext(PopoverBranchContext);
   const apply = (value: string | null): void => {
+    if (b.disabled() || !props.api.commands.canExecute(props.item.command))
+      return;
     if (value) setLastValue(value);
     props.api.commands.execute(props.item.command, value);
+    menuPath?.closeAll();
+    props.api.focusEditor();
   };
   return (
     <ColorPicker
@@ -222,6 +233,8 @@ function RenderColorPicker(props: RendererProps<ColorPickerItem>): JSX.Element {
       value={(b.value() as string | null | undefined) ?? null}
       defaultValue={props.item.defaultValue}
       lastValue={lastValue()}
+      disabled={b.disabled()}
+      onUnavailableFocus={props.api.focusEditor}
       tooltip={resolveTooltip(props.item, props.api) ?? ""}
       label={resolveLabel(props.item, props.api)}
       ribbonSize={props.item.ribbonSize}

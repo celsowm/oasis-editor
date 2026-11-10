@@ -26,6 +26,10 @@ export interface PopoverTriggerApi {
 export interface PopoverProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Revoking availability closes an open panel and prevents reopening it. */
+  disabled?: boolean;
+  /** Restore focus when revocation removes the currently focused panel. */
+  onUnavailableFocus?: () => void;
   /** Renders the trigger; must attach `api.ref` to the positioning anchor. */
   trigger: (api: PopoverTriggerApi) => JSX.Element;
   children: JSX.Element;
@@ -50,6 +54,12 @@ export interface PopoverProps {
 export function Popover(props: PopoverProps): JSX.Element {
   let anchorRef: HTMLElement | undefined;
   let panelRef: HTMLDivElement | undefined;
+  createEffect((): void => {
+    if (!props.disabled || !props.open) return;
+    const hadFocus = panelRef?.contains(document.activeElement);
+    props.onOpenChange(false);
+    if (hadFocus) props.onUnavailableFocus?.();
+  });
   const parent = useContext(PopoverBranchContext);
   const branch: PopoverBranch = {
     open: () => props.open,
@@ -159,8 +169,12 @@ export function Popover(props: PopoverProps): JSX.Element {
       {props.trigger({
         ref: (el): HTMLElement => (anchorRef = el),
         open: props.open,
-        setOpen: props.onOpenChange,
-        toggle: (): void => props.onOpenChange(!props.open),
+        setOpen: (next): void => {
+          if (!next || !props.disabled) props.onOpenChange(next);
+        },
+        toggle: (): void => {
+          if (!props.disabled) props.onOpenChange(!props.open);
+        },
       })}
       <Show when={props.open}>
         <Portal>

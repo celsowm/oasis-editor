@@ -23,6 +23,7 @@ export interface SplitButtonProps {
   menuTestId?: string;
   menuAriaLabel?: string;
   menuDisabled?: boolean;
+  onUnavailableFocus?: () => void;
   /** Popover panel. */
   panelClass?: string;
   panelRole?: PanelRole;
@@ -39,6 +40,8 @@ export function SplitButton(props: SplitButtonProps): JSX.Element {
     <Popover
       open={props.open}
       onOpenChange={props.onOpenChange}
+      disabled={props.menuDisabled}
+      onUnavailableFocus={props.onUnavailableFocus}
       panelClass={props.panelClass}
       panelRole={props.panelRole}
       onPanelMouseLeave={props.onPanelMouseLeave}

@@ -1075,8 +1075,8 @@
   border-left-color: var(--oasis-toolbar-border);
 }
 
-.oasis-editor-color-split-main:hover,
-.oasis-editor-color-split-menu-button:hover,
+.oasis-editor-color-split-main:hover:not(:disabled),
+.oasis-editor-color-split-menu-button:hover:not(:disabled),
 .oasis-editor-color-split-open,
 .oasis-editor-color-split-active .oasis-editor-color-split-main,
 .oasis-editor-color-split-active .oasis-editor-color-split-menu-button {
@@ -1087,6 +1087,14 @@
 .oasis-editor-color-split-menu-button:focus-visible {
   outline: 2px solid var(--oasis-accent);
   outline-offset: -2px;
+}
+
+.oasis-editor-color-split-main:disabled,
+.oasis-editor-color-split-menu-button:disabled,
+.oasis-editor-style-gallery-card:disabled,
+.oasis-editor-style-gallery-expand:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .oasis-editor-color-split-icon {
@@ -1162,7 +1170,8 @@
   padding: 6px;
   display: grid;
   gap: 6px;
-  background: var(--oasis-paper);
+  background: var(--oasis-ribbon-panel-bg, var(--oasis-paper));
+  color: var(--oasis-ribbon-text, var(--oasis-text));
   border: 1px solid var(--oasis-toolbar-border);
   border-radius: var(--oasis-radius);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -1479,7 +1488,8 @@
   top: calc(100% + 4px);
   left: 0;
   z-index: 1000;
-  background: var(--oasis-paper);
+  background: var(--oasis-ribbon-panel-bg, var(--oasis-paper));
+  color: var(--oasis-ribbon-text, var(--oasis-text));
   border: 1px solid var(--oasis-toolbar-border);
   border-radius: var(--oasis-radius);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -2368,7 +2378,7 @@
   overflow-wrap: anywhere;
 }
 
-.oasis-editor-style-gallery-card:hover {
+.oasis-editor-style-gallery-card:hover:not(:disabled) {
   background: var(--oasis-ribbon-hover, #e7f1fb);
 }
 

@@ -11,6 +11,8 @@ export interface ColorPickerProps {
   value: string | null | undefined;
   defaultValue: string;
   lastValue: string;
+  disabled?: boolean;
+  onUnavailableFocus?: () => void;
   tooltip: string;
   testId: string;
   label?: string;
@@ -47,6 +49,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
   };
 
   const applyColor = (value: string | null): void => {
+    if (props.disabled) return;
     props.onApply(value);
     close();
   };
@@ -63,6 +66,9 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
       mainTestId={props.testId}
       mainAriaLabel={props.tooltip}
       mainLabel={props.label}
+      mainDisabled={props.disabled}
+      menuDisabled={props.disabled}
+      onUnavailableFocus={props.onUnavailableFocus}
       onMain={(): void => applyColor(directApplyColor())}
       menuTestId={`${props.testId}-dropdown`}
       menuAriaLabel={`${props.tooltip} menu`}
@@ -87,6 +93,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
           class="oasis-editor-color-menu-action"
           data-testid={`${props.testId}-clear`}
           role="menuitem"
+          disabled={props.disabled}
           onClick={(): void => applyColor(null)}
         >
           <span class="oasis-editor-color-menu-action-swatch">
@@ -106,6 +113,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
         themeColorsLabel={props.themeColorsLabel}
         standardColorsLabel={props.standardColorsLabel}
         activeColor={activeColor()}
+        disabled={props.disabled}
         testId={props.testId}
         onPreview={setPreviewColor}
         onPick={applyColor}
@@ -117,6 +125,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
           class="oasis-editor-color-menu-action"
           data-testid={`${props.testId}-more-colors`}
           role="menuitem"
+          disabled={props.disabled}
           onClick={(): void | undefined => customColorInputRef?.click()}
         >
           <span class="oasis-editor-color-menu-action-swatch oasis-editor-color-menu-more-swatch" />
@@ -125,6 +134,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
         <input
           ref={customColorInputRef}
           type="color"
+          disabled={props.disabled}
           class="oasis-editor-color-custom-input"
           data-testid={`${props.testId}-custom-input`}
           value={displayColor() || directApplyColor()}

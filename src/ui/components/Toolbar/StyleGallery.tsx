@@ -5,6 +5,7 @@ import {
   createSignal,
   onMount,
   onCleanup,
+  useContext,
   type JSX,
 } from "solid-js";
 import type {
@@ -12,9 +13,11 @@ import type {
   ToolbarActionApi,
   ToolbarDocumentStyle,
 } from "./schema/items.js";
+import type { CommandRef } from "@/core/commands/CommandRef.js";
 import { Popover } from "./primitives/Popover.js";
 import { Select } from "./primitives/Select.js";
 import { DropdownChevron } from "./primitives/DropdownChevron.js";
+import { PopoverBranchContext } from "./primitives/popoverBranch.js";
 
 export function getQuickStyles(
   styles: ToolbarDocumentStyle[],
@@ -58,6 +61,7 @@ export interface StyleGalleryProps {
 }
 
 export function StyleGallery(props: StyleGalleryProps): JSX.Element {
+  const menuPath = useContext(PopoverBranchContext);
   const [open, setOpen] = createSignal(false);
   const [visibleSlots, setVisibleSlots] = createSignal(1);
   let stripRef: HTMLDivElement | undefined;
@@ -81,20 +85,38 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
     String(props.api.commands.state(props.item.paragraphCommand).value ?? "");
   const characterStyleId = (): string =>
     String(props.api.commands.state(props.item.characterCommand).value ?? "");
+  const commandFor = (style: ToolbarDocumentStyle): CommandRef =>
+    style.type === "character"
+      ? props.item.characterCommand
+      : props.item.paragraphCommand;
+  const disabled = (style: ToolbarDocumentStyle): boolean =>
+    props.item.isDisabled?.(props.api) ??
+    !props.api.commands.state(commandFor(style)).isEnabled;
+  const enabledStyles = createMemo(() =>
+    styles().filter((style) => !disabled(style)),
+  );
+  const hasEnabledStyles = (): boolean => enabledStyles().length > 0;
 
   createEffect((): void => {
     if (!open()) return;
+    hasEnabledStyles();
     queueMicrotask((): void => {
+      if (!open()) return;
       const panel = document.querySelector<HTMLElement>(
         `[data-testid="${panelTestId}"]`,
       );
       const target =
         panel?.querySelector<HTMLButtonElement>(
-          ".oasis-editor-style-gallery-card-active",
+          ".oasis-editor-style-gallery-card-active:not(:disabled)",
         ) ??
         panel?.querySelector<HTMLButtonElement>(
-          ".oasis-editor-style-gallery-card",
+          ".oasis-editor-style-gallery-card:not(:disabled)",
         );
+      if (
+        panel?.contains(document.activeElement) &&
+        !(document.activeElement as HTMLButtonElement).disabled
+      )
+        return;
       target?.focus();
     });
   });
@@ -103,13 +125,11 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
       ? characterStyleId() === style.id
       : paragraphStyleId() === style.id;
   const apply = (style: ToolbarDocumentStyle): void => {
-    const command =
-      style.type === "character"
-        ? props.item.characterCommand
-        : props.item.paragraphCommand;
-    if (props.api.commands.canExecute(command)) {
+    const command = commandFor(style);
+    if (!disabled(style) && props.api.commands.canExecute(command)) {
       props.api.commands.execute(command, style.id);
       setOpen(false);
+      menuPath?.closeAll();
       props.api.focusEditor();
     }
   };
@@ -132,7 +152,7 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
     }
     const buttons = Array.from(
       event.currentTarget.querySelectorAll<HTMLButtonElement>(
-        ".oasis-editor-style-gallery-card",
+        ".oasis-editor-style-gallery-card:not(:disabled)",
       ),
     );
     const current = buttons.indexOf(
@@ -162,6 +182,7 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
       {(style): JSX.Element => (
         <button
           type="button"
+          disabled={disabled(style)}
           class="oasis-editor-style-gallery-card"
           classList={{
             "oasis-editor-style-gallery-card-active": isActive(style),
@@ -189,6 +210,8 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
     <Popover
       open={open()}
       onOpenChange={setOpen}
+      disabled={!hasEnabledStyles()}
+      onUnavailableFocus={props.api.focusEditor}
       placement="bottom-end"
       panelClass="oasis-editor-style-gallery-panel"
       panelRole="listbox"
@@ -198,6 +221,7 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
           <Select
             class="oasis-editor-style-gallery-compact"
             value={characterStyleId() || paragraphStyleId()}
+            disabled={!hasEnabledStyles()}
             data-testid={props.item.testId}
             tooltip={props.api.t("toolbar.style")}
             onChange={(event): void => {
@@ -210,7 +234,9 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
           >
             <For each={styles()}>
               {(style): JSX.Element => (
-                <option value={style.id}>{style.name}</option>
+                <option value={style.id} disabled={disabled(style)}>
+                  {style.name}
+                </option>
               )}
             </For>
           </Select>
@@ -225,6 +251,7 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
             </div>
             <button
               type="button"
+              disabled={!hasEnabledStyles()}
               class="oasis-editor-style-gallery-expand"
               title={props.api.t("toolbar.style")}
               aria-label={props.api.t("toolbar.style")}
