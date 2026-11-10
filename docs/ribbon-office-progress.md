@@ -514,6 +514,16 @@ The matrix now contains 121 Oasis capability rows and links 109 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` validates the special-indent submenu mapping, command registration and absence of a default UI path for `setListLevel` and the six Asian Typography commands; the catalog snapshot reports 109 linked source rows.
 
+## Delivery 32 — Font and Paragraph dialog launchers
+
+Date: 2026-11-10. B01 remains **partial**.
+
+Reviewed the two dialog-launcher entries. Oasis provides Font and Paragraph dialogs from the editor context menu, while WordCraft places launchers on Home (and Paragraph on Layout). The crosswalk records these as `ui-only`: their user-facing dialogs exist, but there is no shared Oasis launcher command or direct Home Ribbon exposure. Individual field capabilities remain separate mappings.
+
+The matrix now contains 123 Oasis capability rows and links 111 of 521 WordCraft source rows; 410 remain unlinked. Dialog launch parity does not verify field coverage, focus/selection behavior, undo or document round-trips.
+
+Evidence: `npm run audit:ribbon` verifies both context-menu tokens and the UI-only classification; the generated WordCraft snapshot reports 111 linked source rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

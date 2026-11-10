@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `121` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `123` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -132,6 +132,8 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `home.asianTypographyTopLinePunct` | `para.asianTypography` | `setTopLinePunct` | — | core-only | core-only | partial | unverified |
 | `home.asianTypographyAutoSpaceDE` | `para.asianTypography` | `setAutoSpaceDE` | — | core-only | core-only | partial | unverified |
 | `home.asianTypographyAutoSpaceDN` | `para.asianTypography` | `setAutoSpaceDN` | — | core-only | core-only | partial | unverified |
+| `context.paragraphDialog` | `para.dialog` | — | Context menu > Paragraph | ui-only | ui-only | partial | unverified |
+| `context.fontDialog` | `format.fontDialog` | — | Context menu > Font | ui-only | ui-only | partial | unverified |
 
 ## Open verification questions
 
@@ -256,6 +258,8 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 119. **home.asianTypographyTopLinePunct:** Oasis registers top-line punctuation compression as a separate command, but no default Ribbon, menu or dialog control was found. Rendering, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command.
 120. **home.asianTypographyAutoSpaceDE:** Oasis registers automatic spacing between East Asian and Latin text as a separate command, but no default Ribbon, menu or dialog control was found. Font/run handling, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command.
 121. **home.asianTypographyAutoSpaceDN:** Oasis registers automatic spacing between East Asian text and numbers as a separate command, but no default Ribbon, menu or dialog control was found. Font/run handling, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command.
+122. **context.paragraphDialog:** Oasis opens its Paragraph dialog from the editor context menu; WordCraft exposes a Paragraph dialog launcher on Home and Layout. The entry point is UI-only and the dialog does not share WordCraft's command contract. Field coverage, selection scope, undo and document round-trips remain independently tracked.
+123. **context.fontDialog:** Oasis opens the Font dialog from the editor context menu; WordCraft exposes a Font dialog launcher on Home. The entry point is UI-only and does not share a launcher command. Font and Advanced tab fields are tracked separately; field coverage, selection scope, undo and DOCX behavior remain to be verified.
 
 ## Audit interpretation
 
