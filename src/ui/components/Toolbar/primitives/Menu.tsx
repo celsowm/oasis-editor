@@ -78,7 +78,7 @@ export function Menu(props: MenuProps): JSX.Element {
             const button = el.closest("button");
             if (
               button &&
-              button.getAttribute("aria-haspopup") !== "menu" &&
+              !button.hasAttribute("aria-haspopup") &&
               !el.closest(".oasis-editor-toolbar-list-options")
             ) {
               setOpen(false);

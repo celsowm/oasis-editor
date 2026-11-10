@@ -3,6 +3,7 @@ import {
   createEffect,
   createSignal,
   onCleanup,
+  useContext,
   type JSX,
 } from "solid-js";
 import { Portal } from "solid-js/web";
@@ -10,6 +11,8 @@ import {
   usePopoverPosition,
   type PopoverPlacement,
 } from "./usePopoverPosition.js";
+import { PopoverBranchContext } from "./popoverBranch.js";
+import type { PopoverBranch } from "./popoverBranch.js";
 import { useDismiss } from "./useDismiss.js";
 
 export interface PopoverTriggerApi {
@@ -47,6 +50,27 @@ export interface PopoverProps {
 export function Popover(props: PopoverProps): JSX.Element {
   let anchorRef: HTMLElement | undefined;
   let panelRef: HTMLDivElement | undefined;
+  const parent = useContext(PopoverBranchContext);
+  const branch: PopoverBranch = {
+    open: () => props.open,
+    children: new Set(),
+    contains: (target) =>
+      props.open &&
+      Boolean(
+        anchorRef?.contains(target) ||
+        panelRef?.contains(target) ||
+        [...branch.children].some((child) => child.contains(target)),
+      ),
+  };
+  parent?.children.add(branch);
+  onCleanup(() => parent?.children.delete(branch));
+  createEffect((): void => {
+    if (parent && !parent.open() && props.open) props.onOpenChange(false);
+  });
+  const hasOpenDescendant = (owner: PopoverBranch): boolean =>
+    [...owner.children].some(
+      (child) => child.open() || hasOpenDescendant(child),
+    );
   const [theme, setTheme] = createSignal<string>();
   const [themeStyle, setThemeStyle] = createSignal<JSX.CSSProperties>({});
 
@@ -87,7 +111,18 @@ export function Popover(props: PopoverProps): JSX.Element {
   useDismiss({
     refs: () => [anchorRef, panelRef],
     open: (): boolean => props.open,
-    onDismiss: (): void => props.onOpenChange(false),
+    isInside: branch.contains,
+    canDismissOnEscape: () => !hasOpenDescendant(branch),
+    onDismiss: (reason): void => {
+      props.onOpenChange(false);
+      if (reason === "escape")
+        queueMicrotask(() => {
+          const button = anchorRef?.matches("button")
+            ? anchorRef
+            : anchorRef?.querySelector<HTMLElement>("button");
+          button?.focus({ preventScroll: true });
+        });
+    },
     closeOnEscape: props.closeOnEscape,
   });
 
@@ -109,7 +144,9 @@ export function Popover(props: PopoverProps): JSX.Element {
       aria-hidden={portalled ? undefined : "true"}
       onMouseLeave={props.onPanelMouseLeave}
     >
-      {props.children}
+      <PopoverBranchContext.Provider value={branch}>
+        {props.children}
+      </PopoverBranchContext.Provider>
     </div>
   );
 

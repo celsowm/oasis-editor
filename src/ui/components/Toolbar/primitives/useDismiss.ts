@@ -4,7 +4,9 @@ export interface DismissOptions {
   /** Elements that should NOT trigger a dismiss when clicked (anchor + panel). */
   refs: Accessor<Array<HTMLElement | undefined>>;
   open: Accessor<boolean>;
-  onDismiss: () => void;
+  onDismiss: (reason: "outside" | "escape") => void;
+  isInside?: (target: Node) => boolean;
+  canDismissOnEscape?: () => boolean;
   /** Dismiss when Escape is pressed. Defaults to true. */
   closeOnEscape?: boolean;
 }
@@ -22,14 +24,19 @@ export function useDismiss(options: DismissOptions): void {
     const inside = options
       .refs()
       .some((el): boolean => el != null && el.contains(target));
-    if (!inside) {
-      options.onDismiss();
+    if (!inside && !options.isInside?.(target)) {
+      options.onDismiss("outside");
     }
   };
 
   const handleKey = (event: KeyboardEvent): void => {
-    if (event.key === "Escape") {
-      options.onDismiss();
+    if (
+      event.key === "Escape" &&
+      !event.defaultPrevented &&
+      (options.canDismissOnEscape?.() ?? true)
+    ) {
+      event.preventDefault();
+      options.onDismiss("escape");
     }
   };
 
