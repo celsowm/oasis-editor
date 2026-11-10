@@ -59,6 +59,10 @@
         "clipboard": {
           "suite": "scripts/verify-ribbon-clipboard.mjs",
           "scope": "Deterministic Clipboard API adapters and synthetic native events in three engines: rich/text/merge, failure feedback, original targets, Cut/Copy and one-step undo. Real OS permission/gesture, Word, DOCX/PDF and image-only flows unverified."
+        },
+        "painter": {
+          "suite": "scripts/verify-ribbon-painter.mjs",
+          "scope": "Inherited appearance, actual Shift+End keyboard selection, one-shot/continuous, undo/redo and lifecycle cancellation in three engines; target carets seeded through the client. Pointer/touch, real Safari/VoiceOver and DOCX/PDF unverified."
         }
       }
     },

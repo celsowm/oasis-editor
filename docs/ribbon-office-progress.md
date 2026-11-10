@@ -170,6 +170,25 @@ Evidence:
 
 Remaining D01 acceptance includes actual Safari/macOS and other native permission/gesture flows, VoiceOver, clipboard images, mixed/nested lists/tables, painter one-shot/sticky workflows and applicable DOCX/PDF evidence. The browser adapters and synthetic events are not substitutes for those checks. No milestone is completed by this delivery.
 
+## Delivery 6 — Painter inheritance and selection-safe lifecycle
+
+Date: 2026-11-10. D01 remains **partial**.
+
+A new core regression demonstrated that a partial selection using inherited paragraph/character styles captured only its direct overrides: inherited font, color, bold and italic were absent. Painter now resolves the effective source appearance before creating its value snapshot. Direct overrides win, source hyperlinks/revision metadata are excluded, and destination hyperlinks remain intact. The core fix and its tests shipped separately from UI wiring.
+
+A browser workflow then exposed a second defect: `client.selection.set` cloned the whole editor state before applying a selection-only update. The document version stayed unchanged, but its identity changed and invalidated Painter's source. The host now retains its immutable document and clones only the incoming selection positions; public snapshot getters remain detached. A dedicated host test checks identity, payload isolation, clean/version state and focus.
+
+Painter now cancels when the editor becomes read-only, its document is replaced or its owner is disposed. Continuous-mode transactions batch the document update and source-identity refresh so the painter does not invalidate its own edit. Before the fix, a read-only editor still reported Painter active and retained its painter cursor.
+
+Evidence:
+
+- Named-style core capture/application test and client selection-identity regression pass, alongside the existing Painter core/controller suites.
+- `npm run test:ribbon:painter` passes eight scenarios per engine in Chromium, Firefox and WebKit: two themes, two locales and 1440/640 px. Source/target positions are seeded through the public client; actual `Shift+End` keyboard selection finalizes each target through the editor input. Checks cover inherited font/size/color, destination links, one-shot disarm, one-step undo/redo, two consecutive continuous targets, Escape without mutation, read-only cancellation and document replacement.
+- Results remain gitignored under `debug_artifacts/ribbon-painter-{engine}/`; CI retains Chromium records under `test-results/ribbon/painter/`. The owned CI runner now includes this seventh suite.
+- TypeScript and changed-source ESLint pass. Full local Vitest: 315 files / 1,808 tests passed; one file/test skipped. Existing global lint failures are down to 249 errors and 19 warnings after formatting the changed files.
+
+Limits: this is core and keyboard/model evidence, not a pixel comparison or a pointer/touch/VoiceOver/Safari/format round-trip certification. Actual pointer targeting, complex stories/tables/lists, full appearance properties and applicable DOCX/PDF workflows remain open with the rest of D01 and M0–M5.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

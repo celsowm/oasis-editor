@@ -36,7 +36,7 @@
       "tab": "home",
       "group": "clipboard",
       "status": "partial",
-      "notes": "Copies the current selection/caret formatting for the next pointer or keyboard target; tests cover ranges, paragraph source, links and one-shot disarm. Full visual/WordCraft behavior and DOCX round-trip remain unverified."
+      "notes": "Captures effective paragraph/character appearance with direct overrides while preserving destination hyperlinks. Three browser engines exercise actual keyboard selection, one-shot disarm and undo/redo. Pointer/touch, real Safari/VoiceOver, complex stories and DOCX/PDF remain unverified."
     },
     {
       "id": "home.formatPainterContinuous",
@@ -46,7 +46,7 @@
       "tab": "home",
       "group": "clipboard",
       "status": "partial",
-      "notes": "Continuous mode applies to multiple finalized targets and stays armed after the editor's own transactional changes. Escape and explicit cancellation disarm; E2E mouse/touch/keyboard testing remains necessary."
+      "notes": "Continuous mode survives two finalized keyboard targets and its own batched transactions. Browser checks exercise Escape, read-only and document-replacement cancellation; client selection-only changes retain source identity. Pointer/touch, complex stories and DOCX/PDF remain unverified."
     },
     {
       "id": "home.paste",
