@@ -35,11 +35,11 @@
 | `references.toc` | `references.toc` | `insertTableOfContents` | `references/tableOfContents` | partial |
 | `references.updateToc` | `references.updateToc` | `updateTableOfContents` | `references/tableOfContents` | partial |
 | `review.trackChanges` | `review.trackChanges` | `toggleTrackChanges` | `review/tracking` | partial |
-| `review.previousRevision` | — | `previousRevision` | `review/changes` | partial |
-| `review.nextRevision` | — | `nextRevision` | `review/changes` | partial |
-| `review.commentsPanel` | — | `toggleCommentsPanel` | `review/comments` | partial |
+| `review.previousRevision` | `review.previousChange` | `previousRevision` | `review/changes` | partial |
+| `review.nextRevision` | `review.nextChange` | `nextRevision` | `review/changes` | partial |
+| `review.commentsPanel` | `review.comments` | `toggleCommentsPanel` | `review/comments` | partial |
 | `review.newComment` | `review.newComment` | `newComment` | `review/comments` | partial |
-| `review.replyComment` | — | `replyComment` | `review/comments` | partial |
+| `review.replyComment` | `review.reply` | `replyComment` | `review/comments` | partial |
 | `review.editComment` | — | `editComment` | `review/comments` | partial |
 | `review.previousComment` | `review.previousComment` | `previousComment` | `review/comments` | partial |
 | `review.nextComment` | `review.nextComment` | `nextComment` | `review/comments` | partial |
@@ -87,11 +87,11 @@
 22. **references.toc:** TOC creation, fields and export/round-trip remain independently testable.
 23. **references.updateToc:** Eligibility and missing-TOC command states still need refinement.
 24. **review.trackChanges:** Active state is wired to EditorState; tracked content fidelity and UI workflows remain to verify.
-25. **review.previousRevision:** Cycles backward through text-run revisions in the active editing story. Pure selection navigation; structural/property revisions need separate navigation support.
-26. **review.nextRevision:** Cycles forward through tracked text-run changes without editing the document; selection is limited to the active section/zone.
-27. **review.commentsPanel:** An editor-scoped discussion drawer lists roots and nested replies, supports text search, open/resolved filters, navigation, moderation and confirmation before deletion. The Activity view shows undoable local comment events for creation, replies, edits, resolve/reopen and deletion; events are not exported to DOCX. Host IDs gate mutations. Visual parity remains partial.
+25. **review.previousRevision:** Related task to WordCraft Previous Change. Oasis cycles backward through text-run revisions in the active editing story; structural, table and section changes need separate navigation support. Pure selection navigation; parity remains partial.
+26. **review.nextRevision:** Related task to WordCraft Next Change. Oasis cycles forward through tracked text-run revisions in the active editing story; structural, table and section changes need separate navigation support. Pure selection navigation; parity remains partial.
+27. **review.commentsPanel:** Related task to WordCraft Show Comments: Oasis toggles an editor-scoped discussion drawer, while WordCraft's command returns the comment list. The drawer lists roots and nested replies, supports text search, open/resolved filters, navigation, moderation and confirmation before deletion. The Activity view shows undoable local comment events, which are not exported to DOCX. Host IDs gate mutations; visual parity remains partial.
 28. **review.newComment:** Creates an authored comment anchored to selected text or a caret word, through a per-editor modal. Uses native comment registry and is undoable; visual E2E and full DOCX import/export fidelity are pending. WordCraft also places this action on Insert; Oasis currently exposes it on Review only, so placement parity remains open.
-29. **review.replyComment:** Creates an unanchored threaded reply linked by parentId to the selected comment. DOCX commentsExtended XML parent relationship has unit coverage; cross-application round-trip remains unverified.
+29. **review.replyComment:** Creates a threaded reply linked to its parent comment; Oasis stores the reply in an unanchored comment story linked by parentId. DOCX commentsExtended XML parent relationship has unit coverage; cross-application round-trip remains unverified.
 30. **review.editComment:** Edits only the selected existing comment's text in a transactional modal; ID, author, creation time, anchors, resolved state and reply links are preserved. Popup actions support editing individual nested replies. DOCX export/reimport and read-only gating have tests; full visual WordCraft parity remains unverified.
 31. **review.previousComment:** Navigates to the prior anchored comment in the active story, skipping unanchored replies and wrapping.
 32. **review.nextComment:** Navigates to the next anchored comment without changing the document; Mapped to WordCraft `review.nextComment`; semantic and persistence parity remain unverified.

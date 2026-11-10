@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 37
+    "linkedRows": 41
   },
   "defaultTabs": [
     "File",
@@ -2873,7 +2873,9 @@
       "group": "Comments",
       "name": "Show Comments",
       "command": "review.comments",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.commentsPanel"
+      ]
     },
     {
       "index": 293,
@@ -2893,7 +2895,9 @@
       "group": "Comments",
       "name": "Reply",
       "command": "review.reply",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.replyComment"
+      ]
     },
     {
       "index": 295,
@@ -2989,7 +2993,9 @@
       "group": "Changes",
       "name": "Previous Change",
       "command": "review.previousChange",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.previousRevision"
+      ]
     },
     {
       "index": 305,
@@ -2998,7 +3004,9 @@
       "group": "Changes",
       "name": "Next Change",
       "command": "review.nextChange",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.nextRevision"
+      ]
     },
     {
       "index": 306,

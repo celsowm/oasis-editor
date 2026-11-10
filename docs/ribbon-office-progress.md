@@ -344,6 +344,18 @@ Evidence: `npm run audit:ribbon:wordcraft:write`, `npm run audit:ribbon:write`, 
 
 Limits: this is source-level exposure plus existing browser/core evidence. It does not certify complete parity, all custom controls, or the full Font workflow.
 
+## Delivery 17 — Review command crosswalk
+
+Date: 2026-11-10. B01 and P01 remain **partial**.
+
+Linked four existing Oasis Review capabilities to their WordCraft catalog rows: previous/next change navigation, Show Comments, and Reply. Source implementations were inspected instead of inferring equivalence from similar labels. Previous/next are related tasks because Oasis currently navigates text-run revisions in its active editing story, while WordCraft's change list includes paragraph, table, and section changes. Show Comments is also a related task: WordCraft's command returns a comment list, whereas Oasis toggles its discussion drawer. Reply is a direct command crosswalk for creating a threaded reply; its cross-application file round-trip remains unverified.
+
+The crosswalk now links 41 of the 521 WordCraft catalog rows; the other 480 remain unclassified. This improves command discoverability accounting only. Review exposure in all contexts, visual organization, tracked-change semantics, comments persistence and DOCX interoperability remain separate acceptance work.
+
+Evidence: inspected WordCraft `crates/engine/src/cmd/review.rs`, `review/changes.rs`, `review/comments.rs` and the pinned catalog rows, alongside Oasis's built-in Review command bindings and `features.json` notes. Regenerated the catalog snapshot and parity matrix; static audit validates all four source IDs and links.
+
+Limits: this does not complete Review workflows or P01. Accept/reject scope, revision navigation parity, comments anchors/authorship and external Word round-trips still require capability-level verification.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
