@@ -22,6 +22,15 @@ const cases = {
   sections: ["layout", "insert"],
   review: ["review"],
 };
+const fixtureScenarios = {
+  text: "text/caret",
+  lists: "list/selected-item",
+  styles: "style/caption-paragraph",
+  table: "table/selected-cell",
+  image: "image/selected-object",
+  sections: "section/landscape-paragraph",
+  review: "review/changed-text-range",
+};
 const sha = execFileSync("git", ["rev-parse", "HEAD"], {
   encoding: "utf8",
 }).trim();
@@ -187,6 +196,7 @@ try {
                 width: panel.clientWidth,
                 scrollWidth: panel.scrollWidth,
                 overflow: panel.dataset.ribbonOverflow,
+                dpr: window.devicePixelRatio,
                 groups: [...panel.children].map((group) => ({
                   id: group.dataset.ribbonGroup,
                   label: group.getAttribute("aria-label"),
@@ -199,8 +209,8 @@ try {
                 })),
               }));
             assert.ok(value.groups.length > 0);
-            if (value.overflow === "false")
-              assert.equal(value.width, width, "Context host width mismatch");
+            assert.equal(value.width, width, "Context host width mismatch");
+            assert.equal(value.dpr, 1, "Context capture DPR mismatch");
             for (const group of value.groups) {
               assert.ok(
                 group.actions > 0,
@@ -245,13 +255,14 @@ try {
               ...iconGeometry,
               sha,
               dirty,
+              browser: engine,
               screenshot,
               selection: baseline.selection,
               definitionSha256: baseline.definitionSha256,
               viewportHeight: 900,
-              dpr: 1,
               ...fontState,
               fixture,
+              scenario: `${fixtureScenarios[fixture]}/${tab}`,
               theme,
               locale,
               tab,
@@ -308,6 +319,18 @@ try {
 
           await page.setViewportSize({ width: 1440, height: 900 });
           await page.getByTestId("editor-ribbon-tab-layout").click();
+          const unitGeometry = await page
+            .locator(".oasis-editor-toolbar")
+            .evaluate((toolbar) => ({
+              width: toolbar.getBoundingClientRect().width,
+              dpr: window.devicePixelRatio,
+            }));
+          assert.equal(
+            unitGeometry.width,
+            1440,
+            "Unit capture host width mismatch",
+          );
+          assert.equal(unitGeometry.dpr, 1, "Unit capture DPR mismatch");
           await page.getByTestId("editor-toolbar-metrics-dropdown").click();
           await assertUnit(page, "editor-toolbar-spacing-after", "pt");
           await assertUnit(page, "editor-toolbar-indent-left", "cm");
@@ -329,8 +352,8 @@ try {
             locale,
             tab: "layout",
             requestedWidth: 1440,
+            ...unitGeometry,
             viewportHeight: 900,
-            dpr: 1,
             scenario: "layout/paragraph-metrics-units",
             screenshot: metricsScreenshot,
           });
@@ -424,8 +447,8 @@ try {
             locale,
             tab: "layout",
             requestedWidth: 1440,
+            ...unitGeometry,
             viewportHeight: 900,
-            dpr: 1,
             scenario: "layout/custom-margins-units",
             screenshot: marginsScreenshot,
           });
@@ -496,6 +519,64 @@ try {
         assert.deepEqual(errors, []);
         await page.close();
       }
+  const expectedLayouts = Object.values(cases).reduce(
+    (total, tabs) => total + tabs.length * 2 * 2 * 5,
+    0,
+  );
+  assert.equal(
+    records.length,
+    expectedLayouts,
+    "Context capture matrix is incomplete",
+  );
+  assert.equal(
+    unitEvidence.length,
+    2 * 2 * 2,
+    "Unit capture matrix is incomplete",
+  );
+  for (const record of records) {
+    assert.ok(record.scenario, `Missing scenario for ${record.screenshot}`);
+    assert.ok(record.screenshot, "Missing screenshot filename");
+    assert.equal(record.sha, sha, `Wrong source SHA for ${record.screenshot}`);
+    assert.equal(
+      record.dirty,
+      dirty,
+      `Inconsistent dirty state for ${record.screenshot}`,
+    );
+    assert.equal(
+      record.browser,
+      engine,
+      `Wrong browser for ${record.screenshot}`,
+    );
+    assert.equal(
+      record.requestedWidth,
+      record.width,
+      `Wrong measured width for ${record.screenshot}`,
+    );
+    assert.equal(record.dpr, 1, `Wrong DPR for ${record.screenshot}`);
+  }
+  for (const record of unitEvidence) {
+    assert.ok(
+      record.scenario,
+      `Missing unit scenario for ${record.screenshot}`,
+    );
+    assert.equal(record.sha, sha, `Wrong source SHA for ${record.screenshot}`);
+    assert.equal(
+      record.dirty,
+      dirty,
+      `Inconsistent dirty state for ${record.screenshot}`,
+    );
+    assert.equal(
+      record.browser,
+      engine,
+      `Wrong browser for ${record.screenshot}`,
+    );
+    assert.equal(
+      record.requestedWidth,
+      record.width,
+      `Wrong measured width for ${record.screenshot}`,
+    );
+    assert.equal(record.dpr, 1, `Wrong DPR for ${record.screenshot}`);
+  }
   await writeFile(
     resolve(output, "verification.json"),
     JSON.stringify(
