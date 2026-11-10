@@ -128,20 +128,27 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
           <div class="oasis-editor-margins-custom-form">
             <For each={FIELDS}>
               {(field): JSX.Element => (
-                <label class="oasis-editor-margins-custom-field">
+                <label
+                  class="oasis-editor-margins-custom-field"
+                  data-testid={`editor-toolbar-margin-${field.key}-field`}
+                >
                   <span>{t(field.labelKey)}</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={draft()[field.key] ?? ""}
-                    onInput={(e): { [x: string]: string } =>
-                      setDraft((d): { [x: string]: string } => ({
-                        ...d,
-                        [field.key]: e.currentTarget.value,
-                      }))
-                    }
-                  />
+                  <div class="oasis-editor-margins-custom-control">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      data-testid={`editor-toolbar-margin-${field.key}`}
+                      value={draft()[field.key] ?? ""}
+                      onInput={(e): { [x: string]: string } =>
+                        setDraft((d): { [x: string]: string } => ({
+                          ...d,
+                          [field.key]: e.currentTarget.value,
+                        }))
+                      }
+                    />
+                    <span class="oasis-editor-ui-field-suffix">cm</span>
+                  </div>
                 </label>
               )}
             </For>

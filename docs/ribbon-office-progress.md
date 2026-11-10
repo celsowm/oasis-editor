@@ -414,6 +414,18 @@ Evidence: `RIBBON_BROWSER=chromium RIBBON_OUTPUT=debug_artifacts/ribbon-v04-labe
 
 Limits: the overflow check covers visible Ribbon button captions; measurement fields, color-split captions, expanded menus, contextual tabs, other locales, Safari, and VoiceOver still need review. V04 remains incomplete.
 
+## Delivery 23 — Explicit units on common measurement controls
+
+Date: 2026-11-10. V04 and D03 remain **partial**.
+
+Added visible `pt` to paragraph spacing and `cm` to paragraph indents, custom page margins, and picture dimensions. Paragraph values convert at the UI boundary: 12 pt maps to 16 model px, and 2.54 cm maps to 96 model px. Undo restores the exact original document snapshot and selection. The shared field suffix is aligned beside its input, uses the Ribbon theme colors, and stays readable in both themes. Image size fields retain their two-row layout at 640 px.
+
+The contextual Chromium verifier checks suffix wording, alignment and WCAG AA text contrast for layout metrics, custom margins and image dimensions. It also captures eight unit-specific popovers with theme, locale, requested width, DPR, commit and dirty metadata. The complete seven-fixture matrix covers 260 actual-width contextual layouts.
+
+Evidence: `RIBBON_BROWSER=chromium node scripts/verify-ribbon-contexts.mjs`; a targeted browser check confirms 12 pt → 16 px and 2.54 cm → 96 px, then verifies undo, selection, unit alignment and contrast. The metrics fields measured 16.10:1 contrast in light theme and 13.74:1 in dark; unit suffixes measured 6.05:1 and 7.83:1 respectively. Typecheck, changed-file ESLint, core Vitest (1,547 passed, one skipped), Ribbon/icon audits and Prettier pass. Captures remain gitignored.
+
+Limits: remaining Design Gallery numeric fields, other measurement dialogs and contextual table fields need a full unit audit. The host still reports `isDirty()` after undo returns the document to its exact clean snapshot; track that dirty-state defect under P04. Safari and VoiceOver remain unverified. V04 and D03 remain incomplete.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
@@ -423,7 +435,7 @@ All requirements in the execution plan remain in scope. The next sequence is:
 3. A03/A04: action/menu/launcher semantics, short viewports, spatial matrices and contextual popup transitions.
 4. R01–R05: close late-font, zoom, pointer/IME, invalidation and performance evidence across remaining contexts.
 5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
-6. P01–P06: Review, References, View, File, search/QAT and interoperability.
+6. P01–P06: Review, References, View, File, search/QAT and interoperability. P04 includes the dirty marker staying set after undo restores the saved document snapshot.
 7. All M4 families: Shapes, Equations, Draw, advanced References, Mailings, Developer/Forms, Charts/SmartArt, integrations and Help, each with the plan's minimum functional delivery.
 8. M5: required cross-browser, keyboard, VoiceOver, language/theme, selection, persistence and performance scenarios with retained evidence.
 

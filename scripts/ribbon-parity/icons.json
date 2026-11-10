@@ -45,42 +45,42 @@
   "uses": [
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 149,
+      "line": 150,
       "role": "icon",
       "name": "crop",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 162,
+      "line": 163,
       "role": "icon",
       "name": "shapes",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 202,
+      "line": 203,
       "role": "icon",
       "name": "ratio",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 242,
+      "line": 243,
       "role": "icon",
       "name": "maximize",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 248,
+      "line": 249,
       "role": "icon",
       "name": "minimize",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 254,
+      "line": 255,
       "role": "icon",
       "name": "rotate-ccw",
       "origin": "lucide"
@@ -101,28 +101,28 @@
     },
     {
       "file": "src/ui/components/Toolbar/groups/MetricGroup.tsx",
-      "line": 22,
+      "line": 45,
       "role": "icon",
       "name": "sliders-horizontal",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/groups/MetricGroup.tsx",
-      "line": 31,
+      "line": 54,
       "role": "icon",
       "name": "file-up",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/groups/MetricGroup.tsx",
-      "line": 38,
+      "line": 61,
       "role": "icon",
       "name": "link-2",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/groups/MetricGroup.tsx",
-      "line": 133,
+      "line": 160,
       "role": "icon",
       "name": "frame",
       "origin": "lucide"
@@ -1202,13 +1202,13 @@
   "dynamic": [
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 120,
+      "line": 121,
       "role": "icon",
       "expression": "props.icon"
     },
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 122,
+      "line": 123,
       "role": "trailingIcon",
       "expression": "props.submenu ? \"chevron-right\" : undefined"
     },

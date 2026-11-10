@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global process, document, window, console, URLSearchParams, Image, getComputedStyle */
 import { verifyRibbonChevrons } from "./ribbon-chevron-geometry.mjs";
 import { execFileSync } from "node:child_process";
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
@@ -30,6 +31,68 @@ const dirty = Boolean(
 const browser = await { chromium, firefox, webkit }[engine].launch();
 const records = [],
   hashes = new Map();
+const unitEvidence = [];
+async function assertUnit(page, testId, unit) {
+  const input = page.getByTestId(testId);
+  const suffix = input
+    .locator("xpath=..")
+    .locator(".oasis-editor-ui-field-suffix");
+  assert.equal(await suffix.textContent(), unit, `${testId} unit`);
+  assert.ok(await suffix.isVisible(), `${testId} unit should be visible`);
+  assert.ok(
+    await input.evaluate((el) => {
+      const suffix = el.parentElement?.querySelector(
+        ".oasis-editor-ui-field-suffix",
+      );
+      if (!suffix) return false;
+      const inputRect = el.getBoundingClientRect();
+      const suffixRect = suffix.getBoundingClientRect();
+      return (
+        Math.abs(
+          inputRect.top +
+            inputRect.height / 2 -
+            (suffixRect.top + suffixRect.height / 2),
+        ) <= 2
+      );
+    }),
+    `${testId} unit should align with the input`,
+  );
+  const contrast = await input.evaluate((el) => {
+    const suffix = el.parentElement?.querySelector(
+      ".oasis-editor-ui-field-suffix",
+    );
+    if (!suffix) return { input: 0, suffix: 0 };
+    const luminance = (color) => {
+      const channels = color
+        .match(/[\d.]+/g)
+        ?.slice(0, 3)
+        .map(Number);
+      if (!channels || channels.length !== 3) return 0;
+      const linear = channels.map((channel) => {
+        const value = channel / 255;
+        return value <= 0.04045
+          ? value / 12.92
+          : ((value + 0.055) / 1.055) ** 2.4;
+      });
+      return linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722;
+    };
+    const ratio = (foreground, background) => {
+      const values = [luminance(foreground), luminance(background)].sort(
+        (left, right) => right - left,
+      );
+      return (values[0] + 0.05) / (values[1] + 0.05);
+    };
+    const background = getComputedStyle(el).backgroundColor;
+    return {
+      input: ratio(getComputedStyle(el).color, background),
+      suffix: ratio(getComputedStyle(suffix).color, background),
+    };
+  });
+  assert.ok(
+    contrast.input >= 4.5 && contrast.suffix >= 4.5,
+    `${testId} text and unit should retain readable contrast: ${JSON.stringify(contrast)}`,
+  );
+}
 try {
   for (const [fixture, tabs] of Object.entries(cases))
     for (const theme of ["light", "dark"])
@@ -242,9 +305,139 @@ try {
             i++
           )
             await page.keyboard.press("Escape");
+
+          await page.setViewportSize({ width: 1440, height: 900 });
+          await page.getByTestId("editor-ribbon-tab-layout").click();
+          await page.getByTestId("editor-toolbar-metrics-dropdown").click();
+          await assertUnit(page, "editor-toolbar-spacing-after", "pt");
+          await assertUnit(page, "editor-toolbar-indent-left", "cm");
+          await assertUnit(page, "editor-toolbar-indent-first-line", "cm");
+          await assertUnit(page, "editor-toolbar-indent-hanging", "cm");
+          const metricsScreenshot = `${theme}-${locale}-layout-paragraph-metrics-units.png`;
+          await page
+            .locator(
+              ".oasis-editor-portal-theme .oasis-editor-toolbar-panel:visible",
+            )
+            .last()
+            .screenshot({ path: resolve(output, metricsScreenshot) });
+          unitEvidence.push({
+            sha,
+            dirty,
+            browser: engine,
+            fixture,
+            theme,
+            locale,
+            tab: "layout",
+            requestedWidth: 1440,
+            viewportHeight: 900,
+            dpr: 1,
+            scenario: "layout/paragraph-metrics-units",
+            screenshot: metricsScreenshot,
+          });
+          const unitSelection = await page.evaluate(() =>
+            window.ribbonReference.client.selection.get(),
+          );
+          const unitDocument = await page.evaluate(() =>
+            JSON.stringify(window.ribbonReference.client.document.get()),
+          );
+
+          const initialSpacing = await page.evaluate(
+            () =>
+              window.ribbonReference.client.commands.state("setSpacingAfter")
+                .value,
+          );
+          await page.getByTestId("editor-toolbar-spacing-after").fill("12");
+          await page.waitForFunction(
+            () =>
+              Number(
+                window.ribbonReference.client.commands.state("setSpacingAfter")
+                  .value,
+              ) === 16,
+          );
+          await page.evaluate(() =>
+            window.ribbonReference.client.history.undo(),
+          );
+          await page.waitForFunction(
+            (value) =>
+              window.ribbonReference.client.commands.state("setSpacingAfter")
+                .value === value,
+            initialSpacing,
+          );
+
+          await page.keyboard.press("Escape");
+          await page.getByTestId("editor-toolbar-metrics-dropdown").click();
+          const initialIndent = await page.evaluate(
+            () =>
+              window.ribbonReference.client.commands.state("setIndentLeft")
+                .value,
+          );
+          await page.getByTestId("editor-toolbar-indent-left").fill("2.54");
+          await page.waitForFunction(
+            () =>
+              Number(
+                window.ribbonReference.client.commands.state("setIndentLeft")
+                  .value,
+              ) === 96,
+          );
+          await page.evaluate(() =>
+            window.ribbonReference.client.history.undo(),
+          );
+          await page.waitForFunction(
+            (value) =>
+              window.ribbonReference.client.commands.state("setIndentLeft")
+                .value === value,
+            initialIndent,
+          );
+          assert.equal(
+            await page.evaluate(() =>
+              JSON.stringify(window.ribbonReference.client.document.get()),
+            ),
+            unitDocument,
+            "Unit conversion edit and undo should restore the exact document",
+          );
+          assert.deepEqual(
+            await page.evaluate(() =>
+              window.ribbonReference.client.selection.get(),
+            ),
+            unitSelection,
+            "Unit conversion edit and undo should retain the selection",
+          );
+
+          await page.keyboard.press("Escape");
+          await page.getByTestId("editor-toolbar-margins-dropdown").click();
+          await page.getByTestId("editor-toolbar-margins-custom").click();
+          for (const side of ["top", "bottom", "left", "right"])
+            await assertUnit(page, `editor-toolbar-margin-${side}`, "cm");
+          const marginsScreenshot = `${theme}-${locale}-layout-custom-margins-units.png`;
+          await page
+            .locator(
+              ".oasis-editor-portal-theme .oasis-editor-margins-panel:visible",
+            )
+            .last()
+            .screenshot({ path: resolve(output, marginsScreenshot) });
+          unitEvidence.push({
+            sha,
+            dirty,
+            browser: engine,
+            fixture,
+            theme,
+            locale,
+            tab: "layout",
+            requestedWidth: 1440,
+            viewportHeight: 900,
+            dpr: 1,
+            scenario: "layout/custom-margins-units",
+            screenshot: marginsScreenshot,
+          });
         }
         // Context removal must close contextual surfaces without leaving empty groups.
         if (["image", "table"].includes(fixture)) {
+          if (fixture === "image") {
+            await page.setViewportSize({ width: 1440, height: 900 });
+            await page.getByTestId("editor-ribbon-tab-imageFormat").click();
+            await assertUnit(page, "editor-toolbar-image-height", "cm");
+            await assertUnit(page, "editor-toolbar-image-width", "cm");
+          }
           await page
             .getByTestId(
               `editor-ribbon-tab-${fixture === "image" ? "imageFormat" : "tableLayout"}`,
@@ -306,13 +499,18 @@ try {
   await writeFile(
     resolve(output, "verification.json"),
     JSON.stringify(
-      { browser: engine, hashes: Object.fromEntries(hashes), records },
+      {
+        browser: engine,
+        hashes: Object.fromEntries(hashes),
+        records,
+        unitEvidence,
+      },
       null,
       2,
     ) + "\n",
   );
   console.log(
-    `Verified ${records.length} contextual layouts in ${engine}; seven deterministic fixtures, selection/context removal and actual widths.`,
+    `Verified ${records.length} contextual layouts and ${unitEvidence.length} unit screenshots in ${engine}; seven deterministic fixtures, selection/context removal and actual widths.`,
   );
 } finally {
   await browser.close();

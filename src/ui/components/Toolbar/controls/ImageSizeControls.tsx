@@ -41,6 +41,7 @@ export function ImageSizeField(props: {
         labelClass="oasis-editor-tool-metric-label"
         title={t(labelKey)}
         label={t(labelKey)}
+        suffix="cm"
         controlClass="oasis-editor-tool-number"
         data-testid={`editor-toolbar-image-${props.dimension}`}
         min="0.1"

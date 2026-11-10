@@ -4,12 +4,35 @@ import { useI18n } from "@/i18n/I18nContext.js";
 import { Menu } from "@/ui/components/Toolbar/primitives/Menu.js";
 import { NumberField } from "@/ui/public/NumberField.js";
 import { TextField } from "@/ui/public/TextField.js";
+import { pxToPt, ptToPx } from "@/export/pdf/units.js";
+import { cmToPx, pxToCm } from "@/ui/components/Toolbar/marginPresets.js";
+import { roundTo } from "@/utils/round.js";
 
 import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 
 const numValue = (api: ToolbarActionApi, command: string): string => {
   const value = api.commands.state(command).value;
   return value == null ? "" : String(value);
+};
+
+const numericValue = (
+  api: ToolbarActionApi,
+  command: string,
+): number | undefined => {
+  const value = api.commands.state(command).value;
+  if (value == null || value === "") return undefined;
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const ptValue = (api: ToolbarActionApi, command: string): string => {
+  const value = numericValue(api, command);
+  return value === undefined ? "" : String(roundTo(pxToPt(value), 2));
+};
+
+const cmValue = (api: ToolbarActionApi, command: string): string => {
+  const value = numericValue(api, command);
+  return value === undefined ? "" : String(pxToCm(value));
 };
 
 /** Paragraph metrics panel (spacing, indents, shading, borders) — command-driven. */
@@ -49,15 +72,16 @@ export function MetricGroup(props: { api: ToolbarActionApi }): JSX.Element {
           labelClass="oasis-editor-tool-metric-label"
           title={t("metric.spacingAfter")}
           label={t("metric.after")}
+          suffix="pt"
           controlClass="oasis-editor-tool-number"
           data-testid="editor-toolbar-spacing-after"
           min="0"
           step="1"
-          value={numValue(api, "setSpacingAfter")}
+          value={ptValue(api, "setSpacingAfter")}
           onChange={(value) =>
             api.commands.execute(
               "setSpacingAfter",
-              value == null ? "" : String(value),
+              value == null ? null : ptToPx(value),
             )
           }
         />
@@ -67,15 +91,16 @@ export function MetricGroup(props: { api: ToolbarActionApi }): JSX.Element {
           labelClass="oasis-editor-tool-metric-label"
           title={t("metric.leftIndent")}
           label={t("metric.indent")}
+          suffix="cm"
           controlClass="oasis-editor-tool-number"
           data-testid="editor-toolbar-indent-left"
           min="0"
-          step="1"
-          value={numValue(api, "setIndentLeft")}
+          step="0.1"
+          value={cmValue(api, "setIndentLeft")}
           onChange={(value) =>
             api.commands.execute(
               "setIndentLeft",
-              value == null ? "" : String(value),
+              value == null ? null : cmToPx(value),
             )
           }
         />
@@ -85,14 +110,15 @@ export function MetricGroup(props: { api: ToolbarActionApi }): JSX.Element {
           labelClass="oasis-editor-tool-metric-label"
           title={t("metric.firstLineIndent")}
           label={t("metric.first")}
+          suffix="cm"
           controlClass="oasis-editor-tool-number"
           data-testid="editor-toolbar-indent-first-line"
-          step="1"
-          value={numValue(api, "setIndentFirstLine")}
+          step="0.1"
+          value={cmValue(api, "setIndentFirstLine")}
           onChange={(value) =>
             api.commands.execute(
               "setIndentFirstLine",
-              value == null ? "" : String(value),
+              value == null ? null : cmToPx(value),
             )
           }
         />
@@ -102,15 +128,16 @@ export function MetricGroup(props: { api: ToolbarActionApi }): JSX.Element {
           labelClass="oasis-editor-tool-metric-label"
           title={t("metric.hangingIndent")}
           label={t("metric.hang")}
+          suffix="cm"
           controlClass="oasis-editor-tool-number"
           data-testid="editor-toolbar-indent-hanging"
           min="0"
-          step="1"
-          value={numValue(api, "setIndentHanging")}
+          step="0.1"
+          value={cmValue(api, "setIndentHanging")}
           onChange={(value) =>
             api.commands.execute(
               "setIndentHanging",
-              value == null ? "" : String(value),
+              value == null ? null : cmToPx(value),
             )
           }
         />

@@ -806,14 +806,21 @@
   min-width: 60px;
 }
 
-.oasis-editor-tool-metric {
+.oasis-editor-ui-field.oasis-editor-tool-metric {
   display: grid;
-  grid-template-columns: minmax(58px, 1fr) minmax(64px, 88px);
+  grid-template-columns: minmax(58px, 1fr) minmax(64px, 88px) auto;
   align-items: center;
   gap: 4px;
   font-size: 11px;
   color: var(--oasis-text-muted);
   padding: 0;
+}
+
+.oasis-editor-ui-field-suffix {
+  align-self: center;
+  color: var(--oasis-text-muted);
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .oasis-editor-tool-number {
@@ -824,6 +831,14 @@
   border-radius: 4px;
   padding: 0 4px;
   font-size: 12px;
+}
+
+.oasis-editor-toolbar-view-ribbon .oasis-editor-tool-number,
+.oasis-editor-toolbar-panel .oasis-editor-tool-number {
+  min-height: 28px;
+  color: var(--oasis-ribbon-text, var(--oasis-text));
+  background: var(--oasis-ribbon-panel-bg, var(--oasis-paper));
+  border-color: var(--oasis-toolbar-border);
 }
 
 .oasis-editor-tool-color {
@@ -857,8 +872,8 @@
   height: 16px;
 }
 
-.oasis-editor-image-size-metric {
-  grid-template-columns: minmax(40px, auto) minmax(58px, 76px);
+.oasis-editor-ui-field.oasis-editor-image-size-metric {
+  grid-template-columns: minmax(40px, auto) minmax(58px, 76px) auto;
 }
 
 /* Word-style Cortar menu and nested shape/ratio flyouts. */
@@ -2294,12 +2309,23 @@
 
 .oasis-editor-margins-custom-field input {
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   padding: 4px 6px;
   border: 1px solid var(--oasis-toolbar-border);
   border-radius: 4px;
-  background: var(--oasis-surface);
-  color: var(--oasis-text);
+  background: var(--oasis-ribbon-panel-bg, var(--oasis-paper));
+  color: var(--oasis-ribbon-text, var(--oasis-text));
+}
+
+.oasis-editor-margins-custom-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.oasis-editor-margins-custom-control input {
+  flex: 1;
 }
 
 .oasis-editor-margins-custom-actions {

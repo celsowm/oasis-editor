@@ -7,6 +7,7 @@ export interface TextFieldProps extends Omit<
   label?: string;
   description?: string;
   error?: string;
+  suffix?: string;
   labelClass?: string;
   controlClass?: string;
   onChange?: (value: string) => void;
@@ -18,6 +19,7 @@ export function TextField(props: TextFieldProps): JSX.Element {
     "label",
     "description",
     "error",
+    "suffix",
     "labelClass",
     "controlClass",
     "onChange",
@@ -55,6 +57,9 @@ export function TextField(props: TextFieldProps): JSX.Element {
         }
         {...others}
       />
+      <Show when={local.suffix}>
+        <span class="oasis-editor-ui-field-suffix">{local.suffix}</span>
+      </Show>
       <Show when={local.description}>
         <span id={descriptionId()} class="oasis-editor-ui-field-description">
           {local.description}
