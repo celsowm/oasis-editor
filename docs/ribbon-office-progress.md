@@ -282,6 +282,19 @@ Evidence:
 
 Limits: this is source inventory and command-ID evidence only. The remaining 501 rows have no direct crosswalk row; equivalence, `core-only`/`menu-only`/UI-only/preservation-only/not-applicable status, semantics, and persistence require individual review. B01 and the full M0–M5 plan remain open.
 
+## Delivery 12 — popup captures at every planned Ribbon width
+
+Date: 2026-11-10. B02 remains **partial**.
+
+Expanded the synthetic Playwright reference captures to include each visible enabled button-driven menu, gallery, group expansion, and nested popup in the current text, table, image, section, and review scenarios. The sets cover actual content widths of 640, 800, 960, 1200, and 1440 px, both themes, and en/pt-BR. Across the retained manifests this produced 3,024 Ribbon scenes, 2,235 with an open popup, across 12 currently populated tabs including Table Design, Table Layout, and Picture Format. Nested popup paths reached depth three. The images crop to the Ribbon and complete visible popup; synthetic document pixels remain masked.
+
+Evidence:
+
+- `debug_artifacts/ribbon-popups-640/manifest.json`, `debug_artifacts/ribbon-popups-context-640/manifest.json`, `debug_artifacts/ribbon-popups-context-960-1200/manifest.json`, and `debug_artifacts/ribbon-popups-context-800-1440/manifest.json` record the screenshots and scenario metadata. These artifacts remain gitignored.
+- `scripts/capture-ribbon-reference.mjs` verified each measured width, popup bounds, unchanged document version and selection, no browser page errors, and no visible unresolved or empty SVGs. All four capture runs completed successfully.
+
+Limits: this covers the currently exposed browser menus, not native OS dialogs or unavailable tabs such as Draw and Shape Format. B02 still needs Safari/VoiceOver, touch, zoom, late-font, performance and comparison against direct Word captures. These captures do not close B01's unmapped WordCraft inventory.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
