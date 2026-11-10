@@ -191,6 +191,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     testId: "editor-toolbar-paste",
     iconName: "clipboard-paste",
     tooltipKey: "menu.edit.paste",
+    labelKey: "menu.edit.paste",
+    ribbonGroupLayout: "three-rows",
     command: "paste",
     ribbonSize: "large",
     menu: {
@@ -229,8 +231,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     testId: "editor-toolbar-format-painter",
     iconName: "paintbrush",
     tooltipKey: "toolbar.formatPainter",
+    labelKey: "toolbar.formatPainter",
     command: "formatPainter",
-    ribbonSize: "large",
     menu: {
       kind: "items",
       items: [
@@ -278,7 +280,6 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     labelKey: "menu.edit.copy",
     tooltipKey: "menu.edit.copy",
     command: "copy",
-    ribbonSize: "large",
   });
   items.push({
     type: "button",
