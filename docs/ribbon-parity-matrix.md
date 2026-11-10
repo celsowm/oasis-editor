@@ -27,14 +27,14 @@
 | `review.previousRevision` | — | `previousRevision` | `review/changes` | partial |
 | `review.nextRevision` | — | `nextRevision` | `review/changes` | partial |
 | `review.commentsPanel` | — | `toggleCommentsPanel` | `review/comments` | partial |
-| `review.newComment` | — | `newComment` | `review/comments` | partial |
+| `review.newComment` | `review.newComment` | `newComment` | `review/comments` | partial |
 | `review.replyComment` | — | `replyComment` | `review/comments` | partial |
 | `review.editComment` | — | `editComment` | `review/comments` | partial |
-| `review.previousComment` | — | `previousComment` | `review/comments` | partial |
-| `review.nextComment` | — | `nextComment` | `review/comments` | partial |
-| `review.resolveComment` | — | `resolveComment` | `review/comments` | partial |
+| `review.previousComment` | `review.previousComment` | `previousComment` | `review/comments` | partial |
+| `review.nextComment` | `review.nextComment` | `nextComment` | `review/comments` | partial |
+| `review.resolveComment` | `review.resolveComment` | `resolveComment` | `review/comments` | partial |
 | `review.reopenComment` | — | `reopenComment` | `review/comments` | partial |
-| `review.deleteComment` | — | `deleteComment` | `review/comments` | partial |
+| `review.deleteComment` | `review.deleteComment` | `deleteComment` | `review/comments` | partial |
 | `review.accept` | `review.accept` | `acceptRevisions` | `review/changes` | partial |
 | `review.reject` | `review.reject` | `rejectRevisions` | `review/changes` | partial |
 | `view.showMargins` | — | `toggleShowMargins` | `view/show` | partial |
@@ -68,11 +68,11 @@
 14. **review.previousRevision:** Cycles backward through text-run revisions in the active editing story. Pure selection navigation; structural/property revisions need separate navigation support.
 15. **review.nextRevision:** Cycles forward through tracked text-run changes without editing the document; selection is limited to the active section/zone.
 16. **review.commentsPanel:** An editor-scoped discussion drawer lists roots and nested replies, supports text search, open/resolved filters, navigation, moderation and confirmation before deletion. The Activity view shows undoable local comment events for creation, replies, edits, resolve/reopen and deletion; events are not exported to DOCX. Host IDs gate mutations. Visual parity remains partial.
-17. **review.newComment:** Creates an authored comment anchored to selected text or a caret word, through a per-editor modal. Uses native comment registry and is undoable; visual E2E and full DOCX import/export fidelity are pending.
+17. **review.newComment:** Creates an authored comment anchored to selected text or a caret word, through a per-editor modal. Uses native comment registry and is undoable; visual E2E and full DOCX import/export fidelity are pending. WordCraft also places this action on Insert; Oasis currently exposes it on Review only, so placement parity remains open.
 18. **review.replyComment:** Creates an unanchored threaded reply linked by parentId to the selected comment. DOCX commentsExtended XML parent relationship has unit coverage; cross-application round-trip remains unverified.
 19. **review.editComment:** Edits only the selected existing comment's text in a transactional modal; ID, author, creation time, anchors, resolved state and reply links are preserved. Popup actions support editing individual nested replies. DOCX export/reimport and read-only gating have tests; full visual WordCraft parity remains unverified.
 20. **review.previousComment:** Navigates to the prior anchored comment in the active story, skipping unanchored replies and wrapping.
-21. **review.nextComment:** Navigates to the next anchored comment without changing the document; WordCraft command id not audited.
+21. **review.nextComment:** Navigates to the next anchored comment without changing the document; Mapped to WordCraft `review.nextComment`; semantic and persistence parity remain unverified.
 22. **review.resolveComment:** Marks the comment under the selection as resolved, retaining the DOCX comment id, author, anchors and thread metadata. Needs round-trip E2E.
 23. **review.reopenComment:** Reopens a resolved comment under the selection. Enabled only when the selected comment is resolved.
 24. **review.deleteComment:** Removes an anchored comment and recursively removes replies to prevent orphan thread parent ids. Undo and DOCX source-package E2E remain to verify.

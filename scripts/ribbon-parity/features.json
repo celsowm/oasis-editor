@@ -170,13 +170,13 @@
     },
     {
       "id": "review.newComment",
-      "wordcraftCommand": null,
+      "wordcraftCommand": "review.newComment",
       "oasisCommand": "newComment",
       "ribbonId": "editor-toolbar-new-comment",
       "tab": "review",
       "group": "comments",
       "status": "partial",
-      "notes": "Creates an authored comment anchored to selected text or a caret word, through a per-editor modal. Uses native comment registry and is undoable; visual E2E and full DOCX import/export fidelity are pending."
+      "notes": "Creates an authored comment anchored to selected text or a caret word, through a per-editor modal. Uses native comment registry and is undoable; visual E2E and full DOCX import/export fidelity are pending. WordCraft also places this action on Insert; Oasis currently exposes it on Review only, so placement parity remains open."
     },
     {
       "id": "review.replyComment",
@@ -200,7 +200,7 @@
     },
     {
       "id": "review.previousComment",
-      "wordcraftCommand": null,
+      "wordcraftCommand": "review.previousComment",
       "oasisCommand": "previousComment",
       "ribbonId": "editor-toolbar-previous-comment",
       "tab": "review",
@@ -210,17 +210,17 @@
     },
     {
       "id": "review.nextComment",
-      "wordcraftCommand": null,
+      "wordcraftCommand": "review.nextComment",
       "oasisCommand": "nextComment",
       "ribbonId": "editor-toolbar-next-comment",
       "tab": "review",
       "group": "comments",
       "status": "partial",
-      "notes": "Navigates to the next anchored comment without changing the document; WordCraft command id not audited."
+      "notes": "Navigates to the next anchored comment without changing the document; Mapped to WordCraft `review.nextComment`; semantic and persistence parity remain unverified."
     },
     {
       "id": "review.resolveComment",
-      "wordcraftCommand": null,
+      "wordcraftCommand": "review.resolveComment",
       "oasisCommand": "resolveComment",
       "ribbonId": "editor-toolbar-resolve-comment",
       "tab": "review",
@@ -240,7 +240,7 @@
     },
     {
       "id": "review.deleteComment",
-      "wordcraftCommand": null,
+      "wordcraftCommand": "review.deleteComment",
       "oasisCommand": "deleteComment",
       "ribbonId": "editor-toolbar-delete-comment",
       "tab": "review",

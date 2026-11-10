@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 20
+    "linkedRows": 26
   },
   "defaultTabs": [
     "File",
@@ -1629,7 +1629,9 @@
       "group": "Comments",
       "name": "Comment",
       "command": "review.newComment",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.newComment"
+      ]
     },
     {
       "index": 160,
@@ -2805,7 +2807,9 @@
       "group": "Comments",
       "name": "New Comment",
       "command": "review.newComment",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.newComment"
+      ]
     },
     {
       "index": 289,
@@ -2814,7 +2818,9 @@
       "group": "Comments",
       "name": "Delete",
       "command": "review.deleteComment",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.deleteComment"
+      ]
     },
     {
       "index": 290,
@@ -2823,7 +2829,9 @@
       "group": "Comments",
       "name": "Previous",
       "command": "review.previousComment",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.previousComment"
+      ]
     },
     {
       "index": 291,
@@ -2832,7 +2840,9 @@
       "group": "Comments",
       "name": "Next",
       "command": "review.nextComment",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.nextComment"
+      ]
     },
     {
       "index": 292,
@@ -2850,7 +2860,9 @@
       "group": "Comments",
       "name": "Resolve",
       "command": "review.resolveComment",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.resolveComment"
+      ]
     },
     {
       "index": 294,
