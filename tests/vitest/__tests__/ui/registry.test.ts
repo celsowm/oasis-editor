@@ -160,7 +160,7 @@ describe("UI registries", () => {
     for (const item of items) {
       expect(knownTabs.has(item.tab ?? "")).toBe(true);
       expect(item.group).toBeTruthy();
-      expect([1, 2]).toContain(item.row);
+      expect([1, 2, 3]).toContain(item.row);
     }
 
     expect(
@@ -374,7 +374,7 @@ describe("UI registries", () => {
     ]);
   });
 
-  it("shrinks ribbon groups from right to left within each resize round", () => {
+  it("honors explicit priorities before right-to-left order within each resize round", () => {
     const groups = buildRibbonGroups(
       [
         {
@@ -416,8 +416,8 @@ describe("UI registries", () => {
     });
 
     expect(resolved.map((group) => [group.id, group.resizeState])).toEqual([
-      ["font", "full"],
-      ["paragraph", "compact"],
+      ["font", "compact"],
+      ["paragraph", "full"],
     ]);
   });
 

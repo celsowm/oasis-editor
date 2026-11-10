@@ -66,6 +66,7 @@ const TAB_LABEL_KEYS: Record<RibbonTabId, TranslationKey> = {
 
 const GROUP_LABEL_KEYS: Record<string, TranslationKey> = {
   clipboard: "ribbon.group.clipboard",
+  history: "ribbon.group.history",
   editing: "ribbon.group.editing",
   pages: "ribbon.group.pages",
   tableOfContents: "ribbon.group.tableOfContents",
@@ -145,6 +146,7 @@ const RIBBON_GROUP_ORDER: Partial<Record<RibbonTabId, Record<string, number>>> =
       document: 10,
     },
     home: {
+      history: 5,
       clipboard: 10,
       font: 20,
       paragraph: 30,
@@ -232,18 +234,25 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
       collapsedIcon: "palette",
     },
     paragraph: {
-      priority: 15,
+      priority: 90,
       states: ["full", "collapsed"],
       collapsedMinWidth: 74,
       collapsedIcon: "pilcrow",
     },
     clipboard: {
-      priority: 20,
-      states: ["full", "collapsed"],
+      priority: 30,
+      states: ["full", "compact", "collapsed"],
+      compactLabels: "hide",
       collapsedIcon: "clipboard",
     },
+    editing: {
+      priority: 20,
+      compactLabels: "hide",
+      collapsedIcon: "search",
+    },
+    history: { states: ["full"], collapsedIcon: "undo" },
     font: {
-      priority: 30,
+      priority: 80,
       states: ["full", "collapsed"],
       collapsedMinWidth: 74,
       collapsedIcon: "type",
@@ -358,10 +367,9 @@ function normalizeResizeStates(
   states: RibbonGroupResizePolicy["states"],
 ): RibbonGroupResizeState[] {
   const source = states?.length ? states : DEFAULT_RESIZE_STATES;
-  const unique = source.filter(
-    (state, index): boolean => source.indexOf(state) === index,
+  return DEFAULT_RESIZE_STATES.filter(
+    (state) => state === "full" || source.includes(state),
   );
-  return unique.includes("full") ? unique : ["full", ...unique];
 }
 
 function mergeRibbonGroupResizePolicy(
@@ -521,228 +529,122 @@ function estimatedRibbonGroupWidths(group: RibbonGroupModel): RibbonGroupWidth {
   };
 }
 
-function widthForState(
-  state: RibbonGroupResizeState,
-  widths: RibbonGroupWidth,
-): number {
-  return widths[state];
-}
-
-function widthForResolvedState(
-  group: RibbonGroupModel,
-  state: RibbonGroupResizeState,
-  widths: RibbonGroupWidth,
-  allocatedWidths: Map<string, number>,
-): number {
-  return state === "compact"
-    ? (allocatedWidths.get(group.id) ?? widths.compact)
-    : widthForState(state, widths);
-}
-
-function snapCompactWidthToWholeItems(
-  group: RibbonGroupModel,
-  desiredWidth: number,
-  minWidth: number,
-  maxWidth: number,
-): number {
-  if (group.id !== "styles") {
-    return Math.min(maxWidth, Math.max(minWidth, desiredWidth));
-  }
-  const chromeWidth = STYLE_GALLERY_EXPAND_WIDTH + STYLE_GALLERY_BORDER_WIDTH;
-  if (maxWidth < STYLE_GALLERY_CARD_WIDTH + chromeWidth) {
-    return Math.min(maxWidth, Math.max(minWidth, desiredWidth));
-  }
-  const cardSlots = Math.max(
-    1,
-    Math.floor((desiredWidth - chromeWidth) / STYLE_GALLERY_CARD_WIDTH),
-  );
-  const snapped = cardSlots * STYLE_GALLERY_CARD_WIDTH + chromeWidth;
-  return Math.min(maxWidth, Math.max(minWidth, snapped));
-}
-
+/**
+ * Resolve from a fixed reduction ladder. There is no history-dependent repair
+ * pass: reducing the budget cannot restore a group by collapsing a neighbour.
+ * Compact states precede collapse; explicit priority then right-to-left order
+ * determines each step. Measured widths include the group's own chrome.
+ */
 export function resolveResponsiveRibbonGroups(
   groups: RibbonGroupModel[],
   availableWidth: number | null,
   measurements: Partial<Record<string, Partial<RibbonGroupWidth>>> = {},
 ): ResolvedRibbonGroupModel[] {
-  const states = new Map<string, RibbonGroupResizeState>();
   const widths = new Map<string, RibbonGroupWidth>();
-  const allocatedWidths = new Map<string, number>();
-
+  const states = new Map<string, RibbonGroupResizeState>();
   for (const group of groups) {
-    const estimated = estimatedRibbonGroupWidths(group);
+    const estimate = estimatedRibbonGroupWidths(group);
     const measured = measurements[group.id] ?? {};
-    const full = Math.max(
-      estimated.full,
-      Math.ceil(measured.full ?? estimated.full),
-    );
+    const validWidth = (value: number | undefined, fallback: number): number =>
+      value !== undefined && Number.isFinite(value) && value > 0
+        ? Math.ceil(value)
+        : fallback;
+    const full = validWidth(measured.full, estimate.full);
     widths.set(group.id, {
       full,
+      compactChrome: measured.compactChrome ?? 11,
       compact: Math.min(
         full,
-        Math.max(
-          group.resizePolicy.compactMinWidth,
-          Math.ceil(measured.compact ?? estimated.compact),
+        validWidth(
+          measured.compact,
+          Math.max(group.resizePolicy.compactMinWidth, estimate.compact),
         ),
       ),
-      collapsed: Math.min(
-        full,
-        Math.max(
-          group.resizePolicy.collapsedMinWidth,
-          Math.ceil(measured.collapsed ?? estimated.collapsed),
-        ),
+      collapsed: validWidth(
+        measured.collapsed,
+        group.resizePolicy.collapsedMinWidth,
       ),
     });
     states.set(group.id, "full");
   }
-
-  if (availableWidth !== null && Number.isFinite(availableWidth)) {
-    let currentWidth = groups.reduce(
-      (sum, group): number =>
-        sum + widthForState("full", widths.get(group.id)!),
-      0,
-    );
-    const targetWidth = Math.max(0, availableWidth);
-
-    while (currentWidth > targetWidth) {
-      const candidates = groups
-        .map((group) => {
-          const groupStates = group.resizePolicy.states;
-          const currentState = states.get(group.id) ?? "full";
-          const currentIndex = groupStates.indexOf(currentState);
-          const nextState =
-            currentIndex >= 0 ? groupStates[currentIndex + 1] : undefined;
-          if (!nextState) return null;
-          const groupWidths = widths.get(group.id)!;
-          const currentWidth = widthForResolvedState(
-            group,
-            currentState,
-            groupWidths,
-            allocatedWidths,
-          );
-          const saving = currentWidth - widthForState(nextState, groupWidths);
-          return saving > 0
-            ? { group, nextState, saving, currentState, currentIndex }
-            : null;
-        })
-        .filter((candidate): candidate is NonNullable<typeof candidate> =>
-          Boolean(candidate),
-        )
-        .sort(
-          (a, b): number =>
-            a.currentIndex - b.currentIndex ||
-            b.group.order - a.group.order ||
-            a.group.resizePolicy.priority - b.group.resizePolicy.priority ||
-            b.saving - a.saving,
-        );
-
-      const next = candidates[0];
-      if (!next) break;
-      const groupWidths = widths.get(next.group.id)!;
-      const currentStateWidth = widthForResolvedState(
-        next.group,
-        next.currentState,
-        groupWidths,
-        allocatedWidths,
+  const budget =
+    availableWidth !== null && Number.isFinite(availableWidth)
+      ? Math.max(0, availableWidth)
+      : Number.POSITIVE_INFINITY;
+  let total = groups.reduce(
+    (sum, group) => sum + widths.get(group.id)!.full,
+    0,
+  );
+  while (total > budget) {
+    const candidates = groups
+      .flatMap((group) => {
+        const current = states.get(group.id)!;
+        const legal = group.resizePolicy.states;
+        const currentWidth = widths.get(group.id)![current];
+        // Skip states that do not save space; a compact layout can legitimately
+        // be the same width as full while its collapsed trigger is much smaller.
+        const next = legal
+          .slice(legal.indexOf(current) + 1)
+          .find((state) => widths.get(group.id)![state] < currentWidth);
+        return next
+          ? [
+              {
+                group,
+                next,
+                saving: currentWidth - widths.get(group.id)![next],
+              },
+            ]
+          : [];
+      })
+      .sort(
+        (a, b) =>
+          Number(a.next === "collapsed") - Number(b.next === "collapsed") ||
+          a.group.resizePolicy.priority - b.group.resizePolicy.priority ||
+          b.group.order - a.group.order ||
+          a.group.id.localeCompare(b.group.id),
       );
-      // Demote to the state's own minimum. Sizing a compact group to "just
-      // enough to close the deficit" here would make its width depend on the
-      // order groups happen to be visited, which is what let the style gallery
-      // end up wider at 960px than at 1200px. Every width above the minimum is
-      // handed out once, below, from a single leftover budget.
-      const nextStateWidth = widthForState(next.nextState, groupWidths);
-      const actualSaving = currentStateWidth - nextStateWidth;
-      states.set(next.group.id, next.nextState);
-      if (next.nextState === "compact") {
-        allocatedWidths.set(next.group.id, nextStateWidth);
-      } else {
-        allocatedWidths.delete(next.group.id);
-      }
-      currentWidth -= actualSaving;
-    }
-
-    let slack = targetWidth - currentWidth;
-
-    // The loop above pays for a demotion in full, so it overshoots whenever the
-    // step frees more than was missing: a group collapses to an icon to recover
-    // 165px when 20px would have done. Walk back up, most-recently-demoted
-    // first, restoring any state the leftover covers. Without this a group's
-    // collapse leaves a pile of slack behind, and handing that pile to the
-    // style gallery is what made a narrower ribbon show more cards.
-    let promoted = true;
-    while (promoted && slack > 0) {
-      promoted = false;
-      for (const group of [...groups].sort(
-        (a, b): number =>
-          b.resizePolicy.priority - a.resizePolicy.priority ||
-          a.order - b.order,
-      )) {
-        const groupStates = group.resizePolicy.states;
-        const state = states.get(group.id) ?? "full";
-        const index = groupStates.indexOf(state);
-        const previous = index > 0 ? groupStates[index - 1] : undefined;
-        if (!previous) continue;
-        const groupWidths = widths.get(group.id)!;
-        const cost =
-          widthForState(previous, groupWidths) -
-          widthForResolvedState(group, state, groupWidths, allocatedWidths);
-        if (cost <= 0 || cost > slack) continue;
-        states.set(group.id, previous);
-        if (previous === "compact") {
-          allocatedWidths.set(group.id, groupWidths.compact);
-        } else {
-          allocatedWidths.delete(group.id);
-        }
-        slack -= cost;
-        promoted = true;
-      }
-    }
-
-    if (slack > 0) {
-      const totalFullWidth = groups.reduce(
-        (sum, group): number => sum + widths.get(group.id)!.full,
-        0,
-      );
-      for (const group of groups
-        .filter((candidate): boolean => states.get(candidate.id) === "compact")
-        .sort(
-          (a, b): number =>
-            b.order - a.order ||
-            a.resizePolicy.priority - b.resizePolicy.priority,
-        )) {
-        const groupWidths = widths.get(group.id)!;
-        const current = allocatedWidths.get(group.id) ?? groupWidths.compact;
-        // A compact group may only claim the room left over once every other
-        // group is at its full width. Slack freed by *collapsing* a neighbour
-        // is not spendable here: letting it through meant collapsing the
-        // paragraph group bought the style gallery a card, so shrinking the
-        // window from 960px to 880px showed one more style, not one fewer.
-        const ceiling = Math.min(
-          groupWidths.full,
-          targetWidth - (totalFullWidth - groupWidths.full),
-        );
-        if (ceiling <= current) continue;
-        // Grow from what the group already has, not from its minimum: the
-        // difference was already spent out of `currentWidth`, and counting it
-        // twice let the panel allocate more than it has.
-        const allocated = snapCompactWidthToWholeItems(
-          group,
-          Math.min(current + slack, ceiling),
-          current,
-          ceiling,
-        );
-        const consumed = allocated - current;
-        if (consumed <= 0) continue;
-        allocatedWidths.set(group.id, allocated);
-        slack -= consumed;
-        if (slack <= 0) break;
-      }
-    }
+    const reduction = candidates[0];
+    if (!reduction) break;
+    states.set(reduction.group.id, reduction.next);
+    total -= reduction.saving;
   }
-
-  return groups.map((group) => ({
-    ...group,
-    resizeState: states.get(group.id) ?? "full",
-    allocatedWidth: allocatedWidths.get(group.id),
-  }));
+  const totalFull = groups.reduce(
+    (sum, group) => sum + widths.get(group.id)!.full,
+    0,
+  );
+  return groups.map((group) => {
+    const state = states.get(group.id)!;
+    const measured = widths.get(group.id)!;
+    let allocated = measured[state];
+    if (
+      state === "compact" &&
+      group.largeItems.some((item) => item.type === "styleGallery")
+    ) {
+      // Grow whole cards only out of room available with every other group
+      // full. Collapsing a neighbour must never buy the gallery extra cards.
+      const ceiling = Math.min(
+        measured.full,
+        budget - (totalFull - measured.full),
+      );
+      const chrome =
+        STYLE_GALLERY_EXPAND_WIDTH +
+        STYLE_GALLERY_BORDER_WIDTH +
+        (measured.compactChrome ?? 11);
+      const wholeCards = Math.floor(
+        (ceiling - chrome) / STYLE_GALLERY_CARD_WIDTH,
+      );
+      if (wholeCards > 0)
+        allocated = Math.max(
+          allocated,
+          Math.min(ceiling, wholeCards * STYLE_GALLERY_CARD_WIDTH + chrome),
+        );
+    }
+    return {
+      ...group,
+      resizeState: state,
+      allocatedWidth: state === "compact" ? allocated : undefined,
+      measuredWidth: allocated,
+      compactChrome: measured.compactChrome,
+    };
+  });
 }

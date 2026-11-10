@@ -125,17 +125,20 @@ function RenderSplit(props: RendererProps<SplitItem>): JSX.Element {
       }
       panelClass={props.item.panelClass ?? "oasis-editor-color-menu"}
       panelRole="menu"
+      mainLabel={resolveLabel(props.item, props.api)}
       mainContent={
         props.item.iconName ? <ToolIcon name={props.item.iconName} /> : <></>
       }
     >
-      <div onClick={(event): void => {
-        const target = event.target as HTMLElement;
-        const button = target.closest("button");
-        if (button && button.getAttribute("aria-haspopup") !== "menu") {
-          setOpen(false);
-        }
-      }}>
+      <div
+        onClick={(event): void => {
+          const target = event.target as HTMLElement;
+          const button = target.closest("button");
+          if (button && !button.hasAttribute("aria-haspopup")) {
+            setOpen(false);
+          }
+        }}
+      >
         {renderMenuContent(props.item.menu, props.api)}
       </div>
     </SplitButton>

@@ -492,6 +492,9 @@ export const en = {
   "ribbon.tab.ai": "AI",
 
   // Ribbon groups
+  "ribbon.scrollPrevious": "Scroll ribbon left",
+  "ribbon.scrollNext": "Scroll ribbon right",
+  "ribbon.group.history": "History",
   "ribbon.group.clipboard": "Clipboard",
   "ribbon.group.editing": "Editing",
   "ribbon.group.pages": "Pages",

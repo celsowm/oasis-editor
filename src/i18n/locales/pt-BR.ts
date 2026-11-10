@@ -497,6 +497,9 @@ export const ptBR = {
   "ribbon.tab.ai": "IA",
 
   // Ribbon groups
+  "ribbon.scrollPrevious": "Rolar faixa de opções para a esquerda",
+  "ribbon.scrollNext": "Rolar faixa de opções para a direita",
+  "ribbon.group.history": "Histórico",
   "ribbon.group.clipboard": "Área de Transferência",
   "ribbon.group.editing": "Edição",
   "ribbon.group.pages": "Páginas",

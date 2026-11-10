@@ -1,4 +1,4 @@
-import { type JSX } from "solid-js";
+import { Show, type JSX } from "solid-js";
 import { Popover } from "./Popover.js";
 import { DropdownChevron } from "./DropdownChevron.js";
 
@@ -13,6 +13,7 @@ export interface SplitButtonProps {
   ribbonSize?: "normal" | "large";
   /** Main (left) button. */
   mainContent: JSX.Element;
+  mainLabel?: string;
   mainTestId?: string;
   mainAriaLabel?: string;
   mainPressed?: boolean;
@@ -62,6 +63,11 @@ export function SplitButton(props: SplitButtonProps): JSX.Element {
             onClick={(): void => props.onMain()}
           >
             {props.mainContent}
+            <Show when={props.mainLabel}>
+              <span class="oasis-editor-color-split-label">
+                {props.mainLabel}
+              </span>
+            </Show>
           </button>
           <button
             type="button"
