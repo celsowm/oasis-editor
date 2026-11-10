@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 103
+    "linkedRows": 105
   },
   "defaultTabs": [
     "File",
@@ -1142,7 +1142,10 @@
       "group": "Paragraph",
       "name": "Shading",
       "command": "para.shading",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.paragraphTextShading",
+        "layout.paragraphShading"
+      ]
     },
     {
       "index": 97,
@@ -1151,7 +1154,10 @@
       "group": "Paragraph",
       "name": "Borders",
       "command": "para.borders",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.paragraphBorders",
+        "context.paragraphBordersDialog"
+      ]
     },
     {
       "index": 98,

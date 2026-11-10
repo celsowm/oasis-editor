@@ -2,8 +2,8 @@
 
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
-**Scope:** 77-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `108` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `112` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -119,6 +119,10 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `insert.editFooter` | `insert.editFooter` | `editFooter` | `insert/headerFooter` | partial | partial | partial | partial |
 | `editing.lineBreak` | `text.lineBreak` | `lineBreak` | — | core-only | core-only | partial | partial |
 | `editing.columnBreak` | `text.columnBreak` | `columnBreak` | — | core-only | core-only | partial | partial |
+| `home.paragraphTextShading` | `para.shading` | `setTextShading` | `home/font` | partial | partial | partial | unverified |
+| `layout.paragraphShading` | `para.shading` | `setParagraphShading` | Layout > Paragraph metrics dropdown > Paragraph shading | menu-only | menu-only | partial | unverified |
+| `layout.paragraphBorders` | `para.borders` | `applyParagraphBorders` | Layout > Paragraph metrics dropdown > Apply borders to paragraph | menu-only | menu-only | partial | unverified |
+| `context.paragraphBordersDialog` | `para.borders` | — | Context menu > Paragraph dialog > Borders and shading | ui-only | ui-only | partial | unverified |
 
 ## Open verification questions
 
@@ -230,6 +234,10 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 106. **insert.editFooter:** Oasis exposes Edit Footer from the Insert > Header & Footer menu. WordCraft also places it on its contextual Header & Footer tab; variant editing, selection/focus behavior and DOCX story round-trip need verification.
 107. **editing.lineBreak:** Oasis registers a hard-line-break command but no default Ribbon/menubar control or shortcut was found. Selection/caret behavior, undo and DOCX break round-trip need verification.
 108. **editing.columnBreak:** Oasis registers a hard-column-break command but no default Ribbon/menubar control or shortcut was found. Column layout, selection/caret behavior, undo and DOCX break round-trip need verification.
+109. **home.paragraphTextShading:** WordCraft para.shading shades selected text when the selection is within one paragraph; Oasis exposes character shading in Home > Font. This covers that scope of the context-sensitive command, while paragraph scope is tracked separately. Mixed ranges, clear behavior, undo and DOCX interoperability need workflow verification.
+110. **layout.paragraphShading:** WordCraft para.shading applies paragraph shading at a caret or when explicitly requested; Oasis exposes a paragraph-color field in the Layout metrics dropdown and also a field in the Paragraph dialog. The control does not provide WordCraft's combined text/paragraph scope or palette workflow; mixed selections, clearing, undo and DOCX interoperability need verification.
+111. **layout.paragraphBorders:** The Oasis quick action applies a 1 pt solid black border on all four paragraph sides. WordCraft para.borders offers individual sides, presets, styles, widths and colors, so this is only a related task; per-side formatting is available separately in the Paragraph dialog. Selection scope, undo and DOCX/PDF output need verification.
+112. **context.paragraphBordersDialog:** The Paragraph dialog commits configurable sides, one shared style, width and color through a dialog transaction, with no shared Oasis command for the full payload. WordCraft also supports independent per-side styles, between borders and more styles; undo grouping and DOCX/PDF behavior need workflow verification.
 
 ## Audit interpretation
 

@@ -492,6 +492,16 @@ The matrix now contains 108 Oasis capability rows and links 103 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` verifies all direct Ribbon mappings, command registrations, source IDs and the 103 linked-row count. Statuses for file output, history transaction grouping, contextual story editing, keyboard behavior and DOCX/PDF fidelity remain partial or unverified pending workflow tests.
 
+## Delivery 30 — Paragraph shading and borders crosswalk
+
+Date: 2026-11-10. B01 remains **partial**.
+
+Reviewed the pinned WordCraft `para.shading` and `para.borders` contracts against Oasis. The source shading command switches between character and paragraph scope; the crosswalk now records the Home text-shading control and Layout paragraph-shading field separately. Borders now record both the Layout quick action, which applies a fixed four-sided border, and the Paragraph dialog, which exposes configurable sides/style/width/color without a shared command for WordCraft's full payload.
+
+The matrix now contains 112 Oasis capability rows and links 105 of 521 WordCraft source rows; 416 remain unlinked. These are related/partial task mappings: the two products differ in shading scope and border presets, per-side styles, and exposure. Undo behavior and DOCX/PDF round-trips still need workflow evidence.
+
+Evidence: the catalog audit checks source IDs, built-in registration, direct Ribbon placement, and UI evidence tokens in `MetricGroup.tsx` and `ParagraphDialog.tsx`; the generated catalog and matrix agree on 105 linked source rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

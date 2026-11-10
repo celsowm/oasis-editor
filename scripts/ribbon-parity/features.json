@@ -6,7 +6,7 @@
     "wordcraftRepository": "storytold/wordcraft",
     "wordcraftCommit": "05f781cfdac1d89034c0f4f5824b597ff845f2ef"
   },
-  "scope": "77-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.",
+  "scope": "Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.",
   "features": [
     {
       "id": "home.copy",
@@ -1248,6 +1248,73 @@
       "semantics": "partial",
       "persistence": "partial",
       "notes": "Oasis registers a hard-column-break command but no default Ribbon/menubar control or shortcut was found. Column layout, selection/caret behavior, undo and DOCX break round-trip need verification."
+    },
+    {
+      "id": "home.paragraphTextShading",
+      "wordcraftCommand": "para.shading",
+      "oasisCommand": "setTextShading",
+      "ribbonId": "editor-toolbar-text-shading",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "WordCraft para.shading shades selected text when the selection is within one paragraph; Oasis exposes character shading in Home > Font. This covers that scope of the context-sensitive command, while paragraph scope is tracked separately. Mixed ranges, clear behavior, undo and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "layout.paragraphShading",
+      "wordcraftCommand": "para.shading",
+      "oasisCommand": "setParagraphShading",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Layout > Paragraph metrics dropdown > Paragraph shading",
+      "uiEvidence": {
+        "file": "src/ui/components/Toolbar/groups/MetricGroup.tsx",
+        "token": "editor-toolbar-paragraph-shading"
+      },
+      "notes": "WordCraft para.shading applies paragraph shading at a caret or when explicitly requested; Oasis exposes a paragraph-color field in the Layout metrics dropdown and also a field in the Paragraph dialog. The control does not provide WordCraft's combined text/paragraph scope or palette workflow; mixed selections, clearing, undo and DOCX interoperability need verification."
+    },
+    {
+      "id": "layout.paragraphBorders",
+      "wordcraftCommand": "para.borders",
+      "oasisCommand": "applyParagraphBorders",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "paragraph",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Layout > Paragraph metrics dropdown > Apply borders to paragraph",
+      "uiEvidence": {
+        "file": "src/ui/components/Toolbar/groups/MetricGroup.tsx",
+        "token": "editor-toolbar-paragraph-borders"
+      },
+      "notes": "The Oasis quick action applies a 1 pt solid black border on all four paragraph sides. WordCraft para.borders offers individual sides, presets, styles, widths and colors, so this is only a related task; per-side formatting is available separately in the Paragraph dialog. Selection scope, undo and DOCX/PDF output need verification."
+    },
+    {
+      "id": "context.paragraphBordersDialog",
+      "wordcraftCommand": "para.borders",
+      "oasisCommand": null,
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Context menu > Paragraph dialog > Borders and shading",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-border-style"
+      },
+      "notes": "The Paragraph dialog commits configurable sides, one shared style, width and color through a dialog transaction, with no shared Oasis command for the full payload. WordCraft also supports independent per-side styles, between borders and more styles; undo grouping and DOCX/PDF behavior need workflow verification."
     }
   ]
 }
