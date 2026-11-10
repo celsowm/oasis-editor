@@ -28,6 +28,28 @@ import {
   preserveSelectionByParagraphOffsets,
 } from "@/core/selection/rangeEditing.js";
 
+/** Keep a direct off override only when clearing it would reveal an inherited on value. */
+function setResolvedBooleanStyle(
+  state: EditorState,
+  paragraph: EditorParagraphNode,
+  style: EditorTextStyle | undefined,
+  key: ToggleableTextStyleKey,
+  enabled: boolean,
+): EditorTextStyle | undefined {
+  let next = setBooleanStyle(style, key, enabled);
+  const effective = resolveEffectiveTextStyleForParagraph(
+    next,
+    paragraph.style?.styleId,
+    state.document.styles,
+  );
+  if (!enabled && effective[key]) next = { ...next, [key]: false };
+  if (enabled && (key === "superscript" || key === "subscript")) {
+    const opposite = key === "superscript" ? "subscript" : "superscript";
+    next = setResolvedBooleanStyle(state, paragraph, next, opposite, false);
+  }
+  return next;
+}
+
 export function toggleTextStyle(
   state: EditorState,
   key: ToggleableTextStyleKey,
@@ -54,7 +76,14 @@ export function toggleTextStyle(
         paragraphIndex === normalized.endIndex
           ? normalized.endParagraphOffset
           : getParagraphLength(paragraph);
-      return sliceRuns(paragraph, startOffset, endOffset);
+      return sliceRuns(paragraph, startOffset, endOffset).map((run) => ({
+        ...run,
+        styles: resolveEffectiveTextStyleForParagraph(
+          run.styles,
+          paragraph.style?.styleId,
+          state.document.styles,
+        ),
+      }));
     })
     .filter((run): boolean => run.text.length > 0);
 
@@ -85,7 +114,13 @@ export function toggleTextStyle(
 
       return mapRunsInRange(paragraph, startOffset, endOffset, (run) => ({
         ...run,
-        styles: setBooleanStyle(run.styles, key, shouldEnable),
+        styles: setResolvedBooleanStyle(
+          state,
+          paragraph,
+          run.styles,
+          key,
+          shouldEnable,
+        ),
       }));
     },
   );
@@ -159,14 +194,30 @@ export function applyUnderlineStyle(
       index === normalized.endIndex
         ? normalized.endParagraphOffset
         : getParagraphLength(paragraph);
-    return mapRunsInRange(paragraph, start, end, (run) => ({
-      ...run,
-      styles: setValueStyle(
-        setBooleanStyle(run.styles, "underline", style !== null),
+    return mapRunsInRange(paragraph, start, end, (run) => {
+      let styles = setValueStyle(
+        setResolvedBooleanStyle(
+          state,
+          paragraph,
+          run.styles,
+          "underline",
+          style !== null,
+        ),
         "underlineStyle",
         style === "single" ? null : style,
-      ),
-    }));
+      );
+      if (
+        (style === "single" || style === null) &&
+        resolveEffectiveTextStyleForParagraph(
+          styles,
+          paragraph.style?.styleId,
+          state.document.styles,
+        ).underlineStyle
+      ) {
+        styles = { ...styles, underlineStyle: style };
+      }
+      return { ...run, styles };
+    });
   });
   return cloneStateWithParagraphs(
     state,
