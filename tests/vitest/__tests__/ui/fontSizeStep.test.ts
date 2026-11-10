@@ -2,9 +2,19 @@ import { describe, it, expect } from "vitest";
 import {
   nextFontSizePt,
   previousFontSizePt,
+  parseFontSizePtToPx,
 } from "@/ui/fontSizeUnits.js";
 
 describe("font size stepping", () => {
+  it("preserves fractional point sizes at the model boundary", () => {
+    expect(parseFontSizePtToPx("10.5")).toBe(14);
+  });
+
+  it("rejects sizes that overflow or disappear during pixel conversion", () => {
+    expect(parseFontSizePtToPx(Number.MAX_VALUE)).toBeNull();
+    expect(parseFontSizePtToPx(Number.MIN_VALUE)).toBeNull();
+  });
+
   it("grows to the next standard size", () => {
     expect(nextFontSizePt(12)).toBe(14);
     expect(nextFontSizePt(11)).toBe(12);

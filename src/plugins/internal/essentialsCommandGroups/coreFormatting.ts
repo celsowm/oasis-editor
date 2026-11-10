@@ -558,17 +558,19 @@ export function buildCoreFormattingCommands({
     setFontSize: valueCommand(
       "setFontSize",
       // The UI speaks points; the model stores pixels.
-      (p): true => {
+      (p): boolean => {
         const value =
           p && typeof p === "object" && "size" in p
             ? (p as { size?: unknown }).size
             : p;
-        formatting.setFontSize(
-          value != null && value !== ""
-            ? parseFontSizePtToPx(value as string)
-            : null,
-        );
-        return true;
+        if (value == null || value === "") {
+          return formatting.setFontSize(null);
+        }
+        if (typeof value !== "string" && typeof value !== "number")
+          return false;
+        const pixels = parseFontSizePtToPx(value);
+        if (pixels === null) return false;
+        return formatting.setFontSize(pixels);
       },
       (): string => formatFontSizePt(s().fontSize),
     ),

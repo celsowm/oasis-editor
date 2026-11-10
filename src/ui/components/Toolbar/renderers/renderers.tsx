@@ -176,6 +176,7 @@ function RenderSelect(props: RendererProps<SelectItem>): JSX.Element {
       wide={props.item.width === "wide"}
       small={props.item.width === "small"}
       value={(b.value() as string | undefined) ?? ""}
+      disabled={b.disabled()}
       data-testid={props.item.testId}
       tooltip={resolveTooltip(props.item, props.api)}
       label={resolveLabel(props.item, props.api)}

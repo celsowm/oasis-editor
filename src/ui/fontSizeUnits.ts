@@ -62,5 +62,6 @@ export function parseFontSizePtToPx(
   if (!Number.isFinite(value) || value <= 0) {
     return null;
   }
-  return fontSizePtToPx(value);
+  const pixels = fontSizePtToPx(value);
+  return Number.isFinite(pixels) && pixels > 0 ? pixels : null;
 }
