@@ -426,11 +426,23 @@ Evidence: `RIBBON_BROWSER=chromium node scripts/verify-ribbon-contexts.mjs`; a t
 
 Limits: remaining Design Gallery numeric fields, other measurement dialogs and contextual table fields need a full unit audit. The host still reports `isDirty()` after undo returns the document to its exact clean snapshot; track that dirty-state defect under P04. Safari and VoiceOver remain unverified. V04 and D03 remain incomplete.
 
+## Delivery 24 — Synthetic fixture capture metadata
+
+Date: 2026-11-10. B03 is **complete** for the current Chromium reference host; B01 and B04 remain **partial**.
+
+The reference host seeds seven synthetic documents through the editor boundary: formatted text, nested lists, style samples, a table, an image, two sections with a landscape selection, and tracked review content with a comment thread. The setup establishes the corresponding caret, range, cell, object, style, or section selection and marks the fixture clean. No personal document data is used.
+
+The contextual verifier now records an explicit scenario for every screenshot, along with browser, source SHA, dirty state, theme, locale, requested and measured width, DPR, fixture, tab, selection, and document/font/definition hashes. It rejects a width or DPR mismatch and an incomplete layout or unit-popover matrix.
+
+Evidence: `RIBBON_BROWSER=chromium node scripts/verify-ribbon-contexts.mjs` generated 260 Ribbon layouts and eight unit popovers. The manifest covers all seven fixtures at 1440, 1200, 960, 800, and 640 px in light/dark and en/pt-BR. A separate artifact audit confirmed every expected combination and PNG exists; all 268 records have scenario and geometry metadata, SHA `565de638d0df3abc03d55f01298b8b341498d305`, and `dirty:false`. The fixture content and selections are defined in `tests/browser/ribbon/fixtures.ts`; screenshots and manifests remain gitignored. Typecheck, changed-file ESLint, core Vitest (1,547 passed, one skipped), Ribbon audit, icon audit, Prettier, and syntax checks pass.
+
+Limits: this closes the synthetic-fixture and capture-metadata acceptance for Chromium. Safari, VoiceOver, Firefox/WebKit coverage for this contextual matrix, and interactions outside the recorded scenarios remain open. It does not establish command semantics or persistence.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
 
-1. Finish B01 source/category reconciliation, B03 fixtures, B04 scene classification, and remaining V02/V04 cases. B02 width evidence and V01/V03 checks are recorded; real Safari/VoiceOver validation remains open.
+1. Finish B01 source/category reconciliation, B04 reference decisions, and remaining V02/V04 cases. B02 width evidence and B03 fixture captures are recorded; V01/V03 checks are recorded; real Safari/VoiceOver validation remains open.
 2. Complete the remaining I03/I04 icon families and A01/A02 contextual/custom layout acceptance.
 3. A03/A04: action/menu/launcher semantics, short viewports, spatial matrices and contextual popup transitions.
 4. R01–R05: close late-font, zoom, pointer/IME, invalidation and performance evidence across remaining contexts.

@@ -90,6 +90,15 @@ No calendar deadline is committed. Complete M0 first and size the verified gaps.
 | B03 | Prepare synthetic text, list, style, table, image, section, and review documents. | Fixtures and existing capture scripts. | Known selection/context; no personal data. Every screenshot records SHA, scenario, theme, language, DPR, and width. | M |
 | B04 | Define each tab/scene's reference: equivalent command, related task, or no counterpart. | Parity catalog and UX documentation. | Classify all 53 existing cases and identify which need another capture from Word itself. | S |
 
+Current M0 status (2026-11-10), with evidence and remaining limits in the [delivery ledger](ribbon-office-progress.md):
+
+| Ticket | Status |
+| --- | --- |
+| B01 | Partial — 69 of 521 source rows are linked; the rest still need individual review. |
+| B02 | Complete for the Chromium reference host's required widths; Safari and VoiceOver remain in M5. |
+| B03 | Complete — seven synthetic fixtures and their contextual capture metadata are verified. |
+| B04 | Partial — the 53 scenes have relationship labels; the direct Word capture queue still needs explicit review. |
+
 ### M1a — Immediate fixes
 
 | ID | Work | Files/areas | Acceptance | Size |
