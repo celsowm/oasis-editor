@@ -524,6 +524,16 @@ The matrix now contains 123 Oasis capability rows and links 111 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` verifies both context-menu tokens and the UI-only classification; the generated WordCraft snapshot reports 111 linked source rows.
 
+## Delivery 33 — Named paragraph styles
+
+Date: 2026-11-10. B01 and D02 remain **partial**.
+
+Mapped WordCraft's dedicated Normal, Heading 1, Heading 2 and Heading 3 commands to the corresponding named styles in Oasis's Home style gallery. This captures the available user task while keeping style-ID/name resolution, inherited formatting, outline/navigation behavior, shortcut parity and DOCX output open for verification.
+
+The matrix now contains 127 Oasis capability rows and links 115 of 521 WordCraft source rows; 406 remain unlinked.
+
+Evidence: the Ribbon audit verifies each gallery mapping against `editor-toolbar-style` and the `setStyleId` command; the generated catalog reports 115 linked source rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

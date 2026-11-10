@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 111
+    "linkedRows": 115
   },
   "defaultTabs": [
     "File",
@@ -1320,7 +1320,9 @@
       "group": "Styles",
       "name": "Normal",
       "command": "para.normal",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.normalStyle"
+      ]
     },
     {
       "index": 112,
@@ -1329,7 +1331,9 @@
       "group": "Styles",
       "name": "Heading 1",
       "command": "para.heading1",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.heading1Style"
+      ]
     },
     {
       "index": 113,
@@ -1338,7 +1342,9 @@
       "group": "Styles",
       "name": "Heading 2",
       "command": "para.heading2",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.heading2Style"
+      ]
     },
     {
       "index": 114,
@@ -1347,7 +1353,9 @@
       "group": "Styles",
       "name": "Heading 3",
       "command": "para.heading3",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.heading3Style"
+      ]
     },
     {
       "index": 115,

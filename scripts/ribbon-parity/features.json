@@ -1468,6 +1468,58 @@
         "token": "editor-context-menu-font"
       },
       "notes": "Oasis opens the Font dialog from the editor context menu; WordCraft exposes a Font dialog launcher on Home. The entry point is UI-only and does not share a launcher command. Font and Advanced tab fields are tracked separately; field coverage, selection scope, undo and DOCX behavior remain to be verified."
+    },
+    {
+      "id": "home.normalStyle",
+      "wordcraftCommand": "para.normal",
+      "oasisCommand": "setStyleId",
+      "ribbonId": "editor-toolbar-style",
+      "tab": "home",
+      "group": "styles",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Normal is selectable from Oasis's Home style gallery through setStyleId. WordCraft also provides a dedicated Normal command and shortcut; style ID/name resolution, inherited formatting, selection scope and DOCX interoperability need verification."
+    },
+    {
+      "id": "home.heading1Style",
+      "wordcraftCommand": "para.heading1",
+      "oasisCommand": "setStyleId",
+      "ribbonId": "editor-toolbar-style",
+      "tab": "home",
+      "group": "styles",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Heading 1 is selectable from Oasis's Home style gallery through setStyleId. WordCraft also provides a dedicated Heading 1 command and shortcut; style ID/name resolution, outline/navigation behavior, selection scope and DOCX interoperability need verification."
+    },
+    {
+      "id": "home.heading2Style",
+      "wordcraftCommand": "para.heading2",
+      "oasisCommand": "setStyleId",
+      "ribbonId": "editor-toolbar-style",
+      "tab": "home",
+      "group": "styles",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Heading 2 is selectable from Oasis's Home style gallery through setStyleId. WordCraft also provides a dedicated Heading 2 command and shortcut; style ID/name resolution, outline/navigation behavior, selection scope and DOCX interoperability need verification."
+    },
+    {
+      "id": "home.heading3Style",
+      "wordcraftCommand": "para.heading3",
+      "oasisCommand": "setStyleId",
+      "ribbonId": "editor-toolbar-style",
+      "tab": "home",
+      "group": "styles",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Heading 3 is selectable from Oasis's Home style gallery through setStyleId. WordCraft also provides a dedicated Heading 3 command and shortcut; style ID/name resolution, outline/navigation behavior, selection scope and DOCX interoperability need verification."
     }
   ]
 }

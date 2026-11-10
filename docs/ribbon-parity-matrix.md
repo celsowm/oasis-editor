@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `123` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `127` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -134,6 +134,10 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `home.asianTypographyAutoSpaceDN` | `para.asianTypography` | `setAutoSpaceDN` | — | core-only | core-only | partial | unverified |
 | `context.paragraphDialog` | `para.dialog` | — | Context menu > Paragraph | ui-only | ui-only | partial | unverified |
 | `context.fontDialog` | `format.fontDialog` | — | Context menu > Font | ui-only | ui-only | partial | unverified |
+| `home.normalStyle` | `para.normal` | `setStyleId` | `home/styles` | partial | partial | partial | unverified |
+| `home.heading1Style` | `para.heading1` | `setStyleId` | `home/styles` | partial | partial | partial | unverified |
+| `home.heading2Style` | `para.heading2` | `setStyleId` | `home/styles` | partial | partial | partial | unverified |
+| `home.heading3Style` | `para.heading3` | `setStyleId` | `home/styles` | partial | partial | partial | unverified |
 
 ## Open verification questions
 
@@ -260,6 +264,10 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 121. **home.asianTypographyAutoSpaceDN:** Oasis registers automatic spacing between East Asian text and numbers as a separate command, but no default Ribbon, menu or dialog control was found. Font/run handling, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command.
 122. **context.paragraphDialog:** Oasis opens its Paragraph dialog from the editor context menu; WordCraft exposes a Paragraph dialog launcher on Home and Layout. The entry point is UI-only and the dialog does not share WordCraft's command contract. Field coverage, selection scope, undo and document round-trips remain independently tracked.
 123. **context.fontDialog:** Oasis opens the Font dialog from the editor context menu; WordCraft exposes a Font dialog launcher on Home. The entry point is UI-only and does not share a launcher command. Font and Advanced tab fields are tracked separately; field coverage, selection scope, undo and DOCX behavior remain to be verified.
+124. **home.normalStyle:** Normal is selectable from Oasis's Home style gallery through setStyleId. WordCraft also provides a dedicated Normal command and shortcut; style ID/name resolution, inherited formatting, selection scope and DOCX interoperability need verification.
+125. **home.heading1Style:** Heading 1 is selectable from Oasis's Home style gallery through setStyleId. WordCraft also provides a dedicated Heading 1 command and shortcut; style ID/name resolution, outline/navigation behavior, selection scope and DOCX interoperability need verification.
+126. **home.heading2Style:** Heading 2 is selectable from Oasis's Home style gallery through setStyleId. WordCraft also provides a dedicated Heading 2 command and shortcut; style ID/name resolution, outline/navigation behavior, selection scope and DOCX interoperability need verification.
+127. **home.heading3Style:** Heading 3 is selectable from Oasis's Home style gallery through setStyleId. WordCraft also provides a dedicated Heading 3 command and shortcut; style ID/name resolution, outline/navigation behavior, selection scope and DOCX interoperability need verification.
 
 ## Audit interpretation
 
