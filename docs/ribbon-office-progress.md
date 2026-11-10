@@ -360,13 +360,13 @@ Limits: this does not complete Review workflows or P01. Accept/reject scope, rev
 
 Date: 2026-11-10. B01 and D04 remain **partial**.
 
-Added capability rows for Insert Table, Pictures, Link, and Remove Hyperlink. Each maps an existing Oasis command and Ribbon control to the corresponding WordCraft catalog command. The notes retain their boundaries: Oasis's table grid is not Draw Table, Quick Tables, text conversion or spreadsheet insertion; image insertion uses the local host picker and does not cover online pictures or other illustration types; the Link dialog does not yet establish all in-document target paths. Remove Hyperlink remains a separate action from link creation.
+Added capability rows for Insert Table, Pictures, Link, Remove Hyperlink, Shapes, Symbols, Equations, Footnote and Caption. Each maps an existing Oasis command and Ribbon control to a WordCraft catalog row. The notes retain their boundaries: Oasis's table grid is not Draw Table, Quick Tables, text conversion or spreadsheet insertion; image insertion uses the local host picker and does not cover online pictures or other illustration types; the Link dialog does not yet establish all in-document target paths; the shape and symbol galleries cover subsets; Oasis captions apply to images under Insert/Accessibility, while WordCraft also captions tables under References.
 
-The crosswalk now contains 53 Oasis capabilities and links 45 of the 521 WordCraft catalog rows, leaving 476 source rows unclassified. These links record candidate command relationships and do not certify complete workflows or persistence.
+The crosswalk now contains 58 Oasis capabilities and links 51 of the 521 WordCraft catalog rows, leaving 470 source rows unclassified. WordCraft places Equation on both Insert and its contextual Equation tab; Oasis currently exposes the shared command through Insert/Symbols only. These links record candidate command relationships and do not certify complete workflows or persistence.
 
-Evidence: inspected WordCraft `crates/engine/src/cmd/insert.rs` and Oasis's Insert placements and Essentials command handlers for table, image, link and unlink. The static audits verify command IDs, toolbar exposure and the generated catalog links.
+Evidence: inspected WordCraft `crates/engine/src/cmd/insert.rs`, `equation.rs`, and `references.rs`, plus Oasis's Insert/References placements, `SymbolMenu`, `ShapeGallery` and Essentials command handlers. Extended the static audit to follow statically imported components supplied through a menu's `content.render`, which records `ShapeGallery`'s literal `insertShape` dispatch as Ribbon reachable. The generated catalog links and matrix pass their audits.
 
-Limits: table targeting and export, image selection and round-trip, hyperlink selection and undo, and the broader Insert tab workflows remain open. D04 and M2 remain incomplete.
+Limits: table targeting and export, image selection and round-trip, hyperlink selection and undo, equation editing/interoperability, reference workflows and the broader Insert tab remain open. D04 and M2 remain incomplete.
 
 ## Remaining execution queue
 

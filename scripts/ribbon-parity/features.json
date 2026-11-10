@@ -6,7 +6,7 @@
     "wordcraftRepository": "storytold/wordcraft",
     "wordcraftCommit": "05f781cfdac1d89034c0f4f5824b597ff845f2ef"
   },
-  "scope": "53-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Category-level exposure, semantics, and persistence evidence is tracked separately in references.json and docs/ribbon-office-progress.md.",
+  "scope": "58-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Category-level exposure, semantics, and persistence evidence is tracked separately in references.json and docs/ribbon-office-progress.md.",
   "features": [
     {
       "id": "home.copy",
@@ -259,6 +259,36 @@
       "notes": "Removes the hyperlink from the selected linked text through the shared command. Mixed ranges, selection retention, undo and DOCX round-trip remain independently unverified."
     },
     {
+      "id": "insert.shape",
+      "wordcraftCommand": "insert.shape",
+      "oasisCommand": "insertShape",
+      "ribbonId": "editor-toolbar-insert-shape",
+      "tab": "insert",
+      "group": "illustrations",
+      "status": "partial",
+      "notes": "The Shape Gallery inserts Oasis's supported preset subset through the shared shape command. Broader WordCraft shape kinds, geometry editing, arrangement, accessibility, rendering and DOCX round-trip remain open."
+    },
+    {
+      "id": "insert.symbol",
+      "wordcraftCommand": "insert.symbol",
+      "oasisCommand": "insertText",
+      "ribbonId": "editor-toolbar-symbols",
+      "tab": "insert",
+      "group": "symbols",
+      "status": "partial",
+      "notes": "Related task: the Oasis Symbols menu inserts its curated symbol/number subset as text and opens a broader symbol dialog. Per-symbol font selection and the full WordCraft symbol command contract are not established."
+    },
+    {
+      "id": "insert.equation",
+      "wordcraftCommand": "insert.equation",
+      "oasisCommand": "insertEquation",
+      "ribbonId": "editor-toolbar-symbols",
+      "tab": "insert",
+      "group": "symbols",
+      "status": "partial",
+      "notes": "Equation templates in the Insert/Symbols menu dispatch the shared equation command. WordCraft also lists this command on its contextual Equation tab; Oasis does not yet expose an equivalent contextual surface. Full editing, navigation, rendering and OMML interoperability remain unverified."
+    },
+    {
       "id": "references.toc",
       "wordcraftCommand": "references.toc",
       "oasisCommand": "insertTableOfContents",
@@ -277,6 +307,26 @@
       "group": "tableOfContents",
       "status": "partial",
       "notes": "Eligibility and missing-TOC command states still need refinement."
+    },
+    {
+      "id": "references.footnote",
+      "wordcraftCommand": "references.footnote",
+      "oasisCommand": "insertFootnote",
+      "ribbonId": "editor-toolbar-footnote",
+      "tab": "references",
+      "group": "footnotes",
+      "status": "partial",
+      "notes": "The References action inserts a footnote at the current editing position. Focus restoration, multi-section behavior and DOCX interoperability remain independently unverified."
+    },
+    {
+      "id": "references.caption",
+      "wordcraftCommand": "references.caption",
+      "oasisCommand": "insertImageCaption",
+      "ribbonId": "editor-toolbar-image-caption",
+      "tab": "insert",
+      "group": "accessibility",
+      "status": "partial",
+      "notes": "Related task: Oasis exposes image caption insertion only when an image is selected, under Insert/Accessibility. WordCraft's caption command also covers tables and is placed under References; placement and target coverage differ."
     },
     {
       "id": "review.trackChanges",

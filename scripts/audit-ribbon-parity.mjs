@@ -4,7 +4,8 @@
  * Deterministic source-level Ribbon inventory and initial WordCraft parity guard.
  *
  * This intentionally proves wiring, NOT document semantics or WordCraft parity.
- * Literal commands in statically imported custom preset controls are scanned.
+ * Literal commands in statically imported custom preset controls are scanned,
+ * including custom content rendered inside a menu.
  * Dynamic commands and plugin-provided UI still require runtime coverage.
  *
  * Usage:
@@ -24,7 +25,7 @@ const wordcraft = JSON.parse(source("scripts/ribbon-parity/wordcraft-catalog.jso
 const getName = (name) =>
   ts.isIdentifier(name) || ts.isStringLiteral(name) ? name.text : undefined;
 const getProperty = (node, key) =>
-  ts.isObjectLiteralExpression(node)
+  node && ts.isObjectLiteralExpression(node)
     ? node.properties.find((prop) =>
         ts.isPropertyAssignment(prop) && getName(prop.name) === key)
     : undefined;
@@ -212,9 +213,14 @@ function collectPresetItems() {
     if (items.has(id)) throw new Error("Duplicate toolbar item: " + id);
     const kind = getString(getExpression(node, "type"));
     const render = getExpression(node, "render");
+    const content = getExpression(node, "content");
+    const contentKind = getString(getExpression(content, "kind"));
+    const contentRender = getExpression(content, "render");
     const componentSource = kind === "custom"
       ? findImportedComponentSource(render, componentImports)
-      : undefined;
+      : contentKind === "custom"
+        ? findImportedComponentSource(contentRender, componentImports)
+        : undefined;
     items.set(id, {
       command: getCommand(getExpression(node, "command")),
       customCommands: componentSource

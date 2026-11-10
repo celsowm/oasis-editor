@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 45
+    "linkedRows": 51
   },
   "defaultTabs": [
     "File",
@@ -1536,7 +1536,9 @@
       "group": "Illustrations",
       "name": "Shapes",
       "command": "insert.shape",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.shape"
+      ]
     },
     {
       "index": 147,
@@ -1888,7 +1890,9 @@
       "group": "Symbols",
       "name": "Equation",
       "command": "insert.equation",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.equation"
+      ]
     },
     {
       "index": 184,
@@ -1906,7 +1910,9 @@
       "group": "Symbols",
       "name": "Symbol",
       "command": "insert.symbol",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.symbol"
+      ]
     },
     {
       "index": 186,
@@ -2369,7 +2375,9 @@
       "group": "Footnotes",
       "name": "Insert Footnote",
       "command": "references.footnote",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.footnote"
+      ]
     },
     {
       "index": 237,
@@ -2459,7 +2467,9 @@
       "group": "Captions",
       "name": "Insert Caption",
       "command": "references.caption",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.caption"
+      ]
     },
     {
       "index": 247,
@@ -3824,7 +3834,9 @@
       "group": "Tools",
       "name": "Equation",
       "command": "insert.equation",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.equation"
+      ]
     },
     {
       "index": 396,
