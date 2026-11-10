@@ -36,12 +36,15 @@ export const CONTEXTUAL_TABS: Partial<Record<RibbonTabId, string>> = {
   tableLayout: "tableContext",
   imageFormat: "imageContext",
 };
-export type RibbonRow = 1 | 2;
+export type RibbonRow = 1 | 2 | 3;
+/** Three rows are opt-in; existing two-row contributions retain their layout. */
+export type RibbonGroupLayout = "two-rows" | "three-rows";
 export type RibbonSize = "normal" | "large";
 export type RibbonGroupResizeState = "full" | "compact" | "collapsed";
 
 export interface RibbonGroupResizePolicy {
   states?: RibbonGroupResizeState[];
+  /** Lower priorities reduce first; compact states precede group collapse. */
   priority?: number;
   compactMinWidth?: number;
   collapsedMinWidth?: number;

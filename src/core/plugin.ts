@@ -3,6 +3,7 @@ import type { EditorState } from "./model.js";
 import type { CommandRef } from "./commands/CommandRef.js";
 import type {
   RibbonGroupResizePolicy,
+  RibbonGroupLayout,
   RibbonRow,
   RibbonSize,
   RibbonTabId,
@@ -114,6 +115,7 @@ export interface PluginAction {
   row?: RibbonRow;
   ribbonSize?: RibbonSize;
   ribbonGroupResize?: RibbonGroupResizePolicy;
+  ribbonGroupLayout?: RibbonGroupLayout;
   order?: number;
 }
 

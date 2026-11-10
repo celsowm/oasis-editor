@@ -11,6 +11,7 @@ export {
   CONTEXTUAL_TABS,
   type RibbonTabId,
   type RibbonRow,
+  type RibbonGroupLayout,
   type RibbonSize,
   type RibbonGroupResizePolicy,
   type RibbonGroupResizeState,
@@ -19,6 +20,7 @@ import type {
   RibbonGroupResizePolicy,
   RibbonTabId,
   RibbonRow,
+  RibbonGroupLayout,
   RibbonSize,
 } from "@/core/pluginUiTypes.js";
 
@@ -104,12 +106,13 @@ interface ToolbarItemBase extends ItemReactiveOverrides {
   group?: string;
   /** Human-readable contribution label; unknown groups otherwise use General. */
   groupLabel?: string;
-  /** Two-row ribbon placement. Missing values default to row 1. */
+  /** Row placement. Row 3 opts the group into the three-row layout. */
   row?: RibbonRow;
   /** Ribbon-only visual scale. Large items span both toolbar rows. */
   ribbonSize?: RibbonSize;
   /** Group-level responsive behavior. First item wins per property. */
   ribbonGroupResize?: RibbonGroupResizePolicy;
+  ribbonGroupLayout?: RibbonGroupLayout;
   testId?: string;
   tooltipKey?: TranslationKey;
   tooltip?: string;
@@ -140,6 +143,8 @@ export type MenuContent =
 
 export interface SplitItem extends ToolbarItemBase {
   type: "split";
+  labelKey?: TranslationKey;
+  label?: string;
   /** Command the main button dispatches (the chevron opens `menu`). */
   command: CommandRef;
   /** Chevron-opened content. */
@@ -240,6 +245,7 @@ export interface SeparatorItem {
   groupLabel?: string;
   row?: RibbonRow;
   ribbonGroupResize?: RibbonGroupResizePolicy;
+  ribbonGroupLayout?: RibbonGroupLayout;
   /**
    * @param api - The toolbar action API.
    * @returns Whether the separator should be visible.

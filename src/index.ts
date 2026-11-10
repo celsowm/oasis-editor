@@ -206,6 +206,7 @@ export type {
 
 export type {
   RibbonRow,
+  RibbonGroupLayout,
   RibbonGroupResizePolicy,
   RibbonGroupResizeState,
   RibbonTabId,

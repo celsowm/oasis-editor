@@ -129,3 +129,34 @@ describe("effective Ribbon composition", () => {
     }
   });
 });
+
+describe("declarative Ribbon group layouts", () => {
+  it("keeps existing two-row contributions and enables a third row without dropping actions", () => {
+    const groups = buildRibbonGroups(
+      [
+        button("two", { group: "existing", row: 2 }),
+        button("three", { group: "new", row: 3 }),
+        button("large", { group: "new", ribbonSize: "large" }),
+      ],
+      "insert",
+      t,
+    );
+    expect(groups.find((group) => group.id === "existing")?.layout).toBe(
+      "two-rows",
+    );
+    const stack = groups.find((group) => group.id === "new")!;
+    expect(stack.layout).toBe("three-rows");
+    expect(stack.rows[3].map((item) => item.id)).toEqual(["three"]);
+    expect(stack.largeItems.map((item) => item.id)).toEqual(["large"]);
+  });
+
+  it("accepts an explicit three-row layout even before the final row is populated", () => {
+    const groups = buildRibbonGroups(
+      [button("stack", { ribbonGroupLayout: "three-rows" })],
+      "insert",
+      t,
+    );
+    expect(groups[0].layout).toBe("three-rows");
+    expect(groups[0].rows[3]).toEqual([]);
+  });
+});

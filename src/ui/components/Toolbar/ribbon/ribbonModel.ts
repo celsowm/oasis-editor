@@ -1,5 +1,6 @@
 import type {
   RibbonGroupResizePolicy,
+  RibbonGroupLayout,
   RibbonGroupResizeState,
   RibbonRow,
   RibbonTabId,
@@ -23,6 +24,7 @@ export interface RibbonGroupModel {
   id: string;
   label: string;
   largeItems: ToolbarItem[];
+  layout: RibbonGroupLayout;
   rows: Record<RibbonRow, ToolbarItem[]>;
   order: number;
   resizePolicy: Required<RibbonGroupResizePolicy>;
@@ -31,9 +33,13 @@ export interface RibbonGroupModel {
 export interface ResolvedRibbonGroupModel extends RibbonGroupModel {
   resizeState: RibbonGroupResizeState;
   allocatedWidth?: number;
+  measuredWidth?: number;
+  compactChrome?: number;
 }
 
 export interface RibbonGroupWidth {
+  /** Outer group width beyond a single compact style gallery. */
+  compactChrome?: number;
   full: number;
   compact: number;
   collapsed: number;
@@ -341,7 +347,7 @@ export function normalizeRibbonGroup(group: ToolbarItem["group"]): string {
 }
 
 export function normalizeRibbonRow(row: ToolbarItem["row"]): RibbonRow {
-  return row === 2 ? 2 : DEFAULT_RIBBON_ROW;
+  return row === 3 ? 3 : row === 2 ? 2 : DEFAULT_RIBBON_ROW;
 }
 
 export function isLargeRibbonItem(item: ToolbarItem): boolean {
@@ -438,7 +444,8 @@ export function buildRibbonGroups(
         id: groupId,
         label: item.groupLabel?.trim() || ribbonGroupLabel(groupId, t),
         largeItems: [],
-        rows: { 1: [], 2: [] },
+        rows: { 1: [], 2: [], 3: [] },
+        layout: item.ribbonGroupLayout ?? "two-rows",
         order: groupOrder,
         resizePolicy: mergeRibbonGroupResizePolicy(
           tab,
@@ -449,6 +456,7 @@ export function buildRibbonGroups(
       groups.set(groupId, group);
     }
     if (item.groupLabel?.trim()) group.label = item.groupLabel.trim();
+    if (item.ribbonGroupLayout) group.layout = item.ribbonGroupLayout;
     group.order = Math.min(group.order, groupOrder);
     group.resizePolicy = {
       ...group.resizePolicy,
@@ -471,25 +479,37 @@ export function buildRibbonGroups(
   return Array.from(groups.values())
     .map((group) => ({
       ...group,
+      layout: group.rows[3].length ? ("three-rows" as const) : group.layout,
       rows: {
         1: trimRibbonSeparators(group.rows[1]),
         2: trimRibbonSeparators(group.rows[2]),
+        3: trimRibbonSeparators(group.rows[3]),
       },
     }))
     .filter(
       (group) =>
-        group.largeItems.length + group.rows[1].length + group.rows[2].length >
+        group.largeItems.length +
+          group.rows[1].length +
+          group.rows[2].length +
+          group.rows[3].length >
         0,
     )
     .sort((a, b): number => a.order - b.order);
 }
 
 function estimatedRibbonGroupWidths(group: RibbonGroupModel): RibbonGroupWidth {
-  const normalCount = group.rows[1].length + group.rows[2].length;
+  const normalCount =
+    group.rows[1].length + group.rows[2].length + group.rows[3].length;
   const largeCount = group.largeItems.length;
   const full = Math.max(
     group.resizePolicy.collapsedMinWidth,
-    largeCount * 72 + Math.max(group.rows[1].length, group.rows[2].length) * 30,
+    largeCount * 72 +
+      Math.max(
+        group.rows[1].length,
+        group.rows[2].length,
+        group.rows[3].length,
+      ) *
+        30,
   );
   return {
     full,
