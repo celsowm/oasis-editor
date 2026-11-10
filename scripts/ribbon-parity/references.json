@@ -24,10 +24,33 @@
       "oasisHistoricalCapture": true,
       "wordcraftTab": "home",
       "wordWebTab": "Home",
-      "exposure": "unverified",
+      "exposure": "partial",
       "semantics": "unverified",
       "persistence": "unverified",
-      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+      "nextEvidence": "Execute the relevant command workflows, verify mutation/undo, and exercise export/reimport. Presentation and context checks do not certify those dimensions.",
+      "evidence": {
+        "suite": "scripts/verify-ribbon-contexts.mjs",
+        "fixtures": [
+          "text",
+          "lists",
+          "styles",
+          "table",
+          "image"
+        ],
+        "widths": [
+          1440,
+          1200,
+          960,
+          800,
+          640
+        ],
+        "dimensions": [
+          "presentation",
+          "context/availability"
+        ],
+        "semanticMutation": "unverified",
+        "persistence": "unverified"
+      }
     },
     {
       "id": "insert",
@@ -35,10 +58,31 @@
       "oasisHistoricalCapture": true,
       "wordcraftTab": "insert",
       "wordWebTab": "Insert",
-      "exposure": "unverified",
+      "exposure": "partial",
       "semantics": "unverified",
       "persistence": "unverified",
-      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+      "nextEvidence": "Execute the relevant command workflows, verify mutation/undo, and exercise export/reimport. Presentation and context checks do not certify those dimensions.",
+      "evidence": {
+        "suite": "scripts/verify-ribbon-contexts.mjs",
+        "fixtures": [
+          "table",
+          "image",
+          "sections"
+        ],
+        "widths": [
+          1440,
+          1200,
+          960,
+          800,
+          640
+        ],
+        "dimensions": [
+          "presentation",
+          "context/availability"
+        ],
+        "semanticMutation": "unverified",
+        "persistence": "unverified"
+      }
     },
     {
       "id": "design",
@@ -57,10 +101,29 @@
       "oasisHistoricalCapture": true,
       "wordcraftTab": "layout",
       "wordWebTab": "Layout",
-      "exposure": "unverified",
+      "exposure": "partial",
       "semantics": "unverified",
       "persistence": "unverified",
-      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+      "nextEvidence": "Execute the relevant command workflows, verify mutation/undo, and exercise export/reimport. Presentation and context checks do not certify those dimensions.",
+      "evidence": {
+        "suite": "scripts/verify-ribbon-contexts.mjs",
+        "fixtures": [
+          "sections"
+        ],
+        "widths": [
+          1440,
+          1200,
+          960,
+          800,
+          640
+        ],
+        "dimensions": [
+          "presentation",
+          "context/availability"
+        ],
+        "semanticMutation": "unverified",
+        "persistence": "unverified"
+      }
     },
     {
       "id": "references",
@@ -79,10 +142,29 @@
       "oasisHistoricalCapture": true,
       "wordcraftTab": "review",
       "wordWebTab": "Review",
-      "exposure": "unverified",
+      "exposure": "partial",
       "semantics": "unverified",
       "persistence": "unverified",
-      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+      "nextEvidence": "Execute the relevant command workflows, verify mutation/undo, and exercise export/reimport. Presentation and context checks do not certify those dimensions.",
+      "evidence": {
+        "suite": "scripts/verify-ribbon-contexts.mjs",
+        "fixtures": [
+          "review"
+        ],
+        "widths": [
+          1440,
+          1200,
+          960,
+          800,
+          640
+        ],
+        "dimensions": [
+          "presentation",
+          "context/availability"
+        ],
+        "semanticMutation": "unverified",
+        "persistence": "unverified"
+      }
     },
     {
       "id": "view",
@@ -101,10 +183,29 @@
       "oasisHistoricalCapture": true,
       "wordcraftTab": "table-design",
       "wordWebTab": null,
-      "exposure": "unverified",
+      "exposure": "partial",
       "semantics": "unverified",
       "persistence": "unverified",
-      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+      "nextEvidence": "Execute the relevant command workflows, verify mutation/undo, and exercise export/reimport. Presentation and context checks do not certify those dimensions.",
+      "evidence": {
+        "suite": "scripts/verify-ribbon-contexts.mjs",
+        "fixtures": [
+          "table"
+        ],
+        "widths": [
+          1440,
+          1200,
+          960,
+          800,
+          640
+        ],
+        "dimensions": [
+          "presentation",
+          "context/availability"
+        ],
+        "semanticMutation": "unverified",
+        "persistence": "unverified"
+      }
     },
     {
       "id": "tablelayout",
@@ -112,10 +213,29 @@
       "oasisHistoricalCapture": true,
       "wordcraftTab": "table-layout",
       "wordWebTab": null,
-      "exposure": "unverified",
+      "exposure": "partial",
       "semantics": "unverified",
       "persistence": "unverified",
-      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+      "nextEvidence": "Execute the relevant command workflows, verify mutation/undo, and exercise export/reimport. Presentation and context checks do not certify those dimensions.",
+      "evidence": {
+        "suite": "scripts/verify-ribbon-contexts.mjs",
+        "fixtures": [
+          "table"
+        ],
+        "widths": [
+          1440,
+          1200,
+          960,
+          800,
+          640
+        ],
+        "dimensions": [
+          "presentation",
+          "context/availability"
+        ],
+        "semanticMutation": "unverified",
+        "persistence": "unverified"
+      }
     },
     {
       "id": "imageformat",
@@ -123,10 +243,29 @@
       "oasisHistoricalCapture": true,
       "wordcraftTab": "picture-format",
       "wordWebTab": null,
-      "exposure": "unverified",
+      "exposure": "partial",
       "semantics": "unverified",
       "persistence": "unverified",
-      "nextEvidence": "Exercise the synthetic fixture in the current preset; inspect commands and import/export before assigning capability status."
+      "nextEvidence": "Execute the relevant command workflows, verify mutation/undo, and exercise export/reimport. Presentation and context checks do not certify those dimensions.",
+      "evidence": {
+        "suite": "scripts/verify-ribbon-contexts.mjs",
+        "fixtures": [
+          "image"
+        ],
+        "widths": [
+          1440,
+          1200,
+          960,
+          800,
+          640
+        ],
+        "dimensions": [
+          "presentation",
+          "context/availability"
+        ],
+        "semanticMutation": "unverified",
+        "persistence": "unverified"
+      }
     },
     {
       "id": "file",

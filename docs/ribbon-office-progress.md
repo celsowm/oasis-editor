@@ -33,7 +33,7 @@ RIBBON_BROWSER=firefox node scripts/verify-ribbon-reference.mjs
 RIBBON_BROWSER=webkit node scripts/verify-ribbon-reference.mjs
 ```
 
-The host is at `/tests/browser/ribbon/?theme=dark&locale=pt-BR&fixture=text`. Supported fixtures currently are `text`, `lists`, `table`, and `image`. Capturing currently uses only `text`; the fixture selector does not establish contextual coverage.
+The host is at `/tests/browser/ribbon/?theme=dark&locale=pt-BR&fixture=text`. Delivery 1 used only `text`. Delivery 3 adds seven controlled fixtures and contextual evidence; see below for the current capture controls and limits.
 
 `RIBBON_BASE_URL`, `RIBBON_OUTPUT`, `RIBBON_BROWSER`, `RIBBON_WIDTHS`, `RIBBON_THEMES`, and `RIBBON_LOCALES` configure captures. Outputs remain gitignored under `debug_artifacts/`. Browser verification covers four theme/locale combinations per engine. WebKit automation is separate from Safari/VoiceOver validation.
 
@@ -91,14 +91,54 @@ The browser suite checks 68 shrinking/expanding layouts per engine across two th
 
 The first remote run exposed jsdom's missing `ResizeObserver` in the existing style gallery test. The test now supplies a controlled observer/strip width, checks whole-card thresholds during resize and verifies observer cleanup. Production browser behavior remains covered by the independent browser suite.
 
+## Delivery 3 — controlled contexts and first SVG family review
+
+Date: 2026-11-10. References: existing Office/WordCraft task organization, current command contracts and the observed page-story/footnote defects. These deliveries preserve the full M0–M5 scope.
+
+| Ticket | Status | Implemented / evidence | Remaining acceptance |
+| --- | --- | --- | --- |
+| B03 | partial | Seven synthetic fixtures: text, lists, styles, table, image, sections and review. Explicit caret/range/object targeting selects a list item, Caption, first table cell, image, landscape section and tracked/commented range. Canonical document/definition hashes and actual font metrics accompany captures. Cross-session/theme/locale checks prove stable fixture content. | Full real-Safari fixture workflow validation; additional stress cases accompany later task deliveries. |
+| B02 | partial | Context verifier records 260 actual-width Ribbon screenshots per engine across seven fixtures, two themes, two locales and five widths. Capture CLI can traverse nested menu paths and include the complete visible popup; it rejects viewport escapes, undisposed popups, content/selection mutation, empty SVGs and unresolved placeholders. | Full scene coverage, short viewports, native dialogs, touch/zoom/late-font and performance baselines. |
+| B01 | partial | Seven reference categories now record partial exposure evidence independently of unverified semantics and persistence. Selection/availability checks do not promote command or format parity. | Reconcile the rest of the feature catalog against command behavior, undo and formats. |
+| I02/I07 | partial | `ToolIcon` owns actual Lucide SVG nodes, preventing stale artwork and orphan SVGs when names change among siblings. Invalid names retain placeholders and diagnostics. Lifecycle tests cover Lucide/custom/unknown transitions. | All dynamic plugin/icon paths and broader appearance regressions. |
+| I03/I04/I06 | partial | Eight reviewed actions/menu glyphs: seven new page-story/numbering vectors and a refined font-independent footnote glyph. The review sheet shows before/current artwork in 16/20/24 px, two themes, three states and three surfaces; 48 scenes per engine. Decorative SVGs, names, path bounds, sizes and lifecycle are checked. | Remaining families, full focus/contrast/assistive-technology and real-Safari visual workflows. See [SVG review](ribbon-icon-review.md). |
+| V04 | partial | Flat data-driven action menus size to content within viewport bounds and retain full captions. Header/Footer's Portuguese Close caption previously clipped (118 px available for 155 px text); the browser guard checks all seven captions. Galleries and nested contribution layouts retain their own geometry. | All labels, units, read-only/mixed states, long plugin/localized captions and other controls. |
+| A05 | partial | Context exit now consistently prefers Home when available; the tab-strip fallback no longer races the toolbar and selects File after leaving a table. Context removal closes its popup and clears the empty Accessibility group without document mutation. | VoiceOver, other context combinations and complete keyboard workflows. |
+
+### Fixtures, captures and CI evidence
+
+- `text`: headings, ordinary/mixed inline text and a link; initial caret is explicit.
+- `lists`: ordered/nested/bulleted content; initial caret targets an actual list item.
+- `styles`: headings, Normal/Emphasis content and a Caption paragraph; Caption is selected by paragraph style.
+- `table`: a synthetic table and an outside paragraph; the first cell activates table tools, and leaving it removes them.
+- `image`: a single inline red-square bitmap selected as an object. Its PNG chunk checksum was repaired after Firefox rejected data that Chromium/WebKit tolerated; pixel bytes are unchanged.
+- `sections`: portrait and landscape sections with synthetic headers/footers; the caret targets landscape.
+- `review`: a tracked insertion, anchored comment, reply and unchanged comparison paragraph; a known revision range is selected.
+
+These are seeded only in the isolated reference host. Persistence is disabled, history is cleared after setup, and the prepared document is clean. Fingerprint normalization removes generated identities while retaining content and anchor relationships; dedicated tests cover identity regeneration, meaningful text changes and asset references.
+
+`npm run test:ribbon:contexts` records the current fixture/selection, SHA/dirty flag, width, DPR, document/definition hashes and current font fingerprint with every screenshot. `npm run test:ribbon:ci` runs the existing gallery/resize suites plus contexts and icon reviews, retaining separate artifacts under `test-results/ribbon/{reference,resize,contexts,icons}`.
+
+The capture CLI additionally accepts `RIBBON_FIXTURES`, `RIBBON_TABS`, `RIBBON_MENUS=1`, `RIBBON_MENU_DEPTH`, `RIBBON_HEIGHT` and `RIBBON_DPR`. Text-only filenames remain compatible with the earlier viewer. Other fixtures have distinct prefixes. Menu traversal fails rather than silently skipping children beyond its depth/safety limit; native OS pickers and unannotated action/dialog launchers are outside this traversal. Captures mask document pixels while preserving geometry and include the Ribbon plus complete visible popup.
+
+### Validation scope and limitations
+
+Chromium, Firefox and WebKit each exercised 260 contextual layouts and 48 SVG review scenes, alongside the existing reference/resize suites. New pure and DOM tests cover fingerprints and SVG lifecycle. These counts describe scenarios, not completed features or parity percentages.
+
+TypeScript, changed-source ESLint, both static audits and the full local Vitest suite passed: 311 files / 1,793 tests passed, with one file/test skipped. Global lint retains 347 errors and 20 warnings outside this delivery's changed source files.
+
+The actual Safari editor page remained hidden and its fixture setup did not complete during this round. No real-Safari fixture workflow pass is counted. Safari 27.0.1 produced 48 SVG DOM-only records with nine correctly sized, font-independent current glyphs per record; hidden-page DOM checks do not establish visual/input/VoiceOver behavior. The earlier Delivery 2 Safari results remain historical evidence for that source version.
+
+Comment/revision mutation, style application, clipboard permissions, DOCX/PDF round-trips and the professional/advanced workflows remain to be demonstrated as specified in the execution plan.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
 
-1. Finish B01–B03 and V01–V04 across synthetic contextual/review scenarios.
-2. A01/A02 and I03/I04: component dimensions, declarative layout contracts, icon review sheet and Clipboard adoption.
-3. A04/R01/R02: preserved popup layouts, every-state measurements and context-isolated invalidation.
-4. R03–R05: documented priorities, monotonic reduction, explicit overflow, stable resize and profiling.
+1. Finish B01/B02 inventory and scene coverage, real-Safari fixture validation, and the remaining V01–V04 cases.
+2. Complete the remaining I03/I04 icon families and A01/A02 contextual/custom layout acceptance.
+3. A03/A04: action/menu/launcher semantics, short viewports, spatial matrices and contextual popup transitions.
+4. R01–R05: close late-font, zoom, pointer/IME, invalidation and performance evidence across remaining contexts.
 5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence.
 6. P01–P06: Review, References, View, File, search/QAT and interoperability.
 7. All M4 families: Shapes, Equations, Draw, advanced References, Mailings, Developer/Forms, Charts/SmartArt, integrations and Help, each with the plan's minimum functional delivery.

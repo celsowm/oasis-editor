@@ -229,7 +229,7 @@ New tabs ship when their minimum usable delivery is demonstrated. Declaring a ne
 5. Guided manual checks: short tasks in Safari/VoiceOver and Word itself using synthetic documents. Record observed steps/time and establish a baseline before promising numerical improvement.
 6. Performance: compare resize/gallery opening before and after changes without repetitive layout work or observer loops. Establish budgets from M0 measurements.
 
-Pre-existing `@solid-refresh` failures prevent certain TSX tests from running in this harness. Do not count them as passes. Use feasible pure checks, appropriate browser execution, and CI as the authority for those tests, as required by AGENTS.md.
+The initial harness had `@solid-refresh` failures in certain TSX tests, as recorded in AGENTS.md. The current local harness can execute the full suite; record the actual result for each delivery. CI remains the authority, and DOM tests do not replace browser, Safari or VoiceOver evidence.
 
 ### Delivery gates
 
