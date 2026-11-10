@@ -591,3 +591,50 @@
   font-size: 12px;
   color: var(--oasis-text-muted);
 }
+
+/* Feedback is scoped to the owning editor and does not resize its Ribbon. */
+.oasis-editor-clipboard-feedback {
+  position: absolute;
+  inset-inline-end: 12px;
+  max-width: min(440px, calc(100% - 24px));
+  z-index: 120;
+}
+.oasis-editor-clipboard-feedback-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--oasis-border-color);
+  border-radius: 8px;
+  color: var(--oasis-text);
+  background: var(--oasis-bg);
+  box-shadow: 0 4px 18px rgb(0 0 0 / 18%);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.oasis-editor-clipboard-feedback-message > svg {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+}
+.oasis-editor-clipboard-feedback-message > button {
+  flex: 0 0 32px;
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+.oasis-editor-clipboard-feedback-message > button:hover {
+  background: var(--oasis-bg);
+}
+.oasis-editor-clipboard-feedback-message > button:focus-visible {
+  outline: 2px solid var(--oasis-accent);
+  outline-offset: 2px;
+}

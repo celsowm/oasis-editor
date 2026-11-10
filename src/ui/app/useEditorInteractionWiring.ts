@@ -1,3 +1,4 @@
+import type { EditorClipboardActions } from "./createEditorClipboardActions.js";
 import { getParagraphById, type EditorState } from "@/core/model.js";
 import type { EditorLogger } from "@/utils/logger.js";
 import { createEditorClipboardController } from "@/app/controllers/useEditorClipboard.js";
@@ -27,6 +28,7 @@ type ClipboardParams = Parameters<typeof createEditorClipboardController>[0];
  * the pointer/keyboard interaction controllers on top of them.
  */
 export interface EditorInteractionWiringContext {
+  clipboardActions?: EditorClipboardActions;
   state: EditorState;
   applyState: NavigationParams["applyState"];
   applyTransactionalState: TextDragParams["applyTransactionalState"];
@@ -132,7 +134,9 @@ export function useEditorInteractionWiring(
     tableResize,
     imageOps: ctx.imageOps,
     clearPendingCaretTextStyle: ctx.styleController.clearPendingCaretTextStyle,
-    onSelectionFinalized: (): void => { ctx.formatPainter.applyToSelection("pointer"); },
+    onSelectionFinalized: (): void => {
+      ctx.formatPainter.applyToSelection("pointer");
+    },
     clearPreferredColumn: ctx.clearPreferredColumn,
     resetTransactionGrouping: ctx.resetTransactionGrouping,
     focusInputAfterPointerSelection: ctx.focusInputAfterPointerSelection,
@@ -178,6 +182,8 @@ export function useEditorInteractionWiring(
       state,
       isReadOnly: ctx.isReadOnly,
       forcePlainTextPaste: ctx.getForcePlainTextPaste,
+      consumePasteMode: ctx.clipboardActions?.consumePasteMode,
+      onNativeClipboardSuccess: ctx.clipboardActions?.dismiss,
       setForcePlainTextPaste: ctx.setForcePlainTextPaste,
       clearPreferredColumn: ctx.clearPreferredColumn,
       resetTransactionGrouping: ctx.resetTransactionGrouping,

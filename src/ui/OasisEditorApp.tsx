@@ -1,3 +1,5 @@
+import { createEditorClipboardActions } from "./app/createEditorClipboardActions.js";
+import { ClipboardFeedback } from "./components/ClipboardFeedback.js";
 import { createSignal, onCleanup, onMount, Show } from "solid-js";
 import { type EditorState, EditorSelection } from "@/core/model.js";
 
@@ -209,7 +211,19 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     updateHistoryState,
   } = documentRuntime;
 
+  const clipboardActions = createEditorClipboardActions({
+    state: (): EditorState => state,
+    isReadOnly,
+    applyTransactionalState,
+    applyTableAwareParagraphEdit: (current, edit): EditorState =>
+      interaction.tableOps.applyTableAwareParagraphEdit(current, edit),
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    focusInput,
+  });
+
   const interaction = createEditorInteractionRuntime({
+    clipboardActions,
     state: state as EditorState,
     logger,
     isReadOnly,
@@ -272,6 +286,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   });
 
   const commandRuntime = createEditorCommandRuntime({
+    clipboardActions,
     document: documentRuntime,
     interaction,
     commentComposer,
@@ -330,6 +345,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     handleEditorContextMenu,
     closeContextMenu,
   } = createEditorChrome({
+    clipboardActions,
     state: (): EditorState => state,
     selection: (): EditorSelection => state.selection,
     toolbarStyleState: styleController.toolbarStyleState,
@@ -512,6 +528,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           />
         </Show>
 
+        <ClipboardFeedback
+          notice={clipboardActions.notice}
+          onDismiss={(): void => {
+            clipboardActions.dismiss();
+            focusInput();
+          }}
+        />
         <Show when={commentComposer.panelOpen()}>
           <ReviewCommentsPanel
             state={(): EditorState => state}

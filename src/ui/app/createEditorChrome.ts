@@ -1,3 +1,4 @@
+import type { EditorClipboardActions } from "./createEditorClipboardActions.js";
 import type { MergeKey } from "@/core/transactionMergeKeys.js";
 import type { EditorSelection, EditorState } from "@/core/model.js";
 import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
@@ -29,6 +30,7 @@ interface ContextMenuState {
 }
 
 export interface EditorChromeDeps {
+  clipboardActions?: EditorClipboardActions;
   state: () => EditorState;
   selection: () => EditorSelection;
   toolbarStyleState: () => ToolbarStyleState;
@@ -129,6 +131,7 @@ function createEditorChromeImpl(deps: EditorChromeDeps) {
   };
 
   const contextMenuClipboard = createEditorContextMenuClipboard({
+    clipboardActions: deps.clipboardActions,
     state: deps.state,
     isReadOnly: deps.isReadOnly,
     t: deps.t,

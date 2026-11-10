@@ -1,42 +1,52 @@
-import { getSelectedText } from "@/core/commands/selection.js";
 import type { EssentialsBrowserCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
-import { canReadSystemClipboard, pasteFromSystemClipboard } from "../clipboardPaste.js";
-import { canWriteSystemClipboard, cutEditorSelection, writeEditorSelectionToClipboard } from "../clipboardWrite.js";
+import { createEditorClipboardActions } from "../createEditorClipboardActions.js";
 
-/**
- * Copies the editor's *model selection*, not the DOM selection of the button
- * that currently holds focus. Keyboard copy through the editor input continues
- * to use useEditorClipboard, preserving its existing rich-clipboard behavior.
- */
+/** Ribbon and context-menu actions share this editor's clipboard feedback. */
 export function buildEssentialsBrowser(
-  options: Pick<CreateEditorEssentialsPluginOptions,
-    | "state" | "isReadOnly" | "applyTransactionalState" | "tableOps"
-    | "clearPreferredColumn" | "resetTransactionGrouping" | "focusInput"
+  options: Pick<
+    CreateEditorEssentialsPluginOptions,
+    | "state"
+    | "isReadOnly"
+    | "applyTransactionalState"
+    | "tableOps"
+    | "clearPreferredColumn"
+    | "resetTransactionGrouping"
+    | "focusInput"
+    | "clipboardActions"
   >,
 ): EssentialsBrowserCapability {
-  const state = options.state;
-  const pasteDeps = {
-    state,
-    isReadOnly: options.isReadOnly,
-    applyTransactionalState: options.applyTransactionalState,
-    applyTableAwareParagraphEdit: options.tableOps.applyTableAwareParagraphEdit,
-    clearPreferredColumn: options.clearPreferredColumn,
-    resetTransactionGrouping: options.resetTransactionGrouping,
-    focusInput: options.focusInput,
-  };
-  const selectedText = (): string => getSelectedText(state());
-
+  const actions =
+    options.clipboardActions ??
+    createEditorClipboardActions({
+      state: options.state,
+      isReadOnly: options.isReadOnly,
+      applyTransactionalState: options.applyTransactionalState,
+      applyTableAwareParagraphEdit:
+        options.tableOps.applyTableAwareParagraphEdit,
+      clearPreferredColumn: options.clearPreferredColumn,
+      resetTransactionGrouping: options.resetTransactionGrouping,
+      focusInput: options.focusInput,
+    });
   return {
-    canCut: canWriteSystemClipboard,
-    cut: (): void => { void cutEditorSelection(pasteDeps); },
-    canPaste: canReadSystemClipboard,
-    paste: (): void => { void pasteFromSystemClipboard(pasteDeps, "rich"); },
-    pasteAsPlainText: (): void => { void pasteFromSystemClipboard(pasteDeps, "text"); },
-    pasteMergeFormatting: (): void => { void pasteFromSystemClipboard(pasteDeps, "merge"); },
-    hasSelection: (): boolean => selectedText().length > 0,
+    // Without the browser API, the action offers the native keyboard path.
+    canCut: (): boolean => true,
+    canPaste: (): boolean => true,
+    hasSelection: actions.hasSelection,
     copy: (): void => {
-      void writeEditorSelectionToClipboard(state());
+      void actions.copy();
+    },
+    cut: (): void => {
+      void actions.cut();
+    },
+    paste: (): void => {
+      void actions.paste("rich");
+    },
+    pasteAsPlainText: (): void => {
+      void actions.paste("text");
+    },
+    pasteMergeFormatting: (): void => {
+      void actions.paste("merge");
     },
   };
 }

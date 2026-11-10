@@ -1,3 +1,4 @@
+import type { EditorClipboardActions } from "./createEditorClipboardActions.js";
 import { getSelectedImageRun } from "@/core/commands/image.js";
 import { getSelectedTextBoxRun } from "@/core/commands/textBox.js";
 import { cloneEditorState } from "@/core/cloneState.js";
@@ -21,6 +22,7 @@ type DocRuntime = ReturnType<typeof createEditorDocumentRuntime>;
 type CommandsController = ReturnType<typeof createEditorCommandsController>;
 
 export interface EditorInteractionRuntimeDeps {
+  clipboardActions?: EditorClipboardActions;
   state: EditorState;
   logger: EditorLogger;
   isReadOnly: () => boolean;
@@ -218,6 +220,7 @@ function createEditorInteractionRuntimeImpl(
     formatPainter,
     getForcePlainTextPaste,
     setForcePlainTextPaste,
+    clipboardActions: deps.clipboardActions,
     insertImageFromFile,
     openEquationDialog: deps.openEquationDialog,
   });

@@ -1,4 +1,19 @@
 export const ptBR = {
+  "clipboard.unsupportedOption":
+    "Este conteúdo não pode ser colado com esta opção. Tente Colar normalmente ou Inserir Imagem.",
+  // Clipboard feedback
+  "clipboard.copyDenied":
+    "Não foi possível copiar. Pressione {0} no documento para copiar o texto selecionado.",
+  "clipboard.cutDenied":
+    "Não foi possível recortar. Seu texto foi mantido. Pressione {0} no documento para recortá-lo.",
+  "clipboard.pasteDenied":
+    "Não foi possível acessar a área de transferência. Pressione {0} no documento para colar com a opção escolhida.",
+  "clipboard.empty": "A área de transferência está vazia.",
+  "clipboard.unsupported":
+    "Use a colagem pelo teclado para este conteúdo. Pressione {0} no documento.",
+  "clipboard.documentChanged":
+    "O documento mudou enquanto a área de transferência estava aberta. Tente novamente.",
+
   // Toolbar
   "toolbar.file": "Arquivo",
   "toolbar.export": "Exportar",

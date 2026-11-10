@@ -1,3 +1,4 @@
+import type { EditorClipboardActions } from "../createEditorClipboardActions.js";
 import type { MergeKey } from "@/core/transactionMergeKeys.js";
 import type { EditorState } from "@/core/model.js";
 import type { SelectedImageRun } from "@/core/commands/image.js";
@@ -10,6 +11,7 @@ import type { createEditorTableOperations } from "@/app/controllers/useEditorTab
 import type { EssentialsDesignCapability } from "@/plugins/internal/essentialsCapabilities.js";
 
 export interface CreateEditorEssentialsPluginOptions {
+  clipboardActions?: EditorClipboardActions;
   design?: EssentialsDesignCapability;
   state: () => EditorState;
   isReadOnly: () => boolean;

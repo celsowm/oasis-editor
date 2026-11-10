@@ -1,8 +1,8 @@
+import type { EditorClipboardActions } from "./createEditorClipboardActions.js";
+import { createEditorClipboardActions } from "./createEditorClipboardActions.js";
 import type { MergeKey } from "@/core/transactionMergeKeys.js";
 import type { EditorState } from "@/core/model.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
-import { cutEditorSelection, writeEditorSelectionToClipboard } from "./clipboardWrite.js";
-import { pasteFromSystemClipboard } from "./clipboardPaste.js";
 import type { TranslateFn } from "@/i18n/index.js";
 import type { ContextMenuItem } from "@/ui/components/ContextMenu/ContextMenu.js";
 import type { EditorLogger } from "@/utils/logger.js";
@@ -14,6 +14,7 @@ interface ContextMenuState {
 }
 
 export interface EditorContextMenuClipboardDeps {
+  clipboardActions?: EditorClipboardActions;
   state: () => EditorState;
   isReadOnly: () => boolean;
   t: TranslateFn;
@@ -70,39 +71,16 @@ function createEditorContextMenuClipboardImpl(
   deps: EditorContextMenuClipboardDeps,
 ) {
   const t = deps.t;
-  const programmaticCopy = async (): Promise<void> => {
-    if (!(await writeEditorSelectionToClipboard(deps.state()))) {
-      deps.logger.warn("contextMenu:copy:failed");
-    }
-  };
-
-  const programmaticCut = async (): Promise<void> => {
-    const success = await cutEditorSelection({
-      state: deps.state,
-      isReadOnly: deps.isReadOnly,
-      clearPreferredColumn: deps.clearPreferredColumn,
-      resetTransactionGrouping: deps.resetTransactionGrouping,
-      applyTransactionalState: deps.applyTransactionalState,
-      applyTableAwareParagraphEdit: deps.applyTableAwareParagraphEdit,
-      focusInput: deps.focusInput,
+  const actions =
+    deps.clipboardActions ??
+    createEditorClipboardActions({
+      ...deps,
+      onIssue: (issue): void =>
+        deps.logger.warn("contextMenu:clipboard:not-completed", { issue }),
     });
-    if (!success) deps.logger.warn("contextMenu:cut:not-completed");
-  };
-
-  const programmaticPaste = async (): Promise<void> => {
-    await pasteFromSystemClipboard({
-      state: deps.state,
-      isReadOnly: deps.isReadOnly,
-      applyTransactionalState: deps.applyTransactionalState,
-      applyTableAwareParagraphEdit: deps.applyTableAwareParagraphEdit,
-      clearPreferredColumn: deps.clearPreferredColumn,
-      resetTransactionGrouping: deps.resetTransactionGrouping,
-      focusInput: deps.focusInput,
-      onError: (error): void => {
-        deps.logger.warn("contextMenu:paste:failed", { error: String(error) });
-      },
-    }, "rich");
-  };
+  const programmaticCopy = actions.copy;
+  const programmaticCut = actions.cut;
+  const programmaticPaste = (): Promise<boolean> => actions.paste("rich");
 
   const buildContextMenuItems = (): ContextMenuItem[] => {
     const hasSelection = !isSelectionCollapsed(deps.state().selection);

@@ -1,4 +1,19 @@
 export const en = {
+  "clipboard.unsupportedOption":
+    "This content cannot be pasted with this option. Try regular Paste or Insert Picture.",
+  // Clipboard feedback
+  "clipboard.copyDenied":
+    "Could not copy. Press {0} in the document to copy the selected text.",
+  "clipboard.cutDenied":
+    "Could not cut. Your text is unchanged. Press {0} in the document to cut it.",
+  "clipboard.pasteDenied":
+    "Could not access the clipboard. Press {0} in the document to paste with the option you selected.",
+  "clipboard.empty": "The clipboard is empty.",
+  "clipboard.unsupported":
+    "This clipboard content needs a native paste. Press {0} in the document.",
+  "clipboard.documentChanged":
+    "The document changed while the clipboard was open. Try again.",
+
   // Toolbar
   "toolbar.file": "File",
   "toolbar.export": "Export",

@@ -1,3 +1,4 @@
+import type { EditorClipboardActions } from "./createEditorClipboardActions.js";
 import { createEffect } from "solid-js";
 import type { BooleanStyleKey } from "@/ui/toolbarStyleState.js";
 import { getDocumentParagraphs, type EditorState } from "@/core/model.js";
@@ -29,6 +30,7 @@ interface LinkDialogSetter {
 }
 
 export interface EditorCommandRuntimeDeps {
+  clipboardActions?: EditorClipboardActions;
   document: DocumentRuntime;
   interaction: InteractionRuntime;
   commentComposer: EditorCommentComposer;
@@ -123,6 +125,7 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
     menuRegistry,
   } = useEditorRuntimeBootstrap({
     essentials: {
+      clipboardActions: deps.clipboardActions,
       state: (): EditorState => deps.state,
       isReadOnly: deps.isReadOnly,
       forcePlainTextPaste: {
