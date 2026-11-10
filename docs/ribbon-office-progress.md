@@ -189,6 +189,44 @@ Evidence:
 
 Limits: this is core and keyboard/model evidence, not a pixel comparison or a pointer/touch/VoiceOver/Safari/format round-trip certification. Actual pointer targeting, complex stories/tables/lists, full appearance properties and applicable DOCX/PDF workflows remain open with the rest of D01 and M0–M5.
 
+## Delivery 7 — inherited Font toggles and explicit DOCX resets
+
+Date: 2026-11-10. D02 and P06 remain **partial**.
+
+A selected run can inherit Bold, Italic or Underline from its paragraph/character style without storing a direct flag. The previous toggle inspected only direct flags, so clicking an apparently active button could leave the effective formatting enabled. Selected-run analysis now resolves effective styles. Turning an inherited effect off stores an explicit false override; ordinary direct formatting still removes redundant flags where safe. Single underline overrides inherited Double, and script toggles explicitly suppress an inherited opposite position.
+
+DOCX export now writes explicit off values when necessary, including both ordinary/complex-script bold and italic flags, `w:u` Single/None and baseline script position. Materialization avoids filling ordinary unformatted runs with unnecessary false defaults. Import retains the reset needed to override inherited styles. The core fix and DOCX fix are separate commits. The distinction between an absent property and an explicit reset follows the primary [Bold](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.bold?view=openxml-3.0.1), [Underline](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.underline?view=openxml-3.0.1) and [VerticalPositionValues](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.verticalpositionvalues?view=openxml-3.0.1) documentation.
+
+Evidence:
+
+- Eight core regression scenarios cover effective inherited toggles, mixed runs, underline replacement/removal, script mutual exclusion and minimal ordinary overrides.
+- Twenty DOCX scenarios cover supported boolean reset flags, contextual alternates, unused defaults, underline Single/None and script baseline export/reimport.
+- `npm run test:ribbon:inherited` passes 32 range workflows and 16 actual keyboard-typing paths per engine in Chromium, Firefox and WebKit. Two themes/locales and 1440/640 px exercise the actual Font controls and collapsed group. Checks cover the original range, outside text, destination links, active state, one-step undo/redo, explicit DOCX XML and self-reimport. Caret formatting does not mutate content before typing.
+- Synthetic DOCX files and manifests remain gitignored under `debug_artifacts/ribbon-inherited-formatting-{engine}/`. The owned CI runner adds this eighth suite, retaining Chromium evidence under `test-results/ribbon/inherited-formatting/`.
+
+Limits: inherited appearance is tested for the named properties, not all Font controls or mixed-state presentation. IME, complex stories/tables, Word-open/repair, PDF, VoiceOver and real-Safari editing workflows remain open. Self-reimport is not external interoperability certification.
+
+## Delivery 8 — aligned dropdown affordances and B/I/U footprints
+
+Date: 2026-11-10. A01/A03, D02 and I06/I07 remain **partial**. Reference: the user's observed alignment defects and the existing original Ribbon components.
+
+Rendered dropdown arrows previously varied between 12, 13, 16 and a distorted 18 × 13 px. Generic SVG rules could enlarge the arrow along with an action icon. The shared affordance now occupies 12 × 12 px, centered in its own slot. Large menus and split actions use shared icon/caption/arrow bands; Paste, Margins, Shading and Borders participate. Native selects retain native selection/keyboard behavior with the same decorative arrow. The size field accommodates the existing 20.25 value.
+
+`DropdownChevron` now owns its SVG node. The earlier observer-replaced placeholder could leave duplicate arrows after conditional remounts; lifecycle coverage verifies disposal, remounting, reactive classes and retained captions. Icon sizing excludes affordances without increasing selector specificity, preserving the 16 px review-sheet samples.
+
+The Underline button keeps its original text U. Its letter and underline mark form one footprint aligned to both the top and bottom of B/I, rather than aligning the letter alone and leaving its mark lower. The primary mark is a stable single line; variant previews, selected menu state, remembered choice and application remain in the dropdown. This presentation intentionally avoids compressing double/wave samples into the small primary glyph.
+
+Evidence:
+
+- `scripts/ribbon-chevron-geometry.mjs` checks rendered arrow dimensions, decorative accessibility, vertical slots and the complete B/I/U footprint. Context captures and the resize suite invoke it, including the nested Font popup.
+- Final 1440 px and collapsed 640 px Font checks pass in Chromium, Firefox and WebKit. B/I ink spans 80.25–93.75 px in the full Ribbon; U plus mark spans approximately 80.19–93.75 in Chromium, 79.69–93.75 in Firefox and 80.20–93.75 in WebKit. The assertion allows at most 1 CSS px per edge for raster/font metrics.
+- Actual Safari 27.0.1 has a visible, focused synthetic host at actual width 1440 px, with 12 correctly sized visible arrows and no duplicates after reload. The cropped dark pt-BR Ribbon is retained at `debug_artifacts/ribbon-chevrons-after/safari-dark-pt-BR-1440.png`. Before/after and individual Font crops are in the same gitignored evidence directory; rejected intermediate U prototypes are not baselines.
+- Eight Chromium underline editing workflows still pass, including menu application, history, DOCX self-reimport and read-only controls.
+- The final owned Chromium CI run passes all eight suites: reference, resize, 260 contextual layouts, 48 SVG review scenes, underline, Clipboard, Painter and inherited Font. The geometry guard runs in context/resize checks.
+- TypeScript, changed-source ESLint and both static audits pass. Full local Vitest: 317 files / 1,837 tests passed; one file/test skipped. Global lint still reports 249 errors and 19 warnings outside the changed source files.
+
+Limits: targeted Safari DOM/pixel evidence does not certify trusted keyboard/pointer workflows, permissions or VoiceOver. All remaining layout families, themes/states, units, accessibility and M0–M5 criteria stay in scope.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

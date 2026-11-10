@@ -27,7 +27,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "partial",
-      "nextEvidence": "Complete Home/Clipboard/Font/Paragraph acceptance, including native Safari/OS clipboard prompts, painter, mixed/inherited styles, typing/IME, lists and required formats. These scoped workflows do not certify the whole tab.",
+      "nextEvidence": "Complete Home/Clipboard/Font/Paragraph acceptance, including native Safari/OS clipboard prompts, pointer painter, mixed-state presentation, other Font controls, IME, lists and required external formats. These scoped workflows do not certify the whole tab.",
       "evidence": {
         "suite": "scripts/verify-ribbon-contexts.mjs",
         "fixtures": [
@@ -63,6 +63,10 @@
         "painter": {
           "suite": "scripts/verify-ribbon-painter.mjs",
           "scope": "Inherited appearance, actual Shift+End keyboard selection, one-shot/continuous, undo/redo and lifecycle cancellation in three engines; target carets seeded through the client. Pointer/touch, real Safari/VoiceOver and DOCX/PDF unverified."
+        },
+        "inheritedFont": {
+          "suite": "scripts/verify-ribbon-inherited-formatting.mjs",
+          "scope": "Inherited Bold/Italic/Underline off and Single replacement, range preservation, one-step undo/redo, caret typing, explicit DOCX reset XML and self-reimport in three engines. Other properties, mixed-state presentation, IME, Word/PDF and real Safari workflows unverified."
         }
       }
     },
