@@ -402,6 +402,23 @@
       "notes": "Related task: Oasis exposes a Home style gallery that applies paragraph styles, while WordCraft's Styles Pane is a separate management surface. The gallery does not establish style creation, modification, inspection or management parity; style coverage and DOCX round-trip need workflow verification."
     },
     {
+      "id": "review.wordCountStatusRelated",
+      "wordcraftCommand": "review.wordCount",
+      "ribbonId": null,
+      "tab": "review",
+      "group": "proofing",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Status bar > word count",
+      "uiEvidence": {
+        "file": "src/ui/EditorStatusBar.tsx",
+        "token": "editor-statusbar-word-count"
+      },
+      "notes": "Related display only: Oasis shows the total word count in its status bar, while WordCraft's Review command opens a detailed word-count view. Selection-scoped counts and pages/characters/paragraphs statistics are not provided by this status item."
+    },
+    {
       "id": "home.sortParagraphs",
       "wordcraftCommand": "para.sort",
       "oasisCommand": "sortParagraphs",

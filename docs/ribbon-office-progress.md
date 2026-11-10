@@ -712,6 +712,16 @@ The matrix now contains 238 Oasis capability rows and links 202 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` and `npm run audit:ribbon:wordcraft` pass; the pinned catalog reports 202 linked rows.
 
+## Delivery 52 — Word-count display relationship
+
+Date: 2026-11-10. B01 and P01 remain **partial**.
+
+Recorded Oasis's status-bar total word count as a related display for WordCraft Review > Word Count. Oasis does not provide that command's detailed statistics view or selection-scoped counts through this status item.
+
+The matrix now contains 239 Oasis capability rows and links 203 of 521 WordCraft source rows; 318 remain unlinked.
+
+Evidence: `npm run audit:ribbon` validates the UI-only source evidence in `src/ui/EditorStatusBar.tsx`; `npm run audit:ribbon:wordcraft` reports 203 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
