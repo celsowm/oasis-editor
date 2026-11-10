@@ -1117,13 +1117,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
+  width: 18px;
   height: 18px;
-  font-size: 16.5px;
+  font-size: 18px;
   font-weight: 400;
-  line-height: 1;
+  line-height: 18px;
   font-family: Calibri, Arial, sans-serif;
-  transform: translateY(-1px);
 }
 
 .oasis-editor-underline-split-icon {
