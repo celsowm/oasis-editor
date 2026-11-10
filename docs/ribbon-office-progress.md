@@ -83,11 +83,13 @@ The browser suite checks 68 shrinking/expanding layouts per engine across two th
 
 - TypeScript and changed-file ESLint: passed.
 - Non-UI Vitest: 250 passed files, one skipped; 1,464 passed tests, one skipped.
-- Targeted DOM/registry/preset suites: 49 tests passed. These suites execute successfully; this does not certify the other TSX harness suites.
+- Targeted DOM/registry/preset suites: 49 tests passed. The full local suite also executed successfully: 309 passed files, one skipped; 1,788 passed tests, one skipped.
 - Ribbon wiring and icon inventories: passed.
 - Chromium, Firefox and WebKit: resize scenarios passed; gallery/composition/keyboard checks also passed in all four theme/locale combinations per engine.
 - Actual Safari 27.0.1: panel and viewport both measured at 1440, 1200, 960, 800 and 640 px; states retained in local evidence; Font/Paragraph do not reverse their reduction, and Escape dismisses the underline child while retaining the Font popup. This is targeted Safari DOM/event evidence, not a VoiceOver pass.
 - Global lint retains pre-existing failures outside the changed files.
+
+The first remote run exposed jsdom's missing `ResizeObserver` in the existing style gallery test. The test now supplies a controlled observer/strip width, checks whole-card thresholds during resize and verifies observer cleanup. Production browser behavior remains covered by the independent browser suite.
 
 ## Remaining execution queue
 

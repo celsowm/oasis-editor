@@ -46,6 +46,7 @@ const styles: ToolbarDocumentStyle[] = [
 
 afterEach(() => {
   document.body.innerHTML = "";
+  vi.unstubAllGlobals();
 });
 
 describe("StyleGallery", () => {
@@ -83,6 +84,27 @@ describe("StyleGallery", () => {
   });
 
   it("expands, marks the active style, and dispatches by style type", async () => {
+    let stripWidth = 212;
+    const resizeCallbacks = new Set<() => void>();
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        private notify: () => void;
+        constructor(callback: () => void) {
+          this.notify = callback;
+        }
+        observe(target: HTMLElement): void {
+          Object.defineProperty(target, "clientWidth", {
+            configurable: true,
+            get: () => stripWidth,
+          });
+          resizeCallbacks.add(this.notify);
+        }
+        disconnect(): void {
+          resizeCallbacks.delete(this.notify);
+        }
+      },
+    );
     const execute = vi.fn();
     const values: Record<string, string> = {
       setStyleId: "normal",
@@ -121,6 +143,18 @@ describe("StyleGallery", () => {
       host,
     );
 
+    const inlineCards = (): number =>
+      host.querySelectorAll(
+        ".oasis-editor-style-gallery-strip .oasis-editor-style-gallery-card",
+      ).length;
+    expect(inlineCards()).toBe(2);
+    stripWidth = 211;
+    resizeCallbacks.forEach((callback) => callback());
+    expect(inlineCards()).toBe(1);
+    stripWidth = 212;
+    resizeCallbacks.forEach((callback) => callback());
+    expect(inlineCards()).toBe(2);
+
     expect(
       host
         .querySelector("[data-style-id='normal']")
@@ -157,5 +191,6 @@ describe("StyleGallery", () => {
       "styles-expand",
     );
     dispose();
+    expect(resizeCallbacks.size).toBe(0);
   });
 });
