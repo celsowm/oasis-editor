@@ -519,6 +519,8 @@ export const ptBR = {
   "ribbon.group.editing": "Edição",
   "ribbon.group.pages": "Páginas",
   "ribbon.group.tableOfContents": "Sumário",
+  "ribbon.updateToc": "Atualizar",
+  "ribbon.replyComment": "Responder",
   "ribbon.group.tracking": "Controle de Alterações",
   "ribbon.group.changes": "Alterações",
   "ribbon.group.show": "Mostrar",

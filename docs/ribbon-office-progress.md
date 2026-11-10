@@ -402,6 +402,18 @@ Evidence: recaptured the Home ribbon in Chromium at 640 px and then captured all
 
 Limits: other long labels and measurement units still need review across tabs, locales and expanded menus. V04 remains incomplete.
 
+## Delivery 22 — Long action labels across the Ribbon
+
+Date: 2026-11-10. V04 remains **partial**.
+
+A headless Chromium audit of visible Ribbon button labels found two genuine truncations. “Update Table of Contents” competed with its icon in References; “Responder comentário” exceeded its Review button by 4 px in the dark pt-BR layout at 960 px. The visible labels now use concise localized actions (“Update” / “Atualizar” and “Reply” / “Responder”), while their tooltips retain the full task names and the group labels provide context.
+
+The reference verifier now checks visible action-label overflow on every default tab at 1440, 1200, 960, 800, and 640 px, in both themes and English/pt-BR. The four theme/language combinations pass. Forty additional Ribbon-only captures cover References and Review across that width/theme/language matrix.
+
+Evidence: `RIBBON_BROWSER=chromium RIBBON_OUTPUT=debug_artifacts/ribbon-v04-labels RIBBON_THEMES=light,dark RIBBON_LOCALES=en,pt-BR RIBBON_WIDTHS=1440,1200,960,800,640 RIBBON_TABS=references,review node scripts/capture-ribbon-reference.mjs`; `RIBBON_BROWSER=chromium node scripts/verify-ribbon-reference.mjs`; typecheck; changed-file ESLint; Ribbon and icon audits; and 1,547 core tests pass. Capture manifests and screenshots remain gitignored. No Safari windows were opened.
+
+Limits: the overflow check covers visible Ribbon button captions; measurement fields, color-split captions, expanded menus, contextual tabs, other locales, Safari, and VoiceOver still need review. V04 remains incomplete.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

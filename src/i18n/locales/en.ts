@@ -514,6 +514,8 @@ export const en = {
   "ribbon.group.editing": "Editing",
   "ribbon.group.pages": "Pages",
   "ribbon.group.tableOfContents": "Table of Contents",
+  "ribbon.updateToc": "Update",
+  "ribbon.replyComment": "Reply",
   "ribbon.group.tracking": "Tracking",
   "ribbon.group.changes": "Changes",
   "ribbon.group.show": "Show",

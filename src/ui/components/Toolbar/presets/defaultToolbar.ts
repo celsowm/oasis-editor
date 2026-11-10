@@ -863,7 +863,7 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     id: "editor-toolbar-update-toc",
     testId: "editor-toolbar-update-toc",
     iconName: "refresh-cw",
-    labelKey: "menu.insert.updateToc",
+    labelKey: "ribbon.updateToc",
     tooltipKey: "menu.insert.updateToc",
     command: "updateTableOfContents",
   });
@@ -943,7 +943,7 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     id: "editor-toolbar-reply-comment",
     testId: "editor-toolbar-reply-comment",
     iconName: "reply",
-    labelKey: "toolbar.replyComment",
+    labelKey: "ribbon.replyComment",
     tooltipKey: "toolbar.replyComment",
     command: "replyComment",
   });

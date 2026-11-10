@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global process, document, getComputedStyle, innerWidth, console */
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
 import assert from "node:assert/strict";
 import { chromium, firefox, webkit, expect } from "@playwright/test";
@@ -92,6 +93,78 @@ try {
           locale === "en" ? "Header & Footer" : "Cabeçalho e Rodapé",
         ),
       );
+      const ribbonTabs = await page
+        .getByRole("tab")
+        .evaluateAll((elements) =>
+          elements.map((el) => el.id.replace("oasis-editor-ribbon-tab-", "")),
+        );
+      for (const width of [1440, 1200, 960, 800, 640]) {
+        await page.setViewportSize({ width, height: 900 });
+        for (const tab of ribbonTabs) {
+          await page.getByTestId(`editor-ribbon-tab-${tab}`).click();
+          const clippedLabels = await page
+            .locator(
+              ".oasis-editor-toolbar-view-ribbon .oasis-editor-tool-button-label:visible",
+            )
+            .evaluateAll((elements) =>
+              elements
+                .filter(
+                  (el) =>
+                    el.scrollWidth > el.clientWidth + 1 ||
+                    el.scrollHeight > el.clientHeight + 1,
+                )
+                .map((el) => ({
+                  id: el.closest("button")?.dataset.testid ?? null,
+                  text: el.textContent?.trim() ?? "",
+                  clientWidth: el.clientWidth,
+                  scrollWidth: el.scrollWidth,
+                  clientHeight: el.clientHeight,
+                  scrollHeight: el.scrollHeight,
+                })),
+            );
+          assert.deepEqual(
+            clippedLabels,
+            [],
+            `${theme}/${locale}/${width}/${tab}: Ribbon labels must not clip`,
+          );
+
+          const expected =
+            tab === "references"
+              ? {
+                  id: "editor-toolbar-update-toc",
+                  label: locale === "en" ? "Update" : "Atualizar",
+                  title:
+                    locale === "en"
+                      ? "Update Table of Contents"
+                      : "Atualizar Sumário",
+                }
+              : tab === "review"
+                ? {
+                    id: "editor-toolbar-reply-comment",
+                    label: locale === "en" ? "Reply" : "Responder",
+                    title:
+                      locale === "en"
+                        ? "Reply to Comment"
+                        : "Responder comentário",
+                  }
+                : undefined;
+          if (expected) {
+            const button = page.getByTestId(expected.id);
+            assert.equal(
+              await button
+                .locator(".oasis-editor-tool-button-label")
+                .textContent(),
+              expected.label,
+              `${theme}/${locale}/${width}: concise action label`,
+            );
+            assert.equal(
+              await button.getAttribute("title"),
+              expected.title,
+              `${theme}/${locale}/${width}: complete action tooltip`,
+            );
+          }
+        }
+      }
       await page.setViewportSize({ width: 640, height: 900 });
       const home = page.getByTestId("editor-ribbon-tab-home");
       await home.focus();
