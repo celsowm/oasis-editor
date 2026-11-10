@@ -1559,6 +1559,91 @@
       "semantics": "partial",
       "persistence": "unverified",
       "notes": "WordCraft styles.apply with a character-style payload maps to Oasis's character-style gallery path. WordCraft's no-payload branch opens a Styles pane that Oasis does not expose; style availability, selection behavior, clearing, undo and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.advancedFind",
+      "wordcraftCommand": "edit.advancedFind",
+      "oasisCommand": "find",
+      "ribbonId": "editor-toolbar-find",
+      "tab": "home",
+      "group": "editing",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "notes": "The Oasis Find button opens a dialog with match-case and whole-word filters. WordCraft Advanced Find also supports prefix/suffix matching, ignored punctuation/spacing, wildcards, regex, special codes, selection scope and match highlighting; those paths are not represented in Oasis."
+    },
+    {
+      "id": "home.findNext",
+      "wordcraftCommand": "edit.findNext",
+      "oasisCommand": null,
+      "ribbonId": null,
+      "tab": "home",
+      "group": "editing",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Home > Find dialog > Next match",
+      "uiEvidence": {
+        "file": "src/ui/components/FindReplace/FindReplaceDialog.tsx",
+        "token": "fr.findNext"
+      },
+      "notes": "The Find dialog advances to the next match through its controller, and Enter invokes the same action. Oasis has no shared find-next command; wraparound, selection retention and parity with WordCraft's additional search options need workflow verification."
+    },
+    {
+      "id": "home.findPrevious",
+      "wordcraftCommand": "edit.findPrevious",
+      "oasisCommand": null,
+      "ribbonId": null,
+      "tab": "home",
+      "group": "editing",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Home > Find dialog > Previous match",
+      "uiEvidence": {
+        "file": "src/ui/components/FindReplace/FindReplaceDialog.tsx",
+        "token": "fr.findPrevious"
+      },
+      "notes": "The Find dialog moves to the previous match through its controller, and Shift+Enter invokes the same action. Oasis has no shared find-previous command; wraparound, selection retention and parity with WordCraft's additional search options need workflow verification."
+    },
+    {
+      "id": "home.replaceOne",
+      "wordcraftCommand": "edit.replace",
+      "oasisCommand": null,
+      "ribbonId": null,
+      "tab": "home",
+      "group": "editing",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Home > Find dialog > Replace",
+      "uiEvidence": {
+        "file": "src/ui/components/FindReplace/FindReplaceDialog.tsx",
+        "token": "fr.replace"
+      },
+      "notes": "Replace one applies the replacement term to the active match through the dialog controller. WordCraft's edit.replace accepts a direct search/replacement payload with advanced options; Oasis has no shared command bound to this UI action. Selection, formatting preservation, undo and DOCX behavior need workflow verification."
+    },
+    {
+      "id": "home.replaceAll",
+      "wordcraftCommand": "edit.replaceAll",
+      "oasisCommand": null,
+      "ribbonId": null,
+      "tab": "home",
+      "group": "editing",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Home > Find dialog > Replace all",
+      "uiEvidence": {
+        "file": "src/ui/components/FindReplace/FindReplaceDialog.tsx",
+        "token": "fr.replaceAll"
+      },
+      "notes": "Replace all runs through the dialog controller and supports match-case and whole-word filters. The separate Oasis replaceAll command is not dispatched by this UI; WordCraft also supports regex/special codes and a wider option set. A single undo step, formatting, selection and DOCX behavior need workflow verification."
     }
   ]
 }

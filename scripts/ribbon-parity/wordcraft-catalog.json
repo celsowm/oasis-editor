@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 117
+    "linkedRows": 122
   },
   "defaultTabs": [
     "File",
@@ -1461,7 +1461,9 @@
       "group": "Editing",
       "name": "Find Next",
       "command": "edit.findNext",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.findNext"
+      ]
     },
     {
       "index": 126,
@@ -1470,7 +1472,9 @@
       "group": "Editing",
       "name": "Find Previous",
       "command": "edit.findPrevious",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.findPrevious"
+      ]
     },
     {
       "index": 127,
@@ -1479,7 +1483,9 @@
       "group": "Editing",
       "name": "Advanced Find",
       "command": "edit.advancedFind",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.advancedFind"
+      ]
     },
     {
       "index": 128,
@@ -1488,7 +1494,9 @@
       "group": "Editing",
       "name": "Replace",
       "command": "edit.replace",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.replaceOne"
+      ]
     },
     {
       "index": 129,
@@ -1497,7 +1505,9 @@
       "group": "Editing",
       "name": "Replace All",
       "command": "edit.replaceAll",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.replaceAll"
+      ]
     },
     {
       "index": 130,

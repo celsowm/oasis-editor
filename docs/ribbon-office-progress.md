@@ -544,6 +544,16 @@ The matrix now contains 130 Oasis capability rows and links 117 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` confirms all three paths use the `editor-toolbar-style` gallery and registered style commands; the generated source snapshot reports 117 linked rows.
 
+## Delivery 35 — Find and Replace paths
+
+Date: 2026-11-10. B01, D02 and P05 remain **partial**.
+
+Mapped Advanced Find to the Home Find launcher, which opens Oasis's Find dialog. Recorded Next, Previous, Replace and Replace All as UI-only dialog paths because those controls call the dialog controller directly rather than a shared command. The dialog offers match-case and whole-word search, while WordCraft exposes more options including wildcards, regex, special codes and selection scope; the crosswalk preserves this gap.
+
+The matrix now contains 135 Oasis capability rows and links 122 of 521 WordCraft source rows; 399 remain unlinked. Search wrapping, replace formatting, single-step undo, keyboard behavior and DOCX workflows still need end-to-end verification.
+
+Evidence: the audit validates the Home Find binding and the four FindReplaceDialog source tokens; the catalog snapshot reports 122 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
