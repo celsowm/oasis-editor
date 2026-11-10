@@ -27,7 +27,7 @@ The target is comparable quality, discoverability, and workflows for the selecte
 - Observed Oasis: HEAD `8aaa8985937b5c5959e2d8bc0850c0dfcd932856`, with a pre-existing local change in `ribbonModel.ts`. Reconcile that change before implementing work in this area.
 - Observed WordCraft: HEAD `05f781cfdac1d89034c0f4f5824b597ff845f2ef`.
 - Visual inventory: 64 Oasis and 153 WordCraft captures, organized into 21 tab categories and 53 menu/expansion scenes in the comparison viewer. These counts do not measure completed features.
-- Direct reference: 21 dark-theme Word web/Safari captures across seven tabs and three widths. This round did not directly validate Word desktop or its contextual tools.
+- Direct reference: 21 dark-theme Word web/Safari captures across seven tabs and three widths, plus one extra 1470 px Insert capture (22 total). This round did not directly validate Word desktop or its contextual tools.
 - Oasis measurements: 36 captures across nine tabs and 25 additional resize measurements. Actual content widths of 1440/1200/960 were verified; playground geometry invalidated some smaller targets.
 - Confirmed findings: visible `headerFooter`/`sort` identifiers; truncated style previews; a 339 px Clipboard group; Paragraph collapses at 1200 and reappears at 960 while Font collapses; collapsed groups lose their spatial organization.
 - Preserve these strengths: Margins previews, the color palette, table style galleries, contextual tabs, and the shared command boundary.
@@ -97,7 +97,7 @@ Current M0 status (2026-11-10), with evidence and remaining limits in the [deliv
 | B01 | Partial — 69 of 521 source rows are linked; the rest still need individual review. |
 | B02 | Complete for the Chromium reference host's required widths; Safari and VoiceOver remain in M5. |
 | B03 | Complete — seven synthetic fixtures and their contextual capture metadata are verified. |
-| B04 | Partial — the 53 scenes have relationship labels; the direct Word capture queue still needs explicit review. |
+| B04 | Complete — all 53 scene relationships are classified and direct Word captures are explicitly queued; capture execution remains in M5. |
 
 ### M1a — Immediate fixes
 

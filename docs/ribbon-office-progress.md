@@ -438,11 +438,23 @@ Evidence: `RIBBON_BROWSER=chromium node scripts/verify-ribbon-contexts.mjs` gene
 
 Limits: this closes the synthetic-fixture and capture-metadata acceptance for Chromium. Safari, VoiceOver, Firefox/WebKit coverage for this contextual matrix, and interactions outside the recorded scenarios remain open. It does not establish command semantics or persistence.
 
+## Delivery 25 — direct Word capture decisions for reference scenes
+
+Date: 2026-11-10. B04 is **complete** for scene classification and capture planning; B01 remains **partial**.
+
+Reviewed the complete 53-scene reference set: 14 equivalent-command comparisons, eight related-task comparisons, and 31 scenes with no captured Oasis counterpart. The existing direct Word web baseline contains 21 planned tab captures across seven tabs and three widths plus one additional Insert capture at 1470 px. It contains no scene-specific menu/expansion evidence, so all 53 scenes require a direct Word capture before their visual references can be verified. This is a capture queue decision, not a claim that those menus were inspected in Word.
+
+Added `wordCaptureStatus` to every scene and a machine-readable policy stating the baseline scope and 0/53 captured-scene count. `npm run audit:ribbon` now guards the 53-scene count, unique IDs, relationship vocabulary, rationale, capture-status vocabulary, and policy/status totals so new or stale rows cannot silently disappear from the queue.
+
+Evidence: counted the 22 historical `word-web-*.png` files and inspected the tab-level Home capture; `references.json` has all 53 menu scenes marked `wordVerification: unverified`. The relationship totals and capture decision counts are checked by the Ribbon audit. No new Safari window or automation was used.
+
+Limits: B04 closes only the classification and identification requirement. Direct Word submenu captures, desktop/contextual references, and browser/VoiceOver workflows remain open under M5; no menu is treated as visually verified.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
 
-1. Finish B01 source/category reconciliation, B04 reference decisions, and remaining V02/V04 cases. B02 width evidence and B03 fixture captures are recorded; V01/V03 checks are recorded; real Safari/VoiceOver validation remains open.
+1. Finish B01 source/category reconciliation and remaining V02/V04 cases. B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
 2. Complete the remaining I03/I04 icon families and A01/A02 contextual/custom layout acceptance.
 3. A03/A04: action/menu/launcher semantics, short viewports, spatial matrices and contextual popup transitions.
 4. R01–R05: close late-font, zoom, pointer/IME, invalidation and performance evidence across remaining contexts.

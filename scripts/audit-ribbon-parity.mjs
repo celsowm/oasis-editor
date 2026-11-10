@@ -21,6 +21,7 @@ const root = resolve(import.meta.dirname, "..");
 const source = (path) => readFileSync(resolve(root, path), "utf8");
 const catalog = JSON.parse(source("scripts/ribbon-parity/features.json"));
 const wordcraft = JSON.parse(source("scripts/ribbon-parity/wordcraft-catalog.json"));
+const references = JSON.parse(source("scripts/ribbon-parity/references.json"));
 
 const getName = (name) =>
   ts.isIdentifier(name) || ts.isStringLiteral(name) ? name.text : undefined;
@@ -353,6 +354,38 @@ function main() {
   const placements = collectPlacements();
   const menu = collectMenuCommands();
   const errors = [];
+  const scenes = references.scenes ?? [];
+  const sceneCapturePolicy = references.references?.wordSceneCapturePolicy;
+  const sceneRelationships = new Set([
+    "equivalent-command",
+    "related-task",
+    "no-captured-counterpart",
+  ]);
+  const sceneCaptureStatuses = new Set(["required", "captured", "not-applicable"]);
+  const sceneIds = new Set();
+  const requiredSceneCaptures = scenes.filter((scene) => scene.wordCaptureStatus === "required").length;
+  const capturedSceneCaptures = scenes.filter((scene) => scene.wordCaptureStatus === "captured").length;
+  if (scenes.length !== 53) errors.push("Reference scene count differs from the reviewed baseline");
+  if (sceneCapturePolicy?.baselineScope !== "tab-ribbon-only" || !Number.isInteger(sceneCapturePolicy?.baselineCaptureCount)) {
+    errors.push("Word scene-capture baseline metadata is incomplete");
+  }
+  if (sceneCapturePolicy?.requiredSceneCount !== requiredSceneCaptures ||
+      sceneCapturePolicy?.capturedSceneCount !== capturedSceneCaptures) {
+    errors.push("Word scene-capture policy counts do not match scene statuses");
+  }
+  for (const scene of scenes) {
+    if (!scene.id || sceneIds.has(scene.id)) errors.push("Missing or duplicate reference scene ID");
+    sceneIds.add(scene.id);
+    if (!sceneRelationships.has(scene.relationship)) errors.push(`${scene.id}: invalid reference relationship`);
+    if (!scene.rationale?.trim()) errors.push(`${scene.id}: missing relationship rationale`);
+    if (!sceneCaptureStatuses.has(scene.wordCaptureStatus)) errors.push(`${scene.id}: missing Word capture decision`);
+    if (scene.wordCaptureStatus === "required" && scene.wordVerification !== "unverified") {
+      errors.push(`${scene.id}: required Word capture is marked verified`);
+    }
+    if (scene.wordCaptureStatus === "captured" && scene.wordVerification === "unverified") {
+      errors.push(`${scene.id}: captured Word scene lacks verification`);
+    }
+  }
   const ids = new Set();
   const crosswalkByWordcraftCommand = new Map();
   for (const feature of catalog.features) {

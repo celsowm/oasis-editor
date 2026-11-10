@@ -15,7 +15,14 @@
   "references": {
     "oasisObservedCommit": "8aaa8985937b5c5959e2d8bc0850c0dfcd932856",
     "wordcraftObservedCommit": "05f781cfdac1d89034c0f4f5824b597ff845f2ef",
-    "word": "Word web in Safari; dark theme; seven tabs; desktop/contextual tools unverified"
+    "word": "Word web in Safari; dark theme; seven tabs; desktop/contextual tools unverified",
+    "wordSceneCapturePolicy": {
+      "baselineCaptureCount": 22,
+      "baselineScope": "tab-ribbon-only",
+      "capturedSceneCount": 0,
+      "requiredSceneCount": 53,
+      "rationale": "The historical Word web captures cover top-level Ribbon tabs. None contains a paired menu or expansion image for the 53 classified scenes, so each scene needs direct Word evidence before visual comparison."
+    }
   },
   "categories": [
     {
@@ -423,7 +430,8 @@
       "wordcraftCapture": "home--font-color-options",
       "relationship": "equivalent-command",
       "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-02",
@@ -432,7 +440,8 @@
       "wordcraftCapture": "home--text-highlight-color-options",
       "relationship": "equivalent-command",
       "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-03",
@@ -441,7 +450,8 @@
       "wordcraftCapture": "home--underline-options",
       "relationship": "equivalent-command",
       "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-04",
@@ -450,7 +460,8 @@
       "wordcraftCapture": "home--change-case",
       "relationship": "equivalent-command",
       "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-05",
@@ -459,7 +470,8 @@
       "wordcraftCapture": "home--line-and-paragraph-spacing",
       "relationship": "equivalent-command",
       "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-06",
@@ -468,7 +480,8 @@
       "wordcraftCapture": "home--shading-options",
       "relationship": "related-task",
       "rationale": "Verify whether shading targets text or paragraphs before comparing options.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-07",
@@ -477,7 +490,8 @@
       "wordcraftCapture": "home--paste-v",
       "relationship": "equivalent-command",
       "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-08",
@@ -486,7 +500,8 @@
       "wordcraftCapture": "home--numbering-options",
       "relationship": "related-task",
       "rationale": "Advanced numbering properties versus a quick numbering library.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-09",
@@ -495,7 +510,8 @@
       "wordcraftCapture": "home--bullets-options",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-10",
@@ -504,7 +520,8 @@
       "wordcraftCapture": "home--paragraph-tools",
       "relationship": "related-task",
       "rationale": "Style selection versus paragraph tools; compare presentation only.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-11",
@@ -513,7 +530,8 @@
       "wordcraftCapture": "home--text-effects-and-typography--text-fill",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-12",
@@ -522,7 +540,8 @@
       "wordcraftCapture": "insert--header",
       "relationship": "related-task",
       "rationale": "Combined header/footer destinations versus header templates and edit/remove actions.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-13",
@@ -531,7 +550,8 @@
       "wordcraftCapture": "insert--shapes",
       "relationship": "equivalent-command",
       "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-14",
@@ -540,7 +560,8 @@
       "wordcraftCapture": "insert--symbol",
       "relationship": "equivalent-command",
       "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-15",
@@ -549,7 +570,8 @@
       "wordcraftCapture": "insert--add-a-table",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-16",
@@ -558,7 +580,8 @@
       "wordcraftCapture": "insert--add-a-table--quick-tables",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-17",
@@ -567,7 +590,8 @@
       "wordcraftCapture": "insert--page-number",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-18",
@@ -576,7 +600,8 @@
       "wordcraftCapture": "design--themes",
       "relationship": "equivalent-command",
       "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-19",
@@ -585,7 +610,8 @@
       "wordcraftCapture": "design--page-color",
       "relationship": "equivalent-command",
       "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-20",
@@ -594,7 +620,8 @@
       "wordcraftCapture": "design--watermark",
       "relationship": "related-task",
       "rationale": "Watermark property editor versus presets and customization.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-21",
@@ -603,7 +630,8 @@
       "wordcraftCapture": null,
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-22",
@@ -612,7 +640,8 @@
       "wordcraftCapture": "layout--margins",
       "relationship": "equivalent-command",
       "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-23",
@@ -621,7 +650,8 @@
       "wordcraftCapture": "layout--orientation",
       "relationship": "equivalent-command",
       "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-24",
@@ -630,7 +660,8 @@
       "wordcraftCapture": "layout--size",
       "relationship": "related-task",
       "rationale": "Paragraph measurements versus paper size; compare units and labels only.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-25",
@@ -639,7 +670,8 @@
       "wordcraftCapture": "references--table-of-contents",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-26",
@@ -648,7 +680,8 @@
       "wordcraftCapture": "references--insert-citation",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-27",
@@ -657,7 +690,8 @@
       "wordcraftCapture": "review--accept",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-28",
@@ -666,7 +700,8 @@
       "wordcraftCapture": "review--reject",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-29",
@@ -675,7 +710,8 @@
       "wordcraftCapture": "review--display-for-review",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-30",
@@ -684,7 +720,8 @@
       "wordcraftCapture": "view--zoom",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-31",
@@ -693,7 +730,8 @@
       "wordcraftCapture": "view--outline",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-32",
@@ -702,7 +740,8 @@
       "wordcraftCapture": "table-design--shading-options",
       "relationship": "equivalent-command",
       "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-33",
@@ -711,7 +750,8 @@
       "wordcraftCapture": "table-design--table-styles",
       "relationship": "related-task",
       "rationale": "Select table style versus create/modify/delete styles.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-34",
@@ -720,7 +760,8 @@
       "wordcraftCapture": "table-design--borders",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-35",
@@ -729,7 +770,8 @@
       "wordcraftCapture": "table-layout--autofit",
       "relationship": "related-task",
       "rationale": "Cell dimension group versus AutoFit menu; complementary tasks.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-36",
@@ -738,7 +780,8 @@
       "wordcraftCapture": null,
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-37",
@@ -747,7 +790,8 @@
       "wordcraftCapture": null,
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-38",
@@ -756,7 +800,8 @@
       "wordcraftCapture": "table-layout--delete",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-39",
@@ -765,7 +810,8 @@
       "wordcraftCapture": "picture-format--picture-border",
       "relationship": "equivalent-command",
       "rationale": "Same user-facing task; option semantics and persistence require separate verification.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-40",
@@ -774,7 +820,8 @@
       "wordcraftCapture": null,
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-41",
@@ -783,7 +830,8 @@
       "wordcraftCapture": "picture-format--wrap-text",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-42",
@@ -792,7 +840,8 @@
       "wordcraftCapture": "draw--add-pen",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-43",
@@ -801,7 +850,8 @@
       "wordcraftCapture": "draw--color-options",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-44",
@@ -810,7 +860,8 @@
       "wordcraftCapture": "draw--thickness",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-45",
@@ -819,7 +870,8 @@
       "wordcraftCapture": "mailings--start-mail-merge",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-46",
@@ -828,7 +880,8 @@
       "wordcraftCapture": "mailings--select-recipients",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-47",
@@ -837,7 +890,8 @@
       "wordcraftCapture": "mailings--rules",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-48",
@@ -846,7 +900,8 @@
       "wordcraftCapture": "mailings--finish---merge",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-49",
@@ -855,7 +910,8 @@
       "wordcraftCapture": "shape-format--shape-fill",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-50",
@@ -864,7 +920,8 @@
       "wordcraftCapture": "shape-format--shape-outline",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-51",
@@ -873,7 +930,8 @@
       "wordcraftCapture": "shape-format--align",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-52",
@@ -882,7 +940,8 @@
       "wordcraftCapture": "shape-format--rotate",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     },
     {
       "id": "scene-53",
@@ -891,7 +950,8 @@
       "wordcraftCapture": "shape-format--text-effects",
       "relationship": "no-captured-counterpart",
       "rationale": "No homologous expansion in the historical capture set; this does not establish a missing command.",
-      "wordVerification": "unverified"
+      "wordVerification": "unverified",
+      "wordCaptureStatus": "required"
     }
   ]
 }
