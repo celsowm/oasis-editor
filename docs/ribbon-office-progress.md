@@ -624,6 +624,16 @@ The matrix now contains 194 Oasis capability rows and links 166 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` verifies command registration, direct Ribbon IDs, command bindings and contextual placements for all 17 capability rows; the WordCraft catalog snapshot reports 166 linked rows.
 
+## Delivery 43 — Table Design controls and audit evidence
+
+Date: 2026-11-10. B01 and D07 remain **partial**.
+
+Mapped the six Table Style Options toggles, named table-style gallery, cell shading, border presets and Border Painter to their contextual Table Design controls. Extended the source audit to find commands dispatched from static option arrays and to retain the actual imported custom component when its render expression also calls an option builder. Added explicit contextual placement for the Style Options and Border Painter items; the audit had exposed Border Painter's missing placement.
+
+The matrix now contains 204 Oasis capability rows and links 171 of 521 WordCraft source rows; 350 remain unlinked. The Table Design Create/Modify/Delete Style entries remain unlinked for individual review. Visual style application, conditional formatting, cell scope, pointer drawing, undo and DOCX rendering need workflow evidence.
+
+Evidence: `npm run audit:ribbon` verifies all 10 capability paths, their shared custom-control commands and contextual placements; `TableStyleOptions.tsx`, `TableStyleGallery.tsx` and `TableBordersMenu.tsx` provide the control implementations. The catalog snapshot reports 171 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

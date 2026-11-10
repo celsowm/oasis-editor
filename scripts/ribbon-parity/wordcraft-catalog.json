@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 166
+    "linkedRows": 171
   },
   "defaultTabs": [
     "File",
@@ -3677,7 +3677,14 @@
       "group": "Table Style Options",
       "name": "Table Style Options",
       "command": "table.look",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.lookHeaderRow",
+        "table.lookTotalRow",
+        "table.lookBandedRows",
+        "table.lookFirstColumn",
+        "table.lookLastColumn",
+        "table.lookBandedColumns"
+      ]
     },
     {
       "index": 355,
@@ -3686,7 +3693,9 @@
       "group": "Table Styles",
       "name": "Table Styles",
       "command": "table.style",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.styleGallery"
+      ]
     },
     {
       "index": 356,
@@ -3722,7 +3731,9 @@
       "group": "Table Styles",
       "name": "Shading",
       "command": "table.shading",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.shading"
+      ]
     },
     {
       "index": 360,
@@ -3731,7 +3742,9 @@
       "group": "Borders",
       "name": "Borders",
       "command": "table.borders",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.borders"
+      ]
     },
     {
       "index": 361,
@@ -3740,7 +3753,9 @@
       "group": "Borders",
       "name": "Border Painter",
       "command": "table.borderPainter",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.borderPainter"
+      ]
     },
     {
       "index": 362,

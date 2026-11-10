@@ -93,6 +93,7 @@ function findImportedComponentSource(render, imports) {
   let componentSource;
   const visit = (node) => {
     if (
+      !componentSource &&
       ts.isCallExpression(node) &&
       ts.isIdentifier(node.expression) &&
       imports.has(node.expression.text)
@@ -115,6 +116,12 @@ function collectExecutedCommands(path) {
       node.expression.name.text === "execute"
     ) {
       const command = getString(node.arguments[0]);
+      if (command) commands.add(command);
+    }
+    // Some custom controls dispatch from a static option object, for example
+    // `execute(option.command)` where `option` comes from a literal array.
+    if (ts.isPropertyAssignment(node) && getName(node.name) === "command") {
+      const command = getString(node.initializer);
       if (command) commands.add(command);
     }
     ts.forEachChild(node, visit);

@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `194` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `204` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -205,6 +205,16 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `table.sortAscending` | `table.sort` | `tableSortAscending` | `tableLayout/sort` | partial | partial | partial | unverified |
 | `table.sortDescending` | `table.sort` | `tableSortDescending` | `tableLayout/sort` | partial | partial | partial | unverified |
 | `table.convertToText` | `table.toText` | `tableToText` | `tableLayout/merge` | partial | partial | partial | unverified |
+| `table.lookHeaderRow` | `table.look` | `tableToggleHeaderRow` | `tableDesign/tableStyleOptions` | partial | partial | partial | unverified |
+| `table.lookTotalRow` | `table.look` | `tableToggleTotalRow` | `tableDesign/tableStyleOptions` | partial | partial | partial | unverified |
+| `table.lookBandedRows` | `table.look` | `tableToggleBandedRows` | `tableDesign/tableStyleOptions` | partial | partial | partial | unverified |
+| `table.lookFirstColumn` | `table.look` | `tableToggleFirstColumn` | `tableDesign/tableStyleOptions` | partial | partial | partial | unverified |
+| `table.lookLastColumn` | `table.look` | `tableToggleLastColumn` | `tableDesign/tableStyleOptions` | partial | partial | partial | unverified |
+| `table.lookBandedColumns` | `table.look` | `tableToggleBandedColumns` | `tableDesign/tableStyleOptions` | partial | partial | partial | unverified |
+| `table.styleGallery` | `table.style` | `setTableStyle` | `tableDesign/tableStyles` | partial | partial | partial | unverified |
+| `table.shading` | `table.shading` | `tableCellShading` | `tableDesign/borders` | partial | partial | partial | unverified |
+| `table.borders` | `table.borders` | `tableApplyBorderPreset` | `tableDesign/borders` | partial | partial | partial | unverified |
+| `table.borderPainter` | `table.borderPainter` | `toggleTableDrawBorders` | `tableDesign/borders` | partial | partial | partial | unverified |
 
 ## Open verification questions
 
@@ -402,6 +412,16 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 192. **table.sortAscending:** The Table Layout Sort Ascending button sorts body rows by the caret column. Sort keys, header handling, locale-aware values, undo and DOCX preservation need workflow verification.
 193. **table.sortDescending:** The Table Layout Sort Descending button sorts body rows by the caret column. Sort keys, header handling, locale-aware values, undo and DOCX preservation need workflow verification.
 194. **table.convertToText:** The Table Layout Convert to Text button flattens the active table to body paragraphs. Delimiter choice, nested content, selection, undo and formatting retention need workflow verification.
+195. **table.lookHeaderRow:** The Table Design Style Options control toggles the table header-row look flag. Table styles, conditional formatting, visual output and DOCX round-trip need workflow verification.
+196. **table.lookTotalRow:** The Table Design Style Options control toggles the table total-row look flag. Table styles, conditional formatting, visual output and DOCX round-trip need workflow verification.
+197. **table.lookBandedRows:** The Table Design Style Options control toggles banded-row formatting. Style interaction, conditional formatting, visual output and DOCX round-trip need workflow verification.
+198. **table.lookFirstColumn:** The Table Design Style Options control toggles first-column emphasis. Style interaction, conditional formatting, visual output and DOCX round-trip need workflow verification.
+199. **table.lookLastColumn:** The Table Design Style Options control toggles last-column emphasis. Style interaction, conditional formatting, visual output and DOCX round-trip need workflow verification.
+200. **table.lookBandedColumns:** The Table Design Style Options control toggles banded-column formatting. Style interaction, conditional formatting, visual output and DOCX round-trip need workflow verification.
+201. **table.styleGallery:** The Table Design gallery applies a named table style. Preview accuracy, style availability, conditional formatting, selection and DOCX round-trip need workflow verification.
+202. **table.shading:** The Table Design shading color control sets cell fill on the active cell selection. Mixed cells, clearing, theme colors, table-style precedence, undo and DOCX output need workflow verification.
+203. **table.borders:** The Table Design Borders menu applies named border presets to the active cell selection. Side selection, styles, colors, mixed cells, undo and DOCX output need workflow verification.
+204. **table.borderPainter:** The Table Design Border Painter button toggles Oasis's table-border drawing mode. Pointer targeting, selected border presets, keyboard behavior, undo and DOCX output need workflow verification.
 
 ## Audit interpretation
 

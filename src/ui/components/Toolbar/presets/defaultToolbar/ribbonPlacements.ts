@@ -169,6 +169,11 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
     group: "rowsColumns",
     row: 1,
   },
+  "editor-toolbar-tbl-border-painter": {
+    tab: "tableDesign",
+    group: "borders",
+    row: 2,
+  },
   "editor-toolbar-tbl-insert-col-left": {
     tab: "tableLayout",
     group: "rowsColumns",
@@ -257,6 +262,11 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
     row: 2,
   },
   "editor-toolbar-tbl-header-row": {
+    tab: "tableDesign",
+    group: "tableStyleOptions",
+    row: 1,
+  },
+  "editor-toolbar-tbl-style-options": {
     tab: "tableDesign",
     group: "tableStyleOptions",
     row: 1,
