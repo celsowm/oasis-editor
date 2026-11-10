@@ -1244,13 +1244,13 @@
     },
     {
       "file": "src/ui/components/Toolbar/renderers/renderers.tsx",
-      "line": 213,
+      "line": 214,
       "role": "icon",
       "expression": "props.item.iconName ??\n        (props.item.kind === \"color\"\n          ? \"type\"\n          : props.item.kind === \"shading\"\n            ? \"paint-bucket\"\n            : \"highlighter\")"
     },
     {
       "file": "src/ui/components/Toolbar/renderers/renderers.tsx",
-      "line": 279,
+      "line": 280,
       "role": "icon",
       "expression": "props.item.iconName"
     },
