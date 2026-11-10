@@ -242,6 +242,7 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
     clipboard: {
       priority: 30,
       states: ["full", "compact", "collapsed"],
+      collapsedMinWidth: 80,
       compactLabels: "hide",
       collapsedIcon: "clipboard",
     },

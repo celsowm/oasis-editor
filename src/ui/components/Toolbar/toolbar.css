@@ -178,6 +178,19 @@
 .oasis-editor-ribbon-group-collapsed-trigger {
   display: none;
 }
+/* Let a collapsed large menu use its group's allocated width for wrapped labels. */
+.oasis-editor-ribbon-group-collapsed
+  .oasis-editor-ribbon-group-collapsed-trigger
+  > .oasis-editor-toolbar-dropdown {
+  display: block;
+  width: 100%;
+}
+.oasis-editor-ribbon-group-collapsed
+  .oasis-editor-ribbon-group-collapsed-trigger
+  .oasis-editor-tool-button-ribbon-large {
+  width: 100%;
+  max-width: 72px;
+}
 .oasis-editor-ribbon-group-collapsed > .oasis-editor-ribbon-group-content {
   display: none;
 }

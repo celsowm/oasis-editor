@@ -380,11 +380,33 @@ Evidence: checked the pinned WordCraft command registrations and Home UI in `cra
 
 Limits: these are command and exposure mappings, not workflow equivalence. Mixed selections, keyboard/focus behavior, accessibility, external-format round-trips and actual Safari behavior remain unverified. B01 and D01 remain incomplete.
 
+## Delivery 20 — Headless Ribbon baseline and composition
+
+Date: 2026-11-10. B02 is **complete** for the reference host; B01 and V02 remain **partial**. V01 and V03 pass the reviewed acceptance checks.
+
+Captured 45 Ribbon-only scenes across the nine available tabs at content widths 1440, 1200, 960, 800 and 640 px. The headless Chromium harness fixes theme, locale, fixture, height and DPR, records requested and measured widths plus commit/font/document metadata, and rejects a width mismatch. The dark pt-BR text fixture produced a gitignored manifest and screenshots.
+
+The headless reference verifier passed four light/dark and English/pt-BR combinations. It checked the Header & Footer label and unknown-group fallback, the absence of an empty Accessibility group, complete style cards, expanded gallery theme, keyboard navigation and tab reachability at 640 px. Source review confirms composition filters hidden actions while retaining disabled ones; the panel rebuilds groups and schedules measurements when composition changes.
+
+Evidence: `RIBBON_BROWSER=chromium RIBBON_OUTPUT=debug_artifacts/ribbon-office-headless RIBBON_THEMES=dark RIBBON_LOCALES=pt-BR RIBBON_WIDTHS=1440,1200,960,800,640 node scripts/capture-ribbon-reference.mjs` captured the width matrix. `RIBBON_BROWSER=chromium node scripts/verify-ribbon-reference.mjs` verified the four theme/language combinations. No Safari windows were opened.
+
+Limits: this verifies Chromium composition and geometry, not real Safari interaction or VoiceOver. The width matrix covers the text fixture and one controlled theme/locale; list, style, table, image, section and review fixtures, Firefox/WebKit, and selection-driven composition changes still need separate evidence. B01, B03, B04 and V02 remain incomplete.
+
+## Delivery 21 — Collapsed Clipboard label at narrow widths
+
+Date: 2026-11-10. V04 remains **partial**.
+
+The 640 px pt-BR Home capture showed the collapsed “Área de Transferência” label clipped after two lines. Increased that group's collapsed allocation to 80 px and let its large menu trigger fill the allocation, so the label wraps as “Área de” / “Transferência” while the tooltip and accessible name keep the full wording. The final headless capture measured an 81 px group and a 72 px trigger; the label's scroll and client heights both measured 22 px.
+
+Evidence: recaptured the Home ribbon in Chromium at 640 px and then captured all 45 default-tab/width scenes at 1440, 1200, 960, 800 and 640 px. The reference verifier passed again across light/dark and en/pt-BR. No Safari windows were opened.
+
+Limits: other long labels and measurement units still need review across tabs, locales and expanded menus. V04 remains incomplete.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
 
-1. Finish B01/B02 inventory and scene coverage, real-Safari fixture validation, and the remaining V01–V04 cases.
+1. Finish B01 source/category reconciliation, B03 fixtures, B04 scene classification, and remaining V02/V04 cases. B02 width evidence and V01/V03 checks are recorded; real Safari/VoiceOver validation remains open.
 2. Complete the remaining I03/I04 icon families and A01/A02 contextual/custom layout acceptance.
 3. A03/A04: action/menu/launcher semantics, short viewports, spatial matrices and contextual popup transitions.
 4. R01–R05: close late-font, zoom, pointer/IME, invalidation and performance evidence across remaining contexts.
