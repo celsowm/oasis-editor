@@ -53,7 +53,12 @@ export function RibbonTabs(props: RibbonTabsProps): JSX.Element {
       availableTabs.length > 0 &&
       !availableTabs.some((tab): boolean => tab.id === props.activeTab())
     ) {
-      props.setActiveTab(availableTabs[0]!.id);
+      // Match the toolbar's contextual-exit policy. Picking File here races
+      // the parent effect when a table/image selection disappears.
+      props.setActiveTab(
+        (availableTabs.find((tab) => tab.id === "home") ?? availableTabs[0]!)
+          .id,
+      );
     }
   });
 
