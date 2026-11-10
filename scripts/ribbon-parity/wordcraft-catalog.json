@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 26
+    "linkedRows": 35
   },
   "defaultTabs": [
     "File",
@@ -602,7 +602,9 @@
       "group": "Font",
       "name": "Bold",
       "command": "format.bold",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.bold"
+      ]
     },
     {
       "index": 47,
@@ -611,7 +613,9 @@
       "group": "Font",
       "name": "Italic",
       "command": "format.italic",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.italic"
+      ]
     },
     {
       "index": 48,
@@ -656,7 +660,9 @@
       "group": "Font",
       "name": "Subscript",
       "command": "format.subscript",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.subscript"
+      ]
     },
     {
       "index": 53,
@@ -665,7 +671,9 @@
       "group": "Font",
       "name": "Superscript",
       "command": "format.superscript",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.superscript"
+      ]
     },
     {
       "index": 54,
@@ -944,7 +952,9 @@
       "group": "Paragraph",
       "name": "Decrease Indent",
       "command": "para.outdent",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.outdent"
+      ]
     },
     {
       "index": 85,
@@ -953,7 +963,9 @@
       "group": "Paragraph",
       "name": "Increase Indent",
       "command": "para.indent",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.indent"
+      ]
     },
     {
       "index": 86,
@@ -982,7 +994,9 @@
       "group": "Paragraph",
       "name": "Align Left",
       "command": "para.alignLeft",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.alignLeft"
+      ]
     },
     {
       "index": 89,
@@ -991,7 +1005,9 @@
       "group": "Paragraph",
       "name": "Center",
       "command": "para.alignCenter",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.alignCenter"
+      ]
     },
     {
       "index": 90,
@@ -1000,7 +1016,9 @@
       "group": "Paragraph",
       "name": "Align Right",
       "command": "para.alignRight",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.alignRight"
+      ]
     },
     {
       "index": 91,

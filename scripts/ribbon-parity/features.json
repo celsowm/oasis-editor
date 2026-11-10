@@ -6,7 +6,7 @@
     "wordcraftRepository": "storytold/wordcraft",
     "wordcraftCommit": "05f781cfdac1d89034c0f4f5824b597ff845f2ef"
   },
-  "scope": "38-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Category-level exposure, semantics, and persistence evidence is tracked separately in references.json and docs/ribbon-office-progress.md.",
+  "scope": "47-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Category-level exposure, semantics, and persistence evidence is tracked separately in references.json and docs/ribbon-office-progress.md.",
   "features": [
     {
       "id": "home.copy",
@@ -97,6 +97,96 @@
       "group": "editing",
       "status": "partial",
       "notes": "Selections spanning tables and document stories require E2E verification."
+    },
+    {
+      "id": "home.bold",
+      "wordcraftCommand": "format.bold",
+      "oasisCommand": "bold",
+      "ribbonId": "editor-toolbar-bold",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "Bold command is bound to the Home Font button. Delivery 7 covers inherited-style toggles, selection preservation and one-step undo/redo across the Font workflows; mixed-state presentation, Word-open interoperability and Safari/VoiceOver remain unverified."
+    },
+    {
+      "id": "home.italic",
+      "wordcraftCommand": "format.italic",
+      "oasisCommand": "italic",
+      "ribbonId": "editor-toolbar-italic",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "Italic command is bound to the Home Font button. Delivery 7 covers inherited-style toggles, selection preservation and one-step undo/redo across the Font workflows; mixed-state presentation, Word-open interoperability and Safari/VoiceOver remain unverified."
+    },
+    {
+      "id": "home.subscript",
+      "wordcraftCommand": "format.subscript",
+      "oasisCommand": "subscript",
+      "ribbonId": "editor-toolbar-subscript",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "Subscript command is bound to the Home Font button. Delivery 7 covers inherited-style resets, script mutual exclusion and keyboard editing across the Font workflows; mixed-state presentation, Word-open interoperability and Safari/VoiceOver remain unverified."
+    },
+    {
+      "id": "home.superscript",
+      "wordcraftCommand": "format.superscript",
+      "oasisCommand": "superscript",
+      "ribbonId": "editor-toolbar-superscript",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "Superscript command is bound to the Home Font button. Delivery 7 covers inherited-style resets, script mutual exclusion and keyboard editing across the Font workflows; mixed-state presentation, Word-open interoperability and Safari/VoiceOver remain unverified."
+    },
+    {
+      "id": "home.outdent",
+      "wordcraftCommand": "para.outdent",
+      "oasisCommand": "outdent",
+      "ribbonId": "editor-toolbar-list-outdent",
+      "tab": "home",
+      "group": "paragraph",
+      "status": "partial",
+      "notes": "Decrease Indent is bound to the Home Paragraph button. This is a related task, not a complete command equivalent: Oasis changes list nesting only, while WordCraft also adjusts non-list paragraph indentation. Table/list combinations, mixed selections, undo and DOCX/PDF output need workflow verification."
+    },
+    {
+      "id": "home.indent",
+      "wordcraftCommand": "para.indent",
+      "oasisCommand": "indent",
+      "ribbonId": "editor-toolbar-list-indent",
+      "tab": "home",
+      "group": "paragraph",
+      "status": "partial",
+      "notes": "Increase Indent is bound to the Home Paragraph button. This is a related task, not a complete command equivalent: Oasis changes list nesting only, while WordCraft also adjusts non-list paragraph indentation. Table/list combinations, mixed selections, undo and DOCX/PDF output need workflow verification."
+    },
+    {
+      "id": "home.alignLeft",
+      "wordcraftCommand": "para.alignLeft",
+      "oasisCommand": "alignLeft",
+      "ribbonId": "editor-toolbar-align-left",
+      "tab": "home",
+      "group": "paragraph",
+      "status": "partial",
+      "notes": "Align Left is bound to the Home Paragraph button. Mixed/multiple paragraph selection, table cells, keyboard behavior, undo and DOCX/PDF output need workflow verification."
+    },
+    {
+      "id": "home.alignCenter",
+      "wordcraftCommand": "para.alignCenter",
+      "oasisCommand": "alignCenter",
+      "ribbonId": "editor-toolbar-align-center",
+      "tab": "home",
+      "group": "paragraph",
+      "status": "partial",
+      "notes": "Center is bound to the Home Paragraph button. Mixed/multiple paragraph selection, table cells, keyboard behavior, undo and DOCX/PDF output need workflow verification."
+    },
+    {
+      "id": "home.alignRight",
+      "wordcraftCommand": "para.alignRight",
+      "oasisCommand": "alignRight",
+      "ribbonId": "editor-toolbar-align-right",
+      "tab": "home",
+      "group": "paragraph",
+      "status": "partial",
+      "notes": "Align Right is bound to the Home Paragraph button. Mixed/multiple paragraph selection, table cells, keyboard behavior, undo and DOCX/PDF output need workflow verification."
     },
     {
       "id": "insert.pageBreak",
