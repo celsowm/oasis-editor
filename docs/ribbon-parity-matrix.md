@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** 77-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `100` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `108` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -111,6 +111,14 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `home.engrave` | `format.engrave` | `engrave` | — | core-only | core-only | partial | unverified |
 | `home.rtlDirection` | `para.rtl` | `setTextDirection` | — | core-only | core-only | partial | partial |
 | `home.ltrDirection` | `para.ltr` | `setTextDirection` | — | core-only | core-only | partial | partial |
+| `file.print` | `file.print` | `print` | `file/document` | partial | partial | partial | not-applicable |
+| `file.exportPdf` | `file.exportPdf` | `exportPdf` | `file/document` | partial | partial | partial | partial |
+| `home.undo` | `edit.undo` | `undo` | `home/history` | partial | partial | partial | not-applicable |
+| `home.redo` | `edit.redo` | `redo` | `home/history` | partial | partial | partial | not-applicable |
+| `insert.editHeader` | `insert.editHeader` | `editHeader` | `insert/headerFooter` | partial | partial | partial | partial |
+| `insert.editFooter` | `insert.editFooter` | `editFooter` | `insert/headerFooter` | partial | partial | partial | partial |
+| `editing.lineBreak` | `text.lineBreak` | `lineBreak` | — | core-only | core-only | partial | partial |
+| `editing.columnBreak` | `text.columnBreak` | `columnBreak` | — | core-only | core-only | partial | partial |
 
 ## Open verification questions
 
@@ -214,6 +222,14 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 98. **home.engrave:** Oasis registers an engrave character-style command but no default Ribbon, menu or dialog control was found. Rendering, selection behavior, undo and DOCX preservation need verification.
 99. **home.rtlDirection:** Oasis registers a text-direction value command but no default Ribbon or menu control was found. Direction scope, mixed selections, RTL shaping and DOCX interoperability need workflow verification.
 100. **home.ltrDirection:** Oasis registers a text-direction value command but no default Ribbon or menu control was found. Direction scope, mixed selections, RTL shaping and DOCX interoperability need workflow verification.
+101. **file.print:** Oasis exposes Print in File > Document through the host/browser print flow. Page breaks, print settings, cancellation/errors, keyboard access and actual Safari output need workflow verification.
+102. **file.exportPdf:** Oasis exposes PDF export in File > Document. Long documents, page-level features, output integrity, failure/cancel behavior and visual comparisons still need workflow verification.
+103. **home.undo:** Oasis places Undo in Home > History while WordCraft exposes it in Quick Access. Shared history dispatch is wired; transaction scope, disabled state, keyboard parity and multi-step user workflows need verification.
+104. **home.redo:** Oasis places Redo in Home > History while WordCraft exposes it in Quick Access. Shared history dispatch is wired; transaction scope, disabled state, keyboard parity and multi-step user workflows need verification.
+105. **insert.editHeader:** Oasis exposes Edit Header from the Insert > Header & Footer menu. WordCraft also places it on its contextual Header & Footer tab; variant editing, selection/focus behavior and DOCX story round-trip need verification.
+106. **insert.editFooter:** Oasis exposes Edit Footer from the Insert > Header & Footer menu. WordCraft also places it on its contextual Header & Footer tab; variant editing, selection/focus behavior and DOCX story round-trip need verification.
+107. **editing.lineBreak:** Oasis registers a hard-line-break command but no default Ribbon/menubar control or shortcut was found. Selection/caret behavior, undo and DOCX break round-trip need verification.
+108. **editing.columnBreak:** Oasis registers a hard-column-break command but no default Ribbon/menubar control or shortcut was found. Column layout, selection/caret behavior, undo and DOCX break round-trip need verification.
 
 ## Audit interpretation
 

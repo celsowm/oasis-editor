@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 93
+    "linkedRows": 103
   },
   "defaultTabs": [
     "File",
@@ -220,7 +220,9 @@
       "group": "Backstage",
       "name": "Print",
       "command": "file.print",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.print"
+      ]
     },
     {
       "index": 6,
@@ -265,7 +267,9 @@
       "group": "Backstage",
       "name": "Export PDF",
       "command": "file.exportPdf",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.exportPdf"
+      ]
     },
     {
       "index": 11,
@@ -391,7 +395,9 @@
       "group": "Toolbar",
       "name": "Undo",
       "command": "edit.undo",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.undo"
+      ]
     },
     {
       "index": 25,
@@ -409,7 +415,9 @@
       "group": "Toolbar",
       "name": "Redo",
       "command": "edit.redo",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.redo"
+      ]
     },
     {
       "index": 27,
@@ -1786,7 +1794,9 @@
       "group": "Header & Footer",
       "name": "Edit Header",
       "command": "insert.editHeader",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.editHeader"
+      ]
     },
     {
       "index": 164,
@@ -1795,7 +1805,9 @@
       "group": "Header & Footer",
       "name": "Edit Footer",
       "command": "insert.editFooter",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.editFooter"
+      ]
     },
     {
       "index": 165,
@@ -4586,7 +4598,9 @@
       "group": "Navigation",
       "name": "Go to Header",
       "command": "insert.editHeader",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.editHeader"
+      ]
     },
     {
       "index": 470,
@@ -4595,7 +4609,9 @@
       "group": "Navigation",
       "name": "Go to Footer",
       "command": "insert.editFooter",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.editFooter"
+      ]
     },
     {
       "index": 471,
@@ -4649,7 +4665,9 @@
       "group": "Keyboard",
       "name": "Line Break",
       "command": "text.lineBreak",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "editing.lineBreak"
+      ]
     },
     {
       "index": 477,
@@ -4658,7 +4676,9 @@
       "group": "Keyboard",
       "name": "Column Break",
       "command": "text.columnBreak",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "editing.columnBreak"
+      ]
     },
     {
       "index": 478,

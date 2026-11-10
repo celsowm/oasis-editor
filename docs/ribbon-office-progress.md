@@ -482,6 +482,16 @@ The generated matrix now uses an Oasis-surface column to distinguish Ribbon plac
 
 Limits: dialog presence does not establish equivalent command dispatch, mixed-selection behavior, pagination/rendering, undo or DOCX persistence. D02/D03 and B01 remain open; the UI-only Tabs path needs a shared-command and round-trip review.
 
+## Delivery 29 — File, history, header/footer and break crosswalk
+
+Date: 2026-11-10. B01, D04, P03 and P04 remain **partial**.
+
+Mapped eight more WordCraft source commands to Oasis controls or registered core commands: File Print/PDF export, Quick Access Undo/Redo, Insert and contextual Edit Header/Edit Footer, and line/column breaks. The two Header/Footer command IDs each occur on both the Insert tab and the contextual source surface, so eight capability rows cover ten source-catalog rows. Direct controls are checked against their Toolbar IDs and placements; break commands are checked as registered `core-only` operations with no default Ribbon or menubar item.
+
+The matrix now contains 108 Oasis capability rows and links 103 of 521 WordCraft source rows; 418 remain unlinked. This classifies exposure and records workflow gaps without claiming parity: Oasis history is placed in Home, Header/Footer navigation lacks the same contextual surface, and print/PDF and break round-trips still need end-to-end evidence.
+
+Evidence: `npm run audit:ribbon` verifies all direct Ribbon mappings, command registrations, source IDs and the 103 linked-row count. Statuses for file output, history transaction grouping, contextual story editing, keyboard behavior and DOCX/PDF fidelity remain partial or unverified pending workflow tests.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
