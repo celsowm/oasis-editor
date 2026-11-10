@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `222` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `230` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -233,6 +233,14 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `table.selectTable` | `table.selectTable` | `tableSelectTable` | — | core-only | core-only | partial | not-applicable |
 | `review.acceptAll` | `review.acceptAll` | `acceptAllRevisions` | — | core-only | core-only | partial | unverified |
 | `review.rejectAll` | `review.rejectAll` | `rejectAllRevisions` | — | core-only | core-only | partial | unverified |
+| `image.crop` | `picture.crop` | `imageCrop` | `imageFormat/size` | partial | partial | partial | unverified |
+| `image.height` | `picture.size` | `imageHeightCm` | `imageFormat/size` | partial | partial | partial | unverified |
+| `image.width` | `picture.size` | `imageWidthCm` | `imageFormat/size` | partial | partial | partial | unverified |
+| `image.border` | `picture.border` | `imageBorder` | `imageFormat/imageStyles` | partial | partial | partial | unverified |
+| `image.altText` | `picture.altText` | `editImageAlt` | `insert/accessibility` | partial | partial | partial | unverified |
+| `image.reset` | `picture.reset` | `resetImage` | — | core-only | core-only | partial | unverified |
+| `image.transparency` | `picture.transparency` | `imageTransparency` | — | core-only | core-only | partial | unverified |
+| `image.rotation` | `arrange.rotation` | `setFloatingRotation` | — | core-only | core-only | partial | unverified |
 
 ## Open verification questions
 
@@ -458,6 +466,14 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 220. **table.selectTable:** Oasis registers a command to expand the active table selection to the whole table, but no default Ribbon, menu or dialog control was found. Caret targeting, focus, keyboard behavior and undo integration need workflow verification.
 221. **review.acceptAll:** Oasis registers Accept All Changes but no default Ribbon, menu or dialog control was found. Confirmation, protected revisions, comment anchors, undo and DOCX round-trip need workflow verification.
 222. **review.rejectAll:** Oasis registers Reject All Changes but no default Ribbon, menu or dialog control was found. Confirmation, protected revisions, comment anchors, undo and DOCX round-trip need workflow verification.
+223. **image.crop:** Oasis exposes a Crop menu on its contextual Image Format tab, with crop mode, aspect ratios, shape presets, Fill, Fit and Reset. Contextual activation, drag behavior, crop rendering, undo and DOCX round-trip need workflow verification against WordCraft.
+224. **image.height:** Oasis exposes selected-image height in centimetres and locks the aspect ratio. This covers one dimension of WordCraft Size; mixed selection, unit conversion, resizing behavior, undo and DOCX round-trip need workflow verification.
+225. **image.width:** Oasis exposes selected-image width in centimetres and locks the aspect ratio. This covers one dimension of WordCraft Size; mixed selection, unit conversion, resizing behavior, undo and DOCX round-trip need workflow verification.
+226. **image.border:** Oasis exposes picture border editing on its contextual Image Format tab. WordCraft's Picture Styles gallery is a separate, still-unmatched task; available border presets, selected-image behavior, undo and DOCX round-trip need workflow verification.
+227. **image.altText:** Oasis offers selected-image alt-text editing under Insert > Accessibility, while WordCraft places it on Picture Format. The task is related but the Ribbon placement differs; dialog content, screen-reader behavior and DOCX accessibility metadata need workflow verification.
+228. **image.reset:** Oasis registers Reset Picture without a default Ribbon, menu or dialog path. Its implementation clears crop, mask, transparency, border, rotation and flip while retaining the image frame size and floating position; confirmation, undo and DOCX round-trip need workflow verification.
+229. **image.transparency:** Oasis registers a selected-image transparency value from zero to one, but has no default Ribbon, menu or dialog control. Preset and slider UI, rendering, undo and DOCX/PDF interoperability need verification.
+230. **image.rotation:** Oasis registers exact-angle rotation for selected images and text boxes, but has no default contextual Ribbon or menu control. Angle entry, rendering, undo and DOCX/PDF interoperability need workflow verification.
 
 ## Audit interpretation
 

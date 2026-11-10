@@ -48,10 +48,12 @@ export function ImageSizeField(props: {
         step="0.1"
         value={cmValue(props.api, command)}
         onChange={(value): void => {
-          props.api.commands.execute(
-            command,
-            value == null ? "" : String(value),
-          );
+          const nextValue = value == null ? "" : String(value);
+          if (props.dimension === "height") {
+            props.api.commands.execute("imageHeightCm", nextValue);
+          } else {
+            props.api.commands.execute("imageWidthCm", nextValue);
+          }
         }}
       />
     </div>
@@ -127,6 +129,13 @@ function CropMenuRow(props: {
 
 /** The Cortar chevron menu: toggle crop mode + aspect-ratio presets. */
 export function ImageCropMenu(props: { api: ToolbarActionApi }): JSX.Element {
+  type CropCommand =
+    | "imageCrop"
+    | "imageCropShape"
+    | "imageCropAspect"
+    | "imageCropFill"
+    | "imageCropFit"
+    | "imageCropReset";
   const t = useI18n();
   const locale = (): Locale => (t("locale.id") === "en" ? "en" : "pt-BR");
   const menuId = createUniqueId();
@@ -136,8 +145,27 @@ export function ImageCropMenu(props: { api: ToolbarActionApi }): JSX.Element {
   const toggleSubmenu = (value: "shape" | "ratio"): void => {
     setSubmenu((current) => (current === value ? null : value));
   };
-  const apply = (command: string, payload?: string): void => {
-    props.api.commands.execute(command, payload);
+  const apply = (command: CropCommand, payload?: string): void => {
+    switch (command) {
+      case "imageCrop":
+        props.api.commands.execute("imageCrop");
+        break;
+      case "imageCropShape":
+        props.api.commands.execute("imageCropShape", payload ?? "");
+        break;
+      case "imageCropAspect":
+        props.api.commands.execute("imageCropAspect", payload ?? "");
+        break;
+      case "imageCropFill":
+        props.api.commands.execute("imageCropFill");
+        break;
+      case "imageCropFit":
+        props.api.commands.execute("imageCropFit");
+        break;
+      case "imageCropReset":
+        props.api.commands.execute("imageCropReset");
+        break;
+    }
     setSubmenu(null);
   };
   return (

@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 187
+    "linkedRows": 194
   },
   "defaultTabs": [
     "File",
@@ -4481,7 +4481,9 @@
       "group": "Adjust",
       "name": "Transparency",
       "command": "picture.transparency",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "image.transparency"
+      ]
     },
     {
       "index": 435,
@@ -4508,7 +4510,9 @@
       "group": "Adjust",
       "name": "Reset Picture",
       "command": "picture.reset",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "image.reset"
+      ]
     },
     {
       "index": 438,
@@ -4526,7 +4530,9 @@
       "group": "Picture Styles",
       "name": "Picture Border",
       "command": "picture.border",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "image.border"
+      ]
     },
     {
       "index": 440,
@@ -4535,7 +4541,9 @@
       "group": "Accessibility",
       "name": "Alt Text",
       "command": "picture.altText",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "image.altText"
+      ]
     },
     {
       "index": 441,
@@ -4553,7 +4561,9 @@
       "group": "Size",
       "name": "Crop",
       "command": "picture.crop",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "image.crop"
+      ]
     },
     {
       "index": 443,
@@ -4562,7 +4572,10 @@
       "group": "Size",
       "name": "Size",
       "command": "picture.size",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "image.height",
+        "image.width"
+      ]
     },
     {
       "index": 444,
@@ -4571,7 +4584,9 @@
       "group": "Size",
       "name": "Rotation",
       "command": "arrange.rotation",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "image.rotation"
+      ]
     },
     {
       "index": 445,

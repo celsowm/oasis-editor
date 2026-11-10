@@ -664,6 +664,16 @@ The matrix now contains 222 Oasis capability rows and links 187 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` validates both built-in and Essentials command registrations and confirms no default UI path; the catalog snapshot reports 187 linked rows.
 
+## Delivery 47 — Picture Format command paths
+
+Date: 2026-11-10. B01, D01 and P01 remain **partial**.
+
+Linked WordCraft Crop to Oasis's contextual crop menu, including its shape/aspect submenus and Fill/Fit/Reset actions. Linked Size to the separate height and width fields, Picture Border to the contextual border control, and Picture Alt Text to Oasis's selected-image Alt Text action under Insert > Accessibility. The Alt Text task is related, with different Ribbon placement. Reset Picture, transparency and exact-angle picture rotation are registered core commands without default Ribbon/menu paths; their runtime UI, undo and document-format behavior remain open. Corrections, color, artistic effects, background removal, compression, changing the picture source and the Picture Styles gallery remain unlinked for individual review.
+
+The matrix now contains 230 Oasis capability rows and links 194 of 521 WordCraft source rows; 327 remain unlinked. The static audit now recognizes the image-size and crop-menu dispatch paths.
+
+Evidence: `npm run audit:ribbon`, `npm run audit:ribbon:wordcraft` and `npm run audit:ribbon:icons` pass; the pinned catalog reports 194 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
