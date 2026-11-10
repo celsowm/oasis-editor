@@ -4,6 +4,7 @@ import type {
   EditorTextStyle,
   EditorParagraphNode,
   EditorTextRun,
+  EditorUnderlineStyle,
 } from "@/core/model.js";
 import {
   getParagraphLength,
@@ -134,6 +135,39 @@ export function clearSelectedTextFormatting(state: EditorState): EditorState {
     },
   );
 
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+  );
+}
+
+/** Apply or remove underline and its variant in one selection mutation. */
+export function applyUnderlineStyle(
+  state: EditorState,
+  style: EditorUnderlineStyle | null,
+): EditorState {
+  const normalized = normalizeSelection(state);
+  if (normalized.isCollapsed) return state;
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map((paragraph, index) => {
+    if (index < normalized.startIndex || index > normalized.endIndex)
+      return paragraph;
+    const start =
+      index === normalized.startIndex ? normalized.startParagraphOffset : 0;
+    const end =
+      index === normalized.endIndex
+        ? normalized.endParagraphOffset
+        : getParagraphLength(paragraph);
+    return mapRunsInRange(paragraph, start, end, (run) => ({
+      ...run,
+      styles: setValueStyle(
+        setBooleanStyle(run.styles, "underline", style !== null),
+        "underlineStyle",
+        style === "single" ? null : style,
+      ),
+    }));
+  });
   return cloneStateWithParagraphs(
     state,
     nextParagraphs,
