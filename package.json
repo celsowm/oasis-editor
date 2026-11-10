@@ -79,7 +79,8 @@
     "test:ribbon:icons": "node scripts/verify-ribbon-icons.mjs",
     "test:ribbon:editing": "node scripts/verify-ribbon-editing.mjs",
     "test:ribbon:clipboard": "node scripts/verify-ribbon-clipboard.mjs",
-    "test:ribbon:painter": "node scripts/verify-ribbon-painter.mjs"
+    "test:ribbon:painter": "node scripts/verify-ribbon-painter.mjs",
+    "test:ribbon:inherited": "node scripts/verify-ribbon-inherited-formatting.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

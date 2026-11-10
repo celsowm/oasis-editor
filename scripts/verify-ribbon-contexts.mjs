@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { verifyRibbonChevrons } from "./ribbon-chevron-geometry.mjs";
 import { execFileSync } from "node:child_process";
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
 import assert from "node:assert/strict";
@@ -176,7 +177,9 @@ try {
             await page
               .locator(".oasis-editor-toolbar")
               .screenshot({ path: resolve(output, screenshot) });
+            const iconGeometry = await verifyRibbonChevrons(page);
             records.push({
+              ...iconGeometry,
               sha,
               dirty,
               screenshot,

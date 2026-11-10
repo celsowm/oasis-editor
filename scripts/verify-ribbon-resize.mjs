@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { verifyRibbonChevrons } from "./ribbon-chevron-geometry.mjs";
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
 import assert from "node:assert/strict";
 import { chromium, firefox, webkit } from "@playwright/test";
@@ -138,6 +139,7 @@ try {
       await child.evaluate((el) =>
         el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true })),
       );
+      await verifyRibbonChevrons(page);
       await page.keyboard.press("Escape");
       await page.waitForTimeout(50);
       assert.equal(
