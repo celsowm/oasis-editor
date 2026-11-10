@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 125
+    "linkedRows": 132
   },
   "defaultTabs": [
     "File",
@@ -2284,7 +2284,9 @@
       "group": "Page Setup",
       "name": "Margins",
       "command": "layout.margins",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.margins"
+      ]
     },
     {
       "index": 211,
@@ -2293,7 +2295,9 @@
       "group": "Page Setup",
       "name": "Orientation",
       "command": "layout.orientation",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.orientation"
+      ]
     },
     {
       "index": 212,
@@ -2311,7 +2315,9 @@
       "group": "Page Setup",
       "name": "Columns",
       "command": "layout.columns",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.columns"
+      ]
     },
     {
       "index": 214,
@@ -2320,7 +2326,12 @@
       "group": "Page Setup",
       "name": "Breaks",
       "command": "layout.break",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.breakPage",
+        "layout.breakColumn",
+        "layout.breakNextPage",
+        "layout.breakContinuous"
+      ]
     },
     {
       "index": 215,
@@ -2358,7 +2369,9 @@
       "group": "Page Setup",
       "name": "Vertical Alignment",
       "command": "layout.verticalAlign",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.verticalAlign"
+      ]
     },
     {
       "index": 219,
@@ -2376,7 +2389,9 @@
       "group": "Page Setup",
       "name": "Section Direction",
       "command": "layout.sectionRtl",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.sectionDirection"
+      ]
     },
     {
       "index": 221,
@@ -2385,7 +2400,9 @@
       "group": "Page Setup",
       "name": "Text Direction",
       "command": "layout.textDirection",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.textDirection"
+      ]
     },
     {
       "index": 222,

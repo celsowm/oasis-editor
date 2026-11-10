@@ -1701,6 +1701,156 @@
         "token": "const applyToSelection = (origin: \"pointer\" | \"keyboard\")"
       },
       "notes": "After Format Painter is armed, Oasis applies the captured style when the destination selection is finalized; WordCraft exposes Paste Formatting as a separate command. This is a related UI task with different event timing and no shared command for the apply step; pointer/keyboard coverage, undo and DOCX behavior need verification."
+    },
+    {
+      "id": "layout.margins",
+      "wordcraftCommand": "layout.margins",
+      "oasisCommand": "setPageMargins",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "section",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Layout > Margins dropdown",
+      "uiEvidence": {
+        "file": "src/ui/components/Toolbar/groups/MarginsGroup.tsx",
+        "token": "editor-toolbar-margins-dropdown"
+      },
+      "notes": "Oasis provides standard margin presets and custom top/bottom/left/right values. WordCraft also supports mirrored margins, gutter and an Office 2003 preset; units, section scope, print layout and DOCX round-trips need workflow verification."
+    },
+    {
+      "id": "layout.orientation",
+      "wordcraftCommand": "layout.orientation",
+      "oasisCommand": "setOrientation",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "section",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Layout > Section dropdown > Orientation",
+      "uiEvidence": {
+        "file": "src/ui/components/Toolbar/groups/SectionGroup.tsx",
+        "token": "editor-toolbar-orientation-landscape"
+      },
+      "notes": "The Section dropdown sets Portrait or Landscape with the shared setOrientation command. Active-section scope, page-size interactions, selection handling and DOCX/PDF layout need workflow verification."
+    },
+    {
+      "id": "layout.columns",
+      "wordcraftCommand": "layout.columns",
+      "oasisCommand": "setColumns",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "pageSetup",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers a column-layout command but no default Ribbon, menu or dialog control was found. WordCraft exposes presets, spacing, separators, unequal widths and apply scopes; selection/section behavior and DOCX/PDF pagination need workflow verification."
+    },
+    {
+      "id": "layout.breakPage",
+      "wordcraftCommand": "layout.break",
+      "oasisCommand": "pageBreak",
+      "ribbonId": "editor-toolbar-page-break",
+      "tab": "insert",
+      "group": "pages",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis's Insert > Page Break button covers the page-break variant of WordCraft Layout > Breaks. Section-break variants, selection in tables and pagination/DOCX behavior remain separate."
+    },
+    {
+      "id": "layout.breakColumn",
+      "wordcraftCommand": "layout.break",
+      "oasisCommand": "columnBreak",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "pageSetup",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers a column-break command but no default Ribbon, menu or shortcut was found. Layout must contain columns for the break to have the same effect; caret/selection, pagination and DOCX round-trip need verification."
+    },
+    {
+      "id": "layout.breakNextPage",
+      "wordcraftCommand": "layout.break",
+      "oasisCommand": "sectionBreakNextPage",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "section",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Layout > Section dropdown > Next-page section break",
+      "uiEvidence": {
+        "file": "src/ui/components/Toolbar/groups/SectionGroup.tsx",
+        "token": "editor-toolbar-section-break-next"
+      },
+      "notes": "The Section dropdown inserts a next-page section break. WordCraft Breaks also offers even-page and odd-page starts; section boundary, header/footer inheritance and pagination need workflow verification."
+    },
+    {
+      "id": "layout.breakContinuous",
+      "wordcraftCommand": "layout.break",
+      "oasisCommand": "sectionBreakContinuous",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "section",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Layout > Section dropdown > Continuous section break",
+      "uiEvidence": {
+        "file": "src/ui/components/Toolbar/groups/SectionGroup.tsx",
+        "token": "editor-toolbar-section-break-continuous"
+      },
+      "notes": "The Section dropdown inserts a continuous section break. WordCraft Breaks also offers even-page and odd-page starts; section boundary, header/footer inheritance and pagination need workflow verification."
+    },
+    {
+      "id": "layout.verticalAlign",
+      "wordcraftCommand": "layout.verticalAlign",
+      "oasisCommand": "setSectionVerticalAlign",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "pageSetup",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers top, center and bottom section alignment but no default UI; WordCraft also supports justified/both distribution across the page. Section scope, pagination and DOCX/PDF output need workflow verification."
+    },
+    {
+      "id": "layout.sectionDirection",
+      "wordcraftCommand": "layout.sectionRtl",
+      "oasisCommand": "setSectionBidi",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "pageSetup",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers the section bidirectional-layout flag but no default Ribbon or menu control was found. WordCraft defines RTL section columns; column order, mixed sections, pagination and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "layout.textDirection",
+      "wordcraftCommand": "layout.textDirection",
+      "oasisCommand": "setTextDirection",
+      "ribbonId": null,
+      "tab": "layout",
+      "group": "pageSetup",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers paragraph vertical-text flow values but no default UI. WordCraft applies text direction to section(s), table cells or text boxes as well as paragraphs, so target scope and rotated text rendering remain partial; DOCX interoperability needs verification."
     }
   ]
 }

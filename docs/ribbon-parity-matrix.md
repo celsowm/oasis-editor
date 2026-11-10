@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `139` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `149` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -150,6 +150,16 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `home.pasteSpecialText` | `edit.pasteSpecial` | `pasteAsPlainText` | `home/clipboard` | partial | partial | partial | unverified |
 | `home.copyFormat` | `edit.copyFormat` | `formatPainter` | `home/clipboard` | partial | partial | partial | unverified |
 | `home.pasteFormat` | `edit.pasteFormat` | — | Home > Format Painter > select destination text | ui-only | ui-only | partial | unverified |
+| `layout.margins` | `layout.margins` | `setPageMargins` | Layout > Margins dropdown | menu-only | menu-only | partial | unverified |
+| `layout.orientation` | `layout.orientation` | `setOrientation` | Layout > Section dropdown > Orientation | menu-only | menu-only | partial | unverified |
+| `layout.columns` | `layout.columns` | `setColumns` | — | core-only | core-only | partial | unverified |
+| `layout.breakPage` | `layout.break` | `pageBreak` | `insert/pages` | partial | partial | partial | unverified |
+| `layout.breakColumn` | `layout.break` | `columnBreak` | — | core-only | core-only | partial | unverified |
+| `layout.breakNextPage` | `layout.break` | `sectionBreakNextPage` | Layout > Section dropdown > Next-page section break | menu-only | menu-only | partial | unverified |
+| `layout.breakContinuous` | `layout.break` | `sectionBreakContinuous` | Layout > Section dropdown > Continuous section break | menu-only | menu-only | partial | unverified |
+| `layout.verticalAlign` | `layout.verticalAlign` | `setSectionVerticalAlign` | — | core-only | core-only | partial | unverified |
+| `layout.sectionDirection` | `layout.sectionRtl` | `setSectionBidi` | — | core-only | core-only | partial | unverified |
+| `layout.textDirection` | `layout.textDirection` | `setTextDirection` | — | core-only | core-only | partial | unverified |
 
 ## Open verification questions
 
@@ -292,6 +302,16 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 137. **home.pasteSpecialText:** Oasis Paste as Plain Text covers WordCraft Paste Special's text-only format. RTF/picture variants and native clipboard permissions are not covered; selection replacement, one-step undo and DOCX output need workflow verification.
 138. **home.copyFormat:** Oasis's one-shot Format Painter captures the selected source formatting when armed, covering WordCraft Copy Formatting as part of a combined interaction. Source capture, selection scope, hyperlinks and complex stories need workflow verification.
 139. **home.pasteFormat:** After Format Painter is armed, Oasis applies the captured style when the destination selection is finalized; WordCraft exposes Paste Formatting as a separate command. This is a related UI task with different event timing and no shared command for the apply step; pointer/keyboard coverage, undo and DOCX behavior need verification.
+140. **layout.margins:** Oasis provides standard margin presets and custom top/bottom/left/right values. WordCraft also supports mirrored margins, gutter and an Office 2003 preset; units, section scope, print layout and DOCX round-trips need workflow verification.
+141. **layout.orientation:** The Section dropdown sets Portrait or Landscape with the shared setOrientation command. Active-section scope, page-size interactions, selection handling and DOCX/PDF layout need workflow verification.
+142. **layout.columns:** Oasis registers a column-layout command but no default Ribbon, menu or dialog control was found. WordCraft exposes presets, spacing, separators, unequal widths and apply scopes; selection/section behavior and DOCX/PDF pagination need workflow verification.
+143. **layout.breakPage:** Oasis's Insert > Page Break button covers the page-break variant of WordCraft Layout > Breaks. Section-break variants, selection in tables and pagination/DOCX behavior remain separate.
+144. **layout.breakColumn:** Oasis registers a column-break command but no default Ribbon, menu or shortcut was found. Layout must contain columns for the break to have the same effect; caret/selection, pagination and DOCX round-trip need verification.
+145. **layout.breakNextPage:** The Section dropdown inserts a next-page section break. WordCraft Breaks also offers even-page and odd-page starts; section boundary, header/footer inheritance and pagination need workflow verification.
+146. **layout.breakContinuous:** The Section dropdown inserts a continuous section break. WordCraft Breaks also offers even-page and odd-page starts; section boundary, header/footer inheritance and pagination need workflow verification.
+147. **layout.verticalAlign:** Oasis registers top, center and bottom section alignment but no default UI; WordCraft also supports justified/both distribution across the page. Section scope, pagination and DOCX/PDF output need workflow verification.
+148. **layout.sectionDirection:** Oasis registers the section bidirectional-layout flag but no default Ribbon or menu control was found. WordCraft defines RTL section columns; column order, mixed sections, pagination and DOCX interoperability need workflow verification.
+149. **layout.textDirection:** Oasis registers paragraph vertical-text flow values but no default UI. WordCraft applies text direction to section(s), table cells or text boxes as well as paragraphs, so target scope and rotated text rendering remain partial; DOCX interoperability needs verification.
 
 ## Audit interpretation
 

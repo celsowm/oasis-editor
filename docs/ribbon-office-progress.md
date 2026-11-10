@@ -564,6 +564,16 @@ The matrix now contains 139 Oasis capability rows and links 125 of 521 WordCraft
 
 Evidence: Ribbon audit validates the two Paste controls and Format Painter button; `createEditorFormatPainter.ts` verifies that the apply path supports both pointer and keyboard selection. The catalog snapshot reports 125 linked source rows.
 
+## Delivery 37 — Layout page setup and break paths
+
+Date: 2026-11-10. B01 and D04 remain **partial**.
+
+Mapped Layout margins and orientation to their existing dropdown controls. Split the multi-kind Breaks command across Oasis page/column breaks and next-page/continuous section breaks. Also recorded registered core-only column layout, vertical alignment, section direction and paragraph text direction commands.
+
+The matrix now contains 149 Oasis capability rows and links 132 of 521 WordCraft source rows; 389 remain unlinked. WordCraft's mirrored/gutter margins, even/odd-page and text-wrapping breaks, column presets/scopes, justified vertical alignment and non-paragraph text-direction targets are not covered fully. Pagination and DOCX/PDF output remain unverified.
+
+Evidence: `npm run audit:ribbon` validates margins/orientation and section-break UI tokens, direct page-break placement and registered core-only commands; the catalog snapshot reports 132 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
