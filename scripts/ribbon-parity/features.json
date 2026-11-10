@@ -1520,6 +1520,45 @@
       "semantics": "partial",
       "persistence": "unverified",
       "notes": "Heading 3 is selectable from Oasis's Home style gallery through setStyleId. WordCraft also provides a dedicated Heading 3 command and shortcut; style ID/name resolution, outline/navigation behavior, selection scope and DOCX interoperability need verification."
+    },
+    {
+      "id": "home.characterStyle",
+      "wordcraftCommand": "format.charStyle",
+      "oasisCommand": "setCharacterStyleId",
+      "ribbonId": "editor-toolbar-style",
+      "tab": "home",
+      "group": "styles",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis's Home style gallery applies character styles through setCharacterStyleId and lists quick styles. Style availability filtering, name/ID resolution, mixed selections, reset behavior, undo and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.applyParagraphStyle",
+      "wordcraftCommand": "styles.apply",
+      "oasisCommand": "setStyleId",
+      "ribbonId": "editor-toolbar-style",
+      "tab": "home",
+      "group": "styles",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "WordCraft styles.apply with a paragraph-style payload maps to Oasis's paragraph-style gallery path. WordCraft's no-payload branch opens a Styles pane that Oasis does not expose; style application, inherited formatting, selection behavior and DOCX interoperability need workflow verification."
+    },
+    {
+      "id": "home.applyCharacterStyle",
+      "wordcraftCommand": "styles.apply",
+      "oasisCommand": "setCharacterStyleId",
+      "ribbonId": "editor-toolbar-style",
+      "tab": "home",
+      "group": "styles",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "WordCraft styles.apply with a character-style payload maps to Oasis's character-style gallery path. WordCraft's no-payload branch opens a Styles pane that Oasis does not expose; style availability, selection behavior, clearing, undo and DOCX interoperability need workflow verification."
     }
   ]
 }

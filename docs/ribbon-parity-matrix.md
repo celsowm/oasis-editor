@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `127` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `130` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -138,6 +138,9 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `home.heading1Style` | `para.heading1` | `setStyleId` | `home/styles` | partial | partial | partial | unverified |
 | `home.heading2Style` | `para.heading2` | `setStyleId` | `home/styles` | partial | partial | partial | unverified |
 | `home.heading3Style` | `para.heading3` | `setStyleId` | `home/styles` | partial | partial | partial | unverified |
+| `home.characterStyle` | `format.charStyle` | `setCharacterStyleId` | `home/styles` | partial | partial | partial | unverified |
+| `home.applyParagraphStyle` | `styles.apply` | `setStyleId` | `home/styles` | partial | partial | partial | unverified |
+| `home.applyCharacterStyle` | `styles.apply` | `setCharacterStyleId` | `home/styles` | partial | partial | partial | unverified |
 
 ## Open verification questions
 
@@ -268,6 +271,9 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 125. **home.heading1Style:** Heading 1 is selectable from Oasis's Home style gallery through setStyleId. WordCraft also provides a dedicated Heading 1 command and shortcut; style ID/name resolution, outline/navigation behavior, selection scope and DOCX interoperability need verification.
 126. **home.heading2Style:** Heading 2 is selectable from Oasis's Home style gallery through setStyleId. WordCraft also provides a dedicated Heading 2 command and shortcut; style ID/name resolution, outline/navigation behavior, selection scope and DOCX interoperability need verification.
 127. **home.heading3Style:** Heading 3 is selectable from Oasis's Home style gallery through setStyleId. WordCraft also provides a dedicated Heading 3 command and shortcut; style ID/name resolution, outline/navigation behavior, selection scope and DOCX interoperability need verification.
+128. **home.characterStyle:** Oasis's Home style gallery applies character styles through setCharacterStyleId and lists quick styles. Style availability filtering, name/ID resolution, mixed selections, reset behavior, undo and DOCX interoperability need workflow verification.
+129. **home.applyParagraphStyle:** WordCraft styles.apply with a paragraph-style payload maps to Oasis's paragraph-style gallery path. WordCraft's no-payload branch opens a Styles pane that Oasis does not expose; style application, inherited formatting, selection behavior and DOCX interoperability need workflow verification.
+130. **home.applyCharacterStyle:** WordCraft styles.apply with a character-style payload maps to Oasis's character-style gallery path. WordCraft's no-payload branch opens a Styles pane that Oasis does not expose; style availability, selection behavior, clearing, undo and DOCX interoperability need workflow verification.
 
 ## Audit interpretation
 

@@ -534,6 +534,16 @@ The matrix now contains 127 Oasis capability rows and links 115 of 521 WordCraft
 
 Evidence: the Ribbon audit verifies each gallery mapping against `editor-toolbar-style` and the `setStyleId` command; the generated catalog reports 115 linked source rows.
 
+## Delivery 34 — Character and applied styles
+
+Date: 2026-11-10. B01 and D02 remain **partial**.
+
+Mapped WordCraft's Character Style command and the paragraph/character application paths of Apply Styles to Oasis's Home style gallery. The Apply Styles command also opens a Styles pane when no style is supplied; Oasis has no equivalent pane, so that branch remains an explicit gap. The gallery lists quick styles, and the full available-style set, selection behavior and style resolution still need comparison.
+
+The matrix now contains 130 Oasis capability rows and links 117 of 521 WordCraft source rows; 404 remain unlinked.
+
+Evidence: `npm run audit:ribbon` confirms all three paths use the `editor-toolbar-style` gallery and registered style commands; the generated source snapshot reports 117 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

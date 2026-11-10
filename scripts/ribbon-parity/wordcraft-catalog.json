@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 115
+    "linkedRows": 117
   },
   "defaultTabs": [
     "File",
@@ -1427,7 +1427,10 @@
       "group": "Styles",
       "name": "Apply Styles",
       "command": "styles.apply",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.applyParagraphStyle",
+        "home.applyCharacterStyle"
+      ]
     },
     {
       "index": 123,
@@ -1436,7 +1439,9 @@
       "group": "Styles",
       "name": "Character Style",
       "command": "format.charStyle",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.characterStyle"
+      ]
     },
     {
       "index": 124,
