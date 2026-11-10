@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `112` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `121` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -123,6 +123,15 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `layout.paragraphShading` | `para.shading` | `setParagraphShading` | Layout > Paragraph metrics dropdown > Paragraph shading | menu-only | menu-only | partial | unverified |
 | `layout.paragraphBorders` | `para.borders` | `applyParagraphBorders` | Layout > Paragraph metrics dropdown > Apply borders to paragraph | menu-only | menu-only | partial | unverified |
 | `context.paragraphBordersDialog` | `para.borders` | — | Context menu > Paragraph dialog > Borders and shading | ui-only | ui-only | partial | unverified |
+| `home.hangingIndent` | `para.hangingIndent` | `setSpecialIndent` | `home/paragraph` | partial | partial | partial | unverified |
+| `home.listLevel` | `para.listLevel` | `setListLevel` | — | core-only | core-only | partial | unverified |
+| `home.setNumberingValue` | `para.setNumberingValue` | `setListStartAt` | `home/paragraph` | partial | partial | partial | unverified |
+| `home.asianTypographyKinsoku` | `para.asianTypography` | `setKinsoku` | — | core-only | core-only | partial | unverified |
+| `home.asianTypographyWordWrap` | `para.asianTypography` | `setWordWrap` | — | core-only | core-only | partial | unverified |
+| `home.asianTypographyOverflowPunct` | `para.asianTypography` | `setOverflowPunct` | — | core-only | core-only | partial | unverified |
+| `home.asianTypographyTopLinePunct` | `para.asianTypography` | `setTopLinePunct` | — | core-only | core-only | partial | unverified |
+| `home.asianTypographyAutoSpaceDE` | `para.asianTypography` | `setAutoSpaceDE` | — | core-only | core-only | partial | unverified |
+| `home.asianTypographyAutoSpaceDN` | `para.asianTypography` | `setAutoSpaceDN` | — | core-only | core-only | partial | unverified |
 
 ## Open verification questions
 
@@ -238,6 +247,15 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 110. **layout.paragraphShading:** WordCraft para.shading applies paragraph shading at a caret or when explicitly requested; Oasis exposes a paragraph-color field in the Layout metrics dropdown and also a field in the Paragraph dialog. The control does not provide WordCraft's combined text/paragraph scope or palette workflow; mixed selections, clearing, undo and DOCX interoperability need verification.
 111. **layout.paragraphBorders:** The Oasis quick action applies a 1 pt solid black border on all four paragraph sides. WordCraft para.borders offers individual sides, presets, styles, widths and colors, so this is only a related task; per-side formatting is available separately in the Paragraph dialog. Selection scope, undo and DOCX/PDF output need verification.
 112. **context.paragraphBordersDialog:** The Paragraph dialog commits configurable sides, one shared style, width and color through a dialog transaction, with no shared Oasis command for the full payload. WordCraft also supports independent per-side styles, between borders and more styles; undo grouping and DOCX/PDF behavior need workflow verification.
+113. **home.hangingIndent:** The Home special-indent menu exposes Hanging. WordCraft adds 36 pt to the existing left indent; the Oasis menu sets a 36 pt hanging indent by default, so repeated use and paragraphs with existing indents can differ. Selection scope, undo and DOCX/PDF behavior need verification.
+114. **home.listLevel:** Oasis registers a command that sets the selected list paragraphs' explicit level from 0–8, matching WordCraft's task; no default Ribbon or menubar control exposes the numeric level. Mixed list selections, numbering definitions, undo and DOCX interoperability need verification.
+115. **home.setNumberingValue:** The List Options start field sets a numbering start value. WordCraft creates a numbering override that continues across following paragraphs sharing that list; Oasis updates the selected paragraphs' start value, so continuation and selection scope differ. Undo and DOCX behavior need workflow verification.
+116. **home.asianTypographyKinsoku:** Oasis registers the Kinsoku setting as a separate command, but no default Ribbon, menu or dialog control was found. Its behavior, Japanese line-breaking output, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command.
+117. **home.asianTypographyWordWrap:** Oasis registers the East Asian word-wrap setting as a separate command, but no default Ribbon, menu or dialog control was found. Its behavior, mixed-script line breaking, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command.
+118. **home.asianTypographyOverflowPunct:** Oasis registers punctuation overflow as a separate command, but no default Ribbon, menu or dialog control was found. Rendering, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command.
+119. **home.asianTypographyTopLinePunct:** Oasis registers top-line punctuation compression as a separate command, but no default Ribbon, menu or dialog control was found. Rendering, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command.
+120. **home.asianTypographyAutoSpaceDE:** Oasis registers automatic spacing between East Asian and Latin text as a separate command, but no default Ribbon, menu or dialog control was found. Font/run handling, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command.
+121. **home.asianTypographyAutoSpaceDN:** Oasis registers automatic spacing between East Asian text and numbers as a separate command, but no default Ribbon, menu or dialog control was found. Font/run handling, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command.
 
 ## Audit interpretation
 

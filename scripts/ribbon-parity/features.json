@@ -1315,6 +1315,123 @@
         "token": "editor-paragraph-dialog-border-style"
       },
       "notes": "The Paragraph dialog commits configurable sides, one shared style, width and color through a dialog transaction, with no shared Oasis command for the full payload. WordCraft also supports independent per-side styles, between borders and more styles; undo grouping and DOCX/PDF behavior need workflow verification."
+    },
+    {
+      "id": "home.hangingIndent",
+      "wordcraftCommand": "para.hangingIndent",
+      "oasisCommand": "setSpecialIndent",
+      "ribbonId": "editor-toolbar-special-indent-hanging",
+      "tab": "home",
+      "group": "paragraph",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "The Home special-indent menu exposes Hanging. WordCraft adds 36 pt to the existing left indent; the Oasis menu sets a 36 pt hanging indent by default, so repeated use and paragraphs with existing indents can differ. Selection scope, undo and DOCX/PDF behavior need verification."
+    },
+    {
+      "id": "home.listLevel",
+      "wordcraftCommand": "para.listLevel",
+      "oasisCommand": "setListLevel",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers a command that sets the selected list paragraphs' explicit level from 0–8, matching WordCraft's task; no default Ribbon or menubar control exposes the numeric level. Mixed list selections, numbering definitions, undo and DOCX interoperability need verification."
+    },
+    {
+      "id": "home.setNumberingValue",
+      "wordcraftCommand": "para.setNumberingValue",
+      "oasisCommand": "setListStartAt",
+      "ribbonId": "editor-toolbar-list-options",
+      "tab": "home",
+      "group": "paragraph",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "The List Options start field sets a numbering start value. WordCraft creates a numbering override that continues across following paragraphs sharing that list; Oasis updates the selected paragraphs' start value, so continuation and selection scope differ. Undo and DOCX behavior need workflow verification."
+    },
+    {
+      "id": "home.asianTypographyKinsoku",
+      "wordcraftCommand": "para.asianTypography",
+      "oasisCommand": "setKinsoku",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers the Kinsoku setting as a separate command, but no default Ribbon, menu or dialog control was found. Its behavior, Japanese line-breaking output, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command."
+    },
+    {
+      "id": "home.asianTypographyWordWrap",
+      "wordcraftCommand": "para.asianTypography",
+      "oasisCommand": "setWordWrap",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers the East Asian word-wrap setting as a separate command, but no default Ribbon, menu or dialog control was found. Its behavior, mixed-script line breaking, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command."
+    },
+    {
+      "id": "home.asianTypographyOverflowPunct",
+      "wordcraftCommand": "para.asianTypography",
+      "oasisCommand": "setOverflowPunct",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers punctuation overflow as a separate command, but no default Ribbon, menu or dialog control was found. Rendering, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command."
+    },
+    {
+      "id": "home.asianTypographyTopLinePunct",
+      "wordcraftCommand": "para.asianTypography",
+      "oasisCommand": "setTopLinePunct",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers top-line punctuation compression as a separate command, but no default Ribbon, menu or dialog control was found. Rendering, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command."
+    },
+    {
+      "id": "home.asianTypographyAutoSpaceDE",
+      "wordcraftCommand": "para.asianTypography",
+      "oasisCommand": "setAutoSpaceDE",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers automatic spacing between East Asian and Latin text as a separate command, but no default Ribbon, menu or dialog control was found. Font/run handling, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command."
+    },
+    {
+      "id": "home.asianTypographyAutoSpaceDN",
+      "wordcraftCommand": "para.asianTypography",
+      "oasisCommand": "setAutoSpaceDN",
+      "ribbonId": null,
+      "tab": "home",
+      "group": "paragraph",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers automatic spacing between East Asian text and numbers as a separate command, but no default Ribbon, menu or dialog control was found. Font/run handling, undo and DOCX interoperability need workflow verification against WordCraft's combined Asian Typography command."
     }
   ]
 }

@@ -502,6 +502,18 @@ The matrix now contains 112 Oasis capability rows and links 105 of 521 WordCraft
 
 Evidence: the catalog audit checks source IDs, built-in registration, direct Ribbon placement, and UI evidence tokens in `MetricGroup.tsx` and `ParagraphDialog.tsx`; the generated catalog and matrix agree on 105 linked source rows.
 
+## Delivery 31 — List and Asian typography crosswalk
+
+Date: 2026-11-10. B01 and D02 remain **partial**.
+
+Linked three more Home Paragraph tasks: Hanging Indent through the special-indent submenu, explicit list level through a registered core command, and numbering start through the List Options field. The mappings preserve their behavior differences: Oasis sets a fixed hanging indent, and its start value applies to selected paragraphs rather than WordCraft's continuing list instance.
+
+WordCraft combines six Asian Typography options in one command; Oasis registers corresponding Kinsoku, word-wrap, punctuation and East Asian spacing commands separately. All six are recorded as `core-only` because no default UI path is present. This classifies the shared command coverage without claiming equivalent line-breaking or DOCX output.
+
+The matrix now contains 121 Oasis capability rows and links 109 of 521 WordCraft source rows; 412 remain unlinked. Selection behavior, undo, specialized-script rendering and DOCX interoperability remain unverified.
+
+Evidence: `npm run audit:ribbon` validates the special-indent submenu mapping, command registration and absence of a default UI path for `setListLevel` and the six Asian Typography commands; the catalog snapshot reports 109 linked source rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

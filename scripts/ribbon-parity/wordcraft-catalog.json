@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 105
+    "linkedRows": 109
   },
   "defaultTabs": [
     "File",
@@ -965,7 +965,9 @@
       "group": "Paragraph",
       "name": "Change List Level",
       "command": "para.listLevel",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.listLevel"
+      ]
     },
     {
       "index": 80,
@@ -1003,7 +1005,9 @@
       "group": "Paragraph",
       "name": "Set Numbering Value",
       "command": "para.setNumberingValue",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.setNumberingValue"
+      ]
     },
     {
       "index": 84,
@@ -1252,7 +1256,9 @@
       "group": "Paragraph",
       "name": "Hanging Indent",
       "command": "para.hangingIndent",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.hangingIndent"
+      ]
     },
     {
       "index": 107,
@@ -1283,7 +1289,14 @@
       "group": "Paragraph",
       "name": "Asian Typography",
       "command": "para.asianTypography",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.asianTypographyKinsoku",
+        "home.asianTypographyWordWrap",
+        "home.asianTypographyOverflowPunct",
+        "home.asianTypographyTopLinePunct",
+        "home.asianTypographyAutoSpaceDE",
+        "home.asianTypographyAutoSpaceDN"
+      ]
     },
     {
       "index": 110,
