@@ -81,7 +81,8 @@
     "test:ribbon:clipboard": "node scripts/verify-ribbon-clipboard.mjs",
     "test:ribbon:painter": "node scripts/verify-ribbon-painter.mjs",
     "test:ribbon:inherited": "node scripts/verify-ribbon-inherited-formatting.mjs",
-    "test:ribbon:font-values": "node scripts/verify-ribbon-font-values.mjs"
+    "test:ribbon:font-values": "node scripts/verify-ribbon-font-values.mjs",
+    "test:ribbon:colors-styles": "node scripts/verify-ribbon-colors-styles.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

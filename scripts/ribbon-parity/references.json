@@ -71,6 +71,10 @@
         "fontValues": {
           "suite": "scripts/verify-ribbon-font-values.mjs",
           "scope": "Point-valued HTML, mixed size/family fields, partial multirun apply, separate undo/redo, invalid-size nonmutation, read-only fields and DOCX self-reimport in three engines. Full CSS cascade, mixed boolean UI, arbitrary-size entry, IME, Word/PDF and trusted Safari workflows unverified."
+        },
+        "colorStyles": {
+          "suite": "scripts/verify-ribbon-colors-styles.mjs",
+          "scope": "Opaque CSS RGB and standard named sRGB equivalence, color/highlight/shading pickers, dark/light portal panels, selection/history, read-only popup revocation, paragraph/character style links and DOCX self-reimport in Chromium, Firefox and WebKit. Alpha/non-sRGB colors, full CSS cascade, Word-open interoperability, VoiceOver and trusted Safari workflows unverified."
         }
       }
     },

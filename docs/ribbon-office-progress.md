@@ -247,6 +247,26 @@ Evidence:
 
 Limits: blank mixed value fields are verified, but mixed boolean accessibility/presentation remains open. The current size selector is not an editable arbitrary-size combobox; numeric command validation is independent of future text-entry UX. IME, relative CSS units/cascade, actual native clipboard permissions, Word-open/repair, PDF and VoiceOver remain in the execution queue.
 
+## Delivery 10 — color palettes, style links and read-only menu lifecycle
+
+Date: 2026-11-10. D01/D02 and P06 remain **partial**.
+
+Color, highlight and text-shading controls now compare standard named sRGB, hexadecimal, and opaque RGB values consistently. Opaque colors serialize as valid DOCX/PDF values; highlights map through the Word palette. Unsupported translucent and non-sRGB functions remain outside this normalizer. DOCX character runs retain their named character-style link while direct overrides still win, so later style changes remain live after reimport.
+
+Color palettes and the Style Gallery now disable from command availability, close an open popup when read-only revokes the action, and return focus when revocation removes the focused menu. Late native color events cannot apply after revocation. Palette choices persist through Solid control recreation per editor without entering document/history state. Dark portal panels use Ribbon chrome tokens rather than the white document-paper token.
+
+The host change broadcaster now marks document changes only when the immutable document identity changes; selection changes keep their separate event and view/selection-only updates no longer mark the document dirty. Import-time document replacements are not replayed as user edits.
+
+Evidence:
+
+- Core color tests cover 148 standard CSS named sRGB colors and opaque RGB/hex forms. DOCX tests cover foreground, highlight, shading, underline color, valid OOXML values, and self-reimport; PDF tests cover color operators and blending. Character-style tests check preserved `w:rStyle`, direct formatting precedence, and live inherited formatting after a later style update.
+- UI tests cover RGB-equivalent active swatches, disabled palette revocation, focus restoration, ignored late events, per-editor last-choice state, dynamic Style Gallery availability and clean selection/view broadcasts.
+- `scripts/verify-ribbon-colors-styles.mjs` passes 32 workflows per engine in Chromium, Firefox and WebKit: three color pickers and paragraph/character galleries across two themes, two locales and 1440/640 px. The checks retain original target ranges and links, verify hover nonmutation, selection/history, undo/redo, read-only popup closure, portal theme colors, OOXML values and DOCX self-reimport. Cropped screenshots and synthetic DOCX records remain gitignored in `debug_artifacts/ribbon-colors-styles-{engine}/`.
+- The owned Chromium runner adds this as its tenth suite under `test-results/ribbon/colors-styles/`. The integrated run passed all ten suites after the theme-token correction.
+- Full local Vitest: 324 files / 1,889 tests passed; one file/test skipped. TypeScript, changed-file ESLint, Prettier, and both static Ribbon/icon audits pass.
+
+Limits: Opaque sRGB is not full CSS Color 4 or a color-management pipeline; alpha, P3/Lab/other spaces and the full cascade remain open. DOCX self-reimport is not Word-open/repair certification. Real-Safari workflows, VoiceOver, IME and broader document stories remain in the execution queue.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
@@ -255,7 +275,7 @@ All requirements in the execution plan remain in scope. The next sequence is:
 2. Complete the remaining I03/I04 icon families and A01/A02 contextual/custom layout acceptance.
 3. A03/A04: action/menu/launcher semantics, short viewports, spatial matrices and contextual popup transitions.
 4. R01–R05: close late-font, zoom, pointer/IME, invalidation and performance evidence across remaining contexts.
-5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Next inspect the remaining color/highlight/shading pickers and galleries for disabled-state and open-popup transitions; select fields alone do not close that requirement.
+5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
 6. P01–P06: Review, References, View, File, search/QAT and interoperability.
 7. All M4 families: Shapes, Equations, Draw, advanced References, Mailings, Developer/Forms, Charts/SmartArt, integrations and Help, each with the plan's minimum functional delivery.
 8. M5: required cross-browser, keyboard, VoiceOver, language/theme, selection, persistence and performance scenarios with retained evidence.

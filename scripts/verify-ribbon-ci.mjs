@@ -57,6 +57,7 @@ try {
   await run("scripts/verify-ribbon-painter.mjs");
   await run("scripts/verify-ribbon-inherited-formatting.mjs");
   await run("scripts/verify-ribbon-font-values.mjs");
+  await run("scripts/verify-ribbon-colors-styles.mjs");
 } finally {
   server.kill("SIGTERM");
 }
