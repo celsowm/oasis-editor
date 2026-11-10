@@ -96,7 +96,7 @@ function RenderMenu(props: RendererProps<MenuItem>): JSX.Element {
       disabled={b.disabled()}
       hideChevron={props.item.hideChevron}
       ribbonSize={props.item.ribbonSize}
-      panelClass={props.item.panelClass}
+      panelClass={`${props.item.panelClass ?? ""} ${props.item.content.kind === "items" ? "oasis-editor-action-menu" : ""}`}
       keepMounted={props.item.keepMounted}
     >
       {renderMenuContent(props.item.content, props.api)}
@@ -123,7 +123,7 @@ function RenderSplit(props: RendererProps<SplitItem>): JSX.Element {
       menuTestId={
         props.item.testId ? `${props.item.testId}-dropdown` : undefined
       }
-      panelClass={props.item.panelClass ?? "oasis-editor-color-menu"}
+      panelClass={`${props.item.panelClass ?? "oasis-editor-color-menu"} ${props.item.menu.kind === "items" ? "oasis-editor-action-menu" : ""}`}
       panelRole="menu"
       mainLabel={resolveLabel(props.item, props.api)}
       mainContent={

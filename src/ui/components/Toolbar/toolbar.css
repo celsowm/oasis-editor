@@ -290,6 +290,13 @@
   height: var(--oasis-ribbon-small-icon);
 }
 
+.oasis-editor-ribbon-group-three-rows
+  > .oasis-editor-ribbon-normal-rows
+  .oasis-editor-tool-button
+  > svg {
+  flex-basis: var(--oasis-ribbon-small-icon);
+}
+
 .oasis-editor-toolbar-view-ribbon .oasis-editor-toolbar-item {
   flex-shrink: 0;
 }
@@ -2890,4 +2897,34 @@
    Only the document surface changes the pointer while a brush is armed. */
 .oasis-editor-format-painter-active .oasis-editor-paper {
   cursor: crosshair;
+}
+
+/* Data-driven action lists keep full captions; galleries retain their layouts. */
+.oasis-editor-action-menu {
+  width: max-content;
+  min-width: min(200px, calc(100vw - 16px));
+  max-width: min(360px, calc(100vw - 16px));
+  overflow: auto;
+  box-sizing: border-box;
+}
+.oasis-editor-action-menu
+  > div
+  > .oasis-editor-toolbar-item
+  > .oasis-editor-tool-button {
+  width: 100%;
+  max-width: none;
+  min-height: 32px;
+  height: auto;
+  justify-content: flex-start;
+  text-align: start;
+}
+.oasis-editor-action-menu
+  > div
+  > .oasis-editor-toolbar-item
+  > .oasis-editor-tool-button
+  > .oasis-editor-tool-button-label {
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
 }
