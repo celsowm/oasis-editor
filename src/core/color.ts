@@ -1,6 +1,7 @@
 // Shared color primitives. Single source of truth for hex (#RRGGBB) parsing
 // and validation that was previously duplicated across the PDF and DOCX export
 // backends (audit #3).
+import { CSS_NAMED_COLORS } from "./cssNamedColors.js";
 
 /** Matches a 6-digit hex color body (no leading `#`). */
 const HEX6_PATTERN = /^[0-9a-fA-F]{6}$/;
@@ -54,7 +55,7 @@ export function rgb255ToHex(r: number, g: number, b: number): string {
 }
 
 /**
- * Opaque sRGB hex/RGB values as a six-digit body, without a browser dependency.
+ * Named, hex and RGB opaque sRGB colors as a six-digit body, without a browser.
  * Translucent colors and other CSS color spaces require a separate policy.
  */
 export function normalizeOpaqueRgbColor(
@@ -64,6 +65,9 @@ export function normalizeOpaqueRgbColor(
   if (hex6) return hex6;
   const value = color?.trim();
   if (!value) return null;
+  const keyword = value.toLowerCase();
+  if (Object.hasOwn(CSS_NAMED_COLORS, keyword))
+    return CSS_NAMED_COLORS[keyword]!;
   const hex = value.match(/^#([\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})$/i)?.[1];
   if (hex) {
     const expanded =

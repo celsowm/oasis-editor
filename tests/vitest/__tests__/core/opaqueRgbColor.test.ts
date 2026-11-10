@@ -2,6 +2,16 @@ import { describe, expect, it } from "vitest";
 import { normalizeOpaqueRgbColor } from "@/core/color.js";
 
 describe("opaque sRGB color normalization", () => {
+  it("resolves named CSS colors and aliases without contextual keywords", () => {
+    expect(normalizeOpaqueRgbColor("RebeccaPurple")).toBe("663399");
+    expect(normalizeOpaqueRgbColor("yellow")).toBe("FFFF00");
+    expect(normalizeOpaqueRgbColor("cyan")).toBe("00FFFF");
+    expect(normalizeOpaqueRgbColor("grey")).toBe(
+      normalizeOpaqueRgbColor("gray"),
+    );
+    expect(normalizeOpaqueRgbColor("transparent")).toBeNull();
+    expect(normalizeOpaqueRgbColor("toString")).toBeNull();
+  });
   it.each([
     ["#F03", "FF0033"],
     ["#f03f", "FF0033"],
