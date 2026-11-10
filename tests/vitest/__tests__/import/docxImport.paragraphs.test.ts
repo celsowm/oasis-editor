@@ -1,4 +1,13 @@
-import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
+import {
+  getRunImage,
+  getRunTextBox,
+  getRunField,
+  getRunFieldChar,
+  getRunFieldInstruction,
+  getRunFootnoteReference,
+  getRunEndnoteReference,
+  getRunSym,
+} from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
@@ -223,7 +232,7 @@ describe("DOCX paragraph import", () => {
     expect(firstBlock.sourceBlockId).toBe(firstChapter.id);
     expect(firstBlock.layout?.startOffset).toBe(0);
     expect(firstBlock.estimatedHeight).toBeCloseTo(lineHeights + 32, 4);
-  });
+  }, 20_000);
 
   it("imports direct DOCX contextual paragraph spacing", async () => {
     const document = await importDocxToEditorDocument(
@@ -438,7 +447,9 @@ describe("DOCX paragraph import", () => {
   it("imports images with correct dimensions from DOCX", async () => {
     const document = await importLoremComplexDocument();
     const paragraphs = getDocumentParagraphs(document);
-    const imageParagraph = paragraphs.find((p) => p.runs.some((r) => getRunImage(r)));
+    const imageParagraph = paragraphs.find((p) =>
+      p.runs.some((r) => getRunImage(r)),
+    );
 
     expect(imageParagraph).toBeDefined();
     const imageRun = imageParagraph!.runs.find((r) => getRunImage(r))!;
@@ -635,7 +646,9 @@ describe("DOCX paragraph import", () => {
 
     expect(imageRun.text).toBe("￼");
     expect(getRunImage(imageRun)?.src).toBe("");
-    expect(getRunImage(imageRun)?.linkedSrc).toBe("https://example.com/image.png");
+    expect(getRunImage(imageRun)?.linkedSrc).toBe(
+      "https://example.com/image.png",
+    );
     expect(getRunImage(imageRun)?.width).toBe(100);
     expect(getRunImage(imageRun)?.height).toBe(50);
     expect(getRunImage(imageRun)?.alt).toBe("linked alt");

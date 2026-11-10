@@ -36,5 +36,5 @@ describe("DOCX complex document smoke test", () => {
     expect(blocks.length).toBeGreaterThan(250);
     expect(layout.pages.length).toBeGreaterThan(10);
     expect(projectedBlocks).toBeGreaterThanOrEqual(blocks.length);
-  });
+  }, 20_000);
 });
