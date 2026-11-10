@@ -612,6 +612,16 @@ export function buildCoreFormattingCommands({
       (p): boolean => formatting.setCharacterStyleId(String(p)),
       (): string => s().characterStyleId || "",
     ),
+    applyUnderlineStyle: valueCommand(
+      "applyUnderlineStyle",
+      (p): true => (
+        formatting.applyUnderlineStyle(
+          p as import("@/core/model.js").EditorUnderlineStyle | null,
+        ),
+        true
+      ),
+      (): string => s().underlineStyle,
+    ),
     setUnderlineStyle: valueCommand(
       "setUnderlineStyle",
       (p): true => (formatting.setUnderlineStyle((p as string) || null), true),

@@ -1,5 +1,6 @@
 import type {
   EditorColumnsSettings,
+  EditorUnderlineStyle,
   EditorDocumentDesign,
   EditorImageBorder,
   EditorPageBorder,
@@ -176,6 +177,7 @@ export interface EssentialsFormattingCapability {
   setStyleId: (value: string) => boolean;
   setCharacterStyleId: (value: string) => boolean;
   setUnderlineStyle: (value: string | null) => void;
+  applyUnderlineStyle: (value: EditorUnderlineStyle | null) => void;
   setUnderlineColor: (value: string | null) => boolean;
   setCharacterScale: (value: number | null) => boolean;
   setCharacterSpacing: (value: number | null) => boolean;

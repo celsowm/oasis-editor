@@ -5,6 +5,7 @@ import type { TextCaseMode } from "./text.js";
 import type { TableBorderPreset, TableRowHeight } from "./table.js";
 import type {
   EditorMathExpression,
+  EditorUnderlineStyle,
   EditorPageBorder,
   EditorTabStop,
   EditorWatermark,
@@ -169,6 +170,7 @@ export interface OasisCommandPayloads {
   setStyleId: string;
   setCharacterStyleId: string;
   setUnderlineStyle: string | null;
+  applyUnderlineStyle: EditorUnderlineStyle | null;
   setUnderlineColor: string | null;
   setCharacterScale: number | null;
   setCharacterSpacing: number | null;

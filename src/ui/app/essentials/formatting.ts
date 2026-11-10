@@ -321,23 +321,22 @@ export function buildEssentialsFormatting(
       true
     ),
     doubleUnderline: (): true => (
-      (
-        options.styleController.applyToolbarValueStyleCommand as (
-          key: "underlineStyle",
-          value: string | null,
-        ) => void
-      )("underlineStyle", "double"),
-      options.keyboardCommandsController.applyBooleanStyleCommand("underline"),
+      options.styleController.applyToolbarUnderlineStyleCommand(
+        options.styleController.toolbarStyleState().underline &&
+          options.styleController.toolbarStyleState().underlineStyle ===
+            "double"
+          ? null
+          : "double",
+      ),
       true
     ),
     wordUnderline: (): true => (
-      (
-        options.styleController.applyToolbarValueStyleCommand as (
-          key: "underlineStyle",
-          value: string | null,
-        ) => void
-      )("underlineStyle", "words"),
-      options.keyboardCommandsController.applyBooleanStyleCommand("underline"),
+      options.styleController.applyToolbarUnderlineStyleCommand(
+        options.styleController.toolbarStyleState().underline &&
+          options.styleController.toolbarStyleState().underlineStyle === "words"
+          ? null
+          : "words",
+      ),
       true
     ),
     strike: (): true => (
@@ -597,6 +596,8 @@ export function buildEssentialsFormatting(
       ),
       true
     ),
+    applyUnderlineStyle:
+      options.styleController.applyToolbarUnderlineStyleCommand,
     setUnderlineStyle: (value: string | null): void =>
       (
         options.styleController.applyToolbarValueStyleCommand as (

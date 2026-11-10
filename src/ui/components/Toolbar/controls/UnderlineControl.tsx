@@ -11,7 +11,7 @@ const TEST_ID = "editor-toolbar-underline";
 
 /**
  * Underline split-button control — toggle plus a style picker, dispatching only
- * through the `underline` and `setUnderlineStyle` commands.
+ * through the atomic `applyUnderlineStyle` command.
  */
 export function UnderlineControl(props: {
   api: ToolbarActionApi;
@@ -24,32 +24,25 @@ export function UnderlineControl(props: {
   const [open, setOpen] = createSignal(false);
 
   const active = (): boolean => api.commands.state("underline").isActive;
+  const enabled = (): boolean =>
+    api.commands.state("applyUnderlineStyle").isEnabled;
   const currentStyle = (): string =>
     String(api.commands.state("setUnderlineStyle").value ?? "");
 
   const toggleUnderline = (): void => {
-    if (!active()) {
-      const style = lastUnderlineStyle();
-      if (style !== "single" && !currentStyle()) {
-        api.commands.execute("setUnderlineStyle", style);
-      }
-    }
-    api.commands.execute("underline");
+    api.commands.execute(
+      "applyUnderlineStyle",
+      active() ? null : lastUnderlineStyle(),
+    );
   };
 
   const applyUnderlineStyle = (style: EditorUnderlineStyle): void => {
     setLastUnderlineStyle(style);
-    const wasActive = active();
-    api.commands.execute(
-      "setUnderlineStyle",
-      style === "single" ? null : style,
-    );
-    if (!wasActive) api.commands.execute("underline");
+    api.commands.execute("applyUnderlineStyle", style);
   };
 
   const removeUnderline = (): void => {
-    if (active()) api.commands.execute("underline");
-    api.commands.execute("setUnderlineStyle", null);
+    api.commands.execute("applyUnderlineStyle", null);
   };
 
   const indicatorStyle = (): string =>
@@ -65,6 +58,8 @@ export function UnderlineControl(props: {
       rootActive={open() || active()}
       mainTestId={TEST_ID}
       mainPressed={active()}
+      mainDisabled={!enabled()}
+      menuDisabled={!enabled()}
       onMain={toggleUnderline}
       menuTestId={`${TEST_ID}-dropdown`}
       panelClass="oasis-editor-color-menu oasis-editor-underline-menu"
@@ -86,6 +81,7 @@ export function UnderlineControl(props: {
         class="oasis-editor-color-menu-action"
         data-testid={`${TEST_ID}-remove`}
         role="menuitem"
+        disabled={!enabled()}
         onClick={(): void => {
           removeUnderline();
           setOpen(false);
@@ -109,6 +105,7 @@ export function UnderlineControl(props: {
                   "oasis-editor-underline-menu-item-active": isActive(),
                 }}
                 role="menuitemradio"
+                disabled={!enabled()}
                 aria-checked={isActive()}
                 data-testid={`${TEST_ID}-style-${option.value}`}
                 onClick={(): void => {

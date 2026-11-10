@@ -1,3 +1,5 @@
+import { applyUnderlineStyle } from "@/core/commands/textFormatting.js";
+import type { EditorUnderlineStyle } from "@/core/model.js";
 import { MERGE_KEYS } from "@/core/transactionMergeKeys.js";
 import {
   insertPageBreakAtSelection,
@@ -307,6 +309,13 @@ function createEditorCommandsControllerImpl(
       `toggleStyle:${key} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}..${sel.focus.offset}]${selectionTableLocation()}`,
     );
     execText((current): EditorState => toggleTextStyle(current, key));
+  };
+
+  const applyUnderlineStyleCommand = (
+    style: EditorUnderlineStyle | null,
+  ): void => {
+    if (selectionCollapsed()) return;
+    execText((current): EditorState => applyUnderlineStyle(current, style));
   };
 
   const applyToggleCharacterBorderCommand = (): void => {
@@ -648,6 +657,7 @@ function createEditorCommandsControllerImpl(
     applyBooleanStyleCommand,
     applyToggleCharacterBorderCommand,
     applyValueStyleCommand,
+    applyUnderlineStyleCommand,
     applyChangeTextCaseCommand,
     applyClearFormattingCommand,
     applyParagraphStyleCommand,

@@ -1,3 +1,4 @@
+import type { EditorUnderlineStyle } from "@/core/model.js";
 import { createSignal, createEffect } from "solid-js";
 import type { EditorState, EditorTextStyle } from "@/core/model.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
@@ -98,8 +99,8 @@ function createEditorStyleControllerImpl(deps: UseEditorStyleProps) {
       italic: pending.italic ?? resolved.italic,
       underline: pending.underline ?? resolved.underline,
       underlineStyle:
-        pending.underlineStyle !== undefined && pending.underlineStyle !== null
-          ? String(pending.underlineStyle)
+        pending.underlineStyle !== undefined
+          ? String(pending.underlineStyle ?? "")
           : resolved.underlineStyle,
       strike: pending.strike ?? resolved.strike,
       superscript: pending.superscript ?? resolved.superscript,
@@ -150,11 +151,29 @@ function createEditorStyleControllerImpl(deps: UseEditorStyleProps) {
     deps.commandsController().applyBooleanStyleCommand(key);
   };
 
+  const applyToolbarUnderlineStyleCommand = (
+    style: EditorUnderlineStyle | null,
+  ): void => {
+    if (isSelectionCollapsed(deps.state().selection)) {
+      deps.clearPreferredColumn();
+      deps.resetTransactionGrouping();
+      setPendingCaretTextStyle((current) => ({
+        ...current,
+        underline: style !== null,
+        underlineStyle: style === "single" ? null : style,
+      }));
+      deps.focusInput();
+      return;
+    }
+    deps.commandsController().applyUnderlineStyleCommand(style);
+  };
+
   return {
     pendingCaretTextStyle,
     clearPendingCaretTextStyle,
     toolbarStyleState,
     applyToolbarValueStyleCommand,
+    applyToolbarUnderlineStyleCommand,
     applyToolbarBooleanStyleCommand,
   };
 }

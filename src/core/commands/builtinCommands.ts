@@ -98,6 +98,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setStyleId",
   "setCharacterStyleId",
   "setUnderlineStyle",
+  "applyUnderlineStyle",
   "setUnderlineColor",
   "setCharacterScale",
   "setCharacterSpacing",
