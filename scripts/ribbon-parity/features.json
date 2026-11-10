@@ -6,7 +6,7 @@
     "wordcraftRepository": "storytold/wordcraft",
     "wordcraftCommit": "05f781cfdac1d89034c0f4f5824b597ff845f2ef"
   },
-  "scope": "47-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Category-level exposure, semantics, and persistence evidence is tracked separately in references.json and docs/ribbon-office-progress.md.",
+  "scope": "49-feature Oasis crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Category-level exposure, semantics, and persistence evidence is tracked separately in references.json and docs/ribbon-office-progress.md.",
   "features": [
     {
       "id": "home.copy",
@@ -117,6 +117,26 @@
       "group": "font",
       "status": "partial",
       "notes": "Italic command is bound to the Home Font button. Delivery 7 covers inherited-style toggles, selection preservation and one-step undo/redo across the Font workflows; mixed-state presentation, Word-open interoperability and Safari/VoiceOver remain unverified."
+    },
+    {
+      "id": "home.underline",
+      "wordcraftCommand": "format.underline",
+      "oasisCommand": "applyUnderlineStyle",
+      "ribbonId": "editor-toolbar-underline-control",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "The custom Underline split control dispatches the atomic applyUnderlineStyle command. Its main click toggles the last selected variant; WordCraft format.underline activates Single by default, so reusing a prior Double style is a known behavior difference and this is a related-task mapping. Delivery 4 covers apply/remove and one-step undo; mixed states and Word-open interoperability remain unverified."
+    },
+    {
+      "id": "home.doubleUnderline",
+      "wordcraftCommand": "format.doubleUnderline",
+      "oasisCommand": "applyUnderlineStyle",
+      "ribbonId": "editor-toolbar-underline-control",
+      "tab": "home",
+      "group": "font",
+      "status": "partial",
+      "notes": "The Double Underline option in the custom split menu dispatches applyUnderlineStyle with the double variant. Delivery 4 covers atomic variant replacement, selection preservation and one-step undo/redo; mixed states, Word-open interoperability and VoiceOver remain unverified."
     },
     {
       "id": "home.subscript",

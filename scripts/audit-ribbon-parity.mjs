@@ -1,17 +1,19 @@
 #!/usr/bin/env node
+/* global process, console */
 /**
  * Deterministic source-level Ribbon inventory and initial WordCraft parity guard.
  *
  * This intentionally proves wiring, NOT document semantics or WordCraft parity.
- * Dynamic custom controls and plugin-provided UI require runtime coverage.
+ * Literal commands in statically imported custom preset controls are scanned.
+ * Dynamic commands and plugin-provided UI still require runtime coverage.
  *
  * Usage:
  *   node scripts/audit-ribbon-parity.mjs --check
  *   node scripts/audit-ribbon-parity.mjs --write
  *   node scripts/audit-ribbon-parity.mjs --json
  */
-import { readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, relative, resolve } from "node:path";
 import ts from "typescript";
 
 const root = resolve(import.meta.dirname, "..");
@@ -43,8 +45,80 @@ function parse(path) {
     source(path),
     ts.ScriptTarget.Latest,
     true,
-    ts.ScriptKind.TS,
+    path.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
+}
+
+function resolveImportedSource(importerPath, specifier) {
+  const unresolved = specifier.startsWith("@/")
+    ? resolve(root, "src", specifier.slice(2))
+    : resolve(root, dirname(importerPath), specifier);
+  const candidates = unresolved.endsWith(".js")
+    ? [
+        unresolved.slice(0, -3) + ".ts",
+        unresolved.slice(0, -3) + ".tsx",
+        unresolved,
+      ]
+    : [
+        unresolved + ".ts",
+        unresolved + ".tsx",
+        resolve(unresolved, "index.ts"),
+        resolve(unresolved, "index.tsx"),
+      ];
+  const resolvedPath = candidates.find(existsSync);
+  return resolvedPath ? relative(root, resolvedPath) : undefined;
+}
+
+function collectNamedImportSources(file, importerPath) {
+  const imports = new Map();
+  for (const statement of file.statements) {
+    if (
+      !ts.isImportDeclaration(statement) ||
+      !ts.isStringLiteral(statement.moduleSpecifier)
+    ) continue;
+    const bindings = statement.importClause?.namedBindings;
+    if (!bindings || !ts.isNamedImports(bindings)) continue;
+    const path = resolveImportedSource(importerPath, statement.moduleSpecifier.text);
+    if (!path) continue;
+    for (const binding of bindings.elements) {
+      imports.set(binding.name.text, path);
+    }
+  }
+  return imports;
+}
+
+function findImportedComponentSource(render, imports) {
+  let componentSource;
+  const visit = (node) => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      imports.has(node.expression.text)
+    ) {
+      componentSource = imports.get(node.expression.text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  if (render) visit(render);
+  return componentSource;
+}
+
+function collectExecutedCommands(path) {
+  const file = parse(path);
+  const commands = new Set();
+  const visit = (node) => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === "execute"
+    ) {
+      const command = getString(node.arguments[0]);
+      if (command) commands.add(command);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return [...commands];
 }
 
 function findArrayVariable(file, variable) {
@@ -126,7 +200,9 @@ function collectBuiltinCommands() {
 }
 
 function collectPresetItems() {
-  const file = parse("src/ui/components/Toolbar/presets/defaultToolbar.ts");
+  const presetPath = "src/ui/components/Toolbar/presets/defaultToolbar.ts";
+  const file = parse(presetPath);
+  const componentImports = collectNamedImportSources(file, presetPath);
   const items = new Map();
 
   const addItem = (node, parentId = undefined) => {
@@ -134,9 +210,17 @@ function collectPresetItems() {
     const id = getString(getExpression(node, "id"));
     if (!id) return;
     if (items.has(id)) throw new Error("Duplicate toolbar item: " + id);
+    const kind = getString(getExpression(node, "type"));
+    const render = getExpression(node, "render");
+    const componentSource = kind === "custom"
+      ? findImportedComponentSource(render, componentImports)
+      : undefined;
     items.set(id, {
       command: getCommand(getExpression(node, "command")),
-      kind: getString(getExpression(node, "type")),
+      customCommands: componentSource
+        ? collectExecutedCommands(componentSource)
+        : [],
+      kind,
       source: "preset",
       parentId,
     });
@@ -238,7 +322,7 @@ export function renderMatrix(data) {
     "",
     "## Audit interpretation",
     "",
-    "The audit scans the built-in command array, direct default-toolbar objects, the three active static button-spec arrays, Ribbon placement definitions and the default menubar. Dynamic custom controls and plugin contributions cannot be proved complete through static mapping and must be verified in runtime tests. The tool reports direct Ribbon, visible menu or unverified core reachability; it never upgrades a feature to `complete` automatically.",
+    "The audit scans the built-in command array, direct default-toolbar objects, the three active static button-spec arrays, literal commands executed by statically imported custom preset controls, Ribbon placement definitions and the default menubar. Dynamic command expressions and plugin contributions still require runtime coverage. The tool reports direct Ribbon, visible menu or unverified core reachability; it never upgrades a feature to `complete` automatically.",
     "",
     "**Next:** expand the mapping from WordCraft `crates/engine/src/catalog.rs`, `crates/ui-egui/src/ribbon/*.rs` and the Oasis runtime; capture UI-only, core-only, menu-only, preservation-only and not-applicable cases. Use the coverage and acceptance ladder in `docs/wordcraft-ribbon-parity-plan.md` before claiming parity.",
     "",
@@ -326,7 +410,10 @@ function main() {
     }
     const item = toolbar.get(feature.ribbonId);
     if (!item) errors.push(feature.id + ": missing Ribbon item " + feature.ribbonId);
-    else if (item.command !== feature.oasisCommand) {
+    else if (
+      item.command !== feature.oasisCommand &&
+      !(item.customCommands ?? []).includes(feature.oasisCommand)
+    ) {
       errors.push(feature.id + ": wrong command " + (item.command ?? "<none>"));
     }
     const placement = placements.get(feature.ribbonId) ??
@@ -338,7 +425,8 @@ function main() {
 
   const reachable = [...builtin].map((command) => ({
     command,
-    channel: [...toolbar.values()].some((i) => i.command === command)
+    channel: [...toolbar.values()].some((i) =>
+      i.command === command || i.customCommands?.includes(command))
       ? "direct-ribbon"
       : menu.has(command) ? "visible-menu" : "not-statically-verified",
   }));

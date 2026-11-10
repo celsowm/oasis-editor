@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 35
+    "linkedRows": 37
   },
   "defaultTabs": [
     "File",
@@ -624,7 +624,9 @@
       "group": "Font",
       "name": "Underline",
       "command": "format.underline",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.underline"
+      ]
     },
     {
       "index": 49,
@@ -633,7 +635,9 @@
       "group": "Font",
       "name": "Double Underline",
       "command": "format.doubleUnderline",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.doubleUnderline"
+      ]
     },
     {
       "index": 50,
