@@ -29,6 +29,9 @@ jobs:
       - name: Verify Ribbon parity matrix
         run: npm run audit:ribbon
 
+      - name: Verify Ribbon icon inventory
+        run: npm run audit:ribbon:icons
+
       - name: Run Tests
         run: npm test
 
@@ -37,6 +40,16 @@ jobs:
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
+
+      - name: Verify Ribbon browser scenarios
+        run: npm run test:ribbon:ci
+
+      - name: Retain synthetic Ribbon evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ribbon-reference
+          path: test-results/ribbon
 
       - name: Smoke Test Production Build
         run: npm run test:smoke
