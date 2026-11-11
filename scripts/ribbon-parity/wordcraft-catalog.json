@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 335
+    "linkedRows": 374
   },
   "defaultTabs": [
     "File",
@@ -3026,7 +3026,9 @@
       "group": "Create",
       "name": "Envelopes",
       "command": "mailings.envelopes",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.envelopes"
+      ]
     },
     {
       "index": 258,
@@ -3035,7 +3037,9 @@
       "group": "Create",
       "name": "Labels",
       "command": "mailings.labels",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.labels"
+      ]
     },
     {
       "index": 259,
@@ -3044,7 +3048,9 @@
       "group": "Start Mail Merge",
       "name": "Start Mail Merge",
       "command": "mailings.start",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.start"
+      ]
     },
     {
       "index": 260,
@@ -3053,7 +3059,9 @@
       "group": "Start Mail Merge",
       "name": "Select Recipients",
       "command": "mailings.recipients",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.recipients"
+      ]
     },
     {
       "index": 261,
@@ -3062,7 +3070,9 @@
       "group": "Start Mail Merge",
       "name": "Edit Recipient List",
       "command": "mailings.editRecipients",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.editRecipients"
+      ]
     },
     {
       "index": 262,
@@ -3071,7 +3081,9 @@
       "group": "Start Mail Merge",
       "name": "Filter Recipients",
       "command": "mailings.filterRecipients",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.filterRecipients"
+      ]
     },
     {
       "index": 263,
@@ -3080,7 +3092,9 @@
       "group": "Start Mail Merge",
       "name": "Sort Recipients",
       "command": "mailings.sortRecipients",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.sortRecipients"
+      ]
     },
     {
       "index": 264,
@@ -3089,7 +3103,9 @@
       "group": "Write & Insert Fields",
       "name": "Highlight Merge Fields",
       "command": "mailings.highlightFields",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.highlightFields"
+      ]
     },
     {
       "index": 265,
@@ -3098,7 +3114,9 @@
       "group": "Write & Insert Fields",
       "name": "Address Block",
       "command": "mailings.addressBlock",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.addressBlock"
+      ]
     },
     {
       "index": 266,
@@ -3107,7 +3125,9 @@
       "group": "Write & Insert Fields",
       "name": "Greeting Line",
       "command": "mailings.greetingLine",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.greetingLine"
+      ]
     },
     {
       "index": 267,
@@ -3116,7 +3136,9 @@
       "group": "Write & Insert Fields",
       "name": "Insert Merge Field",
       "command": "mailings.insertField",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.insertField"
+      ]
     },
     {
       "index": 268,
@@ -3125,7 +3147,9 @@
       "group": "Write & Insert Fields",
       "name": "Rules",
       "command": "mailings.rules",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.rules"
+      ]
     },
     {
       "index": 269,
@@ -3134,7 +3158,9 @@
       "group": "Write & Insert Fields",
       "name": "Match Fields",
       "command": "mailings.matchFields",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.matchFields"
+      ]
     },
     {
       "index": 270,
@@ -3143,7 +3169,9 @@
       "group": "Preview Results",
       "name": "Preview Results",
       "command": "mailings.preview",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.preview"
+      ]
     },
     {
       "index": 271,
@@ -3152,7 +3180,9 @@
       "group": "Preview Results",
       "name": "Next Record",
       "command": "mailings.next",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.next"
+      ]
     },
     {
       "index": 272,
@@ -3161,7 +3191,9 @@
       "group": "Preview Results",
       "name": "Previous Record",
       "command": "mailings.previous",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.previous"
+      ]
     },
     {
       "index": 273,
@@ -3170,7 +3202,9 @@
       "group": "Preview Results",
       "name": "First Record",
       "command": "mailings.first",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.first"
+      ]
     },
     {
       "index": 274,
@@ -3179,7 +3213,9 @@
       "group": "Preview Results",
       "name": "Last Record",
       "command": "mailings.last",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.last"
+      ]
     },
     {
       "index": 275,
@@ -3188,7 +3224,9 @@
       "group": "Preview Results",
       "name": "Go to Record",
       "command": "mailings.goToRecord",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.goToRecord"
+      ]
     },
     {
       "index": 276,
@@ -3197,7 +3235,9 @@
       "group": "Preview Results",
       "name": "Find Recipient",
       "command": "mailings.findRecipient",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.findRecipient"
+      ]
     },
     {
       "index": 277,
@@ -3206,7 +3246,9 @@
       "group": "Preview Results",
       "name": "Check for Errors",
       "command": "mailings.checkErrors",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.checkErrors"
+      ]
     },
     {
       "index": 278,
@@ -3215,7 +3257,9 @@
       "group": "Finish",
       "name": "Finish & Merge",
       "command": "mailings.finish",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.finish"
+      ]
     },
     {
       "index": 279,
@@ -3224,7 +3268,9 @@
       "group": "Finish",
       "name": "Print Documents",
       "command": "mailings.printDocuments",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "mailings.printDocuments"
+      ]
     },
     {
       "index": 280,
@@ -3233,7 +3279,9 @@
       "group": "Proofing",
       "name": "Spelling & Grammar",
       "command": "review.spelling",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.spelling"
+      ]
     },
     {
       "index": 281,
@@ -3242,7 +3290,9 @@
       "group": "Proofing",
       "name": "Thesaurus",
       "command": "review.thesaurus",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.thesaurus"
+      ]
     },
     {
       "index": 282,
@@ -3262,7 +3312,9 @@
       "group": "Speech",
       "name": "Read Aloud",
       "command": "review.readAloud",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.readAloud"
+      ]
     },
     {
       "index": 284,
@@ -3282,7 +3334,9 @@
       "group": "Accessibility",
       "name": "Alt Text",
       "command": "view.altTextPane",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.altTextPane"
+      ]
     },
     {
       "index": 286,
@@ -3291,7 +3345,9 @@
       "group": "Language",
       "name": "Translate",
       "command": "review.translate",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.translate"
+      ]
     },
     {
       "index": 287,
@@ -3300,7 +3356,9 @@
       "group": "Language",
       "name": "Language",
       "command": "review.language",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.language"
+      ]
     },
     {
       "index": 288,
@@ -3397,7 +3455,9 @@
       "group": "Tracking",
       "name": "Display for Review",
       "command": "review.markup",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.displayForReview"
+      ]
     },
     {
       "index": 297,
@@ -3406,7 +3466,9 @@
       "group": "Tracking",
       "name": "Show Markup",
       "command": "review.showMarkup",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.showMarkup"
+      ]
     },
     {
       "index": 298,
@@ -3415,7 +3477,9 @@
       "group": "Tracking",
       "name": "Reviewing Pane",
       "command": "review.changes",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.reviewingPane"
+      ]
     },
     {
       "index": 299,
@@ -3424,7 +3488,9 @@
       "group": "Tracking",
       "name": "Track Changes Options",
       "command": "review.trackingOptions",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.trackChangesOptions"
+      ]
     },
     {
       "index": 300,
@@ -3499,7 +3565,9 @@
       "group": "Compare",
       "name": "Compare",
       "command": "review.compare",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.compare"
+      ]
     },
     {
       "index": 307,
@@ -3508,7 +3576,9 @@
       "group": "Compare",
       "name": "Combine",
       "command": "review.combine",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.combine"
+      ]
     },
     {
       "index": 308,
@@ -3517,7 +3587,9 @@
       "group": "Protect",
       "name": "Block Authors",
       "command": "review.blockAuthors",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.blockAuthors"
+      ]
     },
     {
       "index": 309,
@@ -3526,7 +3598,9 @@
       "group": "Protect",
       "name": "Restrict Editing",
       "command": "review.restrict",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.restrictEditing"
+      ]
     },
     {
       "index": 310,
@@ -3535,7 +3609,9 @@
       "group": "Ink",
       "name": "Hide Ink",
       "command": "review.hideInk",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.hideInk"
+      ]
     },
     {
       "index": 311,
@@ -5526,7 +5602,9 @@
       "group": "Proofing",
       "name": "Set Proofing Language",
       "command": "review.language",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "review.language"
+      ]
     },
     {
       "index": 517,

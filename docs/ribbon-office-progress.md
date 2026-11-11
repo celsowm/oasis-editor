@@ -990,6 +990,26 @@ Evidence: the crosswalk now classifies 335 of 521 source rows; 186 remain unclas
 
 Limits: TOC/footnote workflows already mapped remain partial; DOCX field interoperability and References accessibility still require workflow evidence.
 
+## Delivery 80 — Mailings tab inventory review
+
+Date: 2026-11-11. B01 and M4 Mailings remain **partial**.
+
+Reviewed all 23 Mailings commands, from envelopes/labels and recipient sources through merge fields, preview, validation and output. The repository contains no mail-merge engine, recipient data model or default Mailings controls, so every command is explicitly classified missing with a task-specific rationale.
+
+Evidence: the crosswalk now classifies 358 of 521 source rows; 163 remain unclassified. The snapshot and parity audits validate the source rows and documented gaps.
+
+Limits: the Mailings family remains a planned M4 capability and has no implementation or workflow evidence.
+
+## Delivery 81 — Review tab source inventory review
+
+Date: 2026-11-11. B01 and P02 remain **partial**.
+
+Reviewed the remaining Review commands. Mapped the selected-image alt-text editor as a partial related path for WordCraft's Alt Text pane. Classified the absent proofing, speech, translation, review-mode/filter, tracked-change settings, compare/combine, author-blocking, protection and ink controls individually. Oasis's Track Changes toggle, discussion panel, host read-only setting and comment permissions do not provide those broader workflows.
+
+Evidence: the crosswalk now classifies 374 of 521 source rows; 147 remain unclassified. Static command and placement checks pass for the related Alt Text action; all unsupported rows have command-specific rationales.
+
+Limits: Review and References remain partial, including tracked-change interoperability, document language, accessibility and host protection semantics.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

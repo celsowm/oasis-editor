@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `366` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `404` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -377,6 +377,44 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `references.updateAuthorities` | `references.updateAuthorities` | — | — | missing | missing | missing | unverified |
 | `references.updateFields` | `references.updateFields` | — | — | missing | missing | missing | unverified |
 | `references.noteOptions` | `references.noteOptions` | `setNoteOptions` | — | core-only | core-only | partial | unverified |
+| `mailings.envelopes` | `mailings.envelopes` | — | — | missing | missing | missing | unverified |
+| `mailings.labels` | `mailings.labels` | — | — | missing | missing | missing | unverified |
+| `mailings.start` | `mailings.start` | — | — | missing | missing | missing | unverified |
+| `mailings.recipients` | `mailings.recipients` | — | — | missing | missing | missing | unverified |
+| `mailings.editRecipients` | `mailings.editRecipients` | — | — | missing | missing | missing | unverified |
+| `mailings.filterRecipients` | `mailings.filterRecipients` | — | — | missing | missing | missing | unverified |
+| `mailings.sortRecipients` | `mailings.sortRecipients` | — | — | missing | missing | missing | unverified |
+| `mailings.highlightFields` | `mailings.highlightFields` | — | — | missing | missing | missing | unverified |
+| `mailings.addressBlock` | `mailings.addressBlock` | — | — | missing | missing | missing | unverified |
+| `mailings.greetingLine` | `mailings.greetingLine` | — | — | missing | missing | missing | unverified |
+| `mailings.insertField` | `mailings.insertField` | — | — | missing | missing | missing | unverified |
+| `mailings.rules` | `mailings.rules` | — | — | missing | missing | missing | unverified |
+| `mailings.matchFields` | `mailings.matchFields` | — | — | missing | missing | missing | unverified |
+| `mailings.preview` | `mailings.preview` | — | — | missing | missing | missing | unverified |
+| `mailings.next` | `mailings.next` | — | — | missing | missing | missing | unverified |
+| `mailings.previous` | `mailings.previous` | — | — | missing | missing | missing | unverified |
+| `mailings.first` | `mailings.first` | — | — | missing | missing | missing | unverified |
+| `mailings.last` | `mailings.last` | — | — | missing | missing | missing | unverified |
+| `mailings.goToRecord` | `mailings.goToRecord` | — | — | missing | missing | missing | unverified |
+| `mailings.findRecipient` | `mailings.findRecipient` | — | — | missing | missing | missing | unverified |
+| `mailings.checkErrors` | `mailings.checkErrors` | — | — | missing | missing | missing | unverified |
+| `mailings.finish` | `mailings.finish` | — | — | missing | missing | missing | unverified |
+| `mailings.printDocuments` | `mailings.printDocuments` | — | — | missing | missing | missing | unverified |
+| `review.spelling` | `review.spelling` | — | — | missing | missing | missing | unverified |
+| `review.thesaurus` | `review.thesaurus` | — | — | missing | missing | missing | unverified |
+| `review.readAloud` | `review.readAloud` | — | — | missing | missing | missing | unverified |
+| `review.translate` | `review.translate` | — | — | missing | missing | missing | unverified |
+| `review.language` | `review.language` | — | — | missing | missing | missing | unverified |
+| `review.displayForReview` | `review.markup` | — | — | missing | missing | missing | unverified |
+| `review.showMarkup` | `review.showMarkup` | — | — | missing | missing | missing | unverified |
+| `review.reviewingPane` | `review.changes` | — | — | missing | missing | missing | unverified |
+| `review.trackChangesOptions` | `review.trackingOptions` | — | — | missing | missing | missing | unverified |
+| `review.compare` | `review.compare` | — | — | missing | missing | missing | unverified |
+| `review.combine` | `review.combine` | — | — | missing | missing | missing | unverified |
+| `review.blockAuthors` | `review.blockAuthors` | — | — | missing | missing | missing | unverified |
+| `review.restrictEditing` | `review.restrict` | — | — | missing | missing | missing | unverified |
+| `review.hideInk` | `review.hideInk` | — | — | missing | missing | missing | unverified |
+| `review.altTextPane` | `view.altTextPane` | `editImageAlt` | `insert/accessibility` | partial | partial | partial | partial |
 
 ## Open verification questions
 
@@ -746,6 +784,44 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 364. **references.updateAuthorities:** Update Table of Authorities: No table-of-authorities field or refresh workflow is exposed.
 365. **references.updateFields:** Update Fields: Oasis can update its TOC through a dedicated command, but no general document-field refresh action is exposed.
 366. **references.noteOptions:** Oasis registers footnote/endnote numbering settings, but no default Ribbon, menu or dialog control exposes them. User workflow, settings scope and DOCX settings.xml round-trip need verification.
+367. **mailings.envelopes:** Envelopes: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No envelope layout, address merge or print workflow is exposed.
+368. **mailings.labels:** Labels: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No label-sheet setup or recipient-label generation workflow is exposed.
+369. **mailings.start:** Start Mail Merge: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No mail-merge document mode or data-source workflow is exposed.
+370. **mailings.recipients:** Select Recipients: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No recipient source selection or connection UI is exposed.
+371. **mailings.editRecipients:** Edit Recipient List: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No mail-merge recipient dataset or editing surface is exposed.
+372. **mailings.filterRecipients:** Filter Recipients: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No recipient-query filtering workflow is exposed.
+373. **mailings.sortRecipients:** Sort Recipients: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No recipient dataset sorting workflow is exposed.
+374. **mailings.highlightFields:** Highlight Merge Fields: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No merge-field model or highlighting toggle is exposed.
+375. **mailings.addressBlock:** Address Block: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No recipient address-block merge field or insertion dialog is exposed.
+376. **mailings.greetingLine:** Greeting Line: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No greeting-line merge field or configuration workflow is exposed.
+377. **mailings.insertField:** Insert Merge Field: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No recipient schema or merge-field picker is exposed.
+378. **mailings.rules:** Rules: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No conditional mail-merge rule authoring workflow is exposed.
+379. **mailings.matchFields:** Match Fields: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No recipient-field mapping or schema matching workflow is exposed.
+380. **mailings.preview:** Preview Results: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No merge record preview mode is exposed.
+381. **mailings.next:** Next Record: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No record cursor or merge-preview navigation is exposed.
+382. **mailings.previous:** Previous Record: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No record cursor or merge-preview navigation is exposed.
+383. **mailings.first:** First Record: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No record cursor or merge-preview navigation is exposed.
+384. **mailings.last:** Last Record: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No record cursor or merge-preview navigation is exposed.
+385. **mailings.goToRecord:** Go to Record: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No indexed mail-merge record navigation is exposed.
+386. **mailings.findRecipient:** Find Recipient: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No recipient search or selection workflow is exposed.
+387. **mailings.checkErrors:** Check for Errors: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No merge validation or recipient-data error check is exposed.
+388. **mailings.finish:** Finish & Merge: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No merged-document generation or delivery workflow is exposed.
+389. **mailings.printDocuments:** Print Documents: No mail-merge engine, recipient data model or user-facing control is exposed in the default app. No print-per-recipient merge output workflow is exposed.
+390. **review.spelling:** Spelling & Grammar: No spellchecking provider, dictionary integration or spelling/grammar review workflow is exposed in the default app.
+391. **review.thesaurus:** Thesaurus: No thesaurus provider or synonym lookup workflow is exposed.
+392. **review.readAloud:** Read Aloud: No text-to-speech reading mode or playback controls are exposed.
+393. **review.translate:** Translate: No translation provider or selection/document translation workflow is exposed.
+394. **review.language:** Language: No proofing-language picker is exposed. Setting the app locale changes UI strings and is not document proofing language.
+395. **review.displayForReview:** Display for Review: Oasis can track edits and accept/reject revisions, but exposes no display mode to switch between Simple/All/Original markup views.
+396. **review.showMarkup:** Show Markup: No revision-category/author markup filters are exposed in the default app.
+397. **review.reviewingPane:** Reviewing Pane: The comments panel lists discussion threads, not a tracked-change review list; no Reviewing Pane workflow is exposed.
+398. **review.trackChangesOptions:** Track Changes Options: Oasis exposes a Track Changes toggle, but no author/color/balloon/options configuration workflow.
+399. **review.compare:** Compare: No document comparison/diff generation workflow is exposed.
+400. **review.combine:** Combine: No revision-preserving document combination workflow is exposed.
+401. **review.blockAuthors:** Block Authors: Review access identities gate comment mutations, but no author-blocking or revision ownership control is exposed.
+402. **review.restrictEditing:** Restrict Editing: The host can configure a read-only editor, but the app exposes no document protection/password or selective editing restriction workflow.
+403. **review.hideInk:** Hide Ink: No ink model or hide-ink display command is exposed.
+404. **review.altTextPane:** Oasis opens the selected image alt-text editor from Insert/Accessibility; the control is selection-specific and does not provide a general Alt Text pane for every object type. Screen-reader and DOCX metadata behavior remain open.
 
 ## Audit interpretation
 
