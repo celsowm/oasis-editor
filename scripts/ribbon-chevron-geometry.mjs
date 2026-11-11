@@ -65,7 +65,7 @@ async function verifyFontGlyphAlignment(page) {
     if (buttons.some((button) => !button)) return [];
     return buttons.map((button, index) => {
       const glyph = button.querySelector(
-        "svg,.oasis-editor-underline-split-glyph",
+        ".oasis-editor-underline-split-glyph svg,svg",
       );
       const id = ["bold", "italic", "underline"][index];
       if (!glyph) return { id, missing: true };
