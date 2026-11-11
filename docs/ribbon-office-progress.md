@@ -1084,6 +1084,14 @@ Clarified Design's numeric control labels in English and Brazilian Portuguese. W
 
 Evidence: the browser scenario `Design numeric controls declare their units and ranges` opens both custom panels, verifies the localized accessible labels, then records Canvas 2D calls to check that 48 pt watermark text renders at 64 px and 24 pt border distance renders at 32 px with a 1 pt stroke rendered at 4/3 px. The production build and typecheck pass. This covers those two Design panels only; remaining measurement controls, locale lengths, mixed/read-only states and actual Safari/VoiceOver remain open.
 
+## Delivery 90 — Built-in group label coverage
+
+Date: 2026-11-11. V01 remains **partial**.
+
+Added a locale-aware regression check over every default and contextual Ribbon tab. In English and Brazilian Portuguese, all groups composed from the default preset must have a readable, nonempty label and must not expose their internal camelCase group IDs. Existing focused tests still verify explicit plugin labels and the localized General fallback.
+
+Evidence: `npx vitest run --project ui tests/vitest/__tests__/ui/registry.test.ts` passes all 16 tests. This is static registry/model coverage; dynamic plugin lifecycle and rendered browser labels remain open.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

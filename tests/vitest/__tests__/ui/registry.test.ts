@@ -33,6 +33,25 @@ describe("UI registries", () => {
     );
   });
 
+  it("keeps every default and contextual preset group label user-facing", () => {
+    for (const locale of ["en", "pt-BR"] as const) {
+      const translate = createTranslator(() => locale);
+      const items = createDefaultToolbarPreset(translate);
+
+      for (const tab of RIBBON_TABS) {
+        for (const group of buildRibbonGroups(items, tab, translate)) {
+          expect(group.label, `${locale}/${tab}/${group.id}`).not.toBe("");
+          expect(group.label, `${locale}/${tab}/${group.id}`).not.toBe(
+            group.id,
+          );
+          expect(group.label, `${locale}/${tab}/${group.id}`).not.toMatch(
+            /^[a-z]+(?:[A-Z][a-z]+)+$/,
+          );
+        }
+      }
+    }
+  });
+
   it("deduplicates and orders toolbar items", () => {
     const registry = createToolbarRegistry();
 
