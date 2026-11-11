@@ -21,7 +21,10 @@ import type {
   ToolbarViewMode,
 } from "@/ui/OasisEditorAppProps.js";
 import { RibbonTabs } from "./ribbon/RibbonTabs.js";
-import { visibleRibbonItems } from "./ribbon/ribbonModel.js";
+import {
+  resolveContextualTabTransition,
+  visibleRibbonItems,
+} from "./ribbon/ribbonModel.js";
 import { RibbonPanel } from "./ribbon/RibbonPanel.js";
 import { CONTEXTUAL_TABS, type RibbonTabId } from "./schema/items.js";
 import type { ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
@@ -48,11 +51,10 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
   const [version, setVersion] = createSignal(0);
   const [activeTab, setActiveTab] = createSignal<RibbonTabId>("home");
 
-  // Word-style contextual tabs (table tools, image format, …): when a gating
-  // command turns active, surface its tab and focus the first one; when the
-  // active tab's gating command turns inactive, fall back to Home so a stale
-  // panel is never shown. Generic over every `CONTEXTUAL_TABS` entry so multiple
-  // contextual features coexist without hardcoded per-feature blocks.
+  // Word-style contextual tabs (table tools, image format, …): the pure
+  // `resolveContextualTabTransition` policy decides the tab a context snapshot
+  // selects. Generic over every `CONTEXTUAL_TABS` entry so multiple contextual
+  // features coexist without hardcoded per-feature blocks.
   const CONTEXTUAL_TAB_ENTRIES = Object.entries(CONTEXTUAL_TABS) as Array<
     [RibbonTabId, string]
   >;
@@ -63,18 +65,13 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
         current.set(command, api.commands.state(command).isActive);
       }
     }
-    // Focus the first contextual tab whose gating command just became active.
-    for (const [tab, command] of CONTEXTUAL_TAB_ENTRIES) {
-      if ((current.get(command) ?? false) && !(prev?.get(command) ?? false)) {
-        setActiveTab(tab);
-        break;
-      }
-    }
-    // Leave a now-hidden contextual tab.
-    const activeCommand = CONTEXTUAL_TABS[activeTab()];
-    if (activeCommand && !(current.get(activeCommand) ?? false)) {
-      setActiveTab("home");
-    }
+    const next = resolveContextualTabTransition(
+      CONTEXTUAL_TAB_ENTRIES,
+      activeTab(),
+      prev,
+      current,
+    );
+    if (next && next !== activeTab()) setActiveTab(next);
     return current;
   });
 

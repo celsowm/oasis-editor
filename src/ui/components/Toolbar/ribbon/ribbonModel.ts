@@ -116,6 +116,31 @@ export function isRibbonTabVisible(
   return api ? api.commands.state(gatingCommand).isActive : false;
 }
 
+/**
+ * Resolves the tab a context snapshot should select, or `null` to keep the
+ * current tab. Entering a contextual context wins over the tab the user was
+ * on (Word activates the contextual tab); leaving the currently active
+ * contextual context falls back to Home so a stale panel is never shown.
+ *
+ * Pure so the policy is testable without mounting the Toolbar: `prev` is the
+ * previous snapshot, `current` the new one, both keyed by gating command.
+ */
+export function resolveContextualTabTransition(
+  entries: readonly (readonly [RibbonTabId, string])[],
+  activeTab: RibbonTabId,
+  prev: ReadonlyMap<string, boolean> | undefined,
+  current: ReadonlyMap<string, boolean>,
+): RibbonTabId | null {
+  for (const [tab, command] of entries) {
+    if ((current.get(command) ?? false) && !(prev?.get(command) ?? false)) {
+      return tab;
+    }
+  }
+  const activeCommand = CONTEXTUAL_TABS[activeTab];
+  if (activeCommand && !(current.get(activeCommand) ?? false)) return "home";
+  return null;
+}
+
 export function buildRibbonTabDefinitions(
   t: TranslateFn,
   api?: Pick<ToolbarActionApi, "commands">,
