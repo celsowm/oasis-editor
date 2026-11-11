@@ -1050,11 +1050,29 @@ Evidence: the crosswalk now classifies 443 of 521 source rows; 78 remain unclass
 
 Limits: image and shape workflows remain partial, including object selection, visual effects, accessibility and DOCX round-trip.
 
+## Delivery 86 — Editing inventory and interaction evidence
+
+Date: 2026-11-11. B01, D01 and P05 remain **partial**.
+
+Reviewed all 39 previously unmatched Editing commands. Mapped text input, Enter/Tab/delete, word/line/document navigation and word/paragraph selection to their actual keyboard/pointer paths as related UI-only behavior. Classified registered paragraph move/promote/demote commands as core-only; Spike, Unicode conversion, sentence/F8/column selection, page navigation and general field-code editing remain missing from the default app.
+
+Evidence: the parity auditor validates UI source paths and tokens in the text input, keyboard and surface-event controllers, plus registered command exposure. The catalog now classifies 482 of 521 source rows; 39 remain unclassified.
+
+Limits: UI-only mappings are not shared WordCraft command contracts. Platform key differences, selection boundaries, IME, screen-reader support and field interoperability remain open.
+
+## Delivery 87 — Complete source inventory classification
+
+Date: 2026-11-11. B01 is **complete for static inventory reconciliation**; M0/M5 evidence work and all implementation milestones remain active.
+
+Reviewed and classified the final 39 WordCraft source rows across Equation, Outlining and Tools. Equation rows distinguish existing text/symbol insertion paths from unsupported conversion modes and structures; Outlining rows distinguish related style/core commands from menu-only and missing workflows; unsupported Tools rows have command-specific rationales. The historical reference catalog also has explicit exposure, semantics, persistence and next-evidence fields for all 21 categories, including categories without a Word web counterpart.
+
+Evidence: `npm run audit:ribbon` and `npm run audit:ribbon:wordcraft` pass. The Oasis crosswalk has 551 features and links/classifies all 521 pinned WordCraft rows; the snapshot contains 25 surfaces. All 53 direct Word scene captures remain uncaptured (0/53), so this closes inventory classification only and does not claim visual, behavioral or product parity.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
 
-1. Finish B01 source/category reconciliation and remaining V02/V04 cases. B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
+1. B01 static inventory reconciliation is complete. Finish remaining V02/V04 cases; B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
 2. Complete the remaining I03/I04 icon families and A01/A02 contextual/custom layout acceptance.
 3. A03/A04: action/menu/launcher semantics, contextual popup transitions, mixed matrix states and VoiceOver review.
 4. R01–R05: close late-font, zoom, pointer/IME, invalidation and performance evidence across remaining contexts.

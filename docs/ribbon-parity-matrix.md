@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `473` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `551` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -484,6 +484,84 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `shape.textOutline` | `wordArt.textOutline` | — | — | missing | missing | missing | unverified |
 | `shape.textTransform` | `wordArt.transform` | — | — | missing | missing | missing | unverified |
 | `shape.createLink` | `shape.link` | `link` | `insert/links` | partial | partial | partial | partial |
+| `editing.typeText` | `text.insert` | — | Canvas editor > text input | ui-only | ui-only | partial | not-applicable |
+| `editing.newParagraph` | `text.newParagraph` | — | Canvas editor > Enter | ui-only | ui-only | partial | not-applicable |
+| `editing.tab` | `text.tab` | — | Canvas editor > Tab | ui-only | ui-only | partial | not-applicable |
+| `editing.tabCharacter` | `text.insertTab` | — | — | missing | missing | missing | unverified |
+| `editing.backspace` | `text.backspace` | — | Canvas editor > Backspace | ui-only | ui-only | partial | not-applicable |
+| `editing.delete` | `text.delete` | — | Canvas editor > Delete | ui-only | ui-only | partial | not-applicable |
+| `editing.deletePreviousWord` | `text.deleteWordBack` | — | Canvas editor > Ctrl/Command+Backspace | ui-only | ui-only | partial | not-applicable |
+| `editing.deleteNextWord` | `text.deleteWordForward` | — | Canvas editor > Ctrl/Command+Delete | ui-only | ui-only | partial | not-applicable |
+| `editing.moveParagraphUp` | `para.moveUp` | `moveParagraphsUp` | — | core-only | core-only | partial | unverified |
+| `editing.moveParagraphDown` | `para.moveDown` | `moveParagraphsDown` | — | core-only | core-only | partial | unverified |
+| `editing.promote` | `para.promote` | `promote` | — | core-only | core-only | partial | unverified |
+| `editing.demote` | `para.demote` | `demote` | — | core-only | core-only | partial | unverified |
+| `editing.toggleUnicode` | `text.toggleUnicode` | — | — | missing | missing | missing | unverified |
+| `editing.spike` | `edit.spike` | — | — | missing | missing | missing | unverified |
+| `editing.insertSpike` | `edit.insertSpike` | — | — | missing | missing | missing | unverified |
+| `editing.wordLeft` | `caret.wordLeft` | — | Canvas editor > Ctrl/Command+Left | ui-only | ui-only | partial | not-applicable |
+| `editing.wordRight` | `caret.wordRight` | — | Canvas editor > Ctrl/Command+Right | ui-only | ui-only | partial | not-applicable |
+| `editing.lineStart` | `caret.home` | — | Canvas editor > Home | ui-only | ui-only | partial | not-applicable |
+| `editing.lineEnd` | `caret.end` | — | Canvas editor > End | ui-only | ui-only | partial | not-applicable |
+| `editing.paragraphUp` | `caret.paraUp` | — | Canvas editor > Up Arrow | ui-only | ui-only | partial | not-applicable |
+| `editing.paragraphDown` | `caret.paraDown` | — | Canvas editor > Down Arrow | ui-only | ui-only | partial | not-applicable |
+| `editing.documentStart` | `caret.docStart` | — | Canvas editor > Ctrl/Command+Home | ui-only | ui-only | partial | not-applicable |
+| `editing.documentEnd` | `caret.docEnd` | — | Canvas editor > Ctrl/Command+End | ui-only | ui-only | partial | not-applicable |
+| `editing.pageUp` | `caret.pageUp` | — | — | missing | missing | missing | unverified |
+| `editing.pageDown` | `caret.pageDown` | — | — | missing | missing | missing | unverified |
+| `editing.goBack` | `edit.goBack` | — | — | missing | missing | missing | unverified |
+| `editing.selectWord` | `select.word` | — | Canvas editor > double-click a word | ui-only | ui-only | partial | not-applicable |
+| `editing.selectSentence` | `select.sentence` | — | — | missing | missing | missing | unverified |
+| `editing.selectParagraph` | `select.paragraph` | — | Canvas editor > triple-click a paragraph | ui-only | ui-only | partial | not-applicable |
+| `editing.extendSelectionF8` | `select.extend` | — | — | missing | missing | missing | unverified |
+| `editing.columnSelection` | `select.column` | — | — | missing | missing | missing | unverified |
+| `editing.showFieldCodes` | `view.fieldCodes` | — | — | missing | missing | missing | unverified |
+| `editing.toggleFieldCodes` | `fields.toggleCode` | — | — | missing | missing | missing | unverified |
+| `editing.editFieldCode` | `fields.setCode` | — | — | missing | missing | missing | unverified |
+| `editing.unlinkFields` | `fields.unlink` | — | — | missing | missing | missing | unverified |
+| `editing.lockFields` | `fields.lock` | — | — | missing | missing | missing | unverified |
+| `editing.unlockFields` | `fields.unlock` | — | — | missing | missing | missing | unverified |
+| `editing.nextField` | `fields.next` | — | — | missing | missing | missing | unverified |
+| `editing.previousField` | `fields.previous` | — | — | missing | missing | missing | unverified |
+| `equation.unicodeInput` | `equation.inputFormat` | `insertEquation` | `insert/symbols` | partial | partial | partial | partial |
+| `equation.latexInput` | `equation.inputFormat` | `insertEquation` | `insert/symbols` | partial | partial | partial | partial |
+| `equation.convert` | `equation.convert` | `insertEquation` | `insert/symbols` | partial | partial | partial | partial |
+| `equation.normalText` | `equation.normalText` | — | — | missing | missing | missing | unverified |
+| `equation.symbols` | `equation.insertSymbol` | `insertText` | `insert/symbols` | partial | partial | partial | partial |
+| `equation.fraction` | `equation.insertStructure` | `insertEquation` | `insert/symbols` | partial | partial | partial | partial |
+| `equation.script` | `equation.insertStructure` | `insertEquation` | `insert/symbols` | partial | partial | partial | partial |
+| `equation.radical` | `equation.insertStructure` | `insertEquation` | `insert/symbols` | partial | partial | partial | partial |
+| `equation.integral` | `equation.insertStructure` | `insertEquation` | `insert/symbols` | partial | partial | partial | partial |
+| `equation.largeOperator` | `equation.insertStructure` | `insertEquation` | `insert/symbols` | partial | partial | partial | partial |
+| `equation.bracket` | `equation.insertStructure` | `insertEquation` | `insert/symbols` | partial | partial | partial | partial |
+| `equation.function` | `equation.insertStructure` | — | — | missing | missing | missing | unverified |
+| `equation.accent` | `equation.insertStructure` | — | — | missing | missing | missing | unverified |
+| `equation.limit` | `equation.insertStructure` | — | — | missing | missing | missing | unverified |
+| `equation.operator` | `equation.insertStructure` | — | — | missing | missing | missing | unverified |
+| `equation.matrix` | `equation.insertStructure` | `insertEquation` | `insert/symbols` | partial | partial | partial | partial |
+| `equation.display` | `equation.display` | — | — | missing | missing | missing | unverified |
+| `equation.justification` | `equation.justify` | — | — | missing | missing | missing | unverified |
+| `equation.number` | `equation.number` | — | — | missing | missing | missing | unverified |
+| `equation.structureCommands` | `equation.structure` | — | — | missing | missing | missing | unverified |
+| `outlining.promoteToHeading1` | `outline.promoteToHeading1` | `setStyleId` | `home/styles` | partial | partial | partial | partial |
+| `outlining.promote` | `outline.promote` | `promote` | — | core-only | core-only | partial | unverified |
+| `outlining.level` | `outline.level` | `setOutlineLevel` | Layout > Paragraph dialog > Indents and Spacing > Outline level | menu-only | menu-only | partial | partial |
+| `outlining.demote` | `outline.demote` | `demote` | — | core-only | core-only | partial | unverified |
+| `outlining.demoteToBody` | `outline.demoteToBody` | `setStyleId` | `home/styles` | partial | partial | partial | partial |
+| `outlining.moveUp` | `outline.moveUp` | `moveParagraphsUp` | — | core-only | core-only | partial | unverified |
+| `outlining.moveDown` | `outline.moveDown` | `moveParagraphsDown` | — | core-only | core-only | partial | unverified |
+| `outlining.expand` | `outline.expand` | — | — | missing | missing | missing | unverified |
+| `outlining.collapse` | `outline.collapse` | — | — | missing | missing | missing | unverified |
+| `outlining.showLevel` | `outline.showLevel` | — | — | missing | missing | missing | unverified |
+| `outlining.showFormatting` | `outline.showFormatting` | — | — | missing | missing | missing | unverified |
+| `outlining.firstLineOnly` | `outline.firstLineOnly` | — | — | missing | missing | missing | unverified |
+| `outlining.close` | `outline.close` | — | — | missing | missing | missing | unverified |
+| `tools.autoCorrect` | `tools.autocorrect` | — | — | missing | missing | missing | unverified |
+| `tools.customizeRibbon` | `tools.customizeRibbon` | — | — | missing | missing | missing | unverified |
+| `tools.customizeKeyboard` | `tools.customizeKeyboard` | — | — | missing | missing | missing | unverified |
+| `tools.encrypt` | `file.encrypt` | — | — | missing | missing | missing | unverified |
+| `tools.templatesAddIns` | `tools.templates` | — | — | missing | missing | missing | unverified |
+| `tools.fullScreenView` | `view.fullScreenView` | — | — | missing | missing | missing | unverified |
 
 ## Open verification questions
 
@@ -960,6 +1038,84 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 471. **shape.textOutline:** Text Outline: No WordArt text-outline control exists; shape outline targets the container rather than its text.
 472. **shape.textTransform:** Text Effects Transform: No WordArt transform/effect workflow is exposed.
 473. **shape.createLink:** Oasis provides the shared Insert Link dialog/command, which can create a hyperlink from a selected text range; it is located on Insert and is not a Shape Format text action. Link targeting within text-box body selection needs workflow verification.
+474. **editing.typeText:** Type Text: Text is entered through the editor input pipeline, including IME composition; direct command and formatting parity remain separate.
+475. **editing.newParagraph:** New Paragraph: Enter splits the current block and supports list behavior; paragraph/line break distinctions and undo need workflow verification.
+476. **editing.tab:** Tab: Tab indents/outdents lists or moves between table cells; it does not insert a tab stop in ordinary text, so this is only a related keyboard action.
+477. **editing.tabCharacter:** Tab Character: No literal tab-character insertion command or default UI action is exposed.
+478. **editing.backspace:** Backspace: Backspace deletes backward through the active selection and editor structure; text/field/table edge parity needs verification.
+479. **editing.delete:** Delete: Delete removes forward through the active selection and editor structure; text/field/table edge parity needs verification.
+480. **editing.deletePreviousWord:** Delete Previous Word: The keyboard controller deletes the preceding word; platform-specific word boundaries and selection behavior need verification.
+481. **editing.deleteNextWord:** Delete Next Word: The keyboard controller deletes the following word; platform-specific word boundaries and selection behavior need verification.
+482. **editing.moveParagraphUp:** Move Paragraph Up: The registered command moves selected paragraphs, but no default Ribbon, menu or keyboard binding exposes this action.
+483. **editing.moveParagraphDown:** Move Paragraph Down: The registered command moves selected paragraphs, but no default Ribbon, menu or keyboard binding exposes this action.
+484. **editing.promote:** Promote: The registered outline-step command promotes paragraphs/list levels, but no default Ribbon, menu or keyboard binding exposes it.
+485. **editing.demote:** Demote: The registered outline-step command demotes paragraphs/list levels, but no default Ribbon, menu or keyboard binding exposes it.
+486. **editing.toggleUnicode:** Toggle Unicode Character: No Unicode character-code conversion or toggle workflow is exposed.
+487. **editing.spike:** Spike: No multi-cut Spike buffer or collection workflow is exposed.
+488. **editing.insertSpike:** Insert Spike: No Spike buffer exists, so collected content cannot be inserted.
+489. **editing.wordLeft:** Word Left: Control/Command+Arrow moves the caret by word; platform-specific boundary semantics need verification.
+490. **editing.wordRight:** Word Right: Control/Command+Arrow moves the caret by word; platform-specific boundary semantics need verification.
+491. **editing.lineStart:** Line Start: Home moves to the paragraph start; visual-line start behavior may differ from Word.
+492. **editing.lineEnd:** Line End: End moves to the paragraph end; visual-line end behavior may differ from Word.
+493. **editing.paragraphUp:** Paragraph Up: Up Arrow navigates the visual caret/selection and is related to paragraph navigation; soft-wrap, table and page-boundary behavior differ.
+494. **editing.paragraphDown:** Paragraph Down: Down Arrow navigates the visual caret/selection and is related to paragraph navigation; soft-wrap, table and page-boundary behavior differ.
+495. **editing.documentStart:** Document Start: Control/Command+Home moves to the document boundary; section/story scope and selection extension need verification.
+496. **editing.documentEnd:** Document End: Control/Command+End moves to the document boundary; section/story scope and selection extension need verification.
+497. **editing.pageUp:** Page Up: No dedicated in-document page-navigation command is exposed; browser scrolling is not the same caret action.
+498. **editing.pageDown:** Page Down: No dedicated in-document page-navigation command is exposed; browser scrolling is not the same caret action.
+499. **editing.goBack:** Go Back: No editor caret-navigation history command restores the previous editing location.
+500. **editing.selectWord:** Select Word: Double-click selects a word through pointer hit testing; keyboard command exposure and language-specific word boundaries need verification.
+501. **editing.selectSentence:** Select Sentence: No sentence-selection gesture, keyboard binding or default command control is exposed.
+502. **editing.selectParagraph:** Select Paragraph: Triple-click selects a paragraph range; exact paragraph-mark inclusion and touch behavior need verification.
+503. **editing.extendSelectionF8:** Extend Selection (F8): No F8 extend-selection mode or repeatable selection-extension workflow is exposed.
+504. **editing.columnSelection:** Column Selection: No rectangular text-column selection mode is exposed. Table-column selection is a separate task.
+505. **editing.showFieldCodes:** Show Field Codes: No field-code display toggle is exposed. Supported date/page fields render as values.
+506. **editing.toggleFieldCodes:** Toggle Field Codes: No field-code toggle command or control is exposed.
+507. **editing.editFieldCode:** Edit Field Code: No field-code editor or arbitrary field-code authoring workflow is exposed.
+508. **editing.unlinkFields:** Unlink Fields: No command converts a field result into static text.
+509. **editing.lockFields:** Lock Fields: No field-lock state or user-facing lock action is exposed.
+510. **editing.unlockFields:** Unlock Fields: No field-lock state or user-facing unlock action is exposed.
+511. **editing.nextField:** Next Field: No field-navigation command traverses document fields.
+512. **editing.previousField:** Previous Field: No field-navigation command traverses document fields.
+513. **equation.unicodeInput:** Unicode input: The linear equation editor accepts Unicode text/math symbols, but has no explicit Unicode input-format selector.
+514. **equation.latexInput:** LaTeX input: The linear editor parses a limited LaTeX-like syntax such as fractions and radicals; Oasis has no input-format toggle and does not implement the full LaTeX grammar.
+515. **equation.convert:** Convert: Oasis parses the linear editor into a structured expression as the user types and inserts it through the same command; there is no separate Word convert action.
+516. **equation.normalText:** Normal Text: No normal-text mode toggle is exposed inside an equation; the linear editor is not an equation-format selector.
+517. **equation.symbols:** Equation Symbols: The Insert/Symbols menu includes common characters and example equations, but does not expose Word’s full equation-symbol gallery.
+518. **equation.fraction:** Fraction: The Equation dialog has a fraction template; the editor exposes a smaller palette and no contextual Equation tab.
+519. **equation.script:** Script: The Equation dialog supports superscript/subscript templates; broader script structures and keyboard behavior remain open.
+520. **equation.radical:** Radical: The Equation dialog includes a square-root template, but no full radical gallery or contextual tab.
+521. **equation.integral:** Integral: The Equation dialog includes a basic integral template; limits, variants and structural editing remain unverified.
+522. **equation.largeOperator:** Large Operator: The Equation dialog includes a summation example, but not Word’s full large-operator gallery and limit placement behavior.
+523. **equation.bracket:** Bracket: The Equation dialog includes a delimiter template; delimiter variants and sizing controls remain limited.
+524. **equation.function:** Function: No function-structure gallery or function-specific equation control is exposed.
+525. **equation.accent:** Accent: No equation accent structure gallery/control is exposed.
+526. **equation.limit:** Limit and Log: No limit/log structure gallery or dedicated operator-limit control is exposed.
+527. **equation.operator:** Operator: No dedicated operator structure gallery is exposed.
+528. **equation.matrix:** Matrix: The Equation dialog supports a basic matrix template; matrix sizing, editing and richer delimiters remain limited.
+529. **equation.display:** Change to Inline / Display: The document model carries display math, but no inline/display toggle is exposed in the Equation UI.
+530. **equation.justification:** Justification: No equation alignment/justification control is exposed.
+531. **equation.number:** Equation Number: No equation-numbering or numbering-format workflow is exposed.
+532. **equation.structureCommands:** Structure Commands: No contextual Equation tab or structure-editing command surface is exposed.
+533. **outlining.promoteToHeading1:** Oasis can apply Heading 1 from the Home style gallery, but this is not an Outlining-mode promote command. Outline hierarchy, selection behavior and DOCX heading semantics remain open.
+534. **outlining.promote:** Oasis registers an outline-step promote command, but exposes no Outlining tab control or keyboard binding. Heading/list behavior and document interoperability need workflow verification.
+535. **outlining.level:** The Paragraph dialog sets an outline level, but the control is outside an Outlining view and does not provide outline-mode level display/management.
+536. **outlining.demote:** Oasis registers an outline-step demote command, but exposes no Outlining tab control or keyboard binding. Heading/list behavior and document interoperability need workflow verification.
+537. **outlining.demoteToBody:** Oasis can apply the Normal style from the Home gallery, but has no Outlining-mode demote-to-body command. Existing outline structure and DOCX behavior remain to verify.
+538. **outlining.moveUp:** Oasis registers a paragraph-move-up command, but no Outlining tab control or keyboard binding exposes it.
+539. **outlining.moveDown:** Oasis registers a paragraph-move-down command, but no Outlining tab control or keyboard binding exposes it.
+540. **outlining.expand:** Expand: No Outlining view or heading expansion state is exposed.
+541. **outlining.collapse:** Collapse: The navigation Outline panel can collapse as a whole, but it has no per-heading collapse/expand control.
+542. **outlining.showLevel:** Show Level: No outline-level visibility filter is exposed.
+543. **outlining.showFormatting:** Show Text Formatting: No Outlining view or formatting-visibility toggle is exposed.
+544. **outlining.firstLineOnly:** Show First Line Only: No outline first-line-only display mode is exposed.
+545. **outlining.close:** Close Outline View: Oasis has a collapsible Outline panel, not a distinct Outlining view with a close-view command.
+546. **tools.autoCorrect:** AutoCorrect Options: No autocorrect rule editor or user-facing proofing preferences workflow is exposed.
+547. **tools.customizeRibbon:** Customize Ribbon: Oasis supports host-side toolbar customization APIs, but no in-app Ribbon customization surface is exposed.
+548. **tools.customizeKeyboard:** Customize Keyboard: No keyboard-shortcut editor or user-facing key-binding customization surface is exposed.
+549. **tools.encrypt:** Encrypt with Password: No document encryption, password protection or key-management workflow is exposed.
+550. **tools.templatesAddIns:** Templates and Add-ins: No template/add-in manager or document-template integration surface is exposed.
+551. **tools.fullScreenView:** Full Screen View: No in-app full-screen view command or focus-mode toggle is exposed; browser fullscreen is host behavior.
 
 ## Audit interpretation
 

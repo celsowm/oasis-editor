@@ -5418,6 +5418,985 @@
       "semantics": "partial",
       "persistence": "partial",
       "notes": "Oasis provides the shared Insert Link dialog/command, which can create a hyperlink from a selected text range; it is located on Insert and is not a Shape Format text action. Link targeting within text-box body selection needs workflow verification."
+    },
+    {
+      "id": "editing.typeText",
+      "wordcraftCommand": "text.insert",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "keyboard",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > text input",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorTextInput.ts",
+        "token": "handleTextInput"
+      },
+      "notes": "Type Text: Text is entered through the editor input pipeline, including IME composition; direct command and formatting parity remain separate."
+    },
+    {
+      "id": "editing.newParagraph",
+      "wordcraftCommand": "text.newParagraph",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "keyboard",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > Enter",
+      "uiEvidence": {
+        "file": "src/app/controllers/EditorCommandRegistry.ts",
+        "token": "id: \"splitBlock\""
+      },
+      "notes": "New Paragraph: Enter splits the current block and supports list behavior; paragraph/line break distinctions and undo need workflow verification."
+    },
+    {
+      "id": "editing.tab",
+      "wordcraftCommand": "text.tab",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "keyboard",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > Tab",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorKeyboard.ts",
+        "token": "case \"Tab\""
+      },
+      "notes": "Tab: Tab indents/outdents lists or moves between table cells; it does not insert a tab stop in ordinary text, so this is only a related keyboard action."
+    },
+    {
+      "id": "editing.tabCharacter",
+      "wordcraftCommand": "text.insertTab",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Tab Character: No literal tab-character insertion command or default UI action is exposed.",
+      "tab": "editing",
+      "group": "keyboard"
+    },
+    {
+      "id": "editing.backspace",
+      "wordcraftCommand": "text.backspace",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "keyboard",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > Backspace",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorKeyboard.ts",
+        "token": "case \"Backspace\""
+      },
+      "notes": "Backspace: Backspace deletes backward through the active selection and editor structure; text/field/table edge parity needs verification."
+    },
+    {
+      "id": "editing.delete",
+      "wordcraftCommand": "text.delete",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "keyboard",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > Delete",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorKeyboard.ts",
+        "token": "case \"Delete\""
+      },
+      "notes": "Delete: Delete removes forward through the active selection and editor structure; text/field/table edge parity needs verification."
+    },
+    {
+      "id": "editing.deletePreviousWord",
+      "wordcraftCommand": "text.deleteWordBack",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "keyboard",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > Ctrl/Command+Backspace",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorKeyboard.ts",
+        "token": "if ((event.ctrlKey || event.metaKey) && !event.altKey)"
+      },
+      "notes": "Delete Previous Word: The keyboard controller deletes the preceding word; platform-specific word boundaries and selection behavior need verification."
+    },
+    {
+      "id": "editing.deleteNextWord",
+      "wordcraftCommand": "text.deleteWordForward",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "keyboard",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > Ctrl/Command+Delete",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorKeyboard.ts",
+        "token": "if ((event.ctrlKey || event.metaKey) && !event.altKey)"
+      },
+      "notes": "Delete Next Word: The keyboard controller deletes the following word; platform-specific word boundaries and selection behavior need verification."
+    },
+    {
+      "id": "editing.moveParagraphUp",
+      "wordcraftCommand": "para.moveUp",
+      "oasisCommand": "moveParagraphsUp",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "keyboard",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Move Paragraph Up: The registered command moves selected paragraphs, but no default Ribbon, menu or keyboard binding exposes this action."
+    },
+    {
+      "id": "editing.moveParagraphDown",
+      "wordcraftCommand": "para.moveDown",
+      "oasisCommand": "moveParagraphsDown",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "keyboard",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Move Paragraph Down: The registered command moves selected paragraphs, but no default Ribbon, menu or keyboard binding exposes this action."
+    },
+    {
+      "id": "editing.promote",
+      "wordcraftCommand": "para.promote",
+      "oasisCommand": "promote",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "keyboard",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Promote: The registered outline-step command promotes paragraphs/list levels, but no default Ribbon, menu or keyboard binding exposes it."
+    },
+    {
+      "id": "editing.demote",
+      "wordcraftCommand": "para.demote",
+      "oasisCommand": "demote",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "keyboard",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Demote: The registered outline-step command demotes paragraphs/list levels, but no default Ribbon, menu or keyboard binding exposes it."
+    },
+    {
+      "id": "editing.toggleUnicode",
+      "wordcraftCommand": "text.toggleUnicode",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Toggle Unicode Character: No Unicode character-code conversion or toggle workflow is exposed.",
+      "tab": "editing",
+      "group": "keyboard"
+    },
+    {
+      "id": "editing.spike",
+      "wordcraftCommand": "edit.spike",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Spike: No multi-cut Spike buffer or collection workflow is exposed.",
+      "tab": "editing",
+      "group": "keyboard"
+    },
+    {
+      "id": "editing.insertSpike",
+      "wordcraftCommand": "edit.insertSpike",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Insert Spike: No Spike buffer exists, so collected content cannot be inserted.",
+      "tab": "editing",
+      "group": "keyboard"
+    },
+    {
+      "id": "editing.wordLeft",
+      "wordcraftCommand": "caret.wordLeft",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "navigation",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > Ctrl/Command+Left",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorKeyboard.ts",
+        "token": "moveSelectionByWord"
+      },
+      "notes": "Word Left: Control/Command+Arrow moves the caret by word; platform-specific boundary semantics need verification."
+    },
+    {
+      "id": "editing.wordRight",
+      "wordcraftCommand": "caret.wordRight",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "navigation",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > Ctrl/Command+Right",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorKeyboard.ts",
+        "token": "moveSelectionByWord"
+      },
+      "notes": "Word Right: Control/Command+Arrow moves the caret by word; platform-specific boundary semantics need verification."
+    },
+    {
+      "id": "editing.lineStart",
+      "wordcraftCommand": "caret.home",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "navigation",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > Home",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorKeyboard.ts",
+        "token": "if (event.key === \"Home\" || event.key === \"End\")"
+      },
+      "notes": "Line Start: Home moves to the paragraph start; visual-line start behavior may differ from Word."
+    },
+    {
+      "id": "editing.lineEnd",
+      "wordcraftCommand": "caret.end",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "navigation",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > End",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorKeyboard.ts",
+        "token": "if (event.key === \"Home\" || event.key === \"End\")"
+      },
+      "notes": "Line End: End moves to the paragraph end; visual-line end behavior may differ from Word."
+    },
+    {
+      "id": "editing.paragraphUp",
+      "wordcraftCommand": "caret.paraUp",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "navigation",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > Up Arrow",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorKeyboard.ts",
+        "token": "case \"ArrowUp\""
+      },
+      "notes": "Paragraph Up: Up Arrow navigates the visual caret/selection and is related to paragraph navigation; soft-wrap, table and page-boundary behavior differ."
+    },
+    {
+      "id": "editing.paragraphDown",
+      "wordcraftCommand": "caret.paraDown",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "navigation",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > Down Arrow",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorKeyboard.ts",
+        "token": "case \"ArrowDown\""
+      },
+      "notes": "Paragraph Down: Down Arrow navigates the visual caret/selection and is related to paragraph navigation; soft-wrap, table and page-boundary behavior differ."
+    },
+    {
+      "id": "editing.documentStart",
+      "wordcraftCommand": "caret.docStart",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "navigation",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > Ctrl/Command+Home",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorKeyboard.ts",
+        "token": "moveSelectionToDocumentBoundary"
+      },
+      "notes": "Document Start: Control/Command+Home moves to the document boundary; section/story scope and selection extension need verification."
+    },
+    {
+      "id": "editing.documentEnd",
+      "wordcraftCommand": "caret.docEnd",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "navigation",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > Ctrl/Command+End",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorKeyboard.ts",
+        "token": "moveSelectionToDocumentBoundary"
+      },
+      "notes": "Document End: Control/Command+End moves to the document boundary; section/story scope and selection extension need verification."
+    },
+    {
+      "id": "editing.pageUp",
+      "wordcraftCommand": "caret.pageUp",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Page Up: No dedicated in-document page-navigation command is exposed; browser scrolling is not the same caret action.",
+      "tab": "editing",
+      "group": "navigation"
+    },
+    {
+      "id": "editing.pageDown",
+      "wordcraftCommand": "caret.pageDown",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Page Down: No dedicated in-document page-navigation command is exposed; browser scrolling is not the same caret action.",
+      "tab": "editing",
+      "group": "navigation"
+    },
+    {
+      "id": "editing.goBack",
+      "wordcraftCommand": "edit.goBack",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Go Back: No editor caret-navigation history command restores the previous editing location.",
+      "tab": "editing",
+      "group": "navigation"
+    },
+    {
+      "id": "editing.selectWord",
+      "wordcraftCommand": "select.word",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "selection",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > double-click a word",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorSurfaceEvents.ts",
+        "token": "handleDoubleClickDown"
+      },
+      "notes": "Select Word: Double-click selects a word through pointer hit testing; keyboard command exposure and language-specific word boundaries need verification."
+    },
+    {
+      "id": "editing.selectSentence",
+      "wordcraftCommand": "select.sentence",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Select Sentence: No sentence-selection gesture, keyboard binding or default command control is exposed.",
+      "tab": "editing",
+      "group": "selection"
+    },
+    {
+      "id": "editing.selectParagraph",
+      "wordcraftCommand": "select.paragraph",
+      "ribbonId": null,
+      "tab": "editing",
+      "group": "selection",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Canvas editor > triple-click a paragraph",
+      "uiEvidence": {
+        "file": "src/app/controllers/useEditorSurfaceEvents.ts",
+        "token": "handleTripleClickDown"
+      },
+      "notes": "Select Paragraph: Triple-click selects a paragraph range; exact paragraph-mark inclusion and touch behavior need verification."
+    },
+    {
+      "id": "editing.extendSelectionF8",
+      "wordcraftCommand": "select.extend",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Extend Selection (F8): No F8 extend-selection mode or repeatable selection-extension workflow is exposed.",
+      "tab": "editing",
+      "group": "selection"
+    },
+    {
+      "id": "editing.columnSelection",
+      "wordcraftCommand": "select.column",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Column Selection: No rectangular text-column selection mode is exposed. Table-column selection is a separate task.",
+      "tab": "editing",
+      "group": "selection"
+    },
+    {
+      "id": "editing.showFieldCodes",
+      "wordcraftCommand": "view.fieldCodes",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Show Field Codes: No field-code display toggle is exposed. Supported date/page fields render as values.",
+      "tab": "editing",
+      "group": "fields"
+    },
+    {
+      "id": "editing.toggleFieldCodes",
+      "wordcraftCommand": "fields.toggleCode",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Toggle Field Codes: No field-code toggle command or control is exposed.",
+      "tab": "editing",
+      "group": "fields"
+    },
+    {
+      "id": "editing.editFieldCode",
+      "wordcraftCommand": "fields.setCode",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Edit Field Code: No field-code editor or arbitrary field-code authoring workflow is exposed.",
+      "tab": "editing",
+      "group": "fields"
+    },
+    {
+      "id": "editing.unlinkFields",
+      "wordcraftCommand": "fields.unlink",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Unlink Fields: No command converts a field result into static text.",
+      "tab": "editing",
+      "group": "fields"
+    },
+    {
+      "id": "editing.lockFields",
+      "wordcraftCommand": "fields.lock",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Lock Fields: No field-lock state or user-facing lock action is exposed.",
+      "tab": "editing",
+      "group": "fields"
+    },
+    {
+      "id": "editing.unlockFields",
+      "wordcraftCommand": "fields.unlock",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Unlock Fields: No field-lock state or user-facing unlock action is exposed.",
+      "tab": "editing",
+      "group": "fields"
+    },
+    {
+      "id": "editing.nextField",
+      "wordcraftCommand": "fields.next",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Next Field: No field-navigation command traverses document fields.",
+      "tab": "editing",
+      "group": "fields"
+    },
+    {
+      "id": "editing.previousField",
+      "wordcraftCommand": "fields.previous",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Previous Field: No field-navigation command traverses document fields.",
+      "tab": "editing",
+      "group": "fields"
+    },
+    {
+      "id": "equation.unicodeInput",
+      "wordcraftCommand": "equation.inputFormat",
+      "oasisCommand": "insertEquation",
+      "ribbonId": "editor-toolbar-symbols",
+      "tab": "insert",
+      "group": "symbols",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Unicode input: The linear equation editor accepts Unicode text/math symbols, but has no explicit Unicode input-format selector."
+    },
+    {
+      "id": "equation.latexInput",
+      "wordcraftCommand": "equation.inputFormat",
+      "oasisCommand": "insertEquation",
+      "ribbonId": "editor-toolbar-symbols",
+      "tab": "insert",
+      "group": "symbols",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "LaTeX input: The linear editor parses a limited LaTeX-like syntax such as fractions and radicals; Oasis has no input-format toggle and does not implement the full LaTeX grammar."
+    },
+    {
+      "id": "equation.convert",
+      "wordcraftCommand": "equation.convert",
+      "oasisCommand": "insertEquation",
+      "ribbonId": "editor-toolbar-symbols",
+      "tab": "insert",
+      "group": "symbols",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Convert: Oasis parses the linear editor into a structured expression as the user types and inserts it through the same command; there is no separate Word convert action."
+    },
+    {
+      "id": "equation.normalText",
+      "wordcraftCommand": "equation.normalText",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Normal Text: No normal-text mode toggle is exposed inside an equation; the linear editor is not an equation-format selector."
+    },
+    {
+      "id": "equation.symbols",
+      "wordcraftCommand": "equation.insertSymbol",
+      "oasisCommand": "insertText",
+      "ribbonId": "editor-toolbar-symbols",
+      "tab": "insert",
+      "group": "symbols",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Equation Symbols: The Insert/Symbols menu includes common characters and example equations, but does not expose Word’s full equation-symbol gallery."
+    },
+    {
+      "id": "equation.fraction",
+      "wordcraftCommand": "equation.insertStructure",
+      "oasisCommand": "insertEquation",
+      "ribbonId": "editor-toolbar-symbols",
+      "tab": "insert",
+      "group": "symbols",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Fraction: The Equation dialog has a fraction template; the editor exposes a smaller palette and no contextual Equation tab."
+    },
+    {
+      "id": "equation.script",
+      "wordcraftCommand": "equation.insertStructure",
+      "oasisCommand": "insertEquation",
+      "ribbonId": "editor-toolbar-symbols",
+      "tab": "insert",
+      "group": "symbols",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Script: The Equation dialog supports superscript/subscript templates; broader script structures and keyboard behavior remain open."
+    },
+    {
+      "id": "equation.radical",
+      "wordcraftCommand": "equation.insertStructure",
+      "oasisCommand": "insertEquation",
+      "ribbonId": "editor-toolbar-symbols",
+      "tab": "insert",
+      "group": "symbols",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Radical: The Equation dialog includes a square-root template, but no full radical gallery or contextual tab."
+    },
+    {
+      "id": "equation.integral",
+      "wordcraftCommand": "equation.insertStructure",
+      "oasisCommand": "insertEquation",
+      "ribbonId": "editor-toolbar-symbols",
+      "tab": "insert",
+      "group": "symbols",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Integral: The Equation dialog includes a basic integral template; limits, variants and structural editing remain unverified."
+    },
+    {
+      "id": "equation.largeOperator",
+      "wordcraftCommand": "equation.insertStructure",
+      "oasisCommand": "insertEquation",
+      "ribbonId": "editor-toolbar-symbols",
+      "tab": "insert",
+      "group": "symbols",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Large Operator: The Equation dialog includes a summation example, but not Word’s full large-operator gallery and limit placement behavior."
+    },
+    {
+      "id": "equation.bracket",
+      "wordcraftCommand": "equation.insertStructure",
+      "oasisCommand": "insertEquation",
+      "ribbonId": "editor-toolbar-symbols",
+      "tab": "insert",
+      "group": "symbols",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Bracket: The Equation dialog includes a delimiter template; delimiter variants and sizing controls remain limited."
+    },
+    {
+      "id": "equation.function",
+      "wordcraftCommand": "equation.insertStructure",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Function: No function-structure gallery or function-specific equation control is exposed."
+    },
+    {
+      "id": "equation.accent",
+      "wordcraftCommand": "equation.insertStructure",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Accent: No equation accent structure gallery/control is exposed."
+    },
+    {
+      "id": "equation.limit",
+      "wordcraftCommand": "equation.insertStructure",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Limit and Log: No limit/log structure gallery or dedicated operator-limit control is exposed."
+    },
+    {
+      "id": "equation.operator",
+      "wordcraftCommand": "equation.insertStructure",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Operator: No dedicated operator structure gallery is exposed."
+    },
+    {
+      "id": "equation.matrix",
+      "wordcraftCommand": "equation.insertStructure",
+      "oasisCommand": "insertEquation",
+      "ribbonId": "editor-toolbar-symbols",
+      "tab": "insert",
+      "group": "symbols",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Matrix: The Equation dialog supports a basic matrix template; matrix sizing, editing and richer delimiters remain limited."
+    },
+    {
+      "id": "equation.display",
+      "wordcraftCommand": "equation.display",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Change to Inline / Display: The document model carries display math, but no inline/display toggle is exposed in the Equation UI."
+    },
+    {
+      "id": "equation.justification",
+      "wordcraftCommand": "equation.justify",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Justification: No equation alignment/justification control is exposed."
+    },
+    {
+      "id": "equation.number",
+      "wordcraftCommand": "equation.number",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Equation Number: No equation-numbering or numbering-format workflow is exposed."
+    },
+    {
+      "id": "equation.structureCommands",
+      "wordcraftCommand": "equation.structure",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Structure Commands: No contextual Equation tab or structure-editing command surface is exposed."
+    },
+    {
+      "id": "outlining.promoteToHeading1",
+      "wordcraftCommand": "outline.promoteToHeading1",
+      "oasisCommand": "setStyleId",
+      "ribbonId": "editor-toolbar-style",
+      "tab": "home",
+      "group": "styles",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Oasis can apply Heading 1 from the Home style gallery, but this is not an Outlining-mode promote command. Outline hierarchy, selection behavior and DOCX heading semantics remain open."
+    },
+    {
+      "id": "outlining.promote",
+      "wordcraftCommand": "outline.promote",
+      "oasisCommand": "promote",
+      "ribbonId": null,
+      "tab": "outlining",
+      "group": "outlineTools",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers an outline-step promote command, but exposes no Outlining tab control or keyboard binding. Heading/list behavior and document interoperability need workflow verification."
+    },
+    {
+      "id": "outlining.level",
+      "wordcraftCommand": "outline.level",
+      "oasisCommand": "setOutlineLevel",
+      "ribbonId": null,
+      "tab": "outlining",
+      "group": "outlineTools",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "partial",
+      "uiPath": "Layout > Paragraph dialog > Indents and Spacing > Outline level",
+      "uiEvidence": {
+        "file": "src/ui/components/Dialogs/ParagraphDialog.tsx",
+        "token": "editor-paragraph-dialog-outline-level"
+      },
+      "notes": "The Paragraph dialog sets an outline level, but the control is outside an Outlining view and does not provide outline-mode level display/management."
+    },
+    {
+      "id": "outlining.demote",
+      "wordcraftCommand": "outline.demote",
+      "oasisCommand": "demote",
+      "ribbonId": null,
+      "tab": "outlining",
+      "group": "outlineTools",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers an outline-step demote command, but exposes no Outlining tab control or keyboard binding. Heading/list behavior and document interoperability need workflow verification."
+    },
+    {
+      "id": "outlining.demoteToBody",
+      "wordcraftCommand": "outline.demoteToBody",
+      "oasisCommand": "setStyleId",
+      "ribbonId": "editor-toolbar-style",
+      "tab": "home",
+      "group": "styles",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Oasis can apply the Normal style from the Home gallery, but has no Outlining-mode demote-to-body command. Existing outline structure and DOCX behavior remain to verify."
+    },
+    {
+      "id": "outlining.moveUp",
+      "wordcraftCommand": "outline.moveUp",
+      "oasisCommand": "moveParagraphsUp",
+      "ribbonId": null,
+      "tab": "outlining",
+      "group": "outlineTools",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers a paragraph-move-up command, but no Outlining tab control or keyboard binding exposes it."
+    },
+    {
+      "id": "outlining.moveDown",
+      "wordcraftCommand": "outline.moveDown",
+      "oasisCommand": "moveParagraphsDown",
+      "ribbonId": null,
+      "tab": "outlining",
+      "group": "outlineTools",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers a paragraph-move-down command, but no Outlining tab control or keyboard binding exposes it."
+    },
+    {
+      "id": "outlining.expand",
+      "wordcraftCommand": "outline.expand",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Expand: No Outlining view or heading expansion state is exposed.",
+      "tab": "outlining",
+      "group": "outlineTools"
+    },
+    {
+      "id": "outlining.collapse",
+      "wordcraftCommand": "outline.collapse",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Collapse: The navigation Outline panel can collapse as a whole, but it has no per-heading collapse/expand control.",
+      "tab": "outlining",
+      "group": "outlineTools"
+    },
+    {
+      "id": "outlining.showLevel",
+      "wordcraftCommand": "outline.showLevel",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Show Level: No outline-level visibility filter is exposed.",
+      "tab": "outlining",
+      "group": "outlineTools"
+    },
+    {
+      "id": "outlining.showFormatting",
+      "wordcraftCommand": "outline.showFormatting",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Show Text Formatting: No Outlining view or formatting-visibility toggle is exposed.",
+      "tab": "outlining",
+      "group": "outlineTools"
+    },
+    {
+      "id": "outlining.firstLineOnly",
+      "wordcraftCommand": "outline.firstLineOnly",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Show First Line Only: No outline first-line-only display mode is exposed.",
+      "tab": "outlining",
+      "group": "outlineTools"
+    },
+    {
+      "id": "outlining.close",
+      "wordcraftCommand": "outline.close",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Close Outline View: Oasis has a collapsible Outline panel, not a distinct Outlining view with a close-view command.",
+      "tab": "outlining",
+      "group": "outlineTools"
+    },
+    {
+      "id": "tools.autoCorrect",
+      "wordcraftCommand": "tools.autocorrect",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "AutoCorrect Options: No autocorrect rule editor or user-facing proofing preferences workflow is exposed."
+    },
+    {
+      "id": "tools.customizeRibbon",
+      "wordcraftCommand": "tools.customizeRibbon",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Customize Ribbon: Oasis supports host-side toolbar customization APIs, but no in-app Ribbon customization surface is exposed."
+    },
+    {
+      "id": "tools.customizeKeyboard",
+      "wordcraftCommand": "tools.customizeKeyboard",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Customize Keyboard: No keyboard-shortcut editor or user-facing key-binding customization surface is exposed."
+    },
+    {
+      "id": "tools.encrypt",
+      "wordcraftCommand": "file.encrypt",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Encrypt with Password: No document encryption, password protection or key-management workflow is exposed."
+    },
+    {
+      "id": "tools.templatesAddIns",
+      "wordcraftCommand": "tools.templates",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Templates and Add-ins: No template/add-in manager or document-template integration surface is exposed."
+    },
+    {
+      "id": "tools.fullScreenView",
+      "wordcraftCommand": "view.fullScreenView",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Full Screen View: No in-app full-screen view command or focus-mode toggle is exposed; browser fullscreen is host behavior."
     }
   ]
 }

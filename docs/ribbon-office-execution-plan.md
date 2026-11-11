@@ -94,7 +94,7 @@ Current M0 status (2026-11-10), with evidence and remaining limits in the [deliv
 
 | Ticket | Status |
 | --- | --- |
-| B01 | Partial — 443 of 521 source rows are linked; 78 still need individual review. |
+| B01 | Complete for static inventory reconciliation — all 521 of 521 source rows are linked/classified, and all 21 historical screenshot categories have explicit triage fields. The 53 direct Word scene captures remain open under M5 evidence work. |
 | B02 | Complete for the Chromium reference host's required widths; Safari and VoiceOver remain in M5. |
 | B03 | Complete — seven synthetic fixtures and their contextual capture metadata are verified. |
 | B04 | Complete — all 53 scene relationships are classified and direct Word captures are explicitly queued; capture execution remains in M5. |
