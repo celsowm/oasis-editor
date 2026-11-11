@@ -39,6 +39,11 @@ export type TableBorderPreset =
   | "diagonalDown"
   | "diagonalUp";
 
+export interface TableCellAlignment {
+  horizontal: "left" | "center" | "right";
+  vertical: "top" | "middle" | "bottom";
+}
+
 /** Word's default border: black, solid, one half point. */
 export const DEFAULT_TABLE_BORDER: EditorBorderStyle = {
   width: 0.5,
@@ -259,8 +264,8 @@ export function setTableCellStyleValue<K extends keyof EditorTableCellStyle>(
 /** Set the horizontal and vertical alignment of selected table-cell text. */
 export function setTableCellAlignment(
   state: EditorState,
-  horizontal: NonNullable<EditorTableCellStyle["horizontalAlign"]>,
-  vertical: NonNullable<EditorTableCellStyle["verticalAlign"]>,
+  horizontal: TableCellAlignment["horizontal"],
+  vertical: TableCellAlignment["vertical"],
 ): EditorState {
   const horizontallyAligned = setTableCellStyleValue(
     state,

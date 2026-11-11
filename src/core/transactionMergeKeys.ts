@@ -47,6 +47,7 @@ export const MERGE_KEYS = {
   tableBorders: "tableBorders",
   tableWidth: "tableWidth",
   tableAlign: "tableAlign",
+  tableCellAlignment: "tableCellAlignment",
   tableCellVerticalAlign: "tableCellVerticalAlign",
   tableCellTextDirection: "tableCellTextDirection",
   tableCellWidth: "tableCellWidth",

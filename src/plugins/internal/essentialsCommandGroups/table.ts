@@ -207,6 +207,11 @@ export function buildTableCommands({
     tableAlignRight: actionCommand("tableAlignRight", (): void =>
       table.alignRight(),
     ),
+    tableSetCellAlignment: actionCommand("tableSetCellAlignment", (p): void =>
+      table.setCellAlignment(
+        p as import("@/core/commands/table.js").TableCellAlignment,
+      ),
+    ),
     tableSetCellVerticalAlign: actionCommand(
       "tableSetCellVerticalAlign",
       (p): void =>

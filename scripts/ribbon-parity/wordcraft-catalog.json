@@ -4071,7 +4071,8 @@
       "oasisFeatureIds": [
         "table.cellAlignTop",
         "table.cellAlignMiddle",
-        "table.cellAlignBottom"
+        "table.cellAlignBottom",
+        "table.cellAlignMatrix"
       ]
     },
     {

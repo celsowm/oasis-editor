@@ -708,6 +708,48 @@
   cursor: default;
 }
 
+.oasis-editor-table-cell-alignment-matrix {
+  display: grid;
+  grid-template-columns: repeat(3, 24px);
+  grid-auto-rows: 24px;
+  gap: 2px;
+  align-content: center;
+  justify-content: center;
+}
+
+.oasis-editor-table-cell-alignment-matrix .oasis-editor-table-cell-alignment-option,
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-table-cell-alignment-matrix
+  .oasis-editor-tool-button.oasis-editor-table-cell-alignment-option {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  flex: 0 0 24px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+
+.oasis-editor-table-cell-alignment-glyph {
+  width: 15px;
+  height: 15px;
+  box-sizing: border-box;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  place-items: center;
+}
+
+.oasis-editor-table-cell-alignment-mark {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: currentColor;
+}
+
 .oasis-editor-tool-button-active {
   background: var(--oasis-accent-active) !important;
   color: var(--oasis-accent-active-text) !important;

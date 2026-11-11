@@ -11,6 +11,7 @@ import { SymbolMenu } from "@/ui/components/Toolbar/SymbolMenu.js";
 import { TableStyleGallery } from "@/ui/components/Toolbar/TableStyleGallery.js";
 import { TableStyleOptions } from "@/ui/components/Toolbar/TableStyleOptions.js";
 import { TableBordersMenu } from "@/ui/components/Toolbar/TableBordersMenu.js";
+import { TableCellAlignmentMatrix } from "@/ui/components/Toolbar/controls/TableCellAlignmentMatrix.js";
 import {
   DesignGallery,
   DesignPageBorderPanel,
@@ -1229,6 +1230,20 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
       tooltipKey: spec.labelKey,
     });
   }
+  items.push({
+    type: "custom",
+    id: "editor-toolbar-cell-alignment-matrix",
+    testId: "editor-toolbar-cell-alignment-matrix",
+    tab: "tableLayout",
+    group: "alignment",
+    row: 1,
+    ribbonSize: "large",
+    render: (api) =>
+      TableCellAlignmentMatrix({
+        api,
+        testId: "editor-toolbar-cell-alignment-matrix",
+      }),
+  });
 
   // --- Section ---
   items.push({

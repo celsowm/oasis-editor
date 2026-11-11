@@ -261,6 +261,11 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
     group: "alignment",
     row: 2,
   },
+  "editor-toolbar-cell-alignment-matrix": {
+    tab: "tableLayout",
+    group: "alignment",
+    row: 1,
+  },
   "editor-toolbar-tbl-header-row": {
     tab: "tableDesign",
     group: "tableStyleOptions",

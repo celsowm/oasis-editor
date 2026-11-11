@@ -4,6 +4,7 @@ import {
   distributeSelectedTableRows,
   applyTableBorderPreset,
   setTableCellBorders,
+  setTableCellAlignment,
   setTableCellStyleValue,
   setTableCellWidth,
   setTableCellNoWrap,
@@ -25,6 +26,7 @@ import {
   canSetTableCellMargins,
   setActiveTableCellMargins,
   type TableCellMargins,
+  type TableCellAlignment,
   canSetActiveTableCellSpacing,
   setActiveTableCellSpacing,
   canSetActiveTableIndent,
@@ -432,6 +434,16 @@ export function buildEssentialsTable(
         (current): EditorState =>
           setTableCellStyleValue(current, "horizontalAlign", "right"),
         MERGE_KEYS.tableAlign,
+      ),
+    setCellAlignment: (alignment: TableCellAlignment): void =>
+      apply(
+        (current): EditorState =>
+          setTableCellAlignment(
+            current,
+            alignment.horizontal,
+            alignment.vertical,
+          ),
+        MERGE_KEYS.tableCellAlignment,
       ),
     setCellVerticalAlign: (value: "top" | "middle" | "bottom"): void =>
       apply(

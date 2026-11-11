@@ -2,7 +2,11 @@ import type { CommandRef } from "./CommandRef.js";
 import type { EditorPageMargins, EditorPosition } from "@/core/model.js";
 import type { SectionPageNumberFormat } from "./pageNumber.js";
 import type { TextCaseMode } from "./text.js";
-import type { TableBorderPreset, TableRowHeight } from "./table.js";
+import type {
+  TableBorderPreset,
+  TableCellAlignment,
+  TableRowHeight,
+} from "./table.js";
 import type {
   EditorMathExpression,
   EditorUnderlineStyle,
@@ -343,6 +347,7 @@ export interface OasisCommandPayloads {
   tableAlignLeft: undefined;
   tableAlignCenter: undefined;
   tableAlignRight: undefined;
+  tableSetCellAlignment: TableCellAlignment;
   tableSetCellVerticalAlign: "top" | "middle" | "bottom";
   tableSetCellTextDirection: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV";
   tableToText: undefined;

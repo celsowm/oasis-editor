@@ -2914,6 +2914,24 @@
       "notes": "The Table Layout Align Bottom button sets selected cell content to bottom alignment; the Cell tab also exposes this value. Selection scope, inherited states, row sizing, undo and DOCX rendering need workflow verification."
     },
     {
+      "id": "table.cellAlignMatrix",
+      "wordcraftCommand": "table.cellAlign",
+      "oasisCommand": "tableSetCellAlignment",
+      "ribbonId": "editor-toolbar-cell-alignment-matrix",
+      "tab": "tableLayout",
+      "group": "alignment",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "uiPath": "Table Layout > Alignment matrix",
+      "uiEvidence": {
+        "file": "src/ui/components/Toolbar/controls/TableCellAlignmentMatrix.tsx",
+        "token": "editor-toolbar-cell-align-bottom-center"
+      },
+      "notes": "The 3×3 positional picker combines horizontal and vertical alignment on selected cells through one command. Keyboard, multi-cell mixed-state, selection retention, undo and DOCX round-trip still need workflow verification."
+    },
+    {
       "id": "table.textDirection",
       "wordcraftCommand": "table.textDirection",
       "oasisCommand": "tableSetCellTextDirection",

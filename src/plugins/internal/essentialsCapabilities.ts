@@ -21,6 +21,7 @@ import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
 import type { OasisBuiltinCommand } from "@/core/commands/builtinCommands.js";
 import type { TableBorderPreset } from "@/core/commands/table.js";
 import type {
+  TableCellAlignment,
   TableCellMargins,
   TableRowHeight,
 } from "@/core/commands/table.js";
@@ -686,6 +687,7 @@ export interface EssentialsTableCapability {
   alignLeft: () => void;
   alignCenter: () => void;
   alignRight: () => void;
+  setCellAlignment: (alignment: TableCellAlignment) => void;
   setCellVerticalAlign: (value: "top" | "middle" | "bottom") => void;
   setCellTextDirection: (
     value: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV",

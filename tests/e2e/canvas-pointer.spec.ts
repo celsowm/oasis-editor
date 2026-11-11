@@ -1004,6 +1004,63 @@ test("canvas simple 2x2 table hit-test uses canvas layout only", async ({
   await expectNoMissEvents(page);
 });
 
+test("collapsed Table Layout group exposes the spatial cell alignment matrix", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+  await seedText(page, "cell alignment matrix");
+  await insertTable(page, 2, 2);
+  await page.waitForTimeout(120);
+  const editorPage = await canvasPageRect(page);
+  await page.mouse.click(editorPage.x + 210, editorPage.y + 210);
+  await expectLastHitFromCanvas(page);
+  const tableLayoutTab = page.getByTestId("editor-ribbon-tab-tableLayout");
+  await expect(tableLayoutTab).toBeVisible();
+  await tableLayoutTab.click();
+
+  await page.setViewportSize({ width: 320, height: 600 });
+  const alignmentGroup = page.locator('[data-ribbon-group="alignment"]');
+  await expect(alignmentGroup).toHaveAttribute(
+    "data-ribbon-state",
+    "collapsed",
+  );
+  await page.getByTestId("editor-ribbon-group-alignment").click();
+
+  const collapsedPopup = page.locator(".oasis-editor-ribbon-collapsed-menu");
+  const matrix = collapsedPopup.getByTestId(
+    "editor-toolbar-cell-alignment-matrix",
+  );
+  await expect(matrix).toBeVisible();
+  await expect(matrix.getByRole("button")).toHaveCount(9);
+  const markerPositions = await matrix.locator("button").evaluateAll((buttons) =>
+    buttons.map((button) => {
+      const marker = button.querySelector<HTMLElement>(
+        ".oasis-editor-table-cell-alignment-mark",
+      );
+      if (!marker) return null;
+      const style = getComputedStyle(marker);
+      return [style.gridRow, style.gridColumn];
+    }),
+  );
+  expect(markerPositions).toEqual([
+    ["1", "1"],
+    ["1", "2"],
+    ["1", "3"],
+    ["2", "1"],
+    ["2", "2"],
+    ["2", "3"],
+    ["3", "1"],
+    ["3", "2"],
+    ["3", "3"],
+  ]);
+  const bottomCenter = collapsedPopup.getByTestId(
+    "editor-toolbar-cell-align-bottom-center",
+  );
+  await expect(bottomCenter).toBeVisible();
+  await bottomCenter.click();
+  await expectDebugSelection(page);
+});
+
 test("triple-click selects paragraph including paragraph mark in main zone", async ({
   page,
 }) => {
