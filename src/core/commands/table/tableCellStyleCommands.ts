@@ -256,6 +256,20 @@ export function setTableCellStyleValue<K extends keyof EditorTableCellStyle>(
   };
 }
 
+/** Set the horizontal and vertical alignment of selected table-cell text. */
+export function setTableCellAlignment(
+  state: EditorState,
+  horizontal: NonNullable<EditorTableCellStyle["horizontalAlign"]>,
+  vertical: NonNullable<EditorTableCellStyle["verticalAlign"]>,
+): EditorState {
+  const horizontallyAligned = setTableCellStyleValue(
+    state,
+    "horizontalAlign",
+    horizontal,
+  );
+  return setTableCellStyleValue(horizontallyAligned, "verticalAlign", vertical);
+}
+
 export function setTableCellWidth(
   state: EditorState,
   width: number | string | null,

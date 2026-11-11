@@ -7,7 +7,10 @@ import {
   createEditorTableCell,
   createEditorTableRow,
 } from "@/core/editorState.js";
-import { setTableCellStyleValue } from "@/core/commands/table.js";
+import {
+  setTableCellAlignment,
+  setTableCellStyleValue,
+} from "@/core/commands/table.js";
 import {
   getDocumentSectionsCanonical,
   type EditorState,
@@ -67,6 +70,38 @@ describe("table cell vertical alignment and text direction", () => {
     const table = firstTable(next);
     expect(table.rows[0]!.cells[0]!.style?.verticalAlign).toBe("middle");
     expect(table.rows[0]!.cells[1]!.style?.verticalAlign).toBe("middle");
+  });
+
+  it("sets horizontal and vertical alignment together on selected cells", () => {
+    const { state, paragraphA, paragraphB } = twoCellFixture();
+    const selected = selectTableCells(state, paragraphA, paragraphB);
+    const next = setTableCellAlignment(selected, "center", "bottom");
+    const table = firstTable(next);
+    for (const cell of table.rows[0]!.cells) {
+      expect(cell.style?.horizontalAlign).toBe("center");
+      expect(cell.style?.verticalAlign).toBe("bottom");
+    }
+  });
+
+  it("records both original alignment values in a single property revision", () => {
+    const { state, paragraphA, paragraphB } = twoCellFixture();
+    const original = setTableCellAlignment(
+      selectTableCells(state, paragraphA, paragraphB),
+      "right",
+      "top",
+    );
+    const tracked = {
+      ...original,
+      trackChangesEnabled: true,
+    };
+    const next = setTableCellAlignment(tracked, "left", "middle");
+    const cell = firstTable(next).rows[0]!.cells[0]!;
+    expect(cell.style?.horizontalAlign).toBe("left");
+    expect(cell.style?.verticalAlign).toBe("middle");
+    expect(cell.style?.propertyRevision?.previous).toMatchObject({
+      horizontalAlign: "right",
+      verticalAlign: "top",
+    });
   });
 
   it("sets textDirection on the selected cells", () => {
