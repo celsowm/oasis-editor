@@ -191,6 +191,7 @@ describe("UI registries", () => {
       (item) => item.tab === "file" && item.group === "document",
     );
     expect(fileItems.map((item) => item.id)).toEqual([
+      OASIS_TOOLBAR_ITEMS.saveDocument,
       OASIS_TOOLBAR_ITEMS.newDocument,
       OASIS_TOOLBAR_ITEMS.importDocument,
       OASIS_TOOLBAR_ITEMS.exportDocx,
@@ -200,6 +201,7 @@ describe("UI registries", () => {
     expect(
       fileItems.map((item) => ("labelKey" in item ? item.labelKey : undefined)),
     ).toEqual([
+      "generic.save",
       "toolbar.newDocument",
       "toolbar.importDocx",
       "toolbar.exportDocx",
