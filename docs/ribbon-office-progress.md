@@ -1142,13 +1142,36 @@ Extended the resize verifier to change Font group label metrics without mutating
 
 Evidence: `RIBBON_BROWSER=chromium npm run test:ribbon:resize` passes 68 layout scenarios across light/dark themes and English/Brazilian Portuguese, including late-font invalidation and exact baseline restoration. Firefox and WebKit runs remain outstanding. This targeted path uses changed CSS metrics plus a synthetic font event; it verifies the invalidation listener and measurement recovery, not network font loading or platform font behavior.
 
+## Delivery 97 — Contextual popup transitions and mixed alignment state
+
+Date: 2026-11-11. A01/A02/A04/A05 and V02 remain **partial**; VoiceOver, touch, trusted Safari input and other context combinations stay open.
+
+An open Home popup (Underline split menu), the paragraph line-spacing menu and the 640 px collapsed Font-group popup all close when the selection moves table → image → text: no portalled menu survives, no console error is logged, and the transition itself does not change the document, history or dirty flag. Returning to the table reproduces the exact prior measured groups, so no context reuses stale widths.
+
+Public `selection.set`/`document.set` refocus the editor input in this host, so focus never fell to `<body>` in any exercised path. Ribbon-side focus restoration on popup disposal was therefore not added speculatively; the observed policy is recorded instead.
+
+Mixed cell alignment now has browser evidence: selecting cells with different alignment reports `data-alignment-state="mixed"`, no pressed option and an `aria-description`; selecting a single cell restores `uniform`, the right/middle option and removes the description.
+
+The tab policy is now a pure `resolveContextualTabTransition`: entry wins over the current tab, exit from a hidden contextual tab falls back to Home, and an unchanged snapshot keeps the tab. Eight unit scenarios cover shared gates, direct table↔image switching, still-active contexts and non-contextual tabs; the Toolbar effect consumes the function.
+
+Evidence:
+
+- `npm run test:ribbon:contexts` passes in Chromium, Firefox and WebKit with 260 contextual layouts, 8 unit screenshots and 2 transition records per engine. Chromium retains `test-results/ribbon/contexts/`; the other engines keep gitignored `debug_artifacts/ribbon-contexts-{engine}/`.
+- The transition checks assert portal/menu removal, the Table Design ↔ Picture Format tab policy, unchanged document/history/dirty state, identical group widths after re-entry, and the mixed → uniform matrix states.
+- Pre-flight closed Delivery 96's outstanding retarget: `RIBBON_BROWSER=firefox` and `RIBBON_BROWSER=webkit npm run test:ribbon:resize` each pass 68 layouts.
+- TypeScript, changed-source ESLint, non-UI Vitest (325 files / 1,902 tests passed, one skipped) and `npm run audit:ribbon` pass. The owned Chromium CI runner passes all ten suites, including the extended contexts verifier.
+
+Observed but not changed: executing bold, underline, color or font family while an inline image is selected writes the corresponding `styles.*` value onto the image run, with a history entry and dirty flag, even though nothing visible changes. Word disables those controls for object selections. This is queued as a separate A03/D02 defect instead of being folded into the transition delivery.
+
+Limits: no VoiceOver, touch, pointer-driven or real-Safari trusted-input evidence; one table↔image pair plus one collapsed popup at 640 px; the transition assertions use synthetic content and programmatic selection.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
 
 1. B01 static inventory reconciliation is complete. Finish remaining V02/V04 cases; B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
 2. Complete the remaining I03/I04 icon families and A01/A02 contextual/custom layout acceptance.
-3. A03/A04: action/menu/launcher semantics, contextual popup transitions, mixed matrix states and VoiceOver review.
+3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting enablement and VoiceOver review.
 4. R01–R05: close late-font, zoom, pointer/IME, invalidation and performance evidence across remaining contexts.
 5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
 6. P01–P06: Review, References, View, File, search/QAT and interoperability. P04 includes the dirty marker staying set after undo restores the saved document snapshot.
