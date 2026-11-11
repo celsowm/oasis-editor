@@ -49,7 +49,7 @@ jobs:
       - name: Install Chromium
         run: |
           for attempt in 1 2 3; do
-            if npx playwright install --with-deps chromium; then
+            if npx playwright install chromium; then
               exit 0
             fi
             if [ "$attempt" -lt 3 ]; then
