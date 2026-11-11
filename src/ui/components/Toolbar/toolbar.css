@@ -315,6 +315,17 @@
   flex-basis: var(--oasis-ribbon-small-icon);
 }
 
+/* Office's Clipboard stack is icon-led: keep Cut/Copy/Painter labels in names
+ * and tooltips, while reserving their captions for the expanded group popup. */
+.oasis-editor-ribbon-group[data-ribbon-group="clipboard"]:not(
+    .oasis-editor-ribbon-group-collapsed
+  )
+  > .oasis-editor-ribbon-group-content
+  .oasis-editor-ribbon-normal-rows
+  :is(.oasis-editor-tool-button-label, .oasis-editor-color-split-label) {
+  display: none;
+}
+
 .oasis-editor-toolbar-view-ribbon .oasis-editor-toolbar-item {
   flex-shrink: 0;
 }
@@ -719,7 +730,8 @@
   justify-content: center;
 }
 
-.oasis-editor-table-cell-alignment-matrix .oasis-editor-table-cell-alignment-option,
+.oasis-editor-table-cell-alignment-matrix
+  .oasis-editor-table-cell-alignment-option,
 .oasis-editor-toolbar-view-ribbon
   .oasis-editor-table-cell-alignment-matrix
   .oasis-editor-tool-button.oasis-editor-table-cell-alignment-option {

@@ -2389,6 +2389,54 @@ test("long plugin group captions truncate without widening the Ribbon", async ({
   expect(geometry.textOverflow).toBe("ellipsis");
 });
 
+test("Clipboard stack saves width and keeps captions in its expanded popup", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await gotoEditor(page);
+  const group = page.locator('[data-ribbon-group="clipboard"]');
+  await expect(group).toBeVisible();
+  const fullWidth = Number(await group.getAttribute("data-ribbon-width-full"));
+  expect(fullWidth).toBeLessThan(160);
+
+  for (const id of [
+    "editor-toolbar-cut",
+    "editor-toolbar-copy",
+    "editor-toolbar-format-painter",
+  ]) {
+    const button = page.getByTestId(id);
+    await expect(button).toHaveAttribute("aria-label", /\S+/);
+    const tooltipTarget =
+      id === "editor-toolbar-format-painter"
+        ? button.locator("xpath=..")
+        : button;
+    await expect(tooltipTarget).toHaveAttribute("title", /\S+/);
+    await expect(
+      button.locator(
+        ".oasis-editor-tool-button-label, .oasis-editor-color-split-label",
+      ),
+    ).toBeHidden();
+  }
+
+  await page.setViewportSize({ width: 640, height: 900 });
+  await expect(group).toHaveAttribute("data-ribbon-state", "collapsed");
+  await page.getByTestId("editor-ribbon-group-clipboard").click();
+  const popup = page.locator(".oasis-editor-ribbon-collapsed-menu");
+  for (const id of [
+    "editor-toolbar-cut",
+    "editor-toolbar-copy",
+    "editor-toolbar-format-painter",
+  ]) {
+    await expect(
+      popup
+        .getByTestId(id)
+        .locator(
+          ".oasis-editor-tool-button-label, .oasis-editor-color-split-label",
+        ),
+    ).toBeVisible();
+  }
+});
+
 test("ribbon insert table works on desktop and narrow widths", async ({
   page,
 }) => {

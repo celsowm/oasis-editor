@@ -1126,6 +1126,14 @@ Long explicit plugin group labels now truncate with ellipses at a bounded 144 px
 
 Evidence: `long plugin group captions truncate without widening the Ribbon` registers a 65-character Home group label, verifies full accessible/title text, measures clipped label ink and confirms the full-state group remains below 220 px. The targeted Chromium E2E passes against a production bundle built with `VITE_OASIS_CANVAS_DEBUG=1` for the test harness. Other locales and VoiceOver remain open.
 
+## Delivery 95 — Compact Clipboard action stack
+
+Date: 2026-11-11. D01 and the Clipboard I03 review remain **partial**; native clipboard behavior, paste variants, remaining icon optical review, and Safari paths are still open.
+
+The standard Home Clipboard group now follows the Office icon-led stack: Cut, Copy, and Format Painter captions are hidden in the normal ribbon, reducing the group while retaining each control's accessible name and tooltip. The collapsed group's popup keeps the action captions visible for discovery.
+
+Evidence: `Clipboard stack saves width and keeps captions in its expanded popup` verifies the full-state measured group stays below 160 px at 1440, each action retains its accessible name and tooltip, and all three captions return in the collapsed popup at 640 px. This is Chromium presentation evidence; it does not certify clipboard command workflows or Safari/VoiceOver.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
