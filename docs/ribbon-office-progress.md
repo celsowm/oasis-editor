@@ -58,7 +58,7 @@ Reference: classic Office action hierarchy, Word web's emphasis on direct format
 | Ticket  | Status  | Implemented / evidence                                                                                                                                                                                                                                                                                                                                         | Remaining acceptance                                                                                                                                   |
 | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | A01/A02 | partial | Optional neutral `RibbonGroupLayout`, third-row placement, shared height/stack/icon tokens, compatible two-row defaults and split labels. A large Paste sits beside Cut/Copy/Painter; history has its own group. Core contract tests and the default preset guard cover adoption.                                                                              | Review optical icon families, every contextual layout, custom gallery contributions, long labels and host customization.                               |
-| A04     | partial | Collapsed groups retain large actions and their two/three-row arrangement. A logical popup ownership tree keeps portalled children inside their parent for outside-click handling. Escape closes the deepest open menu and restores its trigger focus. Collapsed Ribbon popups clamp vertically into a 180 px viewport and scroll within their existing max-height. | Inline flyouts, contextual transitions with menus open, matrix alignment controls and VoiceOver.                                                     |
+| A04     | partial | Collapsed groups retain large actions and their two/three-row arrangement. A logical popup ownership tree keeps portalled children inside their parent for outside-click handling. Escape closes the deepest open menu and restores its trigger focus. Collapsed Ribbon popups clamp vertically into a 180 px viewport and scroll within their existing max-height. Keyboard Tab traversal scrolls a height-constrained panel and keeps focus visible. | Contextual transitions with menus open, matrix alignment controls and VoiceOver.                                                     |
 | R01     | partial | Full/compact/collapsed DOM copies are inert, hidden, stripped of IDs/test IDs, measured in one batched write/read task and removed synchronously. No additional Solid controllers are mounted for measurement. Browser assertions compare rendered widths with planned outer widths.                                                                           | Every contextual/custom-control family and dimensional override.                                                                                       |
 | R02     | partial | Widths belong to the exact current group composition. Tab/group ID reuse cannot reuse measurements; item, language and extension changes rebuild the context. Font completion, owner theme/style changes and viewport changes schedule measurement.                                                                                                            | Real late font loads, zoom/DPR transitions, nested selection changes and externally injected stylesheet changes.                                       |
 | R03     | partial | Fixed reduction ladder: compact states before collapse; lower priority first, then right-to-left for ties. No restorative pass. Home priorities preserve Font/Paragraph until secondary groups reduce. Only actual style galleries can receive whole-card slack from a budget assuming other groups full.                                                      | Review all tab priorities with task evidence, contextual selections and other group families.                                                          |
@@ -778,7 +778,7 @@ Collapsed Ribbon group popups now opt into vertical viewport fitting. Positionin
 
 Evidence: the new browser scenario failed at 180 px before the positioning change and passes after it. `npm run build` and `npm run typecheck` pass.
 
-Limits: direct keyboard traversal of a scroll-constrained panel, nested flyouts and contextual transitions while a popup is open remain unverified. A04 remains partial.
+Limits at Delivery 58: direct keyboard traversal of a scroll-constrained panel, nested flyouts and contextual transitions while a popup is open were unverified. A04 remained partial.
 
 ## Delivery 59 — Nested crop flyout interaction
 
@@ -788,7 +788,7 @@ Fixed the crop submenu row so hover, keyboard focus and click all open the reque
 
 Evidence: `npx playwright test --config playwright.e2e.config.ts tests/e2e/canvas-pointer.spec.ts -g 'collapsed image group keeps its parent open for crop flyouts'` passes against a production build with `VITE_OASIS_CANVAS_DEBUG=1`.
 
-Limits: keyboard traversal of scroll-constrained panels, matrix alignment controls and contextual transitions while a popup is open still need browser evidence. A04 remains partial.
+Limits at Delivery 59: keyboard traversal of scroll-constrained panels, matrix alignment controls and contextual transitions while a popup is open still needed browser evidence. A04 remained partial.
 
 ## Delivery 60 — Contextual group removal and nested Escape
 
@@ -798,7 +798,17 @@ Extended the Insert accessibility composition scenario through the reverse selec
 
 Evidence: both `Insert accessibility group follows image selection visibility` and `collapsed image group keeps its parent open for crop flyouts` pass in `tests/e2e/canvas-pointer.spec.ts` against a production build with `VITE_OASIS_CANVAS_DEBUG=1`.
 
-Limits: repeated selection changes and repeated width remeasurement remain open for V02. A04 still needs keyboard traversal of scroll-constrained panels, matrix alignment controls and contextual transitions while a popup is open.
+Limits at Delivery 60: repeated selection changes and repeated width remeasurement remain open for V02. A04 still needed keyboard traversal of scroll-constrained panels, matrix alignment controls and contextual transitions while a popup is open.
+
+## Delivery 61 — Keyboard traversal in a constrained popup
+
+Date: 2026-11-11. A04 remains **partial**.
+
+Added an end-to-end keyboard scenario for the collapsed Font group. It constrains the popup height, tabs through its controls, verifies the popup scroll position advances, and confirms focus remains within the visible panel area.
+
+Evidence: `npx playwright test --config playwright.e2e.config.ts tests/e2e/orientation-overflow.spec.ts -g 'keyboard traversal scrolls a height-constrained collapsed Ribbon popup'` passes in Chromium. Build and Deploy for `fb3fbf6d` passed the full `test:ribbon:ci` browser suite, smoke test and deploy; Publish passed and confirmed `v0.0.267`.
+
+Limits: browser traversal is verified for one height-constrained Font popup. Contextual transitions while menus are open, matrix alignment controls and VoiceOver remain open for A04.
 
 ## Remaining execution queue
 

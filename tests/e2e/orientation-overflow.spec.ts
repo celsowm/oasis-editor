@@ -365,6 +365,75 @@ test("collapsed Ribbon popup stays inside a short viewport", async ({
     .toBe(true);
 });
 
+test("keyboard traversal scrolls a height-constrained collapsed Ribbon popup", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 120 });
+  await gotoEditor(page);
+  await page.getByTestId("editor-ribbon-tab-home").click();
+  const fontGroup = page.locator('[data-ribbon-group="font"]');
+  await expect(fontGroup).toHaveAttribute("data-ribbon-state", "collapsed");
+
+  await page.getByTestId("editor-ribbon-group-font").click();
+  const popup = page.locator(".oasis-editor-ribbon-collapsed-menu");
+  await expect(popup).toBeVisible();
+  // Constrain the panel to exercise keyboard/scroll behavior independently of
+  // whether this group's current content fills the physical viewport height.
+  await popup.evaluate((element) => {
+    const panel = element as HTMLElement;
+    panel.style.height = "40px";
+    panel.style.maxHeight = "40px";
+    panel.style.minHeight = "0";
+    panel.style.overflowY = "auto";
+  });
+  const popupGeometry = await popup.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+  }));
+  expect(
+    popupGeometry.scrollHeight,
+    `expected overflowing content in ${popupGeometry.clientHeight}px popup`,
+  ).toBeGreaterThan(popupGeometry.clientHeight);
+
+  const buttons = popup.locator("button:visible");
+  const buttonCount = await buttons.count();
+  expect(buttonCount).toBeGreaterThan(1);
+  await buttons.first().focus();
+
+  let maxScrollTop = 0;
+  let lastFocus: { inside: boolean; visible: boolean } | null = null;
+  for (let index = 0; index < buttonCount; index++) {
+    await page.keyboard.press("Tab");
+    const nextFocus = await page.evaluate(() => {
+      const popupElement = document.querySelector(
+        ".oasis-editor-ribbon-collapsed-menu",
+      );
+      const active = document.activeElement;
+      if (!popupElement || !(active instanceof HTMLElement)) {
+        return { inside: false, visible: false };
+      }
+      const popupRect = popupElement.getBoundingClientRect();
+      const activeRect = active.getBoundingClientRect();
+      return {
+        inside: popupElement.contains(active),
+        visible:
+          activeRect.top >= popupRect.top &&
+          activeRect.bottom <= popupRect.bottom,
+      };
+    });
+    if (!nextFocus.inside) break;
+    lastFocus = nextFocus;
+    maxScrollTop = Math.max(
+      maxScrollTop,
+      await popup.evaluate((element) => element.scrollTop),
+    );
+  }
+
+  expect(maxScrollTop).toBeGreaterThan(0);
+  expect(lastFocus?.inside).toBe(true);
+  expect(lastFocus?.visible).toBe(true);
+});
+
 test("narrowing the ribbon never shows more style cards", async ({ page }) => {
   // The ribbon frees width by collapsing groups, and whatever it frees is then
   // available to the compact style gallery. Left unchecked that inverts the
