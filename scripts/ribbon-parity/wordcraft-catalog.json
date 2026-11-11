@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 217
+    "linkedRows": 234
   },
   "defaultTabs": [
     "File",
@@ -215,7 +215,9 @@
       "group": "Backstage",
       "name": "Save As",
       "command": "file.saveAs",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.saveAs"
+      ]
     },
     {
       "index": 5,
@@ -235,7 +237,9 @@
       "group": "Backstage",
       "name": "Print Markup",
       "command": "file.printMarkup",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.printMarkup"
+      ]
     },
     {
       "index": 7,
@@ -244,7 +248,9 @@
       "group": "Backstage",
       "name": "Close",
       "command": "file.close",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.close"
+      ]
     },
     {
       "index": 8,
@@ -253,7 +259,9 @@
       "group": "Backstage",
       "name": "Info",
       "command": "file.info",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.info"
+      ]
     },
     {
       "index": 9,
@@ -262,7 +270,9 @@
       "group": "Backstage",
       "name": "Properties",
       "command": "file.properties",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.properties"
+      ]
     },
     {
       "index": 10,
@@ -282,7 +292,9 @@
       "group": "Backstage",
       "name": "Export Image",
       "command": "file.exportPng",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.exportPng"
+      ]
     },
     {
       "index": 12,
@@ -291,7 +303,9 @@
       "group": "Backstage",
       "name": "Options",
       "command": "file.options",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.options"
+      ]
     },
     {
       "index": 13,
@@ -300,7 +314,9 @@
       "group": "Options",
       "name": "Numerals",
       "command": "view.numeral",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.numeral"
+      ]
     },
     {
       "index": 14,
@@ -309,7 +325,9 @@
       "group": "Backstage",
       "name": "Share",
       "command": "file.share",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.share"
+      ]
     },
     {
       "index": 15,
@@ -318,7 +336,9 @@
       "group": "Backstage",
       "name": "Protect Document",
       "command": "file.protect",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.protect"
+      ]
     },
     {
       "index": 16,
@@ -327,7 +347,9 @@
       "group": "Backstage",
       "name": "Inspect Document",
       "command": "file.inspect",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.inspect"
+      ]
     },
     {
       "index": 17,
@@ -336,7 +358,9 @@
       "group": "Backstage",
       "name": "Check Accessibility",
       "command": "file.accessibility",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.accessibility"
+      ]
     },
     {
       "index": 18,
@@ -345,7 +369,9 @@
       "group": "Backstage",
       "name": "Check Compatibility",
       "command": "file.compatibility",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.compatibility"
+      ]
     },
     {
       "index": 19,
@@ -354,7 +380,9 @@
       "group": "Backstage",
       "name": "Version History",
       "command": "file.versions",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.versions"
+      ]
     },
     {
       "index": 20,
@@ -363,7 +391,9 @@
       "group": "Backstage",
       "name": "Recover Unsaved",
       "command": "file.recover",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.recover"
+      ]
     },
     {
       "index": 21,
@@ -3043,7 +3073,9 @@
       "group": "Accessibility",
       "name": "Check Accessibility",
       "command": "file.accessibility",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.accessibility"
+      ]
     },
     {
       "index": 285,
@@ -3580,7 +3612,9 @@
       "group": "SharePoint",
       "name": "Properties",
       "command": "file.properties",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.properties"
+      ]
     },
     {
       "index": 340,

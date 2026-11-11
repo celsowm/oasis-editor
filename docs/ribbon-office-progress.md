@@ -880,6 +880,16 @@ Evidence: `npm run audit:ribbon` verifies each missing row has a written rationa
 
 Limits: these Quick Access capabilities remain unsupported. Keyboard, history transaction and search/QAT work remain open under P03/P05/M5.
 
+## Delivery 69 — Remaining File surface crosswalk
+
+Date: 2026-11-11. B01 and P04 remain **partial**.
+
+Reviewed remaining File/Options catalog commands against the default File and menubar surfaces, command registry, document IO and persistence APIs. Linked Save As to DOCX export as a partial related path. Classified Print Markup, Close, Info, Properties, Export Image, Options, Numerals, Share, Protect, Inspect, Accessibility Check, Compatibility Check, Version History and Recover Unsaved as missing from the default app workflow, with a command-specific rationale. The public save API remains unclassified in the command matrix because it has no user-facing File action; finishing the P04 save lifecycle is separate.
+
+Evidence: the crosswalk audit validates all 15 rows against the pinned WordCraft catalog, checks DOCX export placement, and requires missing rows to declare no Oasis command/UI path plus a rationale. The catalog now maps 234 of 521 source rows; 287 remain unclassified.
+
+Limits: `missing` records the current default app path, not host-provided extensions. Save integration, error/cancellation behavior, saved-version recovery and P04/P06 workflow evidence remain open.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

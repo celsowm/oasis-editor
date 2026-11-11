@@ -1361,6 +1361,145 @@
       "notes": "No personal-template library or list-templates workflow was found in the File tab, menubar, or core command registry."
     },
     {
+      "id": "file.saveAs",
+      "wordcraftCommand": "file.saveAs",
+      "oasisCommand": "exportDocx",
+      "ribbonId": "editor-toolbar-export-docx",
+      "tab": "file",
+      "group": "document",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "The File tab offers DOCX export as a related Save As path, downloading a copy instead of selecting an arbitrary host location or updating the active persistence record. Format choice, overwrite behavior and full save lifecycle remain open in P04/P06."
+    },
+    {
+      "id": "file.printMarkup",
+      "wordcraftCommand": "file.printMarkup",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Print Markup: Oasis exposes browser/host Print but has no print-markup toggle or revision-markup print path in the File tab or print handler."
+    },
+    {
+      "id": "file.close",
+      "wordcraftCommand": "file.close",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Close: No document-close command or File close action exists in the default app; the host owns editor disposal. Header/footer close exits a story and is not document close."
+    },
+    {
+      "id": "file.info",
+      "wordcraftCommand": "file.info",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Info: No Backstage information page or command exists. Status-bar counts and the outline do not provide the source File Info workflow."
+    },
+    {
+      "id": "file.properties",
+      "wordcraftCommand": "file.properties",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Properties: No document-properties page or command exists in the File tab, menubar, or built-in command registry."
+    },
+    {
+      "id": "file.exportPng",
+      "wordcraftCommand": "file.exportPng",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Export Image: No document/page-to-PNG export workflow exists in File, menubar, or built-in commands; image export and screenshot utilities are not document export."
+    },
+    {
+      "id": "file.options",
+      "wordcraftCommand": "file.options",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Options: No application Options/Preferences page is available through the default File or menubar surfaces. Hidden Tools/Preferences metadata has no visible action."
+    },
+    {
+      "id": "view.numeral",
+      "wordcraftCommand": "view.numeral",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Numerals: No numeral-display settings command or user-facing control exists in the default app surfaces or built-in command registry."
+    },
+    {
+      "id": "file.share",
+      "wordcraftCommand": "file.share",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Share: No document-sharing workflow, share link, or collaboration service action is exposed in the default app or built-in commands."
+    },
+    {
+      "id": "file.protect",
+      "wordcraftCommand": "file.protect",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Protect Document: The declared Protection tab has no populated default controls or protection command; no document restriction workflow is exposed."
+    },
+    {
+      "id": "file.inspect",
+      "wordcraftCommand": "file.inspect",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Inspect Document: No document inspector workflow is exposed through the File tab, menubar, or built-in commands."
+    },
+    {
+      "id": "file.accessibility",
+      "wordcraftCommand": "file.accessibility",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Check Accessibility: Alt text and accessible controls exist, but no document accessibility-checker workflow or command is exposed."
+    },
+    {
+      "id": "file.compatibility",
+      "wordcraftCommand": "file.compatibility",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Check Compatibility: No document compatibility checker or compatibility report workflow exists in the default app or built-in commands."
+    },
+    {
+      "id": "file.versions",
+      "wordcraftCommand": "file.versions",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Version History: No saved-version history or restore-version workflow is exposed. Stepwise undo is not document version history."
+    },
+    {
+      "id": "file.recover",
+      "wordcraftCommand": "file.recover",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Recover Unsaved: No unsaved-document recovery browser or recovery command is exposed; IndexedDB persistence is not an end-user recovery workflow."
+    },
+    {
       "id": "quickAccess.undoTo",
       "wordcraftCommand": "edit.undoTo",
       "status": "missing",
