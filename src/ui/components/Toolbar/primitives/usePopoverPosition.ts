@@ -10,6 +10,8 @@ export interface PopoverPositionOptions {
   /** Whether the popover is currently open. Listeners attach only while open. */
   open: Accessor<boolean>;
   placement?: PopoverPlacement;
+  /** Clamp the panel's vertical position to the visible viewport. */
+  fitViewport?: boolean;
   /** Vertical gap between anchor and panel, in px. */
   gap?: number;
   /** Minimum distance from the viewport edges, in px. */
@@ -55,8 +57,22 @@ export function usePopoverPosition(
         ? rect.right + window.scrollX - panelWidth
         : rect.left + window.scrollX;
 
+    const preferredTop = rect.bottom + window.scrollY + gap();
+    const top = options.fitViewport
+      ? Math.max(
+          window.scrollY + pad,
+          Math.min(
+            preferredTop,
+            window.scrollY +
+              window.innerHeight -
+              (options.panel()?.offsetHeight ?? 0) -
+              pad,
+          ),
+        )
+      : preferredTop;
+
     setCoords({
-      top: rect.bottom + window.scrollY + gap(),
+      top,
       left: Math.max(window.scrollX + pad, Math.min(preferredLeft, maxLeft)),
     });
   };

@@ -37,6 +37,8 @@ export interface PopoverProps {
   panelClass?: string;
   panelRole?: JSX.HTMLAttributes<HTMLDivElement>["role"];
   panelTestId?: string;
+  /** Reposition tall panels so they remain within the viewport vertically. */
+  fitViewport?: boolean;
   onPanelMouseLeave?: () => void;
   closeOnEscape?: boolean;
   /**
@@ -120,6 +122,7 @@ export function Popover(props: PopoverProps): JSX.Element {
     panel: (): HTMLDivElement | undefined => panelRef,
     open: (): boolean => props.open,
     placement: props.placement,
+    fitViewport: props.fitViewport,
   });
 
   useDismiss({

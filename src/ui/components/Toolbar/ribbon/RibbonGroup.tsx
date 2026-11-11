@@ -102,6 +102,7 @@ export function RibbonGroup(props: RibbonGroupProps): JSX.Element {
           tooltip={props.group.label}
           testId={`editor-ribbon-group-${props.group.id}`}
           ribbonSize="large"
+          fitViewport
           panelClass="oasis-editor-ribbon-collapsed-menu oasis-editor-toolbar-view-ribbon"
         >
           <RibbonGroupContent group={props.group} api={props.api} />

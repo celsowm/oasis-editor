@@ -338,6 +338,33 @@ test("home ribbon shrinks and collapses groups as width decreases", async ({
   await expect(page.getByTestId("editor-toolbar-style-expand")).toBeVisible();
 });
 
+test("collapsed Ribbon popup stays inside a short viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 180 });
+  await gotoEditor(page);
+  await page.getByTestId("editor-ribbon-tab-home").click();
+  await expect
+    .poll(() =>
+      page
+        .locator('[data-ribbon-group="styles"]')
+        .getAttribute("data-ribbon-state"),
+    )
+    .toBe("collapsed");
+
+  await page.getByTestId("editor-ribbon-group-styles").click();
+  const popup = page.locator(".oasis-editor-ribbon-collapsed-menu");
+  await expect(popup).toBeVisible();
+  await expect
+    .poll(async () => {
+      const box = await popup.boundingBox();
+      return Boolean(
+        box && box.y >= 0 && box.y + box.height <= page.viewportSize()!.height,
+      );
+    })
+    .toBe(true);
+});
+
 test("narrowing the ribbon never shows more style cards", async ({ page }) => {
   // The ribbon frees width by collapsing groups, and whatever it frees is then
   // available to the compact style gallery. Left unchecked that inverts the

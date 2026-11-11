@@ -14,6 +14,8 @@ export interface MenuProps {
   ribbonSize?: "normal" | "large";
   /** Extra class for the popover panel. */
   panelClass?: string;
+  /** Reposition tall panels so they remain within the viewport vertically. */
+  fitViewport?: boolean;
   keepMounted?: boolean;
   onOpenChange?: (open: boolean) => void;
   children: JSX.Element;
@@ -37,6 +39,7 @@ export function Menu(props: MenuProps): JSX.Element {
         open={open()}
         onOpenChange={updateOpen}
         keepMounted={props.keepMounted}
+        fitViewport={props.fitViewport}
         panelRole="menu"
         panelClass={`oasis-editor-toolbar-dropdown-menu ${props.panelClass || ""}`}
         onPanelMouseLeave={undefined}
