@@ -22,6 +22,7 @@ import type { OasisBuiltinCommand } from "@/core/commands/builtinCommands.js";
 import type { TableBorderPreset } from "@/core/commands/table.js";
 import type {
   TableCellAlignment,
+  TableCellAlignmentState,
   TableCellMargins,
   TableRowHeight,
 } from "@/core/commands/table.js";
@@ -688,6 +689,7 @@ export interface EssentialsTableCapability {
   alignCenter: () => void;
   alignRight: () => void;
   setCellAlignment: (alignment: TableCellAlignment) => void;
+  getCellAlignmentState: () => TableCellAlignmentState | null;
   setCellVerticalAlign: (value: "top" | "middle" | "bottom") => void;
   setCellTextDirection: (
     value: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV",

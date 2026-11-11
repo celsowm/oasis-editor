@@ -369,6 +369,8 @@ export const ptBR = {
   "table.points": "Pontos",
   "table.percent": "Porcentagem",
   "table.alignmentSection": "Alinhamento",
+  "table.alignmentMixed":
+    "As células selecionadas têm alinhamentos diferentes.",
   "table.indentFromLeft": "Recuar a partir da esquerda",
   "table.textWrappingSection": "Disposição do texto",
   "table.wrapNone": "Nenhuma",

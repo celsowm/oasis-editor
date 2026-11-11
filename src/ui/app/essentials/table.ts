@@ -5,6 +5,7 @@ import {
   applyTableBorderPreset,
   setTableCellBorders,
   setTableCellAlignment,
+  getTableCellAlignmentState,
   setTableCellStyleValue,
   setTableCellWidth,
   setTableCellNoWrap,
@@ -445,6 +446,7 @@ export function buildEssentialsTable(
           ),
         MERGE_KEYS.tableCellAlignment,
       ),
+    getCellAlignmentState: () => getTableCellAlignmentState(options.state()),
     setCellVerticalAlign: (value: "top" | "middle" | "bottom"): void =>
       apply(
         (current): EditorState =>

@@ -44,6 +44,11 @@ export interface TableCellAlignment {
   vertical: "top" | "middle" | "bottom";
 }
 
+export interface TableCellAlignmentState {
+  horizontal: TableCellAlignment["horizontal"] | "mixed" | null;
+  vertical: TableCellAlignment["vertical"] | "mixed" | null;
+}
+
 /** Word's default border: black, solid, one half point. */
 export const DEFAULT_TABLE_BORDER: EditorBorderStyle = {
   width: 0.5,
@@ -273,6 +278,48 @@ export function setTableCellAlignment(
     horizontal,
   );
   return setTableCellStyleValue(horizontallyAligned, "verticalAlign", vertical);
+}
+
+/** Read the alignment shared by the current cell selection, preserving mixed state. */
+export function getTableCellAlignmentState(
+  state: EditorState,
+): TableCellAlignmentState | null {
+  const selection = resolveTableBorderSelection(state);
+  if (!selection || selection.selectedEntries.length === 0) return null;
+
+  const horizontal = selection.selectedEntries.map(
+    ({ cell }): string => cell.style?.horizontalAlign ?? "left",
+  );
+  const vertical = selection.selectedEntries.map(
+    ({ cell }): string => cell.style?.verticalAlign ?? "top",
+  );
+
+  const summarize = <T extends string>(
+    values: string[],
+    allowed: readonly T[],
+  ): T | "mixed" | null => {
+    const first = values[0];
+    if (!first) return null;
+    if (values.some((value): boolean => !allowed.includes(value as T))) {
+      return null;
+    }
+    if (values.some((value): boolean => value !== first)) return "mixed";
+    return first as T;
+  };
+
+  const horizontalValue = summarize<TableCellAlignment["horizontal"]>(
+    horizontal,
+    ["left", "center", "right"],
+  );
+  const verticalValue = summarize<TableCellAlignment["vertical"]>(vertical, [
+    "top",
+    "middle",
+    "bottom",
+  ]);
+  return {
+    horizontal: horizontalValue,
+    vertical: verticalValue,
+  };
 }
 
 export function setTableCellWidth(

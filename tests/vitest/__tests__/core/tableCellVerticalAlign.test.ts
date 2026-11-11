@@ -8,6 +8,7 @@ import {
   createEditorTableRow,
 } from "@/core/editorState.js";
 import {
+  getTableCellAlignmentState,
   setTableCellAlignment,
   setTableCellStyleValue,
 } from "@/core/commands/table.js";
@@ -81,6 +82,25 @@ describe("table cell vertical alignment and text direction", () => {
       expect(cell.style?.horizontalAlign).toBe("center");
       expect(cell.style?.verticalAlign).toBe("bottom");
     }
+  });
+
+  it("reports mixed horizontal cell alignment without losing shared vertical state", () => {
+    const { state, paragraphA, paragraphB } = twoCellFixture();
+    const table = firstTable(state);
+    table.rows[0]!.cells[0]!.style = {
+      horizontalAlign: "left",
+      verticalAlign: "bottom",
+    };
+    table.rows[0]!.cells[1]!.style = {
+      horizontalAlign: "right",
+      verticalAlign: "bottom",
+    };
+
+    expect(
+      getTableCellAlignmentState(
+        selectTableCells(state, paragraphA, paragraphB),
+      ),
+    ).toEqual({ horizontal: "mixed", vertical: "bottom" });
   });
 
   it("records both original alignment values in a single property revision", () => {

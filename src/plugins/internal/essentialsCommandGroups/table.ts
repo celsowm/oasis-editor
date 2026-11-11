@@ -1,4 +1,5 @@
 import type { OasisPlugin } from "@/core/plugin.js";
+import type { TableCellAlignmentState } from "@/core/commands/table.js";
 import type {
   ActionCommandBuilder,
   ValueCommandBuilder,
@@ -207,10 +208,15 @@ export function buildTableCommands({
     tableAlignRight: actionCommand("tableAlignRight", (): void =>
       table.alignRight(),
     ),
-    tableSetCellAlignment: actionCommand("tableSetCellAlignment", (p): void =>
-      table.setCellAlignment(
-        p as import("@/core/commands/table.js").TableCellAlignment,
-      ),
+    tableSetCellAlignment: actionCommand(
+      "tableSetCellAlignment",
+      (p): void =>
+        table.setCellAlignment(
+          p as import("@/core/commands/table.js").TableCellAlignment,
+        ),
+      (): { value: TableCellAlignmentState | null } => ({
+        value: table.getCellAlignmentState(),
+      }),
     ),
     tableSetCellVerticalAlign: actionCommand(
       "tableSetCellVerticalAlign",

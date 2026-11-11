@@ -366,6 +366,7 @@ export const en = {
   "table.points": "Points",
   "table.percent": "Percent",
   "table.alignmentSection": "Alignment",
+  "table.alignmentMixed": "The selected cells have mixed alignment.",
   "table.indentFromLeft": "Indent from left",
   "table.textWrappingSection": "Text wrapping",
   "table.wrapNone": "None",

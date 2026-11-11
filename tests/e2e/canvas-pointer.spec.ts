@@ -1032,16 +1032,18 @@ test("collapsed Table Layout group exposes the spatial cell alignment matrix", a
   );
   await expect(matrix).toBeVisible();
   await expect(matrix.getByRole("button")).toHaveCount(9);
-  const markerPositions = await matrix.locator("button").evaluateAll((buttons) =>
-    buttons.map((button) => {
-      const marker = button.querySelector<HTMLElement>(
-        ".oasis-editor-table-cell-alignment-mark",
-      );
-      if (!marker) return null;
-      const style = getComputedStyle(marker);
-      return [style.gridRow, style.gridColumn];
-    }),
-  );
+  const markerPositions = await matrix
+    .locator("button")
+    .evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const marker = button.querySelector<HTMLElement>(
+          ".oasis-editor-table-cell-alignment-mark",
+        );
+        if (!marker) return null;
+        const style = getComputedStyle(marker);
+        return [style.gridRow, style.gridColumn];
+      }),
+    );
   expect(markerPositions).toEqual([
     ["1", "1"],
     ["1", "2"],
@@ -1058,6 +1060,19 @@ test("collapsed Table Layout group exposes the spatial cell alignment matrix", a
   );
   await expect(bottomCenter).toBeVisible();
   await bottomCenter.click();
+  await page.getByTestId("editor-ribbon-group-alignment").click();
+  const reopenedMatrix = page
+    .locator(".oasis-editor-ribbon-collapsed-menu")
+    .getByTestId("editor-toolbar-cell-alignment-matrix");
+  const reopenedBottomCenter = reopenedMatrix.getByTestId(
+    "editor-toolbar-cell-align-bottom-center",
+  );
+  await expect(reopenedBottomCenter).toHaveAttribute("aria-pressed", "true");
+  await expect(reopenedMatrix).toHaveAttribute(
+    "data-horizontal-state",
+    "center",
+  );
+  await expect(reopenedMatrix).toHaveAttribute("data-vertical-state", "bottom");
   await expectDebugSelection(page);
 });
 

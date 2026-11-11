@@ -830,6 +830,16 @@ Evidence: `CanvasTableLayout.test.ts` covers cell fallback and paragraph precede
 
 Limits: mixed alignment state presentation, explicit single-step undo, direct Word visual comparison, and VoiceOver remain unverified. These semantics and accessibility checks remain in scope for D08/A04/M5.
 
+## Delivery 64 — Alignment state and mixed selections
+
+Date: 2026-11-11. D08, A04 and M5 remain **partial**.
+
+The 3×3 matrix now reflects the selected cells' current horizontal/vertical pair, marks a uniform match as pressed, and exposes axis-level mixed values in the control's accessible description and data state. A core query keeps horizontal and vertical summaries independent. The browser scenario applies an alignment, reopens the collapsed group and confirms that the corresponding position remains selected.
+
+Evidence: the core mixed-selection test, 15 CanvasTableLayout tests, typecheck, changed-source ESLint, Ribbon/catalog/icon audits, and the focused collapsed-group Playwright scenario pass.
+
+Limits: mixed state has core coverage but still needs a browser selection scenario and direct VoiceOver review. Explicit single-step undo and direct Word visual comparison also remain open.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
