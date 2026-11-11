@@ -1769,6 +1769,19 @@ test("Insert accessibility group follows image selection visibility", async ({
   await expect(
     accessibilityGroup.getByTestId("editor-toolbar-image-alt"),
   ).toBeVisible();
+  await expect
+    .poll(async () =>
+      Number(
+        await accessibilityGroup.getAttribute("data-ribbon-width-allocated"),
+      ),
+    )
+    .toBeGreaterThan(0);
+
+  await page.setViewportSize({ width: 320, height: 900 });
+  await expect(accessibilityGroup).toHaveAttribute(
+    "data-ribbon-state",
+    "collapsed",
+  );
 });
 
 test("toolbar overflow table insert does not throw insertBefore NotFoundError", async ({

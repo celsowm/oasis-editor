@@ -750,6 +750,8 @@ Recorded Oasis's always-visible horizontal ruler as a related display for WordCr
 
 The matrix now contains 245 Oasis capability rows and links 209 of 521 WordCraft source rows; 312 remain unlinked.
 
+Evidence: `npm run audit:ribbon` validates the UI evidence token in `src/ui/components/Ruler/HorizontalRuler.tsx`; `npm run audit:ribbon:wordcraft` reports 209 linked rows.
+
 ## Delivery 56 — Paginated canvas relationship
 
 Recorded Oasis's default paginated paper stack as a related presentation for WordCraft View > Print Layout. Oasis has no selectable view mode, and Read Mode, Web Layout and switching between modes remain unavailable.
@@ -762,13 +764,11 @@ Evidence: `npm run audit:ribbon` validates the UI evidence token in `src/ui/comp
 
 Date: 2026-11-11. V02 remains **partial**.
 
-Added a Chromium interaction scenario proving the Insert Accessibility group is absent without an image selection and appears with the image Alt Text action after selecting an inserted image. The core composition cases also verify that invisible items remove empty groups, disabled actions remain present, and separators are trimmed after filtering.
+Added a Chromium interaction scenario proving the Insert Accessibility group is absent without an image selection and appears with the image Alt Text action after selecting an inserted image. It verifies that the changed composition receives a positive measured width and collapses at a 320 px viewport. The core composition cases also verify that invisible items remove empty groups, disabled actions remain present, and separators are trimmed after filtering.
 
 Evidence: `npx playwright test --config playwright.e2e.config.ts tests/e2e/canvas-pointer.spec.ts -g 'Insert accessibility group follows image selection visibility'` passes. The complete build-and-deploy workflow for the current main commit passes.
 
-Limits: the scenario does not yet verify that changing away from the image selection removes the group again or that responsive widths are remeasured after a selection-driven composition change. V02 remains partial.
-
-Evidence: `npm run audit:ribbon` validates the UI evidence token in `src/ui/components/Ruler/HorizontalRuler.tsx`; `npm run audit:ribbon:wordcraft` reports 209 linked rows.
+Limits: the scenario does not yet verify that changing away from the image selection removes the group again or that selection changes repeatedly remeasure widths. V02 remains partial.
 
 ## Remaining execution queue
 
