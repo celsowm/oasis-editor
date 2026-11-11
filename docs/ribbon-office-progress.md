@@ -1030,6 +1030,16 @@ Evidence: 403 of 521 source rows are now classified; 118 remain unclassified. Th
 
 Limits: table style fidelity, RTL table layout and section-specific header/footer behavior remain open under A02/P04/P06.
 
+## Delivery 84 — Read Mode, Developer, SmartArt and Chart inventories
+
+Date: 2026-11-11. B01 and M4 advanced families remain **partial**.
+
+Reviewed 26 commands across Read Mode, Developer, SmartArt Design and Chart Design. Read Mode is not implemented; the app exposes no Developer content-control insertion/properties workflow, SmartArt object model or chart data model. Each command is individually classified missing rather than treating a tab label or preserved document structure as an authoring capability.
+
+Evidence: the catalog now classifies 429 of 521 source rows; 92 remain unclassified. The pinned source-command audit verifies all 26 command names and rationales.
+
+Limits: Developer controls, SmartArt and Charts remain explicit M4 implementation work; no insertion, editing or interoperability workflow is claimed.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

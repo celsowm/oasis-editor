@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `433` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `459` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -444,6 +444,32 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `headerFooter.previousSection` | `hf.previous` | — | — | missing | missing | missing | unverified |
 | `headerFooter.nextSection` | `hf.next` | — | — | missing | missing | missing | unverified |
 | `headerFooter.position` | `hf.position` | — | — | missing | missing | missing | unverified |
+| `readMode.columnWidth` | `view.readColumnWidth` | — | — | missing | missing | missing | unverified |
+| `readMode.pageColor` | `view.readPageColor` | — | — | missing | missing | missing | unverified |
+| `readMode.layout` | `view.readLayout` | — | — | missing | missing | missing | unverified |
+| `developer.richTextControl` | `developer.richText` | — | — | missing | missing | missing | unverified |
+| `developer.plainTextControl` | `developer.plainText` | — | — | missing | missing | missing | unverified |
+| `developer.pictureControl` | `developer.picture` | — | — | missing | missing | missing | unverified |
+| `developer.buildingBlockControl` | `developer.buildingBlock` | — | — | missing | missing | missing | unverified |
+| `developer.checkboxControl` | `developer.checkBox` | — | — | missing | missing | missing | unverified |
+| `developer.comboBoxControl` | `developer.comboBox` | — | — | missing | missing | missing | unverified |
+| `developer.dropDownControl` | `developer.dropDown` | — | — | missing | missing | missing | unverified |
+| `developer.datePickerControl` | `developer.datePicker` | — | — | missing | missing | missing | unverified |
+| `developer.repeatingSectionControl` | `developer.repeatingSection` | — | — | missing | missing | missing | unverified |
+| `developer.propertiesPane` | `developer.properties` | — | — | missing | missing | missing | unverified |
+| `developer.designMode` | `developer.designMode` | — | — | missing | missing | missing | unverified |
+| `smartArt.addShape` | `smartArt.addShape` | — | — | missing | missing | missing | unverified |
+| `smartArt.promote` | `smartArt.promote` | — | — | missing | missing | missing | unverified |
+| `smartArt.demote` | `smartArt.demote` | — | — | missing | missing | missing | unverified |
+| `smartArt.textPane` | `smartArt.textPane` | — | — | missing | missing | missing | unverified |
+| `smartArt.layouts` | `smartArt.layout` | — | — | missing | missing | missing | unverified |
+| `smartArt.styles` | `smartArt.colors` | — | — | missing | missing | missing | unverified |
+| `smartArt.reset` | `smartArt.reset` | — | — | missing | missing | missing | unverified |
+| `chart.changeType` | `chart.type` | — | — | missing | missing | missing | unverified |
+| `chart.editData` | `chart.editData` | — | — | missing | missing | missing | unverified |
+| `chart.title` | `chart.title` | — | — | missing | missing | missing | unverified |
+| `chart.legend` | `chart.legend` | — | — | missing | missing | missing | unverified |
+| `chart.dataLabels` | `chart.dataLabels` | — | — | missing | missing | missing | unverified |
 
 ## Open verification questions
 
@@ -880,6 +906,32 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 431. **headerFooter.previousSection:** Previous Section: The header/footer editor exposes no navigation command to move to the previous section story.
 432. **headerFooter.nextSection:** Next Section: The header/footer editor exposes no navigation command to move to the next section story.
 433. **headerFooter.position:** Header from Top: Header distance is preserved in document data, but no default control changes the header’s distance from the page top.
+434. **readMode.columnWidth:** Column Width: No Read Mode exists, so no column-width setting for its reading surface is exposed.
+435. **readMode.pageColor:** Page Color: The document Design page-color control is unrelated to a Read Mode-specific page color; no reading-mode view or control exists.
+436. **readMode.layout:** Layout: No Read Mode layout selector or alternate reading surface exists.
+437. **developer.richTextControl:** Rich Text Content Control: No Developer tab or user-facing content-control insertion/editing workflow is exposed.
+438. **developer.plainTextControl:** Plain Text Content Control: No Developer tab or user-facing content-control insertion/editing workflow is exposed.
+439. **developer.pictureControl:** Picture Content Control: No Developer tab or user-facing content-control insertion/editing workflow is exposed.
+440. **developer.buildingBlockControl:** Building Block Gallery Content Control: No Developer tab, building-block gallery or content-control workflow is exposed.
+441. **developer.checkboxControl:** Check Box Content Control: No Developer tab or user-facing checkbox content-control workflow is exposed.
+442. **developer.comboBoxControl:** Combo Box Content Control: No Developer tab or user-facing combo-box content-control workflow is exposed.
+443. **developer.dropDownControl:** Drop-Down List Content Control: No Developer tab or user-facing dropdown content-control workflow is exposed.
+444. **developer.datePickerControl:** Date Picker Content Control: Date fields are supported, but no interactive date-picker content control or Developer workflow is exposed.
+445. **developer.repeatingSectionControl:** Repeating Section Content Control: No Developer tab or repeating-section content-control model and workflow are exposed.
+446. **developer.propertiesPane:** Properties: No content-control properties dialog or Developer properties workflow is exposed.
+447. **developer.designMode:** Design Mode: No content-control design mode or Developer editing state is exposed.
+448. **smartArt.addShape:** Add Shape: No SmartArt graphic model or shape-in-graphic editing workflow is exposed.
+449. **smartArt.promote:** Promote: No SmartArt hierarchy or promote/demote commands are exposed.
+450. **smartArt.demote:** Demote: No SmartArt hierarchy or promote/demote commands are exposed.
+451. **smartArt.textPane:** Text Pane: No SmartArt graphic or associated text pane is exposed.
+452. **smartArt.layouts:** Layouts: No SmartArt layout gallery is exposed.
+453. **smartArt.styles:** Change Colors: No SmartArt graphic style/color system is exposed.
+454. **smartArt.reset:** Reset Graphic: No SmartArt graphic model or reset workflow is exposed.
+455. **chart.changeType:** Change Chart Type: No chart data model or chart-type conversion workflow is exposed.
+456. **chart.editData:** Edit Data: No embedded chart data source or editing workflow is exposed.
+457. **chart.title:** Chart Title: No chart object/title element or chart formatting workflow is exposed.
+458. **chart.legend:** Legend: No chart legend formatting workflow is exposed.
+459. **chart.dataLabels:** Data Labels: No chart data-label formatting workflow is exposed.
 
 ## Audit interpretation
 

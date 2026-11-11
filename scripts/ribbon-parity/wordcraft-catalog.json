@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 403
+    "linkedRows": 429
   },
   "defaultTabs": [
     "File",
@@ -3939,7 +3939,9 @@
       "group": "View",
       "name": "Column Width",
       "command": "view.readColumnWidth",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "readMode.columnWidth"
+      ]
     },
     {
       "index": 341,
@@ -3948,7 +3950,9 @@
       "group": "View",
       "name": "Page Color",
       "command": "view.readPageColor",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "readMode.pageColor"
+      ]
     },
     {
       "index": 342,
@@ -3957,7 +3961,9 @@
       "group": "View",
       "name": "Layout",
       "command": "view.readLayout",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "readMode.layout"
+      ]
     },
     {
       "index": 343,
@@ -3966,7 +3972,9 @@
       "group": "Controls",
       "name": "Rich Text Content Control",
       "command": "developer.richText",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "developer.richTextControl"
+      ]
     },
     {
       "index": 344,
@@ -3975,7 +3983,9 @@
       "group": "Controls",
       "name": "Plain Text Content Control",
       "command": "developer.plainText",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "developer.plainTextControl"
+      ]
     },
     {
       "index": 345,
@@ -3984,7 +3994,9 @@
       "group": "Controls",
       "name": "Picture Content Control",
       "command": "developer.picture",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "developer.pictureControl"
+      ]
     },
     {
       "index": 346,
@@ -3993,7 +4005,9 @@
       "group": "Controls",
       "name": "Building Block Gallery Content Control",
       "command": "developer.buildingBlock",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "developer.buildingBlockControl"
+      ]
     },
     {
       "index": 347,
@@ -4002,7 +4016,9 @@
       "group": "Controls",
       "name": "Check Box Content Control",
       "command": "developer.checkBox",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "developer.checkboxControl"
+      ]
     },
     {
       "index": 348,
@@ -4011,7 +4027,9 @@
       "group": "Controls",
       "name": "Combo Box Content Control",
       "command": "developer.comboBox",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "developer.comboBoxControl"
+      ]
     },
     {
       "index": 349,
@@ -4020,7 +4038,9 @@
       "group": "Controls",
       "name": "Drop-Down List Content Control",
       "command": "developer.dropDown",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "developer.dropDownControl"
+      ]
     },
     {
       "index": 350,
@@ -4029,7 +4049,9 @@
       "group": "Controls",
       "name": "Date Picker Content Control",
       "command": "developer.datePicker",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "developer.datePickerControl"
+      ]
     },
     {
       "index": 351,
@@ -4038,7 +4060,9 @@
       "group": "Controls",
       "name": "Repeating Section Content Control",
       "command": "developer.repeatingSection",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "developer.repeatingSectionControl"
+      ]
     },
     {
       "index": 352,
@@ -4047,7 +4071,9 @@
       "group": "Controls",
       "name": "Design Mode",
       "command": "developer.designMode",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "developer.designMode"
+      ]
     },
     {
       "index": 353,
@@ -4056,7 +4082,9 @@
       "group": "Controls",
       "name": "Properties",
       "command": "developer.properties",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "developer.propertiesPane"
+      ]
     },
     {
       "index": 354,
@@ -4996,7 +5024,9 @@
       "group": "Create Graphic",
       "name": "Add Shape",
       "command": "smartArt.addShape",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "smartArt.addShape"
+      ]
     },
     {
       "index": 446,
@@ -5005,7 +5035,9 @@
       "group": "Create Graphic",
       "name": "Promote",
       "command": "smartArt.promote",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "smartArt.promote"
+      ]
     },
     {
       "index": 447,
@@ -5014,7 +5046,9 @@
       "group": "Create Graphic",
       "name": "Demote",
       "command": "smartArt.demote",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "smartArt.demote"
+      ]
     },
     {
       "index": 448,
@@ -5023,7 +5057,9 @@
       "group": "Create Graphic",
       "name": "Text Pane",
       "command": "smartArt.textPane",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "smartArt.textPane"
+      ]
     },
     {
       "index": 449,
@@ -5032,7 +5068,9 @@
       "group": "Layouts",
       "name": "Layouts",
       "command": "smartArt.layout",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "smartArt.layouts"
+      ]
     },
     {
       "index": 450,
@@ -5041,7 +5079,9 @@
       "group": "SmartArt Styles",
       "name": "Change Colors",
       "command": "smartArt.colors",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "smartArt.styles"
+      ]
     },
     {
       "index": 451,
@@ -5050,7 +5090,9 @@
       "group": "Reset",
       "name": "Reset Graphic",
       "command": "smartArt.reset",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "smartArt.reset"
+      ]
     },
     {
       "index": 452,
@@ -5059,7 +5101,9 @@
       "group": "Type",
       "name": "Change Chart Type",
       "command": "chart.type",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "chart.changeType"
+      ]
     },
     {
       "index": 453,
@@ -5068,7 +5112,9 @@
       "group": "Data",
       "name": "Edit Data",
       "command": "chart.editData",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "chart.editData"
+      ]
     },
     {
       "index": 454,
@@ -5077,7 +5123,9 @@
       "group": "Chart Layouts",
       "name": "Chart Title",
       "command": "chart.title",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "chart.title"
+      ]
     },
     {
       "index": 455,
@@ -5086,7 +5134,9 @@
       "group": "Chart Layouts",
       "name": "Legend",
       "command": "chart.legend",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "chart.legend"
+      ]
     },
     {
       "index": 456,
@@ -5095,7 +5145,9 @@
       "group": "Chart Layouts",
       "name": "Data Labels",
       "command": "chart.dataLabels",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "chart.dataLabels"
+      ]
     },
     {
       "index": 457,

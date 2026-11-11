@@ -1725,7 +1725,7 @@
       "exposure": "core-only",
       "semantics": "partial",
       "persistence": "unverified",
-      "notes": "Oasis registers a command that sets the selected list paragraphs' explicit level from 0–8, matching WordCraft's task; no default Ribbon or menubar control exposes the numeric level. Mixed list selections, numbering definitions, undo and DOCX interoperability need verification."
+      "notes": "Oasis registers a command that sets the selected list paragraphs' explicit level from 0\u20138, matching WordCraft's task; no default Ribbon or menubar control exposes the numeric level. Mixed list selections, numbering definitions, undo and DOCX interoperability need verification."
     },
     {
       "id": "home.setNumberingValue",
@@ -3152,7 +3152,7 @@
         "file": "src/ui/components/Toolbar/controls/TableCellAlignmentMatrix.tsx",
         "token": "editor-toolbar-cell-align-bottom-center"
       },
-      "notes": "The 3×3 positional picker combines horizontal and vertical alignment on selected cells through one command. Keyboard, multi-cell mixed-state, selection retention, undo and DOCX round-trip still need workflow verification."
+      "notes": "The 3\u00d73 positional picker combines horizontal and vertical alignment on selected cells through one command. Keyboard, multi-cell mixed-state, selection retention, undo and DOCX round-trip still need workflow verification."
     },
     {
       "id": "table.textDirection",
@@ -3509,7 +3509,7 @@
       "exposure": "missing",
       "semantics": "missing",
       "persistence": "unverified",
-      "notes": "Clipboard Pane: No persistent clipboard task pane is exposed in the default app surfaces. Cut/copy/paste commands are direct editing actions and do not provide Word’s multi-item clipboard history."
+      "notes": "Clipboard Pane: No persistent clipboard task pane is exposed in the default app surfaces. Cut/copy/paste commands are direct editing actions and do not provide Word\u2019s multi-item clipboard history."
     },
     {
       "id": "home.phoneticGuide",
@@ -3899,7 +3899,7 @@
       "exposure": "missing",
       "semantics": "missing",
       "persistence": "unverified",
-      "notes": "Text from File: DOCX import replaces/loads a document; no workflow inserts another file’s text at the current selection."
+      "notes": "Text from File: DOCX import replaces/loads a document; no workflow inserts another file\u2019s text at the current selection."
     },
     {
       "id": "insert.inkEquation",
@@ -4073,7 +4073,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "partial",
-      "notes": "Theme: The Design gallery applies one of Oasis’s built-in document themes. Theme coverage, preview/commit behavior, selection preservation and DOCX theme fidelity remain under verification."
+      "notes": "Theme: The Design gallery applies one of Oasis\u2019s built-in document themes. Theme coverage, preview/commit behavior, selection preservation and DOCX theme fidelity remain under verification."
     },
     {
       "id": "design.styleSet",
@@ -4086,7 +4086,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "partial",
-      "notes": "Style Set: The same gallery applies bundled Oasis themes, but does not expose Word’s independent Style Set library or user-defined sets. This is a related, partial workflow."
+      "notes": "Style Set: The same gallery applies bundled Oasis themes, but does not expose Word\u2019s independent Style Set library or user-defined sets. This is a related, partial workflow."
     },
     {
       "id": "design.colors",
@@ -4138,7 +4138,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "partial",
-      "notes": "Effects: The Design gallery applies a bundled effects preset. Word’s full document-effects set and rendering interoperability remain unverified."
+      "notes": "Effects: The Design gallery applies a bundled effects preset. Word\u2019s full document-effects set and rendering interoperability remain unverified."
     },
     {
       "id": "design.setDefault",
@@ -4151,7 +4151,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "partial",
-      "notes": "Set as Default: The File-independent Design action marks the current Oasis design as the default. Scope, persistence and host/profile behavior need verification against Word’s application-level default."
+      "notes": "Set as Default: The File-independent Design action marks the current Oasis design as the default. Scope, persistence and host/profile behavior need verification against Word\u2019s application-level default."
     },
     {
       "id": "design.watermark",
@@ -4190,7 +4190,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "partial",
-      "notes": "Page Borders: The page-border panel exposes style, color, width and distance settings; Word’s art borders, application scope and DOCX fidelity remain unverified."
+      "notes": "Page Borders: The page-border panel exposes style, color, width and distance settings; Word\u2019s art borders, application scope and DOCX fidelity remain unverified."
     },
     {
       "id": "layout.pageSetupDialog",
@@ -4930,7 +4930,7 @@
         "file": "src/ui/components/Outline/OutlinePanel.tsx",
         "token": "oasis-outline-panel"
       },
-      "notes": "Outline: Oasis provides heading navigation in an Outline panel, but not Word’s document-structure editing mode. Promote/demote, selection and view-mode behavior differ."
+      "notes": "Outline: Oasis provides heading navigation in an Outline panel, but not Word\u2019s document-structure editing mode. Promote/demote, selection and view-mode behavior differ."
     },
     {
       "id": "view.onePage",
@@ -5053,7 +5053,241 @@
       "exposure": "missing",
       "semantics": "missing",
       "persistence": "unverified",
-      "notes": "Header from Top: Header distance is preserved in document data, but no default control changes the header’s distance from the page top."
+      "notes": "Header from Top: Header distance is preserved in document data, but no default control changes the header\u2019s distance from the page top."
+    },
+    {
+      "id": "readMode.columnWidth",
+      "wordcraftCommand": "view.readColumnWidth",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Column Width: No Read Mode exists, so no column-width setting for its reading surface is exposed."
+    },
+    {
+      "id": "readMode.pageColor",
+      "wordcraftCommand": "view.readPageColor",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Page Color: The document Design page-color control is unrelated to a Read Mode-specific page color; no reading-mode view or control exists."
+    },
+    {
+      "id": "readMode.layout",
+      "wordcraftCommand": "view.readLayout",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Layout: No Read Mode layout selector or alternate reading surface exists."
+    },
+    {
+      "id": "developer.richTextControl",
+      "wordcraftCommand": "developer.richText",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Rich Text Content Control: No Developer tab or user-facing content-control insertion/editing workflow is exposed."
+    },
+    {
+      "id": "developer.plainTextControl",
+      "wordcraftCommand": "developer.plainText",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Plain Text Content Control: No Developer tab or user-facing content-control insertion/editing workflow is exposed."
+    },
+    {
+      "id": "developer.pictureControl",
+      "wordcraftCommand": "developer.picture",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Picture Content Control: No Developer tab or user-facing content-control insertion/editing workflow is exposed."
+    },
+    {
+      "id": "developer.buildingBlockControl",
+      "wordcraftCommand": "developer.buildingBlock",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Building Block Gallery Content Control: No Developer tab, building-block gallery or content-control workflow is exposed."
+    },
+    {
+      "id": "developer.checkboxControl",
+      "wordcraftCommand": "developer.checkBox",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Check Box Content Control: No Developer tab or user-facing checkbox content-control workflow is exposed."
+    },
+    {
+      "id": "developer.comboBoxControl",
+      "wordcraftCommand": "developer.comboBox",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Combo Box Content Control: No Developer tab or user-facing combo-box content-control workflow is exposed."
+    },
+    {
+      "id": "developer.dropDownControl",
+      "wordcraftCommand": "developer.dropDown",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Drop-Down List Content Control: No Developer tab or user-facing dropdown content-control workflow is exposed."
+    },
+    {
+      "id": "developer.datePickerControl",
+      "wordcraftCommand": "developer.datePicker",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Date Picker Content Control: Date fields are supported, but no interactive date-picker content control or Developer workflow is exposed."
+    },
+    {
+      "id": "developer.repeatingSectionControl",
+      "wordcraftCommand": "developer.repeatingSection",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Repeating Section Content Control: No Developer tab or repeating-section content-control model and workflow are exposed."
+    },
+    {
+      "id": "developer.propertiesPane",
+      "wordcraftCommand": "developer.properties",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Properties: No content-control properties dialog or Developer properties workflow is exposed."
+    },
+    {
+      "id": "developer.designMode",
+      "wordcraftCommand": "developer.designMode",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Design Mode: No content-control design mode or Developer editing state is exposed."
+    },
+    {
+      "id": "smartArt.addShape",
+      "wordcraftCommand": "smartArt.addShape",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Add Shape: No SmartArt graphic model or shape-in-graphic editing workflow is exposed."
+    },
+    {
+      "id": "smartArt.promote",
+      "wordcraftCommand": "smartArt.promote",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Promote: No SmartArt hierarchy or promote/demote commands are exposed."
+    },
+    {
+      "id": "smartArt.demote",
+      "wordcraftCommand": "smartArt.demote",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Demote: No SmartArt hierarchy or promote/demote commands are exposed."
+    },
+    {
+      "id": "smartArt.textPane",
+      "wordcraftCommand": "smartArt.textPane",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Text Pane: No SmartArt graphic or associated text pane is exposed."
+    },
+    {
+      "id": "smartArt.layouts",
+      "wordcraftCommand": "smartArt.layout",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Layouts: No SmartArt layout gallery is exposed."
+    },
+    {
+      "id": "smartArt.styles",
+      "wordcraftCommand": "smartArt.colors",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Change Colors: No SmartArt graphic style/color system is exposed."
+    },
+    {
+      "id": "smartArt.reset",
+      "wordcraftCommand": "smartArt.reset",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Reset Graphic: No SmartArt graphic model or reset workflow is exposed."
+    },
+    {
+      "id": "chart.changeType",
+      "wordcraftCommand": "chart.type",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Change Chart Type: No chart data model or chart-type conversion workflow is exposed."
+    },
+    {
+      "id": "chart.editData",
+      "wordcraftCommand": "chart.editData",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Edit Data: No embedded chart data source or editing workflow is exposed."
+    },
+    {
+      "id": "chart.title",
+      "wordcraftCommand": "chart.title",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Chart Title: No chart object/title element or chart formatting workflow is exposed."
+    },
+    {
+      "id": "chart.legend",
+      "wordcraftCommand": "chart.legend",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Legend: No chart legend formatting workflow is exposed."
+    },
+    {
+      "id": "chart.dataLabels",
+      "wordcraftCommand": "chart.dataLabels",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Data Labels: No chart data-label formatting workflow is exposed."
     }
   ]
 }
