@@ -1737,6 +1737,7 @@ test("Insert accessibility group follows image selection visibility", async ({
   page,
 }) => {
   await gotoEditor(page);
+  const pageRect = await canvasPageRect(page);
   const insertTab = page.getByTestId("editor-ribbon-tab-insert");
   const accessibilityGroup = page.locator(
     '[data-ribbon-group="accessibility"]',
@@ -1782,6 +1783,70 @@ test("Insert accessibility group follows image selection visibility", async ({
     "data-ribbon-state",
     "collapsed",
   );
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.mouse.click(pageRect.x + 100, pageRect.y + 140);
+  await expect(
+    page.locator(".oasis-editor-image-selection-overlay"),
+  ).toBeHidden();
+  await expect(accessibilityGroup).toHaveCount(0);
+});
+
+test("collapsed image group keeps its parent open for crop flyouts", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+  await insertInlineImage(page);
+
+  const image = await page.evaluate(() => {
+    const entry = window.__oasisCanvasDebug
+      ?.getLayoutSnapshot()
+      ?.inlineImages.find((candidate) => candidate.zone === "main");
+    return entry
+      ? {
+          x: entry.left + entry.width / 2,
+          y: entry.top + entry.height / 2,
+        }
+      : null;
+  });
+  if (!image) throw new Error("unable to resolve inserted image geometry");
+  await page.mouse.click(image.x, image.y);
+  await expect(
+    page.locator(".oasis-editor-image-selection-overlay"),
+  ).toBeVisible();
+
+  await page.setViewportSize({ width: 320, height: 240 });
+  const sizeGroup = page.locator('[data-ribbon-group="size"]');
+  await expect
+    .poll(() => sizeGroup.getAttribute("data-ribbon-state"))
+    .toBe("collapsed");
+  await page.getByTestId("editor-ribbon-group-size").click();
+
+  const collapsedPopup = page.locator(".oasis-editor-ribbon-collapsed-menu");
+  await expect(collapsedPopup).toBeVisible();
+  await collapsedPopup.getByTestId("editor-toolbar-image-crop").click();
+  const cropPanel = page.locator(".oasis-editor-image-crop-panel");
+  await expect(cropPanel).toBeVisible();
+  await cropPanel.getByTestId("editor-toolbar-image-crop-shape").click();
+
+  await expect(collapsedPopup).toBeVisible();
+  await expect(
+    cropPanel.locator(".oasis-editor-image-crop-flyout"),
+  ).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(
+    cropPanel.locator(".oasis-editor-image-crop-flyout"),
+  ).toBeHidden();
+  await expect(cropPanel).toBeVisible();
+  await expect(collapsedPopup).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(cropPanel).toBeHidden();
+  await expect(collapsedPopup).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(collapsedPopup).toBeHidden();
 });
 
 test("toolbar overflow table insert does not throw insertBefore NotFoundError", async ({

@@ -1,4 +1,12 @@
-import { For, Show, createSignal, createUniqueId, type JSX } from "solid-js";
+import {
+  For,
+  Show,
+  createEffect,
+  createSignal,
+  createUniqueId,
+  onCleanup,
+  type JSX,
+} from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import type { TranslationKey } from "@/i18n/index.js";
 import { NumberField } from "@/ui/public/NumberField.js";
@@ -142,9 +150,20 @@ export function ImageCropMenu(props: { api: ToolbarActionApi }): JSX.Element {
   const shapeSubmenuId = `${menuId}-crop-shapes`;
   const ratioSubmenuId = `${menuId}-crop-ratios`;
   const [submenu, setSubmenu] = createSignal<"shape" | "ratio" | null>(null);
-  const toggleSubmenu = (value: "shape" | "ratio"): void => {
-    setSubmenu((current) => (current === value ? null : value));
+  const openSubmenu = (value: "shape" | "ratio"): void => {
+    setSubmenu(value);
   };
+  createEffect((): void => {
+    if (!submenu()) return;
+    const handleEscape = (event: KeyboardEvent): void => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      setSubmenu(null);
+    };
+    window.addEventListener("keydown", handleEscape, true);
+    onCleanup(() => window.removeEventListener("keydown", handleEscape, true));
+  });
   const apply = (command: CropCommand, payload?: string): void => {
     switch (command) {
       case "imageCrop":
@@ -194,9 +213,9 @@ export function ImageCropMenu(props: { api: ToolbarActionApi }): JSX.Element {
           open={submenu() === "shape"}
           submenuId={shapeSubmenuId}
           onHover={(): void => {
-            setSubmenu("shape");
+            openSubmenu("shape");
           }}
-          onClick={(): void => toggleSubmenu("shape")}
+          onClick={(): void => openSubmenu("shape")}
         />
         <Show when={submenu() === "shape"}>
           <div
@@ -234,9 +253,9 @@ export function ImageCropMenu(props: { api: ToolbarActionApi }): JSX.Element {
           open={submenu() === "ratio"}
           submenuId={ratioSubmenuId}
           onHover={(): void => {
-            setSubmenu("ratio");
+            openSubmenu("ratio");
           }}
-          onClick={(): void => toggleSubmenu("ratio")}
+          onClick={(): void => openSubmenu("ratio")}
         />
         <Show when={submenu() === "ratio"}>
           <div
