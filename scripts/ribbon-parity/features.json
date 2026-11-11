@@ -487,6 +487,23 @@
       "notes": "Related control only: Oasis provides a status-bar minus button that reduces document zoom by a fixed step. The step sequence differs from any unverified WordCraft preset behavior; keyboard access and center anchoring need workflow verification."
     },
     {
+      "id": "view.navigationOutlineRelated",
+      "wordcraftCommand": "view.navigationPane",
+      "ribbonId": null,
+      "tab": "view",
+      "group": "show",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Document stage > Outline panel",
+      "uiEvidence": {
+        "file": "src/ui/components/Outline/OutlinePanel.tsx",
+        "token": "oasis-outline-panel"
+      },
+      "notes": "Related navigation only: Oasis exposes document headings in a collapsible Outline panel, while WordCraft's Navigation Pane also includes search and page navigation. Those other tasks, focus behavior and heading-navigation equivalence need workflow verification."
+    },
+    {
       "id": "home.sortParagraphs",
       "wordcraftCommand": "para.sort",
       "oasisCommand": "sortParagraphs",

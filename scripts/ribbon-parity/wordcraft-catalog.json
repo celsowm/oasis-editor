@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 207
+    "linkedRows": 208
   },
   "defaultTabs": [
     "File",
@@ -3399,7 +3399,9 @@
       "group": "Show",
       "name": "Navigation Pane",
       "command": "view.navigationPane",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.navigationOutlineRelated"
+      ]
     },
     {
       "index": 323,
