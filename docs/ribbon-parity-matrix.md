@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `305` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `322` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -316,6 +316,23 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `insert.getAddIns` | `addins.get` | — | — | missing | missing | missing | unverified |
 | `insert.onlineVideo` | `insert.video` | — | — | missing | missing | missing | unverified |
 | `insert.crossReference` | `insert.crossReference` | — | — | missing | missing | missing | unverified |
+| `insert.textBox` | `insert.textBox` | `insertShape` | `insert/illustrations` | partial | partial | partial | unverified |
+| `insert.quickParts` | `insert.quickParts` | — | — | missing | missing | missing | unverified |
+| `insert.autoText` | `insert.autoText` | — | — | missing | missing | missing | unverified |
+| `insert.documentProperty` | `insert.docProperty` | — | — | missing | missing | missing | unverified |
+| `insert.field` | `insert.field` | `insertDateField` | `insert/links` | partial | partial | partial | partial |
+| `insert.wordArt` | `insert.wordArt` | — | — | missing | missing | missing | unverified |
+| `insert.dropCap` | `insert.dropCap` | `setDropCap` | — | core-only | core-only | partial | unverified |
+| `insert.signatureLine` | `insert.signatureLine` | — | — | missing | missing | missing | unverified |
+| `insert.object` | `insert.object` | — | — | missing | missing | missing | unverified |
+| `insert.textFromFile` | `insert.textFromFile` | — | — | missing | missing | missing | unverified |
+| `insert.inkEquation` | `insert.inkEquation` | `insertEquation` | `insert/symbols` | partial | partial | partial | partial |
+| `insert.optionalHyphen` | `text.optionalHyphen` | `insertOptionalHyphen` | — | core-only | core-only | partial | unverified |
+| `insert.coverPage` | `insert.coverPage` | — | — | missing | missing | missing | unverified |
+| `insert.icons` | `insert.icon` | — | — | missing | missing | missing | unverified |
+| `insert.removeHeader` | `insert.removeHeader` | — | — | missing | missing | missing | unverified |
+| `insert.removeFooter` | `insert.removeFooter` | — | — | missing | missing | missing | unverified |
+| `insert.linkToPrevious` | `layout.linkToPrevious` | — | — | missing | missing | missing | unverified |
 
 ## Open verification questions
 
@@ -624,6 +641,23 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 303. **insert.getAddIns:** Get Add-ins: No add-in store, discovery surface or add-in installation workflow is exposed in the default app.
 304. **insert.onlineVideo:** Online Video: No online video embed or media insertion workflow is exposed.
 305. **insert.crossReference:** Cross-reference: No cross-reference insertion dialog or command is exposed in the default UI. Citation links and heading navigation are separate tasks.
+306. **insert.textBox:** The Shapes gallery can insert shape-backed text containers, but Oasis has no dedicated Text Box action or insertion mode. Text-box body editing and DOCX behavior remain partially verified.
+307. **insert.quickParts:** Quick Parts: No reusable building-block gallery or insertion workflow is exposed in the default app.
+308. **insert.autoText:** AutoText: No named reusable text-snippet library or insertion workflow is exposed.
+309. **insert.documentProperty:** Document Property: No document metadata field picker or insertable property control is exposed. Date and page fields are separate supported field types.
+310. **insert.field:** Oasis inserts selected date and page-number fields, but exposes no general field-code chooser. Field families, updates, locking and interoperability need separate verification.
+311. **insert.wordArt:** WordArt: No decorative text gallery or WordArt insertion workflow is exposed. Shape text styling does not provide WordArt presets and transforms.
+312. **insert.dropCap:** Oasis registers the drop-cap setter and model support, but no default Ribbon or dialog control exposes it. Visual, selection and DOCX behavior need workflow verification.
+313. **insert.signatureLine:** Signature Line: No signature-request placeholder or signing workflow is exposed in the default app.
+314. **insert.object:** Object: No embedded-object or OLE insertion workflow is exposed in the default app.
+315. **insert.textFromFile:** Text from File: DOCX import replaces/loads a document; no workflow inserts another file’s text at the current selection.
+316. **insert.inkEquation:** Oasis exposes a structured equation editor, but no ink handwriting equation recognition workflow. The typed equation path is related rather than equivalent.
+317. **insert.optionalHyphen:** Oasis registers an optional-hyphen insertion command, but no default Ribbon, menu or dialog control exposes it. Rendering, line breaking and DOCX round-trip need verification.
+318. **insert.coverPage:** Cover Page: No cover-page template gallery or predesigned cover insertion workflow is exposed. Blank-page and page-break commands do not provide document cover templates.
+319. **insert.icons:** Icons: The default Insert tab exposes shapes and symbols, but no searchable Office icon asset gallery or SVG icon insertion workflow.
+320. **insert.removeHeader:** Remove Header: Oasis can enter the header editor, but the default UI exposes no remove-header action that clears a section header and its variants.
+321. **insert.removeFooter:** Remove Footer: Oasis can enter the footer editor, but the default UI exposes no remove-footer action that clears a section footer and its variants.
+322. **insert.linkToPrevious:** Link to Previous: No section header/footer inheritance toggle is exposed in the default app; editing a story does not change its linkage to the prior section.
 
 ## Audit interpretation
 

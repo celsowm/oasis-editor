@@ -930,6 +930,26 @@ Evidence: the generated catalog and matrix now classify 273 of 521 source rows; 
 
 Limits: Insert table, local image, hyperlinks and existing object workflows retain their independent semantic, accessibility and file-round-trip checks. These classifications do not close I01 or the M4 advanced-object work.
 
+## Delivery 74 — Insert Text and Symbols source inventory review
+
+Date: 2026-11-11. B01, I01 and M4 remain **partial**.
+
+Reviewed the remaining Insert Text/Symbols commands. Mapped Oasis's shape-backed text containers, selected date/page fields and structured equation editor as related partial workflows; classified exposed core-only drop-cap and optional-hyphen commands separately from the missing dedicated UI. Quick Parts, AutoText, document-property insertion, WordArt, signature lines, embedded objects, insert-from-file and ink equation recognition are individually classified missing.
+
+Evidence: the crosswalk and pinned source snapshot classify 286 of 521 WordCraft entries; 235 remain unclassified. Placement audits pass for the related Insert paths.
+
+Limits: these mappings do not close text-box authoring, field interoperability, equation handwriting, or M4 object-family requirements.
+
+## Delivery 75 — Insert header/footer and asset source gaps
+
+Date: 2026-11-11. B01, I01 and P04 remain **partial**.
+
+Reviewed five remaining Insert commands: Cover Page, Icons, Remove Header, Remove Footer and Link to Previous. Mapped the current blank-page/header-editor capabilities as related only where appropriate and classified these distinct workflows missing from the default app with command-specific rationale.
+
+Evidence: the crosswalk now classifies 291 of 521 source rows; 230 remain unclassified. The generated catalog and parity audit validate the added entries.
+
+Limits: header/footer editing and section inheritance still require independent workflow and DOCX round-trip coverage under P04/P06.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

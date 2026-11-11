@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 273
+    "linkedRows": 291
   },
   "defaultTabs": [
     "File",
@@ -1680,7 +1680,9 @@
       "group": "Pages",
       "name": "Cover Page",
       "command": "insert.coverPage",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.coverPage"
+      ]
     },
     {
       "index": 137,
@@ -1799,7 +1801,9 @@
       "group": "Illustrations",
       "name": "Icons",
       "command": "insert.icon",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.icons"
+      ]
     },
     {
       "index": 148,
@@ -1998,7 +2002,9 @@
       "group": "Header & Footer",
       "name": "Remove Header",
       "command": "insert.removeHeader",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.removeHeader"
+      ]
     },
     {
       "index": 166,
@@ -2007,7 +2013,9 @@
       "group": "Header & Footer",
       "name": "Remove Footer",
       "command": "insert.removeFooter",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.removeFooter"
+      ]
     },
     {
       "index": 167,
@@ -2060,7 +2068,9 @@
       "group": "Header & Footer",
       "name": "Link to Previous",
       "command": "layout.linkToPrevious",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.linkToPrevious"
+      ]
     },
     {
       "index": 172,
@@ -2069,7 +2079,9 @@
       "group": "Text",
       "name": "Text Box",
       "command": "insert.textBox",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.textBox"
+      ]
     },
     {
       "index": 173,
@@ -2078,7 +2090,9 @@
       "group": "Text",
       "name": "Quick Parts",
       "command": "insert.quickParts",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.quickParts"
+      ]
     },
     {
       "index": 174,
@@ -2087,7 +2101,9 @@
       "group": "Text",
       "name": "AutoText",
       "command": "insert.autoText",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.autoText"
+      ]
     },
     {
       "index": 175,
@@ -2096,7 +2112,9 @@
       "group": "Text",
       "name": "Document Property",
       "command": "insert.docProperty",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.documentProperty"
+      ]
     },
     {
       "index": 176,
@@ -2105,7 +2123,9 @@
       "group": "Text",
       "name": "Field",
       "command": "insert.field",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.field"
+      ]
     },
     {
       "index": 177,
@@ -2114,7 +2134,9 @@
       "group": "Text",
       "name": "WordArt",
       "command": "insert.wordArt",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.wordArt"
+      ]
     },
     {
       "index": 178,
@@ -2123,7 +2145,9 @@
       "group": "Text",
       "name": "Drop Cap",
       "command": "insert.dropCap",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.dropCap"
+      ]
     },
     {
       "index": 179,
@@ -2132,7 +2156,9 @@
       "group": "Text",
       "name": "Signature Line",
       "command": "insert.signatureLine",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.signatureLine"
+      ]
     },
     {
       "index": 180,
@@ -2152,7 +2178,9 @@
       "group": "Text",
       "name": "Object",
       "command": "insert.object",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.object"
+      ]
     },
     {
       "index": 182,
@@ -2161,7 +2189,9 @@
       "group": "Text",
       "name": "Text from File",
       "command": "insert.textFromFile",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.textFromFile"
+      ]
     },
     {
       "index": 183,
@@ -2181,7 +2211,9 @@
       "group": "Symbols",
       "name": "Ink Equation",
       "command": "insert.inkEquation",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.inkEquation"
+      ]
     },
     {
       "index": 185,
@@ -2223,7 +2255,9 @@
       "group": "Symbols",
       "name": "Optional Hyphen",
       "command": "text.optionalHyphen",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.optionalHyphen"
+      ]
     },
     {
       "index": 189,
@@ -4286,7 +4320,9 @@
       "group": "Tools",
       "name": "Ink Equation",
       "command": "insert.inkEquation",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.inkEquation"
+      ]
     },
     {
       "index": 397,

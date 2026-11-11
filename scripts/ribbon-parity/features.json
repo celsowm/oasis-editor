@@ -3798,6 +3798,179 @@
       "semantics": "missing",
       "persistence": "unverified",
       "notes": "Cross-reference: No cross-reference insertion dialog or command is exposed in the default UI. Citation links and heading navigation are separate tasks."
+    },
+    {
+      "id": "insert.textBox",
+      "wordcraftCommand": "insert.textBox",
+      "oasisCommand": "insertShape",
+      "ribbonId": "editor-toolbar-insert-shape",
+      "tab": "insert",
+      "group": "illustrations",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "The Shapes gallery can insert shape-backed text containers, but Oasis has no dedicated Text Box action or insertion mode. Text-box body editing and DOCX behavior remain partially verified."
+    },
+    {
+      "id": "insert.quickParts",
+      "wordcraftCommand": "insert.quickParts",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Quick Parts: No reusable building-block gallery or insertion workflow is exposed in the default app."
+    },
+    {
+      "id": "insert.autoText",
+      "wordcraftCommand": "insert.autoText",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "AutoText: No named reusable text-snippet library or insertion workflow is exposed."
+    },
+    {
+      "id": "insert.documentProperty",
+      "wordcraftCommand": "insert.docProperty",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Document Property: No document metadata field picker or insertable property control is exposed. Date and page fields are separate supported field types."
+    },
+    {
+      "id": "insert.field",
+      "wordcraftCommand": "insert.field",
+      "oasisCommand": "insertDateField",
+      "ribbonId": "editor-toolbar-insert-date",
+      "tab": "insert",
+      "group": "links",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Oasis inserts selected date and page-number fields, but exposes no general field-code chooser. Field families, updates, locking and interoperability need separate verification."
+    },
+    {
+      "id": "insert.wordArt",
+      "wordcraftCommand": "insert.wordArt",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "WordArt: No decorative text gallery or WordArt insertion workflow is exposed. Shape text styling does not provide WordArt presets and transforms."
+    },
+    {
+      "id": "insert.dropCap",
+      "wordcraftCommand": "insert.dropCap",
+      "oasisCommand": "setDropCap",
+      "ribbonId": null,
+      "tab": "insert",
+      "group": "text",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers the drop-cap setter and model support, but no default Ribbon or dialog control exposes it. Visual, selection and DOCX behavior need workflow verification."
+    },
+    {
+      "id": "insert.signatureLine",
+      "wordcraftCommand": "insert.signatureLine",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Signature Line: No signature-request placeholder or signing workflow is exposed in the default app."
+    },
+    {
+      "id": "insert.object",
+      "wordcraftCommand": "insert.object",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Object: No embedded-object or OLE insertion workflow is exposed in the default app."
+    },
+    {
+      "id": "insert.textFromFile",
+      "wordcraftCommand": "insert.textFromFile",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Text from File: DOCX import replaces/loads a document; no workflow inserts another file’s text at the current selection."
+    },
+    {
+      "id": "insert.inkEquation",
+      "wordcraftCommand": "insert.inkEquation",
+      "oasisCommand": "insertEquation",
+      "ribbonId": "editor-toolbar-symbols",
+      "tab": "insert",
+      "group": "symbols",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Oasis exposes a structured equation editor, but no ink handwriting equation recognition workflow. The typed equation path is related rather than equivalent."
+    },
+    {
+      "id": "insert.optionalHyphen",
+      "wordcraftCommand": "text.optionalHyphen",
+      "oasisCommand": "insertOptionalHyphen",
+      "ribbonId": null,
+      "tab": "insert",
+      "group": "symbols",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers an optional-hyphen insertion command, but no default Ribbon, menu or dialog control exposes it. Rendering, line breaking and DOCX round-trip need verification."
+    },
+    {
+      "id": "insert.coverPage",
+      "wordcraftCommand": "insert.coverPage",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Cover Page: No cover-page template gallery or predesigned cover insertion workflow is exposed. Blank-page and page-break commands do not provide document cover templates."
+    },
+    {
+      "id": "insert.icons",
+      "wordcraftCommand": "insert.icon",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Icons: The default Insert tab exposes shapes and symbols, but no searchable Office icon asset gallery or SVG icon insertion workflow."
+    },
+    {
+      "id": "insert.removeHeader",
+      "wordcraftCommand": "insert.removeHeader",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Remove Header: Oasis can enter the header editor, but the default UI exposes no remove-header action that clears a section header and its variants."
+    },
+    {
+      "id": "insert.removeFooter",
+      "wordcraftCommand": "insert.removeFooter",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Remove Footer: Oasis can enter the footer editor, but the default UI exposes no remove-footer action that clears a section footer and its variants."
+    },
+    {
+      "id": "insert.linkToPrevious",
+      "wordcraftCommand": "layout.linkToPrevious",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Link to Previous: No section header/footer inheritance toggle is exposed in the default app; editing a story does not change its linkage to the prior section."
     }
   ]
 }
