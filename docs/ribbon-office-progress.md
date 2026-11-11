@@ -1102,6 +1102,14 @@ Evidence: the Home Ribbon Playwright check compares actual visible Bold/Italic/U
 
 Limits: this is one everyday typography family. Other icon families and actual Safari/VoiceOver review remain open.
 
+## Delivery 92 — Repeated table-context transitions
+
+Date: 2026-11-11. V02 remains **partial** pending dynamic plugin add/remove, separator changes, and measurement invalidation under changed composition.
+
+Added an end-to-end regression for repeated transitions between document text and a table. It verifies both Table Design and Table Layout tabs are absent outside the table, both appear when the caret returns to a cell, the contextual Table Design tab receives focus, and the toolbar returns to Home when the caret leaves the table. The test repeats the cycle twice.
+
+Evidence: `table contextual tabs follow repeated table selection transitions` passes in the desktop Playwright project. The test exercises the user-visible contextual tab strip in Chromium; it does not cover plugin lifecycle, other dynamic groups, Safari, or VoiceOver.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

@@ -1930,6 +1930,45 @@ test("Insert accessibility group follows image selection visibility", async ({
   }
 });
 
+test("table contextual tabs follow repeated table selection transitions", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+  await seedText(page, "Table context follows selection");
+  await insertTable(page, 2, 2);
+  const editorPage = await canvasPageRect(page);
+  await page.mouse.click(editorPage.x + 210, editorPage.y + 210);
+  await expectLastHitFromCanvas(page);
+
+  const designTab = page.getByTestId("editor-ribbon-tab-tableDesign");
+  const layoutTab = page.getByTestId("editor-ribbon-tab-tableLayout");
+  // Insertion leaves the caret inside the new table, so the contextual tabs
+  // are expected to be active until focus moves back into the document text.
+  await expect(designTab).toBeVisible();
+  await expect(layoutTab).toBeVisible();
+  await page.keyboard.press("Control+Home");
+  await expect(designTab).toHaveCount(0);
+  await expect(layoutTab).toHaveCount(0);
+
+  for (let cycle = 0; cycle < 2; cycle += 1) {
+    await page.mouse.click(editorPage.x + 210, editorPage.y + 210);
+    await expectLastHitFromCanvas(page);
+    await expect(designTab).toBeVisible();
+    await expect(layoutTab).toBeVisible();
+    await expect(designTab).toHaveAttribute("aria-selected", "true");
+
+    await page.keyboard.press("Control+Home");
+    await expect(designTab).toHaveCount(0);
+    await expect(layoutTab).toHaveCount(0);
+    await expect(page.getByTestId("editor-ribbon-tab-home")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  }
+
+  await expectNoMissEvents(page);
+});
+
 test("collapsed image group keeps its parent open for crop flyouts", async ({
   page,
 }) => {
