@@ -870,6 +870,16 @@ Evidence: `npm run audit:ribbon` and `npm run audit:ribbon:wordcraft` pass. The 
 
 Limits: the three template workflows remain unsupported. Other File commands still need individual review; P04/P06 lifecycle and persistence tests remain open.
 
+## Delivery 68 — Quick Access history gaps classified
+
+Date: 2026-11-11. B01, P03 and P05 remain **partial**.
+
+Reviewed WordCraft Undo List and Repeat against Oasis's toolbar, menubar and public client API. Oasis supports stepwise Undo/Redo but has no history jump menu; it has no repeat-last-command action, and Redo is not treated as equivalent. Both source entries are now explicitly classified as `missing` with the observed scope recorded.
+
+Evidence: `npm run audit:ribbon` verifies each missing row has a written rationale and declares no Oasis command or UI path. The crosswalk now maps and classifies 217 of 521 source rows; 304 remain unclassified.
+
+Limits: these Quick Access capabilities remain unsupported. Keyboard, history transaction and search/QAT work remain open under P03/P05/M5.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

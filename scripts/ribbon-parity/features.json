@@ -1361,6 +1361,24 @@
       "notes": "No personal-template library or list-templates workflow was found in the File tab, menubar, or core command registry."
     },
     {
+      "id": "quickAccess.undoTo",
+      "wordcraftCommand": "edit.undoTo",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Oasis exposes stepwise Undo/Redo only. The Home history group has no undo-history menu, and the public client history API provides undo/redo but no jump-to-entry operation."
+    },
+    {
+      "id": "quickAccess.repeat",
+      "wordcraftCommand": "edit.repeat",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "No repeat-last-command action or public command exists in the default toolbar, menubar, or built-in command registry. Redo is a distinct history operation and is not treated as equivalent."
+    },
+    {
       "id": "file.print",
       "wordcraftCommand": "file.print",
       "oasisCommand": "print",
