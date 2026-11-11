@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `346` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `366` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -357,6 +357,26 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `layout.documentGrid` | `layout.documentGrid` | — | — | missing | missing | missing | unverified |
 | `layout.selectionPane` | `arrange.selectionPane` | — | — | missing | missing | missing | unverified |
 | `layout.groupObjects` | `arrange.group` | — | — | missing | missing | missing | unverified |
+| `references.addTocText` | `references.addText` | — | — | missing | missing | missing | unverified |
+| `references.removeToc` | `references.removeToc` | — | — | missing | missing | missing | unverified |
+| `references.endnote` | `references.endnote` | — | — | missing | missing | missing | unverified |
+| `references.nextFootnote` | `references.nextFootnote` | — | — | missing | missing | missing | unverified |
+| `references.showNotes` | `references.notes` | — | — | missing | missing | missing | unverified |
+| `references.researcher` | `references.researcher` | — | — | missing | missing | missing | unverified |
+| `references.citation` | `references.citation` | — | — | missing | missing | missing | unverified |
+| `references.sources` | `references.sources` | — | — | missing | missing | missing | unverified |
+| `references.citationStyle` | `references.citationStyle` | — | — | missing | missing | missing | unverified |
+| `references.bibliography` | `references.bibliography` | — | — | missing | missing | missing | unverified |
+| `references.tableOfFigures` | `references.tableOfFigures` | — | — | missing | missing | missing | unverified |
+| `references.updateFigures` | `references.updateFigures` | — | — | missing | missing | missing | unverified |
+| `references.markIndexEntry` | `references.markEntry` | — | — | missing | missing | missing | unverified |
+| `references.insertIndex` | `references.index` | — | — | missing | missing | missing | unverified |
+| `references.updateIndex` | `references.updateIndex` | — | — | missing | missing | missing | unverified |
+| `references.markCitation` | `references.markCitation` | — | — | missing | missing | missing | unverified |
+| `references.tableOfAuthorities` | `references.tableOfAuthorities` | — | — | missing | missing | missing | unverified |
+| `references.updateAuthorities` | `references.updateAuthorities` | — | — | missing | missing | missing | unverified |
+| `references.updateFields` | `references.updateFields` | — | — | missing | missing | missing | unverified |
+| `references.noteOptions` | `references.noteOptions` | `setNoteOptions` | — | core-only | core-only | partial | unverified |
 
 ## Open verification questions
 
@@ -706,6 +726,26 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 344. **layout.documentGrid:** Document Grid: No document-grid configuration command or control is exposed in the default app.
 345. **layout.selectionPane:** Selection Pane: No object-list pane for selecting, hiding or reordering document objects is exposed. Canvas hit testing and outline navigation are different workflows.
 346. **layout.groupObjects:** Group: Oasis has no grouped-object model or command in the default app; selecting individual shapes does not create a persistent group.
+347. **references.addTocText:** Add Text: No control changes the outline level of selected paragraphs for inclusion/exclusion in a table of contents. General paragraph outline-level commands are not exposed as this TOC task.
+348. **references.removeToc:** Remove Table of Contents: Oasis can insert/update its TOC, but no dedicated remove-TOC workflow is exposed.
+349. **references.endnote:** Insert Endnote: Oasis inserts footnotes only; no endnote insertion command or UI is exposed.
+350. **references.nextFootnote:** Next Footnote: No navigation command moves between footnote references or note bodies in the default app.
+351. **references.showNotes:** Show Notes: No notes-pane command or note navigation panel is exposed.
+352. **references.researcher:** Researcher: No external research/search provider integration or Researcher pane is exposed.
+353. **references.citation:** Insert Citation: No citation-source database or citation insertion workflow is exposed.
+354. **references.sources:** Manage Sources: No bibliography source manager or source database is exposed.
+355. **references.citationStyle:** Citation Style: No citation-style selector or bibliography formatting workflow is exposed.
+356. **references.bibliography:** Bibliography: No bibliography generation workflow is exposed.
+357. **references.tableOfFigures:** Insert Table of Figures: Oasis image captions do not generate a table of figures; no such insertion workflow is exposed.
+358. **references.updateFigures:** Update Table of Figures: No table-of-figures field generation or refresh workflow is exposed.
+359. **references.markIndexEntry:** Mark Index Entry: No index-marking command or hidden index-entry model is exposed.
+360. **references.insertIndex:** Insert Index: No index field or index generation workflow is exposed.
+361. **references.updateIndex:** Update Index: No index field update workflow is exposed.
+362. **references.markCitation:** Mark Table of Authorities Citation: No legal-authority citation model or marking workflow is exposed.
+363. **references.tableOfAuthorities:** Insert Table of Authorities: No table-of-authorities generation workflow is exposed.
+364. **references.updateAuthorities:** Update Table of Authorities: No table-of-authorities field or refresh workflow is exposed.
+365. **references.updateFields:** Update Fields: Oasis can update its TOC through a dedicated command, but no general document-field refresh action is exposed.
+366. **references.noteOptions:** Oasis registers footnote/endnote numbering settings, but no default Ribbon, menu or dialog control exposes them. User workflow, settings scope and DOCX settings.xml round-trip need verification.
 
 ## Audit interpretation
 

@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 315
+    "linkedRows": 335
   },
   "defaultTabs": [
     "File",
@@ -2762,7 +2762,9 @@
       "group": "Table of Contents",
       "name": "Add Text",
       "command": "references.addText",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.addTocText"
+      ]
     },
     {
       "index": 234,
@@ -2782,7 +2784,9 @@
       "group": "Table of Contents",
       "name": "Remove Table of Contents",
       "command": "references.removeToc",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.removeToc"
+      ]
     },
     {
       "index": 236,
@@ -2802,7 +2806,9 @@
       "group": "Footnotes",
       "name": "Insert Endnote",
       "command": "references.endnote",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.endnote"
+      ]
     },
     {
       "index": 238,
@@ -2811,7 +2817,9 @@
       "group": "Footnotes",
       "name": "Next Footnote",
       "command": "references.nextFootnote",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.nextFootnote"
+      ]
     },
     {
       "index": 239,
@@ -2820,7 +2828,9 @@
       "group": "Footnotes",
       "name": "Show Notes",
       "command": "references.notes",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.showNotes"
+      ]
     },
     {
       "index": 240,
@@ -2829,7 +2839,9 @@
       "group": "Footnotes",
       "name": "Footnote Options",
       "command": "references.noteOptions",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.noteOptions"
+      ]
     },
     {
       "index": 241,
@@ -2838,7 +2850,9 @@
       "group": "Research",
       "name": "Researcher",
       "command": "references.researcher",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.researcher"
+      ]
     },
     {
       "index": 242,
@@ -2847,7 +2861,9 @@
       "group": "Citations",
       "name": "Insert Citation",
       "command": "references.citation",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.citation"
+      ]
     },
     {
       "index": 243,
@@ -2856,7 +2872,9 @@
       "group": "Citations",
       "name": "Manage Sources",
       "command": "references.sources",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.sources"
+      ]
     },
     {
       "index": 244,
@@ -2865,7 +2883,9 @@
       "group": "Citations",
       "name": "Style",
       "command": "references.citationStyle",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.citationStyle"
+      ]
     },
     {
       "index": 245,
@@ -2874,7 +2894,9 @@
       "group": "Citations",
       "name": "Bibliography",
       "command": "references.bibliography",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.bibliography"
+      ]
     },
     {
       "index": 246,
@@ -2894,7 +2916,9 @@
       "group": "Captions",
       "name": "Insert Table of Figures",
       "command": "references.tableOfFigures",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.tableOfFigures"
+      ]
     },
     {
       "index": 248,
@@ -2903,7 +2927,9 @@
       "group": "Captions",
       "name": "Update Table of Figures",
       "command": "references.updateFigures",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.updateFigures"
+      ]
     },
     {
       "index": 249,
@@ -2923,7 +2949,9 @@
       "group": "Index",
       "name": "Mark Entry",
       "command": "references.markEntry",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.markIndexEntry"
+      ]
     },
     {
       "index": 251,
@@ -2932,7 +2960,9 @@
       "group": "Index",
       "name": "Insert Index",
       "command": "references.index",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.insertIndex"
+      ]
     },
     {
       "index": 252,
@@ -2941,7 +2971,9 @@
       "group": "Index",
       "name": "Update Index",
       "command": "references.updateIndex",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.updateIndex"
+      ]
     },
     {
       "index": 253,
@@ -2950,7 +2982,9 @@
       "group": "Table of Authorities",
       "name": "Mark Citation",
       "command": "references.markCitation",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.markCitation"
+      ]
     },
     {
       "index": 254,
@@ -2959,7 +2993,9 @@
       "group": "Table of Authorities",
       "name": "Insert Table of Authorities",
       "command": "references.tableOfAuthorities",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.tableOfAuthorities"
+      ]
     },
     {
       "index": 255,
@@ -2968,7 +3004,9 @@
       "group": "Table of Authorities",
       "name": "Update Table",
       "command": "references.updateAuthorities",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.updateAuthorities"
+      ]
     },
     {
       "index": 256,
@@ -2977,7 +3015,9 @@
       "group": "Fields",
       "name": "Update Fields",
       "command": "references.updateFields",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "references.updateFields"
+      ]
     },
     {
       "index": 257,

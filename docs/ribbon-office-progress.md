@@ -980,6 +980,16 @@ Evidence: the crosswalk now classifies 315 of 521 source rows; 206 remain unclas
 
 Limits: page size, orientation, margins and arrangement remain separate workflows with their own behavior/interoperability checks.
 
+## Delivery 79 — References tab source inventory review
+
+Date: 2026-11-11. B01 and P02 remain **partial**.
+
+Reviewed the remaining References commands. Oasis has direct TOC creation/update and footnote insertion, while endnotes, note navigation, source/citation management, bibliography, tables of figures/authorities, indexes and general field updates are unsupported. The registered note-numbering settings command is classified core-only because no default UI exposes it. Image captions and the References caption command remain distinct tasks.
+
+Evidence: the crosswalk now classifies 335 of 521 source rows; 186 remain unclassified. The generated catalog and command audit validate each classification, including the registered core-only note-options command.
+
+Limits: TOC/footnote workflows already mapped remain partial; DOCX field interoperability and References accessibility still require workflow evidence.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

@@ -4231,6 +4231,190 @@
       "semantics": "missing",
       "persistence": "unverified",
       "notes": "Group: Oasis has no grouped-object model or command in the default app; selecting individual shapes does not create a persistent group."
+    },
+    {
+      "id": "references.addTocText",
+      "wordcraftCommand": "references.addText",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Add Text: No control changes the outline level of selected paragraphs for inclusion/exclusion in a table of contents. General paragraph outline-level commands are not exposed as this TOC task."
+    },
+    {
+      "id": "references.removeToc",
+      "wordcraftCommand": "references.removeToc",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Remove Table of Contents: Oasis can insert/update its TOC, but no dedicated remove-TOC workflow is exposed."
+    },
+    {
+      "id": "references.endnote",
+      "wordcraftCommand": "references.endnote",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Insert Endnote: Oasis inserts footnotes only; no endnote insertion command or UI is exposed."
+    },
+    {
+      "id": "references.nextFootnote",
+      "wordcraftCommand": "references.nextFootnote",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Next Footnote: No navigation command moves between footnote references or note bodies in the default app."
+    },
+    {
+      "id": "references.showNotes",
+      "wordcraftCommand": "references.notes",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Show Notes: No notes-pane command or note navigation panel is exposed."
+    },
+    {
+      "id": "references.researcher",
+      "wordcraftCommand": "references.researcher",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Researcher: No external research/search provider integration or Researcher pane is exposed."
+    },
+    {
+      "id": "references.citation",
+      "wordcraftCommand": "references.citation",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Insert Citation: No citation-source database or citation insertion workflow is exposed."
+    },
+    {
+      "id": "references.sources",
+      "wordcraftCommand": "references.sources",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Manage Sources: No bibliography source manager or source database is exposed."
+    },
+    {
+      "id": "references.citationStyle",
+      "wordcraftCommand": "references.citationStyle",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Citation Style: No citation-style selector or bibliography formatting workflow is exposed."
+    },
+    {
+      "id": "references.bibliography",
+      "wordcraftCommand": "references.bibliography",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Bibliography: No bibliography generation workflow is exposed."
+    },
+    {
+      "id": "references.tableOfFigures",
+      "wordcraftCommand": "references.tableOfFigures",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Insert Table of Figures: Oasis image captions do not generate a table of figures; no such insertion workflow is exposed."
+    },
+    {
+      "id": "references.updateFigures",
+      "wordcraftCommand": "references.updateFigures",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Update Table of Figures: No table-of-figures field generation or refresh workflow is exposed."
+    },
+    {
+      "id": "references.markIndexEntry",
+      "wordcraftCommand": "references.markEntry",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Mark Index Entry: No index-marking command or hidden index-entry model is exposed."
+    },
+    {
+      "id": "references.insertIndex",
+      "wordcraftCommand": "references.index",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Insert Index: No index field or index generation workflow is exposed."
+    },
+    {
+      "id": "references.updateIndex",
+      "wordcraftCommand": "references.updateIndex",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Update Index: No index field update workflow is exposed."
+    },
+    {
+      "id": "references.markCitation",
+      "wordcraftCommand": "references.markCitation",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Mark Table of Authorities Citation: No legal-authority citation model or marking workflow is exposed."
+    },
+    {
+      "id": "references.tableOfAuthorities",
+      "wordcraftCommand": "references.tableOfAuthorities",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Insert Table of Authorities: No table-of-authorities generation workflow is exposed."
+    },
+    {
+      "id": "references.updateAuthorities",
+      "wordcraftCommand": "references.updateAuthorities",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Update Table of Authorities: No table-of-authorities field or refresh workflow is exposed."
+    },
+    {
+      "id": "references.updateFields",
+      "wordcraftCommand": "references.updateFields",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Update Fields: Oasis can update its TOC through a dedicated command, but no general document-field refresh action is exposed."
+    },
+    {
+      "id": "references.noteOptions",
+      "wordcraftCommand": "references.noteOptions",
+      "oasisCommand": "setNoteOptions",
+      "ribbonId": null,
+      "tab": "references",
+      "group": "footnotes",
+      "status": "core-only",
+      "exposure": "core-only",
+      "semantics": "partial",
+      "persistence": "unverified",
+      "notes": "Oasis registers footnote/endnote numbering settings, but no default Ribbon, menu or dialog control exposes them. User workflow, settings scope and DOCX settings.xml round-trip need verification."
     }
   ]
 }
