@@ -247,6 +247,34 @@ try {
         document.getElementById("reference-roomy-style").remove();
       });
       assert.deepEqual(await snapshot(page), beforeTheme);
+      // A late web-font swap can change measured intrinsic widths without
+      // changing the Ribbon DOM or its host theme. The FontFaceSet listener
+      // must schedule a fresh measurement, and the original metrics must
+      // return when the font styling is removed.
+      const beforeFont = await snapshot(page);
+      await page.evaluate(() => {
+        const style = document.createElement("style");
+        style.id = "reference-late-font-style";
+        style.textContent =
+          '.oasis-editor-ribbon-group[data-ribbon-group="paragraph"] > .oasis-editor-ribbon-group-label { font-family: monospace !important; font-size: 32px !important; letter-spacing: 10px !important; max-width: none !important; width: max-content !important; }';
+        document.head.append(style);
+        document.fonts.dispatchEvent(new Event("loadingdone"));
+      });
+      const lateFont = await snapshot(page);
+      assert.ok(
+        lateFont.groups.find((group) => group.id === "paragraph").full >
+          beforeFont.groups.find((group) => group.id === "paragraph").full,
+        "Late font metrics did not invalidate Ribbon measurements",
+      );
+      await page.evaluate(() => {
+        document.getElementById("reference-late-font-style").remove();
+        document.fonts.dispatchEvent(new Event("loadingdone"));
+      });
+      assert.deepEqual(
+        await snapshot(page),
+        beforeFont,
+        "Removing late font metrics did not restore the baseline layout",
+      );
       // An idle Ribbon must not continuously create measurement copies.
       await page.waitForTimeout(100);
       await page.evaluate(() => {

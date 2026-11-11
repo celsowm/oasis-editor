@@ -1134,6 +1134,14 @@ The standard Home Clipboard group now follows the Office icon-led stack: Cut, Co
 
 Evidence: `Clipboard stack saves width and keeps captions in its expanded popup` verifies the full-state measured group stays below 160 px at 1440, each action retains its accessible name and tooltip, and all three captions return in the collapsed popup at 640 px. This is Chromium presentation evidence; it does not certify clipboard command workflows or Safari/VoiceOver.
 
+## Delivery 96 — Late font measurement invalidation
+
+Date: 2026-11-11. R02/R05 remain **partial**; actual late web-font loading, scale changes, additional contexts, focus/IME behavior and before/after performance profiling remain open.
+
+Extended the resize verifier to change Font group label metrics without mutating the Ribbon DOM, dispatch a `FontFaceSet` `loadingdone` event, and verify that the measured full width grows. Removing the injected metrics and dispatching the event again must restore the exact prior layout snapshot.
+
+Evidence: `RIBBON_BROWSER=chromium npm run test:ribbon:resize` passes 68 layout scenarios across light/dark themes and English/Brazilian Portuguese, including late-font invalidation and exact baseline restoration. Firefox and WebKit runs remain outstanding. This targeted path uses changed CSS metrics plus a synthetic font event; it verifies the invalidation listener and measurement recovery, not network font loading or platform font behavior.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
