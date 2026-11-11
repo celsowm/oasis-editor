@@ -766,7 +766,7 @@ Date: 2026-11-11. V02 remains **partial**.
 
 Added a Chromium interaction scenario proving the Insert Accessibility group is absent without an image selection and appears with the image Alt Text action after selecting an inserted image. It verifies that the changed composition receives a positive measured width and collapses at a 320 px viewport. The core composition cases also verify that invisible items remove empty groups, disabled actions remain present, and separators are trimmed after filtering.
 
-Evidence: `npx playwright test --config playwright.e2e.config.ts tests/e2e/canvas-pointer.spec.ts -g 'Insert accessibility group follows image selection visibility'` passes. The complete build-and-deploy workflow for the current main commit passes.
+Evidence: `npx playwright test --config playwright.e2e.config.ts tests/e2e/canvas-pointer.spec.ts -g 'Insert accessibility group follows image selection visibility'` passes against a production build with `VITE_OASIS_CANVAS_DEBUG=1`.
 
 Limits: the scenario does not yet verify that changing away from the image selection removes the group again or that selection changes repeatedly remeasure widths. V02 remains partial.
 
