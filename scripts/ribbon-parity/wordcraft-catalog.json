@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 209
+    "linkedRows": 210
   },
   "defaultTabs": [
     "File",
@@ -3309,7 +3309,9 @@
       "group": "Views",
       "name": "Print Layout",
       "command": "view.printLayout",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.printLayoutRelated"
+      ]
     },
     {
       "index": 313,

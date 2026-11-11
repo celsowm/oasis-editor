@@ -521,6 +521,23 @@
       "notes": "Related display only: Oasis shows a horizontal ruler with margin and indent markers when editor chrome is visible. It has no user-facing visibility toggle or vertical ruler, so this does not match WordCraft's Ruler toggle."
     },
     {
+      "id": "view.printLayoutRelated",
+      "wordcraftCommand": "view.printLayout",
+      "ribbonId": null,
+      "tab": "view",
+      "group": "views",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Document canvas > paginated paper stack",
+      "uiEvidence": {
+        "file": "src/ui/components/CanvasEditorSurface.tsx",
+        "token": "oasis-editor-paper-stack oasis-editor-canvas-stack"
+      },
+      "notes": "Related presentation only: Oasis lays the document out as pages with paper dimensions, margins and page breaks. It is the canvas's default presentation, not a selectable View mode; Web Layout, Read Mode and switching between view modes are not provided. Page-level rendering and print/DOCX fidelity need workflow verification."
+    },
+    {
       "id": "home.sortParagraphs",
       "wordcraftCommand": "para.sort",
       "oasisCommand": "sortParagraphs",

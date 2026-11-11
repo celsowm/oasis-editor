@@ -750,6 +750,14 @@ Recorded Oasis's always-visible horizontal ruler as a related display for WordCr
 
 The matrix now contains 245 Oasis capability rows and links 209 of 521 WordCraft source rows; 312 remain unlinked.
 
+## Delivery 56 — Paginated canvas relationship
+
+Recorded Oasis's default paginated paper stack as a related presentation for WordCraft View > Print Layout. Oasis has no selectable view mode, and Read Mode, Web Layout and switching between modes remain unavailable.
+
+The matrix now contains 246 Oasis capability rows and links 210 of 521 WordCraft source rows; 311 remain unlinked.
+
+Evidence: `npm run audit:ribbon` validates the UI evidence token in `src/ui/components/CanvasEditorSurface.tsx`; `npm run audit:ribbon:wordcraft` reports 210 linked rows.
+
 Evidence: `npm run audit:ribbon` validates the UI evidence token in `src/ui/components/Ruler/HorizontalRuler.tsx`; `npm run audit:ribbon:wordcraft` reports 209 linked rows.
 
 ## Remaining execution queue
