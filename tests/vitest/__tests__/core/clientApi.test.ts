@@ -87,8 +87,11 @@ describe("OasisEditorClient", () => {
     expect(client.document.isDirty()).toBe(true);
     client.document.markClean();
     expect(client.isDirty()).toBe(false);
+    client.emit("change", state);
+    expect(client.document.isDirty()).toBe(true);
     await client.save();
     expect(saveDocument).toHaveBeenCalledTimes(1);
+    expect(client.document.isDirty()).toBe(false);
     client.focusEditor();
     client.blurEditor();
     expect(focus).toHaveBeenCalledTimes(1);

@@ -23,7 +23,7 @@ export const defaultMenuItems: MenuItem[] = [
     path: "File/Save",
     labelKey: "generic.save",
     shortcut: "Ctrl+S",
-    hidden: true,
+    command: "saveDocument",
     icon: "save",
   },
   {

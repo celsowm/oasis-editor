@@ -89,6 +89,9 @@ export function buildDocumentAndBrowserCommands({
     newDocument: actionCommand("newDocument", (): void =>
       document.newDocument(),
     ),
+    saveDocument: actionCommand("saveDocument", (): void =>
+      document.saveDocument(),
+    ),
     exportDocx: actionCommand("exportDocx", (): void => document.exportDocx()),
     exportPdf: actionCommand("exportPdf", (): void => document.exportPdf()),
     importDocument: actionCommand("importDocument", (): void =>

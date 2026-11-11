@@ -229,6 +229,7 @@ export interface EssentialsDocumentStyleDescriptor {
 export interface EssentialsDocumentCapability {
   documentStyles: () => EssentialsDocumentStyleDescriptor[];
   newDocument: () => void;
+  saveDocument: () => void;
   exportDocx: () => void;
   exportPdf: () => void;
   printDocument: () => void;

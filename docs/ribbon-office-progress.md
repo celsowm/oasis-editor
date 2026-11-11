@@ -890,6 +890,16 @@ Evidence: the crosswalk audit validates all 15 rows against the pinned WordCraft
 
 Limits: `missing` records the current default app path, not host-provided extensions. Save integration, error/cancellation behavior, saved-version recovery and P04/P06 workflow evidence remain open.
 
+## Delivery 70 — File Save action and persistence path
+
+Date: 2026-11-11. B01 and P04 remain **partial**.
+
+Added a File ribbon Save action and File menu command backed by the public client persistence contract. The default app stores the document in IndexedDB; custom hosts continue to provide their own save implementation. Successful persistence clears the dirty flag, while failures are logged and leave user-visible save feedback, reload/recovery and broader lifecycle handling open.
+
+Evidence: the client API test now verifies dirty state clears only after `save()` succeeds. A browser E2E scenario checks the saved IndexedDB record contains edited text and verifies New Document does not request dirty-document confirmation after Save. The parity matrix links WordCraft `file.save` to this action as partial. The audit now maps 235 of 521 source rows; 286 remain unclassified.
+
+Limits: failed-save feedback, Save As/overwrite semantics, reopening persisted content, autosave/recovery and the full P04 dirty-state lifecycle remain open. The focused browser E2E passed locally; CI is pending for this delivery.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

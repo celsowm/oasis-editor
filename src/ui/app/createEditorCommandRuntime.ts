@@ -164,6 +164,13 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
         requestConfirmation: (): void =>
           deps.setNewDocumentDialog({ isOpen: true }),
       }),
+      saveDocument: (): void => {
+        void runtimeClient
+          .save()
+          .catch((error: unknown): void =>
+            deps.logger.error("document:save failed", error),
+          );
+      },
       openSymbolDialog: (): void => deps.setSymbolDialog({ isOpen: true }),
       openTablePropertiesDialog: (activeTab?: "table" | "cell"): void => {
         const initial = readTableProperties(deps.state, activeTab ?? "table");

@@ -117,6 +117,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "copy",
   "cut",
   "newDocument",
+  "saveDocument",
   "exportDocx",
   "exportPdf",
   "importDocument",

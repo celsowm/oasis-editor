@@ -40,6 +40,7 @@ export interface CreateEditorEssentialsPluginOptions {
     handlePrint: () => Promise<Blob>;
   };
   newDocument: () => void;
+  saveDocument: () => void;
   openSymbolDialog: () => void;
   openEquationDialog: () => void;
   /** Opens the Table Properties dialog for the active table/cell. */

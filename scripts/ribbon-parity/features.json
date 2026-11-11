@@ -1321,6 +1321,19 @@
       "notes": "The File tab creates a blank document and confirms before discarding a dirty document. WordCraft's template selection and new-document options are not provided; confirmation, dirty-state and lifecycle workflows remain in P04."
     },
     {
+      "id": "file.save",
+      "wordcraftCommand": "file.save",
+      "oasisCommand": "saveDocument",
+      "ribbonId": "editor-toolbar-save-document",
+      "tab": "file",
+      "group": "document",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Save invokes the public client host persistence contract; the default app uses IndexedDB, and a custom host can persist elsewhere. The command clears dirty state after success and logs failures, while visible completion/error feedback and full save/reload/recovery workflows remain open in P04."
+    },
+    {
       "id": "file.open",
       "wordcraftCommand": "file.open",
       "oasisCommand": "importDocument",

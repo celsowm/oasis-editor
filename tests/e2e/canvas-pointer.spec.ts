@@ -2047,3 +2047,43 @@ test("ribbon insert table works on desktop and narrow widths", async ({
   await page.getByTestId("editor-ribbon-tab-insert").click();
   await insertTable(page, 2, 3);
 });
+
+test("File Save persists the document and clears the dirty state", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await gotoEditor(page);
+  await seedText(page, "host save flow");
+
+  await page.getByTestId("editor-ribbon-tab-file").click();
+  await page.getByTestId("editor-toolbar-save-document").click();
+
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          new Promise<boolean>((resolve, reject) => {
+            const request = indexedDB.open("oasis-editor-db", 1);
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+              const database = request.result;
+              const transaction = database.transaction("documents", "readonly");
+              const getRequest = transaction
+                .objectStore("documents")
+                .get("current-document");
+              getRequest.onerror = () => reject(getRequest.error);
+              getRequest.onsuccess = () => {
+                resolve(
+                  JSON.stringify(getRequest.result).includes("host save flow"),
+                );
+                database.close();
+              };
+            };
+          }),
+      ),
+    )
+    .toBe(true);
+
+  await page.getByTestId("editor-toolbar-new-document").click();
+  await expect(page.getByTestId("editor-new-document-message")).toHaveCount(0);
+});

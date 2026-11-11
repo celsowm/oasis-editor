@@ -65,6 +65,7 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-show-margins": { tab: "view", group: "show", row: 1 },
   "editor-toolbar-show-paragraph-marks": { tab: "view", group: "show", row: 1 },
   "editor-toolbar-precise-fonts": { tab: "view", group: "show", row: 2 },
+  "editor-toolbar-save-document": { tab: "file", group: "document", row: 1 },
   "editor-toolbar-new-document": { tab: "file", group: "document", row: 1 },
   "editor-toolbar-export-docx": { tab: "file", group: "document", row: 1 },
   "editor-toolbar-export-pdf": { tab: "file", group: "document", row: 1 },

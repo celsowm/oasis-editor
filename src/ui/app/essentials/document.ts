@@ -93,6 +93,7 @@ export function buildEssentialsDocument(
       });
     },
     newDocument: (): void => options.newDocument(),
+    saveDocument: (): void => options.saveDocument(),
     openSymbolDialog: (): void => options.openSymbolDialog(),
     openEquationDialog: (): void => options.openEquationDialog(),
     hasActiveTable: (): boolean => hasActiveTable(options.state()),

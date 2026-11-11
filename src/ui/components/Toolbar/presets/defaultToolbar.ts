@@ -118,6 +118,16 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   // --- File ---
   items.push({
     type: "button",
+    id: "editor-toolbar-save-document",
+    testId: "editor-toolbar-save-document",
+    iconName: "save",
+    labelKey: "generic.save",
+    tooltipKey: "generic.save",
+    command: "saveDocument",
+    ribbonSize: "large",
+  });
+  items.push({
+    type: "button",
     id: "editor-toolbar-new-document",
     testId: "editor-toolbar-new-document",
     iconName: "file-plus",
