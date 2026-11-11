@@ -3971,6 +3971,96 @@
       "semantics": "missing",
       "persistence": "unverified",
       "notes": "Link to Previous: No section header/footer inheritance toggle is exposed in the default app; editing a story does not change its linkage to the prior section."
+    },
+    {
+      "id": "draw.select",
+      "wordcraftCommand": "draw.select",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Select: No ink-selection mode or drawing-tool state exists in the default app. Text and object selection is a separate editor workflow."
+    },
+    {
+      "id": "draw.lassoSelect",
+      "wordcraftCommand": "draw.lasso",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Lasso Select: No freeform lasso selection for ink strokes is exposed in the default app."
+    },
+    {
+      "id": "draw.eraser",
+      "wordcraftCommand": "draw.eraser",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Eraser: No ink stroke eraser or stroke-segment editing workflow is exposed. Table cell/border editing is unrelated."
+    },
+    {
+      "id": "draw.pen",
+      "wordcraftCommand": "draw.pen",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Pen: No pressure-sensitive ink pen tool or stroke model is exposed."
+    },
+    {
+      "id": "draw.pencil",
+      "wordcraftCommand": "draw.pencil",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Pencil: No pencil drawing tool or ink stroke workflow is exposed."
+    },
+    {
+      "id": "draw.highlighter",
+      "wordcraftCommand": "draw.highlighter",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Highlighter: Text highlighting is supported, but no freehand ink highlighter or stroke model is exposed."
+    },
+    {
+      "id": "draw.addPen",
+      "wordcraftCommand": "draw.addPen",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Add Pen: No configurable pen palette or add-pen workflow is exposed."
+    },
+    {
+      "id": "draw.inkToShape",
+      "wordcraftCommand": "draw.inkToShape",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Ink to Shape: No ink recognition pipeline converts freehand strokes into shape objects. The shape gallery inserts preset shapes directly."
+    },
+    {
+      "id": "draw.inkToMath",
+      "wordcraftCommand": "draw.inkToMath",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Ink to Math: The equation editor accepts structured/typed input, but no handwriting recognition converts ink to math."
+    },
+    {
+      "id": "draw.inkReplay",
+      "wordcraftCommand": "draw.replay",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Ink Replay: No ink stroke history or replay workflow is exposed."
     }
   ]
 }

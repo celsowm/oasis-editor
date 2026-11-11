@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `322` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `332` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -333,6 +333,16 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `insert.removeHeader` | `insert.removeHeader` | — | — | missing | missing | missing | unverified |
 | `insert.removeFooter` | `insert.removeFooter` | — | — | missing | missing | missing | unverified |
 | `insert.linkToPrevious` | `layout.linkToPrevious` | — | — | missing | missing | missing | unverified |
+| `draw.select` | `draw.select` | — | — | missing | missing | missing | unverified |
+| `draw.lassoSelect` | `draw.lasso` | — | — | missing | missing | missing | unverified |
+| `draw.eraser` | `draw.eraser` | — | — | missing | missing | missing | unverified |
+| `draw.pen` | `draw.pen` | — | — | missing | missing | missing | unverified |
+| `draw.pencil` | `draw.pencil` | — | — | missing | missing | missing | unverified |
+| `draw.highlighter` | `draw.highlighter` | — | — | missing | missing | missing | unverified |
+| `draw.addPen` | `draw.addPen` | — | — | missing | missing | missing | unverified |
+| `draw.inkToShape` | `draw.inkToShape` | — | — | missing | missing | missing | unverified |
+| `draw.inkToMath` | `draw.inkToMath` | — | — | missing | missing | missing | unverified |
+| `draw.inkReplay` | `draw.replay` | — | — | missing | missing | missing | unverified |
 
 ## Open verification questions
 
@@ -658,6 +668,16 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 320. **insert.removeHeader:** Remove Header: Oasis can enter the header editor, but the default UI exposes no remove-header action that clears a section header and its variants.
 321. **insert.removeFooter:** Remove Footer: Oasis can enter the footer editor, but the default UI exposes no remove-footer action that clears a section footer and its variants.
 322. **insert.linkToPrevious:** Link to Previous: No section header/footer inheritance toggle is exposed in the default app; editing a story does not change its linkage to the prior section.
+323. **draw.select:** Select: No ink-selection mode or drawing-tool state exists in the default app. Text and object selection is a separate editor workflow.
+324. **draw.lassoSelect:** Lasso Select: No freeform lasso selection for ink strokes is exposed in the default app.
+325. **draw.eraser:** Eraser: No ink stroke eraser or stroke-segment editing workflow is exposed. Table cell/border editing is unrelated.
+326. **draw.pen:** Pen: No pressure-sensitive ink pen tool or stroke model is exposed.
+327. **draw.pencil:** Pencil: No pencil drawing tool or ink stroke workflow is exposed.
+328. **draw.highlighter:** Highlighter: Text highlighting is supported, but no freehand ink highlighter or stroke model is exposed.
+329. **draw.addPen:** Add Pen: No configurable pen palette or add-pen workflow is exposed.
+330. **draw.inkToShape:** Ink to Shape: No ink recognition pipeline converts freehand strokes into shape objects. The shape gallery inserts preset shapes directly.
+331. **draw.inkToMath:** Ink to Math: The equation editor accepts structured/typed input, but no handwriting recognition converts ink to math.
+332. **draw.inkReplay:** Ink Replay: No ink stroke history or replay workflow is exposed.
 
 ## Audit interpretation
 

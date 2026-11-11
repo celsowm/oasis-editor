@@ -950,6 +950,16 @@ Evidence: the crosswalk now classifies 291 of 521 source rows; 230 remain unclas
 
 Limits: header/footer editing and section inheritance still require independent workflow and DOCX round-trip coverage under P04/P06.
 
+## Delivery 76 — Draw tab inventory review
+
+Date: 2026-11-11. B01 and M4 Draw remain **partial**.
+
+Reviewed all ten unclassified Draw commands: selection, lasso, eraser, pen, pencil, ink highlighter, pen setup, ink-to-shape/math conversion and replay. Classified each as missing from the default app. Oasis text highlighting, object selection and the preset Shape gallery are distinct workflows and do not provide an ink subsystem.
+
+Evidence: all 301 of 521 source rows classified so far pass the crosswalk audit; 220 remain unclassified.
+
+Limits: the entire ink/drawing family remains open under M4; these inventory classifications do not implement it.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

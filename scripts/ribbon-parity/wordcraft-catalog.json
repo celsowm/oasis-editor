@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 291
+    "linkedRows": 301
   },
   "defaultTabs": [
     "File",
@@ -2266,7 +2266,9 @@
       "group": "Tools",
       "name": "Select",
       "command": "draw.select",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "draw.select"
+      ]
     },
     {
       "index": 190,
@@ -2275,7 +2277,9 @@
       "group": "Tools",
       "name": "Lasso Select",
       "command": "draw.lasso",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "draw.lassoSelect"
+      ]
     },
     {
       "index": 191,
@@ -2284,7 +2288,9 @@
       "group": "Tools",
       "name": "Eraser",
       "command": "draw.eraser",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "draw.eraser"
+      ]
     },
     {
       "index": 192,
@@ -2293,7 +2299,9 @@
       "group": "Pens",
       "name": "Pen",
       "command": "draw.pen",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "draw.pen"
+      ]
     },
     {
       "index": 193,
@@ -2302,7 +2310,9 @@
       "group": "Pens",
       "name": "Pencil",
       "command": "draw.pencil",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "draw.pencil"
+      ]
     },
     {
       "index": 194,
@@ -2311,7 +2321,9 @@
       "group": "Pens",
       "name": "Highlighter",
       "command": "draw.highlighter",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "draw.highlighter"
+      ]
     },
     {
       "index": 195,
@@ -2320,7 +2332,9 @@
       "group": "Pens",
       "name": "Add Pen",
       "command": "draw.addPen",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "draw.addPen"
+      ]
     },
     {
       "index": 196,
@@ -2329,7 +2343,9 @@
       "group": "Convert",
       "name": "Ink to Shape",
       "command": "draw.inkToShape",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "draw.inkToShape"
+      ]
     },
     {
       "index": 197,
@@ -2338,7 +2354,9 @@
       "group": "Convert",
       "name": "Ink to Math",
       "command": "draw.inkToMath",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "draw.inkToMath"
+      ]
     },
     {
       "index": 198,
@@ -2358,7 +2376,9 @@
       "group": "Replay",
       "name": "Ink Replay",
       "command": "draw.replay",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "draw.inkReplay"
+      ]
     },
     {
       "index": 200,
