@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 374
+    "linkedRows": 395
   },
   "defaultTabs": [
     "File",
@@ -3620,7 +3620,9 @@
       "group": "Views",
       "name": "Read Mode",
       "command": "view.readMode",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.readMode"
+      ]
     },
     {
       "index": 312,
@@ -3640,7 +3642,9 @@
       "group": "Views",
       "name": "Web Layout",
       "command": "view.webLayout",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.webLayout"
+      ]
     },
     {
       "index": 314,
@@ -3649,7 +3653,9 @@
       "group": "Views",
       "name": "Outline",
       "command": "view.outline",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.outlineMode"
+      ]
     },
     {
       "index": 315,
@@ -3658,7 +3664,9 @@
       "group": "Views",
       "name": "Draft",
       "command": "view.draft",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.draft"
+      ]
     },
     {
       "index": 316,
@@ -3667,7 +3675,9 @@
       "group": "Immersive",
       "name": "Focus",
       "command": "view.focus",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.focus"
+      ]
     },
     {
       "index": 317,
@@ -3676,7 +3686,9 @@
       "group": "Immersive",
       "name": "Immersive Reader",
       "command": "view.immersive",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.immersiveReader"
+      ]
     },
     {
       "index": 318,
@@ -3685,7 +3697,9 @@
       "group": "Page Movement",
       "name": "Vertical",
       "command": "view.vertical",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.verticalMovement"
+      ]
     },
     {
       "index": 319,
@@ -3694,7 +3708,9 @@
       "group": "Page Movement",
       "name": "Side to Side",
       "command": "view.sideToSide",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.sideToSide"
+      ]
     },
     {
       "index": 320,
@@ -3714,7 +3730,9 @@
       "group": "Show",
       "name": "Gridlines",
       "command": "view.gridlines",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.gridlines"
+      ]
     },
     {
       "index": 322,
@@ -3756,7 +3774,9 @@
       "group": "Zoom",
       "name": "One Page",
       "command": "view.onePage",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.onePage"
+      ]
     },
     {
       "index": 326,
@@ -3765,7 +3785,9 @@
       "group": "Zoom",
       "name": "Multiple Pages",
       "command": "view.multiplePages",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.multiplePages"
+      ]
     },
     {
       "index": 327,
@@ -3774,7 +3796,9 @@
       "group": "Zoom",
       "name": "Page Width",
       "command": "view.pageWidth",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.pageWidth"
+      ]
     },
     {
       "index": 328,
@@ -3805,7 +3829,9 @@
       "group": "Dark Mode",
       "name": "Switch Modes",
       "command": "view.darkMode",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.darkMode"
+      ]
     },
     {
       "index": 331,
@@ -3814,7 +3840,9 @@
       "group": "Window",
       "name": "New Window",
       "command": "view.newWindow",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.newWindow"
+      ]
     },
     {
       "index": 332,
@@ -3823,7 +3851,9 @@
       "group": "Window",
       "name": "Arrange All",
       "command": "view.arrangeAll",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.arrangeAll"
+      ]
     },
     {
       "index": 333,
@@ -3832,7 +3862,9 @@
       "group": "Window",
       "name": "Split",
       "command": "view.split",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.split"
+      ]
     },
     {
       "index": 334,
@@ -3841,7 +3873,9 @@
       "group": "Window",
       "name": "View Side by Side",
       "command": "view.sideBySide",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.sideBySide"
+      ]
     },
     {
       "index": 335,
@@ -3850,7 +3884,9 @@
       "group": "Window",
       "name": "Synchronous Scrolling",
       "command": "view.syncScroll",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.synchronousScrolling"
+      ]
     },
     {
       "index": 336,
@@ -3859,7 +3895,9 @@
       "group": "Window",
       "name": "Switch Windows",
       "command": "view.switchWindows",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.switchWindows"
+      ]
     },
     {
       "index": 337,
@@ -3868,7 +3906,9 @@
       "group": "Macros",
       "name": "Macros",
       "command": "tools.macros",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.macros"
+      ]
     },
     {
       "index": 338,
@@ -3877,7 +3917,9 @@
       "group": "Macros",
       "name": "Record Macro",
       "command": "tools.recordMacro",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.recordMacro"
+      ]
     },
     {
       "index": 339,

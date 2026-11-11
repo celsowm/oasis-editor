@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `404` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `425` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -415,6 +415,27 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `review.restrictEditing` | `review.restrict` | — | — | missing | missing | missing | unverified |
 | `review.hideInk` | `review.hideInk` | — | — | missing | missing | missing | unverified |
 | `review.altTextPane` | `view.altTextPane` | `editImageAlt` | `insert/accessibility` | partial | partial | partial | partial |
+| `view.readMode` | `view.readMode` | — | — | missing | missing | missing | unverified |
+| `view.webLayout` | `view.webLayout` | — | — | missing | missing | missing | unverified |
+| `view.draft` | `view.draft` | — | — | missing | missing | missing | unverified |
+| `view.focus` | `view.focus` | — | — | missing | missing | missing | unverified |
+| `view.immersiveReader` | `view.immersive` | — | — | missing | missing | missing | unverified |
+| `view.verticalMovement` | `view.vertical` | — | — | missing | missing | missing | unverified |
+| `view.sideToSide` | `view.sideToSide` | — | — | missing | missing | missing | unverified |
+| `view.gridlines` | `view.gridlines` | — | — | missing | missing | missing | unverified |
+| `view.darkMode` | `view.darkMode` | — | — | missing | missing | missing | unverified |
+| `view.newWindow` | `view.newWindow` | — | — | missing | missing | missing | unverified |
+| `view.arrangeAll` | `view.arrangeAll` | — | — | missing | missing | missing | unverified |
+| `view.split` | `view.split` | — | — | missing | missing | missing | unverified |
+| `view.sideBySide` | `view.sideBySide` | — | — | missing | missing | missing | unverified |
+| `view.synchronousScrolling` | `view.syncScroll` | — | — | missing | missing | missing | unverified |
+| `view.switchWindows` | `view.switchWindows` | — | — | missing | missing | missing | unverified |
+| `view.macros` | `tools.macros` | — | — | missing | missing | missing | unverified |
+| `view.recordMacro` | `tools.recordMacro` | — | — | missing | missing | missing | unverified |
+| `view.outlineMode` | `view.outline` | — | Document stage > Outline panel | ui-only | ui-only | partial | not-applicable |
+| `view.onePage` | `view.onePage` | — | Status bar > zoom slider | ui-only | ui-only | partial | not-applicable |
+| `view.multiplePages` | `view.multiplePages` | — | Status bar > zoom slider | ui-only | ui-only | partial | not-applicable |
+| `view.pageWidth` | `view.pageWidth` | — | Status bar > zoom slider | ui-only | ui-only | partial | not-applicable |
 
 ## Open verification questions
 
@@ -822,6 +843,27 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 402. **review.restrictEditing:** Restrict Editing: The host can configure a read-only editor, but the app exposes no document protection/password or selective editing restriction workflow.
 403. **review.hideInk:** Hide Ink: No ink model or hide-ink display command is exposed.
 404. **review.altTextPane:** Oasis opens the selected image alt-text editor from Insert/Accessibility; the control is selection-specific and does not provide a general Alt Text pane for every object type. Screen-reader and DOCX metadata behavior remain open.
+405. **view.readMode:** Read Mode: No selectable distraction-free reading mode is exposed; the default canvas remains an editable paginated view.
+406. **view.webLayout:** Web Layout: No continuous web-layout mode or view switch is exposed.
+407. **view.draft:** Draft: No draft/outline text-only document view is exposed.
+408. **view.focus:** Focus: No focus mode hides Ribbon/chrome or changes the editor to a distraction-free workspace.
+409. **view.immersiveReader:** Immersive Reader: No immersive reading, read-aloud or accessibility reading surface is exposed.
+410. **view.verticalMovement:** Vertical Page Movement: No page-movement mode selector is exposed in the default app.
+411. **view.sideToSide:** Side to Side: No horizontal side-by-side page movement mode is exposed.
+412. **view.gridlines:** Gridlines: No document gridline display toggle is exposed. Table editing guides and canvas page boundaries are separate.
+413. **view.darkMode:** Switch Modes: No user-facing document/app dark-mode switch is exposed in the default Ribbon or menus.
+414. **view.newWindow:** New Window: No in-app command opens another synchronized editor window for the current document.
+415. **view.arrangeAll:** Arrange All: No multi-window arrangement workflow is exposed.
+416. **view.split:** Split: No split-window view of one document is exposed.
+417. **view.sideBySide:** View Side by Side: No synchronized two-document side-by-side view is exposed.
+418. **view.synchronousScrolling:** Synchronous Scrolling: No paired-window synchronized scrolling control is exposed.
+419. **view.switchWindows:** Switch Windows: No in-app document-window switcher is exposed; browser tabs are host/browser navigation.
+420. **view.macros:** Macros: No macro storage, scripting runtime or macro manager is exposed.
+421. **view.recordMacro:** Record Macro: No command recorder or macro authoring workflow is exposed.
+422. **view.outlineMode:** Outline: Oasis provides heading navigation in an Outline panel, but not Word’s document-structure editing mode. Promote/demote, selection and view-mode behavior differ.
+423. **view.onePage:** One Page: Oasis permits arbitrary zoom percentages but has no fit-one-page command or preset. Page-fit behavior and keyboard access remain unverified.
+424. **view.multiplePages:** Multiple Pages: Oasis permits arbitrary zoom percentages but has no fit-multiple-pages command or page-layout preset.
+425. **view.pageWidth:** Page Width: Oasis permits arbitrary zoom percentages but has no fit-page-width command or preset; responsive canvas width is not a width-fit action.
 
 ## Audit interpretation
 

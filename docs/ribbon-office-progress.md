@@ -1010,6 +1010,16 @@ Evidence: the crosswalk now classifies 374 of 521 source rows; 147 remain unclas
 
 Limits: Review and References remain partial, including tracked-change interoperability, document language, accessibility and host protection semantics.
 
+## Delivery 82 — View tab source inventory review
+
+Date: 2026-11-11. B01 and P05 remain **partial**.
+
+Reviewed the remaining View commands. Mapped Oasis's Outline panel and status-bar zoom slider as related UI-only paths for Outline and the three page-fit presets, with their different behavior documented. Classified Read/Web/Draft/Focus/Immersive modes, page movement, gridlines, theme switching, multi-window arrangements and macros as absent from the default app.
+
+Evidence: the crosswalk now classifies 395 of 521 source rows; 126 remain unclassified. The parity audit validates the four related UI paths against source file/token evidence and validates the remaining rationales.
+
+Limits: zoom and outline behavior still need keyboard/accessibility workflows; View remains without selectable document view modes or window management.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

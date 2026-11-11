@@ -4761,6 +4761,227 @@
       "semantics": "partial",
       "persistence": "partial",
       "notes": "Oasis opens the selected image alt-text editor from Insert/Accessibility; the control is selection-specific and does not provide a general Alt Text pane for every object type. Screen-reader and DOCX metadata behavior remain open."
+    },
+    {
+      "id": "view.readMode",
+      "wordcraftCommand": "view.readMode",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Read Mode: No selectable distraction-free reading mode is exposed; the default canvas remains an editable paginated view."
+    },
+    {
+      "id": "view.webLayout",
+      "wordcraftCommand": "view.webLayout",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Web Layout: No continuous web-layout mode or view switch is exposed."
+    },
+    {
+      "id": "view.draft",
+      "wordcraftCommand": "view.draft",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Draft: No draft/outline text-only document view is exposed."
+    },
+    {
+      "id": "view.focus",
+      "wordcraftCommand": "view.focus",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Focus: No focus mode hides Ribbon/chrome or changes the editor to a distraction-free workspace."
+    },
+    {
+      "id": "view.immersiveReader",
+      "wordcraftCommand": "view.immersive",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Immersive Reader: No immersive reading, read-aloud or accessibility reading surface is exposed."
+    },
+    {
+      "id": "view.verticalMovement",
+      "wordcraftCommand": "view.vertical",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Vertical Page Movement: No page-movement mode selector is exposed in the default app."
+    },
+    {
+      "id": "view.sideToSide",
+      "wordcraftCommand": "view.sideToSide",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Side to Side: No horizontal side-by-side page movement mode is exposed."
+    },
+    {
+      "id": "view.gridlines",
+      "wordcraftCommand": "view.gridlines",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Gridlines: No document gridline display toggle is exposed. Table editing guides and canvas page boundaries are separate."
+    },
+    {
+      "id": "view.darkMode",
+      "wordcraftCommand": "view.darkMode",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Switch Modes: No user-facing document/app dark-mode switch is exposed in the default Ribbon or menus."
+    },
+    {
+      "id": "view.newWindow",
+      "wordcraftCommand": "view.newWindow",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "New Window: No in-app command opens another synchronized editor window for the current document."
+    },
+    {
+      "id": "view.arrangeAll",
+      "wordcraftCommand": "view.arrangeAll",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Arrange All: No multi-window arrangement workflow is exposed."
+    },
+    {
+      "id": "view.split",
+      "wordcraftCommand": "view.split",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Split: No split-window view of one document is exposed."
+    },
+    {
+      "id": "view.sideBySide",
+      "wordcraftCommand": "view.sideBySide",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "View Side by Side: No synchronized two-document side-by-side view is exposed."
+    },
+    {
+      "id": "view.synchronousScrolling",
+      "wordcraftCommand": "view.syncScroll",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Synchronous Scrolling: No paired-window synchronized scrolling control is exposed."
+    },
+    {
+      "id": "view.switchWindows",
+      "wordcraftCommand": "view.switchWindows",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Switch Windows: No in-app document-window switcher is exposed; browser tabs are host/browser navigation."
+    },
+    {
+      "id": "view.macros",
+      "wordcraftCommand": "tools.macros",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Macros: No macro storage, scripting runtime or macro manager is exposed."
+    },
+    {
+      "id": "view.recordMacro",
+      "wordcraftCommand": "tools.recordMacro",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Record Macro: No command recorder or macro authoring workflow is exposed."
+    },
+    {
+      "id": "view.outlineMode",
+      "wordcraftCommand": "view.outline",
+      "ribbonId": null,
+      "tab": "view",
+      "group": "views",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Document stage > Outline panel",
+      "uiEvidence": {
+        "file": "src/ui/components/Outline/OutlinePanel.tsx",
+        "token": "oasis-outline-panel"
+      },
+      "notes": "Outline: Oasis provides heading navigation in an Outline panel, but not Word’s document-structure editing mode. Promote/demote, selection and view-mode behavior differ."
+    },
+    {
+      "id": "view.onePage",
+      "wordcraftCommand": "view.onePage",
+      "ribbonId": null,
+      "tab": "view",
+      "group": "zoom",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Status bar > zoom slider",
+      "uiEvidence": {
+        "file": "src/ui/EditorStatusBar.tsx",
+        "token": "editor-statusbar-zoom-control"
+      },
+      "notes": "One Page: Oasis permits arbitrary zoom percentages but has no fit-one-page command or preset. Page-fit behavior and keyboard access remain unverified."
+    },
+    {
+      "id": "view.multiplePages",
+      "wordcraftCommand": "view.multiplePages",
+      "ribbonId": null,
+      "tab": "view",
+      "group": "zoom",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Status bar > zoom slider",
+      "uiEvidence": {
+        "file": "src/ui/EditorStatusBar.tsx",
+        "token": "editor-statusbar-zoom-control"
+      },
+      "notes": "Multiple Pages: Oasis permits arbitrary zoom percentages but has no fit-multiple-pages command or page-layout preset."
+    },
+    {
+      "id": "view.pageWidth",
+      "wordcraftCommand": "view.pageWidth",
+      "ribbonId": null,
+      "tab": "view",
+      "group": "zoom",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Status bar > zoom slider",
+      "uiEvidence": {
+        "file": "src/ui/EditorStatusBar.tsx",
+        "token": "editor-statusbar-zoom-control"
+      },
+      "notes": "Page Width: Oasis permits arbitrary zoom percentages but has no fit-page-width command or preset; responsive canvas width is not a width-fit action."
     }
   ]
 }
