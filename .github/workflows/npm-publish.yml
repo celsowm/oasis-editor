@@ -47,7 +47,17 @@ jobs:
         run: npm run build:app
 
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: |
+          for attempt in 1 2 3; do
+            if npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "Chromium setup failed (attempt $attempt); retrying after a short pause."
+              sleep 15
+            fi
+          done
+          exit 1
 
       - name: Smoke test production build
         run: npm run test:smoke
