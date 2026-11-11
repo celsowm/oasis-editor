@@ -560,54 +560,72 @@ test("toolbar color split buttons separate direct apply from palette selection",
   await expect(page.locator(".oasis-editor-color-menu")).toHaveCount(0);
 });
 
-test("underline split button matches text color split button dimensions", async ({
+test("underline glyph matches Bold and Italic optical height", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
   await gotoEditor(page);
 
   const dimensions = await page.evaluate(() => {
     const read = (testId: string) => {
-      const main = document.querySelector(
-        `[data-testid="${testId}"]`,
-      ) as HTMLElement | null;
-      const menu = document.querySelector(
-        `[data-testid="${testId}-dropdown"]`,
-      ) as HTMLElement | null;
+      const main = [
+        ...document.querySelectorAll<HTMLElement>(`[data-testid="${testId}"]`),
+      ].find((element) => element.getBoundingClientRect().width > 0);
       const root = main?.closest(
         ".oasis-editor-color-split",
       ) as HTMLElement | null;
-      const icon = main?.querySelector(
-        ".oasis-editor-color-split-icon",
+      const menu = root?.querySelector(
+        `[data-testid="${testId}-dropdown"]`,
       ) as HTMLElement | null;
-      const glyph = icon?.querySelector(
-        "svg, i, .oasis-editor-underline-split-glyph",
-      ) as HTMLElement | null;
-      if (!root || !main || !menu || !icon) return null;
+      if (!root || !main || !menu) return null;
 
       const rect = (element: HTMLElement) => {
         const bounds = element.getBoundingClientRect();
         return { width: bounds.width, height: bounds.height };
       };
-      const iconStyles = getComputedStyle(icon);
       return {
         root: rect(root),
         main: rect(main),
         menu: rect(menu),
-        icon: rect(icon),
-        glyph: glyph ? rect(glyph) : null,
-        iconPaddingBottom: iconStyles.paddingBottom,
       };
     };
 
     return {
       color: read("editor-toolbar-color"),
       underline: read("editor-toolbar-underline"),
+      glyphs: ["bold", "italic", "underline"].map((name) => {
+        const svg = [
+          ...document.querySelectorAll<SVGSVGElement>(
+            `[data-testid="editor-toolbar-${name}"] svg`,
+          ),
+        ].find((element) => element.getBoundingClientRect().width > 0);
+        if (!(svg instanceof SVGSVGElement)) return null;
+        const ink = svg.getBBox();
+        const box = svg.getBoundingClientRect();
+        return {
+          box: { width: box.width, height: box.height },
+          ink: { x: ink.x, y: ink.y, width: ink.width, height: ink.height },
+          strokeWidth: svg.getAttribute("stroke-width"),
+        };
+      }),
     };
   });
 
   expect(dimensions.color).not.toBeNull();
   expect(dimensions.underline).not.toBeNull();
   expect(dimensions.underline).toEqual(dimensions.color);
+
+  const [bold, italic, underline] = dimensions.glyphs;
+  expect(bold).not.toBeNull();
+  expect(italic).not.toBeNull();
+  expect(underline).not.toBeNull();
+  for (const sibling of [bold!, italic!]) {
+    expect(underline!.box).toEqual(sibling.box);
+    expect(underline!.ink.y).toBe(sibling.ink.y);
+    expect(underline!.ink.height).toBe(sibling.ink.height);
+    expect(underline!.strokeWidth).toBe(sibling.strokeWidth);
+    expect(underline!.ink.width).toBeLessThan(sibling.ink.width);
+  }
 });
 
 test("canvas header requires double-click to enter and double-click body to exit", async ({
@@ -1872,18 +1890,13 @@ test("Insert accessibility group follows image selection visibility", async ({
     await expect
       .poll(async () =>
         Number(
-          await accessibilityGroup.getAttribute(
-            "data-ribbon-width-allocated",
-          ),
+          await accessibilityGroup.getAttribute("data-ribbon-width-allocated"),
         ),
       )
       .toBeGreaterThan(0);
 
     const currentPageRect = await canvasPageRect(page);
-    await page.mouse.click(
-      currentPageRect.x + 100,
-      currentPageRect.y + 140,
-    );
+    await page.mouse.click(currentPageRect.x + 100, currentPageRect.y + 140);
     await expect(
       page.locator(".oasis-editor-image-selection-overlay"),
     ).toBeHidden();
@@ -1910,9 +1923,7 @@ test("Insert accessibility group follows image selection visibility", async ({
     await expect
       .poll(async () =>
         Number(
-          await accessibilityGroup.getAttribute(
-            "data-ribbon-width-allocated",
-          ),
+          await accessibilityGroup.getAttribute("data-ribbon-width-allocated"),
         ),
       )
       .toBeGreaterThan(0);
@@ -2074,8 +2085,9 @@ test("Design numeric controls declare their units and ranges", async ({
   await expect
     .poll(async () =>
       page.evaluate(() =>
-        (window as Window & { __designMetrics?: { fonts: string[] } })
-          .__designMetrics?.fonts.includes("64px Arial"),
+        (
+          window as Window & { __designMetrics?: { fonts: string[] } }
+        ).__designMetrics?.fonts.includes("64px Arial"),
       ),
     )
     .toBe(true);
@@ -2088,16 +2100,18 @@ test("Design numeric controls declare their units and ranges", async ({
   await expect
     .poll(async () =>
       page.evaluate(() =>
-        (window as Window & {
-          __designMetrics?: {
-            strokes: Array<{
-              color: string;
-              lineWidth: number;
-              x: number;
-              y: number;
-            }>;
-          };
-        }).__designMetrics?.strokes.some(
+        (
+          window as Window & {
+            __designMetrics?: {
+              strokes: Array<{
+                color: string;
+                lineWidth: number;
+                x: number;
+                y: number;
+              }>;
+            };
+          }
+        ).__designMetrics?.strokes.some(
           (stroke) =>
             stroke.color === "#64748b" &&
             Math.abs(stroke.x - 32) < 0.1 &&

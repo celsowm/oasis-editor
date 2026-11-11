@@ -40,7 +40,8 @@
     "tableToText",
     "tableVerticalAlign",
     "tableWidth",
-    "textToTable"
+    "textToTable",
+    "underlineGlyph"
   ],
   "uses": [
     {

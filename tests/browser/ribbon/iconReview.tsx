@@ -41,6 +41,13 @@ function LegacyFootnote(): JSX.Element {
     </SvgIcon>
   );
 }
+function LegacyUnderline(): JSX.Element {
+  return (
+    <span class="oasis-editor-underline-split-glyph" aria-hidden="true">
+      U
+    </span>
+  );
+}
 function IconReview(): JSX.Element {
   const params = new URLSearchParams(location.search);
   const [theme, setTheme] = createSignal(
@@ -79,7 +86,14 @@ function IconReview(): JSX.Element {
     >
       <Show
         when={name() === "legacyFootnote"}
-        fallback={<ToolIcon name={name()} />}
+        fallback={
+          <Show
+            when={name() === "legacyUnderline"}
+            fallback={<ToolIcon name={name()} />}
+          >
+            <LegacyUnderline />
+          </Show>
+        }
       >
         <LegacyFootnote />
       </Show>

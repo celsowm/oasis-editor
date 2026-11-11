@@ -1092,6 +1092,16 @@ Added a locale-aware regression check over every default and contextual Ribbon t
 
 Evidence: `npx vitest run --project ui tests/vitest/__tests__/ui/registry.test.ts` passes all 16 tests. This is static registry/model coverage; dynamic plugin lifecycle and rendered browser labels remain open.
 
+## Delivery 91 — Font formatting glyph alignment
+
+Date: 2026-11-11. I03/I04 remain **partial**; this closes one Home glyph family review.
+
+Replaced the font-rendered Underline `U` with an original SVG using the same 24×24 coordinate system and 2-unit stroke as Lucide Bold and Italic. Its path shares the siblings' vertical bounds and has a slightly narrower silhouette, preserving the U's full height and balanced top/bottom clearance. Added it to the icon review sheet and generated inventory.
+
+Evidence: the Home Ribbon Playwright check compares actual visible Bold/Italic/Underline SVG boxes, path bounds and stroke widths. It passes. The icon review verifies 54 scenes per engine in Chromium, Firefox and WebKit across 16/20/24 px, both themes, three states and three surfaces. No font-dependent SVG text or unresolved icon is present.
+
+Limits: this is one everyday typography family. Other icon families and actual Safari/VoiceOver review remain open.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

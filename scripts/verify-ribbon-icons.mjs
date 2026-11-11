@@ -54,7 +54,7 @@ try {
         );
         assert.equal(
           await page.locator(".icon-review-sample svg").count(),
-          18,
+          candidate.before === "legacyUnderline" ? 9 : 18,
           "Stale SVG nodes accumulated during name changes",
         );
         const metrics = await page

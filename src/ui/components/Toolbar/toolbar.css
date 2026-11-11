@@ -1189,10 +1189,11 @@
   justify-content: center;
   width: 18px;
   height: 18px;
-  font-size: 18px;
-  font-weight: 400;
-  line-height: 18px;
-  font-family: Calibri, Arial, sans-serif;
+}
+
+.oasis-editor-underline-split-glyph svg {
+  width: 18px;
+  height: 18px;
 }
 
 .oasis-editor-underline-split-icon {

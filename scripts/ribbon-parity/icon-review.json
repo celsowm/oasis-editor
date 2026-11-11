@@ -1,21 +1,9 @@
 {
   "schemaVersion": 1,
   "reference": "Classic Word document-story semantics; original Oasis vectors, not copied product assets.",
-  "sizes": [
-    16,
-    20,
-    24
-  ],
-  "surfaces": [
-    "button",
-    "menu",
-    "collapsed"
-  ],
-  "states": [
-    "normal",
-    "active",
-    "disabled"
-  ],
+  "sizes": [16, 20, 24],
+  "surfaces": ["button", "menu", "collapsed"],
+  "states": ["normal", "active", "disabled"],
   "candidates": [
     {
       "id": "header-footer",
@@ -90,6 +78,16 @@
       "decision": "refine",
       "defect": "SVG text depends on platform font metrics; the fixed dark-red superscript has no theme adaptation.",
       "result": "Original paths for ab and superscript 1 with a theme accent; no SVG text or external font."
+    },
+    {
+      "id": "underline-glyph",
+      "command": "applyUnderlineStyle",
+      "before": "legacyUnderline",
+      "after": "underlineGlyph",
+      "decision": "replace",
+      "defect": "The text-rendered U has platform-dependent cap and width metrics beside the Bold and Italic SVGs.",
+      "result": "A Lucide-weight vector keeps equal top and bottom clearance in the shared 18px icon box while matching the siblings' vertical ink height.",
+      "action": "Underline toggle"
     }
   ],
   "remainingReview": [

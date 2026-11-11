@@ -70,6 +70,18 @@ const FootnoteIcon: CustomIconRenderer = (): JSX.Element => (
   </SvgIcon>
 );
 
+/** Underline letterform mirrors Lucide's 24px stroke and vertical ink bounds. */
+const UnderlineGlyphIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={2}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M7 4v10a5 5 0 0 0 10 0V4M6 20h12" />
+  </SvgIcon>
+);
+
 /** Document-story icons share a page silhouette and distinct target regions. */
 function PageStoryIcon(props: {
   target: "header" | "footer" | "both";
@@ -422,6 +434,7 @@ export const CheckIcon = (props: { size?: number }): JSX.Element => (
 
 const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   footnote: FootnoteIcon,
+  underlineGlyph: UnderlineGlyphIcon,
   pageHeader: PageHeaderIcon,
   pageFooter: PageFooterIcon,
   pageHeaderFooter: PageHeaderFooterIcon,

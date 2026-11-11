@@ -4,6 +4,7 @@ import type { EditorUnderlineStyle } from "@/core/model.js";
 import { SplitButton } from "@/ui/components/Toolbar/primitives/SplitButton.js";
 import { toolbarChoice } from "../state/toolbarChoice.js";
 import { UNDERLINE_STYLE_OPTIONS } from "@/ui/components/Toolbar/underlineStyles.js";
+import { ToolIcon } from "@/ui/utils/customIcons.js";
 
 import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 
@@ -70,7 +71,7 @@ export function UnderlineControl(props: {
       mainContent={
         <span class="oasis-editor-color-split-icon oasis-editor-underline-split-icon">
           <span class="oasis-editor-underline-split-glyph" aria-hidden="true">
-            U
+            <ToolIcon name="underlineGlyph" />
           </span>
           <span class="oasis-editor-underline-split-indicator" />
         </span>
