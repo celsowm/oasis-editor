@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 212
+    "linkedRows": 215
   },
   "defaultTabs": [
     "File",
@@ -372,7 +372,9 @@
       "group": "Backstage",
       "name": "New from Template",
       "command": "file.newFromTemplate",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.newFromTemplate"
+      ]
     },
     {
       "index": 22,
@@ -381,7 +383,9 @@
       "group": "Backstage",
       "name": "Save as Template",
       "command": "file.saveTemplate",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.saveTemplate"
+      ]
     },
     {
       "index": 23,
@@ -390,7 +394,9 @@
       "group": "Backstage",
       "name": "Personal Templates",
       "command": "file.listTemplates",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "file.listTemplates"
+      ]
     },
     {
       "index": 24,

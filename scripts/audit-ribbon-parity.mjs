@@ -497,7 +497,7 @@ function main() {
   }
   const linkedRows = wordcraft.rows.filter((row) => row.oasisFeatureIds.length > 0).length;
   if (wordcraft.counts?.linkedRows !== linkedRows) errors.push("WordCraft snapshot linked-row count is inconsistent");
-  const commandlessStatuses = new Set(["ui-only"]);
+  const commandlessStatuses = new Set(["ui-only", "missing", "not-applicable"]);
   for (const feature of catalog.features) {
     if (ids.has(feature.id)) errors.push("Duplicate feature ID: " + feature.id);
     ids.add(feature.id);
@@ -518,6 +518,15 @@ function main() {
       if (feature[dimension] !== undefined && !dimensionStatuses.has(feature[dimension])) {
         errors.push(feature.id + ": invalid " + dimension + " classification");
       }
+    }
+    if (feature.status === "missing" || feature.status === "not-applicable") {
+      if (feature.oasisCommand || feature.ribbonId || feature.uiPath || feature.uiEvidence) {
+        errors.push(feature.id + ": commandless classification conflicts with an Oasis path");
+      }
+      if (!feature.notes?.trim()) {
+        errors.push(feature.id + ": commandless classification needs a rationale");
+      }
+      continue;
     }
     if (feature.status === "core-only") {
       if (feature.exposure !== "core-only") {

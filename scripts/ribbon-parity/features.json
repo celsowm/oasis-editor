@@ -1334,6 +1334,33 @@
       "notes": "The File tab opens the DOCX import picker. Arbitrary document opening and other source formats are not provided by this path; cancellation, import errors, source preservation and full lifecycle workflows remain in P04/P06."
     },
     {
+      "id": "file.newFromTemplate",
+      "wordcraftCommand": "file.newFromTemplate",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "No document-template picker or command is exposed in the File tab, menubar, or core command registry. Style galleries select formatting presets; they do not create documents from templates."
+    },
+    {
+      "id": "file.saveTemplate",
+      "wordcraftCommand": "file.saveTemplate",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "No save-as-template command or user-facing template workflow was found in the File tab, menubar, or core command registry."
+    },
+    {
+      "id": "file.listTemplates",
+      "wordcraftCommand": "file.listTemplates",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "No personal-template library or list-templates workflow was found in the File tab, menubar, or core command registry."
+    },
+    {
       "id": "file.print",
       "wordcraftCommand": "file.print",
       "oasisCommand": "print",

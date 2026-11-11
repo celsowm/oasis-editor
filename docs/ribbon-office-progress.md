@@ -860,6 +860,16 @@ Evidence: the static audit validates both registered commands and their `file/do
 
 Limits: dirty-document confirmation, import cancellation/errors, source-part preservation and full lifecycle behavior remain open under P04/P06. Mapping the commands does not certify those workflows.
 
+## Delivery 67 — File template capabilities classified
+
+Date: 2026-11-11. B01 and P04 remain **partial**.
+
+Reviewed WordCraft's New from Template, Save as Template and Personal Templates commands against Oasis's File surfaces, command registry, and document-template paths. No equivalent document-template workflow exists. Classified the three source entries as `missing`, while keeping persistence unverified; Oasis style galleries apply formatting presets and do not create or save document templates. The audit now accepts explicit `missing`/`not-applicable` rows only when they have a written rationale and no claimed Oasis command or UI path.
+
+Evidence: `npm run audit:ribbon` and `npm run audit:ribbon:wordcraft` pass. The crosswalk now maps and classifies 215 of 521 source rows; 306 remain unclassified. No status here claims product parity.
+
+Limits: the three template workflows remain unsupported. Other File commands still need individual review; P04/P06 lifecycle and persistence tests remain open.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
