@@ -43,6 +43,10 @@ form matches the codebase.
 - Gates before push: `npm run typecheck`, `npm run lint` (clean in changed
   files), non-UI vitest, `npm run audit:ribbon`, then `git pull --rebase`, then
   push.
+- Before another push, wait for both the Build and Deploy and Publish workflows
+  for the current `main` head to finish. Publish may push a release commit and
+  tag after publishing to npm; racing that push can leave the published tag
+  detached from `main` and fail the workflow.
 - `.tsx`/Solid UI tests can't run in this harness (pre-existing
   `@solid-refresh` failures); CI is the authority.
 - Long locale line keys must be prettier-wrapped (`eslint --fix` on locale
