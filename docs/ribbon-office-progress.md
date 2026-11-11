@@ -1068,6 +1068,14 @@ Reviewed and classified the final 39 WordCraft source rows across Equation, Outl
 
 Evidence: `npm run audit:ribbon` and `npm run audit:ribbon:wordcraft` pass. The Oasis crosswalk has 551 features and links/classifies all 521 pinned WordCraft rows; the snapshot contains 25 surfaces. All 53 direct Word scene captures remain uncaptured (0/53), so this closes inventory classification only and does not claim visual, behavioral or product parity.
 
+## Delivery 88 — Repeated contextual composition and measurement
+
+Date: 2026-11-11. V02 remains **partial** pending other dynamic contribution and separator scenarios.
+
+Extended the image-selection Insert scenario to repeat the text → image → text context transition twice after the initial selection. Each cycle checks the Accessibility group disappears and returns with a positive width allocation, while viewport changes exercise its collapsed and expanded measurement states.
+
+Evidence: the Playwright scenario `Insert accessibility group follows image selection visibility` now checks repeated context changes and width allocations. This verifies one image-driven group and Chromium layout; it does not cover table contexts, dynamic plugin add/remove, or Safari/VoiceOver.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

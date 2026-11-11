@@ -1861,18 +1861,62 @@ test("Insert accessibility group follows image selection visibility", async ({
     )
     .toBeGreaterThan(0);
 
-  await page.setViewportSize({ width: 320, height: 900 });
-  await expect(accessibilityGroup).toHaveAttribute(
-    "data-ribbon-state",
-    "collapsed",
-  );
+  for (let cycle = 0; cycle < 2; cycle += 1) {
+    await page.setViewportSize({ width: 320, height: 900 });
+    await expect(accessibilityGroup).toHaveAttribute(
+      "data-ribbon-state",
+      "collapsed",
+    );
 
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await page.mouse.click(pageRect.x + 100, pageRect.y + 140);
-  await expect(
-    page.locator(".oasis-editor-image-selection-overlay"),
-  ).toBeHidden();
-  await expect(accessibilityGroup).toHaveCount(0);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect
+      .poll(async () =>
+        Number(
+          await accessibilityGroup.getAttribute(
+            "data-ribbon-width-allocated",
+          ),
+        ),
+      )
+      .toBeGreaterThan(0);
+
+    const currentPageRect = await canvasPageRect(page);
+    await page.mouse.click(
+      currentPageRect.x + 100,
+      currentPageRect.y + 140,
+    );
+    await expect(
+      page.locator(".oasis-editor-image-selection-overlay"),
+    ).toBeHidden();
+    await expect(accessibilityGroup).toHaveCount(0);
+
+    const currentImage = await page.evaluate(() => {
+      const entry = window.__oasisCanvasDebug
+        ?.getLayoutSnapshot()
+        ?.inlineImages.find((candidate) => candidate.zone === "main");
+      return entry
+        ? {
+            x: entry.left + entry.width / 2,
+            y: entry.top + entry.height / 2,
+          }
+        : null;
+    });
+    if (!currentImage) throw new Error("unable to resolve image geometry");
+    await page.mouse.click(currentImage.x, currentImage.y);
+    await expect(
+      page.locator(".oasis-editor-image-selection-overlay"),
+    ).toBeVisible();
+    await insertTab.click();
+    await expect(accessibilityGroup).toBeVisible();
+    await expect
+      .poll(async () =>
+        Number(
+          await accessibilityGroup.getAttribute(
+            "data-ribbon-width-allocated",
+          ),
+        ),
+      )
+      .toBeGreaterThan(0);
+  }
 });
 
 test("collapsed image group keeps its parent open for crop flyouts", async ({
