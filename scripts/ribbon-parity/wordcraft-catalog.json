@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 208
+    "linkedRows": 209
   },
   "defaultTabs": [
     "File",
@@ -3381,7 +3381,9 @@
       "group": "Show",
       "name": "Ruler",
       "command": "view.ruler",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.horizontalRulerRelated"
+      ]
     },
     {
       "index": 321,

@@ -504,6 +504,23 @@
       "notes": "Related navigation only: Oasis exposes document headings in a collapsible Outline panel, while WordCraft's Navigation Pane also includes search and page navigation. Those other tasks, focus behavior and heading-navigation equivalence need workflow verification."
     },
     {
+      "id": "view.horizontalRulerRelated",
+      "wordcraftCommand": "view.ruler",
+      "ribbonId": null,
+      "tab": "view",
+      "group": "show",
+      "status": "ui-only",
+      "exposure": "ui-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "uiPath": "Document canvas > horizontal ruler",
+      "uiEvidence": {
+        "file": "src/ui/components/Ruler/HorizontalRuler.tsx",
+        "token": "oasis-editor-horizontal-ruler-track"
+      },
+      "notes": "Related display only: Oasis shows a horizontal ruler with margin and indent markers when editor chrome is visible. It has no user-facing visibility toggle or vertical ruler, so this does not match WordCraft's Ruler toggle."
+    },
+    {
       "id": "home.sortParagraphs",
       "wordcraftCommand": "para.sort",
       "oasisCommand": "sortParagraphs",

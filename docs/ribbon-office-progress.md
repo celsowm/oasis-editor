@@ -742,6 +742,16 @@ The matrix now contains 244 Oasis capability rows and links 208 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` validates the UI evidence token in `src/ui/components/Outline/OutlinePanel.tsx`; `npm run audit:ribbon:wordcraft` reports 208 linked rows.
 
+## Delivery 55 — Horizontal ruler relationship
+
+Date: 2026-11-10. B01, D05 and P03 remain **partial**.
+
+Recorded Oasis's always-visible horizontal ruler as a related display for WordCraft's View > Ruler command. It includes page margins and draggable indent markers but has no visibility toggle or vertical ruler.
+
+The matrix now contains 245 Oasis capability rows and links 209 of 521 WordCraft source rows; 312 remain unlinked.
+
+Evidence: `npm run audit:ribbon` validates the UI evidence token in `src/ui/components/Ruler/HorizontalRuler.tsx`; `npm run audit:ribbon:wordcraft` reports 209 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
