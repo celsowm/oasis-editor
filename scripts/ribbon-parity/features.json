@@ -3475,6 +3475,32 @@
       "semantics": "partial",
       "persistence": "unverified",
       "notes": "Oasis registers top, middle or bottom vertical anchoring for text-box content but has no default Ribbon, menu or dialog path. Interaction with padding, vertical text, resizing and DOCX round-trip needs verification."
+    },
+    {
+      "id": "file.autoSave",
+      "wordcraftCommand": "file.autosave",
+      "oasisCommand": null,
+      "ribbonId": null,
+      "tab": "quickAccess",
+      "group": "toolbar",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "partial",
+      "notes": "Oasis has optional host-configured debounced persistence, but the default app does not enable it and exposes no AutoSave toggle or status control in the Quick Access Toolbar. This does not provide the user-facing Word AutoSave workflow."
+    },
+    {
+      "id": "titleBar.commandSearch",
+      "wordcraftCommand": "tools.search",
+      "oasisCommand": null,
+      "ribbonId": null,
+      "tab": "titleBar",
+      "group": "search",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "not-applicable",
+      "notes": "No Tell Me/command-search launcher is exposed in the title bar or default app surfaces. The Find command searches document content and is not a command-search equivalent."
     }
   ]
 }

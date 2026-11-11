@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `270` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `272` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -281,6 +281,8 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `shape.outlineWidth` | `shape.outline` | `setShapeOutlineWidth` | — | core-only | core-only | partial | unverified |
 | `shape.textDirection` | `shape.textDirection` | `setTextBoxTextDirection` | — | core-only | core-only | partial | unverified |
 | `shape.textAlignment` | `shape.alignText` | `setTextBoxVerticalAlign` | — | core-only | core-only | partial | unverified |
+| `file.autoSave` | `file.autosave` | — | — | missing | missing | missing | partial |
+| `titleBar.commandSearch` | `tools.search` | — | — | missing | missing | missing | not-applicable |
 
 ## Open verification questions
 
@@ -554,6 +556,8 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 268. **shape.outlineWidth:** Oasis registers selected-text-box outline width changes but has no default Ribbon, menu or dialog path. Line styles, dashes and width preset coverage remain unverified; rendering and DOCX round-trip need verification.
 269. **shape.textDirection:** Oasis registers horizontal, vertical, rotated and stacked text-box direction values but has no default Ribbon, menu or dialog path. Glyph layout, mixed scripts, focus, rendering and DOCX round-trip need workflow verification.
 270. **shape.textAlignment:** Oasis registers top, middle or bottom vertical anchoring for text-box content but has no default Ribbon, menu or dialog path. Interaction with padding, vertical text, resizing and DOCX round-trip needs verification.
+271. **file.autoSave:** Oasis has optional host-configured debounced persistence, but the default app does not enable it and exposes no AutoSave toggle or status control in the Quick Access Toolbar. This does not provide the user-facing Word AutoSave workflow.
+272. **titleBar.commandSearch:** No Tell Me/command-search launcher is exposed in the title bar or default app surfaces. The Find command searches document content and is not a command-search equivalent.
 
 ## Audit interpretation
 

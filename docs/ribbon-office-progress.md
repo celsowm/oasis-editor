@@ -900,6 +900,16 @@ Evidence: the client API test now verifies dirty state clears only after `save()
 
 Limits: failed-save feedback, Save As/overwrite semantics, reopening persisted content, autosave/recovery and the full P04 dirty-state lifecycle remain open. The focused browser E2E passed locally; CI is pending for this delivery.
 
+## Delivery 71 — Quick Access AutoSave and title search crosswalk
+
+Date: 2026-11-11. B01, P03 and P05 remain **partial**.
+
+Reviewed WordCraft Quick Access AutoSave and title-bar command search. Oasis has an optional debounced host persistence hook, but it is disabled unless the host opts in and there is no user-facing AutoSave toggle/status control. The document Find workflow is not a Tell Me command search, so both catalog entries are classified missing from the default app surface with separate rationales.
+
+Evidence: the crosswalk auditor validates both source commands and the regenerated catalog; the total is 237 of 521 source rows classified, with 284 still unclassified.
+
+Limits: host-configured autosave has not been tested as a complete user workflow. A command launcher and end-to-end AutoSave state remain open.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
