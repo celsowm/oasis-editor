@@ -102,6 +102,309 @@ async function assertUnit(page, testId, unit) {
     `${testId} text and unit should retain readable contrast: ${JSON.stringify(contrast)}`,
   );
 }
+/**
+ * Contextual popups must not outlive the context that owned them, stale
+ * measurements must not be reused when a context returns, and a mixed cell
+ * alignment selection must not masquerade as a uniform one.
+ */
+const transitionImage =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/mXPo5QAAAABJRU5ErkJggg==";
+const transitionEvidence = [];
+async function verifyContextTransitions() {
+  const page = await browser.newPage({
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 1,
+  });
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(`console: ${message.text()}`);
+  });
+  await page.goto(
+    `${base}/tests/browser/ribbon/?${new URLSearchParams({ fixture: "table", theme: "light", locale: "en" })}`,
+  );
+  await waitForRibbonReference(page);
+  await page.evaluate(
+    async ({ image }) => {
+      const c = window.ribbonReference.client;
+      await c.import.html(
+        `<p>Alpha target</p><table><tr><td>Cell one</td><td>Cell two</td></tr><tr><td>Cell three</td><td>Cell four</td></tr></table><p><img alt="Synthetic red square" width="48" height="48" src="${image}" /></p><p>Omega target</p>`,
+      );
+      c.history.clear();
+      c.document.markClean();
+    },
+    { image: transitionImage },
+  );
+
+  const settle = async () => {
+    await page.waitForFunction(() =>
+      [...document.querySelectorAll("[data-ribbon-group]")].every(
+        (group) => Number(group.dataset.ribbonWidthFull) > 0,
+      ),
+    );
+    await page.waitForTimeout(120);
+  };
+  const selectTarget = (target) =>
+    page.evaluate(async ({ target }) => {
+      const { getDocumentParagraphs, paragraphOffsetToPosition } = await import(
+        "/src/core/model.ts"
+      );
+      const c = window.ribbonReference.client;
+      const paragraphs = getDocumentParagraphs(c.document.get());
+      const text = (paragraph) =>
+        paragraph.runs.map((run) => run.text).join("");
+      if (target === "table") {
+        const cell = paragraphs.find((paragraph) =>
+          text(paragraph).includes("Cell one"),
+        );
+        c.selection.set({
+          anchor: paragraphOffsetToPosition(cell, 2),
+          focus: paragraphOffsetToPosition(cell, 2),
+        });
+      } else {
+        const paragraph = paragraphs.find((candidate) =>
+          candidate.runs.some((run) => run.kind === "image"),
+        );
+        c.selection.set({
+          anchor: paragraphOffsetToPosition(paragraph, 0),
+          focus: paragraphOffsetToPosition(paragraph, 1),
+        });
+      }
+    }, { target });
+
+  const snapshot = () =>
+    page.evaluate(() => {
+      const active = document.activeElement;
+      const client = window.ribbonReference.client;
+      return {
+        tab: document.querySelector(".oasis-editor-ribbon-tab-active")
+          ?.textContent,
+        selectedTab: [
+          ...document.querySelectorAll("[role=tab][aria-selected=true]"),
+        ].map((el) => el.getAttribute("data-testid")),
+        portals: document.querySelectorAll(".oasis-editor-portal-theme").length,
+        portalMenus: [
+          ...document.querySelectorAll(
+            ".oasis-editor-portal-theme [role=menu],.oasis-editor-portal-theme [role=listbox]",
+          ),
+        ].filter((el) => el.getBoundingClientRect().width > 0).length,
+        focus: {
+          tag: active?.tagName ?? null,
+          testId: active?.getAttribute?.("data-testid") ?? null,
+          isBody: active === document.body,
+        },
+        groups: [...document.querySelectorAll("[data-ribbon-group]")].map(
+          (group) => ({
+            id: group.dataset.ribbonGroup,
+            state: group.dataset.ribbonState,
+            width: Math.ceil(group.getBoundingClientRect().width),
+            allocated: Number(group.dataset.ribbonWidthAllocated),
+            full: Number(group.dataset.ribbonWidthFull),
+          }),
+        ),
+        document: JSON.stringify(client.document.get()),
+        dirty: client.document.isDirty(),
+        undo: client.history.canUndo(),
+        tableContext: client.commands.state("tableContext").isActive,
+        imageContext: client.commands.state("imageContext").isActive,
+      };
+    });
+
+  const assertPopupClosed = (state, label) => {
+    assert.equal(state.portals, 0, `${label}: popup portal survived`);
+    assert.equal(state.portalMenus, 0, `${label}: popup menu survived`);
+    assert.equal(state.focus.isBody, false, `${label}: focus fell to body`);
+  };
+
+  try {
+    await selectTarget("table");
+    await page.waitForTimeout(180);
+    const tableBaseline = await snapshot();
+    assert.equal(tableBaseline.tableContext, true);
+    assert.ok(
+      tableBaseline.selectedTab.includes("editor-ribbon-tab-tableDesign"),
+      "Table context did not activate Table Design",
+    );
+
+    // A Home popup with keyboard focus inside must close, without mutating the
+    // document or its history, when the selection enters an image context.
+    await page.getByTestId("editor-ribbon-tab-home").click();
+    await page.waitForTimeout(120);
+    await page.getByTestId("editor-toolbar-underline-dropdown").click();
+    await page.getByTestId("editor-toolbar-underline-style-double").focus();
+    const homePopup = await snapshot();
+    assert.equal(homePopup.portals, 1, "Home popup did not open");
+    await selectTarget("image");
+    await page.waitForTimeout(200);
+    const afterImage = await snapshot();
+    assertPopupClosed(afterImage, "Home popup on table -> image");
+    assert.ok(
+      afterImage.selectedTab.includes("editor-ribbon-tab-imageFormat"),
+      "Image context did not activate Picture Format",
+    );
+    assert.equal(afterImage.imageContext, true);
+    assert.equal(afterImage.tableContext, false);
+    assert.equal(
+      afterImage.document,
+      tableBaseline.document,
+      "Context change mutated the document",
+    );
+    assert.equal(afterImage.undo, false, "Context change pushed history");
+    assert.equal(afterImage.dirty, false, "Context change dirtied the document");
+
+    // Returning to the table must not resurrect the popup or reuse widths.
+    await selectTarget("table");
+    await page.waitForTimeout(220);
+    const tableReturn = await snapshot();
+    assertPopupClosed(tableReturn, "table context restored");
+    assert.ok(
+      tableReturn.selectedTab.includes("editor-ribbon-tab-tableDesign"),
+      "Table context did not restore Table Design",
+    );
+    assert.deepEqual(
+      tableReturn.groups,
+      tableBaseline.groups,
+      "Re-entering a context reused stale measurements",
+    );
+
+    // The collapsed-group popup follows the same policy at a narrow width.
+    await page.setViewportSize({ width: 640, height: 900 });
+    await selectTarget("table");
+    await page.waitForTimeout(200);
+    await page.getByTestId("editor-ribbon-tab-home").click();
+    await page.waitForTimeout(120);
+    await page.getByTestId("editor-ribbon-group-font").click();
+    const collapsedPopup = await snapshot();
+    assert.equal(collapsedPopup.portals, 1, "Collapsed group popup did not open");
+    await selectTarget("image");
+    await page.waitForTimeout(220);
+    const afterCollapsed = await snapshot();
+    assertPopupClosed(afterCollapsed, "collapsed Font popup -> image");
+    assert.ok(
+      afterCollapsed.selectedTab.includes("editor-ribbon-tab-imageFormat"),
+      "Collapsed-popup transition did not activate Picture Format",
+    );
+    const collapsedScreenshot = "context-transition-640-image.png";
+    await settle();
+    await page
+      .locator(".oasis-editor-toolbar")
+      .screenshot({ path: resolve(output, collapsedScreenshot) });
+    transitionEvidence.push({
+      sha,
+      dirty,
+      browser: engine,
+      theme: "light",
+      locale: "en",
+      scenario: "transition/collapsed-popup-to-image",
+      screenshot: collapsedScreenshot,
+      requestedWidth: 640,
+      width: await page.evaluate(
+        () => document.querySelector(".oasis-editor-toolbar").clientWidth,
+      ),
+      viewportHeight: 900,
+      dpr: await page.evaluate(() => window.devicePixelRatio),
+    });
+
+    // Mixed cell alignment must be reported as mixed, and uniform state must
+    // recover once a single cell is selected again.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.evaluate(async () => {
+      const { getDocumentParagraphs, paragraphOffsetToPosition } =
+        await import("/src/core/model.ts");
+      const c = window.ribbonReference.client;
+      const paragraphs = getDocumentParagraphs(c.document.get());
+      const text = (paragraph) =>
+        paragraph.runs.map((run) => run.text).join("");
+      const first = paragraphs.find((paragraph) =>
+        text(paragraph).includes("Cell one"),
+      );
+      const fourth = paragraphs.find((paragraph) =>
+        text(paragraph).includes("Cell four"),
+      );
+      const place = (paragraph) => {
+        c.selection.set({
+          anchor: paragraphOffsetToPosition(paragraph, 2),
+          focus: paragraphOffsetToPosition(paragraph, 2),
+        });
+      };
+      place(first);
+      c.commands.execute("tableSetCellAlignment", {
+        horizontal: "right",
+        vertical: "middle",
+      });
+      place(fourth);
+      c.commands.execute("tableSetCellAlignment", {
+        horizontal: "left",
+        vertical: "top",
+      });
+      c.selection.set({
+        anchor: paragraphOffsetToPosition(first, 2),
+        focus: paragraphOffsetToPosition(fourth, 2),
+      });
+      c.history.clear();
+      c.document.markClean();
+    });
+    await page.waitForTimeout(220);
+    await page.getByTestId("editor-ribbon-tab-tableLayout").click();
+    await page.waitForTimeout(150);
+    await settle();
+    const readMatrix = () =>
+      page.getByTestId("editor-toolbar-cell-alignment-matrix").evaluate((el) => ({
+        alignment: el.dataset.alignmentState,
+        horizontal: el.dataset.horizontalState,
+        vertical: el.dataset.verticalState,
+        pressed: el.querySelectorAll('button[aria-pressed="true"]').length,
+        description: el.getAttribute("aria-description"),
+      }));
+    const mixed = await readMatrix();
+    assert.equal(mixed.alignment, "mixed", "Mixed cells were not reported mixed");
+    assert.equal(mixed.pressed, 0, "Mixed selection pressed a single option");
+    assert.ok(mixed.description, "Mixed selection kept a uniform description");
+    const mixedScreenshot = "context-transition-mixed-alignment.png";
+    await settle();
+    await page
+      .locator(".oasis-editor-toolbar")
+      .screenshot({ path: resolve(output, mixedScreenshot) });
+    transitionEvidence.push({
+      sha,
+      dirty,
+      browser: engine,
+      theme: "light",
+      locale: "en",
+      scenario: "transition/mixed-cell-alignment",
+      screenshot: mixedScreenshot,
+      requestedWidth: 1440,
+      width: await page.evaluate(
+        () => document.querySelector(".oasis-editor-toolbar").clientWidth,
+      ),
+      viewportHeight: 900,
+      dpr: await page.evaluate(() => window.devicePixelRatio),
+    });
+    await page.evaluate(async () => {
+      const { getDocumentParagraphs, paragraphOffsetToPosition } =
+        await import("/src/core/model.ts");
+      const c = window.ribbonReference.client;
+      const first = getDocumentParagraphs(c.document.get()).find((paragraph) =>
+        paragraph.runs.map((run) => run.text).join("").includes("Cell one"),
+      );
+      c.selection.set({
+        anchor: paragraphOffsetToPosition(first, 2),
+        focus: paragraphOffsetToPosition(first, 2),
+      });
+    });
+    await page.waitForTimeout(180);
+    const uniform = await readMatrix();
+    assert.equal(uniform.alignment, "uniform");
+    assert.equal(uniform.pressed, 1, "Uniform cell did not press one option");
+    assert.equal(uniform.horizontal, "right");
+    assert.equal(uniform.vertical, "middle");
+    assert.equal(uniform.description, null);
+
+    assert.deepEqual(errors, [], "Context transitions logged errors");
+  } finally {
+    await page.close();
+  }
+}
 try {
   for (const [fixture, tabs] of Object.entries(cases))
     for (const theme of ["light", "dark"])
@@ -519,6 +822,7 @@ try {
         assert.deepEqual(errors, []);
         await page.close();
       }
+  await verifyContextTransitions();
   const expectedLayouts = Object.values(cases).reduce(
     (total, tabs) => total + tabs.length * 2 * 2 * 5,
     0,
@@ -532,6 +836,11 @@ try {
     unitEvidence.length,
     2 * 2 * 2,
     "Unit capture matrix is incomplete",
+  );
+  assert.equal(
+    transitionEvidence.length,
+    2,
+    "Context transition evidence is incomplete",
   );
   for (const record of records) {
     assert.ok(record.scenario, `Missing scenario for ${record.screenshot}`);
@@ -577,6 +886,29 @@ try {
     );
     assert.equal(record.dpr, 1, `Wrong DPR for ${record.screenshot}`);
   }
+  for (const record of transitionEvidence) {
+    assert.ok(
+      record.scenario,
+      `Missing transition scenario for ${record.screenshot}`,
+    );
+    assert.equal(record.sha, sha, `Wrong source SHA for ${record.screenshot}`);
+    assert.equal(
+      record.dirty,
+      dirty,
+      `Inconsistent dirty state for ${record.screenshot}`,
+    );
+    assert.equal(
+      record.browser,
+      engine,
+      `Wrong browser for ${record.screenshot}`,
+    );
+    assert.equal(
+      record.requestedWidth,
+      record.width,
+      `Wrong measured width for ${record.screenshot}`,
+    );
+    assert.equal(record.dpr, 1, `Wrong DPR for ${record.screenshot}`);
+  }
   await writeFile(
     resolve(output, "verification.json"),
     JSON.stringify(
@@ -585,13 +917,14 @@ try {
         hashes: Object.fromEntries(hashes),
         records,
         unitEvidence,
+        transitionEvidence,
       },
       null,
       2,
     ) + "\n",
   );
   console.log(
-    `Verified ${records.length} contextual layouts and ${unitEvidence.length} unit screenshots in ${engine}; seven deterministic fixtures, selection/context removal and actual widths.`,
+    `Verified ${records.length} contextual layouts and ${unitEvidence.length} unit screenshots in ${engine}; seven deterministic fixtures, selection/context removal, popup transitions and actual widths.`,
   );
 } finally {
   await browser.close();
