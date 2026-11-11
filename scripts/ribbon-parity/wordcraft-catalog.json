@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 395
+    "linkedRows": 403
   },
   "defaultTabs": [
     "File",
@@ -4092,7 +4092,9 @@
       "group": "Table Styles",
       "name": "New Table Style",
       "command": "table.newStyle",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.newStyle"
+      ]
     },
     {
       "index": 357,
@@ -4101,7 +4103,9 @@
       "group": "Table Styles",
       "name": "Modify Table Style",
       "command": "table.modifyStyle",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.modifyStyle"
+      ]
     },
     {
       "index": 358,
@@ -4110,7 +4114,9 @@
       "group": "Table Styles",
       "name": "Delete Table Style",
       "command": "table.deleteStyle",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.deleteStyle"
+      ]
     },
     {
       "index": 359,
@@ -4229,7 +4235,9 @@
       "group": "Table",
       "name": "Table Direction",
       "command": "table.rtl",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.direction"
+      ]
     },
     {
       "index": 370,
@@ -4249,7 +4257,9 @@
       "group": "Draw",
       "name": "Eraser",
       "command": "table.eraser",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "table.eraser"
+      ]
     },
     {
       "index": 372,
@@ -5235,7 +5245,9 @@
       "group": "Navigation",
       "name": "Previous Section",
       "command": "hf.previous",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "headerFooter.previousSection"
+      ]
     },
     {
       "index": 472,
@@ -5244,7 +5256,9 @@
       "group": "Navigation",
       "name": "Next Section",
       "command": "hf.next",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "headerFooter.nextSection"
+      ]
     },
     {
       "index": 473,
@@ -5253,7 +5267,9 @@
       "group": "Position",
       "name": "Header from Top",
       "command": "hf.position",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "headerFooter.position"
+      ]
     },
     {
       "index": 474,

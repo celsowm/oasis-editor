@@ -1020,6 +1020,16 @@ Evidence: the crosswalk now classifies 395 of 521 source rows; 126 remain unclas
 
 Limits: zoom and outline behavior still need keyboard/accessibility workflows; View remains without selectable document view modes or window management.
 
+## Delivery 83 — Table and Header/Footer inventory review
+
+Date: 2026-11-11. B01, A02 and P04 remain **partial**.
+
+Reviewed eight remaining contextual commands across Table Design, Table Layout and Header/Footer. The table-style gallery applies existing styles but does not create/manage definitions; no table direction or eraser mode exists. Header/footer story editing has no previous/next section navigation or header-position control, despite preserving imported header distance data.
+
+Evidence: 403 of 521 source rows are now classified; 118 remain unclassified. The generated snapshot and commandless-rationale checks pass.
+
+Limits: table style fidelity, RTL table layout and section-specific header/footer behavior remain open under A02/P04/P06.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

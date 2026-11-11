@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `425` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `433` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -436,6 +436,14 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `view.onePage` | `view.onePage` | — | Status bar > zoom slider | ui-only | ui-only | partial | not-applicable |
 | `view.multiplePages` | `view.multiplePages` | — | Status bar > zoom slider | ui-only | ui-only | partial | not-applicable |
 | `view.pageWidth` | `view.pageWidth` | — | Status bar > zoom slider | ui-only | ui-only | partial | not-applicable |
+| `table.newStyle` | `table.newStyle` | — | — | missing | missing | missing | unverified |
+| `table.modifyStyle` | `table.modifyStyle` | — | — | missing | missing | missing | unverified |
+| `table.deleteStyle` | `table.deleteStyle` | — | — | missing | missing | missing | unverified |
+| `table.direction` | `table.rtl` | — | — | missing | missing | missing | unverified |
+| `table.eraser` | `table.eraser` | — | — | missing | missing | missing | unverified |
+| `headerFooter.previousSection` | `hf.previous` | — | — | missing | missing | missing | unverified |
+| `headerFooter.nextSection` | `hf.next` | — | — | missing | missing | missing | unverified |
+| `headerFooter.position` | `hf.position` | — | — | missing | missing | missing | unverified |
 
 ## Open verification questions
 
@@ -864,6 +872,14 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 423. **view.onePage:** One Page: Oasis permits arbitrary zoom percentages but has no fit-one-page command or preset. Page-fit behavior and keyboard access remain unverified.
 424. **view.multiplePages:** Multiple Pages: Oasis permits arbitrary zoom percentages but has no fit-multiple-pages command or page-layout preset.
 425. **view.pageWidth:** Page Width: Oasis permits arbitrary zoom percentages but has no fit-page-width command or preset; responsive canvas width is not a width-fit action.
+426. **table.newStyle:** New Table Style: The Table Design gallery applies bundled styles, but no user-defined table-style creation workflow is exposed.
+427. **table.modifyStyle:** Modify Table Style: The Table Design gallery applies bundled styles, but no table-style definition editor is exposed.
+428. **table.deleteStyle:** Delete Table Style: No table-style management surface deletes a user-defined style from the default app.
+429. **table.direction:** Table Direction: No table-direction command or UI changes cell/document flow direction for a table. Paragraph RTL support is not table direction.
+430. **table.eraser:** Table Eraser: No table border/cell eraser mode is exposed. Border presets and direct cell formatting are different workflows.
+431. **headerFooter.previousSection:** Previous Section: The header/footer editor exposes no navigation command to move to the previous section story.
+432. **headerFooter.nextSection:** Next Section: The header/footer editor exposes no navigation command to move to the next section story.
+433. **headerFooter.position:** Header from Top: Header distance is preserved in document data, but no default control changes the header’s distance from the page top.
 
 ## Audit interpretation
 

@@ -4982,6 +4982,78 @@
         "token": "editor-statusbar-zoom-control"
       },
       "notes": "Page Width: Oasis permits arbitrary zoom percentages but has no fit-page-width command or preset; responsive canvas width is not a width-fit action."
+    },
+    {
+      "id": "table.newStyle",
+      "wordcraftCommand": "table.newStyle",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "New Table Style: The Table Design gallery applies bundled styles, but no user-defined table-style creation workflow is exposed."
+    },
+    {
+      "id": "table.modifyStyle",
+      "wordcraftCommand": "table.modifyStyle",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Modify Table Style: The Table Design gallery applies bundled styles, but no table-style definition editor is exposed."
+    },
+    {
+      "id": "table.deleteStyle",
+      "wordcraftCommand": "table.deleteStyle",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Delete Table Style: No table-style management surface deletes a user-defined style from the default app."
+    },
+    {
+      "id": "table.direction",
+      "wordcraftCommand": "table.rtl",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Table Direction: No table-direction command or UI changes cell/document flow direction for a table. Paragraph RTL support is not table direction."
+    },
+    {
+      "id": "table.eraser",
+      "wordcraftCommand": "table.eraser",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Table Eraser: No table border/cell eraser mode is exposed. Border presets and direct cell formatting are different workflows."
+    },
+    {
+      "id": "headerFooter.previousSection",
+      "wordcraftCommand": "hf.previous",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Previous Section: The header/footer editor exposes no navigation command to move to the previous section story."
+    },
+    {
+      "id": "headerFooter.nextSection",
+      "wordcraftCommand": "hf.next",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Next Section: The header/footer editor exposes no navigation command to move to the next section story."
+    },
+    {
+      "id": "headerFooter.position",
+      "wordcraftCommand": "hf.position",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Header from Top: Header distance is preserved in document data, but no default control changes the header’s distance from the page top."
     }
   ]
 }
