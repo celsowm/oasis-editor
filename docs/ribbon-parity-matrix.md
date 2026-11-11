@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `332` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `342` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -343,6 +343,16 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `draw.inkToShape` | `draw.inkToShape` | — | — | missing | missing | missing | unverified |
 | `draw.inkToMath` | `draw.inkToMath` | — | — | missing | missing | missing | unverified |
 | `draw.inkReplay` | `draw.replay` | — | — | missing | missing | missing | unverified |
+| `design.theme` | `design.theme` | `applyDocumentTheme` | `design/documentFormatting` | partial | partial | partial | partial |
+| `design.styleSet` | `design.styleSet` | `applyDocumentTheme` | `design/documentFormatting` | partial | partial | partial | partial |
+| `design.colors` | `design.themeColors` | `setDocumentColorScheme` | `design/documentFormatting` | partial | partial | partial | partial |
+| `design.fonts` | `design.themeFonts` | `setDocumentFontScheme` | `design/documentFormatting` | partial | partial | partial | partial |
+| `design.paragraphSpacing` | `design.paragraphSpacing` | `setDocumentParagraphSpacing` | `design/documentFormatting` | partial | partial | partial | partial |
+| `design.effects` | `design.effects` | `setDocumentEffects` | `design/documentFormatting` | partial | partial | partial | partial |
+| `design.setDefault` | `design.setDefault` | `setDocumentDesignDefault` | `design/documentFormatting` | partial | partial | partial | partial |
+| `design.watermark` | `design.watermark` | `setDocumentWatermark` | `design/pageBackground` | partial | partial | partial | partial |
+| `design.pageColor` | `design.pageColor` | `setDocumentPageColor` | `design/pageBackground` | partial | partial | partial | partial |
+| `design.pageBorders` | `design.pageBorders` | `setDocumentPageBorder` | `design/pageBackground` | partial | partial | partial | partial |
 
 ## Open verification questions
 
@@ -678,6 +688,16 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 330. **draw.inkToShape:** Ink to Shape: No ink recognition pipeline converts freehand strokes into shape objects. The shape gallery inserts preset shapes directly.
 331. **draw.inkToMath:** Ink to Math: The equation editor accepts structured/typed input, but no handwriting recognition converts ink to math.
 332. **draw.inkReplay:** Ink Replay: No ink stroke history or replay workflow is exposed.
+333. **design.theme:** Theme: The Design gallery applies one of Oasis’s built-in document themes. Theme coverage, preview/commit behavior, selection preservation and DOCX theme fidelity remain under verification.
+334. **design.styleSet:** Style Set: The same gallery applies bundled Oasis themes, but does not expose Word’s independent Style Set library or user-defined sets. This is a related, partial workflow.
+335. **design.colors:** Colors: The Design gallery applies a bundled document color scheme. Scheme completeness, live preview, mixed document state and DOCX theme-color interoperability remain open.
+336. **design.fonts:** Fonts: The Design gallery applies a bundled heading/body font scheme. Font availability, fallback and DOCX theme-font interoperability need verification.
+337. **design.paragraphSpacing:** Paragraph Spacing: The Design gallery applies a preset paragraph-spacing profile. Per-style spacing, full line-spacing controls and DOCX round-trip need workflow verification.
+338. **design.effects:** Effects: The Design gallery applies a bundled effects preset. Word’s full document-effects set and rendering interoperability remain unverified.
+339. **design.setDefault:** Set as Default: The File-independent Design action marks the current Oasis design as the default. Scope, persistence and host/profile behavior need verification against Word’s application-level default.
+340. **design.watermark:** Watermark: The Watermark panel supports Oasis text/image watermark settings, but template breadth, placement variants and DOCX watermark fidelity remain partial.
+341. **design.pageColor:** Page Color: The Design page-color picker sets the document page color. Print/export behavior, theme palette coverage and DOCX interoperability need verification.
+342. **design.pageBorders:** Page Borders: The page-border panel exposes style, color, width and distance settings; Word’s art borders, application scope and DOCX fidelity remain unverified.
 
 ## Audit interpretation
 

@@ -134,10 +134,6 @@ export function DesignGallery(props: DesignGalleryProps): JSX.Element {
   const [previewTheme, setPreviewTheme] = createSignal<DesignThemeId | null>(
     null,
   );
-  const apply = (command: string, payload: unknown): void => {
-    props.api.commands.execute(command, payload);
-    props.api.focusEditor();
-  };
   const selectedTheme = createMemo(() =>
     String(props.api.commands.state("applyDocumentTheme").value ?? ""),
   );
@@ -185,7 +181,10 @@ export function DesignGallery(props: DesignGalleryProps): JSX.Element {
                 onMouseLeave={() => setPreviewTheme(null)}
                 onFocus={() => setPreviewTheme(theme.id)}
                 onBlur={() => setPreviewTheme(null)}
-                onClick={() => apply("applyDocumentTheme", theme.id)}
+                onClick={() => {
+                  props.api.commands.execute("applyDocumentTheme", theme.id);
+                  props.api.focusEditor();
+                }}
               >
                 <span
                   class="oasis-editor-design-theme-preview"
@@ -248,7 +247,13 @@ export function DesignGallery(props: DesignGalleryProps): JSX.Element {
                 role="option"
                 aria-selected={selectedColors() === scheme.id}
                 data-testid={`editor-toolbar-design-color-${scheme.id}`}
-                onClick={() => apply("setDocumentColorScheme", scheme.id)}
+                onClick={() => {
+                  props.api.commands.execute(
+                    "setDocumentColorScheme",
+                    scheme.id,
+                  );
+                  props.api.focusEditor();
+                }}
               >
                 <span class="oasis-editor-design-swatch-row">
                   <For each={scheme.colors}>
@@ -283,7 +288,13 @@ export function DesignGallery(props: DesignGalleryProps): JSX.Element {
                 role="option"
                 aria-selected={selectedFonts() === scheme.id}
                 data-testid={`editor-toolbar-design-font-${scheme.id}`}
-                onClick={() => apply("setDocumentFontScheme", scheme.id)}
+                onClick={() => {
+                  props.api.commands.execute(
+                    "setDocumentFontScheme",
+                    scheme.id,
+                  );
+                  props.api.focusEditor();
+                }}
               >
                 <strong style={{ "font-family": scheme.heading }}>
                   Título
@@ -308,9 +319,13 @@ export function DesignGallery(props: DesignGalleryProps): JSX.Element {
                     "oasis-editor-design-card-active":
                       selectedSpacing() === option.id,
                   }}
-                  onClick={() =>
-                    apply("setDocumentParagraphSpacing", option.id)
-                  }
+                  onClick={() => {
+                    props.api.commands.execute(
+                      "setDocumentParagraphSpacing",
+                      option.id,
+                    );
+                    props.api.focusEditor();
+                  }}
                 >
                   <strong>{option.label}</strong>
                   <small>{option.sample}</small>
@@ -331,7 +346,10 @@ export function DesignGallery(props: DesignGalleryProps): JSX.Element {
                     "oasis-editor-design-card-active":
                       selectedEffects() === option.id,
                   }}
-                  onClick={() => apply("setDocumentEffects", option.id)}
+                  onClick={() => {
+                    props.api.commands.execute("setDocumentEffects", option.id);
+                    props.api.focusEditor();
+                  }}
                 >
                   <strong>{option.label}</strong>
                   <small>{option.description}</small>

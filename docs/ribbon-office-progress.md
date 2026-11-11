@@ -960,6 +960,16 @@ Evidence: all 301 of 521 source rows classified so far pass the crosswalk audit;
 
 Limits: the entire ink/drawing family remains open under M4; these inventory classifications do not implement it.
 
+## Delivery 77 — Design tab crosswalk and static command evidence
+
+Date: 2026-11-11. B01, D03 and A01 remain **partial**.
+
+Mapped all ten Design source commands against the live gallery and page-background controls. Themes, color/font schemes, paragraph spacing, effects, default design, watermark, page color and borders are linked as partial capabilities with separate interoperability notes. Replaced dynamic command dispatch in the Design gallery with explicit command literals so the static parity auditor can verify each action. Added the Design controls to the shared placement inventory used by the audit.
+
+Evidence: `npm run audit:ribbon` passes and validates the command/placement mapping for all ten controls. The crosswalk now classifies 311 of 521 source rows; 210 remain unclassified.
+
+Limits: visual states, full theme/style-set breadth, accessibility and DOCX/PDF fidelity remain independently open under D03/A01/P06.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

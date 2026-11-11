@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 301
+    "linkedRows": 311
   },
   "defaultTabs": [
     "File",
@@ -2387,7 +2387,9 @@
       "group": "Document Formatting",
       "name": "Themes",
       "command": "design.theme",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "design.theme"
+      ]
     },
     {
       "index": 201,
@@ -2396,7 +2398,9 @@
       "group": "Document Formatting",
       "name": "Style Set",
       "command": "design.styleSet",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "design.styleSet"
+      ]
     },
     {
       "index": 202,
@@ -2405,7 +2409,9 @@
       "group": "Document Formatting",
       "name": "Colors",
       "command": "design.themeColors",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "design.colors"
+      ]
     },
     {
       "index": 203,
@@ -2414,7 +2420,9 @@
       "group": "Document Formatting",
       "name": "Fonts",
       "command": "design.themeFonts",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "design.fonts"
+      ]
     },
     {
       "index": 204,
@@ -2423,7 +2431,9 @@
       "group": "Document Formatting",
       "name": "Paragraph Spacing",
       "command": "design.paragraphSpacing",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "design.paragraphSpacing"
+      ]
     },
     {
       "index": 205,
@@ -2432,7 +2442,9 @@
       "group": "Document Formatting",
       "name": "Effects",
       "command": "design.effects",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "design.effects"
+      ]
     },
     {
       "index": 206,
@@ -2441,7 +2453,9 @@
       "group": "Document Formatting",
       "name": "Set as Default",
       "command": "design.setDefault",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "design.setDefault"
+      ]
     },
     {
       "index": 207,
@@ -2450,7 +2464,9 @@
       "group": "Page Background",
       "name": "Watermark",
       "command": "design.watermark",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "design.watermark"
+      ]
     },
     {
       "index": 208,
@@ -2459,7 +2475,9 @@
       "group": "Page Background",
       "name": "Page Color",
       "command": "design.pageColor",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "design.pageColor"
+      ]
     },
     {
       "index": 209,
@@ -2468,7 +2486,9 @@
       "group": "Page Background",
       "name": "Page Borders",
       "command": "design.pageBorders",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "design.pageBorders"
+      ]
     },
     {
       "index": 210,

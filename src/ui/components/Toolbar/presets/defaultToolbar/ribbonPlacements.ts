@@ -11,6 +11,31 @@ interface RibbonPlacement {
 }
 
 const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
+  "editor-toolbar-design-themes": {
+    tab: "design",
+    group: "documentFormatting",
+    row: 1,
+  },
+  "editor-toolbar-design-default": {
+    tab: "design",
+    group: "documentFormatting",
+    row: 2,
+  },
+  "editor-toolbar-design-watermark": {
+    tab: "design",
+    group: "pageBackground",
+    row: 1,
+  },
+  "editor-toolbar-design-page-color": {
+    tab: "design",
+    group: "pageBackground",
+    row: 1,
+  },
+  "editor-toolbar-design-page-borders": {
+    tab: "design",
+    group: "pageBackground",
+    row: 2,
+  },
   "editor-toolbar-paste": { tab: "home", group: "clipboard", row: 1 },
   "editor-toolbar-copy": { tab: "home", group: "clipboard", row: 2 },
   "editor-toolbar-cut": { tab: "home", group: "clipboard", row: 1 },
