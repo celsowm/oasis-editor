@@ -1040,6 +1040,16 @@ Evidence: the catalog now classifies 429 of 521 source rows; 92 remain unclassif
 
 Limits: Developer controls, SmartArt and Charts remain explicit M4 implementation work; no insertion, editing or interoperability workflow is claimed.
 
+## Delivery 85 — Picture and Shape Format inventory review
+
+Date: 2026-11-11. B01, I03 and M4 object tools remain **partial**.
+
+Reviewed the remaining Picture Format and Shape Format commands. Oasis's picture border, crop and text-box fill/outline controls are not equivalent to image correction, removal/compression, picture styles or WordArt effects. Linked Shape Format's Create Link to the shared Insert Link command as a related path in a different Ribbon location; classified the other unsupported image/shape authoring tasks individually.
+
+Evidence: the crosswalk now classifies 443 of 521 source rows; 78 remain unclassified. Static audits validate the link command/placement and written rationales for all missing tasks.
+
+Limits: image and shape workflows remain partial, including object selection, visual effects, accessibility and DOCX round-trip.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

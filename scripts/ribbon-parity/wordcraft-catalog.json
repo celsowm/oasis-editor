@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 429
+    "linkedRows": 443
   },
   "defaultTabs": [
     "File",
@@ -4872,7 +4872,9 @@
       "group": "Adjust",
       "name": "Remove Background",
       "command": "picture.removeBackground",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "picture.removeBackground"
+      ]
     },
     {
       "index": 431,
@@ -4881,7 +4883,9 @@
       "group": "Adjust",
       "name": "Corrections",
       "command": "picture.corrections",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "picture.corrections"
+      ]
     },
     {
       "index": 432,
@@ -4890,7 +4894,9 @@
       "group": "Adjust",
       "name": "Color",
       "command": "picture.color",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "picture.color"
+      ]
     },
     {
       "index": 433,
@@ -4899,7 +4905,9 @@
       "group": "Adjust",
       "name": "Artistic Effects",
       "command": "picture.effects",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "picture.artisticEffects"
+      ]
     },
     {
       "index": 434,
@@ -4919,7 +4927,9 @@
       "group": "Adjust",
       "name": "Compress Pictures",
       "command": "picture.compress",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "picture.compress"
+      ]
     },
     {
       "index": 436,
@@ -4928,7 +4938,9 @@
       "group": "Adjust",
       "name": "Change Picture",
       "command": "picture.change",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "picture.change"
+      ]
     },
     {
       "index": 437,
@@ -4948,7 +4960,9 @@
       "group": "Picture Styles",
       "name": "Picture Styles",
       "command": "picture.style",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "picture.styles"
+      ]
     },
     {
       "index": 439,
@@ -5178,7 +5192,9 @@
       "group": "Shape Styles",
       "name": "Format Shape Pane",
       "command": "view.formatShapePane",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "shape.formatPane"
+      ]
     },
     {
       "index": 460,
@@ -5199,7 +5215,9 @@
       "group": "Shape Styles",
       "name": "Shape Effects",
       "command": "shape.effects",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "shape.effects"
+      ]
     },
     {
       "index": 462,
@@ -5208,7 +5226,9 @@
       "group": "WordArt Styles",
       "name": "WordArt Quick Styles",
       "command": "wordArt.style",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "shape.wordArtStyles"
+      ]
     },
     {
       "index": 463,
@@ -5217,7 +5237,9 @@
       "group": "WordArt Styles",
       "name": "Text Fill",
       "command": "wordArt.textFill",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "shape.textFill"
+      ]
     },
     {
       "index": 464,
@@ -5226,7 +5248,9 @@
       "group": "WordArt Styles",
       "name": "Text Outline",
       "command": "wordArt.textOutline",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "shape.textOutline"
+      ]
     },
     {
       "index": 465,
@@ -5235,7 +5259,9 @@
       "group": "WordArt Styles",
       "name": "Text Effects Transform",
       "command": "wordArt.transform",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "shape.textTransform"
+      ]
     },
     {
       "index": 466,
@@ -5266,7 +5292,9 @@
       "group": "Text",
       "name": "Create Link",
       "command": "shape.link",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "shape.createLink"
+      ]
     },
     {
       "index": 469,

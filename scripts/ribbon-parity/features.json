@@ -1725,7 +1725,7 @@
       "exposure": "core-only",
       "semantics": "partial",
       "persistence": "unverified",
-      "notes": "Oasis registers a command that sets the selected list paragraphs' explicit level from 0\u20138, matching WordCraft's task; no default Ribbon or menubar control exposes the numeric level. Mixed list selections, numbering definitions, undo and DOCX interoperability need verification."
+      "notes": "Oasis registers a command that sets the selected list paragraphs' explicit level from 0–8, matching WordCraft's task; no default Ribbon or menubar control exposes the numeric level. Mixed list selections, numbering definitions, undo and DOCX interoperability need verification."
     },
     {
       "id": "home.setNumberingValue",
@@ -3152,7 +3152,7 @@
         "file": "src/ui/components/Toolbar/controls/TableCellAlignmentMatrix.tsx",
         "token": "editor-toolbar-cell-align-bottom-center"
       },
-      "notes": "The 3\u00d73 positional picker combines horizontal and vertical alignment on selected cells through one command. Keyboard, multi-cell mixed-state, selection retention, undo and DOCX round-trip still need workflow verification."
+      "notes": "The 3×3 positional picker combines horizontal and vertical alignment on selected cells through one command. Keyboard, multi-cell mixed-state, selection retention, undo and DOCX round-trip still need workflow verification."
     },
     {
       "id": "table.textDirection",
@@ -3509,7 +3509,7 @@
       "exposure": "missing",
       "semantics": "missing",
       "persistence": "unverified",
-      "notes": "Clipboard Pane: No persistent clipboard task pane is exposed in the default app surfaces. Cut/copy/paste commands are direct editing actions and do not provide Word\u2019s multi-item clipboard history."
+      "notes": "Clipboard Pane: No persistent clipboard task pane is exposed in the default app surfaces. Cut/copy/paste commands are direct editing actions and do not provide Word’s multi-item clipboard history."
     },
     {
       "id": "home.phoneticGuide",
@@ -3899,7 +3899,7 @@
       "exposure": "missing",
       "semantics": "missing",
       "persistence": "unverified",
-      "notes": "Text from File: DOCX import replaces/loads a document; no workflow inserts another file\u2019s text at the current selection."
+      "notes": "Text from File: DOCX import replaces/loads a document; no workflow inserts another file’s text at the current selection."
     },
     {
       "id": "insert.inkEquation",
@@ -4073,7 +4073,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "partial",
-      "notes": "Theme: The Design gallery applies one of Oasis\u2019s built-in document themes. Theme coverage, preview/commit behavior, selection preservation and DOCX theme fidelity remain under verification."
+      "notes": "Theme: The Design gallery applies one of Oasis’s built-in document themes. Theme coverage, preview/commit behavior, selection preservation and DOCX theme fidelity remain under verification."
     },
     {
       "id": "design.styleSet",
@@ -4086,7 +4086,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "partial",
-      "notes": "Style Set: The same gallery applies bundled Oasis themes, but does not expose Word\u2019s independent Style Set library or user-defined sets. This is a related, partial workflow."
+      "notes": "Style Set: The same gallery applies bundled Oasis themes, but does not expose Word’s independent Style Set library or user-defined sets. This is a related, partial workflow."
     },
     {
       "id": "design.colors",
@@ -4138,7 +4138,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "partial",
-      "notes": "Effects: The Design gallery applies a bundled effects preset. Word\u2019s full document-effects set and rendering interoperability remain unverified."
+      "notes": "Effects: The Design gallery applies a bundled effects preset. Word’s full document-effects set and rendering interoperability remain unverified."
     },
     {
       "id": "design.setDefault",
@@ -4151,7 +4151,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "partial",
-      "notes": "Set as Default: The File-independent Design action marks the current Oasis design as the default. Scope, persistence and host/profile behavior need verification against Word\u2019s application-level default."
+      "notes": "Set as Default: The File-independent Design action marks the current Oasis design as the default. Scope, persistence and host/profile behavior need verification against Word’s application-level default."
     },
     {
       "id": "design.watermark",
@@ -4190,7 +4190,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "partial",
-      "notes": "Page Borders: The page-border panel exposes style, color, width and distance settings; Word\u2019s art borders, application scope and DOCX fidelity remain unverified."
+      "notes": "Page Borders: The page-border panel exposes style, color, width and distance settings; Word’s art borders, application scope and DOCX fidelity remain unverified."
     },
     {
       "id": "layout.pageSetupDialog",
@@ -4930,7 +4930,7 @@
         "file": "src/ui/components/Outline/OutlinePanel.tsx",
         "token": "oasis-outline-panel"
       },
-      "notes": "Outline: Oasis provides heading navigation in an Outline panel, but not Word\u2019s document-structure editing mode. Promote/demote, selection and view-mode behavior differ."
+      "notes": "Outline: Oasis provides heading navigation in an Outline panel, but not Word’s document-structure editing mode. Promote/demote, selection and view-mode behavior differ."
     },
     {
       "id": "view.onePage",
@@ -5053,7 +5053,7 @@
       "exposure": "missing",
       "semantics": "missing",
       "persistence": "unverified",
-      "notes": "Header from Top: Header distance is preserved in document data, but no default control changes the header\u2019s distance from the page top."
+      "notes": "Header from Top: Header distance is preserved in document data, but no default control changes the header’s distance from the page top."
     },
     {
       "id": "readMode.columnWidth",
@@ -5288,6 +5288,136 @@
       "semantics": "missing",
       "persistence": "unverified",
       "notes": "Data Labels: No chart data-label formatting workflow is exposed."
+    },
+    {
+      "id": "picture.removeBackground",
+      "wordcraftCommand": "picture.removeBackground",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Remove Background: No image segmentation or subject-background removal workflow is exposed."
+    },
+    {
+      "id": "picture.corrections",
+      "wordcraftCommand": "picture.corrections",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Corrections: No image sharpness/brightness/contrast correction controls are exposed."
+    },
+    {
+      "id": "picture.color",
+      "wordcraftCommand": "picture.color",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Color: No picture color saturation/tone/recolor workflow is exposed; page and shape color controls target different objects."
+    },
+    {
+      "id": "picture.artisticEffects",
+      "wordcraftCommand": "picture.effects",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Artistic Effects: No raster artistic effect presets are exposed."
+    },
+    {
+      "id": "picture.compress",
+      "wordcraftCommand": "picture.compress",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Compress Pictures: No image-resolution/compression workflow is exposed."
+    },
+    {
+      "id": "picture.change",
+      "wordcraftCommand": "picture.change",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Change Picture: No replace-image workflow preserves an existing picture’s layout/formatting while choosing another source."
+    },
+    {
+      "id": "picture.styles",
+      "wordcraftCommand": "picture.style",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Picture Styles: Oasis has a picture-border picker, but no preset Picture Styles gallery with effects and frames."
+    },
+    {
+      "id": "shape.formatPane",
+      "wordcraftCommand": "view.formatShapePane",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Format Shape Pane: No selected-shape formatting pane is exposed; available fill/outline controls do not form Word’s full pane."
+    },
+    {
+      "id": "shape.effects",
+      "wordcraftCommand": "shape.effects",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Shape Effects: Oasis exposes basic text-box fill/outline but no shape effects such as shadow, glow, bevel or 3D rotation."
+    },
+    {
+      "id": "shape.wordArtStyles",
+      "wordcraftCommand": "wordArt.style",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "WordArt Quick Styles: No WordArt object model, preset gallery or transform styles are exposed."
+    },
+    {
+      "id": "shape.textFill",
+      "wordcraftCommand": "wordArt.textFill",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Text Fill: No WordArt text-fill control exists; shape fill targets the container rather than its text."
+    },
+    {
+      "id": "shape.textOutline",
+      "wordcraftCommand": "wordArt.textOutline",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Text Outline: No WordArt text-outline control exists; shape outline targets the container rather than its text."
+    },
+    {
+      "id": "shape.textTransform",
+      "wordcraftCommand": "wordArt.transform",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Text Effects Transform: No WordArt transform/effect workflow is exposed."
+    },
+    {
+      "id": "shape.createLink",
+      "wordcraftCommand": "shape.link",
+      "oasisCommand": "link",
+      "ribbonId": "editor-toolbar-link",
+      "tab": "insert",
+      "group": "links",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Oasis provides the shared Insert Link dialog/command, which can create a hyperlink from a selected text range; it is located on Insert and is not a Shape Format text action. Link targeting within text-box body selection needs workflow verification."
     }
   ]
 }

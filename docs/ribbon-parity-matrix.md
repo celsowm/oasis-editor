@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `459` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `473` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -470,6 +470,20 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `chart.title` | `chart.title` | — | — | missing | missing | missing | unverified |
 | `chart.legend` | `chart.legend` | — | — | missing | missing | missing | unverified |
 | `chart.dataLabels` | `chart.dataLabels` | — | — | missing | missing | missing | unverified |
+| `picture.removeBackground` | `picture.removeBackground` | — | — | missing | missing | missing | unverified |
+| `picture.corrections` | `picture.corrections` | — | — | missing | missing | missing | unverified |
+| `picture.color` | `picture.color` | — | — | missing | missing | missing | unverified |
+| `picture.artisticEffects` | `picture.effects` | — | — | missing | missing | missing | unverified |
+| `picture.compress` | `picture.compress` | — | — | missing | missing | missing | unverified |
+| `picture.change` | `picture.change` | — | — | missing | missing | missing | unverified |
+| `picture.styles` | `picture.style` | — | — | missing | missing | missing | unverified |
+| `shape.formatPane` | `view.formatShapePane` | — | — | missing | missing | missing | unverified |
+| `shape.effects` | `shape.effects` | — | — | missing | missing | missing | unverified |
+| `shape.wordArtStyles` | `wordArt.style` | — | — | missing | missing | missing | unverified |
+| `shape.textFill` | `wordArt.textFill` | — | — | missing | missing | missing | unverified |
+| `shape.textOutline` | `wordArt.textOutline` | — | — | missing | missing | missing | unverified |
+| `shape.textTransform` | `wordArt.transform` | — | — | missing | missing | missing | unverified |
+| `shape.createLink` | `shape.link` | `link` | `insert/links` | partial | partial | partial | partial |
 
 ## Open verification questions
 
@@ -932,6 +946,20 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 457. **chart.title:** Chart Title: No chart object/title element or chart formatting workflow is exposed.
 458. **chart.legend:** Legend: No chart legend formatting workflow is exposed.
 459. **chart.dataLabels:** Data Labels: No chart data-label formatting workflow is exposed.
+460. **picture.removeBackground:** Remove Background: No image segmentation or subject-background removal workflow is exposed.
+461. **picture.corrections:** Corrections: No image sharpness/brightness/contrast correction controls are exposed.
+462. **picture.color:** Color: No picture color saturation/tone/recolor workflow is exposed; page and shape color controls target different objects.
+463. **picture.artisticEffects:** Artistic Effects: No raster artistic effect presets are exposed.
+464. **picture.compress:** Compress Pictures: No image-resolution/compression workflow is exposed.
+465. **picture.change:** Change Picture: No replace-image workflow preserves an existing picture’s layout/formatting while choosing another source.
+466. **picture.styles:** Picture Styles: Oasis has a picture-border picker, but no preset Picture Styles gallery with effects and frames.
+467. **shape.formatPane:** Format Shape Pane: No selected-shape formatting pane is exposed; available fill/outline controls do not form Word’s full pane.
+468. **shape.effects:** Shape Effects: Oasis exposes basic text-box fill/outline but no shape effects such as shadow, glow, bevel or 3D rotation.
+469. **shape.wordArtStyles:** WordArt Quick Styles: No WordArt object model, preset gallery or transform styles are exposed.
+470. **shape.textFill:** Text Fill: No WordArt text-fill control exists; shape fill targets the container rather than its text.
+471. **shape.textOutline:** Text Outline: No WordArt text-outline control exists; shape outline targets the container rather than its text.
+472. **shape.textTransform:** Text Effects Transform: No WordArt transform/effect workflow is exposed.
+473. **shape.createLink:** Oasis provides the shared Insert Link dialog/command, which can create a hyperlink from a selected text range; it is located on Insert and is not a Shape Format text action. Link targeting within text-box body selection needs workflow verification.
 
 ## Audit interpretation
 
