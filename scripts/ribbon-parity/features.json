@@ -4191,6 +4191,46 @@
       "semantics": "partial",
       "persistence": "partial",
       "notes": "Page Borders: The page-border panel exposes style, color, width and distance settings; Word’s art borders, application scope and DOCX fidelity remain unverified."
+    },
+    {
+      "id": "layout.pageSetupDialog",
+      "wordcraftCommand": "layout.pageSetup",
+      "oasisCommand": "setPageMargins",
+      "ribbonId": "editor-toolbar-margins",
+      "tab": "layout",
+      "group": "section",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "Oasis exposes separate Margins and Section dropdowns for common page-setup tasks, but has no single Page Setup dialog. Paper-size breadth, combined scope and full print/DOCX behavior remain open."
+    },
+    {
+      "id": "layout.documentGrid",
+      "wordcraftCommand": "layout.documentGrid",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Document Grid: No document-grid configuration command or control is exposed in the default app."
+    },
+    {
+      "id": "layout.selectionPane",
+      "wordcraftCommand": "arrange.selectionPane",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Selection Pane: No object-list pane for selecting, hiding or reordering document objects is exposed. Canvas hit testing and outline navigation are different workflows."
+    },
+    {
+      "id": "layout.groupObjects",
+      "wordcraftCommand": "arrange.group",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Group: Oasis has no grouped-object model or command in the default app; selecting individual shapes does not create a persistent group."
     }
   ]
 }

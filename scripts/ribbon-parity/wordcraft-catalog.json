@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 311
+    "linkedRows": 315
   },
   "defaultTabs": [
     "File",
@@ -2578,7 +2578,9 @@
       "group": "Page Setup",
       "name": "Page Setup Dialog",
       "command": "layout.pageSetup",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.pageSetupDialog"
+      ]
     },
     {
       "index": 218,
@@ -2598,7 +2600,9 @@
       "group": "Page Setup",
       "name": "Document Grid",
       "command": "layout.documentGrid",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.documentGrid"
+      ]
     },
     {
       "index": 220,
@@ -2703,7 +2707,9 @@
       "group": "Arrange",
       "name": "Selection Pane",
       "command": "arrange.selectionPane",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.selectionPane"
+      ]
     },
     {
       "index": 229,
@@ -2723,7 +2729,9 @@
       "group": "Arrange",
       "name": "Group",
       "command": "arrange.group",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "layout.groupObjects"
+      ]
     },
     {
       "index": 231,

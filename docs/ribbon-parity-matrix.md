@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `342` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `346` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -353,6 +353,10 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `design.watermark` | `design.watermark` | `setDocumentWatermark` | `design/pageBackground` | partial | partial | partial | partial |
 | `design.pageColor` | `design.pageColor` | `setDocumentPageColor` | `design/pageBackground` | partial | partial | partial | partial |
 | `design.pageBorders` | `design.pageBorders` | `setDocumentPageBorder` | `design/pageBackground` | partial | partial | partial | partial |
+| `layout.pageSetupDialog` | `layout.pageSetup` | `setPageMargins` | `layout/section` | partial | partial | partial | partial |
+| `layout.documentGrid` | `layout.documentGrid` | — | — | missing | missing | missing | unverified |
+| `layout.selectionPane` | `arrange.selectionPane` | — | — | missing | missing | missing | unverified |
+| `layout.groupObjects` | `arrange.group` | — | — | missing | missing | missing | unverified |
 
 ## Open verification questions
 
@@ -698,6 +702,10 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 340. **design.watermark:** Watermark: The Watermark panel supports Oasis text/image watermark settings, but template breadth, placement variants and DOCX watermark fidelity remain partial.
 341. **design.pageColor:** Page Color: The Design page-color picker sets the document page color. Print/export behavior, theme palette coverage and DOCX interoperability need verification.
 342. **design.pageBorders:** Page Borders: The page-border panel exposes style, color, width and distance settings; Word’s art borders, application scope and DOCX fidelity remain unverified.
+343. **layout.pageSetupDialog:** Oasis exposes separate Margins and Section dropdowns for common page-setup tasks, but has no single Page Setup dialog. Paper-size breadth, combined scope and full print/DOCX behavior remain open.
+344. **layout.documentGrid:** Document Grid: No document-grid configuration command or control is exposed in the default app.
+345. **layout.selectionPane:** Selection Pane: No object-list pane for selecting, hiding or reordering document objects is exposed. Canvas hit testing and outline navigation are different workflows.
+346. **layout.groupObjects:** Group: Oasis has no grouped-object model or command in the default app; selecting individual shapes does not create a persistent group.
 
 ## Audit interpretation
 

@@ -970,6 +970,16 @@ Evidence: `npm run audit:ribbon` passes and validates the command/placement mapp
 
 Limits: visual states, full theme/style-set breadth, accessibility and DOCX/PDF fidelity remain independently open under D03/A01/P06.
 
+## Delivery 78 — Layout source inventory review
+
+Date: 2026-11-11. B01 and L01 remain **partial**.
+
+Reviewed the four remaining Layout commands. Linked the Page Setup Dialog row to Oasis's related Margins control while documenting that margins/orientation are separate controls rather than one dialog. Classified Document Grid, Selection Pane and Group as missing from the default app; the editor has no document-grid settings, object-list pane or grouped-object model.
+
+Evidence: the crosswalk now classifies 315 of 521 source rows; 206 remain unclassified. The static audit validates the related Margins command and placement and the rationale for each missing workflow.
+
+Limits: page size, orientation, margins and arrangement remain separate workflows with their own behavior/interoperability checks.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
