@@ -1308,6 +1308,32 @@
       "notes": "Oasis registers a text-direction value command but no default Ribbon or menu control was found. Direction scope, mixed selections, RTL shaping and DOCX interoperability need workflow verification."
     },
     {
+      "id": "file.new",
+      "wordcraftCommand": "file.new",
+      "oasisCommand": "newDocument",
+      "ribbonId": "editor-toolbar-new-document",
+      "tab": "file",
+      "group": "document",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "notes": "The File tab creates a blank document and confirms before discarding a dirty document. WordCraft's template selection and new-document options are not provided; confirmation, dirty-state and lifecycle workflows remain in P04."
+    },
+    {
+      "id": "file.open",
+      "wordcraftCommand": "file.open",
+      "oasisCommand": "importDocument",
+      "ribbonId": "editor-toolbar-import-document",
+      "tab": "file",
+      "group": "document",
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "partial",
+      "notes": "The File tab opens the DOCX import picker. Arbitrary document opening and other source formats are not provided by this path; cancellation, import errors, source preservation and full lifecycle workflows remain in P04/P06."
+    },
+    {
       "id": "file.print",
       "wordcraftCommand": "file.print",
       "oasisCommand": "print",

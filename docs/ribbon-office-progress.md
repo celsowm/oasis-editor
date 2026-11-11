@@ -850,6 +850,16 @@ Evidence: the `collapsed Table Layout group exposes the spatial cell alignment m
 
 Limits: browser evidence covers a single selected cell and one supported starting state. Multi-cell undo behavior, direct Word visual comparison and VoiceOver remain open.
 
+## Delivery 66 — File New and Open crosswalk
+
+Date: 2026-11-11. B01 and P04 remain **partial**.
+
+Reviewed the pinned File catalog entries against the actual File tab and menubar. Linked WordCraft New to Oasis's dirty-document-aware `newDocument` action and Open to the DOCX-only `importDocument` picker. These are explicit partial mappings: Oasis does not provide WordCraft's new-document templates or general-format open flow through these controls.
+
+Evidence: the static audit validates both registered commands and their `file/document` placements. The WordCraft snapshot and generated matrix now contain 212 linked source rows out of 521; 309 remain unlinked and unclassified.
+
+Limits: dirty-document confirmation, import cancellation/errors, source-part preservation and full lifecycle behavior remain open under P04/P06. Mapping the commands does not certify those workflows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
