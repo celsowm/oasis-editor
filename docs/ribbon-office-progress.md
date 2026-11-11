@@ -820,6 +820,16 @@ Evidence: `tableCellVerticalAlign.test.ts` covers multi-cell updates and tracked
 
 Limits: mixed alignment states, explicit single-step undo, direct Word visual comparison, VoiceOver, and DOCX round-trip remain unverified. A04 remains partial.
 
+## Delivery 63 — Table-cell alignment rendering and DOCX round-trip
+
+Date: 2026-11-11. D08, P06 and A04 remain **partial**.
+
+Closed a semantic gap found while reviewing Delivery 62: horizontal cell alignment was stored and exported but was not used by canvas paragraph layout. Cell alignment now supplies the fallback alignment for every paragraph in a cell; a paragraph's direct or named-style alignment keeps priority. DOCX export writes that cell setting as paragraph alignment, and import restores the visual result on the paragraph.
+
+Evidence: `CanvasTableLayout.test.ts` covers cell fallback and paragraph precedence; `docxExport.test.ts` exports and reimports an aligned table cell. Both focused suites pass (15 UI layout tests and 37 DOCX export tests). Typecheck, Ribbon/catalog/icon audits, and `git diff --check` pass.
+
+Limits: mixed alignment state presentation, explicit single-step undo, direct Word visual comparison, and VoiceOver remain unverified. These semantics and accessibility checks remain in scope for D08/A04/M5.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

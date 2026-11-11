@@ -7,6 +7,7 @@ import type {
 import {
   resolveEffectiveParagraphStyle,
   resolveEffectiveTableCellFormatting,
+  resolveNamedParagraphStyle,
 } from "@/core/model.js";
 import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
 import { NO_WRAP_MEASURE_WIDTH_PX } from "@/core/layoutConstants.js";
@@ -264,6 +265,26 @@ export function prepareCells(options: {
           continue;
         }
         let paragraph = fitImagesToCellWidth(original, contentWidthPx);
+
+        // Cell alignment is a fallback for every paragraph in the cell. An
+        // explicit paragraph or named paragraph style alignment keeps priority.
+        if (cell.style?.horizontalAlign) {
+          const paragraphAlignment =
+            paragraph.style?.align ??
+            resolveNamedParagraphStyle(
+              paragraph.style?.styleId,
+              state.document.styles,
+            ).align;
+          if (!paragraphAlignment) {
+            paragraph = {
+              ...paragraph,
+              style: {
+                ...(paragraph.style ?? {}),
+                align: cell.style.horizontalAlign,
+              },
+            };
+          }
+        }
 
         if (isFitText) {
           const noWrapProjected = projectParagraphLayout(

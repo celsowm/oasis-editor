@@ -201,6 +201,23 @@ describe("DOCX export", () => {
       '<w:left w:val="dotted" w:sz="6" w:space="0" w:color="64748B"/>',
     );
     expect(xml).toContain('<w:jc w:val="center"/>');
+
+    const imported = await importDocxToEditorDocument(
+      await exportEditorDocumentToDocx(createEditorDocument([table])),
+    );
+    const importedTable = imported.sections?.[0]?.blocks[0];
+    expect(importedTable?.type).toBe("table");
+    if (importedTable?.type !== "table") {
+      throw new Error("Expected the round-tripped first block to be a table");
+    }
+    expect(importedTable.rows[0]!.cells[0]!.blocks[0]?.type).toBe("paragraph");
+    const importedFirstParagraph = importedTable.rows[0]!.cells[0]!.blocks[0];
+    if (importedFirstParagraph?.type !== "paragraph") {
+      throw new Error(
+        "Expected the round-tripped cell content to be a paragraph",
+      );
+    }
+    expect(importedFirstParagraph.style?.align).toBe("center");
   });
 
   it("serializes paragraph borders and shading", async () => {

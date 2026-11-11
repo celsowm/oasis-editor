@@ -66,6 +66,49 @@ describe("buildCanvasTableLayout", () => {
     }
   });
 
+  it("uses cell horizontal alignment as the paragraph fallback", () => {
+    const paragraph = createEditorParagraph("Aligned cell text");
+    const cell = createEditorTableCell([paragraph]);
+    cell.style = { horizontalAlign: "right" };
+    const table = createEditorTable([createEditorTableRow([cell])], [160]);
+
+    const layout = buildCanvasTableLayout({
+      table,
+      state: createEditorStateFromDocument(createEditorDocument([table])),
+      pageIndex: 0,
+      originX: 0,
+      originY: 0,
+      contentWidth: 624,
+      estimatedHeight: 20,
+    });
+
+    expect(layout.cells[0]!.paragraphs[0]!.paragraph.style?.align).toBe(
+      "right",
+    );
+  });
+
+  it("keeps paragraph alignment ahead of cell horizontal alignment", () => {
+    const paragraph = createEditorParagraph("Explicit paragraph alignment");
+    paragraph.style = { align: "center" };
+    const cell = createEditorTableCell([paragraph]);
+    cell.style = { horizontalAlign: "right" };
+    const table = createEditorTable([createEditorTableRow([cell])], [160]);
+
+    const layout = buildCanvasTableLayout({
+      table,
+      state: createEditorStateFromDocument(createEditorDocument([table])),
+      pageIndex: 0,
+      originX: 0,
+      originY: 0,
+      contentWidth: 624,
+      estimatedHeight: 20,
+    });
+
+    expect(layout.cells[0]!.paragraphs[0]!.paragraph.style?.align).toBe(
+      "center",
+    );
+  });
+
   it("applies table left indent to the rendered table geometry", () => {
     const row = createEditorTableRow([
       createEditorTableCell([createEditorParagraph("Linha 1 Col 1")]),
@@ -102,7 +145,10 @@ describe("buildCanvasTableLayout", () => {
     };
 
     const contentWidth = 624;
-    const tableWidth = resolveCanvasTableWidth(makeTable("center"), contentWidth);
+    const tableWidth = resolveCanvasTableWidth(
+      makeTable("center"),
+      contentWidth,
+    );
 
     const centered = makeTable("center");
     const centeredLayout = buildCanvasTableLayout({
@@ -214,10 +260,7 @@ describe("buildCanvasTableLayout", () => {
     // Columns + the three horizontal gaps fill the table width exactly.
     expect(a.width + b.width + 3 * spacingPx).toBeCloseTo(300, 3);
     // Total height carries the leading + trailing vertical gaps.
-    expect(layout.height).toBeCloseTo(
-      layout.rowHeights[0]! + 2 * spacingPx,
-      4,
-    );
+    expect(layout.height).toBeCloseTo(layout.rowHeights[0]! + 2 * spacingPx, 4);
   });
 
   it("keeps the gap-free layout when w:tblCellSpacing is absent", () => {
@@ -391,14 +434,9 @@ describe("buildCanvasTableLayout", () => {
   });
 
   it("scales w:tcFitText cell text so all runs carry a characterScale", () => {
-    const cell = createEditorTableCell([
-      createEditorParagraph("Hello World"),
-    ]);
+    const cell = createEditorTableCell([createEditorParagraph("Hello World")]);
     cell.style = { fitText: true };
-    const table = createEditorTable(
-      [createEditorTableRow([cell])],
-      [200],
-    );
+    const table = createEditorTable([createEditorTableRow([cell])], [200]);
     table.style = { width: 200 };
     const state = createEditorStateFromDocument(createEditorDocument([table]));
 
@@ -422,7 +460,9 @@ describe("buildCanvasTableLayout", () => {
     }
     // The projected lines should still fit within the content width.
     for (const line of para.lines) {
-      expect(lineWidth(line)).toBeLessThanOrEqual(renderedCell.contentWidth + 1);
+      expect(lineWidth(line)).toBeLessThanOrEqual(
+        renderedCell.contentWidth + 1,
+      );
     }
   });
 });
