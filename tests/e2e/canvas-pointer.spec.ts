@@ -2334,6 +2334,61 @@ test("Ribbon recomposes runtime plugin groups and drops orphan separators", asyn
   await expect(group).toHaveCount(0);
 });
 
+test("long plugin group captions truncate without widening the Ribbon", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await gotoEditor(page, {
+    runtime: {
+      customizeToolbar: `window.__oasisToolbarRegistry = registry;`,
+    },
+  });
+  const caption =
+    "Document Translation and Advanced Proofreading Extension Tools";
+  await page.evaluate((groupLabel) => {
+    const registry = (
+      window as Window & {
+        __oasisToolbarRegistry?: { register(item: unknown): void };
+      }
+    ).__oasisToolbarRegistry;
+    if (!registry) throw new Error("toolbar registry was not exposed");
+    registry.register({
+      id: "long-caption-plugin-action",
+      type: "button",
+      tab: "home",
+      group: "longCaptionPlugin",
+      groupLabel,
+      command: "bold",
+      label: "Proofread",
+      testId: "long-caption-plugin-action",
+      ribbonGroupResize: { states: ["full"] },
+    });
+  }, caption);
+
+  const group = page.locator('[data-ribbon-group="longCaptionPlugin"]');
+  const label = group.locator(".oasis-editor-ribbon-group-label");
+  await expect(group).toBeVisible();
+  await expect(group).toHaveAttribute("aria-label", caption);
+  await expect(label).toHaveAttribute("title", caption);
+  await expect(group).toHaveAttribute("data-ribbon-state", "full");
+  const geometry = await label.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const group = element.closest<HTMLElement>("[data-ribbon-group]");
+    return {
+      labelWidth: element.getBoundingClientRect().width,
+      labelScrollWidth: element.scrollWidth,
+      groupWidth: group?.getBoundingClientRect().width ?? Infinity,
+      overflow: style.overflow,
+      textOverflow: style.textOverflow,
+    };
+  });
+  expect(geometry.labelWidth).toBeLessThanOrEqual(144);
+  expect(geometry.labelScrollWidth).toBeGreaterThan(geometry.labelWidth);
+  expect(geometry.groupWidth).toBeLessThan(220);
+  expect(geometry.overflow).toBe("hidden");
+  expect(geometry.textOverflow).toBe("ellipsis");
+});
+
 test("ribbon insert table works on desktop and narrow widths", async ({
   page,
 }) => {

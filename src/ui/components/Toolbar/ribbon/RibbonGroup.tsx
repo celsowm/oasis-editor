@@ -108,7 +108,9 @@ export function RibbonGroup(props: RibbonGroupProps): JSX.Element {
           <RibbonGroupContent group={props.group} api={props.api} />
         </Menu>
       </div>
-      <div class="oasis-editor-ribbon-group-label">{props.group.label}</div>
+      <div class="oasis-editor-ribbon-group-label" title={props.group.label}>
+        {props.group.label}
+      </div>
     </section>
   );
 }

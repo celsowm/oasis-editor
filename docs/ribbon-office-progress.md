@@ -1118,6 +1118,14 @@ Added a browser regression that mutates the toolbar registry after the Ribbon ha
 
 Evidence: `Ribbon recomposes runtime plugin groups and drops orphan separators` passes in the desktop Playwright project. This verifies one dynamically registered Home group and Chromium layout; it does not cover external plugin disposal callbacks, separators between populated groups, Safari, or VoiceOver.
 
+## Delivery 94 — Long plugin group captions
+
+Date: 2026-11-11. V04 remains **partial** pending the rest of the measurement captions/units, mixed and read-only cases, and plugin-localized action labels.
+
+Long explicit plugin group labels now truncate with ellipses at a bounded 144 px while retaining their full text in the group's accessible name and a title tooltip. This keeps the full-layout group width tied to its controls instead of an arbitrarily long caption.
+
+Evidence: `long plugin group captions truncate without widening the Ribbon` registers a 65-character Home group label, verifies full accessible/title text, measures clipped label ink and confirms the full-state group remains below 220 px. The targeted Chromium E2E passes against a production bundle built with `VITE_OASIS_CANVAS_DEBUG=1` for the test harness. Other locales and VoiceOver remain open.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

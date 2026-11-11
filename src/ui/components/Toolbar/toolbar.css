@@ -245,17 +245,19 @@
 
 .oasis-editor-ribbon-group-label {
   min-width: 0;
+  max-width: 144px;
+  overflow: hidden;
   color: var(--oasis-ribbon-muted, #6f6f6f);
   font-size: 10px;
   line-height: 12px;
   text-align: center;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .oasis-editor-ribbon-group-compact .oasis-editor-ribbon-group-label,
 .oasis-editor-ribbon-group-collapsed .oasis-editor-ribbon-group-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .oasis-editor-ribbon-group-compact-hide-labels .oasis-editor-tool-button-label,
