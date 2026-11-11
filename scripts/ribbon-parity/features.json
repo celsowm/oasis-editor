@@ -3501,6 +3501,186 @@
       "semantics": "missing",
       "persistence": "not-applicable",
       "notes": "No Tell Me/command-search launcher is exposed in the title bar or default app surfaces. The Find command searches document content and is not a command-search equivalent."
+    },
+    {
+      "id": "home.clipboardPane",
+      "wordcraftCommand": "edit.clipboardPane",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Clipboard Pane: No persistent clipboard task pane is exposed in the default app surfaces. Cut/copy/paste commands are direct editing actions and do not provide Word’s multi-item clipboard history."
+    },
+    {
+      "id": "home.phoneticGuide",
+      "wordcraftCommand": "format.phonetic",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Phonetic Guide: No phonetic-guide command or editor dialog is exposed in the default app. Font selection and text styling do not add ruby/phonetic annotations."
+    },
+    {
+      "id": "home.encloseCharacters",
+      "wordcraftCommand": "format.enclose",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Enclose Characters: No enclosed-character formatting command or control is exposed in the default Ribbon or menus."
+    },
+    {
+      "id": "home.multilevelList",
+      "wordcraftCommand": "para.multilevel",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Multilevel List: Oasis exposes basic list formatting, but no multilevel-list gallery or hierarchical list workflow is available in the default UI."
+    },
+    {
+      "id": "home.defineMultilevelList",
+      "wordcraftCommand": "list.define",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Define New Multilevel List: No multilevel-list definition dialog or command is exposed. Basic ordered/unordered list formatting does not define hierarchical numbering levels."
+    },
+    {
+      "id": "home.multilevelListLibrary",
+      "wordcraftCommand": "list.multilevelPreset",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Multilevel List Library: No library of multilevel numbering presets is exposed in the default app."
+    },
+    {
+      "id": "home.defineBullet",
+      "wordcraftCommand": "para.defineBullet",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Define New Bullet: No custom bullet-definition dialog or command is exposed; the default list action does not configure a new bullet symbol."
+    },
+    {
+      "id": "home.defineNumberFormat",
+      "wordcraftCommand": "para.defineNumber",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Define New Number Format: No custom number-format definition workflow is exposed; basic numbering does not configure a new format."
+    },
+    {
+      "id": "home.distributedAlignment",
+      "wordcraftCommand": "para.distribute",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Distributed: No distributed paragraph-alignment command or Ribbon control is exposed. Left, center, right and justified alignment do not provide this distinct behavior."
+    },
+    {
+      "id": "home.createStyle",
+      "wordcraftCommand": "styles.create",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Create a Style: The style gallery applies available styles, but the default app exposes no create-style dialog or command."
+    },
+    {
+      "id": "home.modifyStyle",
+      "wordcraftCommand": "styles.modify",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Modify Style: The style gallery applies available styles, but the default app exposes no modify-style workflow for editing a style definition."
+    },
+    {
+      "id": "home.updateStyleToMatch",
+      "wordcraftCommand": "styles.updateToMatch",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Update Style to Match Selection: No command updates a named style definition from the current selection in the default app."
+    },
+    {
+      "id": "home.deleteStyle",
+      "wordcraftCommand": "styles.delete",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Delete Style: No style-management surface or command deletes a named style from the default app."
+    },
+    {
+      "id": "home.styleInspector",
+      "wordcraftCommand": "styles.inspector",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Style Inspector: No style-inspector panel or command is exposed in the default UI."
+    },
+    {
+      "id": "home.manageStyles",
+      "wordcraftCommand": "styles.manage",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Manage Styles: The style gallery applies available styles, but no style-management dialog or command is exposed in the default app."
+    },
+    {
+      "id": "home.goTo",
+      "wordcraftCommand": "edit.goto",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Go To: Find searches text and Outline navigates headings, but the default app exposes no Go To workflow for pages, sections, lines or objects."
+    },
+    {
+      "id": "home.selectObjects",
+      "wordcraftCommand": "select.objects",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Select Objects: Canvas pointer selection targets supported objects directly, but no Select Objects mode or command is exposed in the default Ribbon."
+    },
+    {
+      "id": "home.selectSimilarFormatting",
+      "wordcraftCommand": "select.similar",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Select Similar Formatting: No command selects document ranges based on matching formatting in the default app."
+    },
+    {
+      "id": "home.dictation",
+      "wordcraftCommand": "tools.dictate",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Dictate: No dictation or speech-to-text command is exposed by the default app; browser/platform speech input is not presented as an Oasis workflow."
+    },
+    {
+      "id": "home.editorProofing",
+      "wordcraftCommand": "review.editor",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Editor: No integrated spelling, grammar and writing-suggestion service is exposed in the default app."
     }
   ]
 }

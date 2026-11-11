@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 237
+    "linkedRows": 257
   },
   "defaultTabs": [
     "File",
@@ -604,7 +604,9 @@
       "group": "Clipboard",
       "name": "Clipboard Pane",
       "command": "edit.clipboardPane",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.clipboardPane"
+      ]
     },
     {
       "index": 40,
@@ -966,7 +968,9 @@
       "group": "Font",
       "name": "Phonetic Guide",
       "command": "format.phonetic",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.phoneticGuide"
+      ]
     },
     {
       "index": 73,
@@ -975,7 +979,9 @@
       "group": "Font",
       "name": "Enclose Characters",
       "command": "format.enclose",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.encloseCharacters"
+      ]
     },
     {
       "index": 74,
@@ -1006,7 +1012,9 @@
       "group": "Paragraph",
       "name": "Multilevel List",
       "command": "para.multilevel",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.multilevelList"
+      ]
     },
     {
       "index": 77,
@@ -1015,7 +1023,9 @@
       "group": "Paragraph",
       "name": "Define New Multilevel List",
       "command": "list.define",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.defineMultilevelList"
+      ]
     },
     {
       "index": 78,
@@ -1024,7 +1034,9 @@
       "group": "Paragraph",
       "name": "Multilevel List Library",
       "command": "list.multilevelPreset",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.multilevelListLibrary"
+      ]
     },
     {
       "index": 79,
@@ -1055,7 +1067,9 @@
       "group": "Paragraph",
       "name": "Define New Bullet",
       "command": "para.defineBullet",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.defineBullet"
+      ]
     },
     {
       "index": 82,
@@ -1064,7 +1078,9 @@
       "group": "Paragraph",
       "name": "Define New Number Format",
       "command": "para.defineNumber",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.defineNumberFormat"
+      ]
     },
     {
       "index": 83,
@@ -1172,7 +1188,9 @@
       "group": "Paragraph",
       "name": "Distributed",
       "command": "para.distribute",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.distributedAlignment"
+      ]
     },
     {
       "index": 93,
@@ -1430,7 +1448,9 @@
       "group": "Styles",
       "name": "Create a Style",
       "command": "styles.create",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.createStyle"
+      ]
     },
     {
       "index": 116,
@@ -1439,7 +1459,9 @@
       "group": "Styles",
       "name": "Modify Style",
       "command": "styles.modify",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.modifyStyle"
+      ]
     },
     {
       "index": 117,
@@ -1448,7 +1470,9 @@
       "group": "Styles",
       "name": "Update Style to Match",
       "command": "styles.updateToMatch",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.updateStyleToMatch"
+      ]
     },
     {
       "index": 118,
@@ -1457,7 +1481,9 @@
       "group": "Styles",
       "name": "Delete Style",
       "command": "styles.delete",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.deleteStyle"
+      ]
     },
     {
       "index": 119,
@@ -1477,7 +1503,9 @@
       "group": "Styles",
       "name": "Style Inspector",
       "command": "styles.inspector",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.styleInspector"
+      ]
     },
     {
       "index": 121,
@@ -1486,7 +1514,9 @@
       "group": "Styles",
       "name": "Manage Styles",
       "command": "styles.manage",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.manageStyles"
+      ]
     },
     {
       "index": 122,
@@ -1584,7 +1614,9 @@
       "group": "Editing",
       "name": "Go To",
       "command": "edit.goto",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.goTo"
+      ]
     },
     {
       "index": 131,
@@ -1604,7 +1636,9 @@
       "group": "Editing",
       "name": "Select Objects",
       "command": "select.objects",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.selectObjects"
+      ]
     },
     {
       "index": 133,
@@ -1613,7 +1647,9 @@
       "group": "Editing",
       "name": "Select Similar Formatting",
       "command": "select.similar",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.selectSimilarFormatting"
+      ]
     },
     {
       "index": 134,
@@ -1622,7 +1658,9 @@
       "group": "Voice",
       "name": "Dictate",
       "command": "tools.dictate",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.dictation"
+      ]
     },
     {
       "index": 135,
@@ -1631,7 +1669,9 @@
       "group": "Editor",
       "name": "Editor",
       "command": "review.editor",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "home.editorProofing"
+      ]
     },
     {
       "index": 136,

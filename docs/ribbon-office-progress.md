@@ -910,6 +910,16 @@ Evidence: the crosswalk auditor validates both source commands and the regenerat
 
 Limits: host-configured autosave has not been tested as a complete user workflow. A command launcher and end-to-end AutoSave state remain open.
 
+## Delivery 72 — Home tab source inventory review
+
+Date: 2026-11-11. B01 and D01 remain **partial**.
+
+Reviewed 20 previously unmatched Home commands across Clipboard, Font, Paragraph, Styles, Editing and Voice/Editor. Where Oasis has only an adjacent capability (for example, applying styles or basic list formatting), the crosswalk records why it does not satisfy the source workflow. The unsupported management, multilevel list, phonetic, dictation, Go To and similar-formatting tasks are explicitly classified missing from the default UI.
+
+Evidence: the generated catalog and parity matrix now classify 257 of 521 WordCraft rows; 264 remain unclassified. `npm run audit:ribbon` validates each new missing row has a written rationale and no claimed Oasis command or Ribbon control.
+
+Limits: existing Home capabilities remain only partially workflow-verified; this inventory review does not certify semantic equivalence or accessibility.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

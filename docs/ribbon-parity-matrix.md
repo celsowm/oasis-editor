@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `272` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `292` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -283,6 +283,26 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `shape.textAlignment` | `shape.alignText` | `setTextBoxVerticalAlign` | — | core-only | core-only | partial | unverified |
 | `file.autoSave` | `file.autosave` | — | — | missing | missing | missing | partial |
 | `titleBar.commandSearch` | `tools.search` | — | — | missing | missing | missing | not-applicable |
+| `home.clipboardPane` | `edit.clipboardPane` | — | — | missing | missing | missing | unverified |
+| `home.phoneticGuide` | `format.phonetic` | — | — | missing | missing | missing | unverified |
+| `home.encloseCharacters` | `format.enclose` | — | — | missing | missing | missing | unverified |
+| `home.multilevelList` | `para.multilevel` | — | — | missing | missing | missing | unverified |
+| `home.defineMultilevelList` | `list.define` | — | — | missing | missing | missing | unverified |
+| `home.multilevelListLibrary` | `list.multilevelPreset` | — | — | missing | missing | missing | unverified |
+| `home.defineBullet` | `para.defineBullet` | — | — | missing | missing | missing | unverified |
+| `home.defineNumberFormat` | `para.defineNumber` | — | — | missing | missing | missing | unverified |
+| `home.distributedAlignment` | `para.distribute` | — | — | missing | missing | missing | unverified |
+| `home.createStyle` | `styles.create` | — | — | missing | missing | missing | unverified |
+| `home.modifyStyle` | `styles.modify` | — | — | missing | missing | missing | unverified |
+| `home.updateStyleToMatch` | `styles.updateToMatch` | — | — | missing | missing | missing | unverified |
+| `home.deleteStyle` | `styles.delete` | — | — | missing | missing | missing | unverified |
+| `home.styleInspector` | `styles.inspector` | — | — | missing | missing | missing | unverified |
+| `home.manageStyles` | `styles.manage` | — | — | missing | missing | missing | unverified |
+| `home.goTo` | `edit.goto` | — | — | missing | missing | missing | unverified |
+| `home.selectObjects` | `select.objects` | — | — | missing | missing | missing | unverified |
+| `home.selectSimilarFormatting` | `select.similar` | — | — | missing | missing | missing | unverified |
+| `home.dictation` | `tools.dictate` | — | — | missing | missing | missing | unverified |
+| `home.editorProofing` | `review.editor` | — | — | missing | missing | missing | unverified |
 
 ## Open verification questions
 
@@ -558,6 +578,26 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 270. **shape.textAlignment:** Oasis registers top, middle or bottom vertical anchoring for text-box content but has no default Ribbon, menu or dialog path. Interaction with padding, vertical text, resizing and DOCX round-trip needs verification.
 271. **file.autoSave:** Oasis has optional host-configured debounced persistence, but the default app does not enable it and exposes no AutoSave toggle or status control in the Quick Access Toolbar. This does not provide the user-facing Word AutoSave workflow.
 272. **titleBar.commandSearch:** No Tell Me/command-search launcher is exposed in the title bar or default app surfaces. The Find command searches document content and is not a command-search equivalent.
+273. **home.clipboardPane:** Clipboard Pane: No persistent clipboard task pane is exposed in the default app surfaces. Cut/copy/paste commands are direct editing actions and do not provide Word’s multi-item clipboard history.
+274. **home.phoneticGuide:** Phonetic Guide: No phonetic-guide command or editor dialog is exposed in the default app. Font selection and text styling do not add ruby/phonetic annotations.
+275. **home.encloseCharacters:** Enclose Characters: No enclosed-character formatting command or control is exposed in the default Ribbon or menus.
+276. **home.multilevelList:** Multilevel List: Oasis exposes basic list formatting, but no multilevel-list gallery or hierarchical list workflow is available in the default UI.
+277. **home.defineMultilevelList:** Define New Multilevel List: No multilevel-list definition dialog or command is exposed. Basic ordered/unordered list formatting does not define hierarchical numbering levels.
+278. **home.multilevelListLibrary:** Multilevel List Library: No library of multilevel numbering presets is exposed in the default app.
+279. **home.defineBullet:** Define New Bullet: No custom bullet-definition dialog or command is exposed; the default list action does not configure a new bullet symbol.
+280. **home.defineNumberFormat:** Define New Number Format: No custom number-format definition workflow is exposed; basic numbering does not configure a new format.
+281. **home.distributedAlignment:** Distributed: No distributed paragraph-alignment command or Ribbon control is exposed. Left, center, right and justified alignment do not provide this distinct behavior.
+282. **home.createStyle:** Create a Style: The style gallery applies available styles, but the default app exposes no create-style dialog or command.
+283. **home.modifyStyle:** Modify Style: The style gallery applies available styles, but the default app exposes no modify-style workflow for editing a style definition.
+284. **home.updateStyleToMatch:** Update Style to Match Selection: No command updates a named style definition from the current selection in the default app.
+285. **home.deleteStyle:** Delete Style: No style-management surface or command deletes a named style from the default app.
+286. **home.styleInspector:** Style Inspector: No style-inspector panel or command is exposed in the default UI.
+287. **home.manageStyles:** Manage Styles: The style gallery applies available styles, but no style-management dialog or command is exposed in the default app.
+288. **home.goTo:** Go To: Find searches text and Outline navigates headings, but the default app exposes no Go To workflow for pages, sections, lines or objects.
+289. **home.selectObjects:** Select Objects: Canvas pointer selection targets supported objects directly, but no Select Objects mode or command is exposed in the default Ribbon.
+290. **home.selectSimilarFormatting:** Select Similar Formatting: No command selects document ranges based on matching formatting in the default app.
+291. **home.dictation:** Dictate: No dictation or speech-to-text command is exposed by the default app; browser/platform speech input is not presented as an Oasis workflow.
+292. **home.editorProofing:** Editor: No integrated spelling, grammar and writing-suggestion service is exposed in the default app.
 
 ## Audit interpretation
 
