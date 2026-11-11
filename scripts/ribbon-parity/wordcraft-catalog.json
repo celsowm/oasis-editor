@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 203
+    "linkedRows": 207
   },
   "defaultTabs": [
     "File",
@@ -3408,7 +3408,9 @@
       "group": "Zoom",
       "name": "Zoom",
       "command": "view.zoom",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.zoomStatusRelated"
+      ]
     },
     {
       "index": 324,
@@ -3417,7 +3419,9 @@
       "group": "Zoom",
       "name": "100%",
       "command": "view.zoom100",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.zoom100Related"
+      ]
     },
     {
       "index": 325,
@@ -3453,7 +3457,9 @@
       "group": "Zoom",
       "name": "Zoom In",
       "command": "view.zoomIn",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.zoomInRelated"
+      ]
     },
     {
       "index": 329,
@@ -3462,7 +3468,9 @@
       "group": "Zoom",
       "name": "Zoom Out",
       "command": "view.zoomOut",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "view.zoomOutRelated"
+      ]
     },
     {
       "index": 330,

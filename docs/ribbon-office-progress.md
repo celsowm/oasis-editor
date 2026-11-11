@@ -722,6 +722,16 @@ The matrix now contains 239 Oasis capability rows and links 203 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` validates the UI-only source evidence in `src/ui/EditorStatusBar.tsx`; `npm run audit:ribbon:wordcraft` reports 203 linked rows.
 
+## Delivery 53 — Zoom controls related tasks
+
+Date: 2026-11-10. B01 and P03 remain **partial**.
+
+Mapped WordCraft Zoom, 100%, Zoom In and Zoom Out to Oasis's status-bar slider and step buttons as related UI tasks. Oasis's View tab has no zoom group; fit-to-page, multiple-page and page-width modes remain unmatched. Zoom anchoring, step behavior, keyboard interaction and cross-browser rendering still need workflow evidence.
+
+The matrix now contains 243 Oasis capability rows and links 207 of 521 WordCraft source rows; 314 remain unlinked.
+
+Evidence: `npm run audit:ribbon` validates each status-bar UI evidence token in `src/ui/EditorStatusBar.tsx`; `npm run audit:ribbon:wordcraft` reports 207 linked rows.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
