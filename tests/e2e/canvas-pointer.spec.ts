@@ -2220,6 +2220,120 @@ test("ribbon toolbar is the default and switches tabs", async ({ page }) => {
   await expect(page.getByTestId("editor-toolbar-font-family")).toHaveCount(0);
 });
 
+test("Ribbon recomposes runtime plugin groups and drops orphan separators", async ({
+  page,
+}) => {
+  await gotoEditor(page, {
+    runtime: {
+      customizeToolbar: `window.__oasisToolbarRegistry = registry;`,
+    },
+  });
+
+  await page.evaluate(() => {
+    const registry = (
+      window as Window & {
+        __oasisToolbarRegistry?: {
+          register(item: unknown): void;
+          remove(id: string): void;
+        };
+      }
+    ).__oasisToolbarRegistry;
+    if (!registry) throw new Error("toolbar registry was not exposed");
+    registry.register({
+      id: "runtime-plugin-separator",
+      type: "separator",
+      tab: "home",
+      group: "runtimePlugin",
+      groupLabel: "Runtime plugin",
+      order: 1,
+    });
+    registry.register({
+      id: "runtime-plugin-action",
+      type: "button",
+      tab: "home",
+      group: "runtimePlugin",
+      groupLabel: "Runtime plugin",
+      command: "bold",
+      label: "Runtime action",
+      testId: "runtime-plugin-action",
+      order: 1,
+    });
+  });
+
+  const group = page.locator('[data-ribbon-group="runtimePlugin"]');
+  const action = page.getByTestId("runtime-plugin-action");
+  await expect(group).toBeVisible();
+  const ensureActionReachable = async () => {
+    if ((await group.getAttribute("data-ribbon-state")) === "collapsed") {
+      await page.getByTestId("editor-ribbon-group-runtimePlugin").click();
+      await expect(
+        page
+          .locator(".oasis-editor-ribbon-collapsed-menu")
+          .getByTestId("runtime-plugin-action"),
+      ).toBeVisible();
+    } else {
+      await expect(action).toBeVisible();
+    }
+  };
+  await ensureActionReachable();
+  await expect
+    .poll(async () =>
+      Number(await group.getAttribute("data-ribbon-width-allocated")),
+    )
+    .toBeGreaterThan(0);
+
+  await page.evaluate(() => {
+    const registry = (
+      window as Window & {
+        __oasisToolbarRegistry?: { remove(id: string): void };
+      }
+    ).__oasisToolbarRegistry;
+    registry?.remove("runtime-plugin-action");
+  });
+  await expect(action).toHaveCount(0);
+  await expect(group).toHaveCount(0);
+
+  await page.evaluate(() => {
+    const registry = (
+      window as Window & {
+        __oasisToolbarRegistry?: {
+          register(item: unknown): void;
+          remove(id: string): void;
+        };
+      }
+    ).__oasisToolbarRegistry;
+    registry?.register({
+      id: "runtime-plugin-action",
+      type: "button",
+      tab: "home",
+      group: "runtimePlugin",
+      groupLabel: "Runtime plugin",
+      command: "bold",
+      label: "Runtime action",
+      testId: "runtime-plugin-action",
+      order: 1,
+    });
+    registry?.remove("runtime-plugin-separator");
+  });
+  await expect(group).toBeVisible();
+  await expect(action).toHaveCount(1);
+  await expect
+    .poll(async () =>
+      Number(await group.getAttribute("data-ribbon-width-allocated")),
+    )
+    .toBeGreaterThan(0);
+
+  await page.evaluate(() => {
+    const registry = (
+      window as Window & {
+        __oasisToolbarRegistry?: { remove(id: string): void };
+      }
+    ).__oasisToolbarRegistry;
+    registry?.remove("runtime-plugin-action");
+  });
+  await expect(group).toHaveCount(0);
+});
+
 test("ribbon insert table works on desktop and narrow widths", async ({
   page,
 }) => {

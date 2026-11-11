@@ -1110,6 +1110,14 @@ Added an end-to-end regression for repeated transitions between document text an
 
 Evidence: `table contextual tabs follow repeated table selection transitions` passes in the desktop Playwright project. The test exercises the user-visible contextual tab strip in Chromium; it does not cover plugin lifecycle, other dynamic groups, Safari, or VoiceOver.
 
+## Delivery 93 — Runtime plugin composition and orphan separators
+
+Date: 2026-11-11. V02 remains **partial** pending measurement invalidation across changed language/font/dimensional theme and remaining context combinations.
+
+Added a browser regression that mutates the toolbar registry after the Ribbon has rendered. Adding a plugin action creates its labeled Home group and a positive width allocation; removing the action while its separator remains removes the empty group; removing the separator before restoring the action leaves a measurable group; removing the final action removes the group again. The collapsed action is reachable through its group popup.
+
+Evidence: `Ribbon recomposes runtime plugin groups and drops orphan separators` passes in the desktop Playwright project. This verifies one dynamically registered Home group and Chromium layout; it does not cover external plugin disposal callbacks, separators between populated groups, Safari, or VoiceOver.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
