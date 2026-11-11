@@ -758,6 +758,16 @@ The matrix now contains 246 Oasis capability rows and links 210 of 521 WordCraft
 
 Evidence: `npm run audit:ribbon` validates the UI evidence token in `src/ui/components/CanvasEditorSurface.tsx`; `npm run audit:ribbon:wordcraft` reports 210 linked rows.
 
+## Delivery 57 — Selection-driven Insert group evidence
+
+Date: 2026-11-11. V02 remains **partial**.
+
+Added a Chromium interaction scenario proving the Insert Accessibility group is absent without an image selection and appears with the image Alt Text action after selecting an inserted image. The core composition cases also verify that invisible items remove empty groups, disabled actions remain present, and separators are trimmed after filtering.
+
+Evidence: `npx playwright test --config playwright.e2e.config.ts tests/e2e/canvas-pointer.spec.ts -g 'Insert accessibility group follows image selection visibility'` passes. The complete build-and-deploy workflow for the current main commit passes.
+
+Limits: the scenario does not yet verify that changing away from the image selection removes the group again or that responsive widths are remeasured after a selection-driven composition change. V02 remains partial.
+
 Evidence: `npm run audit:ribbon` validates the UI evidence token in `src/ui/components/Ruler/HorizontalRuler.tsx`; `npm run audit:ribbon:wordcraft` reports 209 linked rows.
 
 ## Remaining execution queue

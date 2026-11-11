@@ -1733,6 +1733,44 @@ test("canvas image click selects object and resize handle changes image dimensio
   await expectNoMissEvents(page);
 });
 
+test("Insert accessibility group follows image selection visibility", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+  const insertTab = page.getByTestId("editor-ribbon-tab-insert");
+  const accessibilityGroup = page.locator(
+    '[data-ribbon-group="accessibility"]',
+  );
+  await insertTab.click();
+  await expect(accessibilityGroup).toHaveCount(0);
+
+  await seedText(page, "Ribbon visibility follows selection");
+  await insertInlineImage(page);
+  const image = await page.evaluate(() => {
+    const entry = window.__oasisCanvasDebug
+      ?.getLayoutSnapshot()
+      ?.inlineImages.find((candidate) => candidate.zone === "main");
+    return entry
+      ? {
+          x: entry.left + entry.width / 2,
+          y: entry.top + entry.height / 2,
+        }
+      : null;
+  });
+  if (!image) throw new Error("unable to resolve inserted image geometry");
+  await page.mouse.click(image.x, image.y);
+  await expect(
+    page.locator(".oasis-editor-image-selection-overlay"),
+  ).toBeVisible();
+  // Image selection moves focus to the contextual tab, so return to Insert to
+  // verify that its composition follows the command visibility state.
+  await insertTab.click();
+  await expect(accessibilityGroup).toBeVisible();
+  await expect(
+    accessibilityGroup.getByTestId("editor-toolbar-image-alt"),
+  ).toBeVisible();
+});
+
 test("toolbar overflow table insert does not throw insertBefore NotFoundError", async ({
   page,
 }) => {
