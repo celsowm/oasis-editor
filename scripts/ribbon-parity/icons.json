@@ -45,42 +45,42 @@
   "uses": [
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 178,
+      "line": 197,
       "role": "icon",
       "name": "crop",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 191,
+      "line": 210,
       "role": "icon",
       "name": "shapes",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 231,
+      "line": 250,
       "role": "icon",
       "name": "ratio",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 271,
+      "line": 290,
       "role": "icon",
       "name": "maximize",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 277,
+      "line": 296,
       "role": "icon",
       "name": "minimize",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 283,
+      "line": 302,
       "role": "icon",
       "name": "rotate-ccw",
       "origin": "lucide"
@@ -1202,13 +1202,13 @@
   "dynamic": [
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 123,
+      "line": 131,
       "role": "icon",
       "expression": "props.icon"
     },
     {
       "file": "src/ui/components/Toolbar/controls/ImageSizeControls.tsx",
-      "line": 125,
+      "line": 133,
       "role": "trailingIcon",
       "expression": "props.submenu ? \"chevron-right\" : undefined"
     },
