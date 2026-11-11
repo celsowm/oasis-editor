@@ -3681,6 +3681,123 @@
       "semantics": "missing",
       "persistence": "unverified",
       "notes": "Editor: No integrated spelling, grammar and writing-suggestion service is exposed in the default app."
+    },
+    {
+      "id": "insert.drawTable",
+      "wordcraftCommand": "table.draw",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Draw Table: The table grid inserts a selected row/column count, but no freehand table-drawing mode is exposed in the default UI."
+    },
+    {
+      "id": "insert.convertTextToTable",
+      "wordcraftCommand": "table.fromText",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Convert Text to Table: No command converts delimited document text into a table in the default app. The Insert table grid creates an empty table and is a different task."
+    },
+    {
+      "id": "insert.excelSpreadsheet",
+      "wordcraftCommand": "insert.spreadsheet",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Excel Spreadsheet: No embedded spreadsheet insertion or Excel integration is exposed in the default app."
+    },
+    {
+      "id": "insert.quickTables",
+      "wordcraftCommand": "table.quick",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Quick Tables: The default Insert tab has no preformatted Quick Tables gallery; the table grid inserts a blank table."
+    },
+    {
+      "id": "insert.onlinePictures",
+      "wordcraftCommand": "insert.onlinePicture",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Online Pictures: Oasis can insert a local image, but no online image search/source picker is exposed in the default app."
+    },
+    {
+      "id": "insert.models3d",
+      "wordcraftCommand": "insert.model3d",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "3D Models: No 3D model importer, viewer or insertion workflow is exposed."
+    },
+    {
+      "id": "insert.smartArt",
+      "wordcraftCommand": "insert.smartArt",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "SmartArt: No SmartArt diagram model or insertion workflow is exposed in the default app."
+    },
+    {
+      "id": "insert.chart",
+      "wordcraftCommand": "insert.chart",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Chart: No chart data model or chart insertion workflow is exposed in the default app."
+    },
+    {
+      "id": "insert.screenshot",
+      "wordcraftCommand": "insert.screenshot",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Screenshot: No screen-capture insertion workflow is exposed. Browser screenshot testing utilities are not a user-facing document action."
+    },
+    {
+      "id": "insert.drawingCanvas",
+      "wordcraftCommand": "insert.canvas",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Drawing Canvas: The editor uses a canvas renderer, but it does not expose an insertable Drawing Canvas object or drawing-area workflow."
+    },
+    {
+      "id": "insert.getAddIns",
+      "wordcraftCommand": "addins.get",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Get Add-ins: No add-in store, discovery surface or add-in installation workflow is exposed in the default app."
+    },
+    {
+      "id": "insert.onlineVideo",
+      "wordcraftCommand": "insert.video",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Online Video: No online video embed or media insertion workflow is exposed."
+    },
+    {
+      "id": "insert.crossReference",
+      "wordcraftCommand": "insert.crossReference",
+      "status": "missing",
+      "exposure": "missing",
+      "semantics": "missing",
+      "persistence": "unverified",
+      "notes": "Cross-reference: No cross-reference insertion dialog or command is exposed in the default UI. Citation links and heading navigation are separate tasks."
     }
   ]
 }

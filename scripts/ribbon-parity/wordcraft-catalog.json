@@ -18,7 +18,7 @@
     "representedContextualTabs": 7,
     "auxiliarySurfaces": 7,
     "groups": 108,
-    "linkedRows": 257
+    "linkedRows": 273
   },
   "defaultTabs": [
     "File",
@@ -1722,7 +1722,9 @@
       "group": "Tables",
       "name": "Draw Table",
       "command": "table.draw",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.drawTable"
+      ]
     },
     {
       "index": 141,
@@ -1731,7 +1733,9 @@
       "group": "Tables",
       "name": "Convert Text to Table",
       "command": "table.fromText",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.convertTextToTable"
+      ]
     },
     {
       "index": 142,
@@ -1740,7 +1744,9 @@
       "group": "Tables",
       "name": "Excel Spreadsheet",
       "command": "insert.spreadsheet",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.excelSpreadsheet"
+      ]
     },
     {
       "index": 143,
@@ -1749,7 +1755,9 @@
       "group": "Tables",
       "name": "Quick Tables",
       "command": "table.quick",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.quickTables"
+      ]
     },
     {
       "index": 144,
@@ -1769,7 +1777,9 @@
       "group": "Illustrations",
       "name": "Online Pictures",
       "command": "insert.onlinePicture",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.onlinePictures"
+      ]
     },
     {
       "index": 146,
@@ -1798,7 +1808,9 @@
       "group": "Illustrations",
       "name": "3D Models",
       "command": "insert.model3d",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.models3d"
+      ]
     },
     {
       "index": 149,
@@ -1807,7 +1819,9 @@
       "group": "Illustrations",
       "name": "SmartArt",
       "command": "insert.smartArt",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.smartArt"
+      ]
     },
     {
       "index": 150,
@@ -1816,7 +1830,9 @@
       "group": "Illustrations",
       "name": "Chart",
       "command": "insert.chart",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.chart"
+      ]
     },
     {
       "index": 151,
@@ -1825,7 +1841,9 @@
       "group": "Illustrations",
       "name": "Screenshot",
       "command": "insert.screenshot",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.screenshot"
+      ]
     },
     {
       "index": 152,
@@ -1834,7 +1852,9 @@
       "group": "Illustrations",
       "name": "Drawing Canvas",
       "command": "insert.canvas",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.drawingCanvas"
+      ]
     },
     {
       "index": 153,
@@ -1843,7 +1863,9 @@
       "group": "Add-ins",
       "name": "Get Add-ins",
       "command": "addins.get",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.getAddIns"
+      ]
     },
     {
       "index": 154,
@@ -1852,7 +1874,9 @@
       "group": "Media",
       "name": "Online Video",
       "command": "insert.video",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.onlineVideo"
+      ]
     },
     {
       "index": 155,
@@ -1894,7 +1918,9 @@
       "group": "Links",
       "name": "Cross-reference",
       "command": "insert.crossReference",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.crossReference"
+      ]
     },
     {
       "index": 159,
@@ -2287,7 +2313,9 @@
       "group": "Insert",
       "name": "Drawing Canvas",
       "command": "insert.canvas",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.drawingCanvas"
+      ]
     },
     {
       "index": 199,
@@ -2802,7 +2830,9 @@
       "group": "Captions",
       "name": "Cross-reference",
       "command": "insert.crossReference",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.crossReference"
+      ]
     },
     {
       "index": 250,
@@ -3968,7 +3998,9 @@
       "group": "Draw",
       "name": "Draw Table",
       "command": "table.draw",
-      "oasisFeatureIds": []
+      "oasisFeatureIds": [
+        "insert.drawTable"
+      ]
     },
     {
       "index": 371,

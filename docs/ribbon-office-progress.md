@@ -920,6 +920,16 @@ Evidence: the generated catalog and parity matrix now classify 257 of 521 WordCr
 
 Limits: existing Home capabilities remain only partially workflow-verified; this inventory review does not certify semantic equivalence or accessibility.
 
+## Delivery 73 — Insert tab source inventory review
+
+Date: 2026-11-11. B01 and I01 remain **partial**.
+
+Reviewed 13 unmatched Insert commands covering table drawing/conversion and presets, online and advanced media, SmartArt/charts, screenshots, add-ins and cross-references. Explicitly separated existing local-image and blank-table insertion from Word’s online-source and richer authoring workflows.
+
+Evidence: the generated catalog and matrix now classify 273 of 521 source rows; 248 remain unclassified. The crosswalk audit verifies the source-command links and requires rationale for each missing classification.
+
+Limits: Insert table, local image, hyperlinks and existing object workflows retain their independent semantic, accessibility and file-round-trip checks. These classifications do not close I01 or the M4 advanced-object work.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:

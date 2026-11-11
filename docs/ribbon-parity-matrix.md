@@ -3,7 +3,7 @@
 > Generated from `scripts/ribbon-parity/features.json`. Run `npm run audit:ribbon:write` to regenerate; `npm run audit:ribbon` validates the wiring and the snapshot.
 
 **Scope:** Oasis capability crosswalk against the pinned WordCraft source inventory of 521 entries. Unmatched WordCraft rows remain unclassified; this is not a complete parity matrix. Per-capability dimension fields are added as their evidence is reviewed; category-level exposure, semantics, and persistence evidence remains in references.json and docs/ribbon-office-progress.md.<br>
-**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `292` Oasis capabilities and does not classify unmatched source rows as missing.<br>
+**Pinned WordCraft inventory:** `521 entries / 25 surfaces`; this crosswalk maps `305` Oasis capabilities and does not classify unmatched source rows as missing.<br>
 **Oasis baseline:** `1acefe74b4cdf7d008c3cd3f4084bec102d7fbb9`<br>
 **WordCraft baseline:** `05f781cfdac1d89034c0f4f5824b597ff845f2ef`
 
@@ -303,6 +303,19 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `home.selectSimilarFormatting` | `select.similar` | — | — | missing | missing | missing | unverified |
 | `home.dictation` | `tools.dictate` | — | — | missing | missing | missing | unverified |
 | `home.editorProofing` | `review.editor` | — | — | missing | missing | missing | unverified |
+| `insert.drawTable` | `table.draw` | — | — | missing | missing | missing | unverified |
+| `insert.convertTextToTable` | `table.fromText` | — | — | missing | missing | missing | unverified |
+| `insert.excelSpreadsheet` | `insert.spreadsheet` | — | — | missing | missing | missing | unverified |
+| `insert.quickTables` | `table.quick` | — | — | missing | missing | missing | unverified |
+| `insert.onlinePictures` | `insert.onlinePicture` | — | — | missing | missing | missing | unverified |
+| `insert.models3d` | `insert.model3d` | — | — | missing | missing | missing | unverified |
+| `insert.smartArt` | `insert.smartArt` | — | — | missing | missing | missing | unverified |
+| `insert.chart` | `insert.chart` | — | — | missing | missing | missing | unverified |
+| `insert.screenshot` | `insert.screenshot` | — | — | missing | missing | missing | unverified |
+| `insert.drawingCanvas` | `insert.canvas` | — | — | missing | missing | missing | unverified |
+| `insert.getAddIns` | `addins.get` | — | — | missing | missing | missing | unverified |
+| `insert.onlineVideo` | `insert.video` | — | — | missing | missing | missing | unverified |
+| `insert.crossReference` | `insert.crossReference` | — | — | missing | missing | missing | unverified |
 
 ## Open verification questions
 
@@ -598,6 +611,19 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 290. **home.selectSimilarFormatting:** Select Similar Formatting: No command selects document ranges based on matching formatting in the default app.
 291. **home.dictation:** Dictate: No dictation or speech-to-text command is exposed by the default app; browser/platform speech input is not presented as an Oasis workflow.
 292. **home.editorProofing:** Editor: No integrated spelling, grammar and writing-suggestion service is exposed in the default app.
+293. **insert.drawTable:** Draw Table: The table grid inserts a selected row/column count, but no freehand table-drawing mode is exposed in the default UI.
+294. **insert.convertTextToTable:** Convert Text to Table: No command converts delimited document text into a table in the default app. The Insert table grid creates an empty table and is a different task.
+295. **insert.excelSpreadsheet:** Excel Spreadsheet: No embedded spreadsheet insertion or Excel integration is exposed in the default app.
+296. **insert.quickTables:** Quick Tables: The default Insert tab has no preformatted Quick Tables gallery; the table grid inserts a blank table.
+297. **insert.onlinePictures:** Online Pictures: Oasis can insert a local image, but no online image search/source picker is exposed in the default app.
+298. **insert.models3d:** 3D Models: No 3D model importer, viewer or insertion workflow is exposed.
+299. **insert.smartArt:** SmartArt: No SmartArt diagram model or insertion workflow is exposed in the default app.
+300. **insert.chart:** Chart: No chart data model or chart insertion workflow is exposed in the default app.
+301. **insert.screenshot:** Screenshot: No screen-capture insertion workflow is exposed. Browser screenshot testing utilities are not a user-facing document action.
+302. **insert.drawingCanvas:** Drawing Canvas: The editor uses a canvas renderer, but it does not expose an insertable Drawing Canvas object or drawing-area workflow.
+303. **insert.getAddIns:** Get Add-ins: No add-in store, discovery surface or add-in installation workflow is exposed in the default app.
+304. **insert.onlineVideo:** Online Video: No online video embed or media insertion workflow is exposed.
+305. **insert.crossReference:** Cross-reference: No cross-reference insertion dialog or command is exposed in the default UI. Citation links and heading navigation are separate tasks.
 
 ## Audit interpretation
 
