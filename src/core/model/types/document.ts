@@ -88,13 +88,16 @@ export interface EditorWatermark {
   rotation?: number;
   scale?: number;
   fontFamily?: string;
+  /** Text size in typographic points. */
   fontSize?: number;
 }
 
 export interface EditorPageBorder {
   style: "single" | "double" | "dashed" | "dotted";
   color: string;
+  /** Border stroke width in typographic points. */
   width: number;
+  /** Distance from the page edge in typographic points. */
   distance?: number;
 }
 

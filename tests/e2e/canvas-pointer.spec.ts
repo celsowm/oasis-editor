@@ -2020,6 +2020,95 @@ test("toolbar wrap layout keeps overflowing tools visible without more menu", as
   await insertTable(page, 2, 3);
 });
 
+test("Design numeric controls declare their units and ranges", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const metrics = {
+      fonts: [] as string[],
+      strokes: [] as Array<{
+        color: string;
+        lineWidth: number;
+        x: number;
+        y: number;
+      }>,
+    };
+    (window as Window & { __designMetrics?: typeof metrics }).__designMetrics =
+      metrics;
+
+    const context = CanvasRenderingContext2D.prototype;
+    const font = Object.getOwnPropertyDescriptor(context, "font");
+    if (font?.get && font.set) {
+      Object.defineProperty(context, "font", {
+        configurable: true,
+        enumerable: font.enumerable,
+        get() {
+          return font.get!.call(this);
+        },
+        set(value: string) {
+          metrics.fonts.push(value);
+          font.set!.call(this, value);
+        },
+      });
+    }
+
+    const strokeRect = context.strokeRect;
+    context.strokeRect = function (x, y, width, height) {
+      metrics.strokes.push({
+        color: String(this.strokeStyle),
+        lineWidth: this.lineWidth,
+        x,
+        y,
+      });
+      strokeRect.call(this, x, y, width, height);
+    };
+  });
+  await gotoEditor(page);
+  await page.getByTestId("editor-ribbon-tab-design").click();
+
+  await page.getByTestId("editor-toolbar-design-watermark").click();
+  await expect(page.getByLabel("Tamanho da fonte (pt)")).toBeVisible();
+  await expect(page.getByLabel("Opacidade (0–1)")).toBeVisible();
+  await expect(page.getByLabel("Rotação (°)")).toBeVisible();
+  await page.getByRole("button", { name: "Aplicar texto" }).click();
+  await expect
+    .poll(async () =>
+      page.evaluate(() =>
+        (window as Window & { __designMetrics?: { fonts: string[] } })
+          .__designMetrics?.fonts.includes("64px Arial"),
+      ),
+    )
+    .toBe(true);
+  await page.keyboard.press("Escape");
+
+  await page.getByTestId("editor-toolbar-design-page-borders").click();
+  await expect(page.getByLabel("Espessura (pt)")).toBeVisible();
+  await expect(page.getByLabel("Distância (pt)")).toBeVisible();
+  await page.getByRole("button", { name: "Aplicar" }).click();
+  await expect
+    .poll(async () =>
+      page.evaluate(() =>
+        (window as Window & {
+          __designMetrics?: {
+            strokes: Array<{
+              color: string;
+              lineWidth: number;
+              x: number;
+              y: number;
+            }>;
+          };
+        }).__designMetrics?.strokes.some(
+          (stroke) =>
+            stroke.color === "#64748b" &&
+            Math.abs(stroke.x - 32) < 0.1 &&
+            Math.abs(stroke.y - 32) < 0.1 &&
+            Math.abs(stroke.lineWidth - 4 / 3) < 0.01,
+        ),
+      ),
+    )
+    .toBe(true);
+});
+
 test("toolbar customization can remove, move and add items", async ({
   page,
 }) => {

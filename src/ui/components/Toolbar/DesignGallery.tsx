@@ -1,5 +1,6 @@
 import { For, Show, createMemo, createSignal, type JSX } from "solid-js";
 import type { EditorPageBorder, EditorWatermark } from "@/core/model.js";
+import { PX_PER_POINT } from "@/core/units.js";
 import type { DesignThemeId } from "@/core/commands/design.js";
 import type { ToolbarActionApi } from "./schema/items.js";
 
@@ -548,7 +549,9 @@ export function DesignPageBorderPanel(
       <h3>{props.api.t("design.pageBorders")}</h3>
       <div
         class="oasis-editor-design-border-preview"
-        style={{ border: `${width()}px ${style()} ${color()}` }}
+        style={{
+          border: `${width() * PX_PER_POINT}px ${style()} ${color()}`,
+        }}
       >
         Página
       </div>

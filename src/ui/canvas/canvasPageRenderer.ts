@@ -14,6 +14,7 @@ import {
   CANVAS_MARGIN_GUIDE_COLOR,
   CANVAS_MUTED_MARK_COLOR,
 } from "./canvasTheme.js";
+import { PX_PER_POINT } from "@/core/units.js";
 import {
   renderBlockList,
   renderFootnoteBlockList,
@@ -163,7 +164,7 @@ export function createCanvasPageRenderer(options: {
           );
         }
       } else {
-        ctx.font = `${watermark.fontSize ?? 48}px ${watermark.fontFamily ?? "Arial"}`;
+        ctx.font = `${(watermark.fontSize ?? 48) * PX_PER_POINT}px ${watermark.fontFamily ?? "Arial"}`;
         ctx.fillText(watermark.text ?? "", 0, 0);
       }
       ctx.restore();
@@ -175,19 +176,23 @@ export function createCanvasPageRenderer(options: {
       ];
     if (section?.pageBorder) {
       const border = section.pageBorder;
+      const borderWidth = Math.max(1, border.width) * PX_PER_POINT;
+      const distance = (border.distance ?? 12) * PX_PER_POINT;
       ctx.save();
       ctx.strokeStyle = border.color;
-      ctx.lineWidth = Math.max(1, border.width);
-      if (border.style === "dashed") ctx.setLineDash([8, 5]);
-      if (border.style === "dotted") ctx.setLineDash([2, 4]);
+      ctx.lineWidth = borderWidth;
+      if (border.style === "dashed")
+        ctx.setLineDash([8 * PX_PER_POINT, 5 * PX_PER_POINT]);
+      if (border.style === "dotted")
+        ctx.setLineDash([2 * PX_PER_POINT, 4 * PX_PER_POINT]);
       ctx.strokeRect(
-        border.distance ?? 12,
-        border.distance ?? 12,
-        width - 2 * (border.distance ?? 12),
-        height - 2 * (border.distance ?? 12),
+        distance,
+        distance,
+        width - 2 * distance,
+        height - 2 * distance,
       );
       if (border.style === "double") {
-        const d = (border.distance ?? 12) + border.width * 2;
+        const d = distance + borderWidth * 2;
         ctx.strokeRect(d, d, width - 2 * d, height - 2 * d);
       }
       ctx.restore();
