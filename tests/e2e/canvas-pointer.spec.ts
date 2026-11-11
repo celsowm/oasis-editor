@@ -1074,6 +1074,17 @@ test("collapsed Table Layout group exposes the spatial cell alignment matrix", a
   );
   await expect(reopenedMatrix).toHaveAttribute("data-vertical-state", "bottom");
   await expectDebugSelection(page);
+
+  await page.keyboard.press("Control+z");
+  await page.getByTestId("editor-ribbon-group-alignment").click();
+  const restoredMatrix = page
+    .locator(".oasis-editor-ribbon-collapsed-menu")
+    .getByTestId("editor-toolbar-cell-alignment-matrix");
+  await expect(
+    restoredMatrix.getByTestId("editor-toolbar-cell-align-top-left"),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(restoredMatrix).toHaveAttribute("data-horizontal-state", "left");
+  await expect(restoredMatrix).toHaveAttribute("data-vertical-state", "top");
 });
 
 test("triple-click selects paragraph including paragraph mark in main zone", async ({

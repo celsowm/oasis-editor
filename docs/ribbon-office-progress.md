@@ -838,7 +838,17 @@ The 3×3 matrix now reflects the selected cells' current horizontal/vertical pai
 
 Evidence: the core mixed-selection test, 15 CanvasTableLayout tests, typecheck, changed-source ESLint, Ribbon/catalog/icon audits, and the focused collapsed-group Playwright scenario pass.
 
-Limits: mixed state has core coverage but still needs a browser selection scenario and direct VoiceOver review. Explicit single-step undo and direct Word visual comparison also remain open.
+Limits: mixed state has core coverage but still needs a browser selection scenario and direct VoiceOver review. Direct Word visual comparison also remains open.
+
+## Delivery 65 — Single-step undo for paired cell alignment
+
+Date: 2026-11-11. D08 remains **partial**.
+
+Extended the collapsed Table Layout browser workflow to apply a combined horizontal/vertical position, reopen the group to verify its active state, issue one Undo, and confirm both axes return to their prior top-left state.
+
+Evidence: the `collapsed Table Layout group exposes the spatial cell alignment matrix` Playwright scenario passes with the Undo and state-restoration assertions.
+
+Limits: browser evidence covers a single selected cell and one supported starting state. Multi-cell undo behavior, direct Word visual comparison and VoiceOver remain open.
 
 ## Remaining execution queue
 
