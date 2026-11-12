@@ -161,6 +161,14 @@ async function verifyContextTransitions() {
           anchor: paragraphOffsetToPosition(cell, 2),
           focus: paragraphOffsetToPosition(cell, 2),
         });
+      } else if (target === "text") {
+        const paragraph = paragraphs.find((candidate) =>
+          text(candidate).includes("Omega"),
+        );
+        c.selection.set({
+          anchor: paragraphOffsetToPosition(paragraph, 0),
+          focus: paragraphOffsetToPosition(paragraph, 5),
+        });
       } else {
         const paragraph = paragraphs.find((candidate) =>
           candidate.runs.some((run) => run.kind === "image"),
@@ -399,6 +407,122 @@ async function verifyContextTransitions() {
     assert.equal(uniform.horizontal, "right");
     assert.equal(uniform.vertical, "middle");
     assert.equal(uniform.description, null);
+
+    // Object selection: character formatting is disabled for the image run in
+    // every entry point (toolbar, shortcut, programmatic) and never mutates the
+    // document, while paragraph commands and Picture Format stay available.
+    await selectTarget("image");
+    await page.waitForTimeout(200);
+    const readCommands = () =>
+      page.evaluate(() => {
+        const c = window.ribbonReference.client;
+        const read = (command) => {
+          const state = c.commands.state(command);
+          return { enabled: state.isEnabled, active: state.isActive };
+        };
+        return {
+          bold: read("bold"),
+          italic: read("italic"),
+          underline: read("underline"),
+          color: read("setColor"),
+          fontFamily: read("setFontFamily"),
+          fontSize: read("setFontSize"),
+          characterStyle: read("setCharacterStyleId"),
+          alignCenter: read("alignCenter"),
+          bulletList: read("bulletList"),
+          paragraphStyle: read("setStyleId"),
+          imageWidth: read("imageWidthCm"),
+          imageCrop: read("imageCrop"),
+          canExecuteBold: c.commands.canExecute("bold"),
+          version: c.document.version(),
+          dirty: c.document.isDirty(),
+          undo: c.history.canUndo(),
+          document: JSON.stringify(c.document.get()),
+        };
+      });
+    const imageGate = await readCommands();
+    for (const command of [
+      "bold",
+      "italic",
+      "underline",
+      "color",
+      "fontFamily",
+      "fontSize",
+      "characterStyle",
+    ]) {
+      assert.equal(
+        imageGate[command].enabled,
+        false,
+        `${command} stayed enabled for an inline image selection`,
+      );
+    }
+    for (const command of [
+      "alignCenter",
+      "bulletList",
+      "paragraphStyle",
+      "imageWidth",
+      "imageCrop",
+    ]) {
+      assert.equal(
+        imageGate[command].enabled,
+        true,
+        `${command} should stay available for an inline image selection`,
+      );
+    }
+    assert.equal(
+      imageGate.canExecuteBold,
+      false,
+      "Programmatic bold bypassed the object-selection gate",
+    );
+
+    await page.getByTestId("editor-ribbon-tab-home").click();
+    await page.waitForTimeout(160);
+    const disabledControls = await page.evaluate(() =>
+      [
+        "editor-toolbar-bold",
+        "editor-toolbar-italic",
+        "editor-toolbar-underline",
+        "editor-toolbar-font-family",
+        "editor-toolbar-font-size",
+      ].map((id) => {
+        const el = document.querySelector(`[data-testid="${id}"]`);
+        return { id, disabled: Boolean(el?.disabled) };
+      }),
+    );
+    for (const control of disabledControls) {
+      assert.equal(
+        control.disabled,
+        true,
+        `${control.id} did not reflect the object-selection gate`,
+      );
+    }
+
+    const mod = await page.evaluate(() =>
+      /Mac/i.test(navigator.userAgent) ? "Meta" : "Control",
+    );
+    await page.keyboard.press(`${mod}+b`);
+    await page.waitForTimeout(160);
+    const afterShortcut = await readCommands();
+    assert.equal(
+      afterShortcut.document,
+      imageGate.document,
+      "Ctrl/Cmd+B mutated an inline image selection",
+    );
+    assert.equal(afterShortcut.undo, false, "Shortcut pushed history");
+    assert.equal(afterShortcut.dirty, false, "Shortcut dirtied the document");
+    assert.equal(afterShortcut.bold.active, false);
+
+    await selectTarget("text");
+    await page.waitForTimeout(200);
+    const textGate = await readCommands();
+    for (const command of ["bold", "italic", "underline", "color"]) {
+      assert.equal(
+        textGate[command].enabled,
+        true,
+        `${command} stayed disabled for a text selection`,
+      );
+    }
+    assert.equal(textGate.canExecuteBold, true);
 
     assert.deepEqual(errors, [], "Context transitions logged errors");
   } finally {
