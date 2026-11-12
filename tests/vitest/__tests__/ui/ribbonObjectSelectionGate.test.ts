@@ -144,3 +144,40 @@ describe("inline image selection command gate", () => {
     expect(gate.isCommandEnabled("bold")).toBe(true);
   });
 });
+
+describe("read-only command gate", () => {
+  const readOnlyGate = () =>
+    buildEssentialsGate({
+      isReadOnly: () => true,
+    } as unknown as CreateEditorEssentialsPluginOptions);
+
+  it("keeps view, copy and context commands usable while gating mutations", () => {
+    const gate = readOnlyGate();
+    for (const name of [
+      "copy",
+      "find",
+      "exportPdf",
+      "toggleShowParagraphMarks",
+      // Context detectors drive contextual tabs without mutating anything.
+      "imageContext",
+      "tableContext",
+      // Gridlines are a view option; documentStyles is a no-op data carrier.
+      "toggleTableGridlines",
+      "documentStyles",
+    ] as OasisBuiltinCommand[])
+      expect(gate.isCommandEnabled(name), name).toBe(true);
+    for (const name of [
+      "bold",
+      "moveParagraphsUp",
+      "moveParagraphsDown",
+      "tableToggleHeaderRow",
+      "setTableStyle",
+      "tableAutoFit",
+      "tableDistributeColumns",
+      "toggleTableDrawBorders",
+      "imageCrop",
+      "imageWidthCm",
+    ] as OasisBuiltinCommand[])
+      expect(gate.isCommandEnabled(name), name).toBe(false);
+  });
+});

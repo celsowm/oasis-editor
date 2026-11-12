@@ -28,6 +28,13 @@ const READ_ONLY_SAFE_COMMANDS: ReadonlySet<OasisBuiltinCommand> = new Set([
   "toggleShowMargins",
   "toggleShowParagraphMarks",
   "togglePreciseFonts",
+  // Context detectors drive contextual tabs and never mutate the document.
+  "imageContext",
+  "tableContext",
+  // Table gridlines are a view option (not a document change).
+  "toggleTableGridlines",
+  // Data carrier for the styles gallery; executing it is a no-op.
+  "documentStyles",
 ]);
 
 /**

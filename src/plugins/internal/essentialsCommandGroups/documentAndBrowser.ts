@@ -1,5 +1,4 @@
 import type { OasisPlugin } from "@/core/plugin.js";
-import type { OasisBuiltinCommand } from "@/core/commands/builtinCommands.js";
 import type { EditorImageBorder } from "@/core/model.js";
 import type { ImageBorderPatch } from "@/core/commands/image.js";
 import type { ActionCommandBuilder } from "../essentialsCommandBuilders.js";
@@ -33,14 +32,6 @@ export function buildDocumentAndBrowserCommands({
   actionCommand,
 }: DocumentAndBrowserGroupDeps): NonNullable<OasisPlugin["commands"]> {
   const s = style.state;
-  /**
-   * Picture Format edits are document mutations, so they follow the same
-   * read-only gate as every other editing command. The image capability only
-   * reports whether an image is selected, which is why these commands used to
-   * stay enabled — and silently resize or crop — in a read-only document.
-   */
-  const canEditImage = (name: OasisBuiltinCommand): boolean =>
-    gate.isCommandEnabled(name) && image.isSelected();
   return {
     documentStyles: actionCommand(
       "documentStyles",
@@ -249,7 +240,7 @@ export function buildDocumentAndBrowserCommands({
       "editImageAlt",
       (): void => image.promptAlt(),
       (): { isEnabled: boolean; isActive: boolean } => ({
-        isEnabled: canEditImage("editImageAlt"),
+        isEnabled: image.isSelected(),
         isActive: image.isSelected(),
       }),
     ),
@@ -257,7 +248,7 @@ export function buildDocumentAndBrowserCommands({
       "insertImageCaption",
       (): void => image.promptCaption(),
       (): { isEnabled: boolean; isActive: boolean } => ({
-        isEnabled: canEditImage("insertImageCaption"),
+        isEnabled: image.isSelected(),
         isActive: image.isSelected(),
       }),
     ),
@@ -274,7 +265,7 @@ export function buildDocumentAndBrowserCommands({
       "imageWidthCm",
       (p): void => image.setWidthCm(Number(p)),
       (): { isEnabled: boolean; value: number | null } => ({
-        isEnabled: canEditImage("imageWidthCm"),
+        isEnabled: image.isSelected(),
         value: image.getSizeCm()?.width ?? null,
       }),
     ),
@@ -282,7 +273,7 @@ export function buildDocumentAndBrowserCommands({
       "imageHeightCm",
       (p): void => image.setHeightCm(Number(p)),
       (): { isEnabled: boolean; value: number | null } => ({
-        isEnabled: canEditImage("imageHeightCm"),
+        isEnabled: image.isSelected(),
         value: image.getSizeCm()?.height ?? null,
       }),
     ),
@@ -290,7 +281,7 @@ export function buildDocumentAndBrowserCommands({
       "imageCrop",
       (): void => image.toggleCrop(),
       (): { isEnabled: boolean; isActive: boolean } => ({
-        isEnabled: canEditImage("imageCrop"),
+        isEnabled: image.isSelected(),
         isActive: image.isCropActive(),
       }),
     ),
@@ -298,14 +289,14 @@ export function buildDocumentAndBrowserCommands({
       "imageCropAspect",
       (p): void => image.applyCropAspect(String(p)),
       (): { isEnabled: boolean } => ({
-        isEnabled: canEditImage("imageCropAspect"),
+        isEnabled: image.isSelected(),
       }),
     ),
     imageCropShape: actionCommand(
       "imageCropShape",
       (p): void => image.applyCropShape(String(p)),
       (): { isEnabled: boolean; value: string | null } => ({
-        isEnabled: canEditImage("imageCropShape"),
+        isEnabled: image.isSelected(),
         value: image.getCropShape(),
       }),
     ),
@@ -313,42 +304,42 @@ export function buildDocumentAndBrowserCommands({
       "imageCropFill",
       (): void => image.applyCropFill(),
       (): { isEnabled: boolean } => ({
-        isEnabled: canEditImage("imageCropFill"),
+        isEnabled: image.isSelected(),
       }),
     ),
     imageCropFit: actionCommand(
       "imageCropFit",
       (): void => image.applyCropFit(),
       (): { isEnabled: boolean } => ({
-        isEnabled: canEditImage("imageCropFit"),
+        isEnabled: image.isSelected(),
       }),
     ),
     imageCropReset: actionCommand(
       "imageCropReset",
       (): void => image.resetCrop(),
       (): { isEnabled: boolean } => ({
-        isEnabled: canEditImage("imageCropReset"),
+        isEnabled: image.isSelected(),
       }),
     ),
     imageFlip: actionCommand(
       "imageFlip",
       (p): void => image.flip((p as "horizontal" | "vertical") ?? "horizontal"),
       (): { isEnabled: boolean } => ({
-        isEnabled: canEditImage("imageFlip"),
+        isEnabled: image.isSelected(),
       }),
     ),
     imageRotate: actionCommand(
       "imageRotate",
       (p): void => image.rotate((p as "left" | "right") ?? "left"),
       (): { isEnabled: boolean } => ({
-        isEnabled: canEditImage("imageRotate"),
+        isEnabled: image.isSelected(),
       }),
     ),
     imageBorder: actionCommand(
       "imageBorder",
       (p): void => image.setBorder(p as ImageBorderPatch),
       (): { isEnabled: boolean; value: EditorImageBorder | null } => ({
-        isEnabled: canEditImage("imageBorder"),
+        isEnabled: image.isSelected(),
         value: image.getBorder(),
       }),
     ),
@@ -359,16 +350,14 @@ export function buildDocumentAndBrowserCommands({
           typeof p === "number" ? p : p == null ? 0 : Number(p),
         ),
       (): { isEnabled: boolean; value: number | null } => ({
-        isEnabled: canEditImage("imageTransparency"),
+        isEnabled: image.isSelected(),
         value: image.getTransparency(),
       }),
     ),
     resetImage: actionCommand(
       "resetImage",
       (): void => image.reset(),
-      (): { isEnabled: boolean } => ({
-        isEnabled: gate.isCommandEnabled("resetImage") && image.canReset(),
-      }),
+      (): { isEnabled: boolean } => ({ isEnabled: image.canReset() }),
     ),
   };
 }

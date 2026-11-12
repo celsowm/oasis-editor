@@ -27,10 +27,16 @@ export function createCommandBuilder(isCommandEnabled: CommandEnabledResolver) {
     state?: () => Partial<CommandState>,
   ): OasisCommand => ({
     execute,
-    refresh: (): CommandState => ({
-      isEnabled: isCommandEnabled(name),
-      ...state?.(),
-    }),
+    refresh: (): CommandState => {
+      const extra = state?.() ?? {};
+      // A command's own condition (can it apply here?) can only narrow the
+      // gate, never widen it: a read-only document must stay read-only even
+      // when the domain says the action is possible.
+      return {
+        ...extra,
+        isEnabled: isCommandEnabled(name) && (extra.isEnabled ?? true),
+      };
+    },
   });
 }
 
@@ -62,10 +68,14 @@ export function createActionCommandBuilder(
       execute(payload);
       return true;
     },
-    refresh: (): CommandState => ({
-      isEnabled: isCommandEnabled(name),
-      ...state?.(),
-    }),
+    refresh: (): CommandState => {
+      const extra = state?.() ?? {};
+      // See createCommandBuilder: the domain condition narrows the gate only.
+      return {
+        ...extra,
+        isEnabled: isCommandEnabled(name) && (extra.isEnabled ?? true),
+      };
+    },
   });
 }
 
