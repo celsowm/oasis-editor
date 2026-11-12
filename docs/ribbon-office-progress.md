@@ -1175,6 +1175,16 @@ Evidence: new unit suites cover the command gate (image, text box, text, read-on
 
 Limits: text-box gating has unit evidence only; math runs, floating shapes and format-painter targets keep their previous behaviour; browser checks use synthetic content and programmatic selection.
 
+## Delivery 99 — fractional DPR and zoom-equivalent layouts
+
+Date: 2026-11-12. R05 gains scoped evidence; pointer/IME, OS-level browser zoom UI and performance budgets remain open.
+
+The resize verifier now also runs at device pixel ratios 1.25, 1.5 and 2, and at the CSS viewports produced by 125%, 150% and 200% browser zoom on a 1440 px window (1152, 960 and 720 px). At every case each group's rendered width still matches its planned allocation within 1 px and no panel overflows its own scroll budget; the collapsed Font-group popup stays inside the visual viewport at 640 px for every DPR; a direct load at a zoom-equivalent width matches an arrangement reached by resizing; and no idle measurement copies appear at the zoomed widths.
+
+Evidence: `npm run test:ribbon:resize` verifies 80 layouts per engine in Chromium, Firefox and WebKit (68 layout/thème records plus 12 DPR/zoom records). The Chromium CI runner executes the same verifier. TypeScript, ESLint on changed files, non-UI Vitest (327 files / 1,913 passed, one skipped) and `npm run audit:ribbon` pass.
+
+Limits: zoom is emulated through the equivalent CSS viewport rather than the browser's own zoom control, so OS zoom UI, per-site zoom and Safari's page-zoom remain unverified; DPR evidence covers layout geometry, not raster sharpness of vector icons at fractional factors.
+
 Limits: no VoiceOver, touch, pointer-driven or real-Safari trusted-input evidence; one table↔image pair plus one collapsed popup at 640 px; the transition assertions use synthetic content and programmatic selection.
 
 ## Remaining execution queue
@@ -1184,7 +1194,7 @@ All requirements in the execution plan remain in scope. The next sequence is:
 1. B01 static inventory reconciliation is complete. Finish remaining V02/V04 cases; B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
 2. Complete the remaining I03/I04 icon families and A01/A02 contextual/custom layout acceptance.
 3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review.
-4. R01–R05: close late-font, zoom, pointer/IME, invalidation and performance evidence across remaining contexts.
+4. R01–R05: close late-font, pointer/IME, invalidation and performance evidence across remaining contexts (fractional DPR and zoom-equivalent widths now have scoped evidence; OS zoom UI and raster sharpness stay open).
 5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
 6. P01–P06: Review, References, View, File, search/QAT and interoperability. P04 includes the dirty marker staying set after undo restores the saved document snapshot.
 7. All M4 families: Shapes, Equations, Draw, advanced References, Mailings, Developer/Forms, Charts/SmartArt, integrations and Help, each with the plan's minimum functional delivery.
