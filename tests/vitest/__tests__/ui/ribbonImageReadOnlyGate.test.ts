@@ -50,8 +50,11 @@ function commandsFor(readOnly: boolean) {
   } as unknown as Parameters<typeof buildDocumentAndBrowserCommands>[0]);
 }
 
+const refresh = (command: OasisCommand | undefined): CommandState =>
+  command?.refresh?.() as CommandState;
+
 const enabled = (command: OasisCommand | undefined): boolean =>
-  (command?.refresh() as CommandState).isEnabled;
+  refresh(command).isEnabled;
 
 describe("Picture Format read-only gate", () => {
   it("disables every image edit while the document is read-only", () => {
@@ -77,6 +80,6 @@ describe("Picture Format read-only gate", () => {
   it("keeps the context detector active so the tab still opens", () => {
     const commands = commandsFor(true);
     const context = commands.imageContext as OasisCommand | undefined;
-    expect(context?.refresh().isActive).toBe(true);
+    expect(refresh(context).isActive).toBe(true);
   });
 });
