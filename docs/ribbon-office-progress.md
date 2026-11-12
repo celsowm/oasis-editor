@@ -1161,7 +1161,19 @@ Evidence:
 - Pre-flight closed Delivery 96's outstanding retarget: `RIBBON_BROWSER=firefox` and `RIBBON_BROWSER=webkit npm run test:ribbon:resize` each pass 68 layouts.
 - TypeScript, changed-source ESLint, non-UI Vitest (325 files / 1,902 tests passed, one skipped) and `npm run audit:ribbon` pass. The owned Chromium CI runner passes all ten suites, including the extended contexts verifier.
 
-Observed but not changed: executing bold, underline, color or font family while an inline image is selected writes the corresponding `styles.*` value onto the image run, with a history entry and dirty flag, even though nothing visible changes. Word disables those controls for object selections. This is queued as a separate A03/D02 defect instead of being folded into the transition delivery.
+Observed but not changed: executing bold, underline, color or font family while an inline image is selected writes the corresponding `styles.*` value onto the image run, with a history entry and dirty flag, even though nothing visible changes. Word disables those controls for object selections. This was queued as a separate A03/D02 defect instead of being folded into the transition delivery; Delivery 98 closes it.
+
+## Delivery 98 — object-selection formatting gate
+
+Date: 2026-11-12. A03/D02 gain a scoped acceptance for inline objects; VoiceOver, trusted Safari input and other object kinds remain open.
+
+Character formatting now disables while the selection is exactly one inline image or text-box run. The Essentials gate marks the run-formatting command family (bold/italic/underline/strike/caps/super/subscript, font family and size, color, highlight, text shading, character style, character spacing/kerning/scale, underline variants, text case and clear formatting) unavailable; paragraph-scoped commands (alignment, lists, paragraph style) and the Picture Format tab stay available. The decision is cached per document/selection snapshot because the live editor state is a proxy whose identity never changes.
+
+While verifying, the keyboard path exposed a second gate bypass: when a binding declared a command that `canExecute` refused, `EditorCommandRegistry` fell through to the binding's local `execute` fallback, so Ctrl/Cmd+B still painted bold onto the image run. A disabled declared command now consumes the chord without running the fallback, so the shortcut cannot bypass the gate.
+
+Evidence: new unit suites cover the command gate (image, text box, text, read-only, missing state accessor) and the registry dispatch policy (command vs fallback, disabled command, unbound handler). The contextual verifier now asserts, for an image selection, that the character commands report disabled, the Home Font controls render disabled, the platform shortcut leaves document/history/dirty unchanged, programmatic execution is refused, paragraph and Picture Format commands stay enabled, and a text selection re-enables everything. Chromium, Firefox and WebKit each pass 260 contextual layouts with those assertions; the owned Chromium CI runner passes all ten suites. Non-UI Vitest: 327 files / 1,913 passed, one skipped.
+
+Limits: text-box gating has unit evidence only; math runs, floating shapes and format-painter targets keep their previous behaviour; browser checks use synthetic content and programmatic selection.
 
 Limits: no VoiceOver, touch, pointer-driven or real-Safari trusted-input evidence; one table↔image pair plus one collapsed popup at 640 px; the transition assertions use synthetic content and programmatic selection.
 
@@ -1171,7 +1183,7 @@ All requirements in the execution plan remain in scope. The next sequence is:
 
 1. B01 static inventory reconciliation is complete. Finish remaining V02/V04 cases; B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
 2. Complete the remaining I03/I04 icon families and A01/A02 contextual/custom layout acceptance.
-3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting enablement and VoiceOver review.
+3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review.
 4. R01–R05: close late-font, zoom, pointer/IME, invalidation and performance evidence across remaining contexts.
 5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
 6. P01–P06: Review, References, View, File, search/QAT and interoperability. P04 includes the dirty marker staying set after undo restores the saved document snapshot.
