@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global process, document, window, console, MutationObserver, HTMLElement, MouseEvent, Event */
 import { verifyRibbonChevrons } from "./ribbon-chevron-geometry.mjs";
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
 import assert from "node:assert/strict";
@@ -48,6 +49,123 @@ const validate = (value) => {
       `Inaccessible clipping: ${JSON.stringify(value)}`,
     );
 };
+/**
+ * R05: fractional device pixel ratios and zoom-equivalent viewports. Browser
+ * zoom keeps the physical window but shrinks the CSS viewport, so a 1440 px
+ * window at 125/150/200% behaves like a 1152/960/720 px CSS viewport. Group
+ * budgets must stay exact, popups must remain inside the visual viewport, and
+ * no idle measurement copies may appear.
+ */
+async function verifyDprAndZoom() {
+  for (const dpr of [1.25, 1.5, 2]) {
+    const page = await browser.newPage({
+      viewport: { width: 1440, height: 900 },
+      deviceScaleFactor: dpr,
+    });
+    try {
+      await page.goto(`${base}/tests/browser/ribbon/?theme=light&locale=en`);
+      await waitForRibbonReference(page);
+      await page.evaluate(() => document.fonts.ready);
+      assert.equal(
+        await page.evaluate(() => window.devicePixelRatio),
+        dpr,
+        `Device scale factor ${dpr} was not applied`,
+      );
+      for (const width of [1440, 960, 640]) {
+        await page.setViewportSize({ width, height: 900 });
+        const value = await snapshot(page);
+        validate(value);
+        records.push({ kind: "dpr", dpr, width, ...value });
+      }
+      // The collapsed Font group popup must fit the visual viewport at 640 px.
+      await page.getByTestId("editor-ribbon-group-font").click();
+      const popup = page.locator(".oasis-editor-ribbon-collapsed-menu");
+      await popup.waitFor();
+      const box = await popup.evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+        return {
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom,
+          width: window.innerWidth,
+          height: window.innerHeight,
+        };
+      });
+      assert.ok(
+        box.left >= -1 &&
+          box.right <= box.width + 1 &&
+          box.top >= -1 &&
+          box.bottom <= box.height + 1,
+        `DPR ${dpr} collapsed popup left the viewport: ${JSON.stringify(box)}`,
+      );
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(60);
+      assert.equal(await popup.count(), 0);
+    } finally {
+      await page.close();
+    }
+  }
+  for (const zoom of [1.25, 1.5, 2]) {
+    const width = Math.round(1440 / zoom);
+    const page = await browser.newPage({
+      viewport: { width, height: Math.round(900 / zoom) },
+      deviceScaleFactor: 1,
+    });
+    try {
+      await page.goto(`${base}/tests/browser/ribbon/?theme=light&locale=en`);
+      await waitForRibbonReference(page);
+      await page.evaluate(() => document.fonts.ready);
+      const value = await snapshot(page);
+      validate(value);
+      assert.equal(
+        value.width,
+        width,
+        `Zoom ${zoom} viewport width drifted`,
+      );
+      records.push({ kind: "zoom", zoom, width, ...value });
+      // Idle baseline: no repeated measurement copies at the zoomed width.
+      await page.waitForTimeout(100);
+      await page.evaluate(() => {
+        window.zoomIdleMeasures = 0;
+        window.zoomMeasureObserver = new MutationObserver((mutations) => {
+          for (const mutation of mutations)
+            for (const node of mutation.addedNodes) {
+              if (
+                node instanceof HTMLElement &&
+                node.dataset.ribbonMeasurementCopy
+              )
+                window.zoomIdleMeasures++;
+            }
+        });
+        window.zoomMeasureObserver.observe(
+          document.querySelector(".oasis-editor-ribbon-panel-frame"),
+          { childList: true },
+        );
+      });
+      await page.waitForTimeout(300);
+      assert.equal(
+        await page.evaluate(() => {
+          window.zoomMeasureObserver.disconnect();
+          return window.zoomIdleMeasures;
+        }),
+        0,
+        `Zoom ${zoom} triggered an idle measurement loop`,
+      );
+      // A direct load at the zoom-equivalent width must match a resized one.
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await snapshot(page);
+      await page.setViewportSize({ width, height: Math.round(900 / zoom) });
+      assert.deepEqual(
+        await snapshot(page),
+        value,
+        `Zoom ${zoom} resize history changed the arrangement`,
+      );
+    } finally {
+      await page.close();
+    }
+  }
+}
 try {
   for (const theme of ["light", "dark"])
     for (const locale of ["en", "pt-BR"]) {
@@ -306,12 +424,13 @@ try {
       assert.deepEqual(errors, []);
       await page.close();
     }
+  await verifyDprAndZoom();
   await writeFile(
     resolve(output, "verification.json"),
     JSON.stringify({ browser: engine, records }, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} layouts in ${engine}: exact state widths, monotonic reduction, direct/resize parity, overflow, focus and nested popups.`,
+    `Verified ${records.length} layouts in ${engine}: exact state widths, monotonic reduction, direct/resize parity, overflow, focus and nested popups; DPR 1.25/1.5/2 and zoom-equivalent 125/150/200% viewports.`,
   );
 } finally {
   await browser.close();
