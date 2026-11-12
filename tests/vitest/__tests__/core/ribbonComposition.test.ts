@@ -3,6 +3,7 @@ import { createTranslator } from "@/i18n/index.js";
 import {
   buildRibbonGroups,
   buildRibbonTabDefinitions,
+  sameRibbonComposition,
   visibleRibbonItems,
 } from "@/ui/components/Toolbar/ribbon/ribbonModel.js";
 import type {
@@ -158,5 +159,38 @@ describe("declarative Ribbon group layouts", () => {
     );
     expect(groups[0].layout).toBe("three-rows");
     expect(groups[0].rows[3]).toEqual([]);
+  });
+});
+
+describe("stable Ribbon item identity", () => {
+  const group = (id: string, items: ToolbarItem[]): ToolbarItem =>
+    ({ type: "group", id, tab: "insert", group: "accessibility", items }) as ToolbarItem;
+
+  it("treats a recomputed composition with identical actions as unchanged", () => {
+    const action = button("bold");
+    const separated = separator("between");
+    const a = [group("clipboard", [action, separated])];
+    // `visibleRibbonItems` allocates a fresh wrapper on every run; the action
+    // and separator instances are the registry's stable objects.
+    const b = [group("clipboard", [action, separated])];
+    expect(a[0]).not.toBe(b[0]);
+    expect(sameRibbonComposition(a, b)).toBe(true);
+  });
+
+  it("detects composition changes that must remount the ribbon", () => {
+    const action = button("bold");
+    const other = button("italic");
+    const base = [group("clipboard", [action])];
+    expect(sameRibbonComposition(base, [group("clipboard", [other])])).toBe(false);
+    expect(sameRibbonComposition(base, [])).toBe(false);
+    expect(sameRibbonComposition(base, [group("font", [action])])).toBe(false);
+    expect(sameRibbonComposition(base, [action])).toBe(false);
+  });
+
+  it("compares nested groups recursively instead of by wrapper identity", () => {
+    const action = button("bold");
+    const nested = (): ToolbarItem =>
+      group("outer", [group("inner", [action])]);
+    expect(sameRibbonComposition([nested()], [nested()])).toBe(true);
   });
 });

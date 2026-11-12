@@ -791,18 +791,71 @@ try {
             JSON.stringify(window.ribbonReference.client.document.get()),
           );
 
+          // Word's Layout fields: the unit is part of the accessible name, the
+          // decimal form follows the document language, and a draft only
+          // commits on Enter/blur (the paragraph command returns focus to the
+          // document, so per-keystroke commits would steal focus).
+          const decimalSeparator = locale === "pt-BR" ? "," : ".";
+          for (const [testId, unit] of [
+            ["editor-toolbar-spacing-after", "pt"],
+            ["editor-toolbar-indent-left", "cm"],
+            ["editor-toolbar-indent-first-line", "cm"],
+            ["editor-toolbar-indent-hanging", "cm"],
+          ]) {
+            const shape = await page.evaluate((id) => {
+              const input = document.querySelector(`[data-testid="${id}"]`);
+              return {
+                type: input?.getAttribute("type") ?? "",
+                inputMode: input?.getAttribute("inputmode") ?? "",
+                ariaLabel: input?.getAttribute("aria-label") ?? "",
+              };
+            }, testId);
+            assert.ok(
+              shape.ariaLabel.endsWith(`(${unit})`),
+              `${testId} accessible name should carry the unit: ${shape.ariaLabel}`,
+            );
+            assert.equal(
+              shape.type,
+              locale === "pt-BR" ? "text" : "number",
+              `${testId} input type should follow the decimal separator`,
+            );
+            if (locale === "pt-BR")
+              assert.equal(shape.inputMode, "decimal", `${testId} inputMode`);
+          }
+
+          await page.evaluate(() => {
+            window.__unitPanel = document.querySelector(
+              ".oasis-editor-portal-theme .oasis-editor-toolbar-panel",
+            );
+          });
           const initialSpacing = await page.evaluate(
             () =>
               window.ribbonReference.client.commands.state("setSpacingAfter")
                 .value,
           );
-          await page.getByTestId("editor-toolbar-spacing-after").fill("12");
+          const spacingField = page.getByTestId("editor-toolbar-spacing-after");
+          await spacingField.fill("12");
+          assert.equal(
+            await page.evaluate(
+              () =>
+                window.ribbonReference.client.commands.state("setSpacingAfter")
+                  .value,
+            ),
+            initialSpacing,
+            "Typing a metric must not commit it",
+          );
+          await spacingField.press("Enter");
           await page.waitForFunction(
             () =>
               Number(
                 window.ribbonReference.client.commands.state("setSpacingAfter")
                   .value,
               ) === 16,
+          );
+          assert.equal(
+            await page.evaluate(() => window.__unitPanel?.isConnected),
+            true,
+            "Metrics panel remounted when a metric committed",
           );
           await page.evaluate(() =>
             window.ribbonReference.client.history.undo(),
@@ -821,13 +874,21 @@ try {
               window.ribbonReference.client.commands.state("setIndentLeft")
                 .value,
           );
-          await page.getByTestId("editor-toolbar-indent-left").fill("2.54");
+          const indentField = page.getByTestId("editor-toolbar-indent-left");
+          // 1.27 cm is exactly 48 px, so the committed display round-trips.
+          await indentField.fill(`1${decimalSeparator}27`);
+          await indentField.press("Enter");
           await page.waitForFunction(
             () =>
               Number(
                 window.ribbonReference.client.commands.state("setIndentLeft")
                   .value,
-              ) === 96,
+              ) === 48,
+          );
+          assert.equal(
+            await indentField.inputValue(),
+            `1${decimalSeparator}27`,
+            "Committed metric should display the localized decimal form",
           );
           await page.evaluate(() =>
             window.ribbonReference.client.history.undo(),
@@ -853,11 +914,63 @@ try {
             "Unit conversion edit and undo should retain the selection",
           );
 
+          // Read-only documents keep the panel visible but grey every control
+          // out, like Word, so a disabled command can never be executed.
+          await page.evaluate(() =>
+            window.ribbonReference.client.ui.setReadOnly(true),
+          );
+          await page.waitForTimeout(150);
+          const readOnlyMetrics = await page.evaluate(() =>
+            [
+              "editor-toolbar-spacing-after",
+              "editor-toolbar-indent-left",
+              "editor-toolbar-indent-first-line",
+              "editor-toolbar-indent-hanging",
+              "editor-toolbar-page-break-before",
+              "editor-toolbar-keep-with-next",
+              "editor-toolbar-paragraph-shading",
+              "editor-toolbar-paragraph-borders",
+            ].map((id) => {
+              const element = document.querySelector(`[data-testid="${id}"]`);
+              return { id, disabled: Boolean(element?.disabled) };
+            }),
+          );
+          for (const control of readOnlyMetrics)
+            assert.equal(
+              control.disabled,
+              true,
+              `${control.id} stayed enabled in a read-only document`,
+            );
+          await page.evaluate(() =>
+            window.ribbonReference.client.ui.setReadOnly(false),
+          );
+          await page.waitForTimeout(150);
+
           await page.keyboard.press("Escape");
           await page.getByTestId("editor-toolbar-margins-dropdown").click();
           await page.getByTestId("editor-toolbar-margins-custom").click();
           for (const side of ["top", "bottom", "left", "right"])
             await assertUnit(page, `editor-toolbar-margin-${side}`, "cm");
+          assert.equal(
+            await page
+              .getByTestId("editor-toolbar-margin-left")
+              .getAttribute("type"),
+            "text",
+            "Custom margin input should accept the localized decimal separator",
+          );
+          assert.equal(
+            await page
+              .getByTestId("editor-toolbar-margin-left")
+              .getAttribute("inputmode"),
+            "decimal",
+            "Custom margin input should request a decimal keypad",
+          );
+          assert.ok(
+            (
+              await page.getByTestId("editor-toolbar-margin-left").inputValue()
+            ).includes(decimalSeparator),
+            "Custom margin drafts should display the document decimal separator",
+          );
           const marginsScreenshot = `${theme}-${locale}-layout-custom-margins-units.png`;
           await page
             .locator(
