@@ -1199,6 +1199,16 @@ Evidence: new unit suites cover `formatDecimal`/`parseDecimal` (locale separator
 
 Limits: mixed values still render blank (Word parity) without a spoken mixed state; `cmToPx` rounds to whole pixels, so 2.5 cm commits to 94 px and redisplays as 2.49; an emptied field clears the metric and non-numeric text is discarded; read-only evidence is DOM/command state, not assistive-technology output.
 
+## Delivery 101 — Picture Format size fields and read-only gate
+
+Date: 2026-11-12. V04 and D02 gain scoped acceptance for the Picture Format tab; VoiceOver, touch and trusted-Safari input remain open.
+
+Three reproduced defects were fixed. In pt-BR the image Width/Height fields printed a hard-coded dot (`1.27`) with the unit only in the visible suffix; they now use the shared `MetricField` primitive (extracted from the Layout › Paragraph panel) so they display and accept the document separator (`1,27`), switch to `type="text" inputmode="decimal"`, and carry the unit in the accessible name (`Largura (cm)`). They also committed on every keystroke, which refocused the document and dropped the Picture Format contextual tab after the first digit; the draft now commits on Enter or blur only. Finally, the whole Picture Format command family ignored the read-only gate: with an image selected in a read-only document the size fields stayed enabled, `imageWidthCm` executed, the image resized, the document became dirty and no history entry existed to undo it. Each of the fifteen image edit commands (alt text, caption, size, crop family, flip, rotate, border, transparency, reset) now resolves `isEnabled` through the gate; the context detector stays enabled so the tab still opens, with its controls greyed out.
+
+Evidence: a new unit suite builds the real command group twice and asserts all fifteen image commands are disabled read-only and enabled when editing is allowed, while `imageContext` stays active. The contextual verifier now asserts the accessible name and input type per locale, the localized value, that typing does not commit, that Enter commits and keeps the Picture Format tab selected, that undo restores the original width, and that a read-only document refuses `imageWidthCm` (`Command disabled:`) without changing content. Chromium, Firefox and WebKit each pass 260 contextual layouts and 8 unit screenshots; the owned Chromium CI runner passes all ten suites. TypeScript, ESLint on changed files, non-UI Vitest (329 files / 1,925 passed, one skipped) and `npm run audit:ribbon` pass.
+
+Limits: the size fields still round centimetres to whole pixels, so 2.5 cm commits as 2.49; only inline-image Picture Format is covered — floating shapes, text boxes and format-painter targets keep their previous enablement; read-only evidence is command/DOM state, not assistive-technology output.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
