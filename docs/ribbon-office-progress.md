@@ -1187,6 +1187,18 @@ Limits: zoom is emulated through the equivalent CSS viewport rather than the bro
 
 Limits: no VoiceOver, touch, pointer-driven or real-Safari trusted-input evidence; one table↔image pair plus one collapsed popup at 640 px; the transition assertions use synthetic content and programmatic selection.
 
+## Delivery 100 — paragraph metric fields and stable ribbon graph
+
+Date: 2026-11-12. V04 gains scoped acceptance for the Layout › Paragraph metrics; VoiceOver, touch and trusted-Safari input remain open.
+
+Three reproduced defects were fixed. In a read-only document the metrics popup kept every field enabled, so typing into it threw an uncaught `Command disabled: setSpacingAfter`; the fields, the two pagination toggles, the shading swatch and the borders button are now disabled from their command state, and the page-margin presets/custom form follow the same rule. Metric fields also committed on every keystroke, and because the paragraph command returns focus to the document, focus left the field after the first character; edits are now local drafts committed on Enter or blur, like Word's Layout fields, with Enter preventing the default so it cannot insert a line break into the document. Finally, the ribbon item graph was rebuilt whenever any `isVisible` predicate re-read command state, and the reference-keyed `For` then remounted every group, which closed the metrics popup on any selection change or edit; `sameRibbonComposition` now keeps the previous array while the visible composition is identical.
+
+Values display and accept the document's decimal separator: pt-BR shows `1,27`, sets `type="text" inputmode="decimal"`, and the accessible name carries the unit (`Recuo à Esquerda (cm)`); en keeps native number inputs. The custom page-margin form uses the same formatting/parsing, so a comma-typed `2,5` applies 94 px.
+
+Evidence: new unit suites cover `formatDecimal`/`parseDecimal` (locale separator, both accepted inputs, empty/non-numeric rejection) and `sameRibbonComposition` (fresh group wrappers, changed composition, nested groups). The contextual verifier now asserts the accessible name and input type per locale, that typing does not commit, that Enter commits exactly once and leaves the panel mounted, that the `1,27` display round-trips, that undo restores the document and selection exactly, and that read-only disables all eight controls. Chromium, Firefox and WebKit each pass 260 contextual layouts and 8 unit screenshots; the owned Chromium CI runner passes all ten suites. TypeScript, ESLint on changed files, non-UI Vitest (328 files / 1,922 passed, one skipped) and `npm run audit:ribbon` pass.
+
+Limits: mixed values still render blank (Word parity) without a spoken mixed state; `cmToPx` rounds to whole pixels, so 2.5 cm commits to 94 px and redisplays as 2.49; an emptied field clears the metric and non-numeric text is discarded; read-only evidence is DOM/command state, not assistive-technology output.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
