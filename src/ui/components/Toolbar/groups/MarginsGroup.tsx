@@ -11,6 +11,7 @@ import {
   type MarginPreset,
 } from "@/ui/components/Toolbar/marginPresets.js";
 
+import { formatDecimal, parseDecimal } from "@/utils/parseNumber.js";
 import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 
 const FIELDS = [
@@ -25,9 +26,12 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
   const t = useI18n();
   const formatCm = (cm: number): string =>
     t("section.marginValue", [
-      String(cm).replace(".", t("number.decimalSeparator")),
+      formatDecimal(String(cm), t("number.decimalSeparator")),
     ]);
   const api = props.api;
+  /** Word greys the margin controls out for read-only documents. */
+  const editable = (): boolean =>
+    api.commands.state("setPageMargins").isEnabled;
   const [showCustom, setShowCustom] = createSignal(false);
   const [draft, setDraft] = createSignal<Record<string, string>>({});
 
@@ -52,11 +56,13 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
 
   const openCustom = (): void => {
     const margins = current();
+    const cm = (value: number): string =>
+      formatDecimal(String(pxToCm(value)), t("number.decimalSeparator"));
     setDraft({
-      top: margins ? String(pxToCm(margins.top)) : "",
-      bottom: margins ? String(pxToCm(margins.bottom)) : "",
-      left: margins ? String(pxToCm(margins.left)) : "",
-      right: margins ? String(pxToCm(margins.right)) : "",
+      top: margins ? cm(margins.top) : "",
+      bottom: margins ? cm(margins.bottom) : "",
+      left: margins ? cm(margins.left) : "",
+      right: margins ? cm(margins.right) : "",
     });
     setShowCustom((v): boolean => !v);
   };
@@ -67,8 +73,8 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
     for (const { key } of FIELDS) {
       const raw = d[key];
       if (raw == null || raw === "") continue;
-      const cm = Number(raw.replace(",", "."));
-      if (Number.isFinite(cm) && cm >= 0) payload[key] = cmToPx(cm);
+      const cm = parseDecimal(raw);
+      if (cm !== null && cm >= 0) payload[key] = cmToPx(cm);
     }
     if (Object.keys(payload).length > 0) {
       api.commands.execute("setPageMargins", payload);
@@ -97,6 +103,7 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
               }}
               data-margin-preset={preset.id}
               data-testid={`editor-toolbar-margins-${preset.id}`}
+              disabled={!editable()}
               onClick={(): void => applyPreset(preset)}
             >
               <span class="oasis-editor-margins-item-name">
@@ -119,6 +126,7 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
           type="button"
           class="oasis-editor-margins-custom-toggle"
           data-testid="editor-toolbar-margins-custom"
+          disabled={!editable()}
           onClick={openCustom}
         >
           <i data-lucide="sliders-horizontal" />
@@ -135,9 +143,11 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
                   <span>{t(field.labelKey)}</span>
                   <div class="oasis-editor-margins-custom-control">
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       min="0"
                       step="0.1"
+                      disabled={!editable()}
                       data-testid={`editor-toolbar-margin-${field.key}`}
                       value={draft()[field.key] ?? ""}
                       onInput={(e): { [x: string]: string } =>
@@ -162,6 +172,7 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
             type="button"
             class="oasis-editor-margins-custom-apply"
             data-testid="editor-toolbar-margins-custom-apply"
+            disabled={!editable()}
             onClick={applyCustom}
           >
             {t("section.marginApply")}

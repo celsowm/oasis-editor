@@ -2308,10 +2308,17 @@
   --oasis-margin-preview-height: 18px;
 }
 
-.oasis-editor-margins-item:hover,
+.oasis-editor-margins-item:hover:not(:disabled),
 .oasis-editor-margins-item:focus-visible {
   background: var(--oasis-hover-bg);
   outline: none;
+}
+
+.oasis-editor-margins-item:disabled,
+.oasis-editor-margins-custom-toggle:disabled,
+.oasis-editor-margins-custom-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .oasis-editor-margins-item-active {
@@ -2344,7 +2351,7 @@
   cursor: pointer;
 }
 
-.oasis-editor-margins-custom-toggle:hover,
+.oasis-editor-margins-custom-toggle:hover:not(:disabled),
 .oasis-editor-margins-custom-toggle:focus-visible {
   background: var(--oasis-hover-bg);
   outline: none;
@@ -2373,6 +2380,11 @@
   border-radius: 4px;
   background: var(--oasis-ribbon-panel-bg, var(--oasis-paper));
   color: var(--oasis-ribbon-text, var(--oasis-text));
+}
+
+.oasis-editor-margins-custom-field input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .oasis-editor-margins-custom-control {

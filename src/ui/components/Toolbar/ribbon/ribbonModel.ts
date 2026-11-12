@@ -457,6 +457,39 @@ function trimRibbonSeparators(items: ToolbarItem[]): ToolbarItem[] {
   return result;
 }
 
+/**
+ * True when two {@link visibleRibbonItems} results describe the same
+ * composition: the same actions, in the same order, with the same nested
+ * children. Group wrappers are freshly allocated on every call, so they are
+ * compared by id and child identity instead of object reference. Used by the
+ * toolbar to keep the item graph stable across unrelated state changes —
+ * otherwise the ribbon `For` remounts every group and dismisses open popups.
+ */
+export function sameRibbonComposition(
+  a: ToolbarItem[],
+  b: ToolbarItem[],
+): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((item, index): boolean => sameRibbonItem(item, b[index]));
+}
+
+/** One item comparison; nested groups recurse so wrappers never need identity. */
+function sameRibbonItem(
+  item: ToolbarItem,
+  other: ToolbarItem | undefined,
+): boolean {
+  if (!other || item.type !== other.type || item.id !== other.id) {
+    return false;
+  }
+  if (item.type !== "group" || other.type !== "group") return item === other;
+  const left = item.items;
+  const right = other.items;
+  return (
+    left.length === right.length &&
+    left.every((child, index): boolean => sameRibbonItem(child, right[index]))
+  );
+}
+
 export function buildRibbonGroups(
   items: ToolbarItem[],
   tab: RibbonTabId,

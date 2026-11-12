@@ -23,6 +23,7 @@ import type {
 import { RibbonTabs } from "./ribbon/RibbonTabs.js";
 import {
   resolveContextualTabTransition,
+  sameRibbonComposition,
   visibleRibbonItems,
 } from "./ribbon/ribbonModel.js";
 import { RibbonPanel } from "./ribbon/RibbonPanel.js";
@@ -50,6 +51,7 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
   const api = createToolbarApi(props.host, useI18n());
   const [version, setVersion] = createSignal(0);
   const [activeTab, setActiveTab] = createSignal<RibbonTabId>("home");
+  let previousRibbonItems: ToolbarItem[] | undefined;
 
   // Word-style contextual tabs (table tools, image format, …): the pure
   // `resolveContextualTabTransition` policy decides the tab a context snapshot
@@ -91,7 +93,23 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
     return ordered;
   });
 
-  const ribbonItems = createMemo(() => visibleRibbonItems(items(), api));
+  const ribbonItems = createMemo((): ToolbarItem[] => {
+    const next = visibleRibbonItems(items(), api);
+    // Recomposition must not recreate the item graph: `visibleRibbonItems`
+    // evaluates every `isVisible`, which reads command state, so an unrelated
+    // selection or formatting change otherwise yields a brand-new array. The
+    // ribbon `For` is keyed by reference, so that remounted every group and
+    // dismissed open popups (Paragraph metrics, margins, palettes) on each
+    // edit. Keep the previous array while the visible composition is identical.
+    if (
+      previousRibbonItems &&
+      sameRibbonComposition(previousRibbonItems, next)
+    ) {
+      return previousRibbonItems;
+    }
+    previousRibbonItems = next;
+    return next;
+  });
 
   const view = (): ToolbarViewMode => props.view ?? "ribbon";
   const layout = (): ToolbarLayoutMode => props.layout ?? "overflow";
