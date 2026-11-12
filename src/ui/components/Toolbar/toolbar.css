@@ -98,6 +98,10 @@
   --oasis-ribbon-stack-row-height: 20px;
   --oasis-ribbon-stack-row-gap: 1px;
   --oasis-ribbon-small-icon: 16px;
+  --oasis-ribbon-medium-icon: 24px;
+  --oasis-ribbon-large-icon: 32px;
+  --oasis-ribbon-focus-visible: 2px solid var(--oasis-accent);
+  --oasis-ribbon-focus-ring: 0 0 0 2px var(--oasis-accent-active);
 }
 
 .oasis-editor-ribbon-panel-frame {
