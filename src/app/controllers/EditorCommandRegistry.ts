@@ -3,7 +3,10 @@ import {
   splitBlockAtSelection,
 } from "@/core/commands/block.js";
 import { setSelection } from "@/core/commands/selection.js";
-import { insertTextAtSelection, insertColumnBreakAtSelection } from "@/core/commands/text.js";
+import {
+  insertTextAtSelection,
+  insertColumnBreakAtSelection,
+} from "@/core/commands/text.js";
 import {
   getParagraphs,
   getParagraphText,
@@ -69,6 +72,12 @@ export class EditorCommandRegistry {
             event.preventDefault();
             return true;
           }
+          // A declared command that is currently disabled owns the shortcut:
+          // running the local `execute` fallback here would bypass the gate
+          // (e.g. Ctrl+B painting bold onto an object selection in read-only
+          // or object contexts). Consume the chord without acting.
+          event.preventDefault();
+          return true;
         }
         const handled = binding.execute(deps, event);
         if (handled !== false) {
