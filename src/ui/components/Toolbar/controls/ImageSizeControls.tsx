@@ -9,7 +9,7 @@ import {
 } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import type { TranslationKey } from "@/i18n/index.js";
-import { NumberField } from "@/ui/public/NumberField.js";
+import { MetricField } from "@/ui/components/Toolbar/primitives/MetricField.js";
 import { Button } from "@/ui/components/Toolbar/primitives/Button.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
 import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
@@ -26,7 +26,9 @@ function cmValue(api: ToolbarActionApi, command: string): string {
 /**
  * A labelled centimetre field for the image Size group (height or width). Reads
  * the current size from the `imageHeightCm`/`imageWidthCm` command and writes it
- * back on change; the core keeps the aspect ratio locked.
+ * back on commit; the core keeps the aspect ratio locked. The draft/commit
+ * behaviour comes from `MetricField`: committing per keystroke dropped the
+ * contextual Picture Format tab after the first digit.
  */
 export function ImageSizeField(props: {
   api: ToolbarActionApi;
@@ -44,16 +46,15 @@ export function ImageSizeField(props: {
       <div class="oasis-editor-image-size-icon" aria-hidden="true">
         <ToolIcon name={icon} />
       </div>
-      <NumberField
-        class="oasis-editor-tool-metric oasis-editor-image-size-metric"
-        labelClass="oasis-editor-tool-metric-label"
-        title={t(labelKey)}
+      <MetricField
+        class="oasis-editor-image-size-metric"
         label={t(labelKey)}
-        suffix="cm"
-        controlClass="oasis-editor-tool-number"
-        data-testid={`editor-toolbar-image-${props.dimension}`}
+        title={t(labelKey)}
+        unit="cm"
+        testId={`editor-toolbar-image-${props.dimension}`}
         min="0.1"
         step="0.1"
+        disabled={!props.api.commands.state(command).isEnabled}
         value={cmValue(props.api, command)}
         onChange={(value): void => {
           const nextValue = value == null ? "" : String(value);
