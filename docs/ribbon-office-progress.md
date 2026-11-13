@@ -1285,12 +1285,24 @@ Evidence: `ribbonComposition.test.ts` asserts that a group whose only action is 
 
 Limits: the visibility filter runs on every composition recomputation; the cost is linear in the item count and negligible at current scale, but could be memoized if the registry grows significantly. No VoiceOver/touch/Safari evidence.
 
+## Delivery 109 — I03/I04: everyday-task icon family replacements
+
+Date: 2026-11-13. I03/I04 gain scoped acceptance for the clipboard and font formatting families; VoiceOver, touch and trusted-Safari input remain open.
+
+Nine everyday-task icons were replaced with original Oasis vectors that share a consistent optical scale, stroke weight (1.65–1.75px), and internal spacing. The clipboard family (clipboard, paste, cut, format painter once/continuous/cancel) now uses a shared clipboard silhouette with action-specific accents, eliminating the mixed Lucide clip/brush/scissors/X strokes. The font formatting family (font color, highlight, shading) uses a shared 'A' glyph with color underline, highlighter sweep, and paragraph fill swatch respectively, matching the underline-glyph weight. The pageBackground collapsed icon was updated to use the shading icon.
+
+Icon review sheet grew to 12 candidates (9 original + 3 new families). The `iconReview.tsx` was fixed to only tag the "Current" section with `data-icon-name` so the verification script correctly counts 9 SVG nodes per candidate. Custom icons are registered in `customIcons.tsx` with the `oasis` origin.
+
+Evidence: `verify-ribbon-icons.mjs` passes 108 review scenes (12 candidates × 2 themes × 3 surfaces × 3 sizes/states); all ten browser suites pass in Chromium (contexts 260, resize 80, reference 4, icons 108, clipboard 24, painter 8, inherited formatting 32+16, font values 8, colors/styles 32, editing 8). TypeScript, ESLint, non-UI Vitest (332/1,939), `npm run audit:ribbon` (551 vs 521), icon audit (133 names, 166 uses, 0 unresolved) pass.
+
+Limits: the new icons are functional replacements; visual/AT review of the new glyphs at 16/20/24px across themes is pending. The table operation grids, distribution/autofit, alignment/sort, and themes/styles families remain in `remainingReview`. No VoiceOver, touch or trusted-Safari evidence.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
 
 1. B01 static inventory reconciliation is complete. **V02 complete**; finish remaining V04 cases; B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
-2. Complete the remaining I03/I04 icon families and A01/A02 acceptance. A02's declarative two-row/three-row/compact vocabulary and the compact Clipboard are covered; gallery, matrix and custom-control groups still need layout acceptance, and A01 still needs a visual/assistive-technology review.
+2. **I03/I04 clipboard and font families complete**; complete remaining icon families (table operations, distribution/autofit, alignment/sort, themes/styles) and A01/A02 acceptance. A02's declarative two-row/three-row/compact vocabulary and the compact Clipboard are covered; gallery, matrix and custom-control groups still need layout acceptance, and A01 still needs a visual/assistive-technology review.
 3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review. Menu panels now traverse with Arrow/Home/End and expose menuitems (Delivery 106); collapsed popups preserve the group's spatial arrangement (Delivery 107); the remaining panels' non-menuitem widgets, a roving tabindex and the launcher contract stay open.
 4. R01–R05: close late-font, pointer/IME, invalidation and performance evidence across remaining contexts (fractional DPR and zoom-equivalent widths now have scoped evidence; OS zoom UI and raster sharpness stay open).
 5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
