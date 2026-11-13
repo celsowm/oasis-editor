@@ -1209,12 +1209,36 @@ Evidence: a new unit suite builds the real command group twice and asserts all f
 
 Limits: the size fields still round centimetres to whole pixels, so 2.5 cm commits as 2.49; only inline-image Picture Format is covered — floating shapes, text boxes and format-painter targets keep their previous enablement; read-only evidence is command/DOM state, not assistive-technology output.
 
+## Delivery 102 — A01 tokens and gate-narrowing builders
+
+Date: 2026-11-12. A01 gains scoped acceptance; A03/D02 keep their earlier scoped acceptance.
+
+Two correctness fixes landed with the token work. The command builders previously spread the domain `state?.()` *after* the gate result, so a domain condition could re-enable a command the gate had closed (a read-only document could still mutate). `createCommandBuilder` and `createActionCommandBuilder` now compute `isEnabled` last as `gate && (domain ?? true)`, so the domain condition can only narrow the gate. The read-only-safe set also gained the non-mutating commands that had been incorrectly disabled: `imageContext`, `tableContext` (context detectors), `toggleTableGridlines` (a view option) and `documentStyles` (a data-carrier no-op). Unit suites cover both builder contracts and the object-selection gate.
+
+The A01 pass added shared Ribbon tokens: `--oasis-ribbon-medium-icon`, `--oasis-ribbon-large-icon`, `--oasis-ribbon-focus-visible` and `--oasis-ribbon-focus-ring`, scoped to the Ribbon so focus styling stays distinct from selection.
+
+Evidence: `tests/vitest/__tests__/core/essentialsCommandBuilders.test.ts` asserts the gate-narrowing contract; `tests/vitest/__tests__/ui/ribbonObjectSelectionGate.test.ts` covers the read-only object selection. TypeScript, ESLint on changed files and non-UI Vitest pass.
+
+Limits: token acceptance is static (CSS variables and usage), not a visual or assistive-technology review; no new browser run was recorded for this delivery.
+
+## Delivery 103 — declarative compact group layout and a repaired type gate
+
+Date: 2026-11-12. A02 gains scoped acceptance for the Clipboard compact arrangement; VoiceOver, touch and trusted-Safari input remain open.
+
+A typecheck regression introduced with Delivery 102 was reproduced first: `essentialsCommandBuilders.test.ts` passed `"toggleBold"` to a builder typed against `OasisBuiltinCommand`, which has no such member, so `npm run typecheck` failed on `main` even though the runtime test passed. The fixture now uses the real `toggleTrackChanges` command, and the type gate is clean again.
+
+A02's declarative layout vocabulary is now real. `RibbonGroupLayout` accepts `"compact"`; `buildRibbonGroups` keeps an explicit `compact` contribution while still auto-promoting any group that actually has a third row to `three-rows`, so two-row groups and existing plugin contributions are unchanged. `RibbonGroup` renders the stacked rows for both `three-rows` and `compact`, and marks compact groups with `oasis-editor-ribbon-group-compact-layout`. The Clipboard group now opts in through `ribbonGroupLayout: "compact"` on its Paste control instead of relying on the row-3 side effect plus the `data-ribbon-group="clipboard"` CSS special case; the legacy selector is retained so plugin groups named `clipboard` keep their appearance, and the collapsed popup still shows the small-command captions.
+
+Evidence: `registry.test.ts` asserts the default Clipboard group resolves to `layout: "compact"` with its third-row Format Painter intact, that `font` stays `two-rows`, and that an explicit compact layout wins over the row-three default; `defaultRibbonParity.test.ts` now asserts the Paste control's declarative `compact` layout. TypeScript, ESLint on changed files, non-UI Vitest (330 files / 1,930 passed, one skipped), `npm run audit:ribbon` (551 Oasis features against 521 WordCraft entries) and the icon audit (130 literal names, 166 uses, no unresolved literals) pass.
+
+Limits: the compact change is DOM/CSS-equivalent to the previous three-row Clipboard (same stacked-row classes, same label-hiding rule), so no new browser capture was taken in this environment; compact is exercised only by the Clipboard group here, and galleries, matrices and custom-control groups still need their own A02 acceptance; VoiceOver, touch and trusted-Safari input remain unverified.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
 
 1. B01 static inventory reconciliation is complete. Finish remaining V02/V04 cases; B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
-2. Complete the remaining I03/I04 icon families and A01/A02 contextual/custom layout acceptance.
+2. Complete the remaining I03/I04 icon families and A01/A02 acceptance. A02's declarative two-row/three-row/compact vocabulary and the compact Clipboard are covered; gallery, matrix and custom-control groups still need layout acceptance, and A01 still needs a visual/assistive-technology review.
 3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review.
 4. R01–R05: close late-font, pointer/IME, invalidation and performance evidence across remaining contexts (fractional DPR and zoom-equivalent widths now have scoped evidence; OS zoom UI and raster sharpness stay open).
 5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
