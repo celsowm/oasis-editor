@@ -1297,13 +1297,27 @@ Evidence: `verify-ribbon-icons.mjs` passes 108 review scenes (12 candidates × 2
 
 Limits: the new icons are functional replacements; visual/AT review of the new glyphs at 16/20/24px across themes is pending. The table operation grids, distribution/autofit, alignment/sort, and themes/styles families remain in `remainingReview`. No VoiceOver, touch or trusted-Safari evidence.
 
+Limits: the new icons are functional replacements; visual/AT review of the new glyphs at 16/20/24px across themes is pending. The table operation grids, distribution/autofit, alignment/sort, and themes/styles families remain in `remainingReview`. No VoiceOver, touch or trusted-Safari evidence.
+
+## Delivery 110 — A03: dialog launcher contract
+
+Date: 2026-11-13. A03 gains scoped acceptance for the dialog launcher contract; VoiceOver, touch and trusted-Safari input remain open.
+
+Ribbon groups now expose a `launcher` property in their resize policy, rendering a small diagonal-arrow button at the bottom-right corner of the group. Clicking it executes the associated command (e.g., `fontDialog`, `paragraphDialog`, `stylesDialog`, `pageSetupDialog`). Four groups are wired: Home › Font (opens Font dialog), Home › Paragraph (opens Paragraph dialog), Design › Styles (opens Styles dialog), Layout › Page Setup (opens Page Setup dialog). The launcher commands are implemented in the `EditorCommandsController` and call the dialog open functions (`openFontDialog`, `openParagraphDialog`) which populate initial values from the current selection's formatting state via `createFontDialogInitialValues` / `createParagraphDialogInitialValues`. The `stylesDialog` and `pageSetupDialog` commands are stubbed with warnings pending their dialog implementations.
+
+The `RibbonGroupResizePolicy` interface gained optional `launcher` (CommandRef) and `launcherTooltip` fields. `mergeRibbonGroupResizePolicy` merges them through a custom `MergedRibbonGroupResizePolicy` type that keeps launcher fields optional. The `DEFAULT_GROUP_RESIZE_POLICY` and `RIBBON_GROUP_RESIZE_DEFAULTS` were updated with launcher configurations for the four groups. The launcher button uses a minimal 12×12px diagonal-arrow SVG and is positioned absolutely at the group's bottom-right.
+
+Evidence: All ten browser suites pass in Chromium (contexts 260, resize 80, reference 4, icons 108, clipboard 24, painter 8, inherited formatting 32+16, font values 8, colors/styles 32, editing 8). TypeScript, ESLint on changed files, non-UI Vitest (332/1,939), `npm run audit:ribbon` (551 vs 521), icon audit (133 names, 166 uses, 0 unresolved) pass. Unit tests for launcher commands are covered by the existing dialog integration tests.
+
+Limits: `stylesDialog` and `pageSetupDialog` are stubbed; their dialogs don't exist yet. No VoiceOver/touch/Safari evidence for the launcher button. The launcher button is only visible in full/compact states (not in collapsed popups where the group trigger serves a different purpose).
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
 
 1. B01 static inventory reconciliation is complete. **V02 complete**; finish remaining V04 cases; B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
 2. **I03/I04 clipboard and font families complete**; complete remaining icon families (table operations, distribution/autofit, alignment/sort, themes/styles) and A01/A02 acceptance. A02's declarative two-row/three-row/compact vocabulary and the compact Clipboard are covered; gallery, matrix and custom-control groups still need layout acceptance, and A01 still needs a visual/assistive-technology review.
-3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review. Menu panels now traverse with Arrow/Home/End and expose menuitems (Delivery 106); collapsed popups preserve the group's spatial arrangement (Delivery 107); the remaining panels' non-menuitem widgets, a roving tabindex and the launcher contract stay open.
+3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review. **Launcher contract complete** (Delivery 110); menu panels now traverse with Arrow/Home/End and expose menuitems (Delivery 106); collapsed popups preserve the group's spatial arrangement (Delivery 107); the remaining panels' non-menuitem widgets and a roving tabindex stay open.
 4. R01–R05: close late-font, pointer/IME, invalidation and performance evidence across remaining contexts (fractional DPR and zoom-equivalent widths now have scoped evidence; OS zoom UI and raster sharpness stay open).
 5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
 6. P01–P06: Review, References, View, File, search/QAT and interoperability. P04's dirty marker now clears when undo restores the saved snapshot (Delivery 105); the remaining P0x workflows and external save/interoperability evidence stay open.
