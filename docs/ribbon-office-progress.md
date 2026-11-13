@@ -1233,6 +1233,26 @@ Evidence: `registry.test.ts` asserts the default Clipboard group resolves to `la
 
 Limits: the compact change is DOM/CSS-equivalent to the previous three-row Clipboard (same stacked-row classes, same label-hiding rule), so no new browser capture was taken in this environment; compact is exercised only by the Clipboard group here, and galleries, matrices and custom-control groups still need their own A02 acceptance; VoiceOver, touch and trusted-Safari input remain unverified.
 
+## Delivery 104 — action, toggle and separator semantics
+
+Date: 2026-11-13. A03 gains scoped acceptance for action/toggle/launcher semantics; VoiceOver, touch and trusted-Safari input remain open.
+
+The toolbar previously exposed every split main button as a toggle: `RenderSplit` passed `mainPressed={b.active()}`, so Paste, Format Painter and Special Indent all rendered `aria-pressed="false"` even though none of them is a toggle. Plain buttons had the opposite problem — a real toggle (Bold, Italic, Underline) rendered no pressed state at all, so assistive technology could not tell an active toggle from an inactive one. `Button` now takes an explicit `pressed` prop and sets `aria-pressed` from it; `RenderActionButton` passes it only for `type: "toggle"`, and `RenderSplit` no longer supplies a pressed state. The split chevron's accessible name now falls back through the main label before the literal word "menu", so a label-only split no longer announces " menu". Toolbar separators expose `role="separator"` with `aria-orientation="vertical"`.
+
+Evidence: a new `toolbarActionSemantics.test.tsx` renders the real `ToolbarItemRenderer` and asserts that a plain button has no `aria-pressed`, an active/inactive toggle reports `true`/`false`, a split main has no pressed state, and the chevron is named from its label with `aria-haspopup="menu"`/`aria-expanded`. Browser suites pass in Chromium against an owned dev server: contexts (260 layouts, 8 unit screenshots), resize (80 layouts), Clipboard (24 workflows), Format Painter (8), inherited formatting (32 + 16 caret paths), font values (8) and colors/styles (32). TypeScript, ESLint on changed files and non-UI Vitest (331 files / 1,934 passed, one skipped) pass.
+
+Limits: the ten-suite CI wrapper could not start its own Vite server because port 5174 was already held by a stale process, so the suites were run individually against a server on port 5199; `verify-ribbon-inherited-formatting` failed once under that stale server and passed cleanly in isolation. No VoiceOver, touch or trusted-Safari evidence; `role="menu"` panels still contain plain buttons rather than menuitem roles, and arrow-key roving inside popups remains open.
+
+## Delivery 105 — dirty marker follows the saved snapshot
+
+Date: 2026-11-13. P04 gains scoped acceptance: the dirty marker now clears when undo restores the saved document and returns on the next edit or redo.
+
+The client set `dirty = true` on every `change` event and only cleared it on load, reset, save or an explicit `markClean`. Undo emits a change, so undoing back to the saved snapshot left the document marked dirty forever — the P04 defect recorded in the queue. The client now remembers a structural fingerprint of the document at the last load/save/mark-clean point and compares it on each change. The change broadcast clones every state it emits, so object identity cannot be used; a structural fingerprint is stable across the clone and across a history snapshot that restores the saved content. A detached client with no host keeps the previous behaviour (the next change marks dirty).
+
+Evidence: `clientApi.test.ts` now asserts that re-emitting the same document stays clean, that a real edit dirties it, that saving clears it, that a structurally identical restored snapshot (fresh identities) stays clean, and that a further edit dirties it again. TypeScript, ESLint on changed files, non-UI Vitest (331 files / 1,934 passed, one skipped) and both Ribbon audits pass.
+
+Limits: the fingerprint is `JSON.stringify(document)` on each change, so large documents pay a serialization cost on every edit (the change broadcast already deep-clones the document, but this is an additional pass); the comparison assumes documents are plain JSON-serializable immutable data, which the model enforces today; no external-save round-trip or multi-client dirty test.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
@@ -1242,7 +1262,7 @@ All requirements in the execution plan remain in scope. The next sequence is:
 3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review.
 4. R01–R05: close late-font, pointer/IME, invalidation and performance evidence across remaining contexts (fractional DPR and zoom-equivalent widths now have scoped evidence; OS zoom UI and raster sharpness stay open).
 5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
-6. P01–P06: Review, References, View, File, search/QAT and interoperability. P04 includes the dirty marker staying set after undo restores the saved document snapshot.
+6. P01–P06: Review, References, View, File, search/QAT and interoperability. P04's dirty marker now clears when undo restores the saved snapshot (Delivery 105); the remaining P0x workflows and external save/interoperability evidence stay open.
 7. All M4 families: Shapes, Equations, Draw, advanced References, Mailings, Developer/Forms, Charts/SmartArt, integrations and Help, each with the plan's minimum functional delivery.
 8. M5: required cross-browser, keyboard, VoiceOver, language/theme, selection, persistence and performance scenarios with retained evidence.
 
