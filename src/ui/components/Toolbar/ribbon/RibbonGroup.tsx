@@ -107,19 +107,21 @@ export function RibbonGroup(props: RibbonGroupProps): JSX.Element {
       <div class="oasis-editor-ribbon-group-content">
         <RibbonGroupContent group={props.group} api={props.api} />
       </div>
-      <div class="oasis-editor-ribbon-group-collapsed-trigger">
-        <Menu
-          icon={props.group.resizePolicy.collapsedIcon}
-          label={props.group.label}
-          tooltip={props.group.label}
-          testId={`editor-ribbon-group-${props.group.id}`}
-          ribbonSize="large"
-          fitViewport
-          panelClass="oasis-editor-ribbon-collapsed-menu oasis-editor-toolbar-view-ribbon"
-        >
-          <RibbonGroupContent group={props.group} api={props.api} />
-        </Menu>
-      </div>
+      <Show when={props.group.resizeState === "collapsed"}>
+        <div class="oasis-editor-ribbon-group-collapsed-trigger">
+          <Menu
+            icon={props.group.resizePolicy.collapsedIcon}
+            label={props.group.label}
+            tooltip={props.group.label}
+            testId={`editor-ribbon-group-${props.group.id}`}
+            ribbonSize="large"
+            fitViewport
+            panelClass="oasis-editor-ribbon-collapsed-menu oasis-editor-toolbar-view-ribbon"
+          >
+            <RibbonGroupContent group={props.group} api={props.api} />
+          </Menu>
+        </div>
+      </Show>
       <div class="oasis-editor-ribbon-group-label" title={props.group.label}>
         {props.group.label}
       </div>

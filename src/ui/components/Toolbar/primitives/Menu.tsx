@@ -1,4 +1,4 @@
-import { Show, createSignal, type JSX } from "solid-js";
+import { Show, createSignal, createEffect, onCleanup, type JSX } from "solid-js";
 import { Popover } from "./Popover.js";
 import { DropdownChevron } from "./DropdownChevron.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
@@ -23,6 +23,13 @@ export interface MenuProps {
    * trigger, which is itself a menuitem with `aria-haspopup`).
    */
   role?: JSX.HTMLAttributes<HTMLButtonElement>["role"];
+  /**
+   * Controlled open state. Omit for the usual uncontrolled dropdown; passing
+   * `false` force-closes a dropdown whose trigger is about to be hidden (a
+   * collapsed Ribbon group that expands again), so the portalled panel cannot
+   * outlive its anchor.
+   */
+  open?: boolean;
   onOpenChange?: (open: boolean) => void;
   children: JSX.Element;
 }
@@ -32,7 +39,17 @@ export interface MenuProps {
  * Replaces ToolbarDropdown; built on the shared Popover primitive.
  */
 export function Menu(props: MenuProps): JSX.Element {
-  const [open, setOpen] = createSignal(false);
+  const [open, setOpen] = createSignal(props.open ?? false);
+  // A caller that owns the trigger's lifetime can force the panel shut; the
+  // uncontrolled case (`open` undefined) keeps the local signal authoritative.
+  createEffect((): void => {
+    if (props.open === false) setOpen(false);
+  });
+  // Uncontrolled menus close their panel on unmount so a collapsed Ribbon
+  // group that expands again doesn't leave a dangling portalled panel.
+  onCleanup((): void => {
+    if (props.open === undefined) setOpen(false);
+  });
   const updateOpen = (nextOpen: boolean): void => {
     setOpen(nextOpen);
     props.onOpenChange?.(nextOpen);
