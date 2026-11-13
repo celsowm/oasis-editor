@@ -37,8 +37,12 @@ export const CONTEXTUAL_TABS: Partial<Record<RibbonTabId, string>> = {
   imageFormat: "imageContext",
 };
 export type RibbonRow = 1 | 2 | 3;
-/** Three rows are opt-in; existing two-row contributions retain their layout. */
-export type RibbonGroupLayout = "two-rows" | "three-rows";
+/**
+ * Group row arrangement. `three-rows` and `compact` are opt-in; existing
+ * two-row contributions retain their layout. `compact` is the Office
+ * "large action + small-command stack" shape (stacked rows, icon-led inline).
+ */
+export type RibbonGroupLayout = "two-rows" | "three-rows" | "compact";
 export type RibbonSize = "normal" | "large";
 export type RibbonGroupResizeState = "full" | "compact" | "collapsed";
 

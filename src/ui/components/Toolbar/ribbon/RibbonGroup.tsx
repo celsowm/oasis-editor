@@ -14,14 +14,24 @@ export interface RibbonGroupProps {
   measurements?: RibbonGroupWidth;
 }
 
+/**
+ * Compact groups are the Office "large action + small-command stack" shape:
+ * they use the three-row stack sizing and additionally drop captions in the
+ * inline Ribbon while keeping them in the collapsed popup.
+ */
+function usesStackedRows(layout: ResolvedRibbonGroupModel["layout"]): boolean {
+  return layout === "three-rows" || layout === "compact";
+}
+
 /** The same spatial arrangement is used in the Ribbon and collapsed popup. */
 function RibbonGroupContent(props: RibbonGroupProps): JSX.Element {
   return (
     <div
       class="oasis-editor-ribbon-group-rows"
       classList={{
-        "oasis-editor-ribbon-group-three-rows":
-          props.group.layout === "three-rows",
+        "oasis-editor-ribbon-group-three-rows": usesStackedRows(
+          props.group.layout,
+        ),
       }}
     >
       <Show when={props.group.largeItems.length > 0}>
@@ -36,7 +46,7 @@ function RibbonGroupContent(props: RibbonGroupProps): JSX.Element {
       <div class="oasis-editor-ribbon-normal-rows">
         <RibbonRow items={props.group.rows[1]} api={props.api} />
         <RibbonRow items={props.group.rows[2]} api={props.api} />
-        <Show when={props.group.layout === "three-rows"}>
+        <Show when={usesStackedRows(props.group.layout)}>
           <RibbonRow items={props.group.rows[3]} api={props.api} />
         </Show>
       </div>
@@ -79,6 +89,8 @@ export function RibbonGroup(props: RibbonGroupProps): JSX.Element {
           props.group.resizeState === "compact",
         "oasis-editor-ribbon-group-collapsed":
           props.group.resizeState === "collapsed",
+        "oasis-editor-ribbon-group-compact-layout":
+          props.group.layout === "compact",
         "oasis-editor-ribbon-group-compact-hide-labels":
           props.group.resizeState === "compact" &&
           props.group.resizePolicy.compactLabels === "hide",

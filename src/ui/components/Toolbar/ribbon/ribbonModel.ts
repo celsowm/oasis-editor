@@ -543,10 +543,16 @@ export function buildRibbonGroups(
     }
   });
 
+  // A02: declarative group layouts — two-rows, three-rows, and compact.
+  // An explicit `compact` contribution wins; otherwise a group with a third
+  // row keeps the established three-row arrangement.
+  for (const group of groups.values()) {
+    if (group.layout === "compact") continue;
+    if (group.rows[3].length) group.layout = "three-rows";
+  }
   return Array.from(groups.values())
     .map((group) => ({
       ...group,
-      layout: group.rows[3].length ? ("three-rows" as const) : group.layout,
       rows: {
         1: trimRibbonSeparators(group.rows[1]),
         2: trimRibbonSeparators(group.rows[2]),

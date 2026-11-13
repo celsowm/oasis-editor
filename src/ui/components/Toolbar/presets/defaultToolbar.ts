@@ -204,7 +204,7 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     iconName: "clipboard-paste",
     tooltipKey: "menu.edit.paste",
     labelKey: "menu.edit.paste",
-    ribbonGroupLayout: "three-rows",
+    ribbonGroupLayout: "compact",
     command: "paste",
     ribbonSize: "large",
     menu: {

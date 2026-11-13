@@ -331,6 +331,51 @@ describe("UI registries", () => {
     expect(groups[0]!.rows[2].map((item) => item.id)).toEqual(["row-two"]);
   });
 
+  it("marks the Clipboard group compact declaratively without losing its stack", () => {
+    const items = createDefaultToolbarPreset(t);
+    const groups = buildRibbonGroups(items, "home", t);
+
+    const clipboard = groups.find((group) => group.id === "clipboard");
+    expect(clipboard?.layout).toBe("compact");
+    expect(clipboard?.rows[3].map((item) => item.id)).toEqual([
+      "editor-toolbar-format-painter",
+    ]);
+
+    // Two-row groups keep their established arrangement.
+    expect(groups.find((group) => group.id === "font")?.layout).toBe(
+      "two-rows",
+    );
+  });
+
+  it("honours an explicit compact layout over the row-three default", () => {
+    const groups = buildRibbonGroups(
+      [
+        {
+          id: "stack-first",
+          type: "button",
+          command: "stackFirst",
+          tab: "home",
+          group: "clipboard",
+          row: 1,
+          ribbonGroupLayout: "compact",
+        },
+        {
+          id: "stack-third",
+          type: "button",
+          command: "stackThird",
+          tab: "home",
+          group: "clipboard",
+          row: 3,
+        },
+      ],
+      "home",
+      t,
+    );
+
+    expect(groups[0]?.layout).toBe("compact");
+    expect(groups[0]?.rows[3].map((item) => item.id)).toEqual(["stack-third"]);
+  });
+
   it("resolves ribbon groups from full to compact to collapsed by priority", () => {
     const groups = buildRibbonGroups(
       [

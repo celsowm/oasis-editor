@@ -132,12 +132,12 @@ describe("WordCraft Ribbon parity: first Oasis exposure slice", () => {
     const ids = items.map((item) => item.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
-  it("keeps Paste large beside a three-command stack and separates history", () => {
+  it("keeps Paste large beside a compact three-command stack and separates history", () => {
     const paste = items.find((item) => item.id === "editor-toolbar-paste");
     expect(paste && "ribbonSize" in paste ? paste.ribbonSize : undefined).toBe(
       "large",
     );
-    expect(paste?.ribbonGroupLayout).toBe("three-rows");
+    expect(paste?.ribbonGroupLayout).toBe("compact");
     for (const [id, row] of [
       ["cut", 1],
       ["copy", 2],
