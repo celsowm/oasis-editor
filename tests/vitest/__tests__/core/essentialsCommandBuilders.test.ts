@@ -43,7 +43,7 @@ describe("essentials command builders", () => {
   it("keeps extra state fields untouched", () => {
     const action = createActionCommandBuilder(() => true);
     const toggle = action(
-      "toggleBold",
+      "toggleTrackChanges",
       () => {},
       () => ({ isEnabled: true, isActive: true, value: "x" }),
     );
