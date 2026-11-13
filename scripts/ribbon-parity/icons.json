@@ -1264,7 +1264,7 @@
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/RibbonGroup.tsx",
-      "line": 112,
+      "line": 113,
       "role": "icon",
       "expression": "props.group.resizePolicy.collapsedIcon"
     },
