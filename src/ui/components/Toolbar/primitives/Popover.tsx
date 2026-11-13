@@ -143,12 +143,70 @@ export function Popover(props: PopoverProps): JSX.Element {
     closeOnEscape: props.closeOnEscape,
   });
 
+  // Arrow-key traversal inside menu-like panels. Tab already moves through the
+  // panel; Office menus also respond to Up/Down/Home/End, and users expect that
+  // from a control announced with aria-haspopup="menu". Text fields and
+  // selects keep their own caret/selection keys.
+  const menuItems = (): HTMLElement[] => {
+    if (!panelRef) return [];
+    return Array.from(
+      panelRef.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [role="menuitem"]:not([aria-disabled="true"])',
+      ),
+    ).filter((element) => !element.closest('[aria-hidden="true"]'));
+  };
+
+  const handleMenuKeyDown = (event: KeyboardEvent): void => {
+    if (props.panelRole !== "menu") return;
+    if (
+      event.defaultPrevented ||
+      event.altKey ||
+      event.metaKey ||
+      event.ctrlKey
+    )
+      return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("input, textarea, select, [contenteditable='true']"))
+      return;
+    const items = menuItems();
+    if (items.length === 0) return;
+    const active = document.activeElement as HTMLElement | null;
+    const index = active ? items.indexOf(active) : -1;
+    const nextIndex = (step: number): number =>
+      index < 0
+        ? step > 0
+          ? 0
+          : items.length - 1
+        : (index + step + items.length) % items.length;
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        items[nextIndex(1)]?.focus();
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        items[nextIndex(-1)]?.focus();
+        break;
+      case "Home":
+        event.preventDefault();
+        items[0]?.focus();
+        break;
+      case "End":
+        event.preventDefault();
+        items[items.length - 1]?.focus();
+        break;
+      default:
+        break;
+    }
+  };
+
   const panel = (portalled: boolean): JSX.Element => (
     <div
       ref={panelRef}
       class={props.panelClass}
       role={props.panelRole}
       data-testid={props.panelTestId}
+      onKeyDown={handleMenuKeyDown}
       style={
         portalled
           ? {

@@ -51,6 +51,11 @@ import { PICTURE_BORDER_DASH_OPTIONS } from "@/ui/components/Toolbar/pictureBord
 export interface RendererProps<I extends ToolbarItem = ToolbarItem> {
   item: I;
   api: ToolbarActionApi;
+  /**
+   * True when the item is rendered inside a `role="menu"` panel. Action items
+   * then expose `role="menuitem"` so the panel's role is valid.
+   */
+  menuItem?: boolean;
 }
 
 function renderMenuContent(
@@ -62,7 +67,9 @@ function renderMenuContent(
   }
   return (
     <For each={content.items}>
-      {(child): JSX.Element => <ToolbarItemRenderer item={child} api={api} />}
+      {(child): JSX.Element => (
+        <ToolbarItemRenderer item={child} api={api} menuItem />
+      )}
     </For>
   );
 }
@@ -87,6 +94,7 @@ function RenderActionButton(
       ribbonSize={props.item.ribbonSize}
       active={b.active()}
       disabled={b.disabled()}
+      role={props.menuItem ? "menuitem" : undefined}
       // Only real toggles announce a pressed state; a plain button must not be
       // exposed as a toggle that is merely off.
       pressed={props.item.type === "toggle" ? b.active() : undefined}
@@ -113,6 +121,7 @@ function RenderMenu(props: RendererProps<MenuItem>): JSX.Element {
       disabled={b.disabled()}
       hideChevron={props.item.hideChevron}
       ribbonSize={props.item.ribbonSize}
+      role={props.menuItem ? "menuitem" : undefined}
       panelClass={`${props.item.panelClass ?? ""} ${props.item.content.kind === "items" ? "oasis-editor-action-menu" : ""}`}
       keepMounted={props.item.keepMounted}
     >
@@ -310,7 +319,11 @@ function RenderGroup(props: RendererProps<GroupItem>): JSX.Element {
   return (
     <For each={props.item.items}>
       {(child): JSX.Element => (
-        <ToolbarItemRenderer item={child} api={props.api} />
+        <ToolbarItemRenderer
+          item={child}
+          api={props.api}
+          menuItem={props.menuItem}
+        />
       )}
     </For>
   );
@@ -374,6 +387,8 @@ export function resolveRenderer(
 export function ToolbarItemRenderer(props: {
   item: ToolbarItem;
   api: ToolbarActionApi;
+  /** Rendered inside a `role="menu"` panel: action items become menuitems. */
+  menuItem?: boolean;
 }): JSX.Element {
   const binding = bindItem(props.item, props.api);
   const component = (): ReturnType<typeof resolveRenderer> =>
@@ -393,7 +408,12 @@ export function ToolbarItemRenderer(props: {
     >
       <Show when={component()}>
         {(comp): JSX.Element => (
-          <Dynamic component={comp()} item={props.item} api={props.api} />
+          <Dynamic
+            component={comp()}
+            item={props.item}
+            api={props.api}
+            menuItem={props.menuItem}
+          />
         )}
       </Show>
     </div>

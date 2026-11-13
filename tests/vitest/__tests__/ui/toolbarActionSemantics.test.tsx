@@ -128,4 +128,56 @@ describe("toolbar action semantics", () => {
 
     dispose();
   });
+
+  it("exposes items inside a menu panel as menuitems only", () => {
+    const api = createApi();
+    const topLevel = renderItem(
+      {
+        id: "menu-trigger",
+        type: "menu",
+        iconName: "shapes",
+        label: "Formas",
+        content: {
+          kind: "items",
+          items: [
+            {
+              id: "inner-action",
+              type: "button",
+              command: "bold",
+              label: "A",
+              testId: "inner-action",
+            },
+            {
+              id: "inner-submenu",
+              type: "menu",
+              label: "B",
+              testId: "inner-submenu",
+              content: { kind: "items", items: [] },
+            },
+          ],
+        },
+      },
+      api,
+    );
+
+    const trigger = topLevel.host.querySelector("button");
+    expect(trigger?.hasAttribute("role")).toBe(false);
+
+    trigger?.click();
+    const panel = document.querySelector<HTMLElement>('[role="menu"]');
+    expect(panel).not.toBeNull();
+
+    const action = panel?.querySelector<HTMLButtonElement>(
+      '[data-testid="inner-action"]',
+    );
+    expect(action?.getAttribute("role")).toBe("menuitem");
+
+    const submenu = panel?.querySelector<HTMLButtonElement>(
+      '[data-testid="inner-submenu"]',
+    );
+    expect(submenu?.getAttribute("role")).toBe("menuitem");
+    expect(submenu?.getAttribute("aria-haspopup")).toBe("menu");
+
+    topLevel.dispose();
+  });
 });

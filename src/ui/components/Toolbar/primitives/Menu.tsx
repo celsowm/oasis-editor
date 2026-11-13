@@ -17,6 +17,12 @@ export interface MenuProps {
   /** Reposition tall panels so they remain within the viewport vertically. */
   fitViewport?: boolean;
   keepMounted?: boolean;
+  /**
+   * Role for the trigger button. Nested dropdowns pass `"menuitem"` so the
+   * parent `role="menu"` panel only contains menu items (plus its submenu
+   * trigger, which is itself a menuitem with `aria-haspopup`).
+   */
+  role?: JSX.HTMLAttributes<HTMLButtonElement>["role"];
   onOpenChange?: (open: boolean) => void;
   children: JSX.Element;
 }
@@ -57,6 +63,7 @@ export function Menu(props: MenuProps): JSX.Element {
             disabled={props.disabled}
             title={props.tooltip}
             aria-label={ariaLabel()}
+            role={props.role}
             aria-haspopup="menu"
             aria-expanded={api.open}
             data-testid={props.testId}
