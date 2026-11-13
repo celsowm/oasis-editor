@@ -9,6 +9,12 @@ export interface ToolbarButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonE
   tooltip?: string;
   wide?: boolean;
   ribbonSize?: "normal" | "large";
+  /**
+   * Toggle state for semantic toggles. Omit for plain actions: an explicit
+   * `aria-pressed="false"` would tell assistive technology the control is a
+   * toggle that happens to be off.
+   */
+  pressed?: boolean;
 }
 
 /** Generic toolbar button primitive (icon and/or label, active/disabled). */
@@ -21,6 +27,7 @@ export function Button(props: ToolbarButtonProps): JSX.Element {
     "tooltip",
     "wide",
     "ribbonSize",
+    "pressed",
     "aria-label",
     "class",
     "classList",
@@ -41,6 +48,7 @@ export function Button(props: ToolbarButtonProps): JSX.Element {
       }}
       title={local.tooltip}
       aria-label={ariaLabel()}
+      aria-pressed={local.pressed}
       {...others}
     >
       <Show when={local.icon}>

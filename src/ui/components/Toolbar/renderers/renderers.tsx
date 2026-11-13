@@ -87,6 +87,9 @@ function RenderActionButton(
       ribbonSize={props.item.ribbonSize}
       active={b.active()}
       disabled={b.disabled()}
+      // Only real toggles announce a pressed state; a plain button must not be
+      // exposed as a toggle that is merely off.
+      pressed={props.item.type === "toggle" ? b.active() : undefined}
       data-testid={props.item.testId}
       tooltip={resolveTooltip(props.item, props.api)}
       onClick={(): void => {
@@ -134,7 +137,6 @@ function RenderSplit(props: RendererProps<SplitItem>): JSX.Element {
       menuDisabled={b.disabled()}
       onUnavailableFocus={props.api.focusEditor}
       ribbonSize={props.item.ribbonSize}
-      mainPressed={b.active()}
       onMain={(): void => {
         if (b.disabled()) return;
         runItem(props.item, props.api);

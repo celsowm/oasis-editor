@@ -36,6 +36,13 @@ export interface SplitButtonProps {
  * Backs the underline and color controls (same markup/classes preserved).
  */
 export function SplitButton(props: SplitButtonProps): JSX.Element {
+  // The chevron is a separate control; give it a name that does not collapse to
+  // " menu" when the caller only supplied a label.
+  const menuLabel = (): string => {
+    if (props.menuAriaLabel) return props.menuAriaLabel;
+    const base = props.mainAriaLabel ?? props.tooltip ?? props.mainLabel ?? "";
+    return base ? `${base} menu` : "menu";
+  };
   return (
     <Popover
       open={props.open}
@@ -77,7 +84,7 @@ export function SplitButton(props: SplitButtonProps): JSX.Element {
             class="oasis-editor-color-split-menu-button"
             classList={{ "oasis-editor-color-split-open": api.open }}
             data-testid={props.menuTestId}
-            aria-label={props.menuAriaLabel ?? `${props.tooltip ?? ""} menu`}
+            aria-label={menuLabel()}
             aria-haspopup="menu"
             aria-expanded={api.open}
             disabled={props.menuDisabled}
