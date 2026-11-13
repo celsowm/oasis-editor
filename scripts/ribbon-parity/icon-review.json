@@ -169,14 +169,378 @@
       "decision": "replace",
       "defect": "The paint bucket is a fill tool metaphor; paragraph shading is a background color, not a canvas fill. The bucket stroke weight differs from the font family.",
       "result": "A paragraph block with a fill swatch; same visual weight as the font family."
+    },
+    {
+      "id": "table-insert-row-above",
+      "command": "tableInsertRowAbove",
+      "before": "tableInsertRowAbove",
+      "after": "tableInsertRowAbove",
+      "decision": "refine",
+      "defect": "The custom icon uses a table shell but the row-above arrow is small and the horizontal rule weight is inconsistent with the table grid stroke.",
+      "result": "Enlarged the insertion arrow; unified stroke weight with table grid (1.65px)."
+    },
+    {
+      "id": "table-insert-row-below",
+      "command": "tableInsertRowBelow",
+      "before": "tableInsertRowBelow",
+      "after": "tableInsertRowBelow",
+      "decision": "refine",
+      "defect": "Same stroke-weight inconsistency as row-above; the bottom rule and arrow need visual parity.",
+      "result": "Matched stroke weight; arrow and rule at 1.65px/2.5px for emphasis."
+    },
+    {
+      "id": "table-delete-row",
+      "command": "tableDeleteRow",
+      "before": "tableDeleteRow",
+      "after": "tableDeleteRow",
+      "decision": "refine",
+      "defect": "The red strikethrough uses a heavier stroke (2.6px) than the table grid, creating visual imbalance at 16px.",
+      "result": "Red strikethrough at 2.0px; table grid remains 1.65px; accent color preserved."
+    },
+    {
+      "id": "table-insert-column-left",
+      "command": "tableInsertColumnLeft",
+      "before": "tableInsertColumnLeft",
+      "after": "tableInsertColumnLeft",
+      "decision": "refine",
+      "defect": "Column-left arrow and vertical rule have mismatched weights; the left rule is 2.5px while grid is 1.65px.",
+      "result": "Vertical rule at 2.5px for emphasis; arrow and grid unified at 1.65px."
+    },
+    {
+      "id": "table-insert-column-right",
+      "command": "tableInsertColumnRight",
+      "before": "tableInsertColumnRight",
+      "after": "tableInsertColumnRight",
+      "decision": "refine",
+      "defect": "Mirror of column-left with same weight mismatch.",
+      "result": "Same refinement as column-left; visual parity achieved."
+    },
+    {
+      "id": "table-delete-column",
+      "command": "tableDeleteColumn",
+      "before": "tableDeleteColumn",
+      "after": "tableDeleteColumn",
+      "decision": "refine",
+      "defect": "Red strikethrough at 2.6px dominates the 1.65px grid; column deletion is harder to distinguish from row deletion at small sizes.",
+      "result": "Red strikethrough at 2.0px; distinct from row deletion by vertical orientation."
+    },
+    {
+      "id": "table-merge",
+      "command": "tableMerge",
+      "before": "tableMerge",
+      "after": "tableMerge",
+      "decision": "refine",
+      "defect": "The merge arrows (1.6px) are thinner than the central rule (2px); the three-row layout doesn't clearly communicate 'merge cells' vs 'split table'.",
+      "result": "Central rule at 2.0px; arrows at 1.8px; added subtle gap between rows to suggest cell merging."
+    },
+    {
+      "id": "table-split",
+      "command": "tableSplit",
+      "before": "tableSplit",
+      "after": "tableSplit",
+      "decision": "refine",
+      "defect": "Split arrows and central cross are same weight (2px); lacks the 'divide' metaphor clarity at 16px.",
+      "result": "Cross at 2.0px; split arrows at 1.8px; vertical/horizontal rules at 1.6px for grid context."
+    },
+    {
+      "id": "table-to-text",
+      "command": "tableToText",
+      "before": "tableToText",
+      "after": "tableToText",
+      "decision": "refine",
+      "defect": "The table-to-text conversion icon uses a 1.8px stroke for text lines and 1.6px for table grid; the transformation arrow is ambiguous at 16px.",
+      "result": "Unified stroke at 1.65px; added a clear rightward arrow (2px) between table and text representations."
+    },
+    {
+      "id": "text-to-table",
+      "command": "textToTable",
+      "before": "textToTable",
+      "after": "textToTable",
+      "decision": "refine",
+      "defect": "Mirror of table-to-text with same stroke inconsistencies; the leftward arrow doesn't clearly indicate conversion direction.",
+      "result": "Unified stroke at 1.65px; clear leftward arrow (2px); text lines and table grid visually balanced."
+    },
+    {
+      "id": "split-table",
+      "command": "splitTable",
+      "before": "splitTable",
+      "after": "splitTable",
+      "decision": "refine",
+      "defect": "The split-table icon has three horizontal rules (1.6px) and a wide gap; the vertical divider is 1.6px making it hard to distinguish from table borders at 16px.",
+      "result": "Vertical divider at 2.0px; horizontal rules at 1.6px; gap widened for clear 'split' reading."
+    },
+    {
+      "id": "sort-ascending",
+      "command": "sortAscending",
+      "before": "sortAscending",
+      "after": "sortAscending",
+      "decision": "refine",
+      "defect": "The sort ascending icon uses a 1.6px stroke for the polyline and 1.5px for the bar; the arrowhead is small at 16px.",
+      "result": "Polyline at 1.8px; bar at 1.8px; arrowhead enlarged for 16px clarity."
+    },
+    {
+      "id": "sort-descending",
+      "command": "sortDescending",
+      "before": "sortDescending",
+      "after": "sortDescending",
+      "decision": "refine",
+      "defect": "Mirror of ascending with same stroke weight issues; descending arrowhead needs equal prominence.",
+      "result": "Same refinement as ascending; visual parity at all sizes."
+    },
+    {
+      "id": "table-vertical-align",
+      "command": "setCellVerticalAlign",
+      "before": "tableVerticalAlign",
+      "after": "tableVerticalAlign",
+      "decision": "refine",
+      "defect": "The rotated alignment icon uses a transform which can blur at fractional DPR; the vertical alignment markers are thin.",
+      "result": "Redrawn without transform; explicit top/middle/bottom markers at 1.8px stroke."
+    },
+    {
+      "id": "table-align-left",
+      "command": "setTableAlignment",
+      "before": "align-left",
+      "after": "tableAlignLeft",
+      "decision": "replace",
+      "defect": "Uses Lucide's generic align-left; doesn't share the table-align family stroke weight (1.8px) or cell-grid context.",
+      "result": "TableAlignIcon shell with left-aligned content lines; 1.8px stroke matching tableAlignCenter/Right."
+    },
+    {
+      "id": "table-align-center",
+      "command": "setTableAlignment",
+      "before": "align-center",
+      "after": "tableAlignCenter",
+      "decision": "replace",
+      "defect": "Uses Lucide's generic align-center; inconsistent with table-align family.",
+      "result": "TableAlignIcon shell with centered content lines; 1.8px stroke."
+    },
+    {
+      "id": "table-align-right",
+      "command": "setTableAlignment",
+      "before": "align-right",
+      "after": "tableAlignRight",
+      "decision": "replace",
+      "defect": "Uses Lucide's generic align-right; inconsistent with table-align family.",
+      "result": "TableAlignIcon shell with right-aligned content lines; 1.8px stroke."
+    },
+    {
+      "id": "align-left",
+      "command": "setParagraphAlign",
+      "before": "align-left",
+      "after": "alignLeft",
+      "decision": "replace",
+      "defect": "Lucide's align-left uses 2px stroke; paragraph alignment family should use 1.8px to match underline-glyph weight.",
+      "result": "Paragraph alignment lines at 1.8px; left-aligned content; consistent with alignCenter/Right/Justify."
+    },
+    {
+      "id": "align-center",
+      "command": "setParagraphAlign",
+      "before": "align-center",
+      "after": "alignCenter",
+      "decision": "replace",
+      "defect": "Lucide's align-center uses 2px stroke; paragraph alignment family should use 1.8px.",
+      "result": "Paragraph alignment lines at 1.8px; centered content; consistent family weight."
+    },
+    {
+      "id": "align-right",
+      "command": "setParagraphAlign",
+      "before": "align-right",
+      "after": "alignRight",
+      "decision": "replace",
+      "defect": "Lucide's align-right uses 2px stroke; paragraph alignment family should use 1.8px.",
+      "result": "Paragraph alignment lines at 1.8px; right-aligned content; consistent family weight."
+    },
+    {
+      "id": "align-justify",
+      "command": "setParagraphAlign",
+      "before": "align-justify",
+      "after": "alignJustify",
+      "decision": "replace",
+      "defect": "Lucide's align-justify uses 2px stroke; paragraph alignment family should use 1.8px; the outer lines are equal length in Lucide but justified text has varying line lengths.",
+      "result": "Paragraph alignment lines at 1.8px; varying line lengths (full, 3/4, 1/2) to suggest justification."
+    },
+    {
+      "id": "table-autofit",
+      "command": "setAutoFit",
+      "before": "tableAutoFit",
+      "after": "tableAutoFit",
+      "decision": "refine",
+      "defect": "The autofit icon has multiple stroke weights (1.6px grid, 2px arrows, 1.4px diagonal); the 'fit to content' metaphor is unclear at 16px.",
+      "result": "Unified grid at 1.65px; fit arrows at 1.8px; diagonal accents at 1.6px; clearer 'autofit' reading."
+    },
+    {
+      "id": "table-distribute-rows",
+      "command": "distributeRows",
+      "before": "tableDistributeRows",
+      "after": "tableDistributeRows",
+      "decision": "refine",
+      "defect": "The distribute rows icon uses 1.6px for horizontal rules and 1.4px for vertical arrows; the equal-spacing metaphor is weak at 16px.",
+      "result": "Horizontal rules at 1.65px; vertical distribution arrows at 1.8px; added subtle gap indicators."
+    },
+    {
+      "id": "table-distribute-columns",
+      "command": "distributeColumns",
+      "before": "tableDistributeColumns",
+      "after": "tableDistributeColumns",
+      "decision": "refine",
+      "defect": "Mirror of distribute rows with same stroke inconsistency; vertical rules vs horizontal arrows weight mismatch.",
+      "result": "Vertical rules at 1.65px; horizontal distribution arrows at 1.8px; visual parity with rows."
+    },
+    {
+      "id": "table-width",
+      "command": "setActiveTableWidth",
+      "before": "tableWidth",
+      "after": "tableWidth",
+      "decision": "refine",
+      "defect": "The table width icon uses 1.6px for the table and 1.4px for the horizontal measure arrows; the measure metaphor is weak at 16px.",
+      "result": "Table grid at 1.65px; measure arrows at 1.8px with clear endpoints; width label suggestion."
+    },
+    {
+      "id": "table-properties",
+      "command": "openTableProperties",
+      "before": "table-properties",
+      "after": "tableProperties",
+      "decision": "replace",
+      "defect": "Uses Lucide's 'settings' gear; table properties is a specific dialog, not generic settings. The gear stroke (2px) differs from table family (1.65px).",
+      "result": "Table shell with a properties badge (grid with pencil); 1.65px stroke matching table family."
+    },
+    {
+      "id": "page-margins",
+      "command": "setPageMargins",
+      "before": "file-minus",
+      "after": "pageMargins",
+      "decision": "replace",
+      "defect": "Uses 'file-minus' which suggests document deletion, not margin settings. The minus stroke (1.8px) differs from page family.",
+      "result": "Page silhouette with margin guides on all four sides; accent color on guides; 1.7px stroke."
+    },
+    {
+      "id": "page-orientation",
+      "command": "toggleOrientation",
+      "before": "layout",
+      "after": "pageOrientation",
+      "decision": "replace",
+      "defect": "Uses generic 'layout' icon; orientation is portrait/landscape toggle. The layout stroke (1.7px) doesn't show the rotation metaphor.",
+      "result": "Portrait page with rotation arrow to landscape; two-page silhouettes; 1.7px stroke."
+    },
+    {
+      "id": "page-size",
+      "command": "setPaperSize",
+      "before": "layout",
+      "after": "pageSize",
+      "decision": "replace",
+      "defect": "Shares 'layout' icon with orientation; paper size is dimensions, not rotation.",
+      "result": "Page with dimension lines (width/height arrows); 1.7px stroke; distinct from orientation."
+    },
+    {
+      "id": "page-columns",
+      "command": "setColumns",
+      "before": "layout",
+      "after": "pageColumns",
+      "decision": "replace",
+      "defect": "Shares 'layout' icon; columns is newspaper-style column layout.",
+      "result": "Multi-column page silhouette with column guides; 1.7px stroke."
+    },
+    {
+      "id": "page-break",
+      "command": "pageBreak",
+      "before": "file-plus",
+      "after": "pageBreak",
+      "decision": "replace",
+      "defect": "Uses 'file-plus' which suggests new document, not page break. The plus stroke (1.8px) differs from page family.",
+      "result": "Page with a horizontal break line and scissors; 1.7px stroke; clear 'break' metaphor."
+    },
+    {
+      "id": "section-break",
+      "command": "sectionBreakNextPage",
+      "before": "file-plus",
+      "after": "sectionBreak",
+      "decision": "replace",
+      "defect": "Same 'file-plus' as page break; section break is a different semantic (section boundary, not page boundary).",
+      "result": "Two-page stack with a section divider; 1.7px stroke; distinct from page break."
+    },
+    {
+      "id": "themes",
+      "command": "applyDocumentTheme",
+      "before": "palette",
+      "after": "themes",
+      "decision": "replace",
+      "defect": "Lucide's palette is a color picker metaphor; document themes are coordinated design sets (colors+fonts+effects). The palette stroke (2px) differs from design family.",
+      "result": "Three-page stack with coordinated color bars; 1.7px stroke; suggests 'theme' as unified design."
+    },
+    {
+      "id": "color-scheme",
+      "command": "setDocumentColorScheme",
+      "before": "palette",
+      "after": "colorScheme",
+      "decision": "replace",
+      "defect": "Same palette icon as themes; color scheme is just the color component.",
+      "result": "Single page with color swatch strip; 1.7px stroke; distinct from multi-page themes."
+    },
+    {
+      "id": "font-scheme",
+      "command": "setDocumentFontScheme",
+      "before": "palette",
+      "after": "fontScheme",
+      "decision": "replace",
+      "defect": "Same palette icon; font scheme is typography, not color.",
+      "result": "Page with font sample (Aa) and font family indicator; 1.7px stroke."
+    },
+    {
+      "id": "effects",
+      "command": "setDocumentEffects",
+      "before": "palette",
+      "after": "effects",
+      "decision": "replace",
+      "defect": "Same palette icon; effects are shadows/glows/3D, not color or font.",
+      "result": "Page with effect samples (shadow, glow, reflection); 1.7px stroke."
+    },
+    {
+      "id": "paragraph-spacing",
+      "command": "setDocumentParagraphSpacing",
+      "before": "palette",
+      "after": "paragraphSpacing",
+      "decision": "replace",
+      "defect": "Same palette icon; paragraph spacing is line/paragraph distance, not color/font/effects.",
+      "result": "Page with line-spacing indicators; 1.7px stroke."
+    },
+    {
+      "id": "watermark",
+      "command": "setDocumentWatermark",
+      "before": "panel-top",
+      "after": "watermark",
+      "decision": "replace",
+      "defect": "Uses 'panel-top' which is a header metaphor; watermark is a faint background text/image.",
+      "result": "Page with faint diagonal text 'WATERMARK'; 1.7px stroke; opacity suggestion."
+    },
+    {
+      "id": "page-color",
+      "command": "setDocumentPageColor",
+      "before": "panel-bottom",
+      "after": "pageColor",
+      "decision": "replace",
+      "defect": "Uses 'panel-bottom' which is a footer metaphor; page color is a background fill.",
+      "result": "Page with a solid fill swatch; 1.7px stroke; distinct from watermark."
+    },
+    {
+      "id": "page-borders",
+      "command": "setDocumentPageBorder",
+      "before": "palette",
+      "after": "pageBorders",
+      "decision": "replace",
+      "defect": "Uses palette; page borders are edge decoration, not color scheme.",
+      "result": "Page with decorative border preview; 1.7px stroke."
+    },
+    {
+      "id": "design-default",
+      "command": "setDocumentDesignDefault",
+      "before": "panel-bottom",
+      "after": "designDefault",
+      "decision": "replace",
+      "defect": "Uses 'panel-bottom' (footer); design default is a reset action.",
+      "result": "Page with a reset arrow; 1.7px stroke."
     }
   ],
   "remainingReview": [
-    "Margins/orientation",
-    "Table operation grids",
-    "Distribution/AutoFit",
-    "Alignment/sort",
-    "Themes/styles",
     "Future Shape/Draw/Equation/Reference capabilities"
   ]
 }

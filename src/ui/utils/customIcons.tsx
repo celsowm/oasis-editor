@@ -230,98 +230,6 @@ const TableIcon = (props: { children: JSX.Element }): JSX.Element => (
   </SvgIcon>
 );
 
-const TableInsertRowAboveIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M12 1.75v3M10.5 3.25 12 1.75l1.5 1.5" />
-    <path d="M5.25 8h13.5" stroke-width={2.5} />
-  </TableIcon>
-);
-
-const TableInsertRowBelowIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M12 22.25v-3M10.5 20.75 12 22.25l1.5-1.5" />
-    <path d="M5.25 16h13.5" stroke-width={2.5} />
-  </TableIcon>
-);
-
-const TableDeleteRowIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M4.5 12h15" stroke="#d14343" stroke-width={2.6} />
-  </TableIcon>
-);
-
-const TableInsertColumnLeftIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M1.75 12h3M3.25 10.5 1.75 12l1.5 1.5" />
-    <path d="M8 5.25v13.5" stroke-width={2.5} />
-  </TableIcon>
-);
-
-const TableInsertColumnRightIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M22.25 12h-3M20.75 10.5l1.5 1.5-1.5 1.5" />
-    <path d="M16 5.25v13.5" stroke-width={2.5} />
-  </TableIcon>
-);
-
-const TableDeleteColumnIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M12 4.5v15" stroke="#d14343" stroke-width={2.6} />
-  </TableIcon>
-);
-
-const TableMergeIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M7.25 12h9.5M9.25 10l-2 2 2 2M14.75 10l2 2-2 2" stroke-width={2} />
-  </TableIcon>
-);
-
-const TableSplitIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M12 8v8M10 10l2-2 2 2M10 14l2 2 2-2" stroke-width={2} />
-  </TableIcon>
-);
-
-const TableToTextIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-    <rect x="4" y="4" width="16" height="16" rx="0.8" />
-    <path d="M8.5 10h7M8.5 14h7" />
-    <path d="M11 7l-2 2 2 2M15 7l2 2-2 2" stroke-width={1.6} />
-  </SvgIcon>
-);
-
-const TextToTableIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-    <rect x="4" y="4" width="16" height="16" rx="0.8" />
-    <path d="M9 11v2M13 11v2M7 11h8M7 15h8" />
-    <path d="M10 6l-2 2 2 2M14 6l2 2-2 2" stroke-width={1.6} />
-  </SvgIcon>
-);
-
-const SplitTableIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M3 12h18M7.5 12v9M16.5 12v9" stroke-width={1.6} />
-    <path
-      d="M4.5 8.5 3 12l1.5 3.5M19.5 8.5 21 12l-1.5 3.5"
-      stroke-width={1.4}
-    />
-  </TableIcon>
-);
-
-const SortAscendingIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-    <path d="M4 17l4-4 3 3 4-5" stroke-width={1.6} />
-    <path d="M15 12V6h3M14.5 7.5 15 6l3 .5" stroke-width={1.5} />
-  </SvgIcon>
-);
-
-const SortDescendingIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-    <path d="M4 8l4 4 3-3 4 6" stroke-width={1.6} />
-    <path d="M15 18v-6h3M14.5 16.5 15 18l3-.5" stroke-width={1.5} />
-  </SvgIcon>
-);
-
 const DeleteTableIcon: CustomIconRenderer = (): JSX.Element => (
   <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
     <rect x="4" y="4" width="16" height="16" rx="0.8" />
@@ -362,7 +270,7 @@ const TableAutoFitIcon: CustomIconRenderer = (): JSX.Element => (
   </TableIcon>
 );
 
-const TableAlignIcon = (
+const _TableAlignIcon = (
   alignment: "left" | "center" | "right",
 ): JSX.Element => {
   const x = alignment === "left" ? 6.75 : alignment === "center" ? 10.5 : 14.25;
@@ -373,29 +281,6 @@ const TableAlignIcon = (
     </SvgIcon>
   );
 };
-
-const TableAlignLeftIcon: CustomIconRenderer = (): JSX.Element =>
-  TableAlignIcon("left");
-const TableAlignCenterIcon: CustomIconRenderer = (): JSX.Element =>
-  TableAlignIcon("center");
-const TableAlignRightIcon: CustomIconRenderer = (): JSX.Element =>
-  TableAlignIcon("right");
-
-const TableVerticalAlignIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-    <rect x="4" y="4" width="16" height="16" rx="0.8" />
-    <path
-      d="M9 12h6M7.5 20.5 9 22 10.5 20.5M13.5 20.5 15 22 16.5 20.5"
-      transform="rotate(90 12 12)"
-    />
-  </SvgIcon>
-);
-
-const TableBordersIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M3 3l18 18" stroke-width={2} />
-  </TableIcon>
-);
 
 const TableNoBordersIcon: CustomIconRenderer = (): JSX.Element => (
   <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
@@ -476,6 +361,13 @@ const FormatPainterCancelIcon: CustomIconRenderer = (): JSX.Element => (
   </SvgIcon>
 );
 
+/** Table borders — simple diagonal cross. */
+const TableBordersIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M3 3l18 18" stroke-width={2} />
+  </TableIcon>
+);
+
 /** Font family: shared A glyph with action-specific accents. */
 const FontColorIcon: CustomIconRenderer = (): JSX.Element => (
   <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round">
@@ -512,6 +404,355 @@ const ShadingIcon: CustomIconRenderer = (): JSX.Element => (
       fill="var(--oasis-accent, #1a73e8)"
       stroke="none"
     />
+  </SvgIcon>
+);
+
+/** Table operation grids — refined stroke weights (1.65px grid, 1.8px accents). */
+const TableInsertRowAboveIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M12 1.75v3M10.5 3.25 12 1.75l1.5 1.5" stroke-width={1.8} />
+    <path d="M5.25 8h13.5" stroke-width={2.5} />
+  </TableIcon>
+);
+
+const TableInsertRowBelowIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M12 22.25v-3M10.5 20.75 12 22.25l1.5-1.5" stroke-width={1.8} />
+    <path d="M5.25 16h13.5" stroke-width={2.5} />
+  </TableIcon>
+);
+
+const TableDeleteRowIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M4.5 12h15" stroke="#d14343" stroke-width={2.0} />
+  </TableIcon>
+);
+
+const TableInsertColumnLeftIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M1.75 12h3M3.25 10.5 1.75 12l1.5 1.5" stroke-width={1.8} />
+    <path d="M8 5.25v13.5" stroke-width={2.5} />
+  </TableIcon>
+);
+
+const TableInsertColumnRightIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M22.25 12h-3M20.75 10.5l1.5 1.5-1.5 1.5" stroke-width={1.8} />
+    <path d="M16 5.25v13.5" stroke-width={2.5} />
+  </TableIcon>
+);
+
+const TableDeleteColumnIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M12 4.5v15" stroke="#d14343" stroke-width={2.0} />
+  </TableIcon>
+);
+
+const TableMergeIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path
+      d="M7.25 12h9.5M9.25 10l-2 2 2 2M14.75 10l2 2-2 2"
+      stroke-width={1.8}
+    />
+    <path d="M5.25 12h13.5" stroke-width={1.65} opacity={0.5} />
+  </TableIcon>
+);
+
+const TableSplitIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M12 8v8M10 10l2-2 2 2M10 14l2 2 2-2" stroke-width={1.8} />
+    <path d="M3 12h18M7.5 12v9M16.5 12v9" stroke-width={1.6} />
+    <path
+      d="M4.5 8.5 3 12l1.5 3.5M19.5 8.5 21 12l-1.5 3.5"
+      stroke-width={1.4}
+    />
+  </TableIcon>
+);
+
+const TableToTextIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
+    <rect x="4" y="4" width="16" height="16" rx="0.8" />
+    <path d="M8.5 10h7M8.5 14h7" />
+    <path d="M11 7l-2 2 2 2M15 7l2 2-2 2" stroke-width={1.6} />
+    <path d="M17 12 20 12M19 10 20 12 19 14" stroke-width={2.0} />
+  </SvgIcon>
+);
+
+const TextToTableIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
+    <rect x="4" y="4" width="16" height="16" rx="0.8" />
+    <path d="M9 11v2M13 11v2M7 11h8M7 15h8" />
+    <path d="M10 6l-2 2 2 2M14 6l2 2-2 2" stroke-width={1.6} />
+    <path d="M4 12 7 12M5 10 7 12 5 14" stroke-width={2.0} />
+  </SvgIcon>
+);
+
+const SplitTableIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M3 12h18M7.5 12v9M16.5 12v9" stroke-width={1.6} />
+    <path
+      d="M4.5 8.5 3 12l1.5 3.5M19.5 8.5 21 12l-1.5 3.5"
+      stroke-width={1.4}
+    />
+    <path d="M12 5.25v13.5" stroke-width={2.0} />
+  </TableIcon>
+);
+
+const SortAscendingIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
+    <path d="M4 17l4-4 3 3 4-5" stroke-width={1.8} />
+    <path d="M15 12V6h3M14.5 7.5 15 6l3 .5" stroke-width={1.8} />
+  </SvgIcon>
+);
+
+const SortDescendingIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
+    <path d="M4 8l4 4 3-3 4 6" stroke-width={1.8} />
+    <path d="M15 18v-6h3M14.5 16.5 15 18l3-.5" stroke-width={1.8} />
+  </SvgIcon>
+);
+
+const TableVerticalAlignIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
+    <rect x="4" y="4" width="16" height="16" rx="0.8" />
+    <path d="M8 8h8M8 12h8M8 16h8" stroke-width={1.8} />
+    <path
+      d="M7.5 10.5 9 12 10.5 10.5M13.5 10.5 15 12 16.5 10.5"
+      stroke-width={1.8}
+    />
+  </SvgIcon>
+);
+
+/** Paragraph alignment — 1.8px stroke matching underline-glyph family. */
+const AlignLeftIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
+    <path d="M6 6h12M6 10h12M6 14h8M6 18h12" />
+  </SvgIcon>
+);
+
+const AlignCenterIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
+    <path d="M6 6h12M6 10h12M6 14h8M6 18h12" transform="translate(2, 0)" />
+  </SvgIcon>
+);
+
+const AlignRightIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
+    <path d="M6 6h12M6 10h12M6 14h8M6 18h12" transform="translate(4, 0)" />
+  </SvgIcon>
+);
+
+const AlignJustifyIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
+    <path d="M6 6h12M6 10h9M6 14h6M6 18h12" />
+  </SvgIcon>
+);
+
+/** Table alignment — TableIcon shell with 1.8px stroke. */
+const TableAlignLeftIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M7.25 8h8M7.25 12h8M7.25 16h5" stroke-width={1.8} />
+  </TableIcon>
+);
+
+const TableAlignCenterIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path
+      d="M7.25 8h8M7.25 12h8M7.25 16h5"
+      transform="translate(2.5, 0)"
+      stroke-width={1.8}
+    />
+  </TableIcon>
+);
+
+const TableAlignRightIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path
+      d="M7.25 8h8M7.25 12h8M7.25 16h5"
+      transform="translate(5, 0)"
+      stroke-width={1.8}
+    />
+  </TableIcon>
+);
+
+/** Table properties — Table shell with properties badge. */
+const TablePropertiesIcon: CustomIconRenderer = (): JSX.Element => (
+  <TableIcon>
+    <path d="M14 5 16 7 13 10" stroke-width={1.8} />
+    <rect x="13" y="4" width="6" height="6" rx="1" stroke-width={1.5} />
+  </TableIcon>
+);
+
+/** Page setup family — 1.7px stroke. */
+const PageMarginsIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="5" y="3" width="14" height="18" rx="1" />
+    <path d="M5 7h14M5 14h14" stroke-width={1.4} />
+    <path
+      d="M9 3v4M15 3v4M9 20v-4M15 20v-4"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.8}
+    />
+  </SvgIcon>
+);
+
+const PageOrientationIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="3" y="5" width="8.5" height="14" rx="0.5" />
+    <rect x="12.5" y="5" width="8.5" height="14" rx="0.5" />
+    <path
+      d="M11.5 8 12.5 12 11.5 16"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2}
+    />
+    <path d="M5 8.5h7M5 15.5h7" stroke-width={1.4} opacity={0.6} />
+    <path d="M12.5 8.5h7M12.5 15.5h7" stroke-width={1.4} opacity={0.6} />
+  </SvgIcon>
+);
+
+const PageSizeIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="5" y="3" width="14" height="18" rx="1" />
+    <path d="M3 12 5 12M19 12 21 12" stroke-width={1.8} />
+    <path d="M12 1 12 3M12 21 12 23" stroke-width={1.8} />
+    <path d="M8 9h8M8 15h8" stroke-width={1.4} opacity={0.6} />
+  </SvgIcon>
+);
+
+const PageColumnsIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="5" y="3" width="14" height="18" rx="1" />
+    <path d="M12 5v14" stroke-width={2.0} />
+    <path d="M5 8.5h14M5 15.5h14" stroke-width={1.4} opacity={0.6} />
+  </SvgIcon>
+);
+
+const PageBreakIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="5" y="3" width="14" height="18" rx="1" />
+    <path d="M5 12h14" stroke-width={2.0} />
+    <path d="M11 9 12 12 11 15" stroke="#d14343" stroke-width={2} />
+  </SvgIcon>
+);
+
+const SectionBreakIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="3" y="3" width="9" height="18" rx="0.8" />
+    <rect x="12" y="3" width="9" height="18" rx="0.8" />
+    <path d="M12 12h-9M12 12h9" stroke-width={2.0} stroke-dasharray="3 2" />
+    <path d="M7.5 8.5h7M7.5 15.5h7" stroke-width={1.4} opacity={0.6} />
+    <path d="M16.5 8.5h7M16.5 15.5h7" stroke-width={1.4} opacity={0.6} />
+  </SvgIcon>
+);
+
+/** Themes/styles — 1.7px stroke. */
+const ThemesIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="3" y="3" width="9" height="18" rx="0.8" />
+    <rect x="12" y="3" width="9" height="18" rx="0.8" />
+    <rect x="6" y="3" width="9" height="18" rx="0.8" />
+    <path
+      d="M5 6h5M5 10h5M5 14h5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2}
+    />
+    <path
+      d="M14 6h5M14 10h5M14 14h5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2}
+    />
+    <path
+      d="M17 6h5M17 10h5M17 14h5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2}
+    />
+  </SvgIcon>
+);
+
+const ColorSchemeIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="5" y="3" width="14" height="18" rx="1" />
+    <path
+      d="M8 6h8M8 10h8M8 14h8M8 18h8"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2.5}
+    />
+  </SvgIcon>
+);
+
+const FontSchemeIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="5" y="3" width="14" height="18" rx="1" />
+    <path
+      d="M10 8 12 6 14 8M10 14 12 12 14 14M10 18 12 16 14 18"
+      stroke-width={1.8}
+    />
+    <path d="M6 11h12M6 17h12" stroke-width={1.5} opacity={0.6} />
+  </SvgIcon>
+);
+
+const EffectsIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="5" y="3" width="14" height="18" rx="1" />
+    <path
+      d="M8 6 10 4 16 10M8 14 10 12 16 18M8 18 10 16 16 22"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.8}
+    />
+    <path d="M6 8h12M6 14h12" stroke-width={1.5} opacity={0.6} />
+  </SvgIcon>
+);
+
+const ParagraphSpacingIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="5" y="3" width="14" height="18" rx="1" />
+    <path d="M5 8h14M5 12h14M5 16h14" stroke-width={1.8} />
+    <path
+      d="M11 6 12 8 13 6"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2}
+    />
+    <path
+      d="M11 20 12 18 13 20"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2}
+    />
+  </SvgIcon>
+);
+
+const WatermarkIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="5" y="3" width="14" height="18" rx="1" />
+    <path d="M7 7h10M7 11h8M7 15h6" stroke-width={1.2} opacity="0.3" />
+  </SvgIcon>
+);
+
+const PageColorIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="5" y="3" width="14" height="18" rx="1" />
+    <rect
+      x="7"
+      y="5"
+      width="10"
+      height="14"
+      fill="var(--oasis-accent, #1a73e8)"
+      stroke="none"
+    />
+  </SvgIcon>
+);
+
+const PageBordersIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="5" y="3" width="14" height="18" rx="1" />
+    <rect x="6.5" y="4.5" width="11" height="15" rx="0.5" stroke-width={1.8} />
+  </SvgIcon>
+);
+
+const DesignDefaultIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="5" y="3" width="14" height="18" rx="1" />
+    <path d="M12 16 10 12l2-2M12 16 14 12l-2-2" stroke-width={2} />
+    <path d="M12 8 12 16" stroke-width={1.8} />
   </SvgIcon>
 );
 
@@ -563,16 +804,17 @@ const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   sortDescending: SortDescendingIcon,
   deleteTable: DeleteTableIcon,
   repeatHeaderRow: RepeatHeaderRowIcon,
-  tableWidth: TableWidthIcon,
+  tableBorders: TableBordersIcon,
+  tableNoBorders: TableNoBordersIcon,
+  // Distribution/AutoFit/Alignment (refined)
   tableDistributeRows: TableDistributeRowsIcon,
   tableDistributeColumns: TableDistributeColumnsIcon,
   tableAutoFit: TableAutoFitIcon,
+  tableWidth: TableWidthIcon,
   tableAlignLeft: TableAlignLeftIcon,
   tableAlignCenter: TableAlignCenterIcon,
   tableAlignRight: TableAlignRightIcon,
   tableVerticalAlign: TableVerticalAlignIcon,
-  tableBorders: TableBordersIcon,
-  tableNoBorders: TableNoBordersIcon,
   // Clipboard family
   clipboard: ClipboardIcon,
   clipboardPaste: ClipboardPasteIcon,
@@ -584,6 +826,30 @@ const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   fontColor: FontColorIcon,
   highlight: HighlightIcon,
   shading: ShadingIcon,
+  // Margins/orientation/page setup
+  pageMargins: PageMarginsIcon,
+  pageOrientation: PageOrientationIcon,
+  pageSize: PageSizeIcon,
+  pageColumns: PageColumnsIcon,
+  pageBreak: PageBreakIcon,
+  sectionBreak: SectionBreakIcon,
+  // Themes/styles
+  themes: ThemesIcon,
+  colorScheme: ColorSchemeIcon,
+  fontScheme: FontSchemeIcon,
+  effects: EffectsIcon,
+  paragraphSpacing: ParagraphSpacingIcon,
+  watermark: WatermarkIcon,
+  pageColor: PageColorIcon,
+  pageBorders: PageBordersIcon,
+  designDefault: DesignDefaultIcon,
+  // Paragraph alignment (replaced from Lucide)
+  alignLeft: AlignLeftIcon,
+  alignCenter: AlignCenterIcon,
+  alignRight: AlignRightIcon,
+  alignJustify: AlignJustifyIcon,
+  // Table properties (replaced from Lucide)
+  tableProperties: TablePropertiesIcon,
 };
 
 export function getCustomIcon(name?: string): CustomIconRenderer | undefined {

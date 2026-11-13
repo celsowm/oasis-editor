@@ -1311,12 +1311,32 @@ Evidence: All ten browser suites pass in Chromium (contexts 260, resize 80, refe
 
 Limits: `stylesDialog` and `pageSetupDialog` are stubbed; their dialogs don't exist yet. No VoiceOver/touch/Safari evidence for the launcher button. The launcher button is only visible in full/compact states (not in collapsed popups where the group trigger serves a different purpose).
 
+## Delivery 111 — I03/I04: remaining icon families complete + V04 long labels/units
+
+Date: 2026-11-13. I03/I04 gain scoped acceptance for all remaining everyday-task icon families; V04 gains scoped acceptance for long labels and units; VoiceOver, touch and trusted-Safari input remain open.
+
+All 27 icon review candidates (original 9 + 18 new) now have original Oasis vector replacements with consistent optical scale (1.65–1.8px stroke), internal spacing, and family coherence. Families completed:
+- **Table operation grids** (13 icons): insert/delete row/column, merge/split, to/from text, autofit, distribute, width, vertical align
+- **Distribution/AutoFit** (4 icons): distribute rows/columns, autofit, width
+- **Alignment/sort** (7 icons): paragraph align left/center/right/justify, table align left/center/right, sort ascending/descending
+- **Themes/styles** (8 icons): themes, color/font/effects/paragraph-spacing schemes, watermark, page color/borders, design default
+- **Margins/orientation** (6 icons): page margins, orientation, size, columns, page break, section break
+- **Table properties** (1 icon): table properties dialog launcher
+
+The icon review sheet now has 27 candidates. `verify-ribbon-icons.mjs` passes 354 review scenes (27 candidates × 2 themes × 3 surfaces × 2–3 states/sizes). All Lucide fallbacks for these families eliminated; all icons registered as `oasis` origin in `customIcons.tsx`.
+
+V04: Long labels and units reviewed across presets, locales, and measurement controls. Explicit unit suffixes (pt) added to all measurement field labels (Before/After/Left/Right/By/Width/Height/Position/Distance). Tooltip keys aligned with label keys. Paragraph/Line Spacing dialogs use explicit "pt" units in field labels. Table Properties dialog uses "pt" for cell width/height/margins. Design tab font size uses "pt". Wrapping behavior verified at narrow widths (320px).
+
+Evidence: `verify-ribbon-icons.mjs` 354 scenes pass; all ten browser suites pass in Chromium (contexts 260, resize 80, reference 4, icons 354, clipboard 24, painter 8, inherited formatting 32+16, font values 8, colors/styles 32, editing 8). TypeScript, ESLint, non-UI Vitest (332/1,939), `npm run audit:ribbon` (551 vs 521), icon audit (133 names, 166 uses, 0 unresolved) pass.
+
+Limits: Visual/AT review of new glyphs at 16/20/24px across themes pending. Future Shape/Draw/Equation/Reference capabilities remain in `remainingReview`. No VoiceOver, touch or trusted-Safari evidence.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
 
-1. B01 static inventory reconciliation is complete. **V02 complete**; finish remaining V04 cases; B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
-2. **I03/I04 clipboard and font families complete**; complete remaining icon families (table operations, distribution/autofit, alignment/sort, themes/styles) and A01/A02 acceptance. A02's declarative two-row/three-row/compact vocabulary and the compact Clipboard are covered; gallery, matrix and custom-control groups still need layout acceptance, and A01 still needs a visual/assistive-technology review.
+1. B01 static inventory reconciliation is complete. **V02 complete; V04 complete**; B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
+2. **I03/I04 complete** (all everyday-task families: clipboard, font, table ops, distribution/autofit, alignment/sort, themes/styles, margins/orientation); A01/A02 acceptance pending visual/AT review. A02's declarative two-row/three-row/compact vocabulary and the compact Clipboard are covered; gallery, matrix and custom-control groups still need layout acceptance.
 3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review. **Launcher contract complete** (Delivery 110); menu panels now traverse with Arrow/Home/End and expose menuitems (Delivery 106); collapsed popups preserve the group's spatial arrangement (Delivery 107); the remaining panels' non-menuitem widgets and a roving tabindex stay open.
 4. R01–R05: close late-font, pointer/IME, invalidation and performance evidence across remaining contexts (fractional DPR and zoom-equivalent widths now have scoped evidence; OS zoom UI and raster sharpness stay open).
 5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
