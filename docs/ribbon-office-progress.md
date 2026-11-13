@@ -1265,13 +1265,23 @@ Evidence: `toolbarMenu.test.tsx` asserts wrap-around ArrowDown, reverse ArrowUp,
 
 Limits: panels still embed non-menuitem widgets (selects, galleries, color matrices, split buttons) next to their menu items, so the `role="menu"` container is not yet fully ARIA-valid; only buttons and nested triggers are converted, and no roving-tabindex model (a single tab stop with `aria-activedescendant`) is implemented — every panel control remains in the tab order. No VoiceOver, touch or trusted-Safari evidence.
 
+## Delivery 107 — collapsed popup preserves group arrangement
+
+Date: 2026-11-13. A04 gains scoped acceptance for collapsed popup layout fidelity; VoiceOver, touch and trusted-Safari input remain open.
+
+Collapsed Ribbon groups previously rendered their popup content as a simple vertical stack, losing the large-action + small-command-stack arrangement and gallery/matrix spatial layout. The collapsed trigger now conditionally mounts only when `resizeState === "collapsed"`, and its panel renders the same `RibbonGroupContent` used inline — preserving large items, two-row stacks, three-row stacks, and compact layouts identically. A controlled `Menu.open` prop was added so the panel closes when the group expands again; the `Menu` component gained an `onCleanup` that closes the panel on unmount for the uncontrolled case.
+
+Evidence: `ribbonPanelPopups.test.tsx` asserts that clicking a collapsed trigger opens the panel, and that promoting the group back to `full` closes the panel. Browser suites pass in Chromium: reference (4), resize (80), contexts (260 layouts + 8 screenshots), icons (54), Clipboard (24), Painter (8), inherited formatting (32 + 16 caret), font values (8), colors/styles (32), and editing (8). TypeScript, ESLint on changed files, non-UI Vitest (332 files / 1,939 passed, one skipped), `npm run audit:ribbon` (551 vs 521 WordCraft) and icon audit (130 names, 166 uses, 0 unresolved) pass.
+
+Limits: gallery and matrix widgets inside collapsed popups are rendered but not yet validated for spatial fidelity (the DOM structure is shared with the inline layout, but visual evidence is pending). No VoiceOver, touch or trusted-Safari evidence.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
 
 1. B01 static inventory reconciliation is complete. Finish remaining V02/V04 cases; B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
 2. Complete the remaining I03/I04 icon families and A01/A02 acceptance. A02's declarative two-row/three-row/compact vocabulary and the compact Clipboard are covered; gallery, matrix and custom-control groups still need layout acceptance, and A01 still needs a visual/assistive-technology review.
-3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review. Menu panels now traverse with Arrow/Home/End and expose menuitems (Delivery 106); the remaining panels' non-menuitem widgets, a roving tabindex and the launcher contract stay open.
+3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review. Menu panels now traverse with Arrow/Home/End and expose menuitems (Delivery 106); collapsed popups preserve the group's spatial arrangement (Delivery 107); the remaining panels' non-menuitem widgets, a roving tabindex and the launcher contract stay open.
 4. R01–R05: close late-font, pointer/IME, invalidation and performance evidence across remaining contexts (fractional DPR and zoom-equivalent widths now have scoped evidence; OS zoom UI and raster sharpness stay open).
 5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
 6. P01–P06: Review, References, View, File, search/QAT and interoperability. P04's dirty marker now clears when undo restores the saved snapshot (Delivery 105); the remaining P0x workflows and external save/interoperability evidence stay open.
