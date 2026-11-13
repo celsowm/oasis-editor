@@ -51,6 +51,7 @@ beforeEach(() => {
   vi.stubGlobal(
     "ResizeObserver",
     class {
+      private callback: (() => void) | null = null;
       observe(target: HTMLElement) {
         // Simulate a strip width that fits 2 cards (212px = 2 * 106px)
         Object.defineProperty(target, "clientWidth", { value: 212, configurable: true });
@@ -59,8 +60,9 @@ beforeEach(() => {
       }
       unobserve(): void {}
       disconnect(): void {}
-      callback: (() => void) | null = null;
-      constructor(private callback: () => void) {}
+      constructor(callback: () => void) {
+        this.callback = callback;
+      }
     },
   );
 });
