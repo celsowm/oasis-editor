@@ -69,6 +69,14 @@ export interface EditorCommandRuntimeDeps {
     initial?: import("@/core/model.js").EditorMathExpression;
     targetRunId?: string;
   }) => void;
+  setFontDialog: (state: {
+    isOpen: boolean;
+    initial: import("@/ui/components/Dialogs/FontDialog.js").FontDialogInitialValues;
+  }) => void;
+  setParagraphDialog: (state: {
+    isOpen: boolean;
+    initial: import("@/ui/components/Dialogs/ParagraphDialog.js").ParagraphDialogInitialValues;
+  }) => void;
   getUiState: () => OasisEditorUiState;
   updateUiState: (patch: OasisEditorUiState) => OasisEditorUiState;
   zoom: {
@@ -114,6 +122,8 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
       setLinkDialog: deps.setLinkDialog,
       setImageAltDialog: deps.setImageAltDialog,
       setImageCaptionDialog: deps.setImageCaptionDialog,
+      setFontDialog: deps.setFontDialog,
+      setParagraphDialog: deps.setParagraphDialog,
     });
 
   const {

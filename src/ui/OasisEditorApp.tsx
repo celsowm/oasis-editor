@@ -320,6 +320,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     setSymbolDialog,
     setEquationDialog,
     setTablePropertiesDialog,
+    setFontDialog,
+    setParagraphDialog,
   });
   const {
     commandsController,

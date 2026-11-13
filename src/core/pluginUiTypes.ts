@@ -4,6 +4,8 @@
 // (DIP). The toolbar layer re-exports these from its schema for convenience, but
 // they are defined here so `core/plugin.ts` can stay UI-agnostic.
 
+import type { CommandRef } from "@/core/commands/CommandRef.js";
+
 export const RIBBON_TABS = [
   "file",
   "home",
@@ -54,4 +56,8 @@ export interface RibbonGroupResizePolicy {
   collapsedMinWidth?: number;
   collapsedIcon?: string;
   compactLabels?: "show" | "hide";
+  /** Dialog launcher: command to execute when the group launcher is clicked. */
+  launcher?: CommandRef;
+  /** Launcher tooltip/label (defaults to group label + " options"). */
+  launcherTooltip?: string;
 }

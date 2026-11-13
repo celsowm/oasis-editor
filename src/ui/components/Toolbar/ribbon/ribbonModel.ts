@@ -11,6 +11,7 @@ import {
   CONTEXTUAL_TABS,
   RIBBON_TABS,
 } from "@/ui/components/Toolbar/schema/items.js";
+import type { CommandRef } from "@/core/commands/CommandRef.js";
 import type { TranslateFn, TranslationKey } from "@/i18n/index.js";
 
 export interface RibbonTabDefinition {
@@ -27,7 +28,7 @@ export interface RibbonGroupModel {
   layout: RibbonGroupLayout;
   rows: Record<RibbonRow, ToolbarItem[]>;
   order: number;
-  resizePolicy: Required<RibbonGroupResizePolicy>;
+  resizePolicy: MergedRibbonGroupResizePolicy;
 }
 
 export interface ResolvedRibbonGroupModel extends RibbonGroupModel {
@@ -235,13 +236,15 @@ const DEFAULT_RESIZE_STATES: RibbonGroupResizeState[] = [
   "collapsed",
 ];
 
-const DEFAULT_GROUP_RESIZE_POLICY: Required<RibbonGroupResizePolicy> = {
+const DEFAULT_GROUP_RESIZE_POLICY: MergedRibbonGroupResizePolicy = {
   states: DEFAULT_RESIZE_STATES,
   priority: 50,
   compactMinWidth: 96,
   collapsedMinWidth: 68,
   collapsedIcon: "ellipsis",
   compactLabels: "show",
+  launcher: undefined,
+  launcherTooltip: undefined,
 };
 
 const STYLE_GALLERY_CARD_WIDTH = 106;
@@ -263,6 +266,8 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
       states: ["full", "collapsed"],
       collapsedMinWidth: 74,
       collapsedIcon: "pilcrow",
+      launcher: "paragraphDialog",
+      launcherTooltip: "Paragraph options",
     },
     clipboard: {
       priority: 30,
@@ -282,6 +287,8 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
       states: ["full", "collapsed"],
       collapsedMinWidth: 74,
       collapsedIcon: "type",
+      launcher: "fontDialog",
+      launcherTooltip: "Font options",
     },
   },
   insert: {
@@ -293,13 +300,24 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
     footnotes: { priority: 15, collapsedIcon: "footnote" },
   },
   design: {
-    documentFormatting: { priority: 10, collapsedIcon: "palette" },
+    documentFormatting: {
+      priority: 10,
+      collapsedIcon: "palette",
+      launcher: "stylesDialog",
+      launcherTooltip: "Styles options",
+    },
     pageBackground: { priority: 20, collapsedIcon: "shading" },
   },
   layout: {
     paragraph: { priority: 30, compactMinWidth: 112, collapsedIcon: "ruler" },
     table: { priority: 20, collapsedIcon: "table" },
-    section: { priority: 40, compactMinWidth: 148, collapsedIcon: "layout" },
+    section: {
+      priority: 40,
+      compactMinWidth: 148,
+      collapsedIcon: "layout",
+      launcher: "pageSetupDialog",
+      launcherTooltip: "Page Setup options",
+    },
   },
   file: {
     document: { priority: 10, collapsedIcon: "file" },
@@ -398,11 +416,20 @@ function normalizeResizeStates(
   );
 }
 
+/** Merged resize policy with all properties resolved except launcher fields which stay optional. */
+type MergedRibbonGroupResizePolicy = Omit<
+  Required<RibbonGroupResizePolicy>,
+  "launcher" | "launcherTooltip"
+> & {
+  launcher?: CommandRef;
+  launcherTooltip?: string;
+};
+
 function mergeRibbonGroupResizePolicy(
   tab: RibbonTabId,
   group: string,
   itemPolicy?: RibbonGroupResizePolicy,
-): Required<RibbonGroupResizePolicy> {
+): MergedRibbonGroupResizePolicy {
   const tabDefaults = RIBBON_GROUP_RESIZE_DEFAULTS[tab]?.[group] ?? {};
   const merged = {
     ...DEFAULT_GROUP_RESIZE_POLICY,
@@ -420,6 +447,8 @@ function mergeRibbonGroupResizePolicy(
       merged.collapsedIcon ?? DEFAULT_GROUP_RESIZE_POLICY.collapsedIcon,
     compactLabels:
       merged.compactLabels ?? DEFAULT_GROUP_RESIZE_POLICY.compactLabels,
+    launcher: merged.launcher,
+    launcherTooltip: merged.launcherTooltip,
   };
 }
 

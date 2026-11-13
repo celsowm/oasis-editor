@@ -207,6 +207,38 @@
   width: 0;
 }
 
+.oasis-editor-ribbon-group-launcher {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--oasis-text-muted);
+  cursor: pointer;
+  border-radius: var(--oasis-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.15s, color 0.15s, background-color 0.15s;
+}
+.oasis-editor-ribbon-group-launcher:hover {
+  opacity: 1;
+  color: var(--oasis-text);
+  background-color: var(--oasis-hover);
+}
+.oasis-editor-ribbon-group-launcher:focus-visible {
+  outline: none;
+  box-shadow: var(--oasis-ribbon-focus-ring);
+}
+.oasis-editor-ribbon-group-launcher-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .oasis-editor-ribbon-group-rows {
   display: flex;
   align-items: stretch;

@@ -9,6 +9,10 @@ import type { EditorLogger } from "@/utils/logger.js";
 import type { EditorTransactionPort } from "@/app/controllers/controllerPorts.js";
 import { createEditorCommandsController } from "@/app/controllers/EditorCommandsController.js";
 import type { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
+import {
+  createFontDialogInitialValues,
+  createParagraphDialogInitialValues,
+} from "@/ui/app/dialogInitialValues.js";
 
 type EditorTableOperations = ReturnType<typeof createEditorTableOperations>;
 
@@ -35,6 +39,14 @@ export interface AppCommandsControllerDeps {
   setImageCaptionDialog: (state: {
     isOpen: boolean;
     initialCaption: string;
+  }) => void;
+  setFontDialog: (state: {
+    isOpen: boolean;
+    initial: import("@/ui/components/Dialogs/FontDialog.js").FontDialogInitialValues;
+  }) => void;
+  setParagraphDialog: (state: {
+    isOpen: boolean;
+    initial: import("@/ui/components/Dialogs/ParagraphDialog.js").ParagraphDialogInitialValues;
   }) => void;
 }
 
@@ -76,6 +88,18 @@ function createAppCommandsControllerImpl(deps: AppCommandsControllerDeps) {
       deps.setImageAltDialog({ isOpen: true, initialAlt }),
     openImageCaptionDialog: (initialCaption): void =>
       deps.setImageCaptionDialog({ isOpen: true, initialCaption }),
+    openFontDialog: (): void => {
+      deps.setFontDialog({
+        isOpen: true,
+        initial: createFontDialogInitialValues(deps.toolbarStyleState()),
+      });
+    },
+    openParagraphDialog: (): void => {
+      deps.setParagraphDialog({
+        isOpen: true,
+        initial: createParagraphDialogInitialValues(deps.toolbarStyleState()),
+      });
+    },
     imageCaptionLabel: (): "Figure" | "Figura" =>
       deps.locale().startsWith("en") ? "Figure" : "Figura",
   });

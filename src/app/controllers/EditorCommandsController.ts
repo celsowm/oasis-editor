@@ -96,6 +96,8 @@ export interface EditorCommandsControllerDeps
   openLinkDialog: (initialHref: string) => void;
   openImageAltDialog: (initialAlt: string) => void;
   openImageCaptionDialog: (initialCaption: string) => void;
+  openFontDialog: () => void;
+  openParagraphDialog: () => void;
   imageCaptionLabel: () => string;
 }
 
@@ -497,6 +499,15 @@ function createEditorCommandsControllerImpl(
     deps.openLinkDialog(activeLink);
   };
 
+  const openFontDialogCommand = (): void => deps.openFontDialog();
+  const openParagraphDialogCommand = (): void => deps.openParagraphDialog();
+  const openStylesDialogCommand = (): void => {
+    logger.warn("stylesDialog not yet implemented");
+  };
+  const openPageSetupDialogCommand = (): void => {
+    logger.warn("pageSetupDialog not yet implemented");
+  };
+
   const removeLinkCommand = (): void => {
     applyLinkCommand(null);
   };
@@ -680,6 +691,10 @@ function createEditorCommandsControllerImpl(
     applyRejectAllRevisionsCommand,
     applyLinkCommand,
     promptForLink,
+    openFontDialog: openFontDialogCommand,
+    openParagraphDialog: openParagraphDialogCommand,
+    openStylesDialog: openStylesDialogCommand,
+    openPageSetupDialog: openPageSetupDialogCommand,
     removeLinkCommand,
     applyImageAltCommand,
     promptForImageAlt,

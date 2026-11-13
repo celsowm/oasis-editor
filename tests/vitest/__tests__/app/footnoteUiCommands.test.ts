@@ -46,6 +46,8 @@ function createControllerHarness(initialState: EditorState) {
     openLinkDialog: vi.fn(),
     openImageAltDialog: vi.fn(),
     openImageCaptionDialog: vi.fn(),
+    openFontDialog: vi.fn(),
+    openParagraphDialog: vi.fn(),
     imageCaptionLabel: () => "Figure",
   });
 

@@ -59,6 +59,8 @@ const baseGroup = (): ResolvedRibbonGroupModel => ({
     priority: 50,
     compactLabels: "hide",
     collapsedIcon: "ellipsis",
+    launcher: undefined,
+    launcherTooltip: undefined,
   },
   resizeState: "collapsed" as const,
 });
