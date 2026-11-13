@@ -17,6 +17,7 @@ import type {
 import {
   buildRibbonGroups,
   resolveResponsiveRibbonGroups,
+  visibleRibbonItems,
 } from "./ribbonModel.js";
 import type { RibbonGroupModel, RibbonGroupWidth } from "./ribbonModel.js";
 import { Button } from "../primitives/Button.js";
@@ -40,7 +41,11 @@ export function RibbonPanel(props: RibbonPanelProps): JSX.Element {
   let frame: number | undefined;
   let disposed = false;
   const groups = createMemo(() =>
-    buildRibbonGroups(props.items(), props.activeTab(), props.api.t),
+    buildRibbonGroups(
+      visibleRibbonItems(props.items(), props.api),
+      props.activeTab(),
+      props.api.t,
+    ),
   );
   // Measurements belong to a composition, not a group ID shared across tabs.
   // A newly translated/reconfigured group never sees another context's widths.
