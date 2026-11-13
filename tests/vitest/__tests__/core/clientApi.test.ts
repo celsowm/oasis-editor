@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createOasisEditorClient } from "@/app/client/OasisEditorClient.js";
 import { createInitialEditorState } from "@/core/editorState.js";
+import { insertTextAtSelection } from "@/core/commands/text.js";
 import { Editor } from "@/core/Editor.js";
 import type { OasisPlugin } from "@/core/plugin.js";
 
@@ -84,14 +85,26 @@ describe("OasisEditorClient", () => {
     expect(client.getDocument()).toBe(state.document);
     expect(client.getSelection()).toBe(state.selection);
     expect(client.document.get()).toBe(state.document);
-    expect(client.document.isDirty()).toBe(true);
+    // Re-emitting the same document is not a change.
+    expect(client.document.isDirty()).toBe(false);
     client.document.markClean();
     expect(client.isDirty()).toBe(false);
+    // A structurally different document marks the editor dirty.
+    const edited = insertTextAtSelection(state, "edit");
+    state.document = edited.document;
     client.emit("change", state);
     expect(client.document.isDirty()).toBe(true);
     await client.save();
     expect(saveDocument).toHaveBeenCalledTimes(1);
     expect(client.document.isDirty()).toBe(false);
+    // Undo restores the saved snapshot with fresh object identities; the
+    // structural comparison keeps the editor clean.
+    state.document = JSON.parse(JSON.stringify(state.document));
+    client.emit("change", state);
+    expect(client.document.isDirty()).toBe(false);
+    state.document = insertTextAtSelection(state, "more").document;
+    client.emit("change", state);
+    expect(client.document.isDirty()).toBe(true);
     client.focusEditor();
     client.blurEditor();
     expect(focus).toHaveBeenCalledTimes(1);

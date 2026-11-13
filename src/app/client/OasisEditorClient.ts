@@ -29,7 +29,24 @@ import {
 import type { ToolbarRegistry } from "@/ui/components/Toolbar/registry/ToolbarRegistry.js";
 import type { MenuRegistry } from "@/ui/components/Menubar/menuRegistry.js";
 import { importHtmlToEditorDocument } from "@/import/html/importHtmlToEditorDocument.js";
-import { exportEditorDocumentToHtml, type HtmlExportOptions } from "@/export/html/exportEditorDocumentToHtml.js";
+import {
+  exportEditorDocumentToHtml,
+  type HtmlExportOptions,
+} from "@/export/html/exportEditorDocumentToHtml.js";
+
+/**
+ * Structural fingerprint used to keep the dirty flag honest across undo/redo.
+ * Documents are plain immutable data, so the saved document and a history
+ * snapshot that restores it serialize identically even when they are different
+ * object identities (the change broadcast clones every state it emits).
+ */
+function documentFingerprint(document: EditorDocument): string | undefined {
+  try {
+    return JSON.stringify(document);
+  } catch {
+    return undefined;
+  }
+}
 
 /** UI-related editor state that can be toggled or configured at runtime. */
 export interface OasisEditorUiState {
@@ -187,25 +204,33 @@ export interface OasisEditorDataIoApi {
    * @param request - Import configuration including format, data, and optional progress callback.
    * @returns A wrapped result indicating success or failure.
    */
-  import(request: {
-    format: "docx";
-    data: Blob | ArrayBuffer | Uint8Array;
-    filename?: string;
-    signal?: AbortSignal;
-    onProgress?: (progress: unknown) => void;
-  } | {
-    format: "html";
-    data: string | Blob | ArrayBuffer | Uint8Array;
-    filename?: string;
-    signal?: AbortSignal;
-    onProgress?: (progress: unknown) => void;
-  }): Promise<OasisResult<{ format: "docx" | "html" }>>;
+  import(
+    request:
+      | {
+          format: "docx";
+          data: Blob | ArrayBuffer | Uint8Array;
+          filename?: string;
+          signal?: AbortSignal;
+          onProgress?: (progress: unknown) => void;
+        }
+      | {
+          format: "html";
+          data: string | Blob | ArrayBuffer | Uint8Array;
+          filename?: string;
+          signal?: AbortSignal;
+          onProgress?: (progress: unknown) => void;
+        },
+  ): Promise<OasisResult<{ format: "docx" | "html" }>>;
   /**
    * Exports the document as a Blob in the requested format.
    * @param request - Export configuration including format and optional filename.
    * @returns A wrapped result containing the blob.
    */
-  export(request: { format: "docx" | "pdf" | "html"; filename?: string; fullDocument?: boolean }): Promise<
+  export(request: {
+    format: "docx" | "pdf" | "html";
+    filename?: string;
+    fullDocument?: boolean;
+  }): Promise<
     OasisResult<{
       format: "docx" | "pdf" | "html";
       blob: Blob;
@@ -414,6 +439,8 @@ export function createOasisEditorClient(): OasisEditorClientController {
   let disposed = false;
   let disposeHost: (() => void | Promise<void>) | undefined;
   let dirty = false;
+  /** Fingerprint of the document at the last load/save/mark-clean point. */
+  let savedDocumentFingerprint: string | undefined;
   let version = 0;
   const idempotent = new Map<string, OasisResult<ApplyEditValue>>();
 
@@ -427,7 +454,13 @@ export function createOasisEditorClient(): OasisEditorClientController {
     payload: OasisEditorClientEvents[TEvent],
   ): void => {
     if (event === "change") {
-      dirty = true;
+      const nextDocument = (payload as OasisEditorClientEvents["change"])
+        .document;
+      const fingerprint = documentFingerprint(nextDocument);
+      dirty =
+        savedDocumentFingerprint === undefined || fingerprint === undefined
+          ? true
+          : fingerprint !== savedDocumentFingerprint;
     }
     const handlers = listeners.get(event);
     if (!handlers) return;
@@ -458,6 +491,14 @@ export function createOasisEditorClient(): OasisEditorClientController {
   const requireHost = (): OasisEditorClientHost => {
     if (!host) throw new Error("Oasis editor client is not mounted.");
     return host;
+  };
+  /** Record the current document as the clean baseline for dirty tracking. */
+  const rememberCleanDocument = (): void => {
+    // A detached client can still be told it is clean; without a host there is
+    // no document to compare against, so the next change simply marks dirty.
+    savedDocumentFingerprint = host
+      ? documentFingerprint(host.getDocument())
+      : undefined;
   };
   const normalizePayload = (
     command: CommandRef,
@@ -532,6 +573,7 @@ export function createOasisEditorClient(): OasisEditorClientController {
     },
     resolveReady(editor): void {
       dirty = false;
+      rememberCleanDocument();
       resolveReady(editor);
       emit("ready", editor);
     },
@@ -559,6 +601,7 @@ export function createOasisEditorClient(): OasisEditorClientController {
       requireHost().setDocument(document);
       version += 1;
       dirty = false;
+      rememberCleanDocument();
     },
     updateDocument(updater): void {
       const currentHost = requireHost();
@@ -574,16 +617,19 @@ export function createOasisEditorClient(): OasisEditorClientController {
       requireHost().resetDocument();
       version += 1;
       dirty = false;
+      rememberCleanDocument();
     },
     async save(): Promise<void> {
       await requireHost().saveDocument();
       dirty = false;
+      rememberCleanDocument();
     },
     isDirty(): boolean {
       return dirty;
     },
     markClean(): void {
       dirty = false;
+      rememberCleanDocument();
     },
     getSelection(): EditorSelection {
       return requireHost().getSelection();
@@ -607,6 +653,7 @@ export function createOasisEditorClient(): OasisEditorClientController {
         requireHost().setDocument(document);
         version += 1;
         dirty = false;
+        rememberCleanDocument();
       },
       update: (updater): void => {
         const currentHost = requireHost();
@@ -622,14 +669,17 @@ export function createOasisEditorClient(): OasisEditorClientController {
         requireHost().resetDocument();
         version += 1;
         dirty = false;
+        rememberCleanDocument();
       },
       save: async (): Promise<void> => {
         await requireHost().saveDocument();
         dirty = false;
+        rememberCleanDocument();
       },
       isDirty: (): boolean => dirty,
       markClean: (): void => {
         dirty = false;
+        rememberCleanDocument();
       },
       version: (): number => version,
     },
@@ -655,6 +705,7 @@ export function createOasisEditorClient(): OasisEditorClientController {
         requireHost().setDocument(document);
         version += 1;
         dirty = false;
+        rememberCleanDocument();
       },
     },
     export: {
@@ -742,11 +793,14 @@ export function createOasisEditorClient(): OasisEditorClientController {
           };
         try {
           if (request.format === "html") {
-            const html = typeof request.data === "string"
-              ? request.data
-              : request.data instanceof Blob
-                ? await request.data.text()
-                : new TextDecoder("utf-8", { fatal: true }).decode(request.data);
+            const html =
+              typeof request.data === "string"
+                ? request.data
+                : request.data instanceof Blob
+                  ? await request.data.text()
+                  : new TextDecoder("utf-8", { fatal: true }).decode(
+                      request.data,
+                    );
             if (request.signal?.aborted)
               return {
                 ok: false,
@@ -756,8 +810,14 @@ export function createOasisEditorClient(): OasisEditorClientController {
             requireHost().setDocument(document);
             version += 1;
             dirty = false;
+            rememberCleanDocument();
             request.onProgress?.({ phase: "done", progress: 100 });
-            return { ok: true, value: { format: "html" }, version, warnings: [] };
+            return {
+              ok: true,
+              value: { format: "html" },
+              version,
+              warnings: [],
+            };
           }
           const data =
             request.data instanceof Blob
@@ -795,9 +855,11 @@ export function createOasisEditorClient(): OasisEditorClientController {
           const value =
             request.format === "html"
               ? new Blob(
-                  [exportEditorDocumentToHtml(requireHost().getDocument(), {
-                    fullDocument: request.fullDocument,
-                  })],
+                  [
+                    exportEditorDocumentToHtml(requireHost().getDocument(), {
+                      fullDocument: request.fullDocument,
+                    }),
+                  ],
                   { type: "text/html;charset=utf-8" },
                 )
               : request.format === "docx"
