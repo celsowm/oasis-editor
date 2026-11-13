@@ -1246,19 +1246,19 @@
     },
     {
       "file": "src/ui/components/Toolbar/renderers/renderers.tsx",
-      "line": 105,
+      "line": 108,
       "role": "icon",
       "expression": "props.item.iconName"
     },
     {
       "file": "src/ui/components/Toolbar/renderers/renderers.tsx",
-      "line": 225,
+      "line": 227,
       "role": "icon",
       "expression": "props.item.iconName ??\n        (props.item.kind === \"color\"\n          ? \"type\"\n          : props.item.kind === \"shading\"\n            ? \"paint-bucket\"\n            : \"highlighter\")"
     },
     {
       "file": "src/ui/components/Toolbar/renderers/renderers.tsx",
-      "line": 293,
+      "line": 295,
       "role": "icon",
       "expression": "props.item.iconName"
     },
