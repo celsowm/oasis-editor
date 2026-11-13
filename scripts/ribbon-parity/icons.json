@@ -1240,25 +1240,25 @@
     },
     {
       "file": "src/ui/components/Toolbar/renderers/renderers.tsx",
-      "line": 84,
+      "line": 91,
       "role": "icon",
       "expression": "props.item.iconName"
     },
     {
       "file": "src/ui/components/Toolbar/renderers/renderers.tsx",
-      "line": 108,
+      "line": 116,
       "role": "icon",
       "expression": "props.item.iconName"
     },
     {
       "file": "src/ui/components/Toolbar/renderers/renderers.tsx",
-      "line": 227,
+      "line": 236,
       "role": "icon",
       "expression": "props.item.iconName ??\n        (props.item.kind === \"color\"\n          ? \"type\"\n          : props.item.kind === \"shading\"\n            ? \"paint-bucket\"\n            : \"highlighter\")"
     },
     {
       "file": "src/ui/components/Toolbar/renderers/renderers.tsx",
-      "line": 295,
+      "line": 304,
       "role": "icon",
       "expression": "props.item.iconName"
     },
