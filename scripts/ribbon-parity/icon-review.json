@@ -88,11 +88,90 @@
       "defect": "The text-rendered U has platform-dependent cap and width metrics beside the Bold and Italic SVGs.",
       "result": "A Lucide-weight vector keeps equal top and bottom clearance in the shared 18px icon box while matching the siblings' vertical ink height.",
       "action": "Underline toggle"
+    },
+    {
+      "id": "clipboard",
+      "command": "paste",
+      "before": "clipboard",
+      "after": "clipboard",
+      "decision": "review",
+      "defect": "The Lucide clipboard uses a heavier stroke than the custom page family; the paste variant adds a document but keeps the same clip geometry, making the two hard to distinguish at 16px.",
+      "result": "Define a shared clipboard silhouette with consistent stroke weight; paste adds a distinct page layer, cut adds scissors, format painter uses a brush on the clipboard face."
+    },
+    {
+      "id": "clipboard-paste",
+      "command": "paste",
+      "before": "clipboard-paste",
+      "after": "clipboardPaste",
+      "decision": "replace",
+      "defect": "The Lucide clipboard-paste uses the same clip geometry as clipboard with a pasted document; at 16px the document layer is illegible and the clip dominates.",
+      "result": "A clipboard silhouette with a clear page insertion glyph; matches the clipboard family stroke weight."
+    },
+    {
+      "id": "clipboard-cut",
+      "command": "cut",
+      "before": "scissors",
+      "after": "clipboardCut",
+      "decision": "replace",
+      "defect": "Cut uses bare scissors which share no visual language with the clipboard family; the scissors stroke weight differs from the clipboard clip.",
+      "result": "Scissors cutting a clipboard page; same clipboard silhouette, scissors as the action accent."
+    },
+    {
+      "id": "format-painter",
+      "command": "formatPainter",
+      "before": "paintbrush",
+      "after": "formatPainter",
+      "decision": "replace",
+      "defect": "The paintbrush is a generic brush; format painter is a clipboard action that copies formatting, not a drawing tool. The brush stroke weight differs from the clipboard family.",
+      "result": "A clipboard with a brush tip on the clip; visually grouped with clipboard family, distinct from drawing tools."
+    },
+    {
+      "id": "format-painter-continuous",
+      "command": "formatPainterContinuous",
+      "before": "paintbrush-2",
+      "after": "formatPainterContinuous",
+      "decision": "replace",
+      "defect": "The double brush variant lacks a clear clipboard relationship; the two brushes are indistinguishable at 16px and read as 'more painting' not 'continuous formatting'.",
+      "result": "Clipboard with a double brush accent; the clipboard grounds it in the formatting family."
+    },
+    {
+      "id": "format-painter-cancel",
+      "command": "cancelFormatPainter",
+      "before": "x",
+      "after": "formatPainterCancel",
+      "decision": "replace",
+      "defect": "A bare X shares no visual language with the format painter family; the X stroke weight is heavier than the brush/clipboard strokes.",
+      "result": "Clipboard with a cancel slash; same silhouette, slash as the stop action."
+    },
+    {
+      "id": "font-color",
+      "command": "setFontColor",
+      "before": "type",
+      "after": "fontColor",
+      "decision": "replace",
+      "defect": "The bare 'A' character uses platform text metrics; at 16px the letterform is illegible and the color bar is a thin line that disappears in dark theme.",
+      "result": "An 'A' glyph drawn as paths with a prominent color underline bar; matches the underline-glyph family weight."
+    },
+    {
+      "id": "highlight",
+      "command": "setHighlightColor",
+      "before": "highlighter",
+      "after": "highlight",
+      "decision": "replace",
+      "defect": "The Lucide highlighter is a marker pen; highlighting text is not drawing. The pen stroke weight differs from the font-color underline.",
+      "result": "A text 'A' with a highlighter sweep behind it; same A glyph as font-color, sweep as the action."
+    },
+    {
+      "id": "shading",
+      "command": "setShadingColor",
+      "before": "paint-bucket",
+      "after": "shading",
+      "decision": "replace",
+      "defect": "The paint bucket is a fill tool metaphor; paragraph shading is a background color, not a canvas fill. The bucket stroke weight differs from the font family.",
+      "result": "A paragraph block with a fill swatch; same visual weight as the font family."
     }
   ],
   "remainingReview": [
-    "Clipboard optical weights",
-    "Font color/highlight/shading",
     "Margins/orientation",
     "Table operation grids",
     "Distribution/AutoFit",

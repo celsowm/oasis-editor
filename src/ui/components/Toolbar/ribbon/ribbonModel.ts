@@ -294,7 +294,7 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
   },
   design: {
     documentFormatting: { priority: 10, collapsedIcon: "palette" },
-    pageBackground: { priority: 20, collapsedIcon: "paint-bucket" },
+    pageBackground: { priority: 20, collapsedIcon: "shading" },
   },
   layout: {
     paragraph: { priority: 30, compactMinWidth: 112, collapsedIcon: "ruler" },

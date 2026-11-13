@@ -1,4 +1,10 @@
-import { Show, createSignal, createEffect, onCleanup, type JSX } from "solid-js";
+import {
+  Show,
+  createSignal,
+  createEffect,
+  onCleanup,
+  type JSX,
+} from "solid-js";
 import { Popover } from "./Popover.js";
 import { DropdownChevron } from "./DropdownChevron.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";

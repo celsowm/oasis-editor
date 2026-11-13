@@ -67,6 +67,7 @@ function IconReview(): JSX.Element {
     name: () => string,
     size: number,
     state: string,
+    isAfter: boolean,
   ): JSX.Element => (
     <button
       type="button"
@@ -80,7 +81,7 @@ function IconReview(): JSX.Element {
       aria-label={`${chosen().command ?? chosen().action ?? chosen().id}, ${size}px, ${state}`}
       aria-pressed={state === "active"}
       disabled={state === "disabled"}
-      data-icon-name={name()}
+      data-icon-name={isAfter ? name() : undefined}
       data-icon-size={size}
       data-icon-state={state}
     >
@@ -152,12 +153,12 @@ function IconReview(): JSX.Element {
         <For
           each={
             [
-              ["Before", () => chosen().before],
-              ["Current", () => chosen().after],
+              ["Before", () => chosen().before, false],
+              ["Current", () => chosen().after, true],
             ] as const
           }
         >
-          {([title, name]) => (
+          {([title, name, isAfter]) => (
             <section>
               <h2>
                 {title} · {name()}
@@ -173,7 +174,7 @@ function IconReview(): JSX.Element {
                   <div class="icon-review-row">
                     <span>{size}px</span>
                     <For each={review.states}>
-                      {(state) => sample(name, size, state)}
+                      {(state) => sample(name, size, state, isAfter)}
                     </For>
                   </div>
                 )}

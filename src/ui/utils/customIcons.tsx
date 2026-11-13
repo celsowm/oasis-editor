@@ -411,6 +411,110 @@ const TableNoBordersIcon: CustomIconRenderer = (): JSX.Element => (
   </SvgIcon>
 );
 
+/** Clipboard family: shared silhouette with action-specific accents. */
+const ClipboardIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
+    <rect x="5.5" y="3.5" width="13" height="17" rx="1" />
+    <path d="M8 3.5v4M16 3.5v4" />
+    <path d="M8 11h8M8 14h8M8 17h8" stroke-width={1.3} opacity={0.7} />
+  </SvgIcon>
+);
+
+const ClipboardPasteIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
+    <rect x="5.5" y="3.5" width="13" height="17" rx="1" />
+    <path d="M8 3.5v4M16 3.5v4" />
+    <rect
+      x="8.5"
+      y="9.5"
+      width="7"
+      height="9"
+      rx="0.5"
+      fill="var(--oasis-accent, #1a73e8)"
+      stroke="none"
+    />
+    <path d="M12 12v4M10 14h4" stroke="#fff" stroke-width={1.5} />
+  </SvgIcon>
+);
+
+const ClipboardCutIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
+    <rect x="5.5" y="3.5" width="13" height="17" rx="1" />
+    <path d="M8 3.5v4M16 3.5v4" />
+    <path d="M10 12 14 16M14 12 10 16" stroke="#d14343" stroke-width={2} />
+    <path d="M12 12h4M12 15h4" stroke-width={1.3} opacity={0.7} />
+  </SvgIcon>
+);
+
+const FormatPainterIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
+    <rect x="5.5" y="3.5" width="13" height="17" rx="1" />
+    <path d="M8 3.5v4M16 3.5v4" />
+    <path d="M11.5 11c0-1.5 1.5-2.5 3-2.5s3 1 3 2.5" stroke-width={2} />
+    <path d="M10 14h4M10 17h4" stroke-width={1.3} opacity={0.7} />
+  </SvgIcon>
+);
+
+const FormatPainterContinuousIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
+    <rect x="5.5" y="3.5" width="13" height="17" rx="1" />
+    <path d="M8 3.5v4M16 3.5v4" />
+    <path
+      d="M10 11c0-1.5 1.5-2.5 3-2.5s3 1 3 2.5M10 14c0-1.5 1.5-2.5 3-2.5s3 1 3 2.5"
+      stroke-width={2}
+    />
+    <path d="M10 17h4" stroke-width={1.3} opacity={0.7} />
+  </SvgIcon>
+);
+
+const FormatPainterCancelIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
+    <rect x="5.5" y="3.5" width="13" height="17" rx="1" />
+    <path d="M8 3.5v4M16 3.5v4" />
+    <path d="M9 9 15 15M15 9 9 15" stroke="#d14343" stroke-width={2} />
+    <path d="M10 14h4M10 17h4" stroke-width={1.3} opacity={0.7} />
+  </SvgIcon>
+);
+
+/** Font family: shared A glyph with action-specific accents. */
+const FontColorIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round">
+    <path d="M12 4v3M9 12l3-6 3 6M7 16h10" />
+    <path
+      d="M6 19h12"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2.5}
+    />
+  </SvgIcon>
+);
+
+const HighlightIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round">
+    <path d="M12 4v3M9 12l3-6 3 6M7 16h10" />
+    <path
+      d="M5 14.5 19 14.5"
+      stroke="var(--oasis-accent, #f6c100)"
+      stroke-width={5}
+      stroke-linecap="butt"
+    />
+  </SvgIcon>
+);
+
+const ShadingIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round">
+    <rect x="4" y="5" width="16" height="14" rx="1" />
+    <path d="M6 8.5h12M6 12h12M6 15.5h12" stroke-width={1.4} opacity={0.6} />
+    <rect
+      x="6"
+      y="10"
+      width="12"
+      height="5"
+      fill="var(--oasis-accent, #1a73e8)"
+      stroke="none"
+    />
+  </SvgIcon>
+);
+
 /**
  * Checkmark glyph used to mark the active item in radio/check menus. Replaces the
  * duplicated inline `<polyline points="20 6 9 17 4 12">` previously copy-pasted
@@ -469,6 +573,17 @@ const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   tableVerticalAlign: TableVerticalAlignIcon,
   tableBorders: TableBordersIcon,
   tableNoBorders: TableNoBordersIcon,
+  // Clipboard family
+  clipboard: ClipboardIcon,
+  clipboardPaste: ClipboardPasteIcon,
+  clipboardCut: ClipboardCutIcon,
+  formatPainter: FormatPainterIcon,
+  formatPainterContinuous: FormatPainterContinuousIcon,
+  formatPainterCancel: FormatPainterCancelIcon,
+  // Font family
+  fontColor: FontColorIcon,
+  highlight: HighlightIcon,
+  shading: ShadingIcon,
 };
 
 export function getCustomIcon(name?: string): CustomIconRenderer | undefined {

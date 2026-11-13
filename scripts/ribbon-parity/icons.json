@@ -6,8 +6,16 @@
     "lucide": "ISC (installed lucide package)"
   },
   "customRegistry": [
+    "clipboard",
+    "clipboardCut",
+    "clipboardPaste",
     "deleteTable",
+    "fontColor",
     "footnote",
+    "formatPainter",
+    "formatPainterCancel",
+    "formatPainterContinuous",
+    "highlight",
     "lineSpacing",
     "pageCount",
     "pageFooter",
@@ -17,6 +25,7 @@
     "pageNumberBottom",
     "pageNumberTop",
     "repeatHeaderRow",
+    "shading",
     "sortAscending",
     "sortDescending",
     "specialIndentFirstLine",
@@ -258,64 +267,64 @@
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 204,
       "role": "iconName",
-      "name": "clipboard-paste",
-      "origin": "lucide"
+      "name": "clipboardPaste",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 217,
       "role": "iconName",
-      "name": "clipboard-paste",
-      "origin": "lucide"
+      "name": "clipboardPaste",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 225,
       "role": "iconName",
-      "name": "paintbrush",
-      "origin": "lucide"
+      "name": "formatPainter",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 233,
       "role": "iconName",
       "name": "clipboard",
-      "origin": "lucide"
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 244,
       "role": "iconName",
-      "name": "paintbrush",
-      "origin": "lucide"
+      "name": "formatPainter",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 255,
       "role": "iconName",
-      "name": "paintbrush",
-      "origin": "lucide"
+      "name": "formatPainter",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 263,
       "role": "iconName",
-      "name": "paintbrush-2",
-      "origin": "lucide"
+      "name": "formatPainterContinuous",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 271,
       "role": "iconName",
-      "name": "x",
-      "origin": "lucide"
+      "name": "formatPainterCancel",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 282,
       "role": "iconName",
-      "name": "scissors",
-      "origin": "lucide"
+      "name": "clipboardCut",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
@@ -405,22 +414,22 @@
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 480,
       "role": "iconName",
-      "name": "type",
-      "origin": "lucide"
+      "name": "fontColor",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 490,
       "role": "iconName",
-      "name": "highlighter",
-      "origin": "lucide"
+      "name": "highlight",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 500,
       "role": "iconName",
-      "name": "paint-bucket",
-      "origin": "lucide"
+      "name": "shading",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
@@ -734,8 +743,8 @@
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 1097,
       "role": "iconName",
-      "name": "paintbrush",
-      "origin": "lucide"
+      "name": "formatPainter",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
@@ -973,7 +982,7 @@
       "line": 272,
       "role": "collapsedIcon",
       "name": "clipboard",
-      "origin": "lucide"
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
@@ -1049,8 +1058,8 @@
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
       "line": 297,
       "role": "collapsedIcon",
-      "name": "paint-bucket",
-      "origin": "lucide"
+      "name": "shading",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
