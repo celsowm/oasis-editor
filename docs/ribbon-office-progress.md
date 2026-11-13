@@ -1253,13 +1253,25 @@ Evidence: `clientApi.test.ts` now asserts that re-emitting the same document sta
 
 Limits: the fingerprint is `JSON.stringify(document)` on each change, so large documents pay a serialization cost on every edit (the change broadcast already deep-clones the document, but this is an additional pass); the comparison assumes documents are plain JSON-serializable immutable data, which the model enforces today; no external-save round-trip or multi-client dirty test.
 
+## Delivery 106 — menu keyboard traversal and menuitem semantics
+
+Date: 2026-11-13. A03 gains scoped acceptance for menu keyboard traversal and menu-item roles; VoiceOver, touch and trusted-Safari input remain open.
+
+Popover panels declared `role="menu"` while their contents were plain buttons: the role promised a menu but the panel offered no menu keyboard model and its children were not menu items, so a screen reader could announce a menu with no items. Action buttons and nested dropdown triggers rendered inside a menu panel now carry `role="menuitem"` (a nested trigger keeps `aria-haspopup="menu"`, which is the standard submenu shape); the same items keep no role at the top level. `RendererProps`/`ToolbarItemRenderer` gained an optional `menuItem` flag, `renderMenuContent` sets it, and `RenderGroup` propagates it to children.
+
+Menu panels also gained arrow-key traversal. `Popover` handles ArrowDown, ArrowUp, Home and End when `panelRole === "menu"`: the focus ring wraps through the enabled buttons/menuitems, ArrowDown/ArrowUp move relative to the focused item (from no focus they enter at the first/last item), and Home/End jump to the ends. Modified key combinations are ignored, and focus stays inside `input`, `textarea`, `select` and `contenteditable` so caret and selection keys keep working in the fields that some panels embed.
+
+Evidence: `toolbarMenu.test.tsx` asserts wrap-around ArrowDown, reverse ArrowUp, Home/End and that an input inside a menu panel keeps its own ArrowDown; `toolbarActionSemantics.test.tsx` asserts a top-level menu trigger has no role while its panel's action and nested-submenu trigger are both `role="menuitem"` (the submenu keeping `aria-haspopup="menu"`). Browser suites pass in Chromium against a dev server on port 5199: reference (4 theme/language combinations), resize (80 layouts), contexts (260 layouts, 8 unit screenshots), icons (54 scenes) and colors/styles (32 workflows). TypeScript, ESLint on changed files, non-UI Vitest (331 files / 1,937 passed, one skipped), `npm run audit:ribbon` (551 Oasis features against 521 WordCraft entries) and the icon audit (130 literal names, 166 uses, no unresolved literals) pass.
+
+Limits: panels still embed non-menuitem widgets (selects, galleries, color matrices, split buttons) next to their menu items, so the `role="menu"` container is not yet fully ARIA-valid; only buttons and nested triggers are converted, and no roving-tabindex model (a single tab stop with `aria-activedescendant`) is implemented — every panel control remains in the tab order. No VoiceOver, touch or trusted-Safari evidence.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
 
 1. B01 static inventory reconciliation is complete. Finish remaining V02/V04 cases; B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
 2. Complete the remaining I03/I04 icon families and A01/A02 acceptance. A02's declarative two-row/three-row/compact vocabulary and the compact Clipboard are covered; gallery, matrix and custom-control groups still need layout acceptance, and A01 still needs a visual/assistive-technology review.
-3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review.
+3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review. Menu panels now traverse with Arrow/Home/End and expose menuitems (Delivery 106); the remaining panels' non-menuitem widgets, a roving tabindex and the launcher contract stay open.
 4. R01–R05: close late-font, pointer/IME, invalidation and performance evidence across remaining contexts (fractional DPR and zoom-equivalent widths now have scoped evidence; OS zoom UI and raster sharpness stay open).
 5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
 6. P01–P06: Review, References, View, File, search/QAT and interoperability. P04's dirty marker now clears when undo restores the saved snapshot (Delivery 105); the remaining P0x workflows and external save/interoperability evidence stay open.
