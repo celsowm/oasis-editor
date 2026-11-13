@@ -1275,11 +1275,21 @@ Evidence: `ribbonPanelPopups.test.tsx` asserts that clicking a collapsed trigger
 
 Limits: gallery and matrix widgets inside collapsed popups are rendered but not yet validated for spatial fidelity (the DOM structure is shared with the inline layout, but visual evidence is pending). No VoiceOver, touch or trusted-Safari evidence.
 
+## Delivery 108 — V02: visible groups and separator hygiene
+
+Date: 2026-11-13. V02 gains scoped acceptance: groups with no visible actions are removed from the Ribbon, and orphan separators are trimmed after visibility filtering.
+
+The `buildRibbonGroups` pipeline previously received all registry items for the active tab and grouped them unconditionally. Items with `isVisible` returning `false` were still grouped; their separators remained as edge/duplicate separators; and groups that became entirely invisible still rendered empty section wrappers. The `visibleRibbonItems` utility existed but was only used in tests. `RibbonPanel` now pipes the raw items through `visibleRibbonItems(api)` before grouping, so invisible actions (and their surrounding separators) are dropped at the composition level. Groups with zero visible children are filtered out by the existing empty-group guard. The accessibility group on the Insert tab now appears only when an image is selected (its Alt Text and Caption actions are enabled), matching the browser evidence.
+
+Evidence: `ribbonComposition.test.ts` asserts that a group whose only action is invisible disappears entirely, that disabled actions (enabled but not visible) are retained, that edge/duplicate separators are trimmed after filtering, and that nested empty groups are removed. Browser suites pass in Chromium: contexts (260 layouts + 8 screenshots verify the accessibility group appears only for the `image` fixture), resize (80), reference (4), icons (54), Clipboard (24), Painter (8), inherited formatting (32 + 16 caret), font values (8), colors/styles (32), and editing (8). TypeScript, ESLint on changed files, non-UI Vitest (332/1,939), `npm run audit:ribbon` (551 vs 521), icon audit (130/166/0) all pass.
+
+Limits: the visibility filter runs on every composition recomputation; the cost is linear in the item count and negligible at current scale, but could be memoized if the registry grows significantly. No VoiceOver/touch/Safari evidence.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
 
-1. B01 static inventory reconciliation is complete. Finish remaining V02/V04 cases; B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
+1. B01 static inventory reconciliation is complete. **V02 complete**; finish remaining V04 cases; B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
 2. Complete the remaining I03/I04 icon families and A01/A02 acceptance. A02's declarative two-row/three-row/compact vocabulary and the compact Clipboard are covered; gallery, matrix and custom-control groups still need layout acceptance, and A01 still needs a visual/assistive-technology review.
 3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review. Menu panels now traverse with Arrow/Home/End and expose menuitems (Delivery 106); collapsed popups preserve the group's spatial arrangement (Delivery 107); the remaining panels' non-menuitem widgets, a roving tabindex and the launcher contract stay open.
 4. R01–R05: close late-font, pointer/IME, invalidation and performance evidence across remaining contexts (fractional DPR and zoom-equivalent widths now have scoped evidence; OS zoom UI and raster sharpness stay open).
