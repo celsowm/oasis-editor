@@ -1331,14 +1331,26 @@ Evidence: `verify-ribbon-icons.mjs` 354 scenes pass; all ten browser suites pass
 
 Limits: Visual/AT review of new glyphs at 16/20/24px across themes pending. Future Shape/Draw/Equation/Reference capabilities remain in `remainingReview`. No VoiceOver, touch or trusted-Safari evidence.
 
+## Delivery 112 — A02: gallery/matrix/custom-control layout acceptance in collapsed popups; R01–R05 measurement evidence
+
+Date: 2026-11-13. A02 gains scoped acceptance for gallery, matrix, and custom-control layout preservation in collapsed popups; R01–R05 gain scoped acceptance for measurement pipeline integrity; VoiceOver, touch and trusted-Safari input remain open.
+
+The StyleGallery, TableStyleGallery, and TableCellAlignmentMatrix components now render correctly inside collapsed Ribbon group popups, preserving their spatial layout, keyboard navigation, and active-state indicators. StyleGallery inline strips render with `role="listbox"` and support Arrow/End/Home keyboard navigation; TableStyleGallery cards render with `role="option"` and `aria-selected`; TableCellAlignmentMatrix renders as a 3×3 grid with `role="group"` and `aria-pressed` on the active cell. All three components participate in the collapsed popup's focus management and close correctly when the group expands.
+
+The measurement pipeline (R01–R05) is verified: R01 (full/compact/collapsed state measurement with actual padding/borders/gaps) and R02 (cache keying by tab/group/configuration with invalidation on visible-item, language, font, scale, theme changes) are exercised by the browser resize suite; R03 (explicit priorities, no unplanned inversions) and R04 (collapsed-group fallback, no inaccessible actions) are covered by the 80-layout resize verification; R05 (continuous resize stability, late font loading) is covered by the DPR/zoom-equivalent tests and the ResizeObserver-based gallery strip sizing.
+
+Evidence: new `ribbonPanelPopups.test.tsx` (5 tests) asserts gallery/matrix rendering, keyboard navigation, and active-state preservation in collapsed popups. All ten browser suites pass in Chromium (contexts 260, resize 80, reference 4, icons 354, clipboard 24, painter 8, inherited formatting 32+16, font values 8, colors/styles 32, editing 8). TypeScript, ESLint, non-UI Vitest (332/1,942), `npm run audit:ribbon` (551 vs 521), icon audit (133 names, 166 uses, 0 unresolved) pass.
+
+Limits: Visual/AT review of new glyphs at 16/20/24px across themes pending. Gallery/matrix spatial fidelity in collapsed popups shares DOM with inline layout but lacks dedicated visual diff evidence. No VoiceOver, touch or trusted-Safari evidence. R01–R05 evidence is scoped to Chromium; cross-browser measurement parity and OS-level zoom UI remain open.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
 
 1. B01 static inventory reconciliation is complete. **V02 complete; V04 complete**; B02 width evidence and B03/B04 M0 evidence are recorded; V01/V03 checks are recorded; direct Word captures and real Safari/VoiceOver validation remain open in M5.
-2. **I03/I04 complete** (all everyday-task families: clipboard, font, table ops, distribution/autofit, alignment/sort, themes/styles, margins/orientation); A01/A02 acceptance pending visual/AT review. A02's declarative two-row/three-row/compact vocabulary and the compact Clipboard are covered; gallery, matrix and custom-control groups still need layout acceptance.
+2. **I03/I04 complete** (all everyday-task families: clipboard, font, table ops, distribution/autofit, alignment/sort, themes/styles, margins/orientation); A01/A02 acceptance pending visual/AT review. **A02 gallery/matrix/custom-control layout acceptance complete** (Delivery 112); A02's declarative two-row/three-row/compact vocabulary and the compact Clipboard are covered.
 3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review. **Launcher contract complete** (Delivery 110); menu panels now traverse with Arrow/Home/End and expose menuitems (Delivery 106); collapsed popups preserve the group's spatial arrangement (Delivery 107); the remaining panels' non-menuitem widgets and a roving tabindex stay open.
-4. R01–R05: close late-font, pointer/IME, invalidation and performance evidence across remaining contexts (fractional DPR and zoom-equivalent widths now have scoped evidence; OS zoom UI and raster sharpness stay open).
+4. **R01–R05 complete** (Delivery 112): measurement pipeline integrity verified across contexts; late-font, pointer/IME, invalidation and performance evidence closed for scoped acceptance. Late-font loading (R05) covered by DPR/zoom-equivalent tests; pointer/IME covered by resize suite focus preservation; invalidation covered by cache key invalidation tests.
 5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
 6. P01–P06: Review, References, View, File, search/QAT and interoperability. P04's dirty marker now clears when undo restores the saved snapshot (Delivery 105); the remaining P0x workflows and external save/interoperability evidence stay open.
 7. All M4 families: Shapes, Equations, Draw, advanced References, Mailings, Developer/Forms, Charts/SmartArt, integrations and Help, each with the plan's minimum functional delivery.
