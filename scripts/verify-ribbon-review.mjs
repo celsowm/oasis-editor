@@ -79,6 +79,13 @@ function markupOptions(page) {
   );
 }
 
+function applyShowMarkup(page, payload) {
+  return page.evaluate(
+    (p) => window.ribbonReference.client.commands.execute("applyShowMarkup", p),
+    payload,
+  );
+}
+
 function revisionMarkupSelector(type) {
   return `[data-testid="editor-revision-markup"]${
     type ? `[data-revision-type="${type}"]` : ""
@@ -592,6 +599,86 @@ try {
       "pane lists one row per tracked revision id",
     );
 
+    // 11a. Show Markup filters govern the Reviewing Pane list too. Dispatch
+    // through the bus (the same path the gallery uses) and assert the rows
+    // and the localized "hidden" hint react without editing revision data.
+    const paneRows = page.locator('[data-testid="review-revisions-list"] > li');
+    const paneInsertRows = page.locator(
+      '[data-testid="review-revisions-list"] [data-revision-type="insert"]',
+    );
+    const paneDeleteRows = page.locator(
+      '[data-testid="review-revisions-list"] [data-revision-type="delete"]',
+    );
+    const initialInsertRows = await paneInsertRows.count();
+    const initialDeleteRows = await paneDeleteRows.count();
+    assert.ok(initialInsertRows > 0, "fixture has an insertion to filter");
+    assert.ok(initialDeleteRows > 0, "fixture has a deletion to filter");
+
+    await applyShowMarkup(page, { section: "insertions" });
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll(
+          '[data-testid="review-revisions-list"] [data-revision-type="insert"]',
+        ).length === 0,
+      undefined,
+      { timeout: 5000 },
+    );
+    assert.equal(await paneRows.count(), countBefore - initialInsertRows);
+    assert.equal(await paneDeleteRows.count(), initialDeleteRows);
+    await page
+      .getByTestId("review-revisions-filtered")
+      .waitFor({ state: "visible", timeout: 5000 });
+    await applyShowMarkup(page, { section: "insertions" });
+    await page.waitForFunction(
+      (expected) =>
+        document.querySelectorAll('[data-testid="review-revisions-list"] > li')
+          .length === expected,
+      countBefore,
+      { timeout: 5000 },
+    );
+    assert.equal(
+      await page.getByTestId("review-revisions-filtered").count(),
+      0,
+    );
+
+    // Hiding one reviewer removes only their rows (the insertion and the
+    // anchored comment author is "Reference author"; the deletion is "User").
+    await applyShowMarkup(page, { author: "Reference author" });
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll(
+          '[data-testid="review-revisions-list"] [data-revision-type="insert"]',
+        ).length === 0,
+      undefined,
+      { timeout: 5000 },
+    );
+    assert.equal(await paneDeleteRows.count(), initialDeleteRows);
+    await page
+      .getByTestId("review-revisions-filtered")
+      .waitFor({ state: "visible", timeout: 5000 });
+
+    // No reviewers visible: the pane falls back to its empty state.
+    await applyShowMarkup(page, { allAuthors: false });
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll('[data-testid="review-revisions-list"] > li')
+          .length === 0,
+      undefined,
+      { timeout: 5000 },
+    );
+    assert.equal(await paneRows.count(), 0);
+
+    // Restore; the bulk Accept All footer still addresses the whole document.
+    await applyShowMarkup(page, { allAuthors: true });
+    await page.waitForFunction(
+      (expected) =>
+        document.querySelectorAll('[data-testid="review-revisions-list"] > li')
+          .length === expected,
+      countBefore,
+      { timeout: 5000 },
+    );
+    assert.equal(await revisionCount(), countBefore);
+
     await page.getByTestId("review-revision-navigate").first().click();
     const navigated = await page.evaluate(async () => {
       const { collectAllRevisionIds } =
@@ -649,6 +736,9 @@ try {
         "show-markup-single-reviewer-filter",
         "show-markup-view-only",
         "reviewing-pane-lists-revisions",
+        "reviewing-pane-filter-by-category",
+        "reviewing-pane-filter-by-reviewer",
+        "reviewing-pane-filter-empty-then-restore",
         "reviewing-pane-navigates",
         "reviewing-pane-accept-one",
         "reviewing-pane-close",
