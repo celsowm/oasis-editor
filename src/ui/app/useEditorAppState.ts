@@ -80,7 +80,13 @@ export function createEditorAppState(options: {
   });
 
   const commitState = (nextState: EditorState): void => {
-    const next = syncActiveSectionToSelection(nextState);
+    // `state` is a live proxy over the signal. A view-only command that returns
+    // it unchanged (a no-op, e.g. restoring an already-default Show Markup
+    // flag) must never be written back into the signal: the proxy's get trap
+    // would then read from itself and recurse forever on the next property
+    // access. Substitute the last committed real state instead.
+    const source: EditorState = nextState === state ? stateSnapshot : nextState;
+    const next = syncActiveSectionToSelection(source);
     stateSnapshot = next;
     setStateSignal(next);
   };

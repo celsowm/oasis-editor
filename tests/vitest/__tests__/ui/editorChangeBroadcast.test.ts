@@ -70,3 +70,27 @@ describe("editor change broadcasts", () => {
     owner.dispose();
   });
 });
+
+describe("commitState with the live state proxy", () => {
+  it("keeps the state readable when a no-op view command returns the proxy", () => {
+    const owner = createRoot((dispose) => {
+      const app = createEditorAppState({
+        initialState: createEditorStateFromTexts(["seed"]),
+      });
+      return { ...app, dispose };
+    });
+
+    // View-only commands (e.g. restoring an already-default Show Markup flag)
+    // legitimately return `state` unchanged. Storing that live proxy back into
+    // the signal would make its get trap read from itself and recurse forever.
+    owner.commitState(owner.state);
+    expect(owner.state.document).toBeTruthy();
+    expect(owner.getStateSnapshot()).toBeTruthy();
+    expect(owner.getStateSnapshot()).not.toBe(owner.state);
+
+    // A second consecutive no-op stays safe too.
+    owner.commitState(owner.state);
+    expect(owner.state.selection).toBeTruthy();
+    owner.dispose();
+  });
+});
