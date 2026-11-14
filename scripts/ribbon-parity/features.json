@@ -1524,11 +1524,17 @@
     {
       "id": "quickAccess.repeat",
       "wordcraftCommand": "edit.repeat",
-      "status": "missing",
-      "exposure": "missing",
-      "semantics": "missing",
-      "persistence": "unverified",
-      "notes": "No repeat-last-command action or public command exists in the default toolbar, menubar, or built-in command registry. Redo is a distinct history operation and is not treated as equivalent."
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "notes": "Edit > Repeat (F4) and the Quick Access Toolbar repeat the last command bus execution (payload included); pure navigation/chrome/history commands are excluded and the last action is re-canExecute-checked through the gate before replay (read-only refuses). Verified end-to-end (verify-ribbon-quickaccess.mjs: F4 toggles Bold, the QAT Repeat button replays it after the tap-driven refresh). Canvas-typing repeats (no bus command) and payload-sensitive edge cases remain unverified; quickAccess.undoTo remains open.",
+      "oasisCommand": "repeatLastAction",
+      "uiPath": "Edit > Repeat; Quick Access Toolbar (default on); F4",
+      "uiEvidence": {
+        "file": "src/ui/app/quickAccessCatalog.ts",
+        "token": "repeatLastAction"
+      }
     },
     {
       "id": "file.print",

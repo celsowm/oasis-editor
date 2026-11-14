@@ -143,7 +143,7 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `file.versions` | `file.versions` | — | — | missing | missing | missing | unverified |
 | `file.recover` | `file.recover` | — | — | missing | missing | missing | unverified |
 | `quickAccess.undoTo` | `edit.undoTo` | — | — | missing | missing | missing | unverified |
-| `quickAccess.repeat` | `edit.repeat` | — | — | missing | missing | missing | unverified |
+| `quickAccess.repeat` | `edit.repeat` | `repeatLastAction` | Edit > Repeat; Quick Access Toolbar (default on); F4 | menu-only | menu-only | partial | not-applicable |
 | `file.print` | `file.print` | `print` | `file/document` | partial | partial | partial | not-applicable |
 | `file.exportPdf` | `file.exportPdf` | `exportPdf` | `file/document` | partial | partial | partial | partial |
 | `home.undo` | `edit.undo` | `undo` | `home/history` | partial | partial | partial | not-applicable |
@@ -697,7 +697,7 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 130. **file.versions:** Version History: No saved-version history or restore-version workflow is exposed. Stepwise undo is not document version history.
 131. **file.recover:** Recover Unsaved: No unsaved-document recovery browser or recovery command is exposed; IndexedDB persistence is not an end-user recovery workflow.
 132. **quickAccess.undoTo:** Oasis exposes stepwise Undo/Redo only. The Home history group has no undo-history menu, and the public client history API provides undo/redo but no jump-to-entry operation.
-133. **quickAccess.repeat:** No repeat-last-command action or public command exists in the default toolbar, menubar, or built-in command registry. Redo is a distinct history operation and is not treated as equivalent.
+133. **quickAccess.repeat:** Edit > Repeat (F4) and the Quick Access Toolbar repeat the last command bus execution (payload included); pure navigation/chrome/history commands are excluded and the last action is re-canExecute-checked through the gate before replay (read-only refuses). Verified end-to-end (verify-ribbon-quickaccess.mjs: F4 toggles Bold, the QAT Repeat button replays it after the tap-driven refresh). Canvas-typing repeats (no bus command) and payload-sensitive edge cases remain unverified; quickAccess.undoTo remains open.
 134. **file.print:** Oasis exposes Print in File > Document through the host/browser print flow. Page breaks, print settings, cancellation/errors, keyboard access and actual Safari output need workflow verification.
 135. **file.exportPdf:** Oasis exposes PDF export in File > Document. Verified end-to-end: %PDF magic bytes and a non-trivial payload through client.io.export (verify-ribbon-file.mjs). Long documents, page-level features, output integrity and visual comparisons still need workflow verification.
 136. **home.undo:** Oasis places Undo in Home > History and on the Quick Access Toolbar (Delivery 125, default on). Shared history dispatch is wired; transaction scope, disabled state, keyboard parity and multi-step user workflows need verification.

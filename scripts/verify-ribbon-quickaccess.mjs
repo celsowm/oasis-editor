@@ -58,6 +58,9 @@ try {
     assert.ok(await page.getByTestId("editor-qat-saveDocument").isVisible());
     assert.ok(await page.getByTestId("editor-qat-undo").isVisible());
     assert.ok(await page.getByTestId("editor-qat-redo").isVisible());
+    assert.ok(
+      await page.getByTestId("editor-qat-repeatLastAction").isVisible(),
+    );
 
     // 2. Undo is disabled on a clean history; a typing action re-enables it.
     assert.equal(
@@ -80,6 +83,35 @@ try {
       "undo stays executable once history exists",
     );
 
+    // 2b. Repeat: clicking Bold through the ribbon records it; F4 replays it.
+    await page.getByTestId("editor-input").focus();
+    await page.keyboard.type("Repeat target. ");
+    await page.keyboard.press("Control+b");
+    await page.keyboard.type("bold-text");
+    assert.equal(
+      await page.evaluate(
+        () => window.ribbonReference.client.commands.state("bold").isActive,
+      ),
+      true,
+    );
+    await page.keyboard.press("F4");
+    assert.equal(
+      await page.evaluate(
+        () => window.ribbonReference.client.commands.state("bold").isActive,
+      ),
+      false,
+      "F4 repeated Bold through the bus",
+    );
+    await page.getByTestId("editor-qat-repeatLastAction").click();
+    assert.equal(
+      await page.evaluate(
+        () => window.ribbonReference.client.commands.state("bold").isActive,
+      ),
+      true,
+      "the QAT Repeat button replays the last command",
+    );
+    await page.keyboard.press("Control+b"); // reset
+
     // 3. The customize dropdown persists the Find toggle into localStorage.
     await page.getByTestId("editor-qat-customize").click();
     await page.getByTestId("editor-qat-toggle-find").click();
@@ -88,7 +120,7 @@ try {
     assert.ok(await page.getByTestId("editor-qat-find").isVisible());
     assert.equal(
       await page.evaluate(() => localStorage.getItem("oasis-quick-access-v1")),
-      JSON.stringify(["saveDocument", "undo", "redo", "find"]),
+      JSON.stringify(["saveDocument", "undo", "redo", "repeatLastAction", "find"]),
     );
 
     // 4. The customized QAT dispatches through the same bus as the ribbon.
@@ -182,6 +214,7 @@ try {
       width,
       checks: [
         "strip-and-default-items",
+        "repeat-f4-and-qat",
         "undo-disabled-state",
         "customize-persists",
         "qat-dispatches-command",
