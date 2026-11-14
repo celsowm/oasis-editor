@@ -86,7 +86,7 @@
       "tab": "home",
       "group": "editing",
       "status": "partial",
-      "notes": "Find pane command is wired; search/replacement interaction still needs E2E verification."
+      "notes": "Find pane command is wired and Ctrl+F reaches it end-to-end (verify-ribbon-find.mjs: open via keyboard and Ribbon, match counter, Enter/Shift+Enter navigation). Search/replace-all preferences are UI-only and do not touch the document."
     },
     {
       "id": "home.selectAll",
@@ -1974,7 +1974,7 @@
         "file": "src/ui/components/FindReplace/FindReplaceDialog.tsx",
         "token": "fr.findNext"
       },
-      "notes": "The Find dialog advances to the next match through its controller, and Enter invokes the same action. Oasis has no shared find-next command; wraparound, selection retention and parity with WordCraft's additional search options need workflow verification."
+      "notes": "Find dialog Next Match verified end-to-end (verify-ribbon-find.mjs: Enter and the Next Match button advance selection to the following occurrence). Oasis has no shared find-next command; wraparound and full option coverage remain open."
     },
     {
       "id": "home.findPrevious",
@@ -1992,7 +1992,7 @@
         "file": "src/ui/components/FindReplace/FindReplaceDialog.tsx",
         "token": "fr.findPrevious"
       },
-      "notes": "The Find dialog moves to the previous match through its controller, and Shift+Enter invokes the same action. Oasis has no shared find-previous command; wraparound, selection retention and parity with WordCraft's additional search options need workflow verification."
+      "notes": "Find dialog Previous Match verified end-to-end (verify-ribbon-find.mjs: Shift+Enter and the Previous Match button move the selection backwards). Oasis has no shared find-previous command; wraparound and full option coverage remain open."
     },
     {
       "id": "home.replaceOne",
@@ -2010,7 +2010,7 @@
         "file": "src/ui/components/FindReplace/FindReplaceDialog.tsx",
         "token": "fr.replace"
       },
-      "notes": "Replace one applies the replacement term to the active match through the dialog controller. WordCraft's edit.replace accepts a direct search/replacement payload with advanced options; Oasis has no shared command bound to this UI action. Selection, formatting preservation, undo and DOCX behavior need workflow verification."
+      "notes": "Replace-one verified end-to-end for a single occurrence through the dialog controller (verify-ribbon-find.mjs). WordCraft's payload-driven replace with options has no shared Oasis command; selection and DOCX interplay remain open."
     },
     {
       "id": "home.replaceAll",
@@ -2028,7 +2028,7 @@
         "file": "src/ui/components/FindReplace/FindReplaceDialog.tsx",
         "token": "fr.replaceAll"
       },
-      "notes": "Replace all runs through the dialog controller and supports match-case and whole-word filters. The separate Oasis replaceAll command is not dispatched by this UI; WordCraft also supports regex/special codes and a wider option set. A single undo step, formatting, selection and DOCX behavior need workflow verification."
+      "notes": "Replace all verified end-to-end: bulk substitution through the dialog controller, single undo step restores the source, dialog closes on completion and the counter reports zero matches (verify-ribbon-find.mjs; 4 layouts, 3 engines). Regex/special codes and DOCX markup interaction remain open."
     },
     {
       "id": "home.pasteSpecialFormatted",
