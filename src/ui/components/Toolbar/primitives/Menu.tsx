@@ -81,6 +81,10 @@ export function Menu(props: MenuProps): JSX.Element {
               "oasis-editor-tool-button-active": props.active || api.open,
               "oasis-editor-tool-button-ribbon-large":
                 props.ribbonSize === "large",
+              // Large dropdowns without a caption are grids with an empty middle
+              // row; the chevron must pin to its own row instead of auto-placing.
+              "oasis-editor-tool-button-dropdown-icon-only":
+                props.ribbonSize === "large" && !props.label,
             }}
             onClick={(): void => api.toggle()}
             disabled={props.disabled}

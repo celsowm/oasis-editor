@@ -196,7 +196,8 @@
   .oasis-editor-tool-button-ribbon-large {
   /* The trigger button's min-width would set the grid item's min-content and
    * grow the section past its collapsed allocation; keep the collapsed
-   * section exactly at collapsedMinWidth. */
+   * section exactly at collapsedMinWidth. Icon-only affordance: chevron
+   * anchors to the bottom edge with the same 8px rhythm as labelled groups. */
   min-width: 0;
   width: 100%;
   max-width: 100%;
@@ -470,6 +471,13 @@
 }
 
 /* Large actions use the same icon/caption/chevron bands, including split actions. */
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-tool-button-ribbon-large.oasis-editor-tool-button-dropdown-icon-only
+  > .oasis-editor-dropdown-chevron {
+  /* icon / empty caption slot / chevron: pin the chevron to row 3 so it
+   * anchors to the same 8px bottom rhythm as captioned large dropdowns */
+  grid-row: 3;
+}
 .oasis-editor-toolbar-view-ribbon
   .oasis-editor-tool-button-ribbon-large.oasis-editor-tool-button-dropdown:has(
     > .oasis-editor-dropdown-chevron

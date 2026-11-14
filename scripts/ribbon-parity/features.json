@@ -664,7 +664,7 @@
       "tab": "references",
       "group": "tableOfContents",
       "status": "partial",
-      "notes": "TOC creation, fields and export/round-trip remain independently testable."
+      "notes": "TOC creation, TOC field export and reimport verified end-to-end (verify-ribbon-references.mjs: insert, update gating, entry text, TOC field in document.xml, 4 layouts, 3 engines). Page numbers resolve only through the field; Word regenerates on open."
     },
     {
       "id": "references.updateToc",
@@ -674,7 +674,7 @@
       "tab": "references",
       "group": "tableOfContents",
       "status": "partial",
-      "notes": "Eligibility and missing-TOC command states still need refinement."
+      "notes": "Update Table of Contents verified end-to-end (verify-ribbon-references.mjs: disabled without a TOC, enabled after insert, safe no-op re-update). Missing-TOC and eligibility gating work."
     },
     {
       "id": "references.footnote",
@@ -684,7 +684,7 @@
       "tab": "references",
       "group": "footnotes",
       "status": "partial",
-      "notes": "The References action inserts a footnote at the current editing position. Focus restoration, multi-section behavior and DOCX interoperability remain independently unverified."
+      "notes": "The References action inserts a footnote at the current editing position; the caret moves into the note body. Verified end-to-end: reference registry, single-transaction undo/redo, typed note body, footnotes.xml/w:footnoteReference DOCX round-trip (verify-ribbon-references.mjs). Cross-application interoperability and multi-section behavior remain unverified."
     },
     {
       "id": "references.caption",
