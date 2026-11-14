@@ -12,6 +12,7 @@ import {
   preciseFontModeVersion,
 } from "@/text/fonts/preciseFontMode.js";
 import type {
+  EssentialsDialogCapability,
   EssentialsFeatureGate,
   EssentialsFormattingCapability,
   EssentialsHistoryCapability,
@@ -26,6 +27,7 @@ interface CoreFormattingGroupDeps {
   selection: EssentialsSelectionCapability;
   history: EssentialsHistoryCapability;
   formatting: EssentialsFormattingCapability;
+  dialog: EssentialsDialogCapability;
   link: EssentialsLinkCapability;
   command: CommandBuilder;
   valueCommand: ValueCommandBuilder;
@@ -38,6 +40,7 @@ export function buildCoreFormattingCommands({
   selection,
   history,
   formatting,
+  dialog,
   link,
   command,
   valueCommand,
@@ -391,6 +394,24 @@ export function buildCoreFormattingCommands({
       (): { isEnabled: boolean } => ({
         isEnabled:
           gate.isCommandEnabled("rejectAllRevisions") &&
+          formatting.hasRevisionsInDocument(),
+      }),
+    ),
+    requestAcceptAllRevisions: command(
+      "requestAcceptAllRevisions",
+      (): boolean => (dialog.requestAcceptAllRevisions(), true),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("requestAcceptAllRevisions") &&
+          formatting.hasRevisionsInDocument(),
+      }),
+    ),
+    requestRejectAllRevisions: command(
+      "requestRejectAllRevisions",
+      (): boolean => (dialog.requestRejectAllRevisions(), true),
+      (): { isEnabled: boolean } => ({
+        isEnabled:
+          gate.isCommandEnabled("requestRejectAllRevisions") &&
           formatting.hasRevisionsInDocument(),
       }),
     ),

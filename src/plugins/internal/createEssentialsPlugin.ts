@@ -52,6 +52,7 @@ export function createEssentialsPlugin(
         selection: deps.selection,
         history: deps.history,
         formatting: deps.formatting,
+        dialog: deps.dialog,
         link: deps.link,
         command,
         valueCommand,

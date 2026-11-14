@@ -132,6 +132,8 @@ export interface OasisCommandPayloads {
   rejectRevisions: undefined;
   acceptAllRevisions: undefined;
   rejectAllRevisions: undefined;
+  requestAcceptAllRevisions: undefined;
+  requestRejectAllRevisions: undefined;
   nextRevision: undefined;
   previousRevision: undefined;
   nextComment: undefined;

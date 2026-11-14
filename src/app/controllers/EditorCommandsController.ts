@@ -462,20 +462,26 @@ function createEditorCommandsControllerImpl(
     focusInput();
   };
 
+  // Revision decisions are document edits: they belong on the undo stack so a
+  // mis-clicked Accept All / Reject All can be reverted with one undo.
   const applyAcceptRevisionsCommand = (): void => {
-    execState(acceptRevisionsInSelection(state));
+    execTransactional((current): EditorState =>
+      acceptRevisionsInSelection(current),
+    );
   };
 
   const applyRejectRevisionsCommand = (): void => {
-    execState(rejectRevisionsInSelection(state));
+    execTransactional((current): EditorState =>
+      rejectRevisionsInSelection(current),
+    );
   };
 
   const applyAcceptAllRevisionsCommand = (): void => {
-    execState(acceptAllRevisions(state));
+    execTransactional((current): EditorState => acceptAllRevisions(current));
   };
 
   const applyRejectAllRevisionsCommand = (): void => {
-    execState(rejectAllRevisions(state));
+    execTransactional((current): EditorState => rejectAllRevisions(current));
   };
 
   const applyLinkCommand = (href: string | null): void => {

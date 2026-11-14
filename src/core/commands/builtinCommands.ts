@@ -56,6 +56,8 @@ export const OASIS_BUILTIN_COMMANDS = [
   "rejectRevisions",
   "acceptAllRevisions",
   "rejectAllRevisions",
+  "requestAcceptAllRevisions",
+  "requestRejectAllRevisions",
   "nextRevision",
   "previousRevision",
   "nextComment",

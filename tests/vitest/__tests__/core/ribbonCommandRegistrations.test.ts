@@ -49,18 +49,25 @@ function commands(gateEnabled: () => boolean, hasToc: () => boolean, hasRevision
     formatPainterMode: () => null,
     canCaptureFormatPainter: () => true,
   } as unknown as EssentialsFormattingCapability;
+  const dialog = {
+    openFontDialog: vi.fn(),
+    openParagraphDialog: vi.fn(),
+    requestAcceptAllRevisions: vi.fn(),
+    requestRejectAllRevisions: vi.fn(),
+  };
   const result = buildCoreFormattingCommands({
     gate,
     style: { state: () => ({}) } as EssentialsStyleCapability,
     selection: { isCollapsed: () => true } as EssentialsSelectionCapability,
     history: { canUndo: () => false, canRedo: () => false } as EssentialsHistoryCapability,
     formatting,
+    dialog,
     link: { canPrompt: () => false } as EssentialsLinkCapability,
     command: createCommandBuilder(gate.isCommandEnabled),
     actionCommand: createActionCommandBuilder(gate.isCommandEnabled),
     valueCommand: createValueCommandBuilder(gate.isCommandEnabled),
   });
-  return { result, formatting };
+  return { result, formatting, dialog };
 }
 
 describe("Essentials Ribbon command registrations", () => {
@@ -83,6 +90,28 @@ describe("Essentials Ribbon command registrations", () => {
     expect(result.newComment?.refresh?.().isEnabled).toBe(false);
     editing = false;
     expect(result.replyComment?.refresh?.().isEnabled).toBe(false);
+  });
+
+  it("gates the bulk Accept All / Reject All requests by document revisions", () => {
+    const { result, formatting, dialog } = commands(
+      () => true,
+      () => true,
+      () => true,
+    );
+    let hasDocumentRevisions = false;
+    formatting.hasRevisionsInDocument = () => hasDocumentRevisions;
+
+    expect(result.requestAcceptAllRevisions?.refresh?.().isEnabled).toBe(false);
+    expect(result.requestRejectAllRevisions?.refresh?.().isEnabled).toBe(false);
+
+    hasDocumentRevisions = true;
+    expect(result.requestAcceptAllRevisions?.refresh?.().isEnabled).toBe(true);
+    expect(result.requestRejectAllRevisions?.refresh?.().isEnabled).toBe(true);
+
+    expect(result.requestAcceptAllRevisions?.execute()).toBe(true);
+    expect(result.requestRejectAllRevisions?.execute()).toBe(true);
+    expect(dialog.requestAcceptAllRevisions).toHaveBeenCalledOnce();
+    expect(dialog.requestRejectAllRevisions).toHaveBeenCalledOnce();
   });
 
   it("exposes Edit Comment only with a selected editable comment", () => {
