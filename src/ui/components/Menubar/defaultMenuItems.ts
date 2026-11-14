@@ -73,6 +73,14 @@ export const defaultMenuItems: MenuItem[] = [
     icon: "redo-2",
   },
   {
+    id: "edit_repeat",
+    path: "Edit/Repeat",
+    labelKey: "quickAccess.repeat",
+    shortcut: "F4",
+    command: "repeatLastAction",
+    icon: "repeat",
+  },
+  {
     id: "edit_cut",
     path: "Edit/Cut",
     labelKey: "menu.edit.cut",

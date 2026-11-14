@@ -80,6 +80,7 @@ export const en = {
   "review.confirmDelete": "Confirm deletion",
   "commandSearch.title": "Command search",
   "quickAccess.title": "Quick Access Toolbar",
+  "quickAccess.repeat": "Repeat",
   "quickAccess.customize": "Customize Quick Access Toolbar",
   "toolbar.tellMe": "Tell Me",
   "commandSearch.placeholder": "Type a command or search…",

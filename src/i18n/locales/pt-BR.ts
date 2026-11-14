@@ -80,6 +80,7 @@ export const ptBR = {
   "review.confirmDelete": "Confirmar exclusão",
   "commandSearch.title": "Pesquisa de comandos",
   "quickAccess.title": "Barra de Acesso Rápido",
+  "quickAccess.repeat": "Repetir",
   "quickAccess.customize": "Personalizar Barra de Acesso Rápido",
   "toolbar.tellMe": "Diga-me",
   "commandSearch.placeholder": "Digite um comando ou pesquise…",

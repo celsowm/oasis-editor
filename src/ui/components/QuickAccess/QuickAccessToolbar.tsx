@@ -1,4 +1,4 @@
-import { For, Show, type Accessor, type JSX } from "solid-js";
+import { For, Show, createMemo, type Accessor, type JSX } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Button } from "@/ui/components/Toolbar/primitives/Button.js";
 import { Menu } from "@/ui/components/Toolbar/primitives/Menu.js";
@@ -10,8 +10,10 @@ export interface QuickAccessToolbarProps {
   visible: Accessor<string[]>;
   onToggle: (command: string) => void;
   onExecute: (command: string) => void;
-  /** Reactive enabled check, re-evaluated on every editor state change. */
+  /** Enabled check; re-evaluated on every bus tap and editor commit. */
   canExecute: (command: string) => boolean;
+  /** Bumps after every command bus execution. */
+  tick: () => number;
 }
 
 /**
@@ -23,6 +25,16 @@ export function QuickAccessToolbar(
   props: QuickAccessToolbarProps,
 ): JSX.Element {
   const t = useI18n();
+
+  // Disabled state re-reads the bus after every tap or editor commit.
+  const enabled = createMemo((): Record<string, boolean> => {
+    props.tick();
+    const map: Record<string, boolean> = {};
+    for (const entry of props.catalog) {
+      map[entry.command] = props.canExecute(entry.command);
+    }
+    return map;
+  });
 
   const visibleEntries = (): QuickAccessCatalogItem[] =>
     props.catalog.filter((entry): boolean =>
@@ -43,7 +55,7 @@ export function QuickAccessToolbar(
             tooltip={t(entry.labelKey)}
             aria-label={t(entry.labelKey)}
             data-testid={`editor-qat-${entry.command}`}
-            disabled={!props.canExecute(entry.command)}
+            disabled={!enabled()[entry.command]}
             onClick={(): void => props.onExecute(entry.command)}
           />
         )}

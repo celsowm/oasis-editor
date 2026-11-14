@@ -17,6 +17,8 @@ type RuntimeCommandHost = ReturnType<typeof createRuntimeCommandHost>;
  * root only feeds the already-built controllers in and consumes the host facade.
  */
 export interface EditorRuntimeBootstrapContext {
+  /** Optional bus tap forwarded to the runtime command host. */
+  onExecuted?: (command: string, payload?: unknown) => void;
   essentials: EssentialsPluginDeps;
   externalPlugins: RuntimePluginsConfig["externalPlugins"];
   t: RuntimePluginsConfig["t"];
@@ -64,6 +66,7 @@ export function useEditorRuntimeBootstrap(
     runtimePlugins,
     focusEditor: ctx.focusEditor,
     logger: ctx.logger,
+    onExecuted: ctx.onExecuted,
     onReady: ctx.onReady,
     onSettled: ctx.onSettled,
     onError: ctx.onError,

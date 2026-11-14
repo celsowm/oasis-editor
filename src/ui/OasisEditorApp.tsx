@@ -297,10 +297,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   } = interaction;
 
   const [commandSearchOpen, setCommandSearchOpen] = createSignal(false);
+  const [qatTick, setQatTick] = createSignal(0);
   const revisionsPanel = createRevisionsPanel();
   const quickAccess = createQuickAccess(QUICK_ACCESS_CATALOG);
   const canExecuteCommand = (command: string): boolean => {
-    void state;
+    // Track the live state so the strip's disabled affordances recompute on
+    // every editor commit (a plain `void state` tracks nothing).
+    void state.selection.anchor.offset;
     try {
       return runtimeEditor().commands.canExecute(command) !== false;
     } catch {
@@ -323,6 +326,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   });
 
   const commandRuntime = createEditorCommandRuntime({
+    onExecutedTap: (): void => {
+      setQatTick((tick): number => tick + 1);
+    },
     commandSearch: {
       isOpen: commandSearchOpen,
       setIsOpen: (open: boolean): void => {
@@ -736,6 +742,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
             onToggle={quickAccess.toggle}
             onExecute={executeCommand}
             canExecute={canExecuteCommand}
+            tick={qatTick}
             onOpenCommandSearch={(): void => {
               setCommandSearchOpen(true);
             }}

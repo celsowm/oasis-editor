@@ -12,6 +12,8 @@ import type { EditorLogger } from "@/utils/logger.js";
 
 interface CreateRuntimeCommandHostOptions {
   initialDocument: EditorDocument;
+  /** Optional tap: called after each command executes through the bus. */
+  onExecuted?: (command: string, payload?: unknown) => void;
   runtimePlugins: OasisPlugin[];
   focusEditor: () => void;
   logger: EditorLogger;
@@ -85,6 +87,9 @@ export function createRuntimeCommandHost(
         doc: options.initialDocument,
         plugins: options.runtimePlugins,
       });
+      if (options.onExecuted) {
+        initializedRuntimeEditor.commands.onExecuted = options.onExecuted;
+      }
       if (disposed) {
         await initializedRuntimeEditor.destroy();
         return;

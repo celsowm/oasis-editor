@@ -11,6 +11,8 @@ export interface ChromeStripProps {
   onToggle: (command: string) => void;
   onExecute: (command: string) => void;
   canExecute: (command: string) => boolean;
+  /** Bumps on every command bus execution; forces the strip to re-read state. */
+  tick: () => number;
   onOpenCommandSearch: () => void;
 }
 
@@ -29,6 +31,7 @@ export function ChromeStrip(props: ChromeStripProps): JSX.Element {
         onToggle={props.onToggle}
         onExecute={props.onExecute}
         canExecute={props.canExecute}
+        tick={props.tick}
       />
       <Text as="span" class="oasis-chrome-strip-spacer" aria-hidden="true" />
       <Button
