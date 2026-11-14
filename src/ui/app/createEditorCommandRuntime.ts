@@ -10,6 +10,8 @@ import { createNewDocumentAction } from "./newDocumentAction.js";
 import { createEditorKeyboardBinding } from "./createEditorKeyboardBinding.js";
 import { connectEditorClientHost } from "./connectEditorClientHost.js";
 import { useEditorRuntimeBootstrap } from "./useEditorRuntimeBootstrap.js";
+import { createRepeatTracking } from "./createRepeatTracking.js";
+import type { Editor } from "@/core/Editor.js";
 import type { createEditorDocumentRuntime } from "./createEditorDocumentRuntime.js";
 import type { createEditorInteractionRuntime } from "./createEditorInteractionRuntime.js";
 import type { EditorCommentComposer } from "./createEditorCommentComposer.js";
@@ -92,6 +94,8 @@ export interface EditorCommandRuntimeDeps {
     setIsOpen: (open: boolean) => void;
   };
   setCommandSearchOpen: (open: boolean) => void;
+  /** Extra tap invoked after every command bus execution (QAT refresh). */
+  onExecutedTap?: () => void;
   getUiState: () => OasisEditorUiState;
   updateUiState: (patch: OasisEditorUiState) => OasisEditorUiState;
   zoom: {
@@ -140,6 +144,27 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
       setFontDialog: deps.setFontDialog,
       setParagraphDialog: deps.setParagraphDialog,
     });
+
+  // Repeat-last-action tracking is created before plugin initialization so the
+  // essentials capability can register the command; the executor binds to the
+  // runtime editor once it exists (repeats only happen on user action).
+  let runtimeEditorFn: (() => Editor) | undefined;
+  const repeatTracking = createRepeatTracking(
+    (command, payload): unknown => {
+      if (!runtimeEditorFn) {
+        throw new Error("repeat tracking used before ready");
+      }
+      return runtimeEditorFn().commands.execute(command, payload);
+    },
+    (command, payload): boolean => {
+      if (!runtimeEditorFn) return false;
+      return runtimeEditorFn().commands.canExecute(command, payload);
+    },
+  );
+  const repeatLastAction = (): void => {
+    repeatTracking.execute();
+  };
+  const canRepeatLastAction = (): boolean => repeatTracking.canExecute();
 
   const {
     runtimeReady,
@@ -198,6 +223,8 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
       },
       openSymbolDialog: (): void => deps.setSymbolDialog({ isOpen: true }),
       openCommandSearch: (): void => deps.setCommandSearchOpen(true),
+      repeatLastAction,
+      canRepeatLastAction,
       openTablePropertiesDialog: (activeTab?: "table" | "cell"): void => {
         const initial = readTableProperties(deps.state, activeTab ?? "table");
         if (!initial) return;
@@ -256,7 +283,12 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
     initialDocument: deps.getStateSnapshot().document,
     focusEditor: deps.focusInput,
     logger: deps.logger,
+    onExecuted: (command: string, payload?: unknown): void => {
+      repeatTracking.record(command, payload);
+      deps.onExecutedTap?.();
+    },
     onReady: (editor): void => {
+      runtimeEditorFn = (): Editor => editor;
       runtimeClient.resolveReady(editor);
       deps.runtimeOptions().onReady?.(runtimeClient);
     },

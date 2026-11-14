@@ -8,6 +8,12 @@ import type {
 export class CommandRegistry implements OasisCommandRegistry {
   private commands = new Map<string, OasisCommand>();
   private contextProvider: (() => OasisCommandContext) | undefined;
+  /**
+   * Policy-free notification hook invoked after a command executes
+   * successfully. Repeat-last-action tracking (Word's F4) plugs in here
+   * without the registry knowing anything about repeat semantics.
+   */
+  onExecuted?: (name: string, payload?: unknown) => void;
 
   setContextProvider(provider: () => OasisCommandContext): void {
     this.contextProvider = provider;
@@ -43,7 +49,12 @@ export class CommandRegistry implements OasisCommandRegistry {
     if (!this.canExecute(name, payload)) {
       throw new Error(`Command disabled: ${name}`);
     }
-    return command.execute(payload, this.contextProvider?.()) as TResult;
+    const result = command.execute(
+      payload,
+      this.contextProvider?.(),
+    ) as TResult;
+    this.onExecuted?.(name, payload);
+    return result;
   }
 
   canExecute(name: string, payload?: unknown): boolean {

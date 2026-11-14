@@ -10,7 +10,7 @@ export interface QuickAccessCatalogEntry {
 const STORAGE_KEY = "oasis-quick-access-v1";
 
 /** The default strip: the three actions every editor needs in reach. */
-const DEFAULT_COMMANDS = ["saveDocument", "undo", "redo"];
+const DEFAULT_COMMANDS = ["saveDocument", "undo", "redo", "repeatLastAction"];
 
 function readStored(): string[] {
   try {
@@ -46,10 +46,17 @@ export function createQuickAccess(
   toggle: (command: string) => void;
 } {
   const known = new Set(catalog.map((entry) => entry.command));
-  const initial = readStored().filter((command): boolean => known.has(command));
-  const [visible, setVisible] = createSignal<string[]>(
-    initial.length > 0 ? initial : [...DEFAULT_COMMANDS],
-  );
+  const stored = readStored().filter((command): boolean => known.has(command));
+  // Additive defaults: newly shipped defaults surface for existing users too;
+  // the user can then opt back out via the customize menu.
+  const initial =
+    stored.length > 0
+      ? [...stored, ...DEFAULT_COMMANDS.filter(
+          (command): boolean =>
+            known.has(command) && !stored.includes(command),
+        )]
+      : [...DEFAULT_COMMANDS];
+  const [visible, setVisible] = createSignal<string[]>(initial);
   createEffect((): void => {
     writeStored(visible());
   });

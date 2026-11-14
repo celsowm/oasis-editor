@@ -231,6 +231,16 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     },
   },
   {
+    id: "repeatLastAction",
+    command: "repeatLastAction",
+    key: "F4",
+    ctrlOrMeta: false,
+    execute: (deps): true => {
+      deps.executeCommand?.("repeatLastAction");
+      return true;
+    },
+  },
+  {
     id: "find",
     command: "find",
     key: "f",

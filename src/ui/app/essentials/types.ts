@@ -44,6 +44,8 @@ export interface CreateEditorEssentialsPluginOptions {
   openSymbolDialog: () => void;
   openEquationDialog: () => void;
   openCommandSearch: () => void;
+  repeatLastAction: () => void;
+  canRepeatLastAction: () => boolean;
   /** Opens the Table Properties dialog for the active table/cell. */
   openTablePropertiesDialog: (activeTab?: "table" | "cell") => void;
   /** Opens the Font dialog. */

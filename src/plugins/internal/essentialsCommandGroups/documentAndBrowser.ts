@@ -219,6 +219,9 @@ export function buildDocumentAndBrowserCommands({
     openCommandSearch: actionCommand("openCommandSearch", (): void =>
       document.openCommandSearch(),
     ),
+    repeatLastAction: actionCommand("repeatLastAction", (): void =>
+      document.repeatLastAction(),
+    ),
     openEquationDialog: actionCommand("openEquationDialog", (): void =>
       document.openEquationDialog(),
     ),

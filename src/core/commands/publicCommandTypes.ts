@@ -132,6 +132,7 @@ export interface OasisCommandPayloads {
   toggleOutlinePanel: undefined;
   toggleRevisionsPanel: undefined;
   openCommandSearch: undefined;
+  repeatLastAction: undefined;
   acceptRevisions: undefined;
   rejectRevisions: undefined;
   setReviewDisplayMode: "all" | "final" | "original";

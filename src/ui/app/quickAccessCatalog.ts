@@ -23,6 +23,12 @@ export const QUICK_ACCESS_CATALOG: readonly QuickAccessCatalogItem[] = [
     shortcut: "Ctrl+Y",
   },
   {
+    command: "repeatLastAction",
+    icon: "repeat",
+    labelKey: "quickAccess.repeat",
+    shortcut: "F4",
+  },
+  {
     command: "find",
     icon: "search",
     labelKey: "find.title",

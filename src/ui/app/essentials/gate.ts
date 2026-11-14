@@ -139,6 +139,9 @@ export function buildEssentialsGate(
     isCommandEnabled: (commandName: OasisBuiltinCommand): boolean => {
       if (commandName === "openSymbolDialog") return true;
       if (commandName === "openEquationDialog") return true;
+      if (commandName === "repeatLastAction") {
+        return !options.isReadOnly() && options.canRepeatLastAction();
+      }
       if (
         RUN_FORMATTING_COMMANDS.has(commandName) &&
         isInlineObjectSelected(options)
