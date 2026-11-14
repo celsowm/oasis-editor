@@ -782,84 +782,91 @@
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1125,
+      "line": 1077,
+      "role": "iconName",
+      "name": "list",
+      "origin": "lucide"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1134,
       "role": "iconName",
       "name": "formatPainter",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1152,
+      "line": 1161,
       "role": "iconName",
       "name": "tableDistributeRows",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1161,
+      "line": 1170,
       "role": "iconName",
       "name": "tableDistributeColumns",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1170,
+      "line": 1179,
       "role": "iconName",
       "name": "tableAutoFit",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1182,
+      "line": 1191,
       "role": "iconName",
       "name": "tableToText",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1194,
+      "line": 1203,
       "role": "iconName",
       "name": "textToTable",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1206,
+      "line": 1215,
       "role": "iconName",
       "name": "splitTable",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1218,
+      "line": 1227,
       "role": "iconName",
       "name": "sortAscending",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1227,
+      "line": 1236,
       "role": "iconName",
       "name": "sortDescending",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1239,
+      "line": 1248,
       "role": "iconName",
       "name": "deleteTable",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1251,
+      "line": 1260,
       "role": "iconName",
       "name": "repeatHeaderRow",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1265,
+      "line": 1274,
       "role": "iconName",
       "name": "tableVerticalAlign",
       "origin": "oasis"
@@ -1284,7 +1291,7 @@
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1083,
+      "line": 1092,
       "role": "iconName",
       "expression": "spec.icon"
     },
