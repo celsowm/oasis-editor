@@ -87,6 +87,10 @@ const allowlistedFiles = new Map([
     "src/ui/components/CommentHighlightOverlay.tsx",
     "pending overlay migration",
   ],
+  [
+    "src/ui/components/RevisionMarkupOverlay.tsx",
+    "low-level overlay decorations",
+  ],
   ["src/ui/components/CanvasEditorSurface.tsx", "canvas host"],
 ]);
 

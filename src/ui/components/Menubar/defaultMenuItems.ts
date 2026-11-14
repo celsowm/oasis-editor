@@ -163,6 +163,13 @@ export const defaultMenuItems: MenuItem[] = [
     icon: "chevron-down",
   },
   {
+    id: "review_revision_markup",
+    path: "Review/Show Markup",
+    labelKey: "toolbar.revisionMarkup",
+    command: "toggleRevisionMarkup",
+    icon: "highlighter",
+  },
+  {
     id: "review_accept_all_revisions",
     path: "Review/Accept All Changes",
     labelKey: "toolbar.acceptAll",

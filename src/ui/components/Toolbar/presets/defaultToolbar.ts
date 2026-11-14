@@ -892,6 +892,15 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     ribbonSize: "large",
   });
   items.push({
+    type: "toggle",
+    id: "editor-toolbar-revision-markup",
+    testId: "editor-toolbar-revision-markup",
+    iconName: "highlighter",
+    labelKey: "toolbar.revisionMarkup",
+    tooltipKey: "toolbar.revisionMarkup",
+    command: "toggleRevisionMarkup",
+  });
+  items.push({
     type: "button",
     id: "editor-toolbar-accept-revisions",
     testId: "editor-toolbar-accept-revisions",

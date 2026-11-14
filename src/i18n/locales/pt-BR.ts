@@ -99,6 +99,7 @@ export const ptBR = {
   "toolbar.trackChanges": "Controlar Alterações",
   "toolbar.accept": "Aceitar",
   "toolbar.reject": "Rejeitar",
+  "toolbar.revisionMarkup": "Mostrar marcações",
   "toolbar.acceptAll": "Aceitar tudo",
   "toolbar.rejectAll": "Rejeitar tudo",
   "toolbar.bold": "Negrito",

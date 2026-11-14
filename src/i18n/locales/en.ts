@@ -99,6 +99,7 @@ export const en = {
   "toolbar.trackChanges": "Track Changes",
   "toolbar.accept": "Accept",
   "toolbar.reject": "Reject",
+  "toolbar.revisionMarkup": "Show Markup",
   "toolbar.acceptAll": "Accept All",
   "toolbar.rejectAll": "Reject All",
   "toolbar.bold": "Bold",
