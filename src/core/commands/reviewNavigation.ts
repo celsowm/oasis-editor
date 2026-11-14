@@ -15,6 +15,7 @@ import {
   positionToParagraphOffset,
 } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
+import { collectCellRevisions } from "@/core/commands/cellRevisions.js";
 
 interface ReviewRange {
   id: string;
@@ -106,7 +107,32 @@ export function collectNavigableRevisions(state: EditorState): ReviewRange[] {
   const paragraphs = getParagraphs(state);
   const ranges: ReviewRange[] = [];
   const seen = new Set<string>();
+  // A cell-level revision has no run to carry its id. Anchor it to the first
+  // paragraph inside the cell so Next/Previous Change and the Reviewing Pane
+  // (whose per-row Accept first focuses the id) can reach it. Inserting during
+  // the paragraph pass keeps the ranges in document order for `findNextRange`.
+  const cellByFirstParagraph = new Map<string, string>();
+  for (const cell of collectCellRevisions(state)) {
+    const first = cell.paragraphIds[0];
+    if (first && !cellByFirstParagraph.has(first)) {
+      cellByFirstParagraph.set(first, cell.id);
+    }
+  }
   paragraphs.forEach((paragraph, index) => {
+    const cellId = cellByFirstParagraph.get(paragraph.id);
+    if (cellId && !seen.has(cellId)) {
+      seen.add(cellId);
+      ranges.push({
+        id: cellId,
+        startIndex: index,
+        startOffset: 0,
+        endIndex: index,
+        endOffset: paragraph.runs.reduce(
+          (total, run): number => total + run.text.length,
+          0,
+        ),
+      });
+    }
     let offset = 0;
     for (const run of paragraph.runs) {
       const ids = [run.revision?.id, run.styles?.propertyRevision?.id].filter(

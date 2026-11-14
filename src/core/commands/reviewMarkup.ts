@@ -5,6 +5,7 @@ import type {
 } from "@/core/model/types/nodes.js";
 import { getDocumentParagraphs } from "@/core/model.js";
 import { getDocumentSections } from "@/core/model.js";
+import { collectCellRevisions } from "@/core/commands/cellRevisions.js";
 
 /** The display sections Word's Show Markup menu filters. */
 export type MarkupSection =
@@ -189,8 +190,9 @@ function paragraphHasVisibleRevision(
 
 /**
  * Paragraph ids that should carry a Simple Markup change bar: every paragraph
- * in the raw document with at least one visible insert/delete text revision or
- * run-level formatting (property) revision. Show Markup category and reviewer
+ * in the raw document with at least one visible insert/delete text revision,
+ * run-level formatting (property) revision, or a revised table cell (the bar
+ * covers each paragraph inside that cell). Show Markup category and reviewer
  * filters are applied through `isRevisionMarkupShown`, so hiding insertions,
  * deletions, formatting or a reviewer removes the matching bar. Endnotes have
  * no editable zone and are not walked.
@@ -201,6 +203,10 @@ export function collectChangeBarParagraphIds(state: EditorState): Set<string> {
     if (paragraphHasVisibleRevision(paragraph, state)) {
       ids.add(paragraph.id);
     }
+  }
+  for (const cell of collectCellRevisions(state)) {
+    if (!isRevisionMarkupShown(state, cell.type, cell.author)) continue;
+    for (const id of cell.paragraphIds) ids.add(id);
   }
   return ids;
 }
