@@ -29,24 +29,36 @@ function revisionFixture() {
     { text: "removed" },
   ]);
   a.runs[1]!.revision = {
-    id: "insert-1", type: "insert", author: "Editor", date: 100,
+    id: "insert-1",
+    type: "insert",
+    author: "Editor",
+    date: 100,
   };
   a.runs[3]!.revision = {
-    id: "delete-1", type: "delete", author: "Editor", date: 200,
+    id: "delete-1",
+    type: "delete",
+    author: "Editor",
+    date: 200,
   };
   const b = createEditorParagraphFromRuns([
     { text: "then " },
     { text: "another" },
   ]);
   b.runs[1]!.revision = {
-    id: "insert-2", type: "insert", author: "Editor", date: 300,
+    id: "insert-2",
+    type: "insert",
+    author: "Editor",
+    date: 300,
   };
   const state = createEditorStateFromDocument(createEditorDocument([a, b]));
   return { state, a, b };
 }
 
 function select(
-  state: EditorState, paragraphId: string, start: number, end = start,
+  state: EditorState,
+  paragraphId: string,
+  start: number,
+  end = start,
 ): EditorState {
   const paragraph = getParagraphs(state).find((p) => p.id === paragraphId)!;
   return {
@@ -60,7 +72,9 @@ function select(
 
 function selectionOffset(state: EditorState, boundary: "anchor" | "focus") {
   const position = state.selection[boundary];
-  const paragraph = getParagraphs(state).find((p) => p.id === position.paragraphId)!;
+  const paragraph = getParagraphs(state).find(
+    (p) => p.id === position.paragraphId,
+  )!;
   return positionToParagraphOffset(paragraph, position);
 }
 
@@ -72,19 +86,29 @@ function commentsFixture() {
     order: ["first", "reply", "grandchild", "second"],
     items: {
       first: {
-        id: "first", author: "Alice", text: "Review first",
+        id: "first",
+        author: "Alice",
+        text: "Review first",
         docxIdHint: 17,
         start: { paragraphId: p1.id, offset: 0 },
         end: { paragraphId: p1.id, offset: 5 },
       },
       reply: {
-        id: "reply", parentId: "first", author: "Bob", text: "Reply",
+        id: "reply",
+        parentId: "first",
+        author: "Bob",
+        text: "Reply",
       },
       grandchild: {
-        id: "grandchild", parentId: "reply", author: "Alice", text: "Nested",
+        id: "grandchild",
+        parentId: "reply",
+        author: "Alice",
+        text: "Nested",
       },
       second: {
-        id: "second", author: "Carol", text: "Review second",
+        id: "second",
+        author: "Carol",
+        text: "Review second",
         resolved: true,
         start: { paragraphId: p2.id, offset: 0 },
         end: { paragraphId: p2.id, offset: 6 },
@@ -98,7 +122,9 @@ describe("Review change navigation", () => {
   it("navigates in text order, skips the current selection and wraps", () => {
     const { state, a, b } = revisionFixture();
     expect(collectNavigableRevisions(state).map((r) => r.id)).toEqual([
-      "insert-1", "delete-1", "insert-2",
+      "insert-1",
+      "delete-1",
+      "insert-2",
     ]);
     const start = select(state, a.id, 0);
     const first = navigateRevision(start, "next");
@@ -126,6 +152,27 @@ describe("Review change navigation", () => {
     expect(collectNavigableRevisions(state)).toEqual([]);
     expect(navigateRevision(state, "next")).toBe(state);
     expect(navigateRevision(state, "previous")).toBe(state);
+  });
+
+  it("lists a run-level formatting (property) revision as navigable", () => {
+    const p = createEditorParagraphFromRuns([{ text: "formatted" }]);
+    p.runs[0]!.styles = {
+      bold: true,
+      propertyRevision: {
+        id: "fmt-1",
+        type: "property",
+        author: "Editor",
+        date: 100,
+        previous: {},
+      },
+    } as (typeof p.runs)[0]["styles"];
+    const state = createEditorStateFromDocument(createEditorDocument([p]));
+    const ranges = collectNavigableRevisions(state);
+    expect(ranges.map((r) => r.id)).toEqual(["fmt-1"]);
+    expect(ranges[0].endOffset).toBe("formatted".length);
+    const moved = navigateRevision(state, "next");
+    expect(moved).not.toBe(state);
+    expect(moved.document).toBe(state.document);
   });
 });
 
@@ -164,7 +211,9 @@ describe("Review comment navigation and management", () => {
     const selected = select(state, p1.id, 0, 5);
     const deleted = deleteSelectedComment(selected);
     expect(deleted.document.comments?.order).toEqual(["second"]);
-    expect(Object.keys(deleted.document.comments?.items ?? {})).toEqual(["second"]);
+    expect(Object.keys(deleted.document.comments?.items ?? {})).toEqual([
+      "second",
+    ]);
     expect(state.document.comments?.order).toHaveLength(4);
     expect(deleteSelectedComment(deleted)).toBe(deleted);
   });

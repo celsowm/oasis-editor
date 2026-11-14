@@ -5,6 +5,7 @@ import type {
   EditorTableRowNode,
   EditorParagraphNode,
   EditorTextRun,
+  EditorTextStyle,
 } from "@/core/model.js";
 import {
   getDocumentSections,
@@ -25,6 +26,21 @@ export function toggleRevisionMarkup(state: EditorState): EditorState {
     ...state,
     showRevisionMarkup: !(state.showRevisionMarkup ?? true),
   };
+}
+
+/**
+ * Drop a run-level `w:rPrChange` marker from a text style. Accepting a
+ * formatting change keeps the new formatting; rejecting it restores the
+ * `previous` style. Mirrors `resolveTextStyle` in trackedRevisions.ts so the
+ * selection-scoped and whole-document accept/reject paths agree.
+ */
+function stripRunPropertyRevision(
+  style: EditorTextStyle | undefined,
+): EditorTextStyle | undefined {
+  if (!style) return undefined;
+  const { propertyRevision: _drop, ...rest } = style;
+  void _drop;
+  return Object.keys(rest).length > 0 ? rest : undefined;
 }
 
 export function setReviewDisplayMode(
@@ -245,6 +261,9 @@ export function acceptRevision(
           delete nextRun.revision;
           return nextRun;
         }
+        if (run.styles?.propertyRevision?.id === revisionId) {
+          return { ...run, styles: stripRunPropertyRevision(run.styles) };
+        }
         return run;
       });
 
@@ -285,6 +304,13 @@ export function rejectRevision(
           const nextRun = { ...run };
           delete nextRun.revision;
           return nextRun;
+        }
+        const property = run.styles?.propertyRevision;
+        if (property?.id === revisionId) {
+          return {
+            ...run,
+            styles: stripRunPropertyRevision(property.previous),
+          };
         }
         return run;
       });
@@ -382,6 +408,9 @@ export function collectSelectedRevisionIds(state: EditorState): Set<string> {
       if (run.revision?.id) {
         revisionIds.add(run.revision.id);
       }
+      if (run.styles?.propertyRevision?.id) {
+        revisionIds.add(run.styles.propertyRevision.id);
+      }
     }
   }
 
@@ -444,6 +473,8 @@ export function collectAllRevisionIds(state: EditorState): Set<string> {
       if (run.revision?.id) revisionIds.add(run.revision.id);
       if (run.revisionRangeMarker?.id)
         revisionIds.add(run.revisionRangeMarker.id);
+      if (run.styles?.propertyRevision?.id)
+        revisionIds.add(run.styles.propertyRevision.id);
     }
   };
 

@@ -31,13 +31,15 @@ interface RevisionEntry {
   snippet: string;
 }
 
-/** The revision's own text (all runs bearing its revision id). */
+/** The revision's own text (all runs bearing its text or formatting id). */
 function revisionSnippet(state: EditorState, id: string): string {
   const paragraphs = getParagraphs(state);
   const parts: string[] = [];
   for (const paragraph of paragraphs) {
     for (const run of paragraph.runs) {
-      if (run.revision?.id === id) parts.push(run.text);
+      if (run.revision?.id === id || run.styles?.propertyRevision?.id === id) {
+        parts.push(run.text);
+      }
     }
   }
   const text = parts.join("").trim();
@@ -60,15 +62,28 @@ export function ReviewingPane(props: ReviewingPaneProps): JSX.Element {
     for (const paragraph of paragraphs) {
       for (const run of paragraph.runs) {
         const revision = run.revision;
-        if (!revision) continue;
-        if (!authorById.has(revision.id)) {
-          authorById.set(revision.id, revision.author);
+        if (revision) {
+          if (!authorById.has(revision.id)) {
+            authorById.set(revision.id, revision.author);
+          }
+          if (!dateById.has(revision.id)) {
+            dateById.set(revision.id, {
+              date: revision.date,
+              type: revision.type,
+            });
+          }
         }
-        if (!dateById.has(revision.id)) {
-          dateById.set(revision.id, {
-            date: revision.date,
-            type: revision.type,
-          });
+        const property = run.styles?.propertyRevision;
+        if (property) {
+          if (!authorById.has(property.id)) {
+            authorById.set(property.id, property.author);
+          }
+          if (!dateById.has(property.id)) {
+            dateById.set(property.id, {
+              date: property.date,
+              type: "property",
+            });
+          }
         }
       }
     }
@@ -109,7 +124,9 @@ export function ReviewingPane(props: ReviewingPaneProps): JSX.Element {
   const typeIconClass = (type: string): string =>
     type === "delete"
       ? "review-revisions-icon-delete"
-      : "review-revisions-icon-insert";
+      : type === "property"
+        ? "review-revisions-icon-property"
+        : "review-revisions-icon-insert";
 
   return (
     <div

@@ -8,9 +8,14 @@ import type {
 } from "@/core/model.js";
 import {
   acceptAllRevisions,
+  acceptRevision,
+  acceptRevisionsInSelection,
   collectAllRevisionIds,
+  collectSelectedRevisionIds,
   hasRevisionsInDocument,
   rejectAllRevisions,
+  rejectRevision,
+  rejectRevisionsInSelection,
 } from "@/core/commands/history.js";
 import { getParagraphs, paragraphOffsetToPosition } from "@/core/model.js";
 import { createEditorStateFromDocument } from "@/core/editorState.js";
@@ -92,12 +97,20 @@ describe("whole-document accept/reject all revisions", () => {
 
   it("acceptAllRevisions keeps insertions and drops deletions across the whole document", () => {
     const p1 = paragraph("p1", [
-      textRun("a", "A", { revision: { id: "ins", type: "insert", author: "A", date: 1 } }),
-      textRun("b", "B", { revision: { id: "del", type: "delete", author: "A", date: 2 } }),
-      textRun("c", "C", { revision: { id: "ins2", type: "insert", author: "A", date: 3 } }),
+      textRun("a", "A", {
+        revision: { id: "ins", type: "insert", author: "A", date: 1 },
+      }),
+      textRun("b", "B", {
+        revision: { id: "del", type: "delete", author: "A", date: 2 },
+      }),
+      textRun("c", "C", {
+        revision: { id: "ins2", type: "insert", author: "A", date: 3 },
+      }),
     ]);
     const p2 = paragraph("p2", [
-      textRun("d", "D", { revision: { id: "del2", type: "delete", author: "A", date: 4 } }),
+      textRun("d", "D", {
+        revision: { id: "del2", type: "delete", author: "A", date: 4 },
+      }),
     ]);
     const document: EditorDocument = {
       id: "doc",
@@ -123,8 +136,12 @@ describe("whole-document accept/reject all revisions", () => {
 
   it("rejectAllRevisions drops insertions and restores deletions across the whole document", () => {
     const p1 = paragraph("p1", [
-      textRun("a", "B", { revision: { id: "ins", type: "insert", author: "A", date: 1 } }),
-      textRun("b", "A", { revision: { id: "del", type: "delete", author: "A", date: 2 } }),
+      textRun("a", "B", {
+        revision: { id: "ins", type: "insert", author: "A", date: 1 },
+      }),
+      textRun("b", "A", {
+        revision: { id: "del", type: "delete", author: "A", date: 2 },
+      }),
     ]);
     const state = createEditorStateFromDocument(documentWithBlocks([p1]));
 
@@ -137,7 +154,9 @@ describe("whole-document accept/reject all revisions", () => {
 
   it("collects revisions inside table cells and header stories", () => {
     const cellParagraph = paragraph("cellp", [
-      textRun("x", "X", { revision: { id: "cell", type: "insert", author: "A", date: 1 } }),
+      textRun("x", "X", {
+        revision: { id: "cell", type: "insert", author: "A", date: 1 },
+      }),
     ]);
     const table: EditorBlockNode = {
       id: "t1",
@@ -150,7 +169,9 @@ describe("whole-document accept/reject all revisions", () => {
       ],
     };
     const headerParagraph = paragraph("hp", [
-      textRun("h", "H", { revision: { id: "hdr", type: "insert", author: "A", date: 2 } }),
+      textRun("h", "H", {
+        revision: { id: "hdr", type: "insert", author: "A", date: 2 },
+      }),
     ]);
     const document: EditorDocument = {
       id: "doc",
@@ -189,7 +210,13 @@ describe("whole-document accept/reject all revisions", () => {
       id: "t1",
       type: "table",
       style: {
-        revision: { id: "tablerev", type: "property" as const, author: "A", date: 2, previous: {} },
+        revision: {
+          id: "tablerev",
+          type: "property" as const,
+          author: "A",
+          date: 2,
+          previous: {},
+        },
       },
       rows: [
         { id: "row1", cells: [{ id: "cell1", blocks: [tableParagraph] }] },
@@ -215,14 +242,19 @@ describe("whole-document accept/reject all revisions", () => {
 
   it("preserves selection by paragraph offsets when accepting whole-document revisions", () => {
     const p1 = paragraph("p1", [
-      textRun("a", "AAA", { revision: { id: "del", type: "delete", author: "A", date: 1 } }),
+      textRun("a", "AAA", {
+        revision: { id: "del", type: "delete", author: "A", date: 1 },
+      }),
       textRun("b", "BBB"),
     ]);
     const state = createEditorStateFromDocument(documentWithBlocks([p1]));
-    const start = { ...state, selection: {
-      anchor: paragraphOffsetToPosition(p1, 1),
-      focus: paragraphOffsetToPosition(p1, 4),
-    } as const };
+    const start = {
+      ...state,
+      selection: {
+        anchor: paragraphOffsetToPosition(p1, 1),
+        focus: paragraphOffsetToPosition(p1, 4),
+      } as const,
+    };
 
     const next = acceptAllRevisions(start);
     const resultParagraph = getParagraphs(next)[0]!;
@@ -241,5 +273,88 @@ describe("whole-document accept/reject all revisions", () => {
     expect(hasRevisionsInDocument(state)).toBe(false);
     expect(acceptAllRevisions(state)).toBe(state);
     expect(rejectAllRevisions(state)).toBe(state);
+  });
+});
+
+describe("run-level formatting (property) revisions", () => {
+  const formatted = () =>
+    createEditorStateFromDocument(
+      documentWithBlocks([
+        paragraph("p1", [
+          textRun("a", "formatted", {
+            styles: {
+              bold: true,
+              propertyRevision: {
+                id: "fmt",
+                type: "property",
+                author: "A",
+                date: 1,
+                previous: { bold: false, italic: true },
+              },
+            },
+          } as Partial<EditorTextRun>),
+        ]),
+      ]),
+    );
+  const runOf = (state: ReturnType<typeof formatted>): EditorTextRun =>
+    getParagraphs(state)[0]!.runs[0]!;
+
+  it("collectAllRevisionIds and collectSelectedRevisionIds find the change", () => {
+    const state = formatted();
+    expect([...collectAllRevisionIds(state)]).toEqual(["fmt"]);
+    expect(hasRevisionsInDocument(state)).toBe(true);
+    const p1 = getParagraphs(state)[0]!;
+    const selected = {
+      ...state,
+      selection: {
+        anchor: paragraphOffsetToPosition(p1, 0),
+        focus: paragraphOffsetToPosition(p1, "formatted".length),
+      },
+    };
+    expect([...collectSelectedRevisionIds(selected)]).toEqual(["fmt"]);
+  });
+
+  it("acceptAllRevisions keeps the new formatting and drops the marker", () => {
+    const next = acceptAllRevisions(formatted());
+    expect(runOf(next).styles?.bold).toBe(true);
+    expect(runOf(next).styles?.propertyRevision).toBeUndefined();
+    expect(hasRevisionsInDocument(next)).toBe(false);
+  });
+
+  it("rejectAllRevisions restores the previous formatting", () => {
+    const next = rejectAllRevisions(formatted());
+    expect(runOf(next).styles?.bold).toBe(false);
+    expect(runOf(next).styles?.italic).toBe(true);
+    expect(runOf(next).styles?.propertyRevision).toBeUndefined();
+    expect(hasRevisionsInDocument(next)).toBe(false);
+  });
+
+  it("single acceptRevision / rejectRevision resolve the marker", () => {
+    const state = formatted();
+    const accepted = acceptRevision(state, "fmt");
+    expect(runOf(accepted).styles?.bold).toBe(true);
+    expect(runOf(accepted).styles?.propertyRevision).toBeUndefined();
+    const rejected = rejectRevision(state, "fmt");
+    expect(runOf(rejected).styles?.bold).toBe(false);
+    expect(runOf(rejected).styles?.italic).toBe(true);
+    expect(runOf(rejected).styles?.propertyRevision).toBeUndefined();
+  });
+
+  it("selection-scoped accept/reject resolve the marker", () => {
+    const state = formatted();
+    const p1 = getParagraphs(state)[0]!;
+    const selected = {
+      ...state,
+      selection: {
+        anchor: paragraphOffsetToPosition(p1, 0),
+        focus: paragraphOffsetToPosition(p1, "formatted".length),
+      },
+    };
+    expect(
+      runOf(acceptRevisionsInSelection(selected)).styles?.propertyRevision,
+    ).toBeUndefined();
+    expect(runOf(rejectRevisionsInSelection(selected)).styles?.bold).toBe(
+      false,
+    );
   });
 });

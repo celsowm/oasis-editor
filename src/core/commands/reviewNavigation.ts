@@ -109,8 +109,11 @@ export function collectNavigableRevisions(state: EditorState): ReviewRange[] {
   paragraphs.forEach((paragraph, index) => {
     let offset = 0;
     for (const run of paragraph.runs) {
-      const revisionId = run.revision?.id;
-      if (revisionId && !seen.has(revisionId)) {
+      const ids = [run.revision?.id, run.styles?.propertyRevision?.id].filter(
+        (id): id is string => typeof id === "string",
+      );
+      for (const revisionId of ids) {
+        if (seen.has(revisionId)) continue;
         seen.add(revisionId);
         ranges.push({
           id: revisionId,
