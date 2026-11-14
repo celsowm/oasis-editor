@@ -1,4 +1,8 @@
 import { getParagraphs, type EditorState } from "@/core/model.js";
+import {
+  isMarkupAuthorShown,
+  isMarkupSectionShown,
+} from "@/core/commands/reviewMarkup.js";
 import type { CommentHighlightBox } from "@/ui/editorUiTypes.js";
 import type { CanvasLayoutSnapshot } from "./CanvasLayoutSnapshot.js";
 
@@ -15,7 +19,11 @@ export function computeCommentHighlights(
   state: EditorState,
 ): CommentHighlightBox[] {
   const registry = state.document.comments;
-  if (!registry || registry.order.length === 0) {
+  if (
+    !registry ||
+    registry.order.length === 0 ||
+    !isMarkupSectionShown(state, "comments")
+  ) {
     return [];
   }
   const surfaceRect = snapshot.surfaceRect;
@@ -29,7 +37,11 @@ export function computeCommentHighlights(
   const boxes: CommentHighlightBox[] = [];
   for (const id of registry.order) {
     const comment = registry.items[id];
-    if (!comment?.start || !comment?.end) {
+    if (
+      !comment?.start ||
+      !comment?.end ||
+      !isMarkupAuthorShown(state, comment.author)
+    ) {
       continue;
     }
     const startIndex = paragraphIndexById.get(comment.start.paragraphId);

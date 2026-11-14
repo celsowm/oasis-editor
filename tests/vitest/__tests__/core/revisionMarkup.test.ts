@@ -9,6 +9,10 @@ import type {
 import { createEditorStateFromDocument } from "@/core/editorState.js";
 import { toggleRevisionMarkup } from "@/core/commands/history.js";
 import { computeRevisionMarkup } from "@/ui/canvas/CanvasRevisionGeometry.js";
+import {
+  applyShowMarkup,
+  setMarkupAuthors,
+} from "@/core/commands/reviewMarkup.js";
 import type { CanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
 
 function pageSettings(): EditorPageSettings {
@@ -31,21 +35,26 @@ function pageSettings(): EditorPageSettings {
 function textRun(
   id: string,
   text: string,
-  revision?: { id: string; type: "insert" | "delete"; author: string; date: number },
+  revision?: {
+    id: string;
+    type: "insert" | "delete";
+    author: string;
+    date: number;
+  },
 ): EditorTextRun {
-  return { id, kind: "text", text, ...(revision ? { revision } : {}) } as EditorTextRun;
+  return {
+    id,
+    kind: "text",
+    text,
+    ...(revision ? { revision } : {}),
+  } as EditorTextRun;
 }
 
-function paragraph(
-  id: string,
-  runs: EditorTextRun[],
-): EditorParagraphNode {
+function paragraph(id: string, runs: EditorTextRun[]): EditorParagraphNode {
   return { id, type: "paragraph", runs };
 }
 
-function stateWith(
-  blocks: EditorParagraphNode[],
-) {
+function stateWith(blocks: EditorParagraphNode[]) {
   const document: EditorDocument = {
     id: "doc",
     sections: [{ id: "s1", blocks, pageSettings: pageSettings() }],
@@ -96,7 +105,17 @@ function buildSnapshot(
     lines,
   };
   return {
-    surfaceRect: { left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600, x: 0, y: 0, toJSON: () => "" } as unknown as DOMRect,
+    surfaceRect: {
+      left: 0,
+      top: 0,
+      right: 800,
+      bottom: 600,
+      width: 800,
+      height: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => "",
+    } as unknown as DOMRect,
     pages: [],
     paragraphs: [segment],
     paragraphsById: new Map([[paragraph.id, [segment]]]),
@@ -109,6 +128,14 @@ function buildSnapshot(
   } as unknown as CanvasLayoutSnapshot;
 }
 
+function markupBoxes(
+  para: EditorParagraphNode,
+  state = stateWith([para]),
+  lineSplits: Array<[number, number]> = [[0, 12]],
+) {
+  return computeRevisionMarkup(buildSnapshot(para, lineSplits), state);
+}
+
 describe("computeRevisionMarkup", () => {
   it("paints one underlined box per inserted range, merged across runs", () => {
     const para = paragraph("p1", [
@@ -116,9 +143,7 @@ describe("computeRevisionMarkup", () => {
       textRun("b", "mark", { id: "i1", type: "insert", author: "A", date: 1 }),
       textRun("c", "ed", { id: "i1", type: "insert", author: "A", date: 1 }),
     ]);
-    const snapshot = buildSnapshot(para, [[0, 12]]);
-
-    const boxes = computeRevisionMarkup(snapshot);
+    const boxes = markupBoxes(para);
     expect(boxes).toHaveLength(1);
     expect(boxes[0]).toMatchObject({
       revisionId: "i1",
@@ -135,7 +160,7 @@ describe("computeRevisionMarkup", () => {
       textRun("a", "keep "),
       textRun("b", "gone", { id: "d1", type: "delete", author: "A", date: 1 }),
     ]);
-    const boxes = computeRevisionMarkup(buildSnapshot(para));
+    const boxes = markupBoxes(para);
     expect(boxes).toHaveLength(1);
     expect(boxes[0].type).toBe("delete");
     expect(boxes[0].revisionId).toBe("d1");
@@ -147,7 +172,11 @@ describe("computeRevisionMarkup", () => {
       textRun("b", "bbbb", { id: "i1", type: "insert", author: "A", date: 1 }),
       textRun("c", "cccc", { id: "i1", type: "insert", author: "A", date: 1 }),
     ]);
-    const boxes = computeRevisionMarkup(buildSnapshot(para, [[0, 4], [4, 8], [8, 12]]));
+    const boxes = markupBoxes(para, stateWith([para]), [
+      [0, 4],
+      [4, 8],
+      [8, 12],
+    ]);
     expect(boxes).toHaveLength(3);
     expect(boxes.every((box) => box.type === "insert")).toBe(true);
     expect(boxes.map((box) => box.top)).toEqual([100, 120, 140]);
@@ -155,16 +184,63 @@ describe("computeRevisionMarkup", () => {
 
   it("returns no boxes for untracked text", () => {
     const para = paragraph("p1", [textRun("a", "plain text")]);
-    expect(computeRevisionMarkup(buildSnapshot(para))).toHaveLength(0);
+    expect(markupBoxes(para)).toHaveLength(0);
+  });
+
+  const mixed = (): EditorParagraphNode =>
+    paragraph("p1", [
+      textRun("a", "added", {
+        id: "i1",
+        type: "insert",
+        author: "User",
+        date: 1,
+      }),
+      textRun("b", "gone", {
+        id: "d1",
+        type: "delete",
+        author: "Zoe",
+        date: 2,
+      }),
+    ]);
+
+  it("hides only insertions when the insertions section is off", () => {
+    const para = mixed();
+    const state = applyShowMarkup(stateWith([para]), {
+      section: "insertions",
+    });
+    const boxes = markupBoxes(para, state);
+    expect(boxes.map((box) => box.type)).toEqual(["delete"]);
+  });
+
+  it("hides only deletions when the deletions section is off", () => {
+    const para = mixed();
+    const state = applyShowMarkup(stateWith([para]), {
+      section: "deletions",
+    });
+    const boxes = markupBoxes(para, state);
+    expect(boxes.map((box) => box.type)).toEqual(["insert"]);
+  });
+
+  it("hides a reviewer's painted markup", () => {
+    const para = mixed();
+    const state = setMarkupAuthors(stateWith([para]), ["User"]);
+    const boxes = markupBoxes(para, state);
+    expect(boxes.map((box) => box.revisionId)).toEqual(["i1"]);
+  });
+
+  it("hides every painted markup when no reviewer is visible", () => {
+    const para = mixed();
+    const state = applyShowMarkup(stateWith([para]), { allAuthors: false });
+    expect(markupBoxes(para, state)).toHaveLength(0);
   });
 });
 
 describe("toggleRevisionMarkup", () => {
   it("defaults to on and flips both ways", () => {
-    const state = stateWith([
-      paragraph("p1", [textRun("a", "hello world!")]),
-    ]);
+    const state = stateWith([paragraph("p1", [textRun("a", "hello world!")])]);
     expect(toggleRevisionMarkup(state).showRevisionMarkup).toBe(false);
-    expect(toggleRevisionMarkup(toggleRevisionMarkup(state)).showRevisionMarkup).toBe(true);
+    expect(
+      toggleRevisionMarkup(toggleRevisionMarkup(state)).showRevisionMarkup,
+    ).toBe(true);
   });
 });

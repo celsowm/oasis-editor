@@ -19,6 +19,10 @@ import {
   setReviewDisplayMode,
 } from "@/core/commands/history.js";
 import {
+  applyShowMarkup,
+  type ShowMarkupPayload,
+} from "@/core/commands/reviewMarkup.js";
+import {
   getSelectedImageCaption,
   setSelectedImageCaption,
   setSelectedImageAlt,
@@ -464,6 +468,12 @@ function createEditorCommandsControllerImpl(
     execState(setReviewDisplayMode(state, mode));
   };
 
+  // Show Markup is a view filter: keep it off the undo stack, like the
+  // existing display-mode and markup-painting toggles.
+  const applyShowMarkupCommand = (payload: ShowMarkupPayload): void => {
+    execState(applyShowMarkup(state, payload));
+  };
+
   const applyToggleShowMarginsCommand = (): void => {
     applyState({ ...state, showMargins: !state.showMargins });
     focusInput();
@@ -703,6 +713,7 @@ function createEditorCommandsControllerImpl(
     applyToggleTrackChangesCommand,
     applyToggleRevisionMarkupCommand,
     applySetReviewDisplayModeCommand,
+    applyShowMarkupCommand,
     applyToggleShowMarginsCommand,
     applyToggleShowParagraphMarksCommand,
     applyAcceptRevisionsCommand,

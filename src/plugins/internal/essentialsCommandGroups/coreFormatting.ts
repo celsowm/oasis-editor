@@ -382,6 +382,19 @@ export function buildCoreFormattingCommands({
         isActive: formatting.areRevisionMarkupVisible(),
       }),
     ),
+    // Carrier for the Show Markup gallery: its value is a reactive snapshot of
+    // the view flags and the reviewers found in the document.
+    showMarkupOptions: valueCommand(
+      "showMarkupOptions",
+      (): boolean => false,
+      (): unknown => formatting.showMarkupOptions(),
+    ),
+    applyShowMarkup: actionCommand("applyShowMarkup", (p): void => {
+      formatting.applyShowMarkup(
+        (p ??
+          {}) as import("@/core/commands/reviewMarkup.js").ShowMarkupPayload,
+      );
+    }),
     toggleOutlinePanel: command(
       "toggleOutlinePanel",
       formatting.toggleOutlinePanel,

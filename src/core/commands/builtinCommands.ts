@@ -53,6 +53,8 @@ export const OASIS_BUILTIN_COMMANDS = [
   "replaceAll",
   "toggleTrackChanges",
   "toggleRevisionMarkup",
+  "showMarkupOptions",
+  "applyShowMarkup",
   "toggleOutlinePanel",
   "toggleRevisionsPanel",
   "openCommandSearch",

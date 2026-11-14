@@ -15,6 +15,7 @@ import type {
   EditorWatermark,
 } from "@/core/model.js";
 import type { DesignThemeId } from "./design.js";
+import type { ShowMarkupPayload } from "./reviewMarkup.js";
 
 /** Payload for the `insertTable` command. */
 export interface InsertTablePayload {
@@ -129,6 +130,8 @@ export interface OasisCommandPayloads {
   replaceAll: ReplaceAllPayload;
   toggleTrackChanges: undefined;
   toggleRevisionMarkup: undefined;
+  showMarkupOptions: undefined;
+  applyShowMarkup: ShowMarkupPayload;
   toggleOutlinePanel: undefined;
   toggleRevisionsPanel: undefined;
   openCommandSearch: undefined;

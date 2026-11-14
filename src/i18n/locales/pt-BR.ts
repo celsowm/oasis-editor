@@ -98,6 +98,11 @@ export const ptBR = {
   "review.displayModeAll": "Marcação completa",
   "review.displayModeFinal": "Final",
   "review.displayModeOriginal": "Original",
+  "review.showMarkup": "Mostrar marcação",
+  "review.showMarkupInsertions": "Inserções",
+  "review.showMarkupDeletions": "Exclusões",
+  "review.showMarkupComments": "Comentários",
+  "review.showMarkupAllReviewers": "Todos os revisores",
   "review.bulkAcceptTitle": "Aceitar todas as alterações",
   "review.bulkAcceptMessage":
     "Aceitar todas as {0} alterações controladas deste documento, incluindo cabeçalhos, rodapés, notas e tabelas?",

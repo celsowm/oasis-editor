@@ -1,4 +1,8 @@
-import type { EditorRevision } from "@/core/model.js";
+import type { EditorRevision, EditorState } from "@/core/model.js";
+import {
+  isMarkupAuthorShown,
+  isMarkupSectionShown,
+} from "@/core/commands/reviewMarkup.js";
 import type { RevisionMarkupBox } from "@/ui/editorUiTypes.js";
 import type { CanvasLayoutSnapshot } from "./CanvasLayoutSnapshot.js";
 
@@ -12,12 +16,17 @@ interface RevisionRange {
 /**
  * Collect the visible text ranges (in paragraph-local offsets) that belong to
  * an insertion or deletion revision. Adjacent runs from the same revision
- * merge so one continuous strikethrough/underline is painted per line.
+ * merge so one continuous strikethrough/underline is painted per line. Show
+ * Markup filters (revision category and author) are applied here, so hiding a
+ * category never mutates the underlying revision data.
  */
-function collectRevisionRanges(paragraph: {
-  runs: { text: string; revision?: EditorRevision }[];
-}): RevisionRange[] {
+function collectRevisionRanges(
+  paragraph: { runs: { text: string; revision?: EditorRevision }[] },
+  state: EditorState,
+): RevisionRange[] {
   const ranges: RevisionRange[] = [];
+  const showInsertions = isMarkupSectionShown(state, "insertions");
+  const showDeletions = isMarkupSectionShown(state, "deletions");
   let offset = 0;
   for (const run of paragraph.runs) {
     const start = offset;
@@ -27,6 +36,8 @@ function collectRevisionRanges(paragraph: {
     if (
       revision &&
       (revision.type === "insert" || revision.type === "delete") &&
+      (revision.type === "insert" ? showInsertions : showDeletions) &&
+      isMarkupAuthorShown(state, revision.author) &&
       end > start
     ) {
       const previous = ranges.at(-1);
@@ -54,15 +65,17 @@ function collectRevisionRanges(paragraph: {
  * Project insert/delete revision ranges into highlight rectangles, reusing the
  * canvas layout snapshot's per-line slot positions (the same machinery the
  * comment highlights and the selection geometry use). One box per covered line;
- * property/formatting and merge/grid revisions are not painted.
+ * property/formatting and merge/grid revisions are not painted. Show Markup
+ * filters come from the live editor state, not from the document.
  */
 export function computeRevisionMarkup(
   snapshot: CanvasLayoutSnapshot,
+  state: EditorState,
 ): RevisionMarkupBox[] {
   const surfaceRect = snapshot.surfaceRect;
   const boxes: RevisionMarkupBox[] = [];
   for (const segment of snapshot.paragraphs) {
-    const ranges = collectRevisionRanges(segment.paragraph);
+    const ranges = collectRevisionRanges(segment.paragraph, state);
     if (ranges.length === 0) continue;
     for (const line of segment.lines) {
       for (const range of ranges) {

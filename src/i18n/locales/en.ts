@@ -98,6 +98,11 @@ export const en = {
   "review.displayModeAll": "All Markup",
   "review.displayModeFinal": "Final",
   "review.displayModeOriginal": "Original",
+  "review.showMarkup": "Show Markup",
+  "review.showMarkupInsertions": "Insertions",
+  "review.showMarkupDeletions": "Deletions",
+  "review.showMarkupComments": "Comments",
+  "review.showMarkupAllReviewers": "All Reviewers",
   "review.bulkAcceptTitle": "Accept all changes",
   "review.bulkAcceptMessage":
     "Accept all {0} tracked changes in this document, including headers, footers, notes and tables?",

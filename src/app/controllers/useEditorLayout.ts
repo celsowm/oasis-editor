@@ -122,14 +122,16 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
   // Display for Review: final/original modes render a *resolved* document.
   // The raw revision marks stay untouched in the model; only the layout sees
   // the projection.
-  const renderDocument = createMemo((): import("@/core/model.js").EditorDocument => {
-    layoutMetricsEpoch();
-    const mode = props.state.reviewDisplayMode ?? "all";
-    if (mode === "all") {
-      return props.state.document;
-    }
-    return projectTrackedRevisions(props.state.document, mode).document;
-  });
+  const renderDocument = createMemo(
+    (): import("@/core/model.js").EditorDocument => {
+      layoutMetricsEpoch();
+      const mode = props.state.reviewDisplayMode ?? "all";
+      if (mode === "all") {
+        return props.state.document;
+      }
+      return projectTrackedRevisions(props.state.document, mode).document;
+    },
+  );
   const documentLayout = createMemo((): EditorLayoutDocument => {
     layoutMetricsEpoch();
     return stabilize(
@@ -212,7 +214,7 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
     setRevisionMarkupBoxes(
       props.state.showRevisionMarkup === false
         ? []
-        : computeRevisionMarkup(snapshot),
+        : computeRevisionMarkup(snapshot, props.state),
     );
     setCommentHighlights(computeCommentHighlights(snapshot, props.state));
     setSelectedImageBox(geometry.selectedImageBox);
@@ -313,9 +315,15 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
     requestInputBoxSync("content-change");
   });
 
-  // The markup toggle is a view flag: flip the overlay without an edit.
+  // The markup toggle is a view flag: flip the overlay without an edit. Show
+  // Markup filters are view flags too, so re-project the painted boxes when a
+  // category or reviewer changes; the revision data itself is untouched.
   createEffect((): void => {
     props.state.showRevisionMarkup;
+    props.state.showMarkupInsertions;
+    props.state.showMarkupDeletions;
+    props.state.showMarkupComments;
+    props.state.markupAuthors;
     requestInputBoxSync("content-change");
   });
 

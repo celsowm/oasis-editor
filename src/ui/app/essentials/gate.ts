@@ -29,6 +29,8 @@ const READ_ONLY_SAFE_COMMANDS: ReadonlySet<OasisBuiltinCommand> = new Set([
   "toggleShowParagraphMarks",
   "togglePreciseFonts",
   "toggleRevisionMarkup",
+  "showMarkupOptions",
+  "applyShowMarkup",
   "toggleRevisionsPanel",
   "toggleOutlinePanel",
   "setReviewDisplayMode",

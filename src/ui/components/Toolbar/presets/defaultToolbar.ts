@@ -4,6 +4,7 @@ import { UnderlineControl } from "@/ui/components/Toolbar/controls/UnderlineCont
 import { ListOptionsControl } from "@/ui/components/Toolbar/controls/ListOptionsControl.js";
 import { LineSpacingButton } from "@/ui/components/Toolbar/LineSpacingButton.js";
 import { ReviewDisplayModeButton } from "@/ui/components/Toolbar/ReviewDisplayModeButton.js";
+import { ShowMarkupButton } from "@/ui/components/Toolbar/ShowMarkupButton.js";
 import { MetricGroup } from "@/ui/components/Toolbar/groups/MetricGroup.js";
 import { SectionGroup } from "@/ui/components/Toolbar/groups/SectionGroup.js";
 import { MarginsGroup } from "@/ui/components/Toolbar/groups/MarginsGroup.js";
@@ -906,6 +907,12 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     id: "editor-toolbar-display-for-review",
     testId: "editor-toolbar-display-for-review",
     render: (api) => ReviewDisplayModeButton({ api }),
+  });
+  items.push({
+    type: "custom",
+    id: "editor-toolbar-show-markup",
+    testId: "editor-toolbar-show-markup",
+    render: (api) => ShowMarkupButton({ api }),
   });
   items.push({
     type: "toggle",

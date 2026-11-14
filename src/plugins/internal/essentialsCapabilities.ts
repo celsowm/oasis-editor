@@ -17,6 +17,10 @@ import type { ImageBorderPatch } from "@/core/commands/image.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
 import type { SpecialCharacterKind } from "@/core/commands/specialChar.js";
 import type { ReplaceAllPayload } from "@/core/commands/publicCommandTypes.js";
+import type {
+  MarkupOptionsSnapshot,
+  ShowMarkupPayload,
+} from "@/core/commands/reviewMarkup.js";
 import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
 import type { OasisBuiltinCommand } from "@/core/commands/builtinCommands.js";
 import type { TableBorderPreset } from "@/core/commands/table.js";
@@ -152,6 +156,10 @@ export interface EssentialsFormattingCapability {
   areRevisionsPanelVisible: () => boolean;
   reviewDisplayMode: () => string;
   setReviewDisplayMode: (mode: string) => boolean;
+  /** Reactive Show Markup menu snapshot (view flags + reviewer list). */
+  showMarkupOptions: () => MarkupOptionsSnapshot;
+  /** Apply one Show Markup category/reviewer action. */
+  applyShowMarkup: (payload: ShowMarkupPayload) => boolean;
   /** Reactive document view/state flags for Ribbon toggle feedback. */
   isTrackChangesEnabled: () => boolean;
   areRevisionMarkupVisible: () => boolean;

@@ -56,6 +56,7 @@ import {
   previousFontSizePt,
 } from "@/ui/fontSizeUnits.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
+import { markupOptionsSnapshot } from "@/core/commands/reviewMarkup.js";
 import type { EssentialsFormattingCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import type { EditorMathExpression } from "@/core/model.js";
 import { togglePreciseFontMode } from "../localFontAccess.js";
@@ -466,6 +467,11 @@ export function buildEssentialsFormatting(
       options.commandsController.applySetReviewDisplayModeCommand(
         mode as import("@/core/model.js").EditorState["reviewDisplayMode"],
       );
+      return true;
+    },
+    showMarkupOptions: () => markupOptionsSnapshot(options.state()),
+    applyShowMarkup: (payload): boolean => {
+      options.commandsController.applyShowMarkupCommand(payload);
       return true;
     },
     toggleTrackChanges: (): true => (
