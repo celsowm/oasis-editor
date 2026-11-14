@@ -47,8 +47,9 @@ export function setParagraphKeepLinesTogether(
       changed = true;
       const style =
         next === undefined
-          ? (() => {
-              const { keepLinesTogether: _drop, ...rest } = paragraph.style ?? {};
+          ? ((): typeof paragraph.style => {
+              const { keepLinesTogether: _drop, ...rest } =
+                paragraph.style ?? {};
               void _drop;
               return Object.keys(rest).length > 0 ? rest : undefined;
             })()

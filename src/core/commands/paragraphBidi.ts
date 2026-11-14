@@ -47,7 +47,7 @@ export function setParagraphBidi(
       changed = true;
       const style =
         next === undefined
-          ? (() => {
+          ? ((): typeof paragraph.style => {
               const { bidi: _drop, ...rest } = paragraph.style ?? {};
               void _drop;
               return Object.keys(rest).length > 0 ? rest : undefined;

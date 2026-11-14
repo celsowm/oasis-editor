@@ -48,7 +48,7 @@ export function setParagraphWordWrap(
       changed = true;
       const style =
         next === undefined
-          ? (() => {
+          ? ((): typeof paragraph.style => {
               const { wordWrap: _drop, ...rest } = paragraph.style ?? {};
               void _drop;
               return Object.keys(rest).length > 0 ? rest : undefined;

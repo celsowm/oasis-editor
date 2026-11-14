@@ -51,10 +51,13 @@ export function createQuickAccess(
   // the user can then opt back out via the customize menu.
   const initial =
     stored.length > 0
-      ? [...stored, ...DEFAULT_COMMANDS.filter(
-          (command): boolean =>
-            known.has(command) && !stored.includes(command),
-        )]
+      ? [
+          ...stored,
+          ...DEFAULT_COMMANDS.filter(
+            (command): boolean =>
+              known.has(command) && !stored.includes(command),
+          ),
+        ]
       : [...DEFAULT_COMMANDS];
   const [visible, setVisible] = createSignal<string[]>(initial);
   createEffect((): void => {

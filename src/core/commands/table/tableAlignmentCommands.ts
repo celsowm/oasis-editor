@@ -63,8 +63,11 @@ export function setActiveTableAlignment(
     return state;
   }
   const blocks =
-    getBlocksForZone(state.document, target.activeSectionIndex, target.loc
-      .zone) ?? [];
+    getBlocksForZone(
+      state.document,
+      target.activeSectionIndex,
+      target.loc.zone,
+    ) ?? [];
   const table = resolveActiveTableNode(state, blocks);
   if (!table) {
     return state;

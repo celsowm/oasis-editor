@@ -35,10 +35,12 @@ export function createFontDialogInitialValues(
     characterSpacing: styleState.characterSpacing ?? "",
     baselineShift: styleState.baselineShift ?? "",
     kerningThreshold: styleState.kerningThreshold ?? "",
-    ligatures: (styleState.ligatures ?? "") as FontDialogInitialValues["ligatures"],
+    ligatures: (styleState.ligatures ??
+      "") as FontDialogInitialValues["ligatures"],
     numberSpacing: (styleState.numberSpacing ??
       "") as FontDialogInitialValues["numberSpacing"],
-    numberForm: (styleState.numberForm ?? "") as FontDialogInitialValues["numberForm"],
+    numberForm: (styleState.numberForm ??
+      "") as FontDialogInitialValues["numberForm"],
     stylisticSet: styleState.stylisticSet ?? "",
     contextualAlternates: Boolean(styleState.contextualAlternates),
   };

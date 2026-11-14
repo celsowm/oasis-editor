@@ -21,11 +21,7 @@ import { normalizeSelection } from "@/core/selection.js";
 
 /** Valid `w:textDirection/@w:val` values for a paragraph. */
 export type ParagraphTextDirection =
-  | "lrTb"
-  | "tbRl"
-  | "btLr"
-  | "lrTbV"
-  | "tbRlV";
+  "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV";
 
 const VALID_DIRECTIONS: ReadonlySet<string> = new Set([
   "lrTb",
@@ -69,7 +65,7 @@ export function setParagraphTextDirection(
       changed = true;
       const style =
         next === undefined
-          ? (() => {
+          ? ((): typeof paragraph.style => {
               const { textDirection: _drop, ...rest } = paragraph.style ?? {};
               void _drop;
               return Object.keys(rest).length > 0 ? rest : undefined;

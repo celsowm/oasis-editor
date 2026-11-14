@@ -49,7 +49,7 @@ export function setParagraphAdjustRightInd(
       changed = true;
       const style =
         next === undefined
-          ? (() => {
+          ? ((): typeof paragraph.style => {
               const { adjustRightInd: _drop, ...rest } = paragraph.style ?? {};
               void _drop;
               return Object.keys(rest).length > 0 ? rest : undefined;

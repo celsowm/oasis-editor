@@ -65,8 +65,7 @@ export function setNoteOptions(
 
   let changed = false;
   if (input.numberFormat !== undefined) {
-    const next =
-      input.numberFormat === null ? undefined : input.numberFormat;
+    const next = input.numberFormat === null ? undefined : input.numberFormat;
     if (base.numberFormat !== next) {
       base.numberFormat = next;
       changed = true;
@@ -94,8 +93,7 @@ export function setNoteOptions(
     return state;
   }
 
-  const settings =
-    Object.keys(base).length > 0 ? { ...base } : undefined;
+  const settings = Object.keys(base).length > 0 ? { ...base } : undefined;
 
   if (kind === "endnote") {
     const endnotes = state.document.endnotes ?? { items: {} };

@@ -112,12 +112,30 @@ export function RibbonGroup(props: RibbonGroupProps): JSX.Element {
           type="button"
           class="oasis-editor-ribbon-group-launcher"
           title={props.group.resizePolicy.launcherTooltip ?? props.group.label}
-          aria-label={props.group.resizePolicy.launcherTooltip ?? `${props.group.label} options`}
-          onClick={() => props.api.commands.execute(props.group.resizePolicy.launcher!)}
+          aria-label={
+            props.group.resizePolicy.launcherTooltip ??
+            `${props.group.label} options`
+          }
+          onClick={() =>
+            props.api.commands.execute(props.group.resizePolicy.launcher!)
+          }
           data-testid={`editor-ribbon-group-${props.group.id}-launcher`}
         >
-          <span class="oasis-editor-ribbon-group-launcher-icon" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <span
+            class="oasis-editor-ribbon-group-launcher-icon"
+            aria-hidden="true"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </span>

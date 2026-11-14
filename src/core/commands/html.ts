@@ -11,7 +11,11 @@ import {
 } from "@/core/model.js";
 import { createEditorParagraph } from "@/core/editorState.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
-import { deleteSelectionRange, getFocusParagraph, withSelection } from "@/core/selection/rangeEditing.js";
+import {
+  deleteSelectionRange,
+  getFocusParagraph,
+  withSelection,
+} from "@/core/selection/rangeEditing.js";
 import { sliceRuns } from "@/core/document/paragraphRuns.js";
 import { insertClipboardParagraphsAtSelection } from "@/core/commands/clipboard.js";
 import { importHtmlToEditorDocument } from "@/import/html/importHtmlToEditorDocument.js";
@@ -20,7 +24,10 @@ import { importHtmlToEditorDocument } from "@/import/html/importHtmlToEditorDocu
  * Inserts an HTML fragment at the caret, replacing the current selection.
  * A single document-state transaction preserves table blocks and nested tables.
  */
-export function insertHtmlAtSelection(state: EditorState, html: string): EditorState {
+export function insertHtmlAtSelection(
+  state: EditorState,
+  html: string,
+): EditorState {
   if (!html.trim()) return state;
   const imported = importHtmlToEditorDocument(html);
   const incoming = getDocumentSectionsCanonical(imported)[0]?.blocks ?? [];
@@ -64,7 +71,8 @@ export function insertHtmlAtSelection(state: EditorState, html: string): EditorS
     ...(offset > 0 ? [before] : []),
     ...incoming,
     ...(afterRuns.length || incoming[incoming.length - 1]?.type === "table"
-      ? [after] : []),
+      ? [after]
+      : []),
   ];
 
   let found = false;
@@ -99,8 +107,11 @@ export function insertHtmlAtSelection(state: EditorState, html: string): EditorS
 
   const zone = collapsed.activeZone ?? "main";
   let nextDocument: EditorDocument = collapsed.document;
-  if (zone === "footnote" && collapsed.activeFootnoteId &&
-      collapsed.document.footnotes?.items[collapsed.activeFootnoteId]) {
+  if (
+    zone === "footnote" &&
+    collapsed.activeFootnoteId &&
+    collapsed.document.footnotes?.items[collapsed.activeFootnoteId]
+  ) {
     const footnotes = collapsed.document.footnotes;
     const item = footnotes.items[collapsed.activeFootnoteId]!;
     const blocks = insertIn(item.blocks);
@@ -118,10 +129,14 @@ export function insertHtmlAtSelection(state: EditorState, html: string): EditorS
     }
   } else {
     const sections = getDocumentSectionsCanonical(collapsed.document);
-    const index = Math.max(0, Math.min(collapsed.activeSectionIndex ?? 0, sections.length - 1));
+    const index = Math.max(
+      0,
+      Math.min(collapsed.activeSectionIndex ?? 0, sections.length - 1),
+    );
     const section = sections[index];
     if (!section) return state;
-    const field = zone === "header" ? "header" : zone === "footer" ? "footer" : "blocks";
+    const field =
+      zone === "header" ? "header" : zone === "footer" ? "footer" : "blocks";
     const newBlocks = insertIn(section[field] ?? []);
     if (found) {
       const nextSections = [...sections];
@@ -132,9 +147,14 @@ export function insertHtmlAtSelection(state: EditorState, html: string): EditorS
   if (!found) return state;
 
   const last = incoming[incoming.length - 1]!;
-  const caret = last.type === "paragraph" && !afterRuns.length
-    ? paragraphOffsetToPosition(last, getParagraphLength(last))
-    : paragraphOffsetToPosition(after, 0);
+  const caret =
+    last.type === "paragraph" && !afterRuns.length
+      ? paragraphOffsetToPosition(last, getParagraphLength(last))
+      : paragraphOffsetToPosition(after, 0);
 
-  return { ...collapsed, document: nextDocument, selection: withSelection(caret) };
+  return {
+    ...collapsed,
+    document: nextDocument,
+    selection: withSelection(caret),
+  };
 }

@@ -6,6 +6,7 @@
 import type {
   EditorComment,
   EditorParagraphNode,
+  EditorPosition,
   EditorState,
 } from "@/core/model.js";
 import {
@@ -23,7 +24,10 @@ interface ReviewRange {
   endOffset: number;
 }
 
-function positionOf(paragraph: EditorParagraphNode, offset: number) {
+function positionOf(
+  paragraph: EditorParagraphNode,
+  offset: number,
+): EditorPosition {
   return paragraphOffsetToPosition(paragraph, offset);
 }
 

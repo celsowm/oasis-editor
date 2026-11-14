@@ -171,8 +171,20 @@ function collectBlocks(container: ParentNode): EditorBlockNode[] {
     }
 
     const element = node as Element;
-    if (["SCRIPT", "STYLE", "TEMPLATE", "IFRAME", "OBJECT", "EMBED",
-         "NOSCRIPT", "SVG", "META", "LINK"].includes(element.tagName)) {
+    if (
+      [
+        "SCRIPT",
+        "STYLE",
+        "TEMPLATE",
+        "IFRAME",
+        "OBJECT",
+        "EMBED",
+        "NOSCRIPT",
+        "SVG",
+        "META",
+        "LINK",
+      ].includes(element.tagName)
+    ) {
       continue;
     }
 

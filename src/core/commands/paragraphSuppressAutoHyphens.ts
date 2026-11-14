@@ -47,7 +47,7 @@ export function setParagraphSuppressAutoHyphens(
       changed = true;
       const style =
         next === undefined
-          ? (() => {
+          ? ((): typeof paragraph.style => {
               const { suppressAutoHyphens: _drop, ...rest } =
                 paragraph.style ?? {};
               void _drop;

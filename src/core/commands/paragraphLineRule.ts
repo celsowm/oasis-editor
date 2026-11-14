@@ -23,11 +23,7 @@ import { normalizeSelection } from "@/core/selection.js";
 /** Valid `w:lineRule` values. */
 export type ParagraphLineRule = "auto" | "exact" | "atLeast";
 
-const VALID_RULES: ReadonlySet<string> = new Set([
-  "auto",
-  "exact",
-  "atLeast",
-]);
+const VALID_RULES: ReadonlySet<string> = new Set(["auto", "exact", "atLeast"]);
 
 /**
  * Set the line rule (`lineRule`) of every selected paragraph. Pass `"auto"`,
@@ -52,7 +48,7 @@ export function setParagraphLineRule(
         return paragraph;
       }
       const current = paragraph.style?.lineRule;
-      const next = (() => {
+      const next = ((): ParagraphLineRule | null | undefined => {
         if (rule === null || rule === "auto") return undefined;
         if (!VALID_RULES.has(rule)) return current;
         return rule;
@@ -63,7 +59,7 @@ export function setParagraphLineRule(
       changed = true;
       const style =
         next === undefined
-          ? (() => {
+          ? ((): typeof paragraph.style => {
               const { lineRule: _drop, ...rest } = paragraph.style ?? {};
               void _drop;
               return Object.keys(rest).length > 0 ? rest : undefined;

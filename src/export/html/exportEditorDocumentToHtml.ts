@@ -25,18 +25,35 @@ function paragraphTag(paragraph: EditorParagraphNode): string {
 }
 
 function renderTable(table: EditorTableNode, document: EditorDocument): string {
-  const rows = table.rows.map((row): string => {
-    const cells = row.cells.map((cell): string => {
-      const tag = row.isHeader || row.style?.isHeader ? "th" : "td";
-      const colspan = (cell.colSpan ?? 1) > 1
-        ? ' colspan="' + String(cell.colSpan) + '"' : "";
-      const rowspan = (cell.rowSpan ?? 1) > 1
-        ? ' rowspan="' + String(cell.rowSpan) + '"' : "";
-      return "<" + tag + colspan + rowspan + ">" +
-        renderBlocks(cell.blocks, document) + "</" + tag + ">";
-    }).join("");
-    return "<tr>" + cells + "</tr>";
-  }).join("");
+  const rows = table.rows
+    .map((row): string => {
+      const cells = row.cells
+        .map((cell): string => {
+          const tag = row.isHeader || row.style?.isHeader ? "th" : "td";
+          const colspan =
+            (cell.colSpan ?? 1) > 1
+              ? ' colspan="' + String(cell.colSpan) + '"'
+              : "";
+          const rowspan =
+            (cell.rowSpan ?? 1) > 1
+              ? ' rowspan="' + String(cell.rowSpan) + '"'
+              : "";
+          return (
+            "<" +
+            tag +
+            colspan +
+            rowspan +
+            ">" +
+            renderBlocks(cell.blocks, document) +
+            "</" +
+            tag +
+            ">"
+          );
+        })
+        .join("");
+      return "<tr>" + cells + "</tr>";
+    })
+    .join("");
   return "<table><tbody>" + rows + "</tbody></table>";
 }
 
@@ -47,7 +64,10 @@ function renderTable(table: EditorTableNode, document: EditorDocument): string {
  * HTML is an interchange format: OOXML-only features (sections, revisions,
  * comments, floating objects, headers/footers) require DOCX or the native model.
  */
-function renderBlocks(blocks: EditorBlockNode[], document: EditorDocument): string {
+function renderBlocks(
+  blocks: EditorBlockNode[],
+  document: EditorDocument,
+): string {
   let html = "";
   const listTags: string[] = [];
   const openItems: boolean[] = [];
@@ -84,8 +104,11 @@ function renderBlocks(blocks: EditorBlockNode[], document: EditorDocument): stri
     const targetLevel = Math.max(0, Math.min(16, block.list.level ?? 0));
 
     while (listTags.length - 1 > targetLevel) closeOne();
-    if (listTags.length - 1 === targetLevel &&
-        listTags[listTags.length - 1] !== tag) closeOne();
+    if (
+      listTags.length - 1 === targetLevel &&
+      listTags[listTags.length - 1] !== tag
+    )
+      closeOne();
 
     if (listTags.length - 1 === targetLevel && openItems[targetLevel]) {
       html += "</li>";
@@ -121,6 +144,12 @@ export function exportEditorDocumentToHtml(
   if (!options.fullDocument) return body;
 
   const title = escapeHtml(String(document.metadata?.title ?? ""));
-  return "<!doctype html><html lang=\"pt-BR\"><head><meta charset=\"utf-8\">" +
-    "<title>" + title + "</title></head><body>" + body + "</body></html>";
+  return (
+    '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">' +
+    "<title>" +
+    title +
+    "</title></head><body>" +
+    body +
+    "</body></html>"
+  );
 }

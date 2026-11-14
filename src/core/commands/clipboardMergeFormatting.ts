@@ -3,7 +3,10 @@ import type { EditorState, EditorTextStyle } from "@/core/model.js";
 import { getParagraphs } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import { getStyleAtOffset } from "@/core/document/paragraphRuns.js";
-import { cloneParagraphStyle, cloneStyle } from "@/core/textStyle/textStyleMutations.js";
+import {
+  cloneParagraphStyle,
+  cloneStyle,
+} from "@/core/textStyle/textStyleMutations.js";
 
 /**
  * Merge Formatting uses destination character and paragraph styling but
@@ -11,8 +14,17 @@ import { cloneParagraphStyle, cloneStyle } from "@/core/textStyle/textStyleMutat
  * Source fonts, sizes, colours, revisions and paragraph metrics do not transfer.
  */
 const EMPHASIS_KEYS = [
-  "bold", "italic", "underline", "underlineStyle", "underlineColor",
-  "strike", "doubleStrike", "smallCaps", "allCaps", "superscript", "subscript",
+  "bold",
+  "italic",
+  "underline",
+  "underlineStyle",
+  "underlineColor",
+  "strike",
+  "doubleStrike",
+  "smallCaps",
+  "allCaps",
+  "superscript",
+  "subscript",
   "link",
 ] as const satisfies ReadonlyArray<keyof EditorTextStyle>;
 

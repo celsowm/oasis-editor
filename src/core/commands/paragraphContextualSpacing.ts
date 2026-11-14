@@ -49,8 +49,9 @@ export function setParagraphContextualSpacing(
       changed = true;
       const style =
         next === undefined
-          ? (() => {
-              const { contextualSpacing: _drop, ...rest } = paragraph.style ?? {};
+          ? ((): typeof paragraph.style => {
+              const { contextualSpacing: _drop, ...rest } =
+                paragraph.style ?? {};
               void _drop;
               return Object.keys(rest).length > 0 ? rest : undefined;
             })()

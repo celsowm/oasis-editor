@@ -12,7 +12,9 @@ export interface CommentComposerDialogProps {
 }
 
 /** Dialog state is local to the mounted editor. */
-export function CommentComposerDialog(props: CommentComposerDialogProps): JSX.Element {
+export function CommentComposerDialog(
+  props: CommentComposerDialogProps,
+): JSX.Element {
   const t = useI18n();
   const [author, setAuthor] = createSignal("");
   const [body, setBody] = createSignal("");
@@ -27,25 +29,32 @@ export function CommentComposerDialog(props: CommentComposerDialogProps): JSX.El
 
   createEffect((): void => {
     if (!pending()) return;
-    setAuthor(pending()?.mode === "edit"
-      ? pending()?.commentAuthor ?? ""
-      : props.composer.authorName());
-    setBody(pending()?.mode === "edit" ? pending()?.commentText ?? "" : "");
+    setAuthor(
+      pending()?.mode === "edit"
+        ? (pending()?.commentAuthor ?? "")
+        : props.composer.authorName(),
+    );
+    setBody(pending()?.mode === "edit" ? (pending()?.commentText ?? "") : "");
     queueMicrotask((): void => bodyRef?.focus());
   });
 
   return (
     <Dialog
       isOpen={pending() !== null}
-      title={t(pending()?.mode === "edit"
-        ? "toolbar.editComment"
-        : pending()?.mode === "reply"
-          ? "toolbar.replyComment"
-          : "toolbar.newComment")}
+      title={t(
+        pending()?.mode === "edit"
+          ? "toolbar.editComment"
+          : pending()?.mode === "reply"
+            ? "toolbar.replyComment"
+            : "toolbar.newComment",
+      )}
       onClose={props.composer.close}
       footer={
         <>
-          <Button onClick={props.composer.close} data-testid="comment-composer-cancel">
+          <Button
+            onClick={props.composer.close}
+            data-testid="comment-composer-cancel"
+          >
             {t("generic.cancel")}
           </Button>
           <Button
@@ -61,8 +70,13 @@ export function CommentComposerDialog(props: CommentComposerDialogProps): JSX.El
     >
       <div class="oasis-editor-comment-composer">
         <Show when={pending()?.mode === "reply"}>
-          <div class="oasis-editor-comment-composer-parent" data-testid="comment-reply-context">
-            <Text as="strong">{t("comment.replyTo")} {pending()?.parentAuthor}</Text>
+          <div
+            class="oasis-editor-comment-composer-parent"
+            data-testid="comment-reply-context"
+          >
+            <Text as="strong">
+              {t("comment.replyTo")} {pending()?.parentAuthor}
+            </Text>
             <Text as="p">{pending()?.parentText}</Text>
           </div>
         </Show>

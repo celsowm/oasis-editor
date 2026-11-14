@@ -8,11 +8,7 @@ import type {
   EditorCommentAnchor,
   EditorState,
 } from "@/core/model.js";
-import {
-  getParagraphs,
-  getParagraphText,
-  positionToParagraphOffset,
-} from "@/core/model.js";
+import { getParagraphs, getParagraphText } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import { resolveWordSelection } from "@/core/wordBoundaries.js";
 
@@ -34,7 +30,9 @@ export interface CommentRange {
  * under the caret. Blank documents cannot create invisible, unselectable
  * zero-width annotations.
  */
-export function getCommentRangeForSelection(state: EditorState): CommentRange | null {
+export function getCommentRangeForSelection(
+  state: EditorState,
+): CommentRange | null {
   const paragraphs = getParagraphs(state);
   if (
     !paragraphs.length ||
@@ -71,7 +69,10 @@ function validContent(content: CommentContent): boolean {
   );
 }
 
-function appendComment(state: EditorState, comment: EditorComment): EditorState {
+function appendComment(
+  state: EditorState,
+  comment: EditorComment,
+): EditorState {
   const existing = state.document.comments;
   if (existing?.items[comment.id]) return state;
   return {
