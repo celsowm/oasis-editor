@@ -294,6 +294,118 @@ try {
       "tracked deletion should paint a strike-through",
     );
 
+    // 9. Display for Review: All Markup shows the insert decoration; Final and
+    // Original render the resolved document with editing disabled (find/copy
+    // stay available) while revisions remain in the model; All restores.
+    assert.equal(
+      await page.evaluate(
+        () =>
+          window.ribbonReference.client.commands.state("setReviewDisplayMode")
+            .value,
+      ),
+      "all",
+    );
+    assert.ok(
+      (await page.locator('[data-testid="editor-revision-markup"]').count()) >
+        0,
+      "All Markup should paint the seeded insertion",
+    );
+    const hasRevisions = () =>
+      page.evaluate(async () => {
+        const { collectAllRevisionIds } = await import(
+          "/src/core/commands/history.ts"
+        );
+        return (
+          collectAllRevisionIds(window.ribbonReference.client.getState()).size >
+          0
+        );
+      });
+    assert.equal(await hasRevisions(), true);
+
+    await (
+      await openGroup(page, "tracking", "editor-toolbar-display-for-review")
+    ).click();
+    await page
+      .locator('[data-testid="editor-toolbar-display-for-review-final"]')
+      .click();
+    assert.equal(
+      await page.evaluate(
+        () =>
+          window.ribbonReference.client.commands.state("setReviewDisplayMode")
+            .value,
+      ),
+      "final",
+    );
+    assert.equal(
+      await page.locator('[data-testid="editor-revision-markup"]').count(),
+      0,
+    );
+    assert.equal(
+      await page.evaluate(
+        () => window.ribbonReference.client.commands.state("bold").isEnabled,
+      ),
+      false,
+      "final view must disable edits",
+    );
+    assert.equal(
+      await page.evaluate(
+        () => window.ribbonReference.client.commands.state("find").isEnabled,
+      ),
+      true,
+      "final view keeps navigation commands",
+    );
+    assert.equal(await hasRevisions(), true, "revisions persist in final view");
+
+    await (
+      await openGroup(page, "tracking", "editor-toolbar-display-for-review")
+    ).click();
+    await page
+      .locator('[data-testid="editor-toolbar-display-for-review-original"]')
+      .click();
+    assert.equal(
+      await page.evaluate(
+        () =>
+          window.ribbonReference.client.commands.state("setReviewDisplayMode")
+            .value,
+      ),
+      "original",
+    );
+    assert.equal(
+      await page.evaluate(
+        () => window.ribbonReference.client.commands.state("bold").isEnabled,
+      ),
+      false,
+      "original view must disable edits",
+    );
+    assert.equal(await hasRevisions(), true);
+
+    await (
+      await openGroup(page, "tracking", "editor-toolbar-display-for-review")
+    ).click();
+    await page
+      .locator('[data-testid="editor-toolbar-display-for-review-all"]')
+      .click();
+    assert.equal(
+      await page.evaluate(
+        () =>
+          window.ribbonReference.client.commands.state("setReviewDisplayMode")
+            .value,
+      ),
+      "all",
+    );
+    assert.ok(
+      (await page.locator('[data-testid="editor-revision-markup"]').count()) >
+        0,
+      "All Markup must restore the decoration",
+    );
+    assert.equal(
+      await page.evaluate(
+        () => window.ribbonReference.client.commands.state("bold").isEnabled,
+      ),
+      true,
+      "All Markup must restore editing",
+    );
+
     assert.deepEqual(errors, []);
     records.push({
       sha,
@@ -312,6 +424,10 @@ try {
         "revision-markup-painted",
         "show-markup-toggle",
         "delete-markup-distinct",
+        "display-for-review-all-marks",
+        "display-for-review-final-readonly",
+        "display-for-review-original-readonly",
+        "display-for-review-roundtrip",
       ],
     });
     await page.close();
@@ -321,7 +437,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction and revision markup.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup and Display for Review.`,
   );
 } finally {
   await browser.close();

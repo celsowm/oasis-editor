@@ -4671,11 +4671,15 @@
     {
       "id": "review.displayForReview",
       "wordcraftCommand": "review.markup",
-      "status": "missing",
-      "exposure": "missing",
-      "semantics": "missing",
-      "persistence": "unverified",
-      "notes": "Display for Review: Oasis tracks edits and accept/rejects revisions, and as of Delivery 116 paints insert/delete markup with a Show Markup toggle. No All Markup / Simple Markup / No Markup / Original document-view switch is exposed yet."
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "notes": "Display for Review: Oasis exposes All Markup / Final / Original as a view-mode switch (Review > Tracking) rendering the resolved projection of the document via projectTrackedRevisions; editing is disabled in Final/Original (view flag, not persisted to DOCX). Simple Markup, reviewer balloons and the Reviewing Pane remain unexposed; markup painting covers insert/delete runs only.",
+      "oasisCommand": "setReviewDisplayMode",
+      "ribbonId": "editor-toolbar-display-for-review",
+      "tab": "review",
+      "group": "tracking"
     },
     {
       "id": "review.showMarkup",

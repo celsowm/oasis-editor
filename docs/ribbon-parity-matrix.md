@@ -405,7 +405,7 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `review.readAloud` | `review.readAloud` | — | — | missing | missing | missing | unverified |
 | `review.translate` | `review.translate` | — | — | missing | missing | missing | unverified |
 | `review.language` | `review.language` | — | — | missing | missing | missing | unverified |
-| `review.displayForReview` | `review.markup` | — | — | missing | missing | missing | unverified |
+| `review.displayForReview` | `review.markup` | `setReviewDisplayMode` | `review/tracking` | partial | partial | partial | not-applicable |
 | `review.showMarkup` | `review.showMarkup` | — | — | missing | missing | missing | unverified |
 | `review.reviewingPane` | `review.changes` | — | — | missing | missing | missing | unverified |
 | `review.trackChangesOptions` | `review.trackingOptions` | — | — | missing | missing | missing | unverified |
@@ -959,7 +959,7 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 392. **review.readAloud:** Read Aloud: No text-to-speech reading mode or playback controls are exposed.
 393. **review.translate:** Translate: No translation provider or selection/document translation workflow is exposed.
 394. **review.language:** Language: No proofing-language picker is exposed. Setting the app locale changes UI strings and is not document proofing language.
-395. **review.displayForReview:** Display for Review: Oasis tracks edits and accept/rejects revisions, and as of Delivery 116 paints insert/delete markup with a Show Markup toggle. No All Markup / Simple Markup / No Markup / Original document-view switch is exposed yet.
+395. **review.displayForReview:** Display for Review: Oasis exposes All Markup / Final / Original as a view-mode switch (Review > Tracking) rendering the resolved projection of the document via projectTrackedRevisions; editing is disabled in Final/Original (view flag, not persisted to DOCX). Simple Markup, reviewer balloons and the Reviewing Pane remain unexposed; markup painting covers insert/delete runs only.
 396. **review.showMarkup:** Show Markup: a Show Markup toggle paints/hides insertions and deletions over the canvas (Delivery 116: colored underline/strike-through, default on, verified end-to-end), but Word's revision-category/author markup filters remain unexposed.
 397. **review.reviewingPane:** Reviewing Pane: The comments panel lists discussion threads, not a tracked-change review list; no Reviewing Pane workflow is exposed.
 398. **review.trackChangesOptions:** Track Changes Options: Oasis exposes a Track Changes toggle, but no author/color/balloon/options configuration workflow.
