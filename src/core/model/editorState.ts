@@ -41,6 +41,20 @@ export interface EditorState {
   reviewDisplayMode?: ReviewDisplayMode;
   /** Presentation toggle for painting tracked revisions (default on). */
   showRevisionMarkup?: boolean;
+  /**
+   * Show Markup presentation filters (Review > Tracking). View only: they
+   * never touch revision data or DOCX output.
+   * Paint insertions (default on). */
+  showMarkupInsertions?: boolean;
+  /** Paint deletions (default on). */
+  showMarkupDeletions?: boolean;
+  /** Paint comment highlights (default on). */
+  showMarkupComments?: boolean;
+  /**
+   * Visible markup authors. `undefined` means every author is visible;
+   * an array is the explicit author allow-list.
+   */
+  markupAuthors?: string[];
 }
 
 export type { EditorPosition, EditorSelection, EditorEditingZone };
