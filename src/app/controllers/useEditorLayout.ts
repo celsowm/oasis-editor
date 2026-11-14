@@ -340,6 +340,7 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
     props.state.showMarkupInsertions;
     props.state.showMarkupDeletions;
     props.state.showMarkupComments;
+    props.state.showMarkupFormatting;
     props.state.markupAuthors;
     requestInputBoxSync("content-change");
   });

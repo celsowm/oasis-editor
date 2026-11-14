@@ -102,6 +102,7 @@ export const en = {
   "review.showMarkup": "Show Markup",
   "review.showMarkupInsertions": "Insertions",
   "review.showMarkupDeletions": "Deletions",
+  "review.showMarkupFormatting": "Formatting",
   "review.showMarkupComments": "Comments",
   "review.showMarkupAllReviewers": "All Reviewers",
   "review.revisionsHiddenByShowMarkup":

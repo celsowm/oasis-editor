@@ -167,4 +167,38 @@ describe("computeChangeBars", () => {
     );
     expect(computeChangeBars(snapshot(segments), state)).toHaveLength(0);
   });
+
+  it("drops a formatting paragraph's bar when the formatting category is off", () => {
+    const formatted = {
+      id: "r1",
+      kind: "text",
+      text: "changed",
+      styles: {
+        propertyRevision: {
+          id: "fmt1",
+          type: "property",
+          author: "Zoe",
+          date: 1,
+          previous: {},
+        },
+      },
+    } as unknown as EditorTextRun;
+    const doc = documentWith([
+      paragraph("p-plain", [textRun("r0", "plain")]),
+      paragraph("p-format", [formatted]),
+    ]);
+    const segs: SegmentSpec[] = [
+      {
+        paragraphId: "p-format",
+        left: 296,
+        top: 120,
+        height: 20,
+        lines: [{ top: 120, height: 20 }],
+      },
+    ];
+    const state = createEditorStateFromDocument(doc);
+    expect(computeChangeBars(snapshot(segs), state)).toHaveLength(1);
+    const hidden = applyShowMarkup(state, { section: "formatting" });
+    expect(computeChangeBars(snapshot(segs), hidden)).toHaveLength(0);
+  });
 });

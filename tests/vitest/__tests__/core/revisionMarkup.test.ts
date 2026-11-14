@@ -318,7 +318,7 @@ describe("computeRevisionMarkup", () => {
     expect(markupBoxes(para, state)).toHaveLength(0);
   });
 
-  it("does not category-filter property (Word has no formatting category here)", () => {
+  it("keeps property decorations when only the insertions category is off", () => {
     const para = paragraph("p1", [propertyRun("a", "formatted", "Zoe")]);
     const state = applyShowMarkup(stateWith([para]), {
       section: "insertions",
@@ -326,6 +326,14 @@ describe("computeRevisionMarkup", () => {
     expect(markupBoxes(para, state).map((box) => box.type)).toEqual([
       "property",
     ]);
+  });
+
+  it("hides property decorations when the formatting category is off", () => {
+    const para = paragraph("p1", [propertyRun("a", "formatted", "Zoe")]);
+    const state = applyShowMarkup(stateWith([para]), {
+      section: "formatting",
+    });
+    expect(markupBoxes(para, state)).toHaveLength(0);
   });
 });
 

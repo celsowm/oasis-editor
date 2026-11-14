@@ -16,6 +16,7 @@ const EMPTY_OPTIONS: MarkupOptionsSnapshot = {
   insertions: true,
   deletions: true,
   comments: true,
+  formatting: true,
   allAuthors: true,
   visibleAuthors: [],
   knownAuthors: [],
@@ -24,6 +25,7 @@ const EMPTY_OPTIONS: MarkupOptionsSnapshot = {
 const SECTIONS = [
   { section: "insertions", labelKey: "review.showMarkupInsertions" },
   { section: "deletions", labelKey: "review.showMarkupDeletions" },
+  { section: "formatting", labelKey: "review.showMarkupFormatting" },
   { section: "comments", labelKey: "review.showMarkupComments" },
 ] as const;
 
@@ -87,6 +89,7 @@ export function ShowMarkupButton(props: ShowMarkupButtonProps): JSX.Element {
     const current = options();
     if (section === "insertions") return current.insertions;
     if (section === "deletions") return current.deletions;
+    if (section === "formatting") return current.formatting;
     return current.comments;
   };
   const reviewerChecked = (author: string): boolean =>

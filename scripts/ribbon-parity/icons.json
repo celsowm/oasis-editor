@@ -1272,7 +1272,7 @@
     },
     {
       "file": "src/ui/components/Toolbar/ShowMarkupButton.tsx",
-      "line": 102,
+      "line": 105,
       "role": "icon",
       "name": "list-checks",
       "origin": "lucide"

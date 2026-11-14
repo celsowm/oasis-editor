@@ -102,6 +102,7 @@ export const ptBR = {
   "review.showMarkup": "Mostrar marcação",
   "review.showMarkupInsertions": "Inserções",
   "review.showMarkupDeletions": "Exclusões",
+  "review.showMarkupFormatting": "Formatação",
   "review.showMarkupComments": "Comentários",
   "review.showMarkupAllReviewers": "Todos os revisores",
   "review.revisionsHiddenByShowMarkup":

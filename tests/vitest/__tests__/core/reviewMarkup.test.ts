@@ -83,6 +83,7 @@ describe("isMarkupSectionShown", () => {
     expect(isMarkupSectionShown(s, "insertions")).toBe(true);
     expect(isMarkupSectionShown(s, "deletions")).toBe(true);
     expect(isMarkupSectionShown(s, "comments")).toBe(true);
+    expect(isMarkupSectionShown(s, "formatting")).toBe(true);
   });
 
   it("reflects the flags once toggled", () => {
@@ -91,6 +92,9 @@ describe("isMarkupSectionShown", () => {
     expect(isMarkupSectionShown(s, "insertions")).toBe(false);
     s = toggleShowMarkupSection(s, "insertions");
     expect(isMarkupSectionShown(s, "insertions")).toBe(true);
+    s = toggleShowMarkupSection(s, "formatting");
+    expect(isMarkupSectionShown(s, "formatting")).toBe(false);
+    expect(s.showMarkupFormatting).toBe(false);
   });
 });
 
@@ -282,9 +286,17 @@ describe("isRevisionMarkupShown", () => {
     expect(isRevisionMarkupShown(s, "delete", "Zoe")).toBe(false);
   });
 
-  it("never category-filters other revision types", () => {
+  it("does not hide formatting revisions via the deletions category", () => {
     const s = applyShowMarkup(base(), { section: "deletions" });
     expect(isRevisionMarkupShown(s, "property", "User")).toBe(true);
+  });
+
+  it("hides only formatting revisions when the formatting category is off", () => {
+    const s = applyShowMarkup(base(), { section: "formatting" });
+    expect(isRevisionMarkupShown(s, "property", "User")).toBe(false);
+    expect(isRevisionMarkupShown(s, "insert", "User")).toBe(true);
+    expect(isRevisionMarkupShown(s, "delete", "User")).toBe(true);
+    expect(isRevisionMarkupShown(s, "merge", "User")).toBe(true);
   });
 });
 
@@ -313,10 +325,21 @@ describe("markupOptionsSnapshot / applyShowMarkup", () => {
       insertions: true,
       deletions: true,
       comments: true,
+      formatting: true,
       allAuthors: true,
       visibleAuthors: [],
       knownAuthors: ["User", "Zoe"],
     });
+  });
+
+  it("toggles the formatting category through applyShowMarkup", () => {
+    const before = marked();
+    const next = applyShowMarkup(before, { section: "formatting" });
+    expect(next.document).toBe(before.document);
+    expect(markupOptionsSnapshot(next).formatting).toBe(false);
+    expect(markupOptionsSnapshot(next).deletions).toBe(true);
+    const restored = applyShowMarkup(next, { section: "formatting" });
+    expect(markupOptionsSnapshot(restored).formatting).toBe(true);
   });
 
   it("toggles a section without touching revision data", () => {
@@ -426,5 +449,8 @@ describe("collectChangeBarParagraphIds", () => {
     // Reviewer filtering still applies to formatting revisions.
     const hidden = setMarkupAuthors(s, ["Someone else"]);
     expect(collectChangeBarParagraphIds(hidden).size).toBe(0);
+    // The dedicated Formatting category removes the formatting paragraph's bar.
+    const noFormatting = applyShowMarkup(s, { section: "formatting" });
+    expect(collectChangeBarParagraphIds(noFormatting).size).toBe(0);
   });
 });

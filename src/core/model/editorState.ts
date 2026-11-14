@@ -52,6 +52,8 @@ export interface EditorState {
   showMarkupDeletions?: boolean;
   /** Paint comment highlights (default on). */
   showMarkupComments?: boolean;
+  /** Paint run-level formatting (property) revisions (default on). */
+  showMarkupFormatting?: boolean;
   /**
    * Visible markup authors. `undefined` means every author is visible;
    * an array is the explicit author allow-list.

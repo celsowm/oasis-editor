@@ -4,7 +4,8 @@ import { getDocumentParagraphs } from "@/core/model.js";
 import { getDocumentSections } from "@/core/model.js";
 
 /** The display sections Word's Show Markup menu filters. */
-export type MarkupSection = "insertions" | "deletions" | "comments";
+export type MarkupSection =
+  "insertions" | "deletions" | "comments" | "formatting";
 
 /**
  * View-only Show Markup presentation flags. They live on `EditorState`
@@ -19,6 +20,8 @@ export interface MarkupVisibilityState {
   showMarkupDeletions?: boolean;
   /** Paint comment highlights (default on). */
   showMarkupComments?: boolean;
+  /** Paint run-level formatting (property) revisions (default on). */
+  showMarkupFormatting?: boolean;
   /**
    * Visible markup authors. `undefined` means every author is visible;
    * an array is the explicit author allow-list.
@@ -28,11 +31,15 @@ export interface MarkupVisibilityState {
 
 const SECTION_KEY: Record<
   MarkupSection,
-  "showMarkupInsertions" | "showMarkupDeletions" | "showMarkupComments"
+  | "showMarkupInsertions"
+  | "showMarkupDeletions"
+  | "showMarkupComments"
+  | "showMarkupFormatting"
 > = {
   insertions: "showMarkupInsertions",
   deletions: "showMarkupDeletions",
   comments: "showMarkupComments",
+  formatting: "showMarkupFormatting",
 };
 
 /** Whether a markup section paints; every section is on by default. */
@@ -61,6 +68,7 @@ export interface MarkupOptionsSnapshot {
   insertions: boolean;
   deletions: boolean;
   comments: boolean;
+  formatting: boolean;
   /** `true` when `markupAuthors` is absent (all authors visible). */
   allAuthors: boolean;
   /** Explicitly visible authors (empty when all authors are visible). */
@@ -78,6 +86,7 @@ export function markupOptionsSnapshot(
     insertions: isMarkupSectionShown(state, "insertions"),
     deletions: isMarkupSectionShown(state, "deletions"),
     comments: isMarkupSectionShown(state, "comments"),
+    formatting: isMarkupSectionShown(state, "formatting"),
     allAuthors,
     visibleAuthors: state.markupAuthors ?? [],
     knownAuthors: collectMarkupAuthors(state),
@@ -118,10 +127,10 @@ export function isMarkupAuthorShown(
 
 /**
  * Whether one revision is shown by the current Show Markup filters. Used by
- * both the painted overlay and the Reviewing Pane list so the two surfaces
- * never disagree. Non-insert/delete revision types are not category-filtered:
- * Oasis has not yet exposed Word's dedicated Formatting Show Markup checkbox,
- * so the gallery currently has only insertion/deletion/comment categories.
+ * the painted overlay, the Reviewing Pane list and Simple Markup change bars
+ * so the surfaces never disagree. Insertions, deletions and formatting each
+ * have a dedicated category checkbox; other revision types are only filtered
+ * by reviewer (there is no category for them).
  */
 export function isRevisionMarkupShown(
   state: EditorState,
@@ -132,6 +141,9 @@ export function isRevisionMarkupShown(
     return false;
   }
   if (type === "delete" && !isMarkupSectionShown(state, "deletions")) {
+    return false;
+  }
+  if (type === "property" && !isMarkupSectionShown(state, "formatting")) {
     return false;
   }
   return isMarkupAuthorShown(state, author);
@@ -175,11 +187,10 @@ function paragraphHasVisibleRevision(
 /**
  * Paragraph ids that should carry a Simple Markup change bar: every paragraph
  * in the raw document with at least one visible insert/delete text revision or
- * run-level formatting (property) revision. Show Markup reviewer filters are
- * applied through `isRevisionMarkupShown`, so a hidden reviewer removes its
- * bar; category flags only apply to insert/delete because Oasis has not yet
- * exposed Word's dedicated Formatting Show Markup checkbox. Endnotes have no
- * editable zone and are not walked.
+ * run-level formatting (property) revision. Show Markup category and reviewer
+ * filters are applied through `isRevisionMarkupShown`, so hiding insertions,
+ * deletions, formatting or a reviewer removes the matching bar. Endnotes have
+ * no editable zone and are not walked.
  */
 export function collectChangeBarParagraphIds(state: EditorState): Set<string> {
   const ids = new Set<string>();
