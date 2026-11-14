@@ -83,6 +83,8 @@ export interface EditorCommandRuntimeDeps {
     action: "accept" | "reject";
     count: number;
   }) => void;
+  toggleOutline: () => void;
+  isOutlineVisible: () => boolean;
   getUiState: () => OasisEditorUiState;
   updateUiState: (patch: OasisEditorUiState) => OasisEditorUiState;
   zoom: {
@@ -234,6 +236,8 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
           count: collectAllRevisionIds(deps.state).size,
         });
       },
+      toggleOutlinePanel: deps.toggleOutline,
+      isOutlineVisible: deps.isOutlineVisible,
     },
     externalPlugins: deps.runtimeOptions().plugins,
     t: deps.translator,

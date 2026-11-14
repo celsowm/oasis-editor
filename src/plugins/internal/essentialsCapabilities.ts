@@ -147,9 +147,11 @@ export interface EssentialsFormattingCapability {
   replaceAll: (payload: ReplaceAllPayload) => boolean;
   toggleTrackChanges: () => boolean;
   toggleRevisionMarkup: () => boolean;
+  toggleOutlinePanel: () => boolean;
   /** Reactive document view/state flags for Ribbon toggle feedback. */
   isTrackChangesEnabled: () => boolean;
   areRevisionMarkupVisible: () => boolean;
+  areOutlineVisible: () => boolean;
   areMarginsVisible: () => boolean;
   areParagraphMarksVisible: () => boolean;
   acceptRevisions: () => boolean;

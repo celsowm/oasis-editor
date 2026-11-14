@@ -129,6 +129,7 @@ export interface OasisCommandPayloads {
   replaceAll: ReplaceAllPayload;
   toggleTrackChanges: undefined;
   toggleRevisionMarkup: undefined;
+  toggleOutlinePanel: undefined;
   acceptRevisions: undefined;
   rejectRevisions: undefined;
   acceptAllRevisions: undefined;

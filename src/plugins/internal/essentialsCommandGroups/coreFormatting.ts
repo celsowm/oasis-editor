@@ -368,6 +368,13 @@ export function buildCoreFormattingCommands({
         isActive: formatting.areRevisionMarkupVisible(),
       }),
     ),
+    toggleOutlinePanel: command(
+      "toggleOutlinePanel",
+      formatting.toggleOutlinePanel,
+      (): { isActive: boolean } => ({
+        isActive: formatting.areOutlineVisible(),
+      }),
+    ),
     acceptRevisions: command(
       "acceptRevisions",
       formatting.acceptRevisions,

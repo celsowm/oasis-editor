@@ -25,7 +25,7 @@ import type {
   ToolbarViewMode,
 } from "@/ui/OasisEditorAppProps.js";
 import { createCanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
-import { getParagraphEntries } from "@/ui/canvas/CanvasGeometry.js";
+import { createOutlineNavigator } from "./outlineNavigator.js";
 import type { OasisEditor } from "@/core/plugin.js";
 import { PluginUiHost } from "@/ui/components/PluginUi/PluginUiHost.js";
 import { JSX } from "solid-js";
@@ -41,7 +41,7 @@ export interface ShellProps {
   showTitleBar: boolean;
   showMenubar: boolean;
   showToolbar: boolean;
-  showOutline: boolean;
+  showOutline: () => boolean;
   toolbarView: ToolbarViewMode;
   toolbarLayout: ToolbarLayoutMode;
   isReadOnly: boolean;
@@ -79,33 +79,14 @@ export function DocumentShell(props: ShellProps): JSX.Element {
     viewportEl = el;
     props.refs.onViewportRef?.(el);
   };
-  const handleOutlineNavigate = (id: string): void => {
-    if (!surfaceEl) return;
-    const snapshot = outlineSnapshotProvider.getCanvasLayoutSnapshot({
-      surface: surfaceEl,
-      state: props.state,
-      documentLayout: props.documentLayout(),
-      zoomFactor: props.layout.zoomFactor?.(),
-    });
-    if (!snapshot) return;
-    const entries = getParagraphEntries(snapshot, id);
-    const entry = entries[0];
-    if (!entry) return;
-    const viewport = viewportEl;
-    const targetTop = entry.top;
-    if (viewport) {
-      const viewportRect = viewport.getBoundingClientRect();
-      viewport.scrollTo({
-        top: viewport.scrollTop + (targetTop - viewportRect.top) - 24,
-        behavior: "smooth",
-      });
-      return;
-    }
-    window.scrollTo({
-      top: window.scrollY + targetTop - 24,
-      behavior: "smooth",
-    });
-  };
+  const handleOutlineNavigate = createOutlineNavigator({
+    state: () => props.state,
+    documentLayout: props.documentLayout,
+    surfaceRef: (): HTMLDivElement | undefined => surfaceEl,
+    viewportRef: (): HTMLDivElement | undefined => viewportEl,
+    zoomFactor: props.layout.zoomFactor,
+    snapshotProvider: outlineSnapshotProvider,
+  });
   return (
     <>
       <Show when={props.showChrome}>
@@ -146,7 +127,7 @@ export function DocumentShell(props: ShellProps): JSX.Element {
 
       <PluginUiHost editor={props.runtimeEditor}>
         <div class="oasis-editor-main-container">
-          <Show when={props.showChrome && props.showOutline}>
+          <Show when={props.showChrome && props.showOutline()}>
             <OutlinePanel
               state={props.state}
               onNavigate={handleOutlineNavigate}

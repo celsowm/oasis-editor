@@ -455,12 +455,17 @@ export function buildEssentialsFormatting(
       Boolean(options.state().showParagraphMarks),
     areRevisionMarkupVisible: (): boolean =>
       Boolean(options.state().showRevisionMarkup ?? true),
+    areOutlineVisible: (): boolean => options.isOutlineVisible(),
     toggleTrackChanges: (): true => (
       options.commandsController.applyToggleTrackChangesCommand(),
       true
     ),
     toggleRevisionMarkup: (): true => (
       options.commandsController.applyToggleRevisionMarkupCommand(),
+      true
+    ),
+    toggleOutlinePanel: (): true => (
+      void options.toggleOutlinePanel(),
       true
     ),
     acceptRevisions: (): true => (

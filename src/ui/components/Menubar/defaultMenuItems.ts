@@ -252,7 +252,8 @@ export const defaultMenuItems: MenuItem[] = [
     id: "view_outline",
     path: "View/Show Outline",
     labelKey: "menu.view.outline",
-    hidden: true,
+    command: "toggleOutlinePanel",
+    icon: "list",
   },
   { id: "view_ruler", path: "View/Show Ruler", hidden: true },
   {

@@ -12,6 +12,8 @@ import type {
 export interface EditorUiOptionsContext {
   ui: () => OasisEditorAppUiProps;
   documentOptions: () => OasisEditorAppDocumentProps;
+  /** Write a patch into the host UI overrides (same funnel as outline.setVisible). */
+  updateUiState: (patch: { showOutline: boolean }) => void;
 }
 
 export interface EditorUiOptions {
@@ -20,6 +22,8 @@ export interface EditorUiOptions {
   showMenubar: () => boolean;
   showToolbar: () => boolean;
   showOutline: () => boolean;
+  /** Flip the outline panel visibility through the host UI overrides. */
+  toggleOutline: () => void;
   toolbarView: () => ToolbarViewMode;
   toolbarLayout: () => ToolbarLayoutMode;
   isReadOnly: () => boolean;
@@ -37,7 +41,7 @@ export interface EditorUiOptions {
 export function createEditorUiOptions(
   ctx: EditorUiOptionsContext,
 ): EditorUiOptions {
-  const { ui, documentOptions } = ctx;
+  const { ui, documentOptions, updateUiState } = ctx;
 
   const loadingOptions = (): OasisEditorLoadingOptions | undefined => {
     const loading = ui().loading;
@@ -52,6 +56,9 @@ export function createEditorUiOptions(
     showMenubar: (): boolean => ui().showMenubar ?? true,
     showToolbar: (): boolean => ui().showToolbar ?? true,
     showOutline: (): boolean => ui().showOutline ?? true,
+    toggleOutline: (): void => {
+      updateUiState({ showOutline: !(ui().showOutline ?? true) });
+    },
     toolbarView: (): ToolbarViewMode => ui().toolbar?.view ?? "ribbon",
     toolbarLayout: (): ToolbarLayoutMode => ui().toolbar?.layout ?? "overflow",
     isReadOnly: (): boolean => documentOptions().readOnly ?? false,

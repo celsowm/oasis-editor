@@ -53,6 +53,10 @@ export interface CreateEditorEssentialsPluginOptions {
   requestAcceptAllRevisions: () => void;
   /** Opens the Reject All confirmation dialog. */
   requestRejectAllRevisions: () => void;
+  /** Toggles the outline panel without touching document state. */
+  toggleOutlinePanel: () => void;
+  /** Reactive read of the outline panel's current visibility. */
+  isOutlineVisible: () => boolean;
   importInputRef: () => HTMLInputElement | undefined;
   imageInputRef: () => HTMLInputElement | undefined;
   selectedImageRun: () => SelectedImageRun | null;

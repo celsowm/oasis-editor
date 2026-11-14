@@ -1070,6 +1070,15 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     tooltipKey: "menu.view.preciseFonts",
     command: "togglePreciseFonts",
   });
+  items.push({
+    type: "toggle",
+    id: "editor-toolbar-outline-panel",
+    testId: "editor-toolbar-outline-panel",
+    iconName: "list",
+    labelKey: "menu.view.outline",
+    tooltipKey: "menu.view.outline",
+    command: "toggleOutlinePanel",
+  });
 
   // --- Table Layout (contextual tab) ---
   // First-class ribbon buttons for the existing no-arg table commands. The

@@ -113,6 +113,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     showMenubar,
     showToolbar,
     showOutline,
+    toggleOutline,
     toolbarView,
     toolbarLayout,
     isReadOnly,
@@ -120,7 +121,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     loadingOptions,
     loadingLabel,
     shellComponent,
-  } = createEditorUiOptions({ ui, documentOptions });
+  } = createEditorUiOptions({ ui, documentOptions, updateUiState });
 
   const focusController = createEditorFocusController();
   const focused = focusController.focused;
@@ -326,6 +327,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     setFontDialog,
     setParagraphDialog,
     setRevisionBulkDialog,
+    toggleOutline,
+    isOutlineVisible: showOutline,
   });
   const {
     commandsController,

@@ -1,4 +1,4 @@
-import { Show, type Accessor } from "solid-js";
+import type { Accessor } from "solid-js";
 import {
   OasisEditorEditor,
   type OasisEditorEditorFileHandlers,
@@ -23,7 +23,10 @@ import type {
 } from "@/ui/OasisEditorAppProps.js";
 import type { OasisEditor } from "@/core/plugin.js";
 import { PluginUiHost } from "@/ui/components/PluginUi/PluginUiHost.js";
-import { JSX } from "solid-js";
+import { OutlinePanel } from "@/ui/components/Outline/OutlinePanel.js";
+import { createCanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
+import { createOutlineNavigator } from "@/ui/shells/outlineNavigator.js";
+import { JSX, Show } from "solid-js";
 
 /** Runtime facade the workspace forwards to the editor surface and shell. */
 export interface EditorWorkspaceRuntime {
@@ -76,7 +79,30 @@ export interface EditorWorkspaceProps {
  * balloon chrome) and the bare canvas editor. Pure binding: it forwards the
  * already-assembled view-prop bundles and runtime facade to the right surface.
  */
+/**
+ * The bare editor surface renders the same outline panel as the composed
+ * shells, so Show Outline works for the default experience too.
+ */
 export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
+  let surfaceEl: HTMLDivElement | undefined;
+  let viewportEl: HTMLDivElement | undefined;
+  const outlineSnapshotProvider = createCanvasLayoutSnapshotProvider();
+  const captureSurfaceRef = (el: HTMLDivElement): void => {
+    surfaceEl = el;
+    props.view.refs.onSurfaceRef?.(el);
+  };
+  const captureViewportRef = (el: HTMLDivElement): void => {
+    viewportEl = el;
+    props.view.refs.onViewportRef?.(el);
+  };
+  const handleOutlineNavigate = createOutlineNavigator({
+    state: props.runtime.state,
+    documentLayout: props.view.documentLayout,
+    surfaceRef: (): HTMLDivElement | undefined => surfaceEl,
+    viewportRef: (): HTMLDivElement | undefined => viewportEl,
+    zoomFactor: props.view.layout.zoomFactor,
+    snapshotProvider: outlineSnapshotProvider,
+  });
   const renderComposedShell = (): JSX.Element => {
     const Shell = props.shellComponent();
     const { runtime, chrome, view } = props;
@@ -92,7 +118,7 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
         showTitleBar={chrome.showTitleBar()}
         showMenubar={chrome.showMenubar()}
         showToolbar={chrome.showToolbar()}
-        showOutline={chrome.showOutline()}
+        showOutline={chrome.showOutline}
         toolbarView={chrome.toolbarView()}
         toolbarLayout={chrome.toolbarLayout()}
         isReadOnly={view.isReadOnly()}
@@ -117,6 +143,17 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
       <Show when={!props.useComposedShell()}>
         <PluginUiHost editor={props.runtime.runtimeEditor}>
           <div class="oasis-editor-main-container">
+            <Show when={props.chrome.showOutline()}>
+              <OutlinePanel
+                state={props.runtime.state()}
+                onNavigate={handleOutlineNavigate}
+                surfaceRef={(): HTMLDivElement | undefined => surfaceEl}
+                viewportRef={(): HTMLDivElement | undefined => viewportEl}
+                documentLayout={props.view.documentLayout}
+                zoomFactor={props.view.layout.zoomFactor}
+                snapshotProvider={outlineSnapshotProvider}
+              />
+            </Show>
             <section class="oasis-editor-stage">
               <OasisEditorEditor
                 state={props.runtime.state}
@@ -132,7 +169,11 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
                   toolbarHost: props.runtime.toolbarHost,
                   persistenceStatus: props.runtime.persistenceStatus,
                 }}
-                refs={props.view.refs}
+                refs={{
+                  ...props.view.refs,
+                  onSurfaceRef: captureSurfaceRef,
+                  onViewportRef: captureViewportRef,
+                }}
                 surfaceHandlers={props.view.surfaceHandlers}
                 inputHandlers={props.view.inputHandlers}
                 fileHandlers={props.view.fileHandlers}
