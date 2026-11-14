@@ -6,83 +6,19 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { chromium, firefox, webkit } from "@playwright/test";
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
+import {
+  createSuite,
+  openGroup,
+  loadFixture,
+  placeCaretInParagraph,
+  openRibbonPage,
+} from "./lib/ribbon-suite.mjs";
 
-const base = process.env.RIBBON_BASE_URL ?? "http://localhost:5173";
-const engine = process.env.RIBBON_BROWSER ?? "chromium";
-const output = resolve(
-  process.env.RIBBON_OUTPUT ?? `debug_artifacts/ribbon-references-${engine}`,
-);
-await mkdir(output, { recursive: true });
-const sha = execFileSync("git", ["rev-parse", "HEAD"], {
-  encoding: "utf8",
-}).trim();
-const dirty = Boolean(
-  execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(),
-);
-const browser = await { chromium, firefox, webkit }[engine].launch();
-const records = [];
-
-async function waitForRibbonSettled(page) {
-  await page.waitForFunction(
-    () =>
-      [...document.querySelectorAll("[data-ribbon-group]")].every(
-        (section) => section.getAttribute("data-ribbon-width-full") !== null,
-      ),
-    undefined,
-    { timeout: 10000 },
-  );
-}
-
-async function openGroup(page, group, testId) {
-  await waitForRibbonSettled(page);
-  const item = page.locator(`[data-testid="${testId}"]`);
-  const count = await item.count();
-  if (count > 0) {
-    const boxes = await Promise.all(
-      [...Array(count)].map((_, index) => item.nth(index).boundingBox()),
-    );
-    const index = boxes.findIndex(
-      (box) => box !== null && box.width > 0 && box.height > 0,
-    );
-    if (index >= 0) return item.nth(index);
-  }
-  await page.keyboard.press("Escape");
-  await page.getByTestId(`editor-ribbon-group-${group}`).click();
-  const popup = page.locator(".oasis-editor-ribbon-collapsed-menu");
-  await popup.waitFor({ state: "visible", timeout: 5000 });
-  return popup.locator(`[data-testid="${testId}"]`);
-}
-
-async function loadFixture(page, fixture) {
-  await page.evaluate(async (name) => {
-    const { prepareRibbonFixture } =
-      await import("/tests/browser/ribbon/fixtures.ts");
-    const client = window.ribbonReference.client;
-    await prepareRibbonFixture(client, name);
-    client.history.clear();
-  }, fixture);
-}
-
-async function placeCaret(page, paragraphIndex, offset) {
-  await page.evaluate(
-    async ([index, position]) => {
-      const { getDocumentParagraphs, paragraphOffsetToPosition } =
-        await import("/src/core/model.ts");
-      const client = window.ribbonReference.client;
-      const paragraph = getDocumentParagraphs(client.document.get())[index];
-      client.selection.set({
-        anchor: paragraphOffsetToPosition(paragraph, position),
-        focus: paragraphOffsetToPosition(paragraph, position),
-      });
-    },
-    [paragraphIndex, offset],
-  );
-}
-
+const { base, engine, output, sha, dirty, records, browser } =
+  await createSuite("references");
 async function snapshot(page) {
   return page.evaluate(async () => {
     const { getDocumentParagraphs } = await import("/src/core/model.ts");
@@ -117,15 +53,11 @@ try {
     { theme: "light", locale: "en", width: 640 },
   ];
   for (const { theme, locale, width } of configs) {
-    const page = await browser.newPage({
-      viewport: { width, height: 900 },
-      deviceScaleFactor: 1,
+    const { page, errors } = await openRibbonPage(browser, base, {
+      theme,
+      locale,
+      width,
     });
-    const errors = [];
-    page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto(
-      `${base}/tests/browser/ribbon/?theme=${theme}&locale=${locale}`,
-    );
     await waitForRibbonReference(page);
     await page.getByTestId("editor-ribbon-tab-references").click();
 
@@ -139,7 +71,7 @@ try {
       ),
       false,
     );
-    await placeCaret(page, 0, 0);
+    await placeCaretInParagraph(page, 0, 0);
     await (
       await openGroup(page, "tableOfContents", "editor-toolbar-insert-toc")
     ).click();
@@ -213,7 +145,7 @@ try {
 
     // 4. Footnote: inserting from the ribbon moves the caret into the note body.
     await loadFixture(page, "text");
-    await placeCaret(page, 1, 7);
+    await placeCaretInParagraph(page, 1, 7);
     await (
       await openGroup(page, "footnotes", "editor-toolbar-footnote")
     ).click();

@@ -5,58 +5,19 @@
  * distinction.
  */
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { chromium, firefox, webkit } from "@playwright/test";
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
+import {
+  createSuite,
+  openGroup,
+  loadFixture,
+  selectRangeInParagraph,
+  openRibbonPage,
+} from "./lib/ribbon-suite.mjs";
 
-const base = process.env.RIBBON_BASE_URL ?? "http://localhost:5173";
-const engine = process.env.RIBBON_BROWSER ?? "chromium";
-const output = resolve(
-  process.env.RIBBON_OUTPUT ?? `debug_artifacts/ribbon-review-${engine}`,
-);
-await mkdir(output, { recursive: true });
-const sha = execFileSync("git", ["rev-parse", "HEAD"], {
-  encoding: "utf8",
-}).trim();
-const dirty = Boolean(
-  execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(),
-);
-const browser = await { chromium, firefox, webkit }[engine].launch();
-const records = [];
-
-async function waitForRibbonSettled(page) {
-  await page.waitForFunction(
-    () =>
-      [...document.querySelectorAll("[data-ribbon-group]")].every(
-        (section) => section.getAttribute("data-ribbon-width-full") !== null,
-      ),
-    undefined,
-    { timeout: 10000 },
-  );
-}
-
-/** Unambiguous locator: full-size copy when actionable, else the collapsed popup. */
-async function openGroup(page, group, testId) {
-  await waitForRibbonSettled(page);
-  const item = page.locator(`[data-testid="${testId}"]`);
-  const count = await item.count();
-  if (count > 0) {
-    const boxes = await Promise.all(
-      [...Array(count)].map((_, index) => item.nth(index).boundingBox()),
-    );
-    const index = boxes.findIndex(
-      (box) => box !== null && box.width > 0 && box.height > 0,
-    );
-    if (index >= 0) return item.nth(index);
-  }
-  await page.keyboard.press("Escape");
-  await page.getByTestId(`editor-ribbon-group-${group}`).click();
-  const popup = page.locator(".oasis-editor-ribbon-collapsed-menu");
-  await popup.waitFor({ state: "visible", timeout: 5000 });
-  return popup.locator(`[data-testid="${testId}"]`);
-}
+const { base, engine, output, sha, dirty, records, browser } =
+  await createSuite("review");
 
 function acceptAllButton(page) {
   return page.locator(
@@ -86,16 +47,6 @@ async function commandEnabled(page, name) {
   );
 }
 
-async function loadFixture(page, fixture) {
-  await page.evaluate(async (name) => {
-    const { prepareRibbonFixture } =
-      await import("/tests/browser/ribbon/fixtures.ts");
-    const client = window.ribbonReference.client;
-    await prepareRibbonFixture(client, name);
-    client.history.clear();
-  }, fixture);
-}
-
 async function paragraphText(page, index = 0) {
   return page.evaluate(async (i) => {
     const { getDocumentParagraphs } = await import("/src/core/model.ts");
@@ -120,22 +71,6 @@ async function placeCaretInParagraph(page, index) {
   }, index);
 }
 
-async function selectRangeInParagraph(page, paragraphIndex, from, to) {
-  await page.evaluate(
-    async ([index, start, end]) => {
-      const { getDocumentParagraphs, paragraphOffsetToPosition } =
-        await import("/src/core/model.ts");
-      const client = window.ribbonReference.client;
-      const paragraph = getDocumentParagraphs(client.document.get())[index];
-      client.selection.set({
-        anchor: paragraphOffsetToPosition(paragraph, start),
-        focus: paragraphOffsetToPosition(paragraph, end),
-      });
-    },
-    [paragraphIndex, from, to],
-  );
-}
-
 try {
   const configs = [
     { theme: "light", locale: "en", width: 1440 },
@@ -145,15 +80,11 @@ try {
     { theme: "light", locale: "en", width: 640 },
   ];
   for (const { theme, locale, width } of configs) {
-    const page = await browser.newPage({
-      viewport: { width, height: 900 },
-      deviceScaleFactor: 1,
+    const { page, errors } = await openRibbonPage(browser, base, {
+      theme,
+      locale,
+      width,
     });
-    const errors = [];
-    page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto(
-      `${base}/tests/browser/ribbon/?theme=${theme}&locale=${locale}`,
-    );
     await waitForRibbonReference(page);
     await page.getByTestId("editor-ribbon-tab-review").click();
 
@@ -312,9 +243,8 @@ try {
     );
     const hasRevisions = () =>
       page.evaluate(async () => {
-        const { collectAllRevisionIds } = await import(
-          "/src/core/commands/history.ts"
-        );
+        const { collectAllRevisionIds } =
+          await import("/src/core/commands/history.ts");
         return (
           collectAllRevisionIds(window.ribbonReference.client.getState()).size >
           0
@@ -406,6 +336,57 @@ try {
       "All Markup must restore editing",
     );
 
+    // 10. The Reviewing Pane lists the tracked revisions, navigates to one,
+    // and accepts a single revision from the list.
+    const revisionCount = () =>
+      page.evaluate(async () => {
+        const { collectAllRevisionIds } =
+          await import("/src/core/commands/history.ts");
+        return collectAllRevisionIds(window.ribbonReference.client.getState())
+          .size;
+      });
+    const countBefore = await revisionCount();
+    assert.ok(countBefore >= 1, "expected at least one revision to list");
+
+    await (
+      await openGroup(page, "tracking", "editor-toolbar-revisions-panel")
+    ).click();
+    await page
+      .getByTestId("review-revisions-panel")
+      .waitFor({ state: "visible", timeout: 5000 });
+    assert.equal(
+      await page.locator('[data-testid="review-revision-accept"]').count(),
+      countBefore,
+      "pane lists one row per tracked revision id",
+    );
+
+    await page.getByTestId("review-revision-navigate").first().click();
+    const navigated = await page.evaluate(async () => {
+      const { collectAllRevisionIds } =
+        await import("/src/core/commands/history.ts");
+      void collectAllRevisionIds;
+      const state = window.ribbonReference.client.getState();
+      return {
+        collapsed:
+          state.selection.anchor.offset !== state.selection.focus.offset,
+        anchorParagraphId: state.selection.anchor.paragraphId,
+      };
+    });
+    assert.equal(
+      navigated.collapsed,
+      true,
+      "navigating to a revision expands the selection onto its range",
+    );
+
+    await page.getByTestId("review-revision-accept").first().click();
+    assert.equal(await revisionCount(), countBefore - 1);
+
+    await page.getByTestId("review-revisions-close").click();
+    assert.equal(
+      await page.locator('[data-testid="review-revisions-panel"]').count(),
+      0,
+    );
+
     assert.deepEqual(errors, []);
     records.push({
       sha,
@@ -428,6 +409,10 @@ try {
         "display-for-review-final-readonly",
         "display-for-review-original-readonly",
         "display-for-review-roundtrip",
+        "reviewing-pane-lists-revisions",
+        "reviewing-pane-navigates",
+        "reviewing-pane-accept-one",
+        "reviewing-pane-close",
       ],
     });
     await page.close();
@@ -437,7 +422,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup and Display for Review.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review and the Reviewing Pane.`,
   );
 } finally {
   await browser.close();

@@ -3,17 +3,12 @@
 import { verifyRibbonChevrons } from "./ribbon-chevron-geometry.mjs";
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
 import assert from "node:assert/strict";
-import { chromium, firefox, webkit } from "@playwright/test";
-import { mkdir, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-const engine = process.env.RIBBON_BROWSER ?? "chromium";
-const base = process.env.RIBBON_BASE_URL ?? "http://localhost:5173";
-const output = resolve(
-  process.env.RIBBON_OUTPUT ?? `debug_artifacts/ribbon-resize-${engine}`,
-);
-await mkdir(output, { recursive: true });
-const browser = await { chromium, firefox, webkit }[engine].launch();
-const records = [];
+import { createSuite } from "./lib/ribbon-suite.mjs";
+
+const { base, engine, output, records, browser } =
+  await createSuite("resize");
 const ranks = { full: 0, compact: 1, collapsed: 2 };
 const snapshot = async (page) => {
   await page.waitForFunction(() =>

@@ -1,29 +1,17 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
-import { chromium, firefox, webkit } from "@playwright/test";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { execFileSync } from "node:child_process";
+import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { createSuite } from "./lib/ribbon-suite.mjs";
 const review = JSON.parse(
   await readFile(
     new URL("./ribbon-parity/icon-review.json", import.meta.url),
     "utf8",
   ),
 );
-const engine = process.env.RIBBON_BROWSER ?? "chromium";
-const base = process.env.RIBBON_BASE_URL ?? "http://localhost:5173";
-const output = resolve(
-  process.env.RIBBON_OUTPUT ?? `debug_artifacts/ribbon-icons-${engine}`,
-);
-await mkdir(output, { recursive: true });
-const sha = execFileSync("git", ["rev-parse", "HEAD"], {
-  encoding: "utf8",
-}).trim();
-const dirty = Boolean(
-  execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(),
-);
-const browser = await { chromium, firefox, webkit }[engine].launch();
-const records = [];
+
+const { base, engine, output, sha, dirty, records, browser } =
+  await createSuite("icons");
 try {
   const page = await browser.newPage({
     viewport: { width: 1440, height: 1000 },

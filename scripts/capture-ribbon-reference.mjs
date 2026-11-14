@@ -34,12 +34,9 @@ const maxMenuDepth = Number(process.env.RIBBON_MENU_DEPTH ?? 4);
 if (!Number.isInteger(maxMenuDepth) || maxMenuDepth < 1 || maxMenuDepth > 8)
   throw new Error("Invalid menu depth");
 const includeMenus = process.env.RIBBON_MENUS === "1";
-const sha = execFileSync("git", ["rev-parse", "HEAD"], {
-  encoding: "utf8",
-}).trim();
-const dirty = Boolean(
-  execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(),
-);
+import { gitInfo } from "./lib/ribbon-suite.mjs";
+
+const { sha, dirty } = gitInfo();
 await mkdir(output, { recursive: true });
 const browser = await launcher.launch();
 const records = [];

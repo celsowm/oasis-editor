@@ -1,8 +1,5 @@
 import { getParagraphEntries } from "@/ui/canvas/CanvasGeometry.js";
-import type {
-  EditorLayoutDocument,
-  EditorState,
-} from "@/core/model.js";
+import type { EditorLayoutDocument, EditorState } from "@/core/model.js";
 import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 
 /**

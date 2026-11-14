@@ -5,36 +5,17 @@
  * undo of a bulk replace — all without touching document persistence.
  */
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { chromium, firefox, webkit } from "@playwright/test";
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
+import {
+  createSuite,
+  loadFixture,
+  openRibbonPage,
+} from "./lib/ribbon-suite.mjs";
 
-const base = process.env.RIBBON_BASE_URL ?? "http://localhost:5173";
-const engine = process.env.RIBBON_BROWSER ?? "chromium";
-const output = resolve(
-  process.env.RIBBON_OUTPUT ?? `debug_artifacts/ribbon-find-${engine}`,
-);
-await mkdir(output, { recursive: true });
-const sha = execFileSync("git", ["rev-parse", "HEAD"], {
-  encoding: "utf8",
-}).trim();
-const dirty = Boolean(
-  execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(),
-);
-const browser = await { chromium, firefox, webkit }[engine].launch();
-const records = [];
-
-async function loadFixture(page, fixture) {
-  await page.evaluate(async (name) => {
-    const { prepareRibbonFixture } =
-      await import("/tests/browser/ribbon/fixtures.ts");
-    const client = window.ribbonReference.client;
-    await prepareRibbonFixture(client, name);
-    client.history.clear();
-  }, fixture);
-}
+const { base, engine, output, sha, dirty, records, browser } =
+  await createSuite("find");
 
 async function documentText(page) {
   return page.evaluate(async () => {
@@ -74,15 +55,11 @@ try {
     { theme: "light", locale: "en", width: 640 },
   ];
   for (const { theme, locale, width } of configs) {
-    const page = await browser.newPage({
-      viewport: { width, height: 900 },
-      deviceScaleFactor: 1,
+    const { page, errors } = await openRibbonPage(browser, base, {
+      theme,
+      locale,
+      width,
     });
-    const errors = [];
-    page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto(
-      `${base}/tests/browser/ribbon/?theme=${theme}&locale=${locale}`,
-    );
     await waitForRibbonReference(page);
     await page.getByTestId("editor-ribbon-tab-home").click();
     await loadFixture(page, "text");

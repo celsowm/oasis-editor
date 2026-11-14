@@ -2,17 +2,13 @@
 /* global process, document, getComputedStyle, innerWidth, console */
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
 import assert from "node:assert/strict";
-import { chromium, firefox, webkit, expect } from "@playwright/test";
-import { mkdir, writeFile } from "node:fs/promises";
+import { expect } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { createSuite } from "./lib/ribbon-suite.mjs";
 
-const base = process.env.RIBBON_BASE_URL ?? "http://localhost:5173";
-const engine = process.env.RIBBON_BROWSER ?? "chromium";
-const output = resolve(
-  process.env.RIBBON_OUTPUT ?? `debug_artifacts/ribbon-checks-${engine}`,
-);
-await mkdir(output, { recursive: true });
-const browser = await { chromium, firefox, webkit }[engine].launch();
+const { base, engine, output, sha, dirty, records, browser } =
+  await createSuite("ribbon-checks");
 const evidence = [];
 try {
   for (const theme of ["light", "dark"])

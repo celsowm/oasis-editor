@@ -1,26 +1,13 @@
 #!/usr/bin/env node
 /** Actual Ribbon actions, undo boundaries and a DOCX round-trip for D02. */
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { chromium, firefox, webkit } from "@playwright/test";
 import JSZip from "jszip";
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
-const base = process.env.RIBBON_BASE_URL ?? "http://localhost:5173";
-const engine = process.env.RIBBON_BROWSER ?? "chromium";
-const output = resolve(
-  process.env.RIBBON_OUTPUT ?? `debug_artifacts/ribbon-editing-${engine}`,
-);
-await mkdir(output, { recursive: true });
-const sha = execFileSync("git", ["rev-parse", "HEAD"], {
-  encoding: "utf8",
-}).trim();
-const dirty = Boolean(
-  execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(),
-);
-const browser = await { chromium, firefox, webkit }[engine].launch();
-const records = [];
+import { createSuite } from "./lib/ribbon-suite.mjs";
+const { base, engine, output, sha, dirty, records, browser } =
+  await createSuite("ribbon-editing");
 async function control(page, id, group = "font") {
   const target = page.locator(`[data-testid="editor-toolbar-${id}"]:visible`);
   if (!(await target.isVisible())) {
