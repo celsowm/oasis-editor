@@ -191,7 +191,13 @@ try {
           deviceScaleFactor: 1,
         });
         const errors = [];
+        const iconWarnings = [];
         page.on("pageerror", (e) => errors.push(e.message));
+        page.on("console", (message) => {
+          if (message.text().includes("Unknown Lucide icon")) {
+            iconWarnings.push(message.text());
+          }
+        });
         await page.goto(
           `${base}/tests/browser/ribbon/?theme=${theme}&locale=${locale}`,
         );
@@ -200,6 +206,39 @@ try {
           .locator("section.oasis-editor-toolbar-view-ribbon")
           .evaluate((e) => e.getBoundingClientRect().width);
         assert.ok(Math.abs(measuredWidth - width) < 1);
+
+        // The three color split buttons use custom (non-Lucide) SVG icons.
+        // An unresolved `<i data-lucide>` placeholder renders blank and logs
+        // "Unknown Lucide icon" on every DOM mutation.
+        const splitIcons = await page.evaluate(() =>
+          [
+            "editor-toolbar-color",
+            "editor-toolbar-highlight",
+            "editor-toolbar-text-shading",
+          ].map((id) => {
+            const holder = document
+              .querySelector(`[data-testid="${id}"]`)
+              ?.querySelector(".oasis-editor-color-split-icon");
+            return {
+              svg: Boolean(holder?.querySelector("svg")),
+              placeholder: Boolean(holder?.querySelector("i[data-lucide]")),
+            };
+          }),
+        );
+        assert.equal(splitIcons.length, 3);
+        for (const icon of splitIcons) {
+          assert.equal(icon.svg, true, "color split renders its SVG glyph");
+          assert.equal(
+            icon.placeholder,
+            false,
+            "no unresolved Lucide placeholder",
+          );
+        }
+        assert.deepEqual(
+          iconWarnings,
+          [],
+          "no unknown-Lucide-icon warnings at mount",
+        );
         for (const mode of modes) {
           const before = await seed(page);
           await (await control(page, `${mode.id}-dropdown`)).click();
@@ -343,6 +382,7 @@ try {
             image,
             document: filename,
             checks: [
+              "custom-split-icons-render",
               "RGB-selected-swatch",
               "preview-no-mutation",
               "original-target-and-links",
@@ -439,6 +479,7 @@ try {
           mode: "styles",
           document: filename,
           checks: [
+            "custom-split-icons-render",
             "paragraph-and-character-scope",
             "selection-and-link-preservation",
             "separate-undo-redo",

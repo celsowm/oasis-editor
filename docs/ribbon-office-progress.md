@@ -1549,6 +1549,16 @@ Harness note: a long-running Vite dev server had accumulated stale HMR state dur
 
 Limits: the pane still lists only insert/delete text-run revisions (no structural/property revisions, no header/footer stories), does not balloon comments, and its open state is not persisted. Simple Markup, change bars, reviewer balloons, reviewer colours/options, property/structural revision painting, endnotes' editable zone, external Word/LibreOffice round-trip and real `w:trackChanges` DOCX persistence remain open. VoiceOver, touch and trusted-Safari input remain unverified.
 
+## Delivery 130 — Fix: color split buttons rendered blank icons
+
+Date: 2026-11-14. A pre-existing UI defect found while gating Deliveries 128/129: the Font Color, Text Highlight and Text Shading split buttons wrote `<i data-lucide="fontColor|highlight|shading">` placeholders, but those three names are **custom** SVG glyphs in `CUSTOM_ICONS`, not Lucide icons. The icon MutationObserver therefore could not resolve them: it logged `Unknown Lucide icon` on every DOM mutation and left an empty `<i>` where the glyph should be.
+
+`ColorPicker.tsx` now renders `ToolIcon` (the same resolver `UnderlineControl` already uses), and `.oasis-editor-color-split-icon` sizing applies to `svg` as well as `i`, so the custom glyphs render at the toolbar's 18px icon size. The three pickers now show their intended multi-color A/highlighter/shading glyphs.
+
+Evidence: `scripts/verify-ribbon-colors-styles.mjs` gains a `custom-split-icons-render` check per layout that asserts each of the three split buttons contains an `<svg>` (and no unresolved `i[data-lucide]` placeholder) and that the page emits zero `Unknown Lucide icon` console warnings; it passes in Chromium, Firefox and WebKit × 8 layouts (32 records, 9 checks each). The dev-server log's last unknown-icon warning predates the fix, and the full `npm run test:ribbon:ci` browser suite (11 suites, including the 354-scene icon review and the 80-layout resize suite) is green again, so the icon sizing change does not shift ribbon measurements. Typecheck, `npm run lint`, `npm run audit:ribbon`, icon audit and native-UI guardrail all pass.
+
+Limits: this is a rendering fix only; no color semantics, palette or DOCX behavior changed. VoiceOver, touch and trusted-Safari rendering remain unverified.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
