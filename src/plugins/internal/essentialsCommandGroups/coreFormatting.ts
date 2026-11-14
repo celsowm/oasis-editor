@@ -361,6 +361,13 @@ export function buildCoreFormattingCommands({
         isActive: formatting.isTrackChangesEnabled(),
       }),
     ),
+    toggleRevisionMarkup: command(
+      "toggleRevisionMarkup",
+      formatting.toggleRevisionMarkup,
+      (): { isActive: boolean } => ({
+        isActive: formatting.areRevisionMarkupVisible(),
+      }),
+    ),
     acceptRevisions: command(
       "acceptRevisions",
       formatting.acceptRevisions,

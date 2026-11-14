@@ -453,8 +453,14 @@ export function buildEssentialsFormatting(
     areMarginsVisible: (): boolean => Boolean(options.state().showMargins),
     areParagraphMarksVisible: (): boolean =>
       Boolean(options.state().showParagraphMarks),
+    areRevisionMarkupVisible: (): boolean =>
+      Boolean(options.state().showRevisionMarkup ?? true),
     toggleTrackChanges: (): true => (
       options.commandsController.applyToggleTrackChangesCommand(),
+      true
+    ),
+    toggleRevisionMarkup: (): true => (
+      options.commandsController.applyToggleRevisionMarkupCommand(),
       true
     ),
     acceptRevisions: (): true => (
