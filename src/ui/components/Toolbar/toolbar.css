@@ -182,6 +182,7 @@
 }
 .oasis-editor-ribbon-group-collapsed-trigger {
   display: none;
+  width: calc(var(--oasis-ribbon-group-collapsed-width, 68px) - 18px);
 }
 /* Let a collapsed large menu use its group's allocated width for wrapped labels. */
 .oasis-editor-ribbon-group-collapsed
@@ -193,8 +194,12 @@
 .oasis-editor-ribbon-group-collapsed
   .oasis-editor-ribbon-group-collapsed-trigger
   .oasis-editor-tool-button-ribbon-large {
+  /* The trigger button's min-width would set the grid item's min-content and
+   * grow the section past its collapsed allocation; keep the collapsed
+   * section exactly at collapsedMinWidth. */
+  min-width: 0;
   width: 100%;
-  max-width: 72px;
+  max-width: 100%;
 }
 .oasis-editor-ribbon-group-collapsed > .oasis-editor-ribbon-group-content {
   display: none;
