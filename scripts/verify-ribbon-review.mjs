@@ -3,7 +3,8 @@
  * P01 Review: document-scoped Accept All / Reject All, their confirmation gate,
  * disabled states without revisions, undo, the selection-vs-document scope
  * distinction, Display for Review (including Simple Markup change bars),
- * Show Markup category/reviewer filters and the Reviewing Pane.
+ * Show Markup category/reviewer filters, formatting revisions and the
+ * Reviewing Pane.
  */
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
@@ -20,24 +21,16 @@ import {
 const { base, engine, output, sha, dirty, records, browser } =
   await createSuite("review");
 
+// The full ribbon and the collapsed-group popup both render the same controls.
+// Use the shared bounding-box + collapsed-popup resolver instead of the
+// `:visible` pseudo-class, which can resolve to a 0x0 copy of a full-size
+// button inside a collapsed group and flake on click (notably Firefox).
 function acceptAllButton(page) {
-  return page.locator(
-    '[data-testid="editor-toolbar-accept-all-revisions"]:visible',
-  );
+  return openGroup(page, "changes", "editor-toolbar-accept-all-revisions");
 }
 
 function rejectAllButton(page) {
-  return page.locator(
-    '[data-testid="editor-toolbar-reject-all-revisions"]:visible',
-  );
-}
-
-async function openReviewGroup(page) {
-  const button = acceptAllButton(page);
-  if (await button.isVisible()) return;
-  await page.keyboard.press("Escape");
-  await page.getByTestId("editor-ribbon-group-changes").click();
-  await button.waitFor({ state: "visible", timeout: 5000 });
+  return openGroup(page, "changes", "editor-toolbar-reject-all-revisions");
 }
 
 async function commandEnabled(page, name) {
@@ -186,15 +179,13 @@ try {
       await commandEnabled(page, "requestRejectAllRevisions"),
       false,
     );
-    await openReviewGroup(page);
-    assert.equal(await acceptAllButton(page).isDisabled(), true);
+    assert.equal(await (await acceptAllButton(page)).isDisabled(), true);
 
     // 2. With a tracked insertion both requests enable and the dialog states scope.
     await loadFixture(page, "review");
     assert.equal(await commandEnabled(page, "requestAcceptAllRevisions"), true);
     assert.equal(await commandEnabled(page, "requestRejectAllRevisions"), true);
-    await openReviewGroup(page);
-    await acceptAllButton(page).click();
+    await (await acceptAllButton(page)).click();
     await page
       .getByTestId("editor-revision-bulk-dialog")
       .waitFor({ state: "visible", timeout: 5000 });
@@ -237,8 +228,7 @@ try {
 
     // 5. Accept All finalizes the text and undo restores the revision.
     const beforeAccept = await paragraphText(page, 0);
-    await openReviewGroup(page);
-    await acceptAllButton(page).click();
+    await (await acceptAllButton(page)).click();
     await page.getByTestId("editor-revision-bulk-confirm").click();
     await page
       .getByTestId("editor-revision-bulk-dialog")
@@ -249,8 +239,7 @@ try {
     assert.equal(await commandEnabled(page, "acceptAllRevisions"), true);
 
     // 6. Reject All removes the inserted text and undo restores it.
-    await openReviewGroup(page);
-    await rejectAllButton(page).click();
+    await (await rejectAllButton(page)).click();
     await page.getByTestId("editor-revision-bulk-confirm").click();
     await page
       .getByTestId("editor-revision-bulk-dialog")
@@ -832,6 +821,119 @@ try {
       0,
     );
 
+    // 13. Formatting (property) revisions paint their own decoration, join the
+    // Show Markup reviewer list, and produce a Simple Markup change bar. Reset
+    // to the pristine fixture first so this is isolated from the steps above.
+    await loadFixture(page, "review");
+    await page.evaluate(async () => {
+      const client = window.ribbonReference.client;
+      const { getDocumentParagraphs } = await import("/src/core/model.ts");
+      const document = client.document.get();
+      const target = getDocumentParagraphs(document)[1];
+      client.document.load({
+        ...document,
+        sections: document.sections.map((section) => ({
+          ...section,
+          blocks: section.blocks.map((block) =>
+            block.id === target.id
+              ? {
+                  ...target,
+                  runs: target.runs.map((run, index) =>
+                    index === 0
+                      ? {
+                          ...run,
+                          styles: {
+                            ...(run.styles ?? {}),
+                            propertyRevision: {
+                              id: "format-revision",
+                              type: "property",
+                              author: "Formatting author",
+                              date: 3000,
+                              previous: {},
+                            },
+                          },
+                        }
+                      : run,
+                  ),
+                }
+              : block,
+          ),
+        })),
+      });
+    });
+    const propertyMarkup = () =>
+      page.locator(
+        '[data-testid="editor-revision-markup"][data-revision-type="property"]',
+      );
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll(
+          '[data-testid="editor-revision-markup"][data-revision-type="property"]',
+        ).length > 0,
+      undefined,
+      { timeout: 5000 },
+    );
+    assert.ok(
+      (await propertyMarkup().count()) > 0,
+      "a formatting revision paints a distinct decoration in All Markup",
+    );
+    assert.equal(
+      await propertyMarkup().first().getAttribute("data-revision-id"),
+      "format-revision",
+    );
+    const authors = (await markupOptions(page)).knownAuthors;
+    assert.ok(
+      authors.includes("Formatting author"),
+      "formatting revision authors appear in the Show Markup reviewer list",
+    );
+
+    // Categories do not filter formatting (Word has no formatting category here).
+    await applyShowMarkup(page, { section: "insertions" });
+    assert.ok(
+      (await propertyMarkup().count()) > 0,
+      "turning insertions off must not hide formatting decorations",
+    );
+    await applyShowMarkup(page, { section: "insertions" });
+
+    // Hiding the formatting author removes its decoration (reviewer filtering).
+    await applyShowMarkup(page, { author: "Formatting author" });
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll(
+          '[data-testid="editor-revision-markup"][data-revision-type="property"]',
+        ).length === 0,
+      undefined,
+      { timeout: 5000 },
+    );
+    assert.equal(await propertyMarkup().count(), 0);
+    await applyShowMarkup(page, { author: "Formatting author" });
+
+    // In Simple Markup the formatting paragraph also gets a change bar (and
+    // inline formatting decorations are hidden along with insert/delete ones).
+    await (
+      await openGroup(page, "tracking", "editor-toolbar-display-for-review")
+    ).click();
+    await page
+      .locator('[data-testid="editor-toolbar-display-for-review-simple"]')
+      .click();
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll('[data-testid="editor-change-bar"]').length >
+        0,
+      undefined,
+      { timeout: 5000 },
+    );
+    assert.equal(
+      await page.locator('[data-testid="editor-revision-markup"]').count(),
+      0,
+    );
+    const simpleIds = await changeBarIds();
+    assert.deepEqual(await paintedChangeBarIds(), simpleIds);
+    assert.ok(
+      simpleIds.length >= 2,
+      "formatting and insert paragraphs both bar",
+    );
+
     assert.deepEqual(errors, []);
     records.push({
       sha,
@@ -872,6 +974,10 @@ try {
         "reviewing-pane-navigates",
         "reviewing-pane-accept-one",
         "reviewing-pane-close",
+        "formatting-revision-paints-distinct-decoration",
+        "formatting-revision-author-in-show-markup",
+        "formatting-revision-not-category-filtered",
+        "formatting-revision-reviewer-filter-and-change-bar",
       ],
     });
     await page.close();
@@ -881,7 +987,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters and the Reviewing Pane.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters, formatting revisions and the Reviewing Pane.`,
   );
 } finally {
   await browser.close();
