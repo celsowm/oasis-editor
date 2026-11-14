@@ -28,6 +28,8 @@ const READ_ONLY_SAFE_COMMANDS: ReadonlySet<OasisBuiltinCommand> = new Set([
   "toggleShowMargins",
   "toggleShowParagraphMarks",
   "togglePreciseFonts",
+  "toggleRevisionMarkup",
+  "setReviewDisplayMode",
   // Context detectors drive contextual tabs and never mutate the document.
   "imageContext",
   "tableContext",
