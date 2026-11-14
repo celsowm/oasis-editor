@@ -259,12 +259,16 @@
   gap: 0.25rem;
   flex: 0 0 auto;
 }
-.oasis-review-revision-footer,
 .oasis-review-revision-footer {
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
   padding-top: 0.5rem;
+}
+.oasis-review-revisions-filtered {
+  margin: 0.25rem 0;
+  font-size: 0.75rem;
+  color: var(--oasis-text-muted, #666);
 }
 
 .oasis-chrome-strip {

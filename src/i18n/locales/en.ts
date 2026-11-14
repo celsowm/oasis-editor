@@ -103,6 +103,8 @@ export const en = {
   "review.showMarkupDeletions": "Deletions",
   "review.showMarkupComments": "Comments",
   "review.showMarkupAllReviewers": "All Reviewers",
+  "review.revisionsHiddenByShowMarkup":
+    "Some revisions are hidden by Show Markup.",
   "review.bulkAcceptTitle": "Accept all changes",
   "review.bulkAcceptMessage":
     "Accept all {0} tracked changes in this document, including headers, footers, notes and tables?",

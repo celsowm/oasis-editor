@@ -1,8 +1,5 @@
 import type { EditorRevision, EditorState } from "@/core/model.js";
-import {
-  isMarkupAuthorShown,
-  isMarkupSectionShown,
-} from "@/core/commands/reviewMarkup.js";
+import { isRevisionMarkupShown } from "@/core/commands/reviewMarkup.js";
 import type { RevisionMarkupBox } from "@/ui/editorUiTypes.js";
 import type { CanvasLayoutSnapshot } from "./CanvasLayoutSnapshot.js";
 
@@ -25,8 +22,6 @@ function collectRevisionRanges(
   state: EditorState,
 ): RevisionRange[] {
   const ranges: RevisionRange[] = [];
-  const showInsertions = isMarkupSectionShown(state, "insertions");
-  const showDeletions = isMarkupSectionShown(state, "deletions");
   let offset = 0;
   for (const run of paragraph.runs) {
     const start = offset;
@@ -36,8 +31,7 @@ function collectRevisionRanges(
     if (
       revision &&
       (revision.type === "insert" || revision.type === "delete") &&
-      (revision.type === "insert" ? showInsertions : showDeletions) &&
-      isMarkupAuthorShown(state, revision.author) &&
+      isRevisionMarkupShown(state, revision.type, revision.author) &&
       end > start
     ) {
       const previous = ranges.at(-1);

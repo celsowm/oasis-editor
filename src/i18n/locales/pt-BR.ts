@@ -103,6 +103,8 @@ export const ptBR = {
   "review.showMarkupDeletions": "Exclusões",
   "review.showMarkupComments": "Comentários",
   "review.showMarkupAllReviewers": "Todos os revisores",
+  "review.revisionsHiddenByShowMarkup":
+    "Algumas revisões estão ocultas por Mostrar marcação.",
   "review.bulkAcceptTitle": "Aceitar todas as alterações",
   "review.bulkAcceptMessage":
     "Aceitar todas as {0} alterações controladas deste documento, incluindo cabeçalhos, rodapés, notas e tabelas?",

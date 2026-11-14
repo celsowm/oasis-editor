@@ -2,6 +2,7 @@ import { For, Show, createMemo, type Accessor, type JSX } from "solid-js";
 import type { EditorState } from "@/core/model.js";
 import { getParagraphs } from "@/core/model.js";
 import { collectNavigableRevisions } from "@/core/commands/reviewNavigation.js";
+import { isRevisionMarkupShown } from "@/core/commands/reviewMarkup.js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Button } from "@/ui/public/Button.js";
 import { Text } from "@/ui/public/Text.js";
@@ -51,7 +52,7 @@ function revisionSnippet(state: EditorState, id: string): string {
  */
 export function ReviewingPane(props: ReviewingPaneProps): JSX.Element {
   const t = useI18n();
-  const entries = createMemo((): RevisionEntry[] => {
+  const allEntries = createMemo((): RevisionEntry[] => {
     const state = props.state();
     const paragraphs = getParagraphs(state);
     const authorById = new Map<string, string>();
@@ -82,6 +83,17 @@ export function ReviewingPane(props: ReviewingPaneProps): JSX.Element {
       };
     });
   });
+
+  // Word's Show Markup filters govern the Reviewing Pane too: hiding a
+  // revision category or a reviewer hides their rows from the list. Accept /
+  // Reject All still address the whole document (they are bulk decisions).
+  const entries = createMemo((): RevisionEntry[] => {
+    const state = props.state();
+    return allEntries().filter((entry): boolean =>
+      isRevisionMarkupShown(state, entry.type, entry.author),
+    );
+  });
+  const hiddenCount = (): number => allEntries().length - entries().length;
 
   const typeLabel = (type: string): string => {
     if (type === "insert" || type === "delete")
@@ -122,6 +134,15 @@ export function ReviewingPane(props: ReviewingPaneProps): JSX.Element {
       <Text as="p">
         {t("review.revisionCount")}: {entries().length}
       </Text>
+      <Show when={hiddenCount() > 0}>
+        <Text
+          as="p"
+          class="oasis-review-revisions-filtered"
+          data-testid="review-revisions-filtered"
+        >
+          {t("review.revisionsHiddenByShowMarkup")}
+        </Text>
+      </Show>
 
       <Show
         when={entries().length > 0}
