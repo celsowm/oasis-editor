@@ -887,7 +887,8 @@ try {
       "formatting revision authors appear in the Show Markup reviewer list",
     );
 
-    // Categories do not filter formatting (Word has no formatting category here).
+    // Categories do not filter formatting (Oasis has not yet exposed Word's
+    // dedicated "Formatting" Show Markup checkbox).
     await applyShowMarkup(page, { section: "insertions" });
     assert.ok(
       (await propertyMarkup().count()) > 0,

@@ -119,8 +119,9 @@ export function isMarkupAuthorShown(
 /**
  * Whether one revision is shown by the current Show Markup filters. Used by
  * both the painted overlay and the Reviewing Pane list so the two surfaces
- * never disagree. Non-insert/delete revision types are not category-filtered
- * (Word's menu only has insertion/deletion/comment categories).
+ * never disagree. Non-insert/delete revision types are not category-filtered:
+ * Oasis has not yet exposed Word's dedicated Formatting Show Markup checkbox,
+ * so the gallery currently has only insertion/deletion/comment categories.
  */
 export function isRevisionMarkupShown(
   state: EditorState,
@@ -176,8 +177,9 @@ function paragraphHasVisibleRevision(
  * in the raw document with at least one visible insert/delete text revision or
  * run-level formatting (property) revision. Show Markup reviewer filters are
  * applied through `isRevisionMarkupShown`, so a hidden reviewer removes its
- * bar; category flags only apply to insert/delete (Word has no formatting
- * category in this menu). Endnotes have no editable zone and are not walked.
+ * bar; category flags only apply to insert/delete because Oasis has not yet
+ * exposed Word's dedicated Formatting Show Markup checkbox. Endnotes have no
+ * editable zone and are not walked.
  */
 export function collectChangeBarParagraphIds(state: EditorState): Set<string> {
   const ids = new Set<string>();
