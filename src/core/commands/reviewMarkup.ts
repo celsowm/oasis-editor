@@ -1,5 +1,8 @@
 import type { EditorState, ReviewDisplayMode } from "@/core/model.js";
-import type { EditorParagraphNode } from "@/core/model/types/nodes.js";
+import type {
+  EditorBlockNode,
+  EditorParagraphNode,
+} from "@/core/model/types/nodes.js";
 import { getDocumentParagraphs } from "@/core/model.js";
 import { getDocumentSections } from "@/core/model.js";
 
@@ -290,20 +293,37 @@ function collectParagraphAuthors(
 }
 
 /**
- * Every author with markup in the document: tracked insert/delete and
- * run-level formatting (property) revision authors plus comment authors,
- * sorted for a stable menu. Empty when nothing is marked.
+ * Every author with markup in the document: tracked insert/delete, run-level
+ * formatting (property), table/row/cell structural and property revision
+ * authors plus comment authors, sorted for a stable menu. Empty when nothing
+ * is marked. Walking table cells matters because a cell-level revision has no
+ * run to carry its author.
  */
 export function collectMarkupAuthors(state: EditorState): string[] {
   const authors = new Set<string>();
 
-  const collectBlocks = (
-    blocks: { type: string; runs?: unknown[] }[] | undefined,
-  ): void => {
+  const addAuthor = (author: string | undefined): void => {
+    if (author) authors.add(author);
+  };
+
+  const collectBlocks = (blocks: EditorBlockNode[] | undefined): void => {
     if (!blocks) return;
     for (const block of blocks) {
-      if (block.type !== "paragraph") continue;
-      collectParagraphAuthors(block as unknown as EditorParagraphNode, authors);
+      if (block.type === "paragraph") {
+        collectParagraphAuthors(block, authors);
+        continue;
+      }
+      addAuthor(block.style?.revision?.author);
+      addAuthor(block.gridRevision?.author);
+      for (const row of block.rows) {
+        addAuthor(row.style?.revision?.author);
+        addAuthor(row.style?.propertyRevision?.author);
+        for (const cell of row.cells) {
+          addAuthor(cell.style?.revision?.author);
+          addAuthor(cell.style?.propertyRevision?.author);
+          collectBlocks(cell.blocks);
+        }
+      }
     }
   };
 
@@ -322,17 +342,18 @@ export function collectMarkupAuthors(state: EditorState): string[] {
       section.firstPageFooter,
       section.evenPageFooter,
     ]) {
-      collectBlocks(blocks as Parameters<typeof collectBlocks>[0]);
+      collectBlocks(blocks as EditorBlockNode[] | undefined);
     }
+    addAuthor(section.propertyRevision?.author);
   }
 
   const footnotes = state.document.footnotes?.items ?? {};
   for (const footnote of Object.values(footnotes)) {
-    collectBlocks(footnote.blocks as Parameters<typeof collectBlocks>[0]);
+    collectBlocks(footnote.blocks as EditorBlockNode[] | undefined);
   }
   const endnotes = state.document.endnotes?.items ?? {};
   for (const endnote of Object.values(endnotes)) {
-    collectBlocks(endnote.blocks as Parameters<typeof collectBlocks>[0]);
+    collectBlocks(endnote.blocks as EditorBlockNode[] | undefined);
   }
 
   const comments = state.document.comments?.items ?? {};

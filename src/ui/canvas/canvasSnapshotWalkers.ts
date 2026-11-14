@@ -453,6 +453,8 @@ export function collectSnapshotTable(
           height: cell.height,
           anchorPosition: cell.anchorPosition,
           revisionId: cell.revision?.id,
+          revisionType: cell.revision?.type,
+          revisionAuthor: cell.revision?.author,
         },
       });
       inlineImages.push(

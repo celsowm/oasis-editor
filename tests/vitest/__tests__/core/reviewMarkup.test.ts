@@ -171,6 +171,73 @@ describe("collectMarkupAuthors", () => {
     const s = state([paragraph("p1", [run])]);
     expect(collectMarkupAuthors(s)).toEqual(["Formatting author"]);
   });
+
+  it("collects table/row/cell structural and property revision authors", () => {
+    const table = {
+      id: "t1",
+      type: "table",
+      rows: [
+        {
+          id: "row1",
+          cells: [
+            {
+              id: "cell1",
+              blocks: [paragraph("p1", [textRun("r1", "plain")])],
+              style: {
+                revision: {
+                  id: "cell-ins",
+                  type: "insert",
+                  author: "Cell author",
+                  date: 1,
+                },
+              },
+            },
+            {
+              id: "cell2",
+              blocks: [paragraph("p2", [textRun("r2", "plain")])],
+              style: {
+                propertyRevision: {
+                  id: "cell-prop",
+                  type: "property",
+                  author: "Cell format author",
+                  date: 2,
+                  previous: {},
+                },
+              },
+            },
+          ],
+          style: {
+            propertyRevision: {
+              id: "row-prop",
+              type: "property",
+              author: "Row author",
+              date: 3,
+              previous: {},
+            },
+          },
+        },
+      ],
+      style: {
+        revision: {
+          id: "table-ins",
+          type: "insert",
+          author: "Table author",
+          date: 4,
+        },
+      },
+    };
+    const doc = {
+      id: "doc",
+      sections: [{ id: "s1", blocks: [table], pageSettings: pageSettings() }],
+    } as unknown as EditorDocument;
+    const s = createEditorStateFromDocument(doc);
+    expect(collectMarkupAuthors(s)).toEqual([
+      "Cell author",
+      "Cell format author",
+      "Row author",
+      "Table author",
+    ]);
+  });
 });
 
 describe("toggleMarkupAuthor", () => {

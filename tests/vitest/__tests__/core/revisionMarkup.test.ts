@@ -346,3 +346,130 @@ describe("toggleRevisionMarkup", () => {
     ).toBe(true);
   });
 });
+
+interface CellSpec {
+  paragraphId: string;
+  rowIndex: number;
+  cellIndex: number;
+  revisionId: string;
+  type: "insert" | "delete" | "merge" | "property";
+  author: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/** Snapshot whose paragraphs each carry a revised table cell. */
+function cellSnapshot(cells: CellSpec[]): CanvasLayoutSnapshot {
+  const base = buildSnapshot(paragraph("p0", [textRun("a", "plain")]));
+  const paragraphs = cells.map((cell) => ({
+    ...(base.paragraphs[0] as object),
+    paragraphId: cell.paragraphId,
+    tableCell: {
+      tableId: "t1",
+      rowIndex: cell.rowIndex,
+      cellIndex: cell.cellIndex,
+      left: cell.left,
+      top: cell.top,
+      width: cell.width,
+      height: cell.height,
+      anchorPosition: {},
+      revisionId: cell.revisionId,
+      revisionType: cell.type,
+      revisionAuthor: cell.author,
+    },
+  }));
+  return {
+    ...base,
+    paragraphs,
+  } as unknown as CanvasLayoutSnapshot;
+}
+
+describe("computeRevisionMarkup table-cell revisions", () => {
+  const cells: CellSpec[] = [
+    {
+      paragraphId: "p-ins",
+      rowIndex: 1,
+      cellIndex: 0,
+      revisionId: "cell-ins",
+      type: "insert",
+      author: "Table author",
+      left: 120,
+      top: 140,
+      width: 90,
+      height: 24,
+    },
+    {
+      paragraphId: "p-prop",
+      rowIndex: 1,
+      cellIndex: 1,
+      revisionId: "cell-prop",
+      type: "property",
+      author: "Table author",
+      left: 220,
+      top: 140,
+      width: 90,
+      height: 24,
+    },
+  ];
+  const rawState = () =>
+    stateWith([
+      paragraph("p-ins", [textRun("a", "plain")]),
+      paragraph("p-prop", [textRun("b", "plain")]),
+    ]);
+
+  it("paints one full-cell outline box per revised cell", () => {
+    const boxes = computeRevisionMarkup(cellSnapshot(cells), rawState());
+    expect(boxes).toHaveLength(2);
+    expect(boxes[0]).toEqual({
+      revisionId: "cell-ins",
+      type: "insert",
+      variant: "cell",
+      left: 120,
+      top: 140,
+      width: 90,
+      height: 24,
+    });
+    expect(boxes[1]).toMatchObject({
+      revisionId: "cell-prop",
+      type: "property",
+      variant: "cell",
+    });
+  });
+
+  it("deduplicates multiple paragraphs inside one cell", () => {
+    const dup = [cells[0]!, { ...cells[0]!, paragraphId: "p-ins-2" }];
+    expect(computeRevisionMarkup(cellSnapshot(dup), rawState())).toHaveLength(
+      1,
+    );
+  });
+
+  it("hides a property cell when the Formatting category is off", () => {
+    const state = applyShowMarkup(rawState(), { section: "formatting" });
+    const boxes = computeRevisionMarkup(cellSnapshot(cells), state);
+    expect(boxes.map((box) => box.type)).toEqual(["insert"]);
+  });
+
+  it("hides an inserted cell when the Insertions category is off", () => {
+    const state = applyShowMarkup(rawState(), { section: "insertions" });
+    const boxes = computeRevisionMarkup(cellSnapshot(cells), state);
+    expect(boxes.map((box) => box.type)).toEqual(["property"]);
+  });
+
+  it("hides all cell outlines when the reviewer is filtered out", () => {
+    const state = setMarkupAuthors(rawState(), ["Someone else"]);
+    expect(computeRevisionMarkup(cellSnapshot(cells), state)).toHaveLength(0);
+  });
+
+  it("merge has no category and is reviewer-filtered only", () => {
+    const merge: CellSpec[] = [
+      { ...cells[0]!, type: "merge", revisionId: "cell-merge" },
+    ];
+    const state = applyShowMarkup(rawState(), { section: "insertions" });
+    const boxes = computeRevisionMarkup(cellSnapshot(merge), state);
+    expect(boxes.map((box) => box.type)).toEqual(["merge"]);
+    const hidden = setMarkupAuthors(rawState(), ["Someone else"]);
+    expect(computeRevisionMarkup(cellSnapshot(merge), hidden)).toHaveLength(0);
+  });
+});

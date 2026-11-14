@@ -40,7 +40,10 @@ export interface CanvasSnapshotTableCellInfo {
   width: number;
   height: number;
   anchorPosition: EditorPosition;
+  /** Structural/formatting revision on this cell (`w:tcPr`/`w:tcPrChange`). */
   revisionId?: string;
+  revisionType?: "insert" | "delete" | "merge" | "property";
+  revisionAuthor?: string;
 }
 
 export interface CanvasSnapshotParagraph {

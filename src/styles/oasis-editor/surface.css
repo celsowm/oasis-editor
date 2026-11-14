@@ -444,6 +444,29 @@
   );
 }
 
+/* Structural table-cell revisions draw a full coloured outline instead of a
+   text underline. Colour follows the same green/red/violet/amber palette. */
+.oasis-editor-revision-markup-cell {
+  border: 2px solid;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+.oasis-editor-revision-markup-cell::after {
+  display: none;
+}
+.oasis-editor-revision-markup-cell.oasis-editor-revision-markup-insert {
+  border-color: #059669;
+}
+.oasis-editor-revision-markup-cell.oasis-editor-revision-markup-delete {
+  border-color: #dc2626;
+}
+.oasis-editor-revision-markup-cell.oasis-editor-revision-markup-property {
+  border-color: #7c3aed;
+}
+.oasis-editor-revision-markup-cell.oasis-editor-revision-markup-merge {
+  border-color: #d97706;
+}
+
 .oasis-editor-change-bar-root {
   pointer-events: none;
 }
