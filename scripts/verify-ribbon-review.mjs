@@ -5,8 +5,8 @@
  * distinction, Display for Review (including Simple Markup change bars),
  * Show Markup category/reviewer filters (including the dedicated Formatting
  * checkbox), formatting revisions, Reviewing Pane formatting rows with their
- * accept/reject, structural table-cell revision outlines, and the persisted
- * Reviewing Pane open state.
+ * accept/reject, structural table-cell revision outlines with their Simple
+ * Markup change bars and pane rows, and the persisted Reviewing Pane open state.
  */
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
@@ -1255,7 +1255,125 @@ try {
     assert.ok(bulkIds.includes("cell-insert"));
     assert.ok(bulkIds.includes("cell-property"));
 
-    // 16. The Reviewing Pane's open state persists across reloads through
+    // 16. Cell revisions also produce Simple Markup change bars and Reviewing
+    // Pane rows. Both follow the Show Markup filters, and per-row Accept
+    // resolves the w:tcPr marker (id, outline and row all disappear together).
+    const reviewMode = () =>
+      page.evaluate(
+        () =>
+          window.ribbonReference.client.commands.state("setReviewDisplayMode")
+            .value,
+      );
+    const setReviewMode = (mode) =>
+      page.evaluate((value) => {
+        window.ribbonReference.client.commands.execute(
+          "setReviewDisplayMode",
+          value,
+        );
+      }, mode);
+    // Drive the mode through the command bus (the same path the gallery uses)
+    // so the check is independent of collapsed-group layout at narrow widths.
+    await setReviewMode("simple");
+    assert.equal(await reviewMode(), "simple");
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll('[data-testid="editor-change-bar"]').length >
+        0,
+      undefined,
+      { timeout: 5000 },
+    );
+    const cellBarIds = await changeBarIds();
+    assert.deepEqual(await paintedChangeBarIds(), cellBarIds);
+    const revisedCellParagraphIds = await page.evaluate(() => {
+      const state = window.ribbonReference.client.getState();
+      const ids = [];
+      for (const section of state.document.sections ?? []) {
+        for (const block of section.blocks) {
+          if (block.type !== "table") continue;
+          for (const row of block.rows) {
+            for (const entry of row.cells) {
+              if (!entry.style?.revision && !entry.style?.propertyRevision) {
+                continue;
+              }
+              for (const child of entry.blocks) {
+                if (child.type === "paragraph") ids.push(child.id);
+              }
+            }
+          }
+        }
+      }
+      return ids.sort();
+    });
+    assert.equal(revisedCellParagraphIds.length, 2);
+    for (const id of revisedCellParagraphIds) {
+      assert.ok(cellBarIds.includes(id), `cell paragraph ${id} has a bar`);
+    }
+    // Formatting off removes exactly the property cell's bar.
+    await applyShowMarkup(page, { section: "formatting" });
+    const barsNoFormatting = await changeBarIds();
+    assert.ok(barsNoFormatting.length < cellBarIds.length);
+    await waitForChangeBarCount(barsNoFormatting.length);
+    assert.deepEqual(await paintedChangeBarIds(), barsNoFormatting);
+    await applyShowMarkup(page, { section: "formatting" });
+    await waitForChangeBarCount(cellBarIds.length);
+
+    await setReviewMode("all");
+    assert.equal(await reviewMode(), "all");
+    await page.evaluate(() => {
+      window.ribbonReference.client.commands.execute("toggleRevisionsPanel");
+    });
+    await page
+      .getByTestId("review-revisions-panel")
+      .waitFor({ state: "visible", timeout: 5000 });
+    const idsInPane = await page.evaluate(async () => {
+      const { collectAllRevisionIds } =
+        await import("/src/core/commands/history.ts");
+      return [
+        ...collectAllRevisionIds(window.ribbonReference.client.getState()),
+      ];
+    });
+    assert.equal(
+      await paneRows.count(),
+      idsInPane.length,
+      "the pane lists one row per cell revision id",
+    );
+    const cellPropertyRows = paneRows.filter({
+      has: page.locator('[data-revision-type="property"]'),
+    });
+    assert.equal(await cellPropertyRows.count(), 1);
+    assert.ok(
+      (await cellPropertyRows.first().textContent())?.includes("2"),
+      "the cell row uses the cell's text as its snippet",
+    );
+    const cellInsertRows = paneRows.filter({
+      has: page.locator('[data-revision-type="insert"]'),
+    });
+    assert.equal(await cellInsertRows.count(), 1);
+
+    // Accept the inserted cell from its row: its id, outline and row vanish,
+    // while the property cell survives (selection-scoped, not document-wide).
+    await cellInsertRows.first().getByTestId("review-revision-accept").click();
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll('[data-revision-id="cell-insert"]').length ===
+        0,
+      undefined,
+      { timeout: 5000 },
+    );
+    const idsAfterAccept = await page.evaluate(async () => {
+      const { collectAllRevisionIds } =
+        await import("/src/core/commands/history.ts");
+      return [
+        ...collectAllRevisionIds(window.ribbonReference.client.getState()),
+      ];
+    });
+    assert.ok(!idsAfterAccept.includes("cell-insert"));
+    assert.ok(idsAfterAccept.includes("cell-property"));
+    assert.equal(await paneRows.count(), idsAfterAccept.length);
+    assert.equal(await cellMarkup().count(), 1);
+    await page.getByTestId("review-revisions-close").click();
+
+    // 17. The Reviewing Pane's open state persists across reloads through
     // localStorage, like Word's pane visibility. This runs last: a reload
     // intentionally discards every earlier step's document/view state.
     const paneStorage = () =>
@@ -1354,6 +1472,10 @@ try {
         "table-cell-revisions-follow-show-markup-categories",
         "table-cell-revisions-follow-reviewer-filters",
         "table-cell-revision-ids-consistent-with-bulk-model",
+        "cell-revisions-simple-markup-change-bars",
+        "cell-revision-change-bars-follow-formatting-checkbox",
+        "reviewing-pane-lists-cell-revisions",
+        "reviewing-pane-cell-row-accept-resolves",
         "reviewing-pane-open-state-persists-across-reload",
         "reviewing-pane-closed-state-persists-across-reload",
       ],
@@ -1365,7 +1487,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject, structural table-cell revision outlines, and the persisted Reviewing Pane open state.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject, structural table-cell revision outlines with their Simple Markup change bars and pane rows, and the persisted Reviewing Pane open state.`,
   );
 } finally {
   await browser.close();
