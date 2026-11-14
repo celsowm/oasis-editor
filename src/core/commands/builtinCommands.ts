@@ -52,6 +52,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "replace",
   "replaceAll",
   "toggleTrackChanges",
+  "toggleRevisionMarkup",
   "acceptRevisions",
   "rejectRevisions",
   "acceptAllRevisions",

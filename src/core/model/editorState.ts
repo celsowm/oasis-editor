@@ -28,6 +28,8 @@ export interface EditorState {
   trackChangesEnabled?: boolean;
   showMargins?: boolean;
   showParagraphMarks?: boolean;
+  /** Presentation toggle for painting tracked revisions (default on). */
+  showRevisionMarkup?: boolean;
 }
 
 export type { EditorPosition, EditorSelection, EditorEditingZone };

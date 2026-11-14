@@ -20,6 +20,13 @@ import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
 import { resolveAllTrackedRevisions } from "@/core/document/trackedRevisions.js";
 import { preserveSelectionByParagraphOffsets } from "@/core/selection/rangeEditing.js";
 
+export function toggleRevisionMarkup(state: EditorState): EditorState {
+  return {
+    ...state,
+    showRevisionMarkup: !(state.showRevisionMarkup ?? true),
+  };
+}
+
 export function toggleTrackChanges(state: EditorState): EditorState {
   return {
     ...state,

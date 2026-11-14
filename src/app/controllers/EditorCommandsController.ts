@@ -15,6 +15,7 @@ import {
   rejectAllRevisions,
   rejectRevisionsInSelection,
   toggleTrackChanges,
+  toggleRevisionMarkup,
 } from "@/core/commands/history.js";
 import {
   getSelectedImageCaption,
@@ -452,6 +453,10 @@ function createEditorCommandsControllerImpl(
     execState(toggleTrackChanges(state));
   };
 
+  const applyToggleRevisionMarkupCommand = (): void => {
+    execState(toggleRevisionMarkup(state));
+  };
+
   const applyToggleShowMarginsCommand = (): void => {
     applyState({ ...state, showMargins: !state.showMargins });
     focusInput();
@@ -689,6 +694,7 @@ function createEditorCommandsControllerImpl(
     handleStyleChange,
     applyUpdateSectionSettingsCommand,
     applyToggleTrackChangesCommand,
+    applyToggleRevisionMarkupCommand,
     applyToggleShowMarginsCommand,
     applyToggleShowParagraphMarksCommand,
     applyAcceptRevisionsCommand,
