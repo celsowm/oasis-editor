@@ -4,7 +4,8 @@
  * disabled states without revisions, undo, the selection-vs-document scope
  * distinction, Display for Review (including Simple Markup change bars),
  * Show Markup category/reviewer filters (including the dedicated Formatting
- * checkbox), formatting revisions and the Reviewing Pane.
+ * checkbox), formatting revisions, and Reviewing Pane formatting rows with
+ * their accept/reject.
  */
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
@@ -994,6 +995,90 @@ try {
     await waitForChangeBarCount(simpleIds.length);
     assert.deepEqual(await paintedChangeBarIds(), simpleIds);
 
+    // 14. The Reviewing Pane now lists formatting (property) revisions, the
+    // Formatting checkbox hides that row, and per-row Accept resolves the
+    // underlying w:rPrChange marker (bulk ids and selection ids both include it).
+    // Return to All Markup first (Simple Markup is read-only).
+    await (
+      await openGroup(page, "tracking", "editor-toolbar-display-for-review")
+    ).click();
+    await page
+      .locator('[data-testid="editor-toolbar-display-for-review-all"]')
+      .click();
+
+    const formattingIds = () =>
+      page.evaluate(async () => {
+        const { collectAllRevisionIds } =
+          await import("/src/core/commands/history.ts");
+        return [
+          ...collectAllRevisionIds(window.ribbonReference.client.getState()),
+        ];
+      });
+    assert.ok(
+      (await formattingIds()).includes("format-revision"),
+      "formatting revision id is counted for bulk Accept/Reject",
+    );
+
+    await (
+      await openGroup(page, "tracking", "editor-toolbar-revisions-panel")
+    ).click();
+    await page
+      .getByTestId("review-revisions-panel")
+      .waitFor({ state: "visible", timeout: 5000 });
+    const formattingRows = () =>
+      page
+        .locator('[data-testid="review-revisions-list"] > li')
+        .filter({ has: page.locator('[data-revision-type="property"]') });
+    assert.equal(await formattingRows().count(), 1);
+    assert.ok(
+      (await formattingRows().first().textContent())?.includes(
+        locale === "en" ? "Formatting change" : "Alteração de formatação",
+      ),
+      "the formatting row uses the localized Formatted label",
+    );
+
+    // The dedicated Formatting checkbox hides the formatting row.
+    await applyShowMarkup(page, { section: "formatting" });
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll(
+          '[data-testid="review-revisions-list"] [data-revision-type="property"]',
+        ).length === 0,
+      undefined,
+      { timeout: 5000 },
+    );
+    assert.equal(await formattingRows().count(), 0);
+    await applyShowMarkup(page, { section: "formatting" });
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll(
+          '[data-testid="review-revisions-list"] [data-revision-type="property"]',
+        ).length === 1,
+      undefined,
+      { timeout: 5000 },
+    );
+    assert.equal(await formattingRows().count(), 1);
+
+    // Accept the formatting row: the marker, its decoration and the row vanish.
+    await formattingRows()
+      .first()
+      .getByTestId("review-revision-accept")
+      .click();
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll('[data-revision-type="property"]').length ===
+        0,
+      undefined,
+      { timeout: 5000 },
+    );
+    assert.equal(await propertyMarkup().count(), 0);
+    assert.equal(await formattingRows().count(), 0);
+    assert.ok(
+      !(await formattingIds()).includes("format-revision"),
+      "accepting removes the formatting revision id",
+    );
+    await page.getByTestId("review-revisions-close").click();
+
     assert.deepEqual(errors, []);
     records.push({
       sha,
@@ -1041,6 +1126,9 @@ try {
         "formatting-revision-follows-formatting-checkbox",
         "formatting-revision-reviewer-filter-and-change-bar",
         "formatting-change-bar-follows-formatting-checkbox",
+        "reviewing-pane-lists-formatting-revision",
+        "reviewing-pane-formatting-row-follows-formatting-checkbox",
+        "reviewing-pane-formatting-row-accept-resolves",
       ],
     });
     await page.close();
@@ -1050,7 +1138,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions and the Reviewing Pane.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject.`,
   );
 } finally {
   await browser.close();
