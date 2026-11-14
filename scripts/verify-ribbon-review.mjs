@@ -5,7 +5,8 @@
  * distinction, Display for Review (including Simple Markup change bars),
  * Show Markup category/reviewer filters (including the dedicated Formatting
  * checkbox), formatting revisions, Reviewing Pane formatting rows with their
- * accept/reject, and structural table-cell revision outlines.
+ * accept/reject, structural table-cell revision outlines, and the persisted
+ * Reviewing Pane open state.
  */
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
@@ -17,6 +18,7 @@ import {
   loadFixture,
   selectRangeInParagraph,
   openRibbonPage,
+  waitForRibbonSettled,
 } from "./lib/ribbon-suite.mjs";
 
 const { base, engine, output, sha, dirty, records, browser } =
@@ -1253,6 +1255,51 @@ try {
     assert.ok(bulkIds.includes("cell-insert"));
     assert.ok(bulkIds.includes("cell-property"));
 
+    // 16. The Reviewing Pane's open state persists across reloads through
+    // localStorage, like Word's pane visibility. This runs last: a reload
+    // intentionally discards every earlier step's document/view state.
+    const paneStorage = () =>
+      page.evaluate(() =>
+        globalThis.localStorage.getItem("oasis-reviewing-pane-v1"),
+      );
+    assert.equal(
+      await page.locator('[data-testid="review-revisions-panel"]').count(),
+      0,
+      "the pane is closed before the persistence check",
+    );
+    // Dispatch through the command bus (the same path the ribbon button uses)
+    // so the check is independent of collapsed-group layout at narrow widths.
+    await page.evaluate(() => {
+      window.ribbonReference.client.commands.execute("toggleRevisionsPanel");
+    });
+    await page
+      .getByTestId("review-revisions-panel")
+      .waitFor({ state: "visible", timeout: 5000 });
+    assert.equal(await paneStorage(), "true");
+
+    await page.reload();
+    await waitForRibbonReference(page);
+    await waitForRibbonSettled(page);
+    await page
+      .getByTestId("review-revisions-panel")
+      .waitFor({ state: "visible", timeout: 5000 });
+    assert.equal(
+      await page.locator('[data-testid="review-revisions-panel"]').count(),
+      1,
+      "an open Reviewing Pane is restored after reload",
+    );
+
+    await page.getByTestId("review-revisions-close").click();
+    assert.equal(await paneStorage(), "false");
+    await page.reload();
+    await waitForRibbonReference(page);
+    await waitForRibbonSettled(page);
+    assert.equal(
+      await page.locator('[data-testid="review-revisions-panel"]').count(),
+      0,
+      "a closed Reviewing Pane stays closed after reload",
+    );
+
     assert.deepEqual(errors, []);
     records.push({
       sha,
@@ -1307,6 +1354,8 @@ try {
         "table-cell-revisions-follow-show-markup-categories",
         "table-cell-revisions-follow-reviewer-filters",
         "table-cell-revision-ids-consistent-with-bulk-model",
+        "reviewing-pane-open-state-persists-across-reload",
+        "reviewing-pane-closed-state-persists-across-reload",
       ],
     });
     await page.close();
@@ -1316,7 +1365,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject, and structural table-cell revision outlines.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject, structural table-cell revision outlines, and the persisted Reviewing Pane open state.`,
   );
 } finally {
   await browser.close();
