@@ -4,6 +4,7 @@ import type {
   CommentHighlightBox,
   InputBox,
   LayoutOptionsOverlay,
+  RevisionMarkupBox,
   RevisionBox,
   SelectedImageBox,
   SelectedTextBoxBox,
@@ -47,6 +48,7 @@ export interface EditorViewLayoutInput {
 export interface EditorViewOverlayInput {
   selectionBoxes: Accessor<SelectionBox[]>;
   commentHighlights: Accessor<CommentHighlightBox[]>;
+  revisionMarkupBoxes: Accessor<RevisionMarkupBox[]>;
   onReplyToComment?: (commentId: string) => void;
   onEditComment?: (commentId: string) => void;
   canEditComment?: (commentId: string) => boolean;
@@ -160,6 +162,7 @@ export function buildEditorViewProps(
   const overlays: OasisEditorEditorOverlayProps = {
     selectionBoxes: overlayInput.selectionBoxes,
     commentHighlights: overlayInput.commentHighlights,
+    revisionMarkupBoxes: overlayInput.revisionMarkupBoxes,
     onReplyToComment: overlayInput.onReplyToComment,
     onEditComment: overlayInput.onEditComment,
     canEditComment: overlayInput.canEditComment,

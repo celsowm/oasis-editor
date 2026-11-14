@@ -6,6 +6,7 @@ import type {
 } from "@/core/model.js";
 import { computeCanvasSelectionGeometry } from "@/ui/canvas/CanvasSelectionGeometry.js";
 import { computeCommentHighlights } from "@/ui/canvas/CanvasCommentGeometry.js";
+import { computeRevisionMarkup } from "@/ui/canvas/CanvasRevisionGeometry.js";
 import {
   bumpLayoutMetricsEpoch,
   layoutMetricsEpoch,
@@ -18,6 +19,7 @@ import type {
   CaretBox,
   CommentHighlightBox,
   InputBox,
+  RevisionMarkupBox,
   SelectionBox,
 } from "@/ui/editorUiTypes.js";
 import type {
@@ -97,6 +99,9 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
   const [commentHighlights, setCommentHighlights] = createSignal<
     CommentHighlightBox[]
   >([]);
+  const [revisionMarkupBoxes, setRevisionMarkupBoxes] = createSignal<
+    RevisionMarkupBox[]
+  >([]);
   const [selectedImageBox, setSelectedImageBox] =
     createSignal<SelectedImageSelectionBox | null>(null);
   const [selectedTextBoxBox, setSelectedTextBoxBox] =
@@ -136,6 +141,7 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
     if (!surface) {
       setSelectionBoxes([]);
       setCommentHighlights([]);
+      setRevisionMarkupBoxes([]);
       setSelectedImageBox(null);
       setSelectedTextBoxBox(null);
       setSelectedTableBox(null);
@@ -159,6 +165,7 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
     if (!snapshot) {
       setSelectionBoxes([]);
       setCommentHighlights([]);
+      setRevisionMarkupBoxes([]);
       setSelectedImageBox(null);
       setSelectedTextBoxBox(null);
       setSelectedTableBox(null);
@@ -175,6 +182,11 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
 
     const geometry = computeCanvasSelectionGeometry(snapshot, props.state);
     setSelectionBoxes(geometry.selectionBoxes);
+    setRevisionMarkupBoxes(
+      props.state.showRevisionMarkup === false
+        ? []
+        : computeRevisionMarkup(snapshot),
+    );
     setCommentHighlights(computeCommentHighlights(snapshot, props.state));
     setSelectedImageBox(geometry.selectedImageBox);
     setSelectedTextBoxBox(geometry.selectedTextBoxBox);
@@ -274,6 +286,12 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
     requestInputBoxSync("content-change");
   });
 
+  // The markup toggle is a view flag: flip the overlay without an edit.
+  createEffect((): void => {
+    props.state.showRevisionMarkup;
+    requestInputBoxSync("content-change");
+  });
+
   createEffect((): void => {
     const viewport = props.viewportRef();
     if (!viewport) {
@@ -313,6 +331,7 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
     inputBox,
     selectionBoxes,
     commentHighlights,
+    revisionMarkupBoxes,
     selectedImageBox,
     selectedTextBoxBox,
     selectedTableBox,

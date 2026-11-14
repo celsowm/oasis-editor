@@ -404,6 +404,35 @@
   background: var(--oasis-comment-bg-active);
 }
 
+.oasis-editor-revision-markup-root {
+  pointer-events: none;
+}
+
+.oasis-editor-revision-markup {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.oasis-editor-revision-markup::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+}
+
+.oasis-editor-revision-markup-insert::after {
+  bottom: 0;
+  background: #059669;
+}
+
+.oasis-editor-revision-markup-delete::after {
+  top: 50%;
+  margin-top: -1px;
+  background: #dc2626;
+}
+
 .oasis-editor-comment-popup {
   position: absolute;
   z-index: 1000;

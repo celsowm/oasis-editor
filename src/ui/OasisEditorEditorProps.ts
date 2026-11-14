@@ -11,6 +11,7 @@ import type {
   CommentHighlightBox,
   InputBox,
   LayoutOptionsOverlay,
+  RevisionMarkupBox,
   RevisionBox,
   SelectedImageBox,
   SelectedTextBoxBox,
@@ -41,6 +42,7 @@ export interface OasisEditorEditorLayoutProps {
 export interface OasisEditorEditorOverlayProps {
   selectionBoxes: Accessor<SelectionBox[]>;
   commentHighlights: Accessor<CommentHighlightBox[]>;
+  revisionMarkupBoxes: Accessor<RevisionMarkupBox[]>;
   onReplyToComment?: (commentId: string) => void;
   onEditComment?: (commentId: string) => void;
   canEditComment?: (commentId: string) => boolean;

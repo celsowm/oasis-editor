@@ -59,6 +59,16 @@ export interface RevisionBox {
   top: number;
 }
 
+/** One decoration rectangle over an inserted/deleted tracked range. */
+export interface RevisionMarkupBox {
+  revisionId: string;
+  type: "insert" | "delete";
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 /** One highlight rectangle over a commented text range, tagged with its id. */
 export interface CommentHighlightBox {
   commentId: string;
