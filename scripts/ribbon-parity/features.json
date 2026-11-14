@@ -1567,7 +1567,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "not-applicable",
-      "notes": "Oasis places Undo in Home > History while WordCraft exposes it in Quick Access. Shared history dispatch is wired; transaction scope, disabled state, keyboard parity and multi-step user workflows need verification."
+      "notes": "Oasis places Undo in Home > History and on the Quick Access Toolbar (Delivery 125, default on). Shared history dispatch is wired; transaction scope, disabled state, keyboard parity and multi-step user workflows need verification."
     },
     {
       "id": "home.redo",
@@ -1580,7 +1580,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "not-applicable",
-      "notes": "Oasis places Redo in Home > History while WordCraft exposes it in Quick Access. Shared history dispatch is wired; transaction scope, disabled state, keyboard parity and multi-step user workflows need verification."
+      "notes": "Oasis places Redo in Home > History and on the Quick Access Toolbar (Delivery 125, default on). Shared history dispatch is wired; transaction scope, disabled state, keyboard parity and multi-step user workflows need verification."
     },
     {
       "id": "insert.editHeader",
@@ -3492,15 +3492,20 @@
     {
       "id": "titleBar.commandSearch",
       "wordcraftCommand": "tools.search",
-      "oasisCommand": null,
+      "oasisCommand": "openCommandSearch",
       "ribbonId": null,
       "tab": "titleBar",
       "group": "search",
-      "status": "missing",
-      "exposure": "missing",
-      "semantics": "missing",
+      "status": "menu-only",
+      "exposure": "menu-only",
+      "semantics": "partial",
       "persistence": "not-applicable",
-      "notes": "No Tell Me/command-search launcher is exposed in the title bar or default app surfaces. The Find command searches document content and is not a command-search equivalent."
+      "notes": "Command search shipped in Delivery 124: Alt+Q (or the Tell Me launcher in the chrome strip, or Tools > Command Search) opens a fuzzy-matched palette over the Ribbon and menubar command surface (buildCommandSearchEntries), with label-first scoring and a command-id fallback so English command names still resolve in other locales. Disabled commands are announced but refuse to run. Verified end-to-end (verify-ribbon-quickaccess.mjs). WordCraft's tools.search options, recents/pinned and per-command scoping remain open.",
+      "uiPath": "Chrome strip > Tell Me; Tools > Command Search; Alt+Q",
+      "uiEvidence": {
+        "file": "src/ui/components/QuickAccess/ChromeStrip.tsx",
+        "token": "editor-toolbar-tell-me"
+      }
     },
     {
       "id": "home.clipboardPane",

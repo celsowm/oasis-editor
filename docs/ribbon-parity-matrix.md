@@ -282,7 +282,7 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `shape.textDirection` | `shape.textDirection` | `setTextBoxTextDirection` | — | core-only | core-only | partial | unverified |
 | `shape.textAlignment` | `shape.alignText` | `setTextBoxVerticalAlign` | — | core-only | core-only | partial | unverified |
 | `file.autoSave` | `file.autosave` | — | — | missing | missing | missing | partial |
-| `titleBar.commandSearch` | `tools.search` | — | — | missing | missing | missing | not-applicable |
+| `titleBar.commandSearch` | `tools.search` | `openCommandSearch` | Chrome strip > Tell Me; Tools > Command Search; Alt+Q | menu-only | menu-only | partial | not-applicable |
 | `home.clipboardPane` | `edit.clipboardPane` | — | — | missing | missing | missing | unverified |
 | `home.phoneticGuide` | `format.phonetic` | — | — | missing | missing | missing | unverified |
 | `home.encloseCharacters` | `format.enclose` | — | — | missing | missing | missing | unverified |
@@ -700,8 +700,8 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 133. **quickAccess.repeat:** No repeat-last-command action or public command exists in the default toolbar, menubar, or built-in command registry. Redo is a distinct history operation and is not treated as equivalent.
 134. **file.print:** Oasis exposes Print in File > Document through the host/browser print flow. Page breaks, print settings, cancellation/errors, keyboard access and actual Safari output need workflow verification.
 135. **file.exportPdf:** Oasis exposes PDF export in File > Document. Verified end-to-end: %PDF magic bytes and a non-trivial payload through client.io.export (verify-ribbon-file.mjs). Long documents, page-level features, output integrity and visual comparisons still need workflow verification.
-136. **home.undo:** Oasis places Undo in Home > History while WordCraft exposes it in Quick Access. Shared history dispatch is wired; transaction scope, disabled state, keyboard parity and multi-step user workflows need verification.
-137. **home.redo:** Oasis places Redo in Home > History while WordCraft exposes it in Quick Access. Shared history dispatch is wired; transaction scope, disabled state, keyboard parity and multi-step user workflows need verification.
+136. **home.undo:** Oasis places Undo in Home > History and on the Quick Access Toolbar (Delivery 125, default on). Shared history dispatch is wired; transaction scope, disabled state, keyboard parity and multi-step user workflows need verification.
+137. **home.redo:** Oasis places Redo in Home > History and on the Quick Access Toolbar (Delivery 125, default on). Shared history dispatch is wired; transaction scope, disabled state, keyboard parity and multi-step user workflows need verification.
 138. **insert.editHeader:** Oasis exposes Edit Header from the Insert > Header & Footer menu. WordCraft also places it on its contextual Header & Footer tab; variant editing, selection/focus behavior and DOCX story round-trip need verification.
 139. **insert.editFooter:** Oasis exposes Edit Footer from the Insert > Header & Footer menu. WordCraft also places it on its contextual Header & Footer tab; variant editing, selection/focus behavior and DOCX story round-trip need verification.
 140. **editing.lineBreak:** Oasis registers a hard-line-break command but no default Ribbon/menubar control or shortcut was found. Selection/caret behavior, undo and DOCX break round-trip need verification.
@@ -836,7 +836,7 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 269. **shape.textDirection:** Oasis registers horizontal, vertical, rotated and stacked text-box direction values but has no default Ribbon, menu or dialog path. Glyph layout, mixed scripts, focus, rendering and DOCX round-trip need workflow verification.
 270. **shape.textAlignment:** Oasis registers top, middle or bottom vertical anchoring for text-box content but has no default Ribbon, menu or dialog path. Interaction with padding, vertical text, resizing and DOCX round-trip needs verification.
 271. **file.autoSave:** Oasis has optional host-configured debounced persistence, but the default app does not enable it and exposes no AutoSave toggle or status control in the Quick Access Toolbar. This does not provide the user-facing Word AutoSave workflow.
-272. **titleBar.commandSearch:** No Tell Me/command-search launcher is exposed in the title bar or default app surfaces. The Find command searches document content and is not a command-search equivalent.
+272. **titleBar.commandSearch:** Command search shipped in Delivery 124: Alt+Q (or the Tell Me launcher in the chrome strip, or Tools > Command Search) opens a fuzzy-matched palette over the Ribbon and menubar command surface (buildCommandSearchEntries), with label-first scoring and a command-id fallback so English command names still resolve in other locales. Disabled commands are announced but refuse to run. Verified end-to-end (verify-ribbon-quickaccess.mjs). WordCraft's tools.search options, recents/pinned and per-command scoping remain open.
 273. **home.clipboardPane:** Clipboard Pane: No persistent clipboard task pane is exposed in the default app surfaces. Cut/copy/paste commands are direct editing actions and do not provide Word’s multi-item clipboard history.
 274. **home.phoneticGuide:** Phonetic Guide: No phonetic-guide command or editor dialog is exposed in the default app. Font selection and text styling do not add ruby/phonetic annotations.
 275. **home.encloseCharacters:** Enclose Characters: No enclosed-character formatting command or control is exposed in the default Ribbon or menus.
