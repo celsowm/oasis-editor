@@ -4,8 +4,8 @@
  * disabled states without revisions, undo, the selection-vs-document scope
  * distinction, Display for Review (including Simple Markup change bars),
  * Show Markup category/reviewer filters (including the dedicated Formatting
- * checkbox), formatting revisions, and Reviewing Pane formatting rows with
- * their accept/reject.
+ * checkbox), formatting revisions, Reviewing Pane formatting rows with their
+ * accept/reject, and structural table-cell revision outlines.
  */
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
@@ -74,10 +74,11 @@ function markupOptions(page) {
 }
 
 function applyShowMarkup(page, payload) {
-  return page.evaluate(
-    (p) => window.ribbonReference.client.commands.execute("applyShowMarkup", p),
-    payload,
-  );
+  // Return undefined explicitly: `execute` can hand back a reactive state
+  // proxy whose self-referential getters overflow Playwright's serializer.
+  return page.evaluate((p) => {
+    window.ribbonReference.client.commands.execute("applyShowMarkup", p);
+  }, payload);
 }
 
 function revisionMarkupSelector(type) {
@@ -1079,6 +1080,179 @@ try {
     );
     await page.getByTestId("review-revisions-close").click();
 
+    // 15. Structural/formatting revisions on table cells paint full-cell
+    // outlines (not text underlines), obey Show Markup category/reviewer
+    // filters, and their ids are counted by the bulk revision model. Reset to
+    // a pristine table fixture and normalize every view filter first.
+    assert.equal(
+      await page.evaluate(
+        () =>
+          window.ribbonReference.client.commands.state("setReviewDisplayMode")
+            .value,
+      ),
+      "all",
+      "step 14 restores All Markup before the table-cell checks",
+    );
+    await applyShowMarkup(page, { allAuthors: true });
+    const defaults = await markupOptions(page);
+    for (const section of [
+      "insertions",
+      "deletions",
+      "formatting",
+      "comments",
+    ]) {
+      if (!defaults[section]) await applyShowMarkup(page, { section });
+    }
+    await loadFixture(page, "table");
+    await page.evaluate(() => {
+      const client = window.ribbonReference.client;
+      const doc = client.document.get();
+      client.document.load({
+        ...doc,
+        sections: doc.sections.map((section) => ({
+          ...section,
+          blocks: section.blocks.map((block) =>
+            block.type !== "table"
+              ? block
+              : {
+                  ...block,
+                  rows: block.rows.map((row, rowIndex) => ({
+                    ...row,
+                    cells: row.cells.map((cell, cellIndex) => {
+                      if (rowIndex === 1 && cellIndex === 0) {
+                        return {
+                          ...cell,
+                          style: {
+                            ...(cell.style ?? {}),
+                            revision: {
+                              id: "cell-insert",
+                              type: "insert",
+                              author: "Table author",
+                              date: 1000,
+                            },
+                          },
+                        };
+                      }
+                      if (rowIndex === 1 && cellIndex === 1) {
+                        return {
+                          ...cell,
+                          style: {
+                            ...(cell.style ?? {}),
+                            propertyRevision: {
+                              id: "cell-property",
+                              type: "property",
+                              author: "Table author",
+                              date: 2000,
+                              previous: {},
+                            },
+                          },
+                        };
+                      }
+                      return cell;
+                    }),
+                  })),
+                },
+          ),
+        })),
+      });
+    });
+
+    const cellMarkup = () =>
+      page.locator(
+        '[data-testid="editor-revision-markup"][data-revision-cell="true"]',
+      );
+    const cellMarkupOf = (type) =>
+      page.locator(
+        `[data-testid="editor-revision-markup"][data-revision-cell="true"][data-revision-type="${type}"]`,
+      );
+    const waitForCellCount = (count) =>
+      page.waitForFunction(
+        (expected) =>
+          document.querySelectorAll(
+            '[data-testid="editor-revision-markup"][data-revision-cell="true"]',
+          ).length === expected,
+        count,
+        { timeout: 5000 },
+      );
+
+    await waitForCellCount(2);
+    assert.equal(await cellMarkup().count(), 2);
+    assert.equal(await cellMarkupOf("insert").count(), 1);
+    assert.equal(await cellMarkupOf("property").count(), 1);
+    assert.deepEqual(
+      (
+        await cellMarkup().evaluateAll((nodes) =>
+          nodes.map((node) => node.getAttribute("data-revision-id")),
+        )
+      ).sort(),
+      ["cell-insert", "cell-property"],
+    );
+    // Full-cell outlines carry a 2px border and a box as big as the cell,
+    // unlike the 2px-tall text underlines used for run revisions.
+    const outlines = await cellMarkup().evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const cs = getComputedStyle(node);
+        return {
+          width: parseFloat(node.style.width),
+          height: parseFloat(node.style.height),
+          borderWidth: cs.borderTopWidth,
+          borderStyle: cs.borderTopStyle,
+        };
+      }),
+    );
+    assert.equal(outlines.length, 2);
+    for (const outline of outlines) {
+      assert.ok(outline.width > 40, "cell outline spans the cell width");
+      assert.ok(outline.height > 10, "cell outline spans the cell height");
+      assert.equal(outline.borderStyle, "solid");
+      assert.equal(outline.borderWidth, "2px");
+    }
+
+    // Formatting off hides only the property cell.
+    await applyShowMarkup(page, { section: "formatting" });
+    await waitForCellCount(1);
+    assert.equal(await cellMarkupOf("insert").count(), 1);
+    assert.equal(await cellMarkupOf("property").count(), 0);
+    await applyShowMarkup(page, { section: "formatting" });
+    await waitForCellCount(2);
+
+    // Insertions off hides only the inserted cell.
+    await applyShowMarkup(page, { section: "insertions" });
+    await waitForCellCount(1);
+    assert.equal(await cellMarkupOf("insert").count(), 0);
+    assert.equal(await cellMarkupOf("property").count(), 1);
+    await applyShowMarkup(page, { section: "insertions" });
+    await waitForCellCount(2);
+
+    // No reviewers visible hides both; restoring brings both back.
+    await applyShowMarkup(page, { allAuthors: false });
+    await waitForCellCount(0);
+    await applyShowMarkup(page, { allAuthors: true });
+    await waitForCellCount(2);
+
+    // Cell authors join the Show Markup reviewer list, and isolating a
+    // reviewer by name (the same path the gallery uses) hides their outlines.
+    assert.ok(
+      (await markupOptions(page)).knownAuthors.includes("Table author"),
+      "cell revision authors appear in the Show Markup reviewer list",
+    );
+    await applyShowMarkup(page, { author: "Table author" });
+    await waitForCellCount(0);
+    await applyShowMarkup(page, { author: "Table author" });
+    await waitForCellCount(2);
+
+    // The bulk revision model already counts cell-level ids, so Accept All /
+    // Reject All address these same changes.
+    const bulkIds = await page.evaluate(async () => {
+      const { collectAllRevisionIds } =
+        await import("/src/core/commands/history.ts");
+      return [
+        ...collectAllRevisionIds(window.ribbonReference.client.getState()),
+      ];
+    });
+    assert.ok(bulkIds.includes("cell-insert"));
+    assert.ok(bulkIds.includes("cell-property"));
+
     assert.deepEqual(errors, []);
     records.push({
       sha,
@@ -1129,6 +1303,10 @@ try {
         "reviewing-pane-lists-formatting-revision",
         "reviewing-pane-formatting-row-follows-formatting-checkbox",
         "reviewing-pane-formatting-row-accept-resolves",
+        "table-cell-revisions-paint-full-cell-outlines",
+        "table-cell-revisions-follow-show-markup-categories",
+        "table-cell-revisions-follow-reviewer-filters",
+        "table-cell-revision-ids-consistent-with-bulk-model",
       ],
     });
     await page.close();
@@ -1138,7 +1316,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject, and structural table-cell revision outlines.`,
   );
 } finally {
   await browser.close();
