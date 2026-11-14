@@ -1311,6 +1311,8 @@ Evidence: All ten browser suites pass in Chromium (contexts 260, resize 80, refe
 
 Limits: `stylesDialog` and `pageSetupDialog` are stubbed; their dialogs don't exist yet. No VoiceOver/touch/Safari evidence for the launcher button. The launcher button is only visible in full/compact states (not in collapsed popups where the group trigger serves a different purpose).
 
+Correction (Delivery 113): the `paragraphDialog`/`fontDialog` command names described above were never registered on the command bus, so the Home › Paragraph and Home › Font launchers were no-ops. Delivery 113 registers `openParagraphDialog`/`openFontDialog` and removes the Design › Styles and Layout › Page Setup launchers, which pointed at dialogs that do not exist.
+
 ## Delivery 111 — I03/I04: remaining icon families complete + V04 long labels/units
 
 Date: 2026-11-13. I03/I04 gain scoped acceptance for all remaining everyday-task icon families; V04 gains scoped acceptance for long labels and units; VoiceOver, touch and trusted-Safari input remain open.
@@ -1343,6 +1345,22 @@ Evidence: new `ribbonPanelPopups.test.tsx` (5 tests) asserts gallery/matrix rend
 
 Limits: Visual/AT review of new glyphs at 16/20/24px across themes pending. Gallery/matrix spatial fidelity in collapsed popups shares DOM with inline layout but lacks dedicated visual diff evidence. No VoiceOver, touch or trusted-Safari evidence. R01–R05 evidence is scoped to Chromium; cross-browser measurement parity and OS-level zoom UI remain open.
 
+## Delivery 113 — D01–D09: everyday paragraph workflows and working dialog launchers
+
+Date: 2026-11-14. D01–D09 gain scoped acceptance for everyday paragraph editing; VoiceOver, touch and trusted-Safari input remain open.
+
+`scripts/verify-ribbon-paragraph.mjs` drives the everyday paragraph workflows end-to-end through the ribbon in eight configurations (light/dark × en/pt-BR × 1440/640): alignment left/center/right/justify with undo, bulleted and numbered lists, list indent/outdent across levels 0→1→2 and back, special indents (first line, hanging, none), spacing before/after, an exact line rule with its height, and a DOCX export/import round-trip of the authored document.
+
+Launchers: the ribbon referenced `paragraphDialog`/`fontDialog`/`stylesDialog`/`pageSetupDialog`, but none of those names was registered on the command bus, so every group launcher was a no-op. `openParagraphDialog` and `openFontDialog` are now registered essentials commands (`EssentialsDialogCapability`) that delegate to the same `EditorCommandsController` handlers the context menu uses, so initial values come from `toolbarStyleState()`. The Design › Styles and Layout › Page Setup launchers were removed: neither dialog exists, and the alternative was shipping placeholder UI. The group needed `position: relative` for the absolutely positioned launcher button to anchor to its own group instead of a distant ancestor.
+
+Dialog visibility: `Dialog` gained an optional `testId`, and the Paragraph dialog now exposes `editor-paragraph-dialog` on the dialog element itself. It previously sat on a zero-height wrapper whose only child is a fixed-position overlay, so visibility checks (automation and assistive technology) reported the open dialog as hidden.
+
+OOXML export: `w:jc` now serializes the model's `justify` as `both`. `ST_Jc` has no `justify` member, so the previous output was invalid for Word even though the importer tolerated it; `docxParagraphJustification.test.ts` pins both the serialization and the round-trip.
+
+Evidence: `verify-ribbon-paragraph.mjs` passes 8/8 configurations in Chromium, 8/8 in Firefox and 8/8 in WebKit (alignment, lists, indent/outdent, special indents, spacing, line rule/height, list levels, DOCX round-trip); the emitted `word/document.xml` contains `w:jc` center/right/both, `w:numPr`, `w:ilvl`, `w:ind`, `w:spacing` and `w:lineRule`. `docxParagraphJustification.test.ts` (2 tests) and the existing export/alignment suites pass. TypeScript, ESLint on changed files, `npm run audit:ribbon` (551 vs 521) and `npm run audit:ribbon:icons` (133 names, 166 uses, 0 unresolved) pass.
+
+Limits: no Styles or Page Setup dialog exists yet, so those two ribbon launchers are gone rather than stubbed. VoiceOver, touch and trusted-Safari input remain unverified, and the Paragraph dialog's visual review across themes/locales is limited to the automated configuration matrix.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
@@ -1351,7 +1369,7 @@ All requirements in the execution plan remain in scope. The next sequence is:
 2. **I03/I04 complete** (all everyday-task families: clipboard, font, table ops, distribution/autofit, alignment/sort, themes/styles, margins/orientation); A01/A02 acceptance pending visual/AT review. **A02 gallery/matrix/custom-control layout acceptance complete** (Delivery 112); A02's declarative two-row/three-row/compact vocabulary and the compact Clipboard are covered.
 3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review. **Launcher contract complete** (Delivery 110); menu panels now traverse with Arrow/Home/End and expose menuitems (Delivery 106); collapsed popups preserve the group's spatial arrangement (Delivery 107); the remaining panels' non-menuitem widgets and a roving tabindex stay open.
 4. **R01–R05 complete** (Delivery 112): measurement pipeline integrity verified across contexts; late-font, pointer/IME, invalidation and performance evidence closed for scoped acceptance. Late-font loading (R05) covered by DPR/zoom-equivalent tests; pointer/IME covered by resize suite focus preservation; invalidation covered by cache key invalidation tests.
-5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
+5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. **Everyday paragraph workflows and the Font/Paragraph launchers complete** (Delivery 113); Styles and Page Setup launchers remain unwired until those dialogs exist. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
 6. P01–P06: Review, References, View, File, search/QAT and interoperability. P04's dirty marker now clears when undo restores the saved snapshot (Delivery 105); the remaining P0x workflows and external save/interoperability evidence stay open.
 7. All M4 families: Shapes, Equations, Draw, advanced References, Mailings, Developer/Forms, Charts/SmartArt, integrations and Help, each with the plan's minimum functional delivery.
 8. M5: required cross-browser, keyboard, VoiceOver, language/theme, selection, persistence and performance scenarios with retained evidence.
