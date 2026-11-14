@@ -4675,7 +4675,7 @@
       "exposure": "missing",
       "semantics": "missing",
       "persistence": "unverified",
-      "notes": "Display for Review: Oasis can track edits and accept/reject revisions, but exposes no display mode to switch between Simple/All/Original markup views."
+      "notes": "Display for Review: Oasis tracks edits and accept/rejects revisions, and as of Delivery 116 paints insert/delete markup with a Show Markup toggle. No All Markup / Simple Markup / No Markup / Original document-view switch is exposed yet."
     },
     {
       "id": "review.showMarkup",
@@ -4684,7 +4684,7 @@
       "exposure": "missing",
       "semantics": "missing",
       "persistence": "unverified",
-      "notes": "Show Markup: No revision-category/author markup filters are exposed in the default app."
+      "notes": "Show Markup: a Show Markup toggle paints/hides insertions and deletions over the canvas (Delivery 116: colored underline/strike-through, default on, verified end-to-end), but Word's revision-category/author markup filters remain unexposed."
     },
     {
       "id": "review.reviewingPane",

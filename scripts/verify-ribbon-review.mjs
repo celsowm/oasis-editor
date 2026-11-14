@@ -26,6 +26,38 @@ const dirty = Boolean(
 const browser = await { chromium, firefox, webkit }[engine].launch();
 const records = [];
 
+async function waitForRibbonSettled(page) {
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll("[data-ribbon-group]")].every(
+        (section) => section.getAttribute("data-ribbon-width-full") !== null,
+      ),
+    undefined,
+    { timeout: 10000 },
+  );
+}
+
+/** Unambiguous locator: full-size copy when actionable, else the collapsed popup. */
+async function openGroup(page, group, testId) {
+  await waitForRibbonSettled(page);
+  const item = page.locator(`[data-testid="${testId}"]`);
+  const count = await item.count();
+  if (count > 0) {
+    const boxes = await Promise.all(
+      [...Array(count)].map((_, index) => item.nth(index).boundingBox()),
+    );
+    const index = boxes.findIndex(
+      (box) => box !== null && box.width > 0 && box.height > 0,
+    );
+    if (index >= 0) return item.nth(index);
+  }
+  await page.keyboard.press("Escape");
+  await page.getByTestId(`editor-ribbon-group-${group}`).click();
+  const popup = page.locator(".oasis-editor-ribbon-collapsed-menu");
+  await popup.waitFor({ state: "visible", timeout: 5000 });
+  return popup.locator(`[data-testid="${testId}"]`);
+}
+
 function acceptAllButton(page) {
   return page.locator(
     '[data-testid="editor-toolbar-accept-all-revisions"]:visible',
@@ -86,6 +118,22 @@ async function placeCaretInParagraph(page, index) {
       focus: paragraphOffsetToPosition(paragraph, offset),
     });
   }, index);
+}
+
+async function selectRangeInParagraph(page, paragraphIndex, from, to) {
+  await page.evaluate(
+    async ([index, start, end]) => {
+      const { getDocumentParagraphs, paragraphOffsetToPosition } =
+        await import("/src/core/model.ts");
+      const client = window.ribbonReference.client;
+      const paragraph = getDocumentParagraphs(client.document.get())[index];
+      client.selection.set({
+        anchor: paragraphOffsetToPosition(paragraph, start),
+        focus: paragraphOffsetToPosition(paragraph, end),
+      });
+    },
+    [paragraphIndex, from, to],
+  );
 }
 
 try {
@@ -192,6 +240,60 @@ try {
     await page.evaluate(() => window.ribbonReference.client.history.undo());
     assert.equal(await paragraphText(page, 0), beforeAccept);
 
+    // 7. The fixture's restored insertion paints markup; the Show Markup
+    // toggle unmounts and remounts the decorations.
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll(
+          '[data-testid="editor-revision-markup"][data-revision-type="insert"]',
+        ).length > 0,
+      undefined,
+      { timeout: 5000 },
+    );
+    await (
+      await openGroup(page, "tracking", "editor-toolbar-revision-markup")
+    ).click();
+    assert.equal(
+      await page.locator('[data-testid="editor-revision-markup"]').count(),
+      0,
+    );
+    await (
+      await openGroup(page, "tracking", "editor-toolbar-revision-markup")
+    ).click();
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll('[data-testid="editor-revision-markup"]')
+          .length > 0,
+      undefined,
+      { timeout: 5000 },
+    );
+
+    // 8. A tracked deletion paints a distinct decoration from an insertion.
+    await (
+      await openGroup(page, "tracking", "editor-toolbar-track-changes")
+    ).click();
+    await selectRangeInParagraph(page, 1, 0, 4);
+    // DOM-focus the hidden text input (a click would land on the canvas);
+    // the ribbon toggle holds focus after its click.
+    await page.getByTestId("editor-input").focus();
+    await page.keyboard.press("Backspace");
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll(
+          '[data-testid="editor-revision-markup"][data-revision-type="delete"]',
+        ).length > 0,
+      undefined,
+      { timeout: 5000 },
+    );
+    assert.ok(
+      (await page
+        .locator(
+          '[data-testid="editor-revision-markup"][data-revision-type="delete"]',
+        )
+        .count()) > 0,
+      "tracked deletion should paint a strike-through",
+    );
+
     assert.deepEqual(errors, []);
     records.push({
       sha,
@@ -207,6 +309,9 @@ try {
         "selection-vs-document-scope",
         "accept-all-undo",
         "reject-all-undo",
+        "revision-markup-painted",
+        "show-markup-toggle",
+        "delete-markup-distinct",
       ],
     });
     await page.close();
@@ -216,7 +321,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo and selection distinction.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction and revision markup.`,
   );
 } finally {
   await browser.close();

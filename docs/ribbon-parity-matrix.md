@@ -959,8 +959,8 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 392. **review.readAloud:** Read Aloud: No text-to-speech reading mode or playback controls are exposed.
 393. **review.translate:** Translate: No translation provider or selection/document translation workflow is exposed.
 394. **review.language:** Language: No proofing-language picker is exposed. Setting the app locale changes UI strings and is not document proofing language.
-395. **review.displayForReview:** Display for Review: Oasis can track edits and accept/reject revisions, but exposes no display mode to switch between Simple/All/Original markup views.
-396. **review.showMarkup:** Show Markup: No revision-category/author markup filters are exposed in the default app.
+395. **review.displayForReview:** Display for Review: Oasis tracks edits and accept/rejects revisions, and as of Delivery 116 paints insert/delete markup with a Show Markup toggle. No All Markup / Simple Markup / No Markup / Original document-view switch is exposed yet.
+396. **review.showMarkup:** Show Markup: a Show Markup toggle paints/hides insertions and deletions over the canvas (Delivery 116: colored underline/strike-through, default on, verified end-to-end), but Word's revision-category/author markup filters remain unexposed.
 397. **review.reviewingPane:** Reviewing Pane: The comments panel lists discussion threads, not a tracked-change review list; no Reviewing Pane workflow is exposed.
 398. **review.trackChangesOptions:** Track Changes Options: Oasis exposes a Track Changes toggle, but no author/color/balloon/options configuration workflow.
 399. **review.compare:** Compare: No document comparison/diff generation workflow is exposed.
