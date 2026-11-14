@@ -1013,7 +1013,7 @@
     },
     {
       "file": "src/ui/components/Toolbar/ReviewDisplayModeButton.tsx",
-      "line": 41,
+      "line": 45,
       "role": "icon",
       "name": "file-diff",
       "origin": "lucide"

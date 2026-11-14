@@ -95,6 +95,7 @@ export const en = {
   "review.revisionProperty": "Formatting change",
   "review.revisionOther": "Change",
   "review.displayForReview": "Display for Review",
+  "review.displayModeSimple": "Simple Markup",
   "review.displayModeAll": "All Markup",
   "review.displayModeFinal": "Final",
   "review.displayModeOriginal": "Original",

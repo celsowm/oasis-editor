@@ -103,6 +103,10 @@ const allowlistedFiles = new Map([
     "src/ui/components/RevisionMarkupOverlay.tsx",
     "low-level overlay decorations",
   ],
+  [
+    "src/ui/components/ChangeBarOverlay.tsx",
+    "low-level overlay decorations",
+  ],
   ["src/ui/components/CanvasEditorSurface.tsx", "canvas host"],
 ]);
 

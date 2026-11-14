@@ -8,6 +8,7 @@ import type { ImportProgressState } from "@/app/controllers/useEditorDocumentIO.
 import type { ToolbarHost } from "./components/Toolbar/state/createToolbarApi.js";
 import type {
   CaretBox,
+  ChangeBarBox,
   CommentHighlightBox,
   InputBox,
   LayoutOptionsOverlay,
@@ -43,6 +44,7 @@ export interface OasisEditorEditorOverlayProps {
   selectionBoxes: Accessor<SelectionBox[]>;
   commentHighlights: Accessor<CommentHighlightBox[]>;
   revisionMarkupBoxes: Accessor<RevisionMarkupBox[]>;
+  changeBarBoxes: Accessor<ChangeBarBox[]>;
   onReplyToComment?: (commentId: string) => void;
   onEditComment?: (commentId: string) => void;
   canEditComment?: (commentId: string) => boolean;

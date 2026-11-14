@@ -95,6 +95,7 @@ export const ptBR = {
   "review.revisionProperty": "Alteração de formatação",
   "review.revisionOther": "Alteração",
   "review.displayForReview": "Exibir para revisão",
+  "review.displayModeSimple": "Marcação simples",
   "review.displayModeAll": "Marcação completa",
   "review.displayModeFinal": "Final",
   "review.displayModeOriginal": "Original",

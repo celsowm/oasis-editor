@@ -216,6 +216,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     selectionBoxes,
     commentHighlights,
     revisionMarkupBoxes,
+    changeBarBoxes,
     selectedImageBox,
     selectedTextBoxBox,
     selectedTableBox,
@@ -460,6 +461,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
       selectionBoxes,
       commentHighlights,
       revisionMarkupBoxes,
+      changeBarBoxes,
       onReplyToComment: (id): void => {
         commentComposer.openReplyToId(id);
       },

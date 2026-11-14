@@ -1,6 +1,7 @@
 import type { Accessor, JSX } from "solid-js";
 import type {
   CaretBox,
+  ChangeBarBox,
   CommentHighlightBox,
   InputBox,
   LayoutOptionsOverlay,
@@ -49,6 +50,7 @@ export interface EditorViewOverlayInput {
   selectionBoxes: Accessor<SelectionBox[]>;
   commentHighlights: Accessor<CommentHighlightBox[]>;
   revisionMarkupBoxes: Accessor<RevisionMarkupBox[]>;
+  changeBarBoxes: Accessor<ChangeBarBox[]>;
   onReplyToComment?: (commentId: string) => void;
   onEditComment?: (commentId: string) => void;
   canEditComment?: (commentId: string) => boolean;
@@ -163,6 +165,7 @@ export function buildEditorViewProps(
     selectionBoxes: overlayInput.selectionBoxes,
     commentHighlights: overlayInput.commentHighlights,
     revisionMarkupBoxes: overlayInput.revisionMarkupBoxes,
+    changeBarBoxes: overlayInput.changeBarBoxes,
     onReplyToComment: overlayInput.onReplyToComment,
     onEditComment: overlayInput.onEditComment,
     canEditComment: overlayInput.canEditComment,

@@ -433,6 +433,19 @@
   background: #dc2626;
 }
 
+.oasis-editor-change-bar-root {
+  pointer-events: none;
+}
+
+.oasis-editor-change-bar {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+  width: 2px;
+  border-radius: 1px;
+  background: #dc2626;
+}
+
 .oasis-editor-comment-popup {
   position: absolute;
   z-index: 1000;

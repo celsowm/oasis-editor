@@ -11,6 +11,7 @@ export interface ReviewDisplayModeButtonProps {
 }
 
 const MODES = [
+  { mode: "simple", labelKey: "review.displayModeSimple" },
   { mode: "all", labelKey: "review.displayModeAll" },
   { mode: "final", labelKey: "review.displayModeFinal" },
   { mode: "original", labelKey: "review.displayModeOriginal" },
@@ -18,12 +19,15 @@ const MODES = [
 
 function rawMode(api: ToolbarActionApi): ReviewDisplayMode {
   const value = api.commands.state("setReviewDisplayMode").value;
-  return value === "final" || value === "original" ? value : "all";
+  return value === "simple" || value === "final" || value === "original"
+    ? value
+    : "all";
 }
 
 /**
  * Display for Review gallery (Word-style): a single trigger showing the
- * current view, with All Markup / Final / Original items marked as radios.
+ * current view, with Simple Markup / All Markup / Final / Original items marked
+ * as radios. Simple Markup renders the final text with margin change bars.
  */
 export function ReviewDisplayModeButton(
   props: ReviewDisplayModeButtonProps,

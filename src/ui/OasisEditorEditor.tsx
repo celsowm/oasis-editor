@@ -14,6 +14,7 @@ import { SelectionOverlay } from "./components/SelectionOverlay.js";
 import { RevisionOverlay } from "./components/RevisionOverlay.js";
 import { CommentHighlightOverlay } from "./components/CommentHighlightOverlay.js";
 import { RevisionMarkupOverlay } from "./components/RevisionMarkupOverlay.js";
+import { ChangeBarOverlay } from "./components/ChangeBarOverlay.js";
 import { FloatingLayoutOptions } from "./components/FloatingToolbar/FloatingLayoutOptions.js";
 import {
   getDocumentPageSettings,
@@ -399,6 +400,10 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
 
             <Show when={overlays().revisionMarkupBoxes().length > 0}>
               <RevisionMarkupOverlay boxes={overlays().revisionMarkupBoxes} />
+            </Show>
+
+            <Show when={overlays().changeBarBoxes().length > 0}>
+              <ChangeBarOverlay boxes={overlays().changeBarBoxes} />
             </Show>
 
             <Show when={overlays().commentHighlights().length > 0}>

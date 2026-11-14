@@ -361,7 +361,12 @@ export function buildCoreFormattingCommands({
           typeof p === "string"
             ? p
             : (p as { mode?: unknown } | null | undefined)?.mode;
-        if (mode !== "all" && mode !== "final" && mode !== "original") {
+        if (
+          mode !== "all" &&
+          mode !== "final" &&
+          mode !== "original" &&
+          mode !== "simple"
+        ) {
           return false;
         }
         return formatting.setReviewDisplayMode(mode);
