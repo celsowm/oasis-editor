@@ -219,3 +219,50 @@
   background: var(--oasis-accent-soft);
   color: var(--oasis-accent);
 }
+
+.oasis-review-revisions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+}
+.oasis-review-revision-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px solid var(--oasis-border-color-muted, #e5e5e5);
+}
+.oasis-review-revision-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.oasis-review-revision-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--oasis-text-muted, #666);
+}
+.oasis-review-revision-type.oasis-review-revisions-icon-insert {
+  color: #059669;
+}
+.oasis-review-revision-type.oasis-review-revisions-icon-delete {
+  color: #dc2626;
+}
+.oasis-review-revision-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+}
+.oasis-review-revision-footer,
+.oasis-review-revision-footer {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding-top: 0.5rem;
+}

@@ -389,6 +389,13 @@ export function buildCoreFormattingCommands({
         isActive: formatting.areOutlineVisible(),
       }),
     ),
+    toggleRevisionsPanel: command(
+      "toggleRevisionsPanel",
+      formatting.toggleRevisionsPanel,
+      (): { isActive: boolean } => ({
+        isActive: formatting.areRevisionsPanelVisible(),
+      }),
+    ),
     acceptRevisions: command(
       "acceptRevisions",
       formatting.acceptRevisions,

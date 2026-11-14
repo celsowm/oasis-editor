@@ -908,6 +908,15 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     render: (api) => ReviewDisplayModeButton({ api }),
   });
   items.push({
+    type: "toggle",
+    id: "editor-toolbar-revisions-panel",
+    testId: "editor-toolbar-revisions-panel",
+    iconName: "list-checks",
+    labelKey: "toolbar.revisionsPanel",
+    tooltipKey: "toolbar.revisionsPanel",
+    command: "toggleRevisionsPanel",
+  });
+  items.push({
     type: "button",
     id: "editor-toolbar-accept-revisions",
     testId: "editor-toolbar-accept-revisions",

@@ -85,6 +85,8 @@ export interface EditorCommandRuntimeDeps {
   }) => void;
   toggleOutline: () => void;
   isOutlineVisible: () => boolean;
+  toggleRevisionsPanel: () => void;
+  revisionsPanelVisible: () => boolean;
   getUiState: () => OasisEditorUiState;
   updateUiState: (patch: OasisEditorUiState) => OasisEditorUiState;
   zoom: {
@@ -238,6 +240,8 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
       },
       toggleOutlinePanel: deps.toggleOutline,
       isOutlineVisible: deps.isOutlineVisible,
+      toggleRevisionsPanel: deps.toggleRevisionsPanel,
+      revisionsPanelVisible: deps.revisionsPanelVisible,
     },
     externalPlugins: deps.runtimeOptions().plugins,
     t: deps.translator,

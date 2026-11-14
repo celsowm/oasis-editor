@@ -4675,7 +4675,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "not-applicable",
-      "notes": "Display for Review: Oasis exposes All Markup / Final / Original as a view-mode switch (Review > Tracking) rendering the resolved projection of the document via projectTrackedRevisions; editing is disabled in Final/Original (view flag, not persisted to DOCX). Simple Markup, reviewer balloons and the Reviewing Pane remain unexposed; markup painting covers insert/delete runs only.",
+      "notes": "Display for Review: Oasis exposes All Markup / Final / Original as a view-mode switch (Review > Tracking) rendering the resolved projection of the document via projectTrackedRevisions; editing is disabled in Final/Original (view flag, not persisted to DOCX). Simple Markup and reviewer balloons remain unexposed; the Reviewing Pane is exposed as of Delivery 122; markup painting covers insert/delete runs only.",
       "oasisCommand": "setReviewDisplayMode",
       "ribbonId": "editor-toolbar-display-for-review",
       "tab": "review",
@@ -4693,11 +4693,15 @@
     {
       "id": "review.reviewingPane",
       "wordcraftCommand": "review.changes",
-      "status": "missing",
-      "exposure": "missing",
-      "semantics": "missing",
-      "persistence": "unverified",
-      "notes": "Reviewing Pane: The comments panel lists discussion threads, not a tracked-change review list; no Reviewing Pane workflow is exposed."
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "notes": "Reviewing Pane: Review > Tracking (and Review menubar) toggles an editor-scoped drawer that lists every tracked revision with type (insert/delete), author and snippet, and accepts/rejects a single revision in place or navigates the selection onto it; Accept All / Reject All route to the confirmation dialog. Evidence in verify-ribbon-review.mjs (list contents, navigation, single accept, close). Structural/property revisions are not listed; the pane state is not persisted; Word's balloons remain unexposed.",
+      "oasisCommand": "toggleRevisionsPanel",
+      "ribbonId": "editor-toolbar-revisions-panel",
+      "tab": "review",
+      "group": "tracking"
     },
     {
       "id": "review.trackChangesOptions",

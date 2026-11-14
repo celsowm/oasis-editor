@@ -130,6 +130,7 @@ export interface OasisCommandPayloads {
   toggleTrackChanges: undefined;
   toggleRevisionMarkup: undefined;
   toggleOutlinePanel: undefined;
+  toggleRevisionsPanel: undefined;
   acceptRevisions: undefined;
   rejectRevisions: undefined;
   setReviewDisplayMode: "all" | "final" | "original";

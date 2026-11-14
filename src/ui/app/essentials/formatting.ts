@@ -456,6 +456,11 @@ export function buildEssentialsFormatting(
     areRevisionMarkupVisible: (): boolean =>
       Boolean(options.state().showRevisionMarkup ?? true),
     areOutlineVisible: (): boolean => options.isOutlineVisible(),
+    toggleRevisionsPanel: (): true => (
+      void options.toggleRevisionsPanel(),
+      true
+    ),
+    areRevisionsPanelVisible: (): boolean => options.revisionsPanelVisible(),
     reviewDisplayMode: (): string => options.state().reviewDisplayMode ?? "all",
     setReviewDisplayMode: (mode): boolean => {
       options.commandsController.applySetReviewDisplayModeCommand(

@@ -658,215 +658,222 @@
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 914,
       "role": "iconName",
+      "name": "list-checks",
+      "origin": "lucide"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 923,
+      "role": "iconName",
       "name": "check",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 924,
+      "line": 933,
       "role": "iconName",
       "name": "x",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 935,
+      "line": 944,
       "role": "iconName",
       "name": "check-check",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 944,
+      "line": 953,
       "role": "iconName",
       "name": "undo-2",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 954,
+      "line": 963,
       "role": "iconName",
       "name": "chevron-up",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 963,
+      "line": 972,
       "role": "iconName",
       "name": "chevron-down",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 972,
+      "line": 981,
       "role": "iconName",
       "name": "list-filter",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 982,
+      "line": 991,
       "role": "iconName",
       "name": "message-square-plus",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 992,
+      "line": 1001,
       "role": "iconName",
       "name": "reply",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1001,
+      "line": 1010,
       "role": "iconName",
       "name": "pencil",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1010,
+      "line": 1019,
       "role": "iconName",
       "name": "message-square",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1019,
+      "line": 1028,
       "role": "iconName",
       "name": "messages-square",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1028,
+      "line": 1037,
       "role": "iconName",
       "name": "message-square-check",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1037,
+      "line": 1046,
       "role": "iconName",
       "name": "message-square-more",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1046,
+      "line": 1055,
       "role": "iconName",
       "name": "message-square-x",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1057,
+      "line": 1066,
       "role": "iconName",
       "name": "scan",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1066,
+      "line": 1075,
       "role": "iconName",
       "name": "pilcrow",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1075,
+      "line": 1084,
       "role": "iconName",
       "name": "type",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1084,
+      "line": 1093,
       "role": "iconName",
       "name": "list",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1141,
+      "line": 1150,
       "role": "iconName",
       "name": "formatPainter",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1168,
+      "line": 1177,
       "role": "iconName",
       "name": "tableDistributeRows",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1177,
+      "line": 1186,
       "role": "iconName",
       "name": "tableDistributeColumns",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1186,
+      "line": 1195,
       "role": "iconName",
       "name": "tableAutoFit",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1198,
+      "line": 1207,
       "role": "iconName",
       "name": "tableToText",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1210,
+      "line": 1219,
       "role": "iconName",
       "name": "textToTable",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1222,
+      "line": 1231,
       "role": "iconName",
       "name": "splitTable",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1234,
+      "line": 1243,
       "role": "iconName",
       "name": "sortAscending",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1243,
+      "line": 1252,
       "role": "iconName",
       "name": "sortDescending",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1255,
+      "line": 1264,
       "role": "iconName",
       "name": "deleteTable",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1267,
+      "line": 1276,
       "role": "iconName",
       "name": "repeatHeaderRow",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1281,
+      "line": 1290,
       "role": "iconName",
       "name": "tableVerticalAlign",
       "origin": "oasis"
@@ -1298,7 +1305,7 @@
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1099,
+      "line": 1108,
       "role": "iconName",
       "expression": "spec.icon"
     },

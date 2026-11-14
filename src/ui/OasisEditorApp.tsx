@@ -42,6 +42,9 @@ import { createEditorCommandRuntime } from "./app/createEditorCommandRuntime.js"
 import { createEditorCommentComposer } from "./app/createEditorCommentComposer.js";
 import { ReviewCommentsPanel } from "./components/ReviewCommentsPanel.js";
 import { focusReviewCommentById } from "@/core/commands/reviewNavigation.js";
+import { createRevisionsPanel } from "./app/createRevisionsPanel.js";
+import { ReviewingPane } from "./components/ReviewingPane.js";
+import { focusRevisionById } from "@/core/commands/reviewNavigation.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 import type { OasisEditorUiState } from "@/app/client/OasisEditorClient.js";
@@ -286,6 +289,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     handleDrop,
   } = interaction;
 
+  const revisionsPanel = createRevisionsPanel();
   const commentComposer = createEditorCommentComposer({
     state: (): EditorState => state,
     isReadOnly,
@@ -334,6 +338,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     setRevisionBulkDialog,
     toggleOutline,
     isOutlineVisible: showOutline,
+    toggleRevisionsPanel: () => {
+      revisionsPanel.toggle();
+    },
+    revisionsPanelVisible: revisionsPanel.open,
   });
   const {
     commandsController,
@@ -562,6 +570,38 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
               applyState(next);
               focusInput();
             }}
+          />
+        </Show>
+        <Show when={revisionsPanel.open()}>
+          <ReviewingPane
+            state={(): EditorState => state}
+            onClose={revisionsPanel.close}
+            onNavigate={(id): void => {
+              const next = focusRevisionById(state, id);
+              if (next === state) return;
+              applyState(next);
+              focusInput();
+            }}
+            onAccept={(id): void => {
+              const next = focusRevisionById(state, id);
+              if (next === state) return;
+              applyState(next);
+              commandsController.applyAcceptRevisionsCommand();
+              focusInput();
+            }}
+            onReject={(id): void => {
+              const next = focusRevisionById(state, id);
+              if (next === state) return;
+              applyState(next);
+              commandsController.applyRejectRevisionsCommand();
+              focusInput();
+            }}
+            onAcceptAll={(): void =>
+              runtimeEditor().commands.execute("requestAcceptAllRevisions")
+            }
+            onRejectAll={(): void =>
+              runtimeEditor().commands.execute("requestRejectAllRevisions")
+            }
           />
         </Show>
         <EditorDialogsLayer

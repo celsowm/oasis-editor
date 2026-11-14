@@ -3,7 +3,11 @@
  * nested table cells. It never jumps into a different header/footer/section,
  * so the resulting selection remains valid for the current editor zone.
  */
-import type { EditorComment, EditorParagraphNode, EditorState } from "@/core/model.js";
+import type {
+  EditorComment,
+  EditorParagraphNode,
+  EditorState,
+} from "@/core/model.js";
 import {
   getParagraphs,
   paragraphOffsetToPosition,
@@ -19,19 +23,23 @@ interface ReviewRange {
   endOffset: number;
 }
 
-function positionOf(
-  paragraph: EditorParagraphNode, offset: number,
-) {
+function positionOf(paragraph: EditorParagraphNode, offset: number) {
   return paragraphOffsetToPosition(paragraph, offset);
 }
 
 function compare(
-  aIndex: number, aOffset: number, bIndex: number, bOffset: number,
+  aIndex: number,
+  aOffset: number,
+  bIndex: number,
+  bOffset: number,
 ): number {
   return aIndex - bIndex || aOffset - bOffset;
 }
 
-function moveToReviewRange(state: EditorState, range: ReviewRange): EditorState {
+function moveToReviewRange(
+  state: EditorState,
+  range: ReviewRange,
+): EditorState {
   const paragraphs = getParagraphs(state);
   const start = paragraphs[range.startIndex];
   const end = paragraphs[range.endIndex];
@@ -53,23 +61,41 @@ function findNextRange(
   if (!ranges.length) return null;
   const paragraphs = getParagraphs(state);
   const byId = new Map(paragraphs.map((p, i) => [p.id, i]));
-  const position = direction === "next"
-    ? normalizeSelection(state, paragraphs).end
-    : normalizeSelection(state, paragraphs).start;
+  const position =
+    direction === "next"
+      ? normalizeSelection(state, paragraphs).end
+      : normalizeSelection(state, paragraphs).start;
   const focusIndex = byId.get(position.paragraphId);
   if (focusIndex === undefined) return null;
   const focusParagraph = paragraphs[focusIndex]!;
-  const focusOffset = positionToParagraphOffset(
-    focusParagraph, position,
-  );
+  const focusOffset = positionToParagraphOffset(focusParagraph, position);
 
-  const found = direction === "next"
-    ? ranges.find((range) =>
-      compare(range.startIndex, range.startOffset, focusIndex, focusOffset) > 0)
-    : [...ranges].reverse().find((range) =>
-      compare(range.startIndex, range.startOffset, focusIndex, focusOffset) < 0);
+  const found =
+    direction === "next"
+      ? ranges.find(
+          (range) =>
+            compare(
+              range.startIndex,
+              range.startOffset,
+              focusIndex,
+              focusOffset,
+            ) > 0,
+        )
+      : [...ranges]
+          .reverse()
+          .find(
+            (range) =>
+              compare(
+                range.startIndex,
+                range.startOffset,
+                focusIndex,
+                focusOffset,
+              ) < 0,
+          );
   // Wrap around, as in the native Review navigation commands.
-  return found ?? (direction === "next" ? ranges[0]! : ranges[ranges.length - 1]!);
+  return (
+    found ?? (direction === "next" ? ranges[0]! : ranges[ranges.length - 1]!)
+  );
 }
 
 export function collectNavigableRevisions(state: EditorState): ReviewRange[] {
@@ -97,9 +123,14 @@ export function collectNavigableRevisions(state: EditorState): ReviewRange[] {
 }
 
 export function navigateRevision(
-  state: EditorState, direction: "next" | "previous",
+  state: EditorState,
+  direction: "next" | "previous",
 ): EditorState {
-  const target = findNextRange(state, collectNavigableRevisions(state), direction);
+  const target = findNextRange(
+    state,
+    collectNavigableRevisions(state),
+    direction,
+  );
   return target ? moveToReviewRange(state, target) : state;
 }
 
@@ -117,15 +148,26 @@ function commentRanges(state: EditorState): ReviewRange[] {
     if (startIndex === undefined || endIndex === undefined) continue;
     const start = paragraphs[startIndex]!;
     const end = paragraphs[endIndex]!;
-    const startOffset = Math.max(0, Math.min(comment.start.offset,
-      start.runs.reduce((n, run) => n + run.text.length, 0)));
-    const endOffset = Math.max(0, Math.min(comment.end.offset,
-      end.runs.reduce((n, run) => n + run.text.length, 0)));
+    const startOffset = Math.max(
+      0,
+      Math.min(
+        comment.start.offset,
+        start.runs.reduce((n, run) => n + run.text.length, 0),
+      ),
+    );
+    const endOffset = Math.max(
+      0,
+      Math.min(
+        comment.end.offset,
+        end.runs.reduce((n, run) => n + run.text.length, 0),
+      ),
+    );
     if (compare(startIndex, startOffset, endIndex, endOffset) > 0) continue;
     ranges.push({ id, startIndex, startOffset, endIndex, endOffset });
   }
   return ranges.sort((a, b) =>
-    compare(a.startIndex, a.startOffset, b.startIndex, b.startOffset));
+    compare(a.startIndex, a.startOffset, b.startIndex, b.startOffset),
+  );
 }
 
 export function collectNavigableComments(state: EditorState): string[] {
@@ -133,7 +175,8 @@ export function collectNavigableComments(state: EditorState): string[] {
 }
 
 export function navigateComment(
-  state: EditorState, direction: "next" | "previous",
+  state: EditorState,
+  direction: "next" | "previous",
 ): EditorState {
   const target = findNextRange(state, commentRanges(state), direction);
   return target ? moveToReviewRange(state, target) : state;
@@ -144,33 +187,74 @@ export function navigateComment(
  * This keeps Resolve/Delete tied to the selected thread rather than a nearby
  * overlapping comment. Replies without anchors are managed by parent id.
  */
-export function getSelectedReviewComment(state: EditorState): EditorComment | null {
+export function getSelectedReviewComment(
+  state: EditorState,
+): EditorComment | null {
   const ranges = commentRanges(state);
   if (!ranges.length) return null;
   const selection = normalizeSelection(state);
-  const exact = ranges.find((range) =>
-    compare(range.startIndex, range.startOffset,
-      selection.startIndex, selection.startParagraphOffset) === 0 &&
-    compare(range.endIndex, range.endOffset,
-      selection.endIndex, selection.endParagraphOffset) === 0);
-  const current = exact ?? ranges.find((range) =>
-    compare(range.startIndex, range.startOffset,
-      selection.startIndex, selection.startParagraphOffset) <= 0 &&
-    compare(range.endIndex, range.endOffset,
-      selection.endIndex, selection.endParagraphOffset) >= 0);
-  return current ? state.document.comments?.items[current.id] ?? null : null;
+  const exact = ranges.find(
+    (range) =>
+      compare(
+        range.startIndex,
+        range.startOffset,
+        selection.startIndex,
+        selection.startParagraphOffset,
+      ) === 0 &&
+      compare(
+        range.endIndex,
+        range.endOffset,
+        selection.endIndex,
+        selection.endParagraphOffset,
+      ) === 0,
+  );
+  const current =
+    exact ??
+    ranges.find(
+      (range) =>
+        compare(
+          range.startIndex,
+          range.startOffset,
+          selection.startIndex,
+          selection.startParagraphOffset,
+        ) <= 0 &&
+        compare(
+          range.endIndex,
+          range.endOffset,
+          selection.endIndex,
+          selection.endParagraphOffset,
+        ) >= 0,
+    );
+  return current ? (state.document.comments?.items[current.id] ?? null) : null;
+}
+
+/** Select the tracked revision exactly as navigated by the Reviewing Pane. */
+export function focusRevisionById(state: EditorState, id: string): EditorState {
+  const target = collectNavigableRevisions(state).find(
+    (range) => range.id === id,
+  );
+  if (!target) return state;
+  return moveToReviewRange(state, target);
 }
 
 /**
  * Jump to an anchored comment in the active section/zone. A reply navigates
  * to its closest anchored ancestor, without changing document text.
  */
-export function focusReviewCommentById(state: EditorState, id: string): EditorState {
+export function focusReviewCommentById(
+  state: EditorState,
+  id: string,
+): EditorState {
   const items = state.document.comments?.items;
   if (!items?.[id]) return state;
   let current = items[id];
   const visited = new Set<string>();
-  while (current && !current.start && current.parentId && !visited.has(current.id)) {
+  while (
+    current &&
+    !current.start &&
+    current.parentId &&
+    !visited.has(current.id)
+  ) {
     visited.add(current.id);
     current = items[current.parentId];
   }
@@ -178,8 +262,8 @@ export function focusReviewCommentById(state: EditorState, id: string): EditorSt
   const end = current?.end;
   if (!start || !end) return state;
   const paragraphs = getParagraphs(state);
-  const pStart = paragraphs.find(p => p.id === start.paragraphId);
-  const pEnd = paragraphs.find(p => p.id === end.paragraphId);
+  const pStart = paragraphs.find((p) => p.id === start.paragraphId);
+  const pEnd = paragraphs.find((p) => p.id === end.paragraphId);
   if (!pStart || !pEnd) return state;
   return {
     ...state,
@@ -191,11 +275,14 @@ export function focusReviewCommentById(state: EditorState, id: string): EditorSt
 }
 
 export function setReviewCommentResolvedById(
-  state: EditorState, id: string, resolved: boolean,
+  state: EditorState,
+  id: string,
+  resolved: boolean,
 ): EditorState {
   const registry = state.document.comments;
   const comment = registry?.items[id];
-  if (!registry || !comment || Boolean(comment.resolved) === resolved) return state;
+  if (!registry || !comment || Boolean(comment.resolved) === resolved)
+    return state;
   return {
     ...state,
     document: {
@@ -210,10 +297,13 @@ export function setReviewCommentResolvedById(
 
 /** The selected-comment actions share the same immutable ID based mutations. */
 export function setSelectedCommentResolved(
-  state: EditorState, resolved: boolean,
+  state: EditorState,
+  resolved: boolean,
 ): EditorState {
   const comment = getSelectedReviewComment(state);
-  return comment ? setReviewCommentResolvedById(state, comment.id, resolved) : state;
+  return comment
+    ? setReviewCommentResolvedById(state, comment.id, resolved)
+    : state;
 }
 
 /**
@@ -221,7 +311,10 @@ export function setSelectedCommentResolved(
  * This pure model operation intentionally has no knowledge of authenticated
  * users: the editor command host must check permissions before invoking it.
  */
-export function deleteReviewCommentById(state: EditorState, id: string): EditorState {
+export function deleteReviewCommentById(
+  state: EditorState,
+  id: string,
+): EditorState {
   const registry = state.document.comments;
   if (!registry?.items[id]) return state;
   const removed = new Set<string>([id]);
@@ -242,7 +335,9 @@ export function deleteReviewCommentById(state: EditorState, id: string): EditorS
     }
   }
   const items = Object.fromEntries(
-    Object.entries(registry.items).filter(([commentId]) => !removed.has(commentId)),
+    Object.entries(registry.items).filter(
+      ([commentId]) => !removed.has(commentId),
+    ),
   );
   return {
     ...state,

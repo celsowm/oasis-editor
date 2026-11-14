@@ -191,6 +191,13 @@ export const defaultMenuItems: MenuItem[] = [
     icon: "list-filter",
   },
   {
+    id: "review_revisions_panel",
+    path: "Review/Reviewing Pane",
+    labelKey: "review.reviewingPane",
+    command: "toggleRevisionsPanel",
+    icon: "list-checks",
+  },
+  {
     id: "review_new_comment",
     path: "Review/New Comment",
     labelKey: "toolbar.newComment",

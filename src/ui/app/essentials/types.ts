@@ -57,6 +57,10 @@ export interface CreateEditorEssentialsPluginOptions {
   toggleOutlinePanel: () => void;
   /** Reactive read of the outline panel's current visibility. */
   isOutlineVisible: () => boolean;
+  /** Toggles the Reviewing Pane without touching document state. */
+  toggleRevisionsPanel: () => void;
+  /** Reactive read of the Reviewing Pane's current visibility. */
+  revisionsPanelVisible: () => boolean;
   importInputRef: () => HTMLInputElement | undefined;
   imageInputRef: () => HTMLInputElement | undefined;
   selectedImageRun: () => SelectedImageRun | null;
