@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
  * P01 Review: document-scoped Accept All / Reject All, their confirmation gate,
- * disabled states without revisions, undo, and the selection-vs-document scope
- * distinction.
+ * disabled states without revisions, undo, the selection-vs-document scope
+ * distinction, Display for Review, Show Markup category/reviewer filters and
+ * the Reviewing Pane.
  */
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
@@ -69,6 +70,86 @@ async function placeCaretInParagraph(page, index) {
       focus: paragraphOffsetToPosition(paragraph, offset),
     });
   }, index);
+}
+
+function markupOptions(page) {
+  return page.evaluate(
+    () =>
+      window.ribbonReference.client.commands.state("showMarkupOptions").value,
+  );
+}
+
+function revisionMarkupSelector(type) {
+  return `[data-testid="editor-revision-markup"]${
+    type ? `[data-revision-type="${type}"]` : ""
+  }`;
+}
+
+function markupCount(page, type) {
+  return page.locator(revisionMarkupSelector(type)).count();
+}
+
+function commentHighlightCount(page) {
+  return page.locator('[data-testid="editor-comment-highlight"]').count();
+}
+
+async function waitForMarkupCount(page, type, expected) {
+  await page.waitForFunction(
+    ([selector, count]) => document.querySelectorAll(selector).length === count,
+    [revisionMarkupSelector(type), expected],
+    { timeout: 5000 },
+  );
+}
+
+async function waitForMarkupPresent(page, type) {
+  await page.waitForFunction(
+    (selector) => document.querySelectorAll(selector).length > 0,
+    revisionMarkupSelector(type),
+    { timeout: 5000 },
+  );
+}
+
+async function waitForCommentHighlights(page) {
+  await page.waitForFunction(
+    () =>
+      document.querySelectorAll('[data-testid="editor-comment-highlight"]')
+        .length > 0,
+    undefined,
+    { timeout: 5000 },
+  );
+}
+
+async function waitForChecked(page, testId, expected) {
+  await page.waitForFunction(
+    ([id, value]) =>
+      document
+        .querySelector(`[data-testid="${id}"]`)
+        ?.getAttribute("aria-checked") === value,
+    [testId, expected],
+    { timeout: 5000 },
+  );
+}
+
+async function openShowMarkupMenu(page) {
+  const firstItem = page.locator(
+    '[data-testid="editor-toolbar-show-markup-insertions"]',
+  );
+  // The gallery keeps itself open between checkbox toggles; only re-open it
+  // when a popover dismissed it (collapsed ribbon groups, outside clicks).
+  if ((await firstItem.count()) > 0 && (await firstItem.isVisible())) return;
+  await (
+    await openGroup(page, "tracking", "editor-toolbar-show-markup")
+  ).click();
+  await firstItem.waitFor({ state: "visible", timeout: 5000 });
+}
+
+async function clickShowMarkupItem(page, testId) {
+  await openShowMarkupMenu(page);
+  await page.locator(`[data-testid="${testId}"]`).click();
+}
+
+async function ariaChecked(page, testId) {
+  return page.locator(`[data-testid="${testId}"]`).getAttribute("aria-checked");
 }
 
 try {
@@ -336,7 +417,158 @@ try {
       "All Markup must restore editing",
     );
 
-    // 10. The Reviewing Pane lists the tracked revisions, navigates to one,
+    // 10. Show Markup: category and reviewer filters change what is painted
+    // without editing revision data. The fixture seeds an insertion and an
+    // anchored comment from "Reference author"; step 8 adds a deletion from
+    // "User", and a reply adds "Reference reviewer" to the reviewer list.
+    const commentCountBefore = await page.evaluate(
+      () =>
+        Object.keys(
+          window.ribbonReference.client.getState().document.comments?.items ??
+            {},
+        ).length,
+    );
+    assert.equal(commentCountBefore, 2);
+
+    const initialOptions = await markupOptions(page);
+    assert.equal(initialOptions.insertions, true);
+    assert.equal(initialOptions.deletions, true);
+    assert.equal(initialOptions.comments, true);
+    assert.equal(initialOptions.allAuthors, true);
+    assert.deepEqual(initialOptions.visibleAuthors, []);
+    assert.ok(initialOptions.knownAuthors.length >= 2);
+    assert.ok((await markupCount(page, "insert")) > 0);
+    assert.ok((await markupCount(page, "delete")) > 0);
+    assert.ok((await commentHighlightCount(page)) > 0);
+
+    await openShowMarkupMenu(page);
+    for (const section of ["insertions", "deletions", "comments"]) {
+      assert.equal(
+        await ariaChecked(page, `editor-toolbar-show-markup-${section}`),
+        "true",
+      );
+    }
+    assert.equal(
+      await ariaChecked(page, "editor-toolbar-show-markup-all-reviewers"),
+      "true",
+    );
+    const reviewerRows = page.locator(
+      '[data-testid^="editor-toolbar-show-markup-reviewer-"]',
+    );
+    assert.equal(
+      await reviewerRows.count(),
+      initialOptions.knownAuthors.length,
+    );
+    assert.deepEqual(
+      await reviewerRows.evaluateAll((rows) =>
+        rows.map((row) => row.getAttribute("data-author")),
+      ),
+      initialOptions.knownAuthors,
+    );
+
+    // Insertions off: only the "User" deletion decoration remains.
+    await clickShowMarkupItem(page, "editor-toolbar-show-markup-insertions");
+    await waitForMarkupCount(page, "insert", 0);
+    assert.equal((await markupOptions(page)).insertions, false);
+    await waitForChecked(
+      page,
+      "editor-toolbar-show-markup-insertions",
+      "false",
+    );
+    assert.ok((await markupCount(page, "delete")) > 0);
+    assert.ok((await commentHighlightCount(page)) > 0);
+
+    // Deletions off too: no revision markup, comment highlights survive.
+    await clickShowMarkupItem(page, "editor-toolbar-show-markup-deletions");
+    await waitForMarkupCount(page, null, 0);
+    assert.equal((await markupOptions(page)).deletions, false);
+    assert.ok((await commentHighlightCount(page)) > 0);
+
+    // Comments off: the comment highlights disappear as well.
+    await clickShowMarkupItem(page, "editor-toolbar-show-markup-comments");
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll('[data-testid="editor-comment-highlight"]')
+          .length === 0,
+      undefined,
+      { timeout: 5000 },
+    );
+    assert.equal((await markupOptions(page)).comments, false);
+    assert.equal(await commentHighlightCount(page), 0);
+
+    // Restore every category.
+    for (const section of ["insertions", "deletions", "comments"]) {
+      await clickShowMarkupItem(page, `editor-toolbar-show-markup-${section}`);
+    }
+    const restoredOptions = await markupOptions(page);
+    assert.equal(restoredOptions.insertions, true);
+    assert.equal(restoredOptions.deletions, true);
+    assert.equal(restoredOptions.comments, true);
+    await waitForMarkupPresent(page, "insert");
+    await waitForMarkupPresent(page, "delete");
+    await waitForCommentHighlights(page);
+
+    // "All Reviewers" unchecked hides every author's markup.
+    await clickShowMarkupItem(page, "editor-toolbar-show-markup-all-reviewers");
+    await waitForMarkupCount(page, null, 0);
+    const noneVisible = await markupOptions(page);
+    assert.equal(noneVisible.allAuthors, false);
+    assert.deepEqual(noneVisible.visibleAuthors, []);
+    assert.equal(await commentHighlightCount(page), 0);
+    await waitForChecked(
+      page,
+      "editor-toolbar-show-markup-all-reviewers",
+      "false",
+    );
+
+    // Re-check "All Reviewers" restores everything.
+    await clickShowMarkupItem(page, "editor-toolbar-show-markup-all-reviewers");
+    assert.equal((await markupOptions(page)).allAuthors, true);
+    await waitForMarkupPresent(page, "insert");
+    await waitForCommentHighlights(page);
+
+    // One reviewer off: their insertion and comment vanish, the other
+    // author's deletion stays, and "All Reviewers" becomes mixed.
+    const authorRow = page.locator(
+      '[data-testid^="editor-toolbar-show-markup-reviewer-"][data-author="Reference author"]',
+    );
+    assert.equal(await authorRow.count(), 1);
+    await openShowMarkupMenu(page);
+    await authorRow.click();
+    await waitForMarkupCount(page, "insert", 0);
+    assert.equal(await commentHighlightCount(page), 0);
+    assert.ok((await markupCount(page, "delete")) > 0);
+    const filtered = await markupOptions(page);
+    assert.equal(filtered.allAuthors, false);
+    assert.ok(!filtered.visibleAuthors.includes("Reference author"));
+    await waitForChecked(
+      page,
+      "editor-toolbar-show-markup-all-reviewers",
+      "mixed",
+    );
+
+    // Toggling the last hidden reviewer collapses back to "all reviewers".
+    await openShowMarkupMenu(page);
+    await authorRow.click();
+    assert.equal((await markupOptions(page)).allAuthors, true);
+    await waitForMarkupPresent(page, "insert");
+    await waitForCommentHighlights(page);
+    await page.keyboard.press("Escape");
+
+    // Show Markup is view-only: revision and comment data are untouched.
+    assert.equal(await hasRevisions(), true);
+    assert.equal(
+      await page.evaluate(
+        () =>
+          Object.keys(
+            window.ribbonReference.client.getState().document.comments?.items ??
+              {},
+          ).length,
+      ),
+      commentCountBefore,
+    );
+
+    // 11. The Reviewing Pane lists the tracked revisions, navigates to one,
     // and accepts a single revision from the list.
     const revisionCount = () =>
       page.evaluate(async () => {
@@ -409,6 +641,13 @@ try {
         "display-for-review-final-readonly",
         "display-for-review-original-readonly",
         "display-for-review-roundtrip",
+        "show-markup-menu-defaults-and-reviewers",
+        "show-markup-insertions-filter",
+        "show-markup-deletions-filter",
+        "show-markup-comments-filter",
+        "show-markup-all-reviewers-toggle",
+        "show-markup-single-reviewer-filter",
+        "show-markup-view-only",
         "reviewing-pane-lists-revisions",
         "reviewing-pane-navigates",
         "reviewing-pane-accept-one",
@@ -422,7 +661,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review and the Reviewing Pane.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Show Markup category/reviewer filters and the Reviewing Pane.`,
   );
 } finally {
   await browser.close();

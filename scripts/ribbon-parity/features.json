@@ -4686,7 +4686,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "not-applicable",
-      "notes": "Display for Review: Oasis exposes All Markup / Final / Original as a view-mode switch (Review > Tracking) rendering the resolved projection of the document via projectTrackedRevisions; editing is disabled in Final/Original (view flag, not persisted to DOCX). Simple Markup and reviewer balloons remain unexposed; the Reviewing Pane is exposed as of Delivery 122; markup painting covers insert/delete runs only.",
+      "notes": "Display for Review: Oasis exposes All Markup / Final / Original as a view-mode switch (Review > Tracking) rendering the resolved projection of the document via projectTrackedRevisions; editing is disabled in Final/Original (view flag, not persisted to DOCX). The adjacent Show Markup gallery (Delivery 128) filters painted insertions, deletions, comments and reviewers per revision/comment author. Simple Markup and reviewer balloons remain unexposed; the Reviewing Pane is exposed as of Delivery 122 but its list is not reviewer-filtered; markup painting still covers insert/delete runs only.",
       "oasisCommand": "setReviewDisplayMode",
       "ribbonId": "editor-toolbar-display-for-review",
       "tab": "review",
@@ -4695,11 +4695,15 @@
     {
       "id": "review.showMarkup",
       "wordcraftCommand": "review.showMarkup",
-      "status": "missing",
-      "exposure": "missing",
-      "semantics": "missing",
-      "persistence": "unverified",
-      "notes": "Show Markup: a Show Markup toggle paints/hides insertions and deletions over the canvas (Delivery 116: colored underline/strike-through, default on, verified end-to-end), but Word's revision-category/author markup filters remain unexposed."
+      "status": "partial",
+      "exposure": "partial",
+      "semantics": "partial",
+      "persistence": "not-applicable",
+      "notes": "Show Markup: Review > Tracking exposes a gallery with Insertions, Deletions and Comments checkboxes plus an All Reviewers checkbox and one checkbox per author found in the document (revision + comment authors). Filters are view-only EditorState flags: they hide painted revision decorations and comment highlights without mutating revision data, and they are not persisted to DOCX or pushed onto the undo stack. Evidence in verify-ribbon-review.mjs (Chromium/Firefox/WebKit, five layouts: category filters, all/none reviewers, single-reviewer filter, mixed All Reviewers state, view-only model check). Word's Simple Markup, reviewer balloons, formatting/property and structural table revision painting, change bars and a reviewer-filtered Reviewing Pane remain unexposed; author identity is a display name (locally authored revisions use a hardcoded 'User'), and VoiceOver, touch and trusted Safari are unverified.",
+      "oasisCommand": "applyShowMarkup",
+      "ribbonId": "editor-toolbar-show-markup",
+      "tab": "review",
+      "group": "tracking"
     },
     {
       "id": "review.reviewingPane",
