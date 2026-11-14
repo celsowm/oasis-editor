@@ -43,6 +43,8 @@ export function createEditorEssentialsRuntimePlugin(
     dialog: {
       openFontDialog: options.openFontDialog,
       openParagraphDialog: options.openParagraphDialog,
+      requestAcceptAllRevisions: options.requestAcceptAllRevisions,
+      requestRejectAllRevisions: options.requestRejectAllRevisions,
     },
   });
 }

@@ -21,6 +21,7 @@ import type { DocumentPersistence } from "@/app/controllers/useEditorPersistence
 import type { OasisEditorUiState } from "@/app/client/OasisEditorClient.js";
 import type { TablePropertiesDialogInitialValues } from "@/ui/components/Dialogs/TablePropertiesDialog.js";
 import { readTableProperties } from "@/app/services/tablePropertiesService.js";
+import { collectAllRevisionIds } from "@/core/commands/history.js";
 
 type DocumentRuntime = ReturnType<typeof createEditorDocumentRuntime>;
 type InteractionRuntime = ReturnType<typeof createEditorInteractionRuntime>;
@@ -76,6 +77,11 @@ export interface EditorCommandRuntimeDeps {
   setParagraphDialog: (state: {
     isOpen: boolean;
     initial: import("@/ui/components/Dialogs/ParagraphDialog.js").ParagraphDialogInitialValues;
+  }) => void;
+  setRevisionBulkDialog: (state: {
+    isOpen: boolean;
+    action: "accept" | "reject";
+    count: number;
   }) => void;
   getUiState: () => OasisEditorUiState;
   updateUiState: (patch: OasisEditorUiState) => OasisEditorUiState;
@@ -214,6 +220,20 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
       },
       openFontDialog: commandsController.openFontDialog,
       openParagraphDialog: commandsController.openParagraphDialog,
+      requestAcceptAllRevisions: (): void => {
+        deps.setRevisionBulkDialog({
+          isOpen: true,
+          action: "accept",
+          count: collectAllRevisionIds(deps.state).size,
+        });
+      },
+      requestRejectAllRevisions: (): void => {
+        deps.setRevisionBulkDialog({
+          isOpen: true,
+          action: "reject",
+          count: collectAllRevisionIds(deps.state).size,
+        });
+      },
     },
     externalPlugins: deps.runtimeOptions().plugins,
     t: deps.translator,

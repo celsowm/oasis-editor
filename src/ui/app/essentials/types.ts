@@ -49,6 +49,10 @@ export interface CreateEditorEssentialsPluginOptions {
   openFontDialog: () => void;
   /** Opens the Paragraph dialog. */
   openParagraphDialog: () => void;
+  /** Opens the Accept All confirmation dialog. */
+  requestAcceptAllRevisions: () => void;
+  /** Opens the Reject All confirmation dialog. */
+  requestRejectAllRevisions: () => void;
   importInputRef: () => HTMLInputElement | undefined;
   imageInputRef: () => HTMLInputElement | undefined;
   selectedImageRun: () => SelectedImageRun | null;

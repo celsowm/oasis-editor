@@ -45,6 +45,14 @@ export interface EditorDialogsState {
     isOpen: boolean;
     initial: TablePropertiesDialogInitialValues;
   }>;
+  revisionBulkDialog: Accessor<RevisionBulkDialogState>;
+  setRevisionBulkDialog: Setter<RevisionBulkDialogState>;
+}
+
+export interface RevisionBulkDialogState {
+  isOpen: boolean;
+  action: "accept" | "reject";
+  count: number;
 }
 
 export function createEditorDialogs(): EditorDialogsState {
@@ -153,6 +161,12 @@ export function createEditorDialogs(): EditorDialogsState {
       tabs: [],
     },
   });
+  const [revisionBulkDialog, setRevisionBulkDialog] =
+    createSignal<RevisionBulkDialogState>({
+      isOpen: false,
+      action: "accept",
+      count: 0,
+    });
   const [tablePropertiesDialog, setTablePropertiesDialog] = createSignal<{
     isOpen: boolean;
     initial: TablePropertiesDialogInitialValues;
@@ -231,5 +245,7 @@ export function createEditorDialogs(): EditorDialogsState {
     setParagraphDialog,
     tablePropertiesDialog,
     setTablePropertiesDialog,
+    revisionBulkDialog,
+    setRevisionBulkDialog,
   };
 }

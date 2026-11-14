@@ -8,6 +8,7 @@ import { FontDialog } from "@/ui/components/Dialogs/FontDialog.js";
 import { ParagraphDialog } from "@/ui/components/Dialogs/ParagraphDialog.js";
 import { TablePropertiesDialog } from "@/ui/components/Dialogs/TablePropertiesDialog.js";
 import { NewDocumentConfirmationDialog } from "@/ui/components/Dialogs/NewDocumentConfirmationDialog.js";
+import { RevisionBulkDialog } from "@/ui/components/Dialogs/RevisionBulkDialog.js";
 import { SymbolDialog } from "@/ui/components/Dialogs/SymbolDialog.js";
 import { EquationDialog } from "@/ui/components/Dialogs/EquationDialog.js";
 import type { EditorMathExpression } from "@/core/model.js";
@@ -38,6 +39,7 @@ export interface EditorDialogsLayerProps {
     typeof TablePropertiesDialog
   >["onApply"];
   confirmNewDocument: () => void;
+  applyBulkRevisions: (action: "accept" | "reject") => void;
   insertSymbol: (symbol: string, fontFamily: string) => void;
   applyEquation: (
     expression: EditorMathExpression,
@@ -70,6 +72,8 @@ export function EditorDialogsLayer(
     setTablePropertiesDialog,
     newDocumentDialog,
     setNewDocumentDialog,
+    revisionBulkDialog,
+    setRevisionBulkDialog,
     symbolDialog,
     setSymbolDialog,
     equationDialog,
@@ -87,6 +91,21 @@ export function EditorDialogsLayer(
         onConfirm={(): void => {
           setNewDocumentDialog({ isOpen: false });
           props.confirmNewDocument();
+        }}
+      />
+
+      <RevisionBulkDialog
+        isOpen={revisionBulkDialog().isOpen}
+        action={revisionBulkDialog().action}
+        count={revisionBulkDialog().count}
+        onClose={(): void => {
+          setRevisionBulkDialog({ ...revisionBulkDialog(), isOpen: false });
+          props.focusInput();
+        }}
+        onConfirm={(): void => {
+          const action = revisionBulkDialog().action;
+          setRevisionBulkDialog({ ...revisionBulkDialog(), isOpen: false });
+          props.applyBulkRevisions(action);
         }}
       />
 

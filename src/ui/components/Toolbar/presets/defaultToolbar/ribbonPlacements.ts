@@ -64,6 +64,16 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
     group: "changes",
     row: 2,
   },
+  "editor-toolbar-accept-all-revisions": {
+    tab: "review",
+    group: "changes",
+    row: 1,
+  },
+  "editor-toolbar-reject-all-revisions": {
+    tab: "review",
+    group: "changes",
+    row: 2,
+  },
   "editor-toolbar-previous-revision": {
     tab: "review",
     group: "changes",

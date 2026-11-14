@@ -914,6 +914,25 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
 
   items.push({
     type: "button",
+    id: "editor-toolbar-accept-all-revisions",
+    testId: "editor-toolbar-accept-all-revisions",
+    iconName: "check-check",
+    labelKey: "toolbar.acceptAll",
+    tooltipKey: "toolbar.acceptAll",
+    command: "requestAcceptAllRevisions",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-reject-all-revisions",
+    testId: "editor-toolbar-reject-all-revisions",
+    iconName: "undo-2",
+    labelKey: "toolbar.rejectAll",
+    tooltipKey: "toolbar.rejectAll",
+    command: "requestRejectAllRevisions",
+  });
+
+  items.push({
+    type: "button",
     id: "editor-toolbar-previous-revision",
     testId: "editor-toolbar-previous-revision",
     iconName: "chevron-up",

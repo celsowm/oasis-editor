@@ -78,6 +78,12 @@ export const en = {
   "review.noComments": "No discussions found",
   "review.goToComment": "Go to comment",
   "review.confirmDelete": "Confirm deletion",
+  "review.bulkAcceptTitle": "Accept all changes",
+  "review.bulkAcceptMessage":
+    "Accept all {0} tracked changes in this document, including headers, footers, notes and tables?",
+  "review.bulkRejectTitle": "Reject all changes",
+  "review.bulkRejectMessage":
+    "Reject all {0} tracked changes in this document, including headers, footers, notes and tables?",
   "toolbar.editComment": "Edit Comment",
   "toolbar.replyComment": "Reply to Comment",
   "comment.author": "Author",
@@ -93,6 +99,8 @@ export const en = {
   "toolbar.trackChanges": "Track Changes",
   "toolbar.accept": "Accept",
   "toolbar.reject": "Reject",
+  "toolbar.acceptAll": "Accept All",
+  "toolbar.rejectAll": "Reject All",
   "toolbar.bold": "Bold",
   "toolbar.italic": "Italic",
   "toolbar.underline": "Underline",

@@ -78,6 +78,12 @@ export const ptBR = {
   "review.noComments": "Nenhuma discussão encontrada",
   "review.goToComment": "Ir ao comentário",
   "review.confirmDelete": "Confirmar exclusão",
+  "review.bulkAcceptTitle": "Aceitar todas as alterações",
+  "review.bulkAcceptMessage":
+    "Aceitar todas as {0} alterações controladas deste documento, incluindo cabeçalhos, rodapés, notas e tabelas?",
+  "review.bulkRejectTitle": "Rejeitar todas as alterações",
+  "review.bulkRejectMessage":
+    "Rejeitar todas as {0} alterações controladas deste documento, incluindo cabeçalhos, rodapés, notas e tabelas?",
   "toolbar.editComment": "Editar comentário",
   "toolbar.replyComment": "Responder comentário",
   "comment.author": "Autor",
@@ -93,6 +99,8 @@ export const ptBR = {
   "toolbar.trackChanges": "Controlar Alterações",
   "toolbar.accept": "Aceitar",
   "toolbar.reject": "Rejeitar",
+  "toolbar.acceptAll": "Aceitar tudo",
+  "toolbar.rejectAll": "Rejeitar tudo",
   "toolbar.bold": "Negrito",
   "toolbar.italic": "Itálico",
   "toolbar.underline": "Sublinhado",

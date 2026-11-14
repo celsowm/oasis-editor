@@ -153,6 +153,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     setParagraphDialog,
     tablePropertiesDialog,
     setTablePropertiesDialog,
+    revisionBulkDialog,
+    setRevisionBulkDialog,
     newDocumentDialog,
     setNewDocumentDialog,
     symbolDialog,
@@ -322,6 +324,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     setTablePropertiesDialog,
     setFontDialog,
     setParagraphDialog,
+    setRevisionBulkDialog,
   });
   const {
     commandsController,
@@ -568,6 +571,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
             setParagraphDialog,
             tablePropertiesDialog,
             setTablePropertiesDialog,
+            revisionBulkDialog,
+            setRevisionBulkDialog,
             newDocumentDialog,
             setNewDocumentDialog,
             symbolDialog,
@@ -588,6 +593,12 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           setParagraphDialogDefault={setParagraphDialogDefault}
           applyTablePropertiesDialogValues={applyTablePropertiesDialogValues}
           confirmNewDocument={(): void => runtimeClient.resetDocument()}
+          applyBulkRevisions={(action): void => {
+            runtimeEditor().commands.execute(
+              action === "accept" ? "acceptAllRevisions" : "rejectAllRevisions",
+            );
+            focusInput();
+          }}
           insertSymbol={(symbol, fontFamily): void => {
             runtimeEditor().commands.execute("insertText", {
               text: symbol,

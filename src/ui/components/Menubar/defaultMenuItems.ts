@@ -163,6 +163,20 @@ export const defaultMenuItems: MenuItem[] = [
     icon: "chevron-down",
   },
   {
+    id: "review_accept_all_revisions",
+    path: "Review/Accept All Changes",
+    labelKey: "toolbar.acceptAll",
+    command: "requestAcceptAllRevisions",
+    icon: "check-check",
+  },
+  {
+    id: "review_reject_all_revisions",
+    path: "Review/Reject All Changes",
+    labelKey: "toolbar.rejectAll",
+    command: "requestRejectAllRevisions",
+    icon: "undo-2",
+  },
+  {
     id: "review_comments_panel",
     path: "Review/Comments Panel",
     labelKey: "review.commentsPanel",

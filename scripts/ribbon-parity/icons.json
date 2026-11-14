@@ -665,180 +665,194 @@
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 919,
       "role": "iconName",
-      "name": "chevron-up",
+      "name": "check-check",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 928,
       "role": "iconName",
-      "name": "chevron-down",
+      "name": "undo-2",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 937,
+      "line": 938,
       "role": "iconName",
-      "name": "list-filter",
+      "name": "chevron-up",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 947,
       "role": "iconName",
-      "name": "message-square-plus",
+      "name": "chevron-down",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 957,
+      "line": 956,
       "role": "iconName",
-      "name": "reply",
+      "name": "list-filter",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 966,
       "role": "iconName",
+      "name": "message-square-plus",
+      "origin": "lucide"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 976,
+      "role": "iconName",
+      "name": "reply",
+      "origin": "lucide"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 985,
+      "role": "iconName",
       "name": "pencil",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 975,
+      "line": 994,
       "role": "iconName",
       "name": "message-square",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 984,
+      "line": 1003,
       "role": "iconName",
       "name": "messages-square",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 993,
+      "line": 1012,
       "role": "iconName",
       "name": "message-square-check",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1002,
+      "line": 1021,
       "role": "iconName",
       "name": "message-square-more",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1011,
+      "line": 1030,
       "role": "iconName",
       "name": "message-square-x",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1022,
+      "line": 1041,
       "role": "iconName",
       "name": "scan",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1031,
+      "line": 1050,
       "role": "iconName",
       "name": "pilcrow",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1040,
+      "line": 1059,
       "role": "iconName",
       "name": "type",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1097,
+      "line": 1116,
       "role": "iconName",
       "name": "formatPainter",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1124,
+      "line": 1143,
       "role": "iconName",
       "name": "tableDistributeRows",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1133,
+      "line": 1152,
       "role": "iconName",
       "name": "tableDistributeColumns",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1142,
+      "line": 1161,
       "role": "iconName",
       "name": "tableAutoFit",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1154,
+      "line": 1173,
       "role": "iconName",
       "name": "tableToText",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1166,
+      "line": 1185,
       "role": "iconName",
       "name": "textToTable",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1178,
+      "line": 1197,
       "role": "iconName",
       "name": "splitTable",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1190,
+      "line": 1209,
       "role": "iconName",
       "name": "sortAscending",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1199,
+      "line": 1218,
       "role": "iconName",
       "name": "sortDescending",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1211,
+      "line": 1230,
       "role": "iconName",
       "name": "deleteTable",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1223,
+      "line": 1242,
       "role": "iconName",
       "name": "repeatHeaderRow",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1237,
+      "line": 1256,
       "role": "iconName",
       "name": "tableVerticalAlign",
       "origin": "oasis"
@@ -1263,7 +1277,7 @@
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1055,
+      "line": 1074,
       "role": "iconName",
       "expression": "spec.icon"
     },
