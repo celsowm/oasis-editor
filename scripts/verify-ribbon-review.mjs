@@ -3,8 +3,8 @@
  * P01 Review: document-scoped Accept All / Reject All, their confirmation gate,
  * disabled states without revisions, undo, the selection-vs-document scope
  * distinction, Display for Review (including Simple Markup change bars),
- * Show Markup category/reviewer filters, formatting revisions and the
- * Reviewing Pane.
+ * Show Markup category/reviewer filters (including the dedicated Formatting
+ * checkbox), formatting revisions and the Reviewing Pane.
  */
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
@@ -556,6 +556,7 @@ try {
     assert.equal(initialOptions.insertions, true);
     assert.equal(initialOptions.deletions, true);
     assert.equal(initialOptions.comments, true);
+    assert.equal(initialOptions.formatting, true);
     assert.equal(initialOptions.allAuthors, true);
     assert.deepEqual(initialOptions.visibleAuthors, []);
     assert.ok(initialOptions.knownAuthors.length >= 2);
@@ -564,7 +565,12 @@ try {
     assert.ok((await commentHighlightCount(page)) > 0);
 
     await openShowMarkupMenu(page);
-    for (const section of ["insertions", "deletions", "comments"]) {
+    for (const section of [
+      "insertions",
+      "deletions",
+      "formatting",
+      "comments",
+    ]) {
       assert.equal(
         await ariaChecked(page, `editor-toolbar-show-markup-${section}`),
         "true",
@@ -574,6 +580,18 @@ try {
       await ariaChecked(page, "editor-toolbar-show-markup-all-reviewers"),
       "true",
     );
+
+    // The dedicated Formatting checkbox toggles its flag both ways (its effect
+    // on an actual formatting revision is asserted in step 13).
+    await clickShowMarkupItem(page, "editor-toolbar-show-markup-formatting");
+    assert.equal((await markupOptions(page)).formatting, false);
+    await waitForChecked(
+      page,
+      "editor-toolbar-show-markup-formatting",
+      "false",
+    );
+    await clickShowMarkupItem(page, "editor-toolbar-show-markup-formatting");
+    assert.equal((await markupOptions(page)).formatting, true);
     const reviewerRows = page.locator(
       '[data-testid^="editor-toolbar-show-markup-reviewer-"]',
     );
@@ -618,7 +636,8 @@ try {
     assert.equal((await markupOptions(page)).comments, false);
     assert.equal(await commentHighlightCount(page), 0);
 
-    // Restore every category.
+    // Restore the three categories turned off above (Formatting was already
+    // restored by its dedicated checkbox check).
     for (const section of ["insertions", "deletions", "comments"]) {
       await clickShowMarkupItem(page, `editor-toolbar-show-markup-${section}`);
     }
@@ -626,6 +645,7 @@ try {
     assert.equal(restoredOptions.insertions, true);
     assert.equal(restoredOptions.deletions, true);
     assert.equal(restoredOptions.comments, true);
+    assert.equal(restoredOptions.formatting, true);
     await waitForMarkupPresent(page, "insert");
     await waitForMarkupPresent(page, "delete");
     await waitForCommentHighlights(page);
@@ -887,14 +907,42 @@ try {
       "formatting revision authors appear in the Show Markup reviewer list",
     );
 
-    // Categories do not filter formatting (Oasis has not yet exposed Word's
-    // dedicated "Formatting" Show Markup checkbox).
+    // Other categories do not hide formatting (only the dedicated Formatting
+    // checkbox does).
     await applyShowMarkup(page, { section: "insertions" });
     assert.ok(
       (await propertyMarkup().count()) > 0,
       "turning insertions off must not hide formatting decorations",
     );
     await applyShowMarkup(page, { section: "insertions" });
+
+    // The dedicated Formatting checkbox hides formatting decorations only;
+    // the insert decoration stays painted.
+    await applyShowMarkup(page, { section: "formatting" });
+    assert.equal((await markupOptions(page)).formatting, false);
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll(
+          '[data-testid="editor-revision-markup"][data-revision-type="property"]',
+        ).length === 0,
+      undefined,
+      { timeout: 5000 },
+    );
+    assert.equal(await propertyMarkup().count(), 0);
+    assert.ok(
+      (await markupCount(page, "insert")) > 0,
+      "formatting off must not hide insertions",
+    );
+    await applyShowMarkup(page, { section: "formatting" });
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll(
+          '[data-testid="editor-revision-markup"][data-revision-type="property"]',
+        ).length > 0,
+      undefined,
+      { timeout: 5000 },
+    );
+    assert.equal((await markupOptions(page)).formatting, true);
 
     // Hiding the formatting author removes its decoration (reviewer filtering).
     await applyShowMarkup(page, { author: "Formatting author" });
@@ -935,6 +983,17 @@ try {
       "formatting and insert paragraphs both bar",
     );
 
+    // Formatting off removes only the formatting paragraph's change bar; the
+    // insert paragraph keeps its bar (bars stay consistent with the core helper).
+    await applyShowMarkup(page, { section: "formatting" });
+    const barsWithoutFormatting = await changeBarIds();
+    assert.ok(barsWithoutFormatting.length < simpleIds.length);
+    await waitForChangeBarCount(barsWithoutFormatting.length);
+    assert.deepEqual(await paintedChangeBarIds(), barsWithoutFormatting);
+    await applyShowMarkup(page, { section: "formatting" });
+    await waitForChangeBarCount(simpleIds.length);
+    assert.deepEqual(await paintedChangeBarIds(), simpleIds);
+
     assert.deepEqual(errors, []);
     records.push({
       sha,
@@ -962,6 +1021,7 @@ try {
         "simple-markup-follows-show-markup-filters",
         "simple-markup-bars-are-mode-specific",
         "show-markup-menu-defaults-and-reviewers",
+        "show-markup-formatting-checkbox",
         "show-markup-insertions-filter",
         "show-markup-deletions-filter",
         "show-markup-comments-filter",
@@ -977,8 +1037,10 @@ try {
         "reviewing-pane-close",
         "formatting-revision-paints-distinct-decoration",
         "formatting-revision-author-in-show-markup",
-        "formatting-revision-not-category-filtered",
+        "formatting-revision-other-categories-independent",
+        "formatting-revision-follows-formatting-checkbox",
         "formatting-revision-reviewer-filter-and-change-bar",
+        "formatting-change-bar-follows-formatting-checkbox",
       ],
     });
     await page.close();
@@ -988,7 +1050,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters, formatting revisions and the Reviewing Pane.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions and the Reviewing Pane.`,
   );
 } finally {
   await browser.close();
