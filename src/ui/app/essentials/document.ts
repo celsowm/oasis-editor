@@ -95,6 +95,7 @@ export function buildEssentialsDocument(
     newDocument: (): void => options.newDocument(),
     saveDocument: (): void => options.saveDocument(),
     openSymbolDialog: (): void => options.openSymbolDialog(),
+    openCommandSearch: (): void => options.openCommandSearch(),
     openEquationDialog: (): void => options.openEquationDialog(),
     hasActiveTable: (): boolean => hasActiveTable(options.state()),
     openTableProperties: (activeTab?: "table" | "cell"): void =>

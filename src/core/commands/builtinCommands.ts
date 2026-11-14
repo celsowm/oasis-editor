@@ -55,6 +55,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "toggleRevisionMarkup",
   "toggleOutlinePanel",
   "toggleRevisionsPanel",
+  "openCommandSearch",
   "acceptRevisions",
   "rejectRevisions",
   "setReviewDisplayMode",

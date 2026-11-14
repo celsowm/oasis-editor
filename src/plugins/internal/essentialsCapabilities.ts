@@ -247,6 +247,7 @@ export interface EssentialsDocumentCapability {
   insertShape: (preset: string) => void;
   openSymbolDialog: () => void;
   openEquationDialog: () => void;
+  openCommandSearch: () => void;
   /** True when the active selection sits inside a table. */
   hasActiveTable: () => boolean;
   /** Opens the Table Properties dialog for the active table/cell. */

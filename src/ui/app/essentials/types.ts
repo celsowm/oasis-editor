@@ -43,6 +43,7 @@ export interface CreateEditorEssentialsPluginOptions {
   saveDocument: () => void;
   openSymbolDialog: () => void;
   openEquationDialog: () => void;
+  openCommandSearch: () => void;
   /** Opens the Table Properties dialog for the active table/cell. */
   openTablePropertiesDialog: (activeTab?: "table" | "cell") => void;
   /** Opens the Font dialog. */

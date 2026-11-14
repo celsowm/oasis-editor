@@ -266,3 +266,40 @@
   justify-content: flex-end;
   padding-top: 0.5rem;
 }
+
+.oasis-chrome-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 2px 12px;
+  border-bottom: 1px solid var(--oasis-border-color-muted, #e4e4e7);
+  background: var(--oasis-toolbar-bg, #ffffff);
+  box-sizing: border-box;
+}
+
+.oasis-chrome-strip-spacer {
+  flex: 1;
+}
+
+.oasis-quick-access {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.oasis-quick-access .oasis-editor-tool-button {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 2px 4px;
+}
+
+.oasis-quick-access .oasis-editor-tool-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.oasis-quick-access-menu {
+  min-width: 220px;
+}

@@ -216,6 +216,9 @@ export function buildDocumentAndBrowserCommands({
     openSymbolDialog: actionCommand("openSymbolDialog", (): void =>
       document.openSymbolDialog(),
     ),
+    openCommandSearch: actionCommand("openCommandSearch", (): void =>
+      document.openCommandSearch(),
+    ),
     openEquationDialog: actionCommand("openEquationDialog", (): void =>
       document.openEquationDialog(),
     ),

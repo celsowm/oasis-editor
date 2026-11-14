@@ -12,6 +12,13 @@ import {
 import { cloneEditorState } from "@/core/cloneState.js";
 import { Toolbar } from "./components/Toolbar/Toolbar.js";
 import "./components/FindReplace/findReplace.css";
+import "./components/CommandSearch/commandSearch.css";
+import { CommandSearchDialog } from "./components/CommandSearch/CommandSearchDialog.js";
+import { buildCommandSearchEntries } from "./app/commandSearchEntries.js";
+import { ChromeStrip } from "./components/QuickAccess/ChromeStrip.js";
+import { createQuickAccess } from "./app/createQuickAccess.js";
+import { QUICK_ACCESS_CATALOG } from "./app/quickAccessCatalog.js";
+import type { CommandSearchEntry } from "@/core/commands/commandSearch.js";
 import { createTranslator, type Locale } from "@/i18n/index.js";
 import { I18nProvider } from "@/i18n/I18nContext.js";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
@@ -289,7 +296,24 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     handleDrop,
   } = interaction;
 
+  const [commandSearchOpen, setCommandSearchOpen] = createSignal(false);
   const revisionsPanel = createRevisionsPanel();
+  const quickAccess = createQuickAccess(QUICK_ACCESS_CATALOG);
+  const canExecuteCommand = (command: string): boolean => {
+    void state;
+    try {
+      return runtimeEditor().commands.canExecute(command) !== false;
+    } catch {
+      return false;
+    }
+  };
+  const executeCommand = (command: string): void => {
+    try {
+      runtimeEditor().commands.execute(command);
+    } catch (error) {
+      logger.error("quick-access execute failed", error);
+    }
+  };
   const commentComposer = createEditorCommentComposer({
     state: (): EditorState => state,
     isReadOnly,
@@ -299,6 +323,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   });
 
   const commandRuntime = createEditorCommandRuntime({
+    commandSearch: {
+      isOpen: commandSearchOpen,
+      setIsOpen: (open: boolean): void => {
+        setCommandSearchOpen(open);
+      },
+    },
+    setCommandSearchOpen,
     clipboardActions,
     document: documentRuntime,
     interaction,
@@ -352,6 +383,20 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     menuRegistry,
     handleKeyDown,
   } = commandRuntime;
+
+  const commandSearchEntries = (): CommandSearchEntry[] =>
+    buildCommandSearchEntries(
+      toolbarRegistry.getOrdered(),
+      menuRegistry.getItems(),
+      translator,
+    );
+  const commandSearchEnabled = (command: string): boolean => {
+    try {
+      return runtimeEditor().commands.canExecute(command) !== false;
+    } catch {
+      return false;
+    }
+  };
 
   const shouldShowCaret = (): boolean =>
     computeShouldShowCaret(state as EditorState, caretBox());
@@ -604,6 +649,20 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
             }
           />
         </Show>
+        <CommandSearchDialog
+          isOpen={commandSearchOpen()}
+          entries={commandSearchEntries()}
+          isEnabled={commandSearchEnabled}
+          onExecute={(entry): void => {
+            runtimeEditor().commands.execute(entry.command, entry.payload);
+            setCommandSearchOpen(false);
+            focusInput();
+          }}
+          onClose={(): void => {
+            setCommandSearchOpen(false);
+            focusInput();
+          }}
+        />
         <EditorDialogsLayer
           commentComposer={commentComposer}
           dialogs={{
@@ -670,6 +729,18 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           closeContextMenu={closeContextMenu}
         />
 
+        <Show when={showToolbar()}>
+          <ChromeStrip
+            catalog={QUICK_ACCESS_CATALOG}
+            visible={quickAccess.visible}
+            onToggle={quickAccess.toggle}
+            onExecute={executeCommand}
+            canExecute={canExecuteCommand}
+            onOpenCommandSearch={(): void => {
+              setCommandSearchOpen(true);
+            }}
+          />
+        </Show>
         <EditorWorkspace
           useComposedShell={useComposedShell}
           shellComponent={shellComponent}

@@ -46,6 +46,7 @@ export interface EditorKeyboardBindingDeps {
   historyActions: EditorHistoryActions;
   styleController: { clearPendingCaretTextStyle: () => void };
   findReplace: { isOpen: () => boolean; setIsOpen: (open: boolean) => void };
+  commandSearch: { isOpen: () => boolean; setIsOpen: (open: boolean) => void };
   runtimeEditor: RuntimeEditorAccessor;
 }
 
@@ -78,6 +79,7 @@ export function createEditorKeyboardBinding(deps: EditorKeyboardBindingDeps): {
     historyActions,
     styleController,
     findReplace,
+    commandSearch,
     runtimeEditor,
   } = deps;
 
@@ -112,6 +114,9 @@ export function createEditorKeyboardBinding(deps: EditorKeyboardBindingDeps): {
     },
     toggleReplace: (open): void => {
       findReplace.setIsOpen(open ?? !findReplace.isOpen());
+    },
+    toggleCommandSearch: (open): void => {
+      commandSearch.setIsOpen(open ?? !commandSearch.isOpen());
     },
     executeCommand: (commandName, payload): unknown =>
       runtimeEditor().commands.execute(commandName, payload),

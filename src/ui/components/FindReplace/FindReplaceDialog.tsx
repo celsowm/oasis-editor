@@ -1,4 +1,4 @@
-import { Show } from "solid-js";
+import { Show, onCleanup, onMount } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import type { UseEditorFindReplaceResult } from "@/app/controllers/useEditorFindReplace.js";
 import { Checkbox } from "@/ui/public/Checkbox.js";
@@ -17,22 +17,35 @@ export function FindReplaceDialog(props: FindReplaceDialogProps): JSX.Element {
   const t = useI18n();
   const { fr } = props;
 
-  const handleKeyDown = (e: KeyboardEvent): void => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (e.shiftKey) {
-        fr.findPrevious();
-      } else {
-        fr.findNext();
-      }
-    } else if (e.key === "Escape") {
-      fr.setIsOpen(false);
+  // Escape is global (same contract as the Dialog primitive); Enter runs find
+  // navigation only while focus is inside this dialog, so other palettes or
+  // dialogs opened on top keep their own Enter semantics.
+  const handleGlobalKeyDown = (e: KeyboardEvent): void => {
+    if (fr.isOpen() && e.key === "Escape") fr.setIsOpen(false);
+  };
+  const handleDialogKeyDown = (e: KeyboardEvent): void => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (e.shiftKey) {
+      fr.findPrevious();
+    } else {
+      fr.findNext();
     }
   };
 
+  onMount((): void => {
+    window.addEventListener("keydown", handleGlobalKeyDown, true);
+  });
+  onCleanup((): void => {
+    window.removeEventListener("keydown", handleGlobalKeyDown, true);
+  });
+
   return (
     <Show when={fr.isOpen()}>
-      <div class="oasis-editor-find-replace-dialog" onKeyDown={handleKeyDown}>
+      <div
+        class="oasis-editor-find-replace-dialog"
+        onKeyDown={handleDialogKeyDown}
+      >
         <div class="oasis-editor-fr-header">
           <Text>{t("find.title")}</Text>
           <SurfaceButton

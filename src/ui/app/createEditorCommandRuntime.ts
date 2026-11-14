@@ -87,6 +87,11 @@ export interface EditorCommandRuntimeDeps {
   isOutlineVisible: () => boolean;
   toggleRevisionsPanel: () => void;
   revisionsPanelVisible: () => boolean;
+  commandSearch: {
+    isOpen: () => boolean;
+    setIsOpen: (open: boolean) => void;
+  };
+  setCommandSearchOpen: (open: boolean) => void;
   getUiState: () => OasisEditorUiState;
   updateUiState: (patch: OasisEditorUiState) => OasisEditorUiState;
   zoom: {
@@ -192,6 +197,7 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
           );
       },
       openSymbolDialog: (): void => deps.setSymbolDialog({ isOpen: true }),
+      openCommandSearch: (): void => deps.setCommandSearchOpen(true),
       openTablePropertiesDialog: (activeTab?: "table" | "cell"): void => {
         const initial = readTableProperties(deps.state, activeTab ?? "table");
         if (!initial) return;
@@ -310,6 +316,7 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
     historyActions: doc.historyActions,
     styleController: interaction.styleController,
     findReplace: interaction.fr,
+    commandSearch: deps.commandSearch,
     runtimeEditor,
   });
 

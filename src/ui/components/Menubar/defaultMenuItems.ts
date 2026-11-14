@@ -559,6 +559,14 @@ export const defaultMenuItems: MenuItem[] = [
     labelKey: "menu.tools.wordcount",
     hidden: true,
   },
+  {
+    id: "tools_command_search",
+    path: "Tools/Command Search",
+    labelKey: "menu.tools.commandSearch",
+    command: "openCommandSearch",
+    icon: "search",
+    shortcut: "Ctrl+K",
+  },
   { id: "tools_spelling", hidden: true, path: "Tools/Spelling" },
   { id: "tools_preferences", path: "Tools/Preferences", hidden: true },
 

@@ -63,6 +63,7 @@ export interface EditorKeyboardDeps
   ) => void;
   toggleFindReplace: (open?: boolean) => void;
   toggleReplace: (open?: boolean) => void;
+  toggleCommandSearch: (open?: boolean) => void;
   executeCommand?: (commandName: string, payload?: unknown) => unknown;
   canExecuteCommand?: (commandName: string, payload?: unknown) => boolean;
 }

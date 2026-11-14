@@ -241,6 +241,16 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     },
   },
   {
+    id: "commandSearch",
+    command: "openCommandSearch",
+    key: "q",
+    alt: true,
+    execute: (deps): true => {
+      deps.toggleCommandSearch(true);
+      return true;
+    },
+  },
+  {
     id: "replace",
     command: "replace",
     key: "h",

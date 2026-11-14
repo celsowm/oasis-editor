@@ -1,0 +1,90 @@
+/* Command search ("Tell Me") */
+.oasis-command-search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 10vh;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.oasis-command-search {
+  position: relative;
+  width: min(560px, 92vw);
+  background: var(--oasis-toolbar-bg, #ffffff);
+  border: 1px solid var(--oasis-border-color, #d4d4d4);
+  border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+  overflow: hidden;
+}
+
+.oasis-command-search .oasis-editor-ui-input {
+  font-size: 14px;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--oasis-border-color-muted, #e4e4e7);
+  border-radius: 0;
+  width: 100%;
+}
+
+.oasis-command-search-hint {
+  display: block;
+  padding: 6px 14px;
+  font-size: 0.7rem;
+  color: var(--oasis-text-muted, #71717a);
+  border-bottom: 1px solid var(--oasis-border-color-muted, #e4e4e7);
+}
+
+.oasis-command-search-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.oasis-command-search-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--oasis-text, #18181b);
+  font-size: 0.82rem;
+}
+
+.oasis-command-search-option-active {
+  background: var(--oasis-accent-soft, #e8f0fe);
+}
+
+.oasis-command-search-option-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.oasis-command-search-shortcut {
+  font-family: var(--oasis-font-mono, ui-monospace, monospace);
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border: 1px solid var(--oasis-border-color, #d4d4d4);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  color: var(--oasis-text-muted, #71717a);
+}
+
+.oasis-command-search-empty {
+  margin: 0;
+  padding: 14px;
+  color: var(--oasis-text-muted, #71717a);
+  font-size: 0.82rem;
+}
+
+.oasis-command-search-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+}
