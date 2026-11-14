@@ -3271,28 +3271,28 @@
     {
       "id": "review.acceptAll",
       "wordcraftCommand": "review.acceptAll",
-      "oasisCommand": "acceptAllRevisions",
-      "ribbonId": null,
+      "oasisCommand": "requestAcceptAllRevisions",
+      "ribbonId": "editor-toolbar-accept-all-revisions",
       "tab": "review",
       "group": "changes",
-      "status": "core-only",
-      "exposure": "core-only",
+      "status": "partial",
+      "exposure": "partial",
       "semantics": "partial",
-      "persistence": "unverified",
-      "notes": "Oasis registers Accept All Changes but no default Ribbon, menu or dialog control was found. Confirmation, protected revisions, comment anchors, undo and DOCX round-trip need workflow verification."
+      "persistence": "partial",
+      "notes": "Ribbon Review > Changes and the Review menubar expose Accept All through requestAcceptAllRevisions, which opens a confirmation naming the document scope and the tracked-change count before running acceptAllRevisions over every section, header/footer story, table/section property and note. The decision is transactional, so one undo restores the revisions; the request stays disabled on a document without revisions. Display for Review, protected revisions and cross-application DOCX round-trip remain open."
     },
     {
       "id": "review.rejectAll",
       "wordcraftCommand": "review.rejectAll",
-      "oasisCommand": "rejectAllRevisions",
-      "ribbonId": null,
+      "oasisCommand": "requestRejectAllRevisions",
+      "ribbonId": "editor-toolbar-reject-all-revisions",
       "tab": "review",
       "group": "changes",
-      "status": "core-only",
-      "exposure": "core-only",
+      "status": "partial",
+      "exposure": "partial",
       "semantics": "partial",
-      "persistence": "unverified",
-      "notes": "Oasis registers Reject All Changes but no default Ribbon, menu or dialog control was found. Confirmation, protected revisions, comment anchors, undo and DOCX round-trip need workflow verification."
+      "persistence": "partial",
+      "notes": "Ribbon Review > Changes and the Review menubar expose Reject All through requestRejectAllRevisions, which opens a confirmation naming the document scope and the tracked-change count before running rejectAllRevisions over every section, header/footer story, table/section property and note. The decision is transactional, so one undo restores the revisions; the request stays disabled on a document without revisions. Display for Review, protected revisions and cross-application DOCX round-trip remain open."
     },
     {
       "id": "image.crop",

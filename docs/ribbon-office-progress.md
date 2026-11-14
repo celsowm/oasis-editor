@@ -1361,6 +1361,20 @@ Evidence: `verify-ribbon-paragraph.mjs` passes 8/8 configurations in Chromium, 8
 
 Limits: no Styles or Page Setup dialog exists yet, so those two ribbon launchers are gone rather than stubbed. VoiceOver, touch and trusted-Safari input remain unverified, and the Paragraph dialog's visual review across themes/locales is limited to the automated configuration matrix.
 
+## Delivery 114 — P01: document-scoped Accept All / Reject All with explicit scope
+
+Date: 2026-11-14. P01 gains scoped acceptance for the document-scoped revision decisions; markup display and comment end-to-end evidence remain open.
+
+Accept All / Reject All existed only as core commands: they were registered and gated but had no ribbon or menubar entry point, so the document-scoped decision was unreachable. Review › Changes now exposes both (row 1 and row 2, next to the selection-scoped Accept/Reject), and the Review menubar carries the same two entries with localized labels in en/pt-BR.
+
+Both open a confirmation dialog that names the document scope (headers, footers, notes and tables) and the exact number of tracked changes before applying. That dialog is the boundary between selection-scoped Accept/Reject, which apply immediately, and the document-scoped decision, so the two cannot be confused. The count comes from `collectAllRevisionIds` over every section, header/footer story, table/row/cell property revision, section property revision and footnote/endnote story.
+
+Revision decisions were applied with `applyState`, which bypasses the undo stack; they now run through `applyTransactionalState`. A mis-clicked Accept All or Reject All is therefore reverted by a single undo, and the same holds for the selection-scoped Accept/Reject pair. The request commands gate on `hasRevisionsInDocument`, so the buttons are disabled on a clean document while the selection-scoped Accept stays disabled whenever the caret is outside a revision.
+
+Evidence: `scripts/verify-ribbon-review.mjs` passes 5 layouts (light/dark × en/pt-BR at 1440, plus light/en at 640) in Chromium, Firefox and WebKit: disabled state without revisions, dialog scope and count, cancel keeps the revisions and adds no history entry, selection-vs-document scope, Accept All followed by undo, and Reject All followed by undo. Unit coverage: the bulk request gating in `ribbonCommandRegistrations.test.ts` and three `revisionBulkDialog.test.tsx` cases (scope text, localized confirm label, cancel does not apply). TypeScript, ESLint on changed files, non-UI Vitest (1,948 passed, 1 skipped) and the native-UI guardrail pass; `npm run audit:ribbon` reports 551 crosswalk features against 521 pinned WordCraft entries with 320 built-ins, and both crosswalk rows now read `partial` with the `review/changes` Ribbon path instead of `core-only`. The icon audit reports 134 literal names and 168 uses with no unresolved literals.
+
+Limits: Display for Review / Show Markup / Reviewing Pane and painted revision markup are still missing. Selection-scoped Accept/Reject still uses the narrower `history.ts` path, so section, footnote and numbering revisions in a selection only resolve through Accept All / Reject All. Comment authoring, reply, resolve and navigation still lack end-to-end browser evidence.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
@@ -1370,7 +1384,7 @@ All requirements in the execution plan remain in scope. The next sequence is:
 3. A03/A04: action/menu/launcher semantics, contextual popup transitions (popup dismissal and mixed-alignment states now have scoped evidence), remaining context combinations, object-selection formatting for the remaining object kinds and VoiceOver review. **Launcher contract complete** (Delivery 110); menu panels now traverse with Arrow/Home/End and expose menuitems (Delivery 106); collapsed popups preserve the group's spatial arrangement (Delivery 107); the remaining panels' non-menuitem widgets and a roving tabindex stay open.
 4. **R01–R05 complete** (Delivery 112): measurement pipeline integrity verified across contexts; late-font, pointer/IME, invalidation and performance evidence closed for scoped acceptance. Late-font loading (R05) covered by DPR/zoom-equivalent tests; pointer/IME covered by resize suite focus preservation; invalidation covered by cache key invalidation tests.
 5. A03, D01–D09: action/split/launcher contracts and every everyday editing workflow, with command/undo/format evidence. **Everyday paragraph workflows and the Font/Paragraph launchers complete** (Delivery 113); Styles and Page Setup launchers remain unwired until those dialogs exist. Color/highlight/shading and gallery revocation now have a scoped delivery; mixed-state presentation, trusted Safari interaction, external formats and the remaining edit controls are still open.
-6. P01–P06: Review, References, View, File, search/QAT and interoperability. P04's dirty marker now clears when undo restores the saved snapshot (Delivery 105); the remaining P0x workflows and external save/interoperability evidence stay open.
+6. P01–P06: Review, References, View, File, search/QAT and interoperability. **Document-scoped Accept All / Reject All complete** (Delivery 114); markup display and comment end-to-end evidence stay open. P04's dirty marker now clears when undo restores the saved snapshot (Delivery 105); the remaining P0x workflows and external save/interoperability evidence stay open.
 7. All M4 families: Shapes, Equations, Draw, advanced References, Mailings, Developer/Forms, Charts/SmartArt, integrations and Help, each with the plan's minimum functional delivery.
 8. M5: required cross-browser, keyboard, VoiceOver, language/theme, selection, persistence and performance scenarios with retained evidence.
 
