@@ -11,6 +11,7 @@ import {
   isMarkupAuthorShown,
   isMarkupSectionShown,
   applyShowMarkup,
+  isRevisionMarkupShown,
   markupOptionsSnapshot,
   setMarkupAuthors,
   toggleMarkupAuthor,
@@ -235,6 +236,35 @@ describe("visibleMarkupAuthors", () => {
     expect(visibleMarkupAuthors(setMarkupAuthors(s, ["User"]))).toEqual([
       "User",
     ]);
+  });
+});
+
+describe("isRevisionMarkupShown", () => {
+  const base = (): ReturnType<typeof state> =>
+    state([paragraph("p1", [textRun("r1", "hi")])]);
+
+  it("shows both categories and every author by default", () => {
+    const s = base();
+    expect(isRevisionMarkupShown(s, "insert", "User")).toBe(true);
+    expect(isRevisionMarkupShown(s, "delete", "Zoe")).toBe(true);
+    expect(isRevisionMarkupShown(s, "property", "Zoe")).toBe(true);
+  });
+
+  it("honours category flags", () => {
+    const s = applyShowMarkup(base(), { section: "insertions" });
+    expect(isRevisionMarkupShown(s, "insert", "User")).toBe(false);
+    expect(isRevisionMarkupShown(s, "delete", "User")).toBe(true);
+  });
+
+  it("honours the reviewer allow-list", () => {
+    const s = setMarkupAuthors(base(), ["User"]);
+    expect(isRevisionMarkupShown(s, "insert", "User")).toBe(true);
+    expect(isRevisionMarkupShown(s, "delete", "Zoe")).toBe(false);
+  });
+
+  it("never category-filters other revision types", () => {
+    const s = applyShowMarkup(base(), { section: "deletions" });
+    expect(isRevisionMarkupShown(s, "property", "User")).toBe(true);
   });
 });
 

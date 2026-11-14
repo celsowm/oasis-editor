@@ -116,6 +116,26 @@ export function isMarkupAuthorShown(
   return state.markupAuthors?.includes(author) ?? true;
 }
 
+/**
+ * Whether one revision is shown by the current Show Markup filters. Used by
+ * both the painted overlay and the Reviewing Pane list so the two surfaces
+ * never disagree. Non-insert/delete revision types are not category-filtered
+ * (Word's menu only has insertion/deletion/comment categories).
+ */
+export function isRevisionMarkupShown(
+  state: EditorState,
+  type: string,
+  author: string,
+): boolean {
+  if (type === "insert" && !isMarkupSectionShown(state, "insertions")) {
+    return false;
+  }
+  if (type === "delete" && !isMarkupSectionShown(state, "deletions")) {
+    return false;
+  }
+  return isMarkupAuthorShown(state, author);
+}
+
 /** The explicit author allow-list, or null when all authors are shown. */
 export function visibleMarkupAuthors(state: EditorState): string[] | null {
   return state.markupAuthors ?? null;
