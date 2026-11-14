@@ -1318,7 +1318,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "not-applicable",
-      "notes": "The File tab creates a blank document and confirms before discarding a dirty document. WordCraft's template selection and new-document options are not provided; confirmation, dirty-state and lifecycle workflows remain in P04."
+      "notes": "The File tab creates a blank document and confirms before discarding a dirty document. Verified end-to-end (verify-ribbon-file.mjs: clean reset without confirmation, unsaved-changes dialog cancel retains content, discard resets and clears the dirty marker; 4 layouts x 3 engines). WordCraft's template selection and new-document options are not provided."
     },
     {
       "id": "file.save",
@@ -1384,7 +1384,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "partial",
-      "notes": "The File tab offers DOCX export as a related Save As path, downloading a copy instead of selecting an arbitrary host location or updating the active persistence record. Format choice, overwrite behavior and full save lifecycle remain open in P04/P06."
+      "notes": "DOCX export as a related Save As path. Verified end-to-end (verify-ribbon-file.mjs: exports a real DOCX container via client.io.export, reimports and retains content). Format choice, overwrite behavior and full save lifecycle remain open in P04/P06."
     },
     {
       "id": "file.printMarkup",
@@ -1554,7 +1554,7 @@
       "exposure": "partial",
       "semantics": "partial",
       "persistence": "partial",
-      "notes": "Oasis exposes PDF export in File > Document. Long documents, page-level features, output integrity, failure/cancel behavior and visual comparisons still need workflow verification."
+      "notes": "Oasis exposes PDF export in File > Document. Verified end-to-end: %PDF magic bytes and a non-trivial payload through client.io.export (verify-ribbon-file.mjs). Long documents, page-level features, output integrity and visual comparisons still need workflow verification."
     },
     {
       "id": "home.undo",
