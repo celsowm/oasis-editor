@@ -419,12 +419,13 @@ export function ParagraphDialog(props: ParagraphDialogProps): JSX.Element {
   );
 
   return (
-    <>
+    <div>
       <Dialog
         isOpen={props.isOpen}
         title={t("paragraph.title")}
         onClose={props.onClose}
         size="lg"
+        testId="editor-paragraph-dialog"
         footer={
           <div class="oasis-editor-dialog-footer-split">
             <div class="oasis-editor-dialog-footer-start">
@@ -501,6 +502,6 @@ export function ParagraphDialog(props: ParagraphDialogProps): JSX.Element {
         }}
         onApply={setTabs}
       />
-    </>
+    </div>
   );
 }

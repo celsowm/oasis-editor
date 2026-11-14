@@ -315,6 +315,8 @@ export const OASIS_BUILTIN_COMMANDS = [
   "openSymbolDialog",
   "openEquationDialog",
   "tableProperties",
+  "openFontDialog",
+  "openParagraphDialog",
 ] as const;
 
 export type OasisBuiltinCommand = (typeof OASIS_BUILTIN_COMMANDS)[number];

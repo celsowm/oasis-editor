@@ -45,6 +45,10 @@ export interface CreateEditorEssentialsPluginOptions {
   openEquationDialog: () => void;
   /** Opens the Table Properties dialog for the active table/cell. */
   openTablePropertiesDialog: (activeTab?: "table" | "cell") => void;
+  /** Opens the Font dialog. */
+  openFontDialog: () => void;
+  /** Opens the Paragraph dialog. */
+  openParagraphDialog: () => void;
   importInputRef: () => HTMLInputElement | undefined;
   imageInputRef: () => HTMLInputElement | undefined;
   selectedImageRun: () => SelectedImageRun | null;

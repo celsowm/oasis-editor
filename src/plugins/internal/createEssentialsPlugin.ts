@@ -12,6 +12,7 @@ import { buildBookmarkCommands } from "./essentialsCommandGroups/bookmark.js";
 import { buildFieldsCommands } from "./essentialsCommandGroups/fields.js";
 import { buildTableCommands } from "./essentialsCommandGroups/table.js";
 import { buildDesignCommands } from "./essentialsCommandGroups/design.js";
+import { buildLauncherCommands } from "./essentialsCommandGroups/launchers.js";
 import type { EssentialsPluginDeps } from "./essentialsCapabilities.js";
 
 export type {
@@ -70,6 +71,10 @@ export function createEssentialsPlugin(
         paragraph: deps.paragraph,
         section: deps.section,
         valueCommand,
+        actionCommand,
+      }),
+      ...buildLauncherCommands({
+        dialog: deps.dialog,
         actionCommand,
       }),
       ...buildHeaderFooterCommands({

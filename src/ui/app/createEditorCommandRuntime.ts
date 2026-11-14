@@ -212,6 +212,8 @@ function createEditorCommandRuntimeImpl(deps: EditorCommandRuntimeDeps) {
         }
         deps.setEquationDialog({ isOpen: true });
       },
+      openFontDialog: commandsController.openFontDialog,
+      openParagraphDialog: commandsController.openParagraphDialog,
     },
     externalPlugins: deps.runtimeOptions().plugins,
     t: deps.translator,

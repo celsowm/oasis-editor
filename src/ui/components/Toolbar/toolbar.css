@@ -163,6 +163,7 @@
   border-right: 1px solid var(--oasis-ribbon-group-border, #dcdcdc);
   min-width: max-content;
   max-height: 75px;
+  position: relative;
 }
 
 .oasis-editor-ribbon-group-compact {

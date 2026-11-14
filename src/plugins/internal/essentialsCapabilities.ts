@@ -593,6 +593,11 @@ export interface EssentialsFieldsCapability {
   }) => void;
 }
 
+export interface EssentialsDialogCapability {
+  openFontDialog: () => void;
+  openParagraphDialog: () => void;
+}
+
 export interface EssentialsDesignCapability {
   applyTheme: (theme: DesignThemeId) => void;
   setColorScheme: (value: string) => void;
@@ -765,4 +770,5 @@ export interface EssentialsPluginDeps {
   design: EssentialsDesignCapability;
   bookmark: EssentialsBookmarkCapability;
   fields: EssentialsFieldsCapability;
+  dialog: EssentialsDialogCapability;
 }

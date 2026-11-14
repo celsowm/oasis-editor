@@ -266,7 +266,7 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
       states: ["full", "collapsed"],
       collapsedMinWidth: 74,
       collapsedIcon: "pilcrow",
-      launcher: "paragraphDialog",
+      launcher: "openParagraphDialog",
       launcherTooltip: "Paragraph options",
     },
     clipboard: {
@@ -287,7 +287,7 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
       states: ["full", "collapsed"],
       collapsedMinWidth: 74,
       collapsedIcon: "type",
-      launcher: "fontDialog",
+      launcher: "openFontDialog",
       launcherTooltip: "Font options",
     },
   },
@@ -303,8 +303,6 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
     documentFormatting: {
       priority: 10,
       collapsedIcon: "palette",
-      launcher: "stylesDialog",
-      launcherTooltip: "Styles options",
     },
     pageBackground: { priority: 20, collapsedIcon: "shading" },
   },
@@ -315,8 +313,6 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
       priority: 40,
       compactMinWidth: 148,
       collapsedIcon: "layout",
-      launcher: "pageSetupDialog",
-      launcherTooltip: "Page Setup options",
     },
   },
   file: {

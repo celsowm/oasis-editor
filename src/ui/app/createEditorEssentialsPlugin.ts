@@ -40,5 +40,9 @@ export function createEditorEssentialsRuntimePlugin(
     design: buildEssentialsDesign(options),
     bookmark: buildEssentialsBookmark(options),
     fields: buildEssentialsFields(options),
+    dialog: {
+      openFontDialog: options.openFontDialog,
+      openParagraphDialog: options.openParagraphDialog,
+    },
   });
 }

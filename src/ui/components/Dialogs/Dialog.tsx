@@ -22,6 +22,8 @@ export interface DialogProps {
   ariaDescribedBy?: string;
   size?: "sm" | "md" | "lg" | "font";
   closeOnOverlayClick?: boolean;
+  /** Overrides the default `editor-dialog` test id on the dialog element. */
+  testId?: string;
 }
 
 export function Dialog(props: DialogProps): JSX.Element {
@@ -74,7 +76,7 @@ export function Dialog(props: DialogProps): JSX.Element {
           aria-label={props.ariaLabel}
           aria-labelledby={props.ariaLabel ? undefined : titleId()}
           aria-describedby={props.ariaDescribedBy}
-          data-testid="editor-dialog"
+          data-testid={props.testId ?? "editor-dialog"}
         >
           <div class="oasis-editor-dialog-header">
             <h3 id={titleId()} class="oasis-editor-dialog-title">
