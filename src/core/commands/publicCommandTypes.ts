@@ -138,7 +138,7 @@ export interface OasisCommandPayloads {
   repeatLastAction: undefined;
   acceptRevisions: undefined;
   rejectRevisions: undefined;
-  setReviewDisplayMode: "all" | "final" | "original";
+  setReviewDisplayMode: "all" | "final" | "original" | "simple";
   acceptAllRevisions: undefined;
   rejectAllRevisions: undefined;
   requestAcceptAllRevisions: undefined;

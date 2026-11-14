@@ -6,8 +6,10 @@ import type {
 } from "@/core/model.js";
 import { computeCanvasSelectionGeometry } from "@/ui/canvas/CanvasSelectionGeometry.js";
 import { projectTrackedRevisions } from "@/core/document/trackedRevisions.js";
+import { reviewDisplayProjection } from "@/core/commands/reviewMarkup.js";
 import { computeCommentHighlights } from "@/ui/canvas/CanvasCommentGeometry.js";
 import { computeRevisionMarkup } from "@/ui/canvas/CanvasRevisionGeometry.js";
+import { computeChangeBars } from "@/ui/canvas/CanvasChangeBarGeometry.js";
 import {
   bumpLayoutMetricsEpoch,
   layoutMetricsEpoch,
@@ -18,6 +20,7 @@ import { canvasTextMeasurer } from "@/ui/canvas/canvasTextMeasurer.js";
 import { createLayoutIdentityStabilizer } from "@/ui/layoutIdentity.js";
 import type {
   CaretBox,
+  ChangeBarBox,
   CommentHighlightBox,
   InputBox,
   RevisionMarkupBox,
@@ -103,6 +106,7 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
   const [revisionMarkupBoxes, setRevisionMarkupBoxes] = createSignal<
     RevisionMarkupBox[]
   >([]);
+  const [changeBarBoxes, setChangeBarBoxes] = createSignal<ChangeBarBox[]>([]);
   const [selectedImageBox, setSelectedImageBox] =
     createSignal<SelectedImageSelectionBox | null>(null);
   const [selectedTextBoxBox, setSelectedTextBoxBox] =
@@ -119,17 +123,18 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
     null,
   );
   const stabilize = createLayoutIdentityStabilizer();
-  // Display for Review: final/original modes render a *resolved* document.
-  // The raw revision marks stay untouched in the model; only the layout sees
-  // the projection.
+  // Display for Review: final/original/simple modes render a *resolved*
+  // document. The raw revision marks stay untouched in the model; only the
+  // layout sees the projection. Simple Markup resolves to the accepted (final)
+  // text and paints margin change bars instead of inline markup.
   const renderDocument = createMemo(
     (): import("@/core/model.js").EditorDocument => {
       layoutMetricsEpoch();
-      const mode = props.state.reviewDisplayMode ?? "all";
-      if (mode === "all") {
+      const view = reviewDisplayProjection(props.state.reviewDisplayMode);
+      if (view === null) {
         return props.state.document;
       }
-      return projectTrackedRevisions(props.state.document, mode).document;
+      return projectTrackedRevisions(props.state.document, view).document;
     },
   );
   const documentLayout = createMemo((): EditorLayoutDocument => {
@@ -156,6 +161,7 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
       setSelectionBoxes([]);
       setCommentHighlights([]);
       setRevisionMarkupBoxes([]);
+      setChangeBarBoxes([]);
       setSelectedImageBox(null);
       setSelectedTextBoxBox(null);
       setSelectedTableBox(null);
@@ -180,6 +186,7 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
       setSelectionBoxes([]);
       setCommentHighlights([]);
       setRevisionMarkupBoxes([]);
+      setChangeBarBoxes([]);
       setSelectedImageBox(null);
       setSelectedTextBoxBox(null);
       setSelectedTableBox(null);
@@ -194,10 +201,14 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
       return;
     }
 
-    // In resolved (final/original) views the geometry of the raw document no
-    // longer describes the painted document, so selection/caret overlays and
-    // revision/comment decorations are hidden; the panel remains usable.
-    if ((props.state.reviewDisplayMode ?? "all") !== "all") {
+    // In resolved (final/original/simple) views the geometry of the raw
+    // document no longer describes the painted document, so selection/caret
+    // overlays and inline revision/comment decorations are hidden; the panel
+    // remains usable. Simple Markup is the exception for decorations: it paints
+    // margin change bars computed from the *projected* snapshot's line geometry
+    // (the projected paragraphs keep the raw document's ids).
+    const mode = props.state.reviewDisplayMode ?? "all";
+    if (mode !== "all") {
       setSelectionBoxes([]);
       setSelectedImageBox(null);
       setSelectedTextBoxBox(null);
@@ -206,10 +217,16 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
       setInputBox({ left: 0, top: 0, height: 28 });
       setCommentHighlights([]);
       setRevisionMarkupBoxes([]);
+      setChangeBarBoxes(
+        mode === "simple" && props.state.showRevisionMarkup !== false
+          ? computeChangeBars(snapshot, props.state)
+          : [],
+      );
       return;
     }
 
     const geometry = computeCanvasSelectionGeometry(snapshot, props.state);
+    setChangeBarBoxes([]);
     setSelectionBoxes(geometry.selectionBoxes);
     setRevisionMarkupBoxes(
       props.state.showRevisionMarkup === false
@@ -373,6 +390,7 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
     selectionBoxes,
     commentHighlights,
     revisionMarkupBoxes,
+    changeBarBoxes,
     selectedImageBox,
     selectedTextBoxBox,
     selectedTableBox,

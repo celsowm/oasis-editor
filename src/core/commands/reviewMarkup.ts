@@ -1,4 +1,4 @@
-import type { EditorState } from "@/core/model.js";
+import type { EditorState, ReviewDisplayMode } from "@/core/model.js";
 import type { EditorParagraphNode } from "@/core/model/types/nodes.js";
 import { getDocumentParagraphs } from "@/core/model.js";
 import { getDocumentSections } from "@/core/model.js";
@@ -134,6 +134,54 @@ export function isRevisionMarkupShown(
     return false;
   }
   return isMarkupAuthorShown(state, author);
+}
+
+/**
+ * Which tracked-revision projection a Display for Review mode renders, or
+ * `null` for All Markup (the raw, unresolved document). Simple Markup shows the
+ * accepted ("final") text and hides inline insert/delete decorations, painting
+ * margin change bars instead. Kept pure so the projection policy is unit-tested
+ * independently of the Solid layout controller.
+ */
+export function reviewDisplayProjection(
+  mode: ReviewDisplayMode | undefined,
+): "final" | "original" | null {
+  if (mode === undefined || mode === "all") return null;
+  return mode === "original" ? "original" : "final";
+}
+
+function paragraphHasVisibleTextRevision(
+  paragraph: EditorParagraphNode,
+  state: EditorState,
+): boolean {
+  for (const run of paragraph.runs) {
+    const revision = run.revision;
+    if (
+      revision &&
+      (revision.type === "insert" || revision.type === "delete") &&
+      isRevisionMarkupShown(state, revision.type, revision.author)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Paragraph ids that should carry a Simple Markup change bar: every paragraph
+ * in the raw document with at least one visible insert/delete text revision.
+ * Show Markup category and reviewer filters are applied through
+ * `isRevisionMarkupShown`, so a hidden category or reviewer removes its bar.
+ * Endnotes have no editable zone and are intentionally not walked.
+ */
+export function collectChangeBarParagraphIds(state: EditorState): Set<string> {
+  const ids = new Set<string>();
+  for (const paragraph of getDocumentParagraphs(state.document)) {
+    if (paragraphHasVisibleTextRevision(paragraph, state)) {
+      ids.add(paragraph.id);
+    }
+  }
+  return ids;
 }
 
 /** The explicit author allow-list, or null when all authors are shown. */

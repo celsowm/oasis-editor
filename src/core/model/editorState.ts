@@ -1,5 +1,5 @@
 /** Display-for-Review rendering mode for tracked revisions. */
-export type ReviewDisplayMode = "all" | "final" | "original";
+export type ReviewDisplayMode = "all" | "final" | "original" | "simple";
 
 /**
  * Editor state: the live, mutable view over a document. Composed of the
@@ -36,6 +36,8 @@ export interface EditorState {
    *   "all"      — show markup (default)
    *   "final"    — render as accepted (insertions kept, deletions dropped)
    *   "original" — render as rejected (insertions dropped, deletions restored)
+   *   "simple"   — render as accepted (final text) with margin change bars
+   *                instead of inline insert/delete decorations
    * Presentation only; the underlying revision marks are untouched.
    */
   reviewDisplayMode?: ReviewDisplayMode;

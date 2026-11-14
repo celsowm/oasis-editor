@@ -7,6 +7,7 @@ import type {
 } from "@/core/model.js";
 import { createEditorStateFromDocument } from "@/core/editorState.js";
 import {
+  collectChangeBarParagraphIds,
   collectMarkupAuthors,
   isMarkupAuthorShown,
   isMarkupSectionShown,
@@ -329,5 +330,57 @@ describe("markupOptionsSnapshot / applyShowMarkup", () => {
   it("ignores an empty payload", () => {
     const before = marked();
     expect(applyShowMarkup(before, {})).toBe(before);
+  });
+});
+
+describe("collectChangeBarParagraphIds", () => {
+  const tracked = () =>
+    state([
+      paragraph("p-plain", [textRun("r0", "unchanged")]),
+      paragraph("p-insert", [
+        textRun("r1", "hi "),
+        textRun("r2", "added", {
+          id: "i1",
+          type: "insert",
+          author: "Reference author",
+          date: 1,
+        }),
+      ]),
+      paragraph("p-delete", [
+        textRun("r3", "gone", {
+          id: "d1",
+          type: "delete",
+          author: "User",
+          date: 2,
+        }),
+      ]),
+    ]);
+
+  it("returns only paragraphs with insert/delete revisions", () => {
+    const ids = collectChangeBarParagraphIds(tracked());
+    expect([...ids].sort()).toEqual(["p-delete", "p-insert"]);
+  });
+
+  it("is empty for an untracked document", () => {
+    expect(
+      collectChangeBarParagraphIds(
+        state([paragraph("p1", [textRun("r1", "plain")])]),
+      ).size,
+    ).toBe(0);
+  });
+
+  it("drops a hidden category's paragraph", () => {
+    const hidden = applyShowMarkup(tracked(), { section: "insertions" });
+    expect([...collectChangeBarParagraphIds(hidden)]).toEqual(["p-delete"]);
+  });
+
+  it("drops a hidden reviewer's paragraph", () => {
+    const filtered = setMarkupAuthors(tracked(), ["User"]);
+    expect([...collectChangeBarParagraphIds(filtered)]).toEqual(["p-delete"]);
+  });
+
+  it("drops every paragraph when no reviewer is visible", () => {
+    const none = applyShowMarkup(tracked(), { allAuthors: false });
+    expect(collectChangeBarParagraphIds(none).size).toBe(0);
   });
 });

@@ -8,6 +8,7 @@ import type {
 import { createEditorStateFromDocument } from "@/core/editorState.js";
 import { setReviewDisplayMode } from "@/core/commands/history.js";
 import { projectTrackedRevisions } from "@/core/document/trackedRevisions.js";
+import { reviewDisplayProjection } from "@/core/commands/reviewMarkup.js";
 import { getParagraphs } from "@/core/model.js";
 
 function pageSettings(): EditorPageSettings {
@@ -30,15 +31,22 @@ function pageSettings(): EditorPageSettings {
 function textRun(
   id: string,
   text: string,
-  revision?: { id: string; type: "insert" | "delete"; author: string; date: number },
+  revision?: {
+    id: string;
+    type: "insert" | "delete";
+    author: string;
+    date: number;
+  },
 ): EditorTextRun {
-  return { id, kind: "text", text, ...(revision ? { revision } : {}) } as EditorTextRun;
+  return {
+    id,
+    kind: "text",
+    text,
+    ...(revision ? { revision } : {}),
+  } as EditorTextRun;
 }
 
-function paragraph(
-  id: string,
-  runs: EditorTextRun[],
-): EditorParagraphNode {
+function paragraph(id: string, runs: EditorTextRun[]): EditorParagraphNode {
   return { id, type: "paragraph", runs };
 }
 
@@ -82,8 +90,28 @@ describe("setReviewDisplayMode", () => {
     const all = setReviewDisplayMode(original, "all");
     expect(all.reviewDisplayMode).toBe("all");
 
+    const simple = setReviewDisplayMode(all, "simple");
+    expect(simple.reviewDisplayMode).toBe("simple");
+
     // no-op when the mode is unchanged (no new history entry)
     expect(setReviewDisplayMode(all, "all")).toBe(all);
+    expect(setReviewDisplayMode(simple, "simple")).toBe(simple);
+  });
+});
+
+describe("reviewDisplayProjection", () => {
+  it("All Markup (default) renders the raw document", () => {
+    expect(reviewDisplayProjection(undefined)).toBeNull();
+    expect(reviewDisplayProjection("all")).toBeNull();
+  });
+
+  it("Final and Original map to their own projections", () => {
+    expect(reviewDisplayProjection("final")).toBe("final");
+    expect(reviewDisplayProjection("original")).toBe("original");
+  });
+
+  it("Simple Markup renders the accepted final text", () => {
+    expect(reviewDisplayProjection("simple")).toBe("final");
   });
 });
 

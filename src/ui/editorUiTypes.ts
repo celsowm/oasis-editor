@@ -78,6 +78,17 @@ export interface CommentHighlightBox {
   height: number;
 }
 
+/**
+ * One vertical margin bar marking a paragraph that contains tracked changes in
+ * Simple Markup. Width is fixed by CSS; `left`/`top`/`height` are overlay-local.
+ */
+export interface ChangeBarBox {
+  paragraphId: string;
+  left: number;
+  top: number;
+  height: number;
+}
+
 import type { Accessor } from "solid-js";
 import type {
   EditorLayoutDocument,
