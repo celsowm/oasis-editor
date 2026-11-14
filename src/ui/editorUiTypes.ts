@@ -59,10 +59,10 @@ export interface RevisionBox {
   top: number;
 }
 
-/** One decoration rectangle over an inserted/deleted tracked range. */
+/** One decoration rectangle over a tracked insert/delete/formatting range. */
 export interface RevisionMarkupBox {
   revisionId: string;
-  type: "insert" | "delete";
+  type: "insert" | "delete" | "property";
   left: number;
   top: number;
   width: number;

@@ -8,8 +8,9 @@ export interface RevisionMarkupOverlayProps {
 
 /**
  * Paints Word-style track-changes decorations over the canvas: a solid green
- * underline for insertions and a red strike-through for deletions. Presentational
- * only — hit-testing and editing stay on the canvas surface underneath.
+ * underline for insertions, a red strike-through for deletions and a violet
+ * underline for formatting (property) revisions. Presentational only —
+ * hit-testing and editing stay on the canvas surface underneath.
  */
 export function RevisionMarkupOverlay(
   props: RevisionMarkupOverlayProps,
@@ -23,6 +24,7 @@ export function RevisionMarkupOverlay(
             classList={{
               "oasis-editor-revision-markup-insert": box.type === "insert",
               "oasis-editor-revision-markup-delete": box.type === "delete",
+              "oasis-editor-revision-markup-property": box.type === "property",
             }}
             data-testid="editor-revision-markup"
             data-revision-type={box.type}

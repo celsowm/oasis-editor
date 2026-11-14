@@ -7,18 +7,26 @@ interface RevisionRange {
   start: number;
   end: number;
   revisionId: string;
-  type: "insert" | "delete";
+  type: "insert" | "delete" | "property";
 }
 
 /**
  * Collect the visible text ranges (in paragraph-local offsets) that belong to
- * an insertion or deletion revision. Adjacent runs from the same revision
- * merge so one continuous strikethrough/underline is painted per line. Show
- * Markup filters (revision category and author) are applied here, so hiding a
- * category never mutates the underlying revision data.
+ * an insertion, deletion or run-level formatting (property) revision. Adjacent
+ * runs from the same revision merge so one continuous decoration is painted
+ * per line. Show Markup filters (revision category and author) are applied
+ * here, so hiding a category never mutates the underlying revision data. A run
+ * carrying both an insert/delete and a property revision paints only the
+ * insert/delete decoration to avoid overlapping boxes.
  */
 function collectRevisionRanges(
-  paragraph: { runs: { text: string; revision?: EditorRevision }[] },
+  paragraph: {
+    runs: {
+      text: string;
+      revision?: EditorRevision;
+      styles?: { propertyRevision?: { id: string; author: string } };
+    }[];
+  },
   state: EditorState,
 ): RevisionRange[] {
   const ranges: RevisionRange[] = [];
@@ -28,27 +36,39 @@ function collectRevisionRanges(
     const end = offset + run.text.length;
     offset = end;
     const revision = run.revision;
+    const property = run.styles?.propertyRevision;
+    let id: string | undefined;
+    let type: RevisionRange["type"] | undefined;
+    let author: string | undefined;
     if (
       revision &&
-      (revision.type === "insert" || revision.type === "delete") &&
-      isRevisionMarkupShown(state, revision.type, revision.author) &&
+      (revision.type === "insert" || revision.type === "delete")
+    ) {
+      id = revision.id;
+      type = revision.type;
+      author = revision.author;
+    } else if (property) {
+      id = property.id;
+      type = "property";
+      author = property.author;
+    }
+    if (
+      id !== undefined &&
+      type !== undefined &&
+      author !== undefined &&
+      isRevisionMarkupShown(state, type, author) &&
       end > start
     ) {
       const previous = ranges.at(-1);
       if (
         previous &&
-        previous.revisionId === revision.id &&
-        previous.type === revision.type &&
+        previous.revisionId === id &&
+        previous.type === type &&
         previous.end === start
       ) {
         previous.end = end;
       } else {
-        ranges.push({
-          start,
-          end,
-          revisionId: revision.id,
-          type: revision.type,
-        });
+        ranges.push({ start, end, revisionId: id, type });
       }
     }
   }
@@ -56,11 +76,11 @@ function collectRevisionRanges(
 }
 
 /**
- * Project insert/delete revision ranges into highlight rectangles, reusing the
- * canvas layout snapshot's per-line slot positions (the same machinery the
- * comment highlights and the selection geometry use). One box per covered line;
- * property/formatting and merge/grid revisions are not painted. Show Markup
- * filters come from the live editor state, not from the document.
+ * Project insert/delete/formatting revision ranges into highlight rectangles,
+ * reusing the canvas layout snapshot's per-line slot positions (the same
+ * machinery the comment highlights and the selection geometry use). One box per
+ * covered line; merge/grid and structural table revisions are not painted.
+ * Show Markup filters come from the live editor state, not from the document.
  */
 export function computeRevisionMarkup(
   snapshot: CanvasLayoutSnapshot,

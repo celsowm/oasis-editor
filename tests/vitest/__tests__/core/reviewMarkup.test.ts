@@ -148,6 +148,25 @@ describe("collectMarkupAuthors", () => {
     const s = state([paragraph("p1", [textRun("r1", "hi")])]);
     expect(collectMarkupAuthors(s)).toEqual([]);
   });
+
+  it("collects run-level formatting (property) revision authors", () => {
+    const run = {
+      id: "r1",
+      kind: "text",
+      text: "formatted",
+      styles: {
+        propertyRevision: {
+          id: "fmt1",
+          type: "property",
+          author: "Formatting author",
+          date: 1,
+          previous: {},
+        },
+      },
+    } as unknown as EditorTextRun;
+    const s = state([paragraph("p1", [run])]);
+    expect(collectMarkupAuthors(s)).toEqual(["Formatting author"]);
+  });
 });
 
 describe("toggleMarkupAuthor", () => {
@@ -382,5 +401,30 @@ describe("collectChangeBarParagraphIds", () => {
   it("drops every paragraph when no reviewer is visible", () => {
     const none = applyShowMarkup(tracked(), { allAuthors: false });
     expect(collectChangeBarParagraphIds(none).size).toBe(0);
+  });
+
+  it("includes a paragraph with only a formatting (property) revision", () => {
+    const run = {
+      id: "r1",
+      kind: "text",
+      text: "formatted",
+      styles: {
+        propertyRevision: {
+          id: "fmt1",
+          type: "property",
+          author: "Formatting author",
+          date: 1,
+          previous: {},
+        },
+      },
+    } as unknown as EditorTextRun;
+    const s = state([
+      paragraph("p-plain", [textRun("r0", "plain")]),
+      paragraph("p-format", [run]),
+    ]);
+    expect([...collectChangeBarParagraphIds(s)]).toEqual(["p-format"]);
+    // Reviewer filtering still applies to formatting revisions.
+    const hidden = setMarkupAuthors(s, ["Someone else"]);
+    expect(collectChangeBarParagraphIds(hidden).size).toBe(0);
   });
 });

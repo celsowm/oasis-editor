@@ -150,7 +150,7 @@ export function reviewDisplayProjection(
   return mode === "original" ? "original" : "final";
 }
 
-function paragraphHasVisibleTextRevision(
+function paragraphHasVisibleRevision(
   paragraph: EditorParagraphNode,
   state: EditorState,
 ): boolean {
@@ -163,21 +163,26 @@ function paragraphHasVisibleTextRevision(
     ) {
       return true;
     }
+    const property = run.styles?.propertyRevision;
+    if (property && isRevisionMarkupShown(state, "property", property.author)) {
+      return true;
+    }
   }
   return false;
 }
 
 /**
  * Paragraph ids that should carry a Simple Markup change bar: every paragraph
- * in the raw document with at least one visible insert/delete text revision.
- * Show Markup category and reviewer filters are applied through
- * `isRevisionMarkupShown`, so a hidden category or reviewer removes its bar.
- * Endnotes have no editable zone and are intentionally not walked.
+ * in the raw document with at least one visible insert/delete text revision or
+ * run-level formatting (property) revision. Show Markup reviewer filters are
+ * applied through `isRevisionMarkupShown`, so a hidden reviewer removes its
+ * bar; category flags only apply to insert/delete (Word has no formatting
+ * category in this menu). Endnotes have no editable zone and are not walked.
  */
 export function collectChangeBarParagraphIds(state: EditorState): Set<string> {
   const ids = new Set<string>();
   for (const paragraph of getDocumentParagraphs(state.document)) {
-    if (paragraphHasVisibleTextRevision(paragraph, state)) {
+    if (paragraphHasVisibleRevision(paragraph, state)) {
       ids.add(paragraph.id);
     }
   }
@@ -263,14 +268,18 @@ function collectParagraphAuthors(
   authors: Set<string>,
 ): void {
   for (const run of paragraph.runs) {
-    const author = run.revision?.author ?? run.revisionRangeMarker?.author;
+    const author =
+      run.revision?.author ??
+      run.revisionRangeMarker?.author ??
+      run.styles?.propertyRevision?.author;
     if (author) authors.add(author);
   }
 }
 
 /**
- * Every author with markup in the document: tracked-revision authors plus
- * comment authors, sorted for a stable menu. Empty when nothing is marked.
+ * Every author with markup in the document: tracked insert/delete and
+ * run-level formatting (property) revision authors plus comment authors,
+ * sorted for a stable menu. Empty when nothing is marked.
  */
 export function collectMarkupAuthors(state: EditorState): string[] {
   const authors = new Set<string>();

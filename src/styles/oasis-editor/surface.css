@@ -433,6 +433,17 @@
   background: #dc2626;
 }
 
+.oasis-editor-revision-markup-property::after {
+  bottom: 0;
+  background: repeating-linear-gradient(
+    to right,
+    #7c3aed 0,
+    #7c3aed 4px,
+    transparent 4px,
+    transparent 7px
+  );
+}
+
 .oasis-editor-change-bar-root {
   pointer-events: none;
 }

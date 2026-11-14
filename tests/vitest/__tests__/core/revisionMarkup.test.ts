@@ -233,6 +233,100 @@ describe("computeRevisionMarkup", () => {
     const state = applyShowMarkup(stateWith([para]), { allAuthors: false });
     expect(markupBoxes(para, state)).toHaveLength(0);
   });
+
+  const propertyRun = (
+    id: string,
+    text: string,
+    author: string,
+  ): EditorTextRun =>
+    ({
+      id,
+      kind: "text",
+      text,
+      styles: {
+        propertyRevision: {
+          id: `fmt-${id}`,
+          type: "property",
+          author,
+          date: 1,
+          previous: {},
+        },
+      },
+    }) as unknown as EditorTextRun;
+
+  it("paints a distinct property decoration for a formatting revision", () => {
+    const para = paragraph("p1", [
+      textRun("a", "plain "),
+      propertyRun("b", "formatted", "Zoe"),
+    ]);
+    const boxes = markupBoxes(para);
+    expect(boxes).toHaveLength(1);
+    expect(boxes[0]).toMatchObject({
+      revisionId: "fmt-b",
+      type: "property",
+    });
+  });
+
+  it("merges adjacent runs sharing one property revision id", () => {
+    const property = {
+      id: "fmt-shared",
+      type: "property" as const,
+      author: "Zoe",
+      date: 1,
+      previous: {},
+    };
+    const para = paragraph("p1", [
+      {
+        id: "a",
+        kind: "text",
+        text: "form",
+        styles: { propertyRevision: property },
+      },
+      {
+        id: "b",
+        kind: "text",
+        text: "atted",
+        styles: { propertyRevision: property },
+      },
+    ] as unknown as EditorTextRun[]);
+    expect(markupBoxes(para)).toHaveLength(1);
+  });
+
+  it("lets insert/delete take precedence over property on the same run", () => {
+    const para = paragraph("p1", [
+      {
+        ...propertyRun("a", "text", "Zoe"),
+        revision: {
+          id: "ins-a",
+          type: "insert",
+          author: "Zoe",
+          date: 1,
+        },
+      } as unknown as EditorTextRun,
+    ]);
+    const boxes = markupBoxes(para);
+    expect(boxes).toHaveLength(1);
+    expect(boxes[0]).toMatchObject({
+      revisionId: "ins-a",
+      type: "insert",
+    });
+  });
+
+  it("hides a property decoration when its author is filtered out", () => {
+    const para = paragraph("p1", [propertyRun("a", "formatted", "Zoe")]);
+    const state = setMarkupAuthors(stateWith([para]), ["User"]);
+    expect(markupBoxes(para, state)).toHaveLength(0);
+  });
+
+  it("does not category-filter property (Word has no formatting category here)", () => {
+    const para = paragraph("p1", [propertyRun("a", "formatted", "Zoe")]);
+    const state = applyShowMarkup(stateWith([para]), {
+      section: "insertions",
+    });
+    expect(markupBoxes(para, state).map((box) => box.type)).toEqual([
+      "property",
+    ]);
+  });
 });
 
 describe("toggleRevisionMarkup", () => {
