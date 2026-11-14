@@ -141,6 +141,14 @@ function serializeParagraphPropertyRevision(
 }
 
 /**
+ * OOXML `ST_Jc` has no `justify` member: full justification is spelled `both`.
+ * The model uses `justify`, so normalize on the way out.
+ */
+function toDocxJustification(align: EditorParagraphStyle["align"]): string {
+  return align === "justify" ? "both" : String(align);
+}
+
+/**
  * Serializes a raw `EditorParagraphStyle` into the contents of a `w:pPr`
  * element (without the wrapping tag). Used for style definitions in styles.xml
  * and as the inner implementation for `serializeParagraphProperties`.
@@ -153,7 +161,7 @@ export function serializeParagraphStyleXml(
   const parts: string[] = [];
 
   if (style.align) {
-    parts.push(`<w:jc w:val="${style.align}"/>`);
+    parts.push(`<w:jc w:val="${toDocxJustification(style.align)}"/>`);
   }
 
   if (
@@ -252,7 +260,7 @@ export function serializeParagraphProperties(
   }
 
   if (align) {
-    parts.push(`<w:jc w:val="${align}"/>`);
+    parts.push(`<w:jc w:val="${toDocxJustification(align)}"/>`);
   }
 
   if (
