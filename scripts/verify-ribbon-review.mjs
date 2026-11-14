@@ -2,8 +2,8 @@
 /**
  * P01 Review: document-scoped Accept All / Reject All, their confirmation gate,
  * disabled states without revisions, undo, the selection-vs-document scope
- * distinction, Display for Review, Show Markup category/reviewer filters and
- * the Reviewing Pane.
+ * distinction, Display for Review (including Simple Markup change bars),
+ * Show Markup category/reviewer filters and the Reviewing Pane.
  */
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
@@ -424,6 +424,132 @@ try {
       "All Markup must restore editing",
     );
 
+    // 9a. Simple Markup: a fourth Display for Review mode renders the accepted
+    // (final) text with margin change bars instead of inline decorations. The
+    // bars are driven by the raw revision-bearing paragraph ids, matched onto
+    // the projected snapshot (which keeps those ids), and honour Show Markup.
+    const changeBars = () => page.locator('[data-testid="editor-change-bar"]');
+    assert.equal(
+      await changeBars().count(),
+      0,
+      "All Markup paints no change bars",
+    );
+
+    const changeBarIds = () =>
+      page.evaluate(async () => {
+        const { collectChangeBarParagraphIds } =
+          await import("/src/core/commands/reviewMarkup.ts");
+        return [
+          ...collectChangeBarParagraphIds(
+            window.ribbonReference.client.getState(),
+          ),
+        ].sort();
+      });
+    const paintedChangeBarIds = () =>
+      changeBars().evaluateAll((bars) =>
+        bars.map((bar) => bar.getAttribute("data-paragraph-id")).sort(),
+      );
+    const waitForChangeBarCount = (count) =>
+      page.waitForFunction(
+        (expected) =>
+          document.querySelectorAll('[data-testid="editor-change-bar"]')
+            .length === expected,
+        count,
+        { timeout: 5000 },
+      );
+
+    await (
+      await openGroup(page, "tracking", "editor-toolbar-display-for-review")
+    ).click();
+    await page
+      .locator('[data-testid="editor-toolbar-display-for-review-simple"]')
+      .click();
+    assert.equal(
+      await page.evaluate(
+        () =>
+          window.ribbonReference.client.commands.state("setReviewDisplayMode")
+            .value,
+      ),
+      "simple",
+    );
+    const defaultIds = await changeBarIds();
+    assert.ok(
+      defaultIds.length >= 1,
+      "fixture has revision-bearing paragraphs",
+    );
+    await waitForChangeBarCount(defaultIds.length);
+    assert.deepEqual(
+      await paintedChangeBarIds(),
+      defaultIds,
+      "change bars match the raw revision-bearing paragraph ids",
+    );
+    assert.equal(
+      await page.locator('[data-testid="editor-revision-markup"]').count(),
+      0,
+      "Simple Markup hides inline insert/delete decorations",
+    );
+    assert.equal(
+      await page.evaluate(
+        () => window.ribbonReference.client.commands.state("bold").isEnabled,
+      ),
+      false,
+      "Simple Markup is read-only",
+    );
+    assert.equal(
+      await hasRevisions(),
+      true,
+      "revisions persist in Simple Markup",
+    );
+
+    // Hiding insertions removes that paragraph's bar but keeps the deletion's.
+    await applyShowMarkup(page, { section: "insertions" });
+    const filteredIds = await changeBarIds();
+    assert.ok(filteredIds.length < defaultIds.length);
+    await waitForChangeBarCount(filteredIds.length);
+    assert.deepEqual(await paintedChangeBarIds(), filteredIds);
+
+    // No reviewers visible -> the pane of change bars is empty.
+    await applyShowMarkup(page, { allAuthors: false });
+    await waitForChangeBarCount(0);
+    assert.equal(await changeBars().count(), 0);
+
+    // Restore the default filters.
+    await applyShowMarkup(page, { allAuthors: true });
+    await applyShowMarkup(page, { section: "insertions" });
+    await waitForChangeBarCount(defaultIds.length);
+    assert.deepEqual(await paintedChangeBarIds(), defaultIds);
+
+    // Change bars are Simple-Markup-only: Final and All Markup paint none.
+    await (
+      await openGroup(page, "tracking", "editor-toolbar-display-for-review")
+    ).click();
+    await page
+      .locator('[data-testid="editor-toolbar-display-for-review-final"]')
+      .click();
+    await waitForChangeBarCount(0);
+    assert.equal(await changeBars().count(), 0);
+
+    await (
+      await openGroup(page, "tracking", "editor-toolbar-display-for-review")
+    ).click();
+    await page
+      .locator('[data-testid="editor-toolbar-display-for-review-all"]')
+      .click();
+    assert.equal(
+      await page.evaluate(
+        () =>
+          window.ribbonReference.client.commands.state("setReviewDisplayMode")
+            .value,
+      ),
+      "all",
+    );
+    assert.equal(await changeBars().count(), 0);
+    assert.ok(
+      (await page.locator('[data-testid="editor-revision-markup"]').count()) >
+        0,
+      "All Markup restores inline decorations",
+    );
+
     // 10. Show Markup: category and reviewer filters change what is painted
     // without editing revision data. The fixture seeds an insertion and an
     // anchored comment from "Reference author"; step 8 adds a deletion from
@@ -728,6 +854,10 @@ try {
         "display-for-review-final-readonly",
         "display-for-review-original-readonly",
         "display-for-review-roundtrip",
+        "simple-markup-change-bars-and-ids",
+        "simple-markup-readonly-and-no-inline-markup",
+        "simple-markup-follows-show-markup-filters",
+        "simple-markup-bars-are-mode-specific",
         "show-markup-menu-defaults-and-reviewers",
         "show-markup-insertions-filter",
         "show-markup-deletions-filter",
@@ -751,7 +881,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Show Markup category/reviewer filters and the Reviewing Pane.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters and the Reviewing Pane.`,
   );
 } finally {
   await browser.close();
