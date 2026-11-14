@@ -1,4 +1,5 @@
 import { Show, createSignal, type JSX } from "solid-js";
+import { ToolIcon } from "@/ui/utils/customIcons.js";
 import { SplitButton } from "./SplitButton.js";
 import { ColorGrids } from "./ColorGrids.js";
 import type { ColorPalette } from "@/ui/components/Toolbar/schema/palette.js";
@@ -75,7 +76,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
       mainContent={
         <>
           <span class="oasis-editor-color-split-icon">
-            <i data-lucide={props.icon} />
+            <ToolIcon name={props.icon} />
             <span
               class="oasis-editor-color-split-indicator"
               classList={{

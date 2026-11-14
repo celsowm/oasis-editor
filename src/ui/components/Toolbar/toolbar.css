@@ -1253,7 +1253,8 @@
   box-sizing: border-box;
 }
 
-.oasis-editor-color-split-icon i {
+.oasis-editor-color-split-icon i,
+.oasis-editor-color-split-icon svg {
   width: 18px;
   height: 18px;
 }
