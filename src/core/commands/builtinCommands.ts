@@ -56,6 +56,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "toggleOutlinePanel",
   "acceptRevisions",
   "rejectRevisions",
+  "setReviewDisplayMode",
   "acceptAllRevisions",
   "rejectAllRevisions",
   "requestAcceptAllRevisions",

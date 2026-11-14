@@ -8,12 +8,15 @@ import type {
   ToolbarViewMode,
   ToolbarLayoutMode,
 } from "@/ui/OasisEditorAppProps.js";
+import type { EditorState } from "@/core/model.js";
 
 export interface EditorUiOptionsContext {
   ui: () => OasisEditorAppUiProps;
   documentOptions: () => OasisEditorAppDocumentProps;
   /** Write a patch into the host UI overrides (same funnel as outline.setVisible). */
   updateUiState: (patch: { showOutline: boolean }) => void;
+  /** Live state, needed for the Display-for-Review read-only gate. */
+  state: () => EditorState;
 }
 
 export interface EditorUiOptions {
@@ -41,7 +44,7 @@ export interface EditorUiOptions {
 export function createEditorUiOptions(
   ctx: EditorUiOptionsContext,
 ): EditorUiOptions {
-  const { ui, documentOptions, updateUiState } = ctx;
+  const { ui, documentOptions, updateUiState, state } = ctx;
 
   const loadingOptions = (): OasisEditorLoadingOptions | undefined => {
     const loading = ui().loading;
@@ -61,7 +64,14 @@ export function createEditorUiOptions(
     },
     toolbarView: (): ToolbarViewMode => ui().toolbar?.view ?? "ribbon",
     toolbarLayout: (): ToolbarLayoutMode => ui().toolbar?.layout ?? "overflow",
-    isReadOnly: (): boolean => documentOptions().readOnly ?? false,
+    /**
+     * Display-for-Review modes render a *resolved* document that is not
+     * editable; every read path (commands gate, clipboard, comments, caret,
+     * chrome) keys off this single accessor.
+     */
+    isReadOnly: (): boolean =>
+      (documentOptions().readOnly ?? false) ||
+      (state().reviewDisplayMode ?? "all") !== "all",
     useComposedShell: (): boolean =>
       ui().uiVariant === "docs" || (ui().shell ?? "document") !== "document",
     loadingOptions,

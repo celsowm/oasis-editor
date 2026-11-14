@@ -148,6 +148,8 @@ export interface EssentialsFormattingCapability {
   toggleTrackChanges: () => boolean;
   toggleRevisionMarkup: () => boolean;
   toggleOutlinePanel: () => boolean;
+  reviewDisplayMode: () => string;
+  setReviewDisplayMode: (mode: string) => boolean;
   /** Reactive document view/state flags for Ribbon toggle feedback. */
   isTrackChangesEnabled: () => boolean;
   areRevisionMarkupVisible: () => boolean;

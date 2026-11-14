@@ -456,6 +456,13 @@ export function buildEssentialsFormatting(
     areRevisionMarkupVisible: (): boolean =>
       Boolean(options.state().showRevisionMarkup ?? true),
     areOutlineVisible: (): boolean => options.isOutlineVisible(),
+    reviewDisplayMode: (): string => options.state().reviewDisplayMode ?? "all",
+    setReviewDisplayMode: (mode): boolean => {
+      options.commandsController.applySetReviewDisplayModeCommand(
+        mode as import("@/core/model.js").EditorState["reviewDisplayMode"],
+      );
+      return true;
+    },
     toggleTrackChanges: (): true => (
       options.commandsController.applyToggleTrackChangesCommand(),
       true
@@ -464,10 +471,7 @@ export function buildEssentialsFormatting(
       options.commandsController.applyToggleRevisionMarkupCommand(),
       true
     ),
-    toggleOutlinePanel: (): true => (
-      void options.toggleOutlinePanel(),
-      true
-    ),
+    toggleOutlinePanel: (): true => (void options.toggleOutlinePanel(), true),
     acceptRevisions: (): true => (
       options.commandsController.applyAcceptRevisionsCommand(),
       true

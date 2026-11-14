@@ -5,6 +5,7 @@ import type {
   EditorLayoutDocument,
 } from "@/core/model.js";
 import { computeCanvasSelectionGeometry } from "@/ui/canvas/CanvasSelectionGeometry.js";
+import { projectTrackedRevisions } from "@/core/document/trackedRevisions.js";
 import { computeCommentHighlights } from "@/ui/canvas/CanvasCommentGeometry.js";
 import { computeRevisionMarkup } from "@/ui/canvas/CanvasRevisionGeometry.js";
 import {
@@ -118,11 +119,22 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
     null,
   );
   const stabilize = createLayoutIdentityStabilizer();
+  // Display for Review: final/original modes render a *resolved* document.
+  // The raw revision marks stay untouched in the model; only the layout sees
+  // the projection.
+  const renderDocument = createMemo((): import("@/core/model.js").EditorDocument => {
+    layoutMetricsEpoch();
+    const mode = props.state.reviewDisplayMode ?? "all";
+    if (mode === "all") {
+      return props.state.document;
+    }
+    return projectTrackedRevisions(props.state.document, mode).document;
+  });
   const documentLayout = createMemo((): EditorLayoutDocument => {
     layoutMetricsEpoch();
     return stabilize(
       projectDocumentLayout(
-        props.state.document,
+        renderDocument(),
         undefined,
         measuredBlockHeights(),
         measuredParagraphLayouts(),
@@ -177,6 +189,21 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
           visible: false,
         }),
       );
+      return;
+    }
+
+    // In resolved (final/original) views the geometry of the raw document no
+    // longer describes the painted document, so selection/caret overlays and
+    // revision/comment decorations are hidden; the panel remains usable.
+    if ((props.state.reviewDisplayMode ?? "all") !== "all") {
+      setSelectionBoxes([]);
+      setSelectedImageBox(null);
+      setSelectedTextBoxBox(null);
+      setSelectedTableBox(null);
+      setCaretBox({ left: 0, top: 0, height: 28, visible: false });
+      setInputBox({ left: 0, top: 0, height: 28 });
+      setCommentHighlights([]);
+      setRevisionMarkupBoxes([]);
       return;
     }
 
@@ -289,6 +316,12 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
   // The markup toggle is a view flag: flip the overlay without an edit.
   createEffect((): void => {
     props.state.showRevisionMarkup;
+    requestInputBoxSync("content-change");
+  });
+
+  // Display for Review re-projects the document; flip layout with the mode.
+  createEffect((): void => {
+    props.state.reviewDisplayMode;
     requestInputBoxSync("content-change");
   });
 

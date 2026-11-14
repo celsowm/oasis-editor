@@ -78,6 +78,10 @@ export const en = {
   "review.noComments": "No discussions found",
   "review.goToComment": "Go to comment",
   "review.confirmDelete": "Confirm deletion",
+  "review.displayForReview": "Display for Review",
+  "review.displayModeAll": "All Markup",
+  "review.displayModeFinal": "Final",
+  "review.displayModeOriginal": "Original",
   "review.bulkAcceptTitle": "Accept all changes",
   "review.bulkAcceptMessage":
     "Accept all {0} tracked changes in this document, including headers, footers, notes and tables?",

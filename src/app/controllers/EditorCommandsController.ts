@@ -16,6 +16,7 @@ import {
   rejectRevisionsInSelection,
   toggleTrackChanges,
   toggleRevisionMarkup,
+  setReviewDisplayMode,
 } from "@/core/commands/history.js";
 import {
   getSelectedImageCaption,
@@ -457,6 +458,12 @@ function createEditorCommandsControllerImpl(
     execState(toggleRevisionMarkup(state));
   };
 
+  const applySetReviewDisplayModeCommand = (
+    mode: import("@/core/model.js").EditorState["reviewDisplayMode"],
+  ): void => {
+    execState(setReviewDisplayMode(state, mode));
+  };
+
   const applyToggleShowMarginsCommand = (): void => {
     applyState({ ...state, showMargins: !state.showMargins });
     focusInput();
@@ -695,6 +702,7 @@ function createEditorCommandsControllerImpl(
     applyUpdateSectionSettingsCommand,
     applyToggleTrackChangesCommand,
     applyToggleRevisionMarkupCommand,
+    applySetReviewDisplayModeCommand,
     applyToggleShowMarginsCommand,
     applyToggleShowParagraphMarksCommand,
     applyAcceptRevisionsCommand,

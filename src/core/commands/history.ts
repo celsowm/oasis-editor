@@ -27,6 +27,17 @@ export function toggleRevisionMarkup(state: EditorState): EditorState {
   };
 }
 
+export function setReviewDisplayMode(
+  state: EditorState,
+  mode: EditorState["reviewDisplayMode"],
+): EditorState {
+  if ((state.reviewDisplayMode ?? "all") === (mode ?? "all")) return state;
+  return {
+    ...state,
+    reviewDisplayMode: mode,
+  };
+}
+
 export function toggleTrackChanges(state: EditorState): EditorState {
   return {
     ...state,

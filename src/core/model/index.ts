@@ -188,7 +188,7 @@ export type {
   EditorLayoutDocument,
 } from "./types/layout.js";
 
-export type { EditorState } from "./editorState.js";
+export type { EditorState, ReviewDisplayMode } from "./editorState.js";
 
 // ---- Constants ----
 export { EDITOR_ASSET_REF_PREFIX } from "./types/primitives.js";

@@ -121,7 +121,12 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     loadingOptions,
     loadingLabel,
     shellComponent,
-  } = createEditorUiOptions({ ui, documentOptions, updateUiState });
+  } = createEditorUiOptions({
+    ui,
+    documentOptions,
+    updateUiState,
+    state: (): EditorState => state as EditorState,
+  });
 
   const focusController = createEditorFocusController();
   const focused = focusController.focused;

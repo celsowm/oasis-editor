@@ -78,6 +78,10 @@ export const ptBR = {
   "review.noComments": "Nenhuma discussão encontrada",
   "review.goToComment": "Ir ao comentário",
   "review.confirmDelete": "Confirmar exclusão",
+  "review.displayForReview": "Exibir para revisão",
+  "review.displayModeAll": "Marcação completa",
+  "review.displayModeFinal": "Final",
+  "review.displayModeOriginal": "Original",
   "review.bulkAcceptTitle": "Aceitar todas as alterações",
   "review.bulkAcceptMessage":
     "Aceitar todas as {0} alterações controladas deste documento, incluindo cabeçalhos, rodapés, notas e tabelas?",

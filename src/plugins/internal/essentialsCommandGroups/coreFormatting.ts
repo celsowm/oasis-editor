@@ -354,6 +354,20 @@ export function buildCoreFormattingCommands({
         formatting.replaceAll(payload);
       }
     }),
+    setReviewDisplayMode: valueCommand(
+      "setReviewDisplayMode",
+      (p): boolean => {
+        const mode =
+          typeof p === "string"
+            ? p
+            : (p as { mode?: unknown } | null | undefined)?.mode;
+        if (mode !== "all" && mode !== "final" && mode !== "original") {
+          return false;
+        }
+        return formatting.setReviewDisplayMode(mode);
+      },
+      (): string => formatting.reviewDisplayMode(),
+    ),
     toggleTrackChanges: command(
       "toggleTrackChanges",
       formatting.toggleTrackChanges,

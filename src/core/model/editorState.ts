@@ -1,3 +1,6 @@
+/** Display-for-Review rendering mode for tracked revisions. */
+export type ReviewDisplayMode = "all" | "final" | "original";
+
 /**
  * Editor state: the live, mutable view over a document. Composed of the
  * document itself, the current selection and presentation toggles.
@@ -28,6 +31,14 @@ export interface EditorState {
   trackChangesEnabled?: boolean;
   showMargins?: boolean;
   showParagraphMarks?: boolean;
+  /**
+   * Display for Review: how tracked revisions render in the canvas.
+   *   "all"      — show markup (default)
+   *   "final"    — render as accepted (insertions kept, deletions dropped)
+   *   "original" — render as rejected (insertions dropped, deletions restored)
+   * Presentation only; the underlying revision marks are untouched.
+   */
+  reviewDisplayMode?: ReviewDisplayMode;
   /** Presentation toggle for painting tracked revisions (default on). */
   showRevisionMarkup?: boolean;
 }

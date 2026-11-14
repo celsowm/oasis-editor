@@ -20,6 +20,10 @@ const allowlistedFiles = new Map([
     "pending toolbar migration",
   ],
   [
+    "src/ui/components/Toolbar/ReviewDisplayModeButton.tsx",
+    "pending toolbar migration",
+  ],
+  [
     "src/ui/components/Toolbar/controls/UnderlineControl.tsx",
     "pending toolbar migration",
   ],
