@@ -10,12 +10,29 @@ import { getDocumentSections } from "@/core/model.js";
 /**
  * Structural or property revisions attached to a table, one of its rows, or
  * one of its cells (`w:tblPrChange`/`w:tblGridChange`, `w:trPrChange`,
- * `w:tcPr` insert/delete/merge and `w:tcPrChange`). These live on the node's
- * `style`, not on any run, so every surface that lists, marks or navigates
- * changes needs this walker. Section-level `w:sectPrChange` and pending merge
- * state remain preservation-only here.
+ * `w:tcPr` insert/delete/merge and `w:tcPrChange`), plus section-level
+ * `w:sectPrChange` property revisions. These live on the node's `style` (or the
+ * section), not on any run, so every surface that lists, marks or navigates
+ * changes needs these walkers. Pending merge state (`mergeRevisionState`) still
+ * carries only an id — no author/date/type — so it remains preservation-only
+ * and cannot become a Reviewing Pane row without new semantics.
  */
 export type TableRevisionScope = "table" | "row" | "cell";
+
+/** A `w:sectPrChange` property revision on a section. */
+export interface SectionRevisionDescriptor {
+  id: string;
+  /** `w:sectPrChange` is a formatting change (Word's Formatting category). */
+  type: "property";
+  author: string;
+  date: number;
+  sectionId: string;
+  sectionIndex: number;
+  /** Every body paragraph id under the section (nested tables included). */
+  paragraphIds: string[];
+  /** Concatenated body text, used as the Reviewing Pane snippet. */
+  snippet: string;
+}
 
 export interface TableRevisionDescriptor {
   id: string;
@@ -235,4 +252,39 @@ export function collectCellRevisions(
   return collectTableRevisions(state).filter(
     (entry): boolean => entry.scope === "cell",
   );
+}
+
+/**
+ * Every section-level `w:sectPrChange` property revision, in document order,
+ * de-duplicated by id. A section revision has no run to carry its id, so each
+ * descriptor carries the section's body paragraph ids: the first anchors Next/
+ * Previous Change and the Reviewing Pane row, while the whole set drives
+ * Simple Markup change bars and the painted section outline. Unfiltered by Show
+ * Markup; consumers apply `isRevisionMarkupShown` at the call site (the type is
+ * `"property"`, so it follows the dedicated Formatting checkbox).
+ */
+export function collectSectionRevisions(
+  state: EditorState,
+): SectionRevisionDescriptor[] {
+  const result: SectionRevisionDescriptor[] = [];
+  const seen = new Set<string>();
+  getDocumentSections(state.document).forEach((section, sectionIndex) => {
+    const revision = section.propertyRevision;
+    if (!revision || seen.has(revision.id)) return;
+    seen.add(revision.id);
+    const paragraphIds: string[] = [];
+    collectParagraphIds(section.blocks, paragraphIds);
+    const text = blockText(section.blocks);
+    result.push({
+      id: revision.id,
+      type: "property",
+      author: revision.author,
+      date: revision.date,
+      sectionId: section.id,
+      sectionIndex,
+      paragraphIds,
+      snippet: text.length > 96 ? `${text.slice(0, 93)}…` : text,
+    });
+  });
+  return result;
 }

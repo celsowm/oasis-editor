@@ -13,6 +13,7 @@ import {
   getParagraphs,
 } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
+import { collectSectionRevisions } from "@/core/commands/cellRevisions.js";
 import {
   buildParagraphFromRuns,
   sliceRuns,
@@ -244,6 +245,49 @@ function transformTableRevision(
   return { ...state, document: { ...state.document, sections } };
 }
 
+/**
+ * Resolve a single section-level `w:sectPrChange` revision, mirroring
+ * `applySectionPropertyRevisions` in trackedRevisions.ts so the
+ * selection-scoped (Reviewing Pane) and whole-document (Accept All / Final /
+ * Original) paths agree. Reject is cross-section: it restores the previous
+ * section properties *and* the following section's breakType. Without this,
+ * per-row Accept/Reject in the pane silently no-ops for section revisions even
+ * though `collectAllRevisionIds` counts them.
+ */
+function transformSectionRevision(
+  state: EditorState,
+  revisionId: string,
+  accept: boolean,
+): EditorState {
+  const sections = getDocumentSections(state.document);
+  const index = sections.findIndex(
+    (section) => section.propertyRevision?.id === revisionId,
+  );
+  if (index === -1) return state;
+  const section = sections[index]!;
+  const revision = section.propertyRevision!;
+  const next = [...sections];
+  if (accept) {
+    next[index] = { ...section, propertyRevision: undefined };
+  } else {
+    const previous = structuredClone(revision.previous);
+    next[index] = {
+      ...section,
+      pageSettings: previous.pageSettings,
+      pageBorder: previous.pageBorder,
+      pageNumbering: previous.pageNumbering,
+      verticalAlignment: previous.verticalAlignment,
+      bidi: previous.bidi,
+      propertyRevision: undefined,
+    };
+    const nextSection = next[index + 1];
+    if (nextSection) {
+      next[index + 1] = { ...nextSection, breakType: previous.nextBreakType };
+    }
+  }
+  return { ...state, document: { ...state.document, sections: next } };
+}
+
 export function acceptRevision(
   state: EditorState,
   revisionId: string,
@@ -285,7 +329,11 @@ export function acceptRevision(
       normalizeSelection(state),
     ),
   );
-  return transformTableRevision(textState, revisionId, true);
+  return transformSectionRevision(
+    transformTableRevision(textState, revisionId, true),
+    revisionId,
+    true,
+  );
 }
 
 export function rejectRevision(
@@ -333,7 +381,11 @@ export function rejectRevision(
       normalizeSelection(state),
     ),
   );
-  return transformTableRevision(textState, revisionId, false);
+  return transformSectionRevision(
+    transformTableRevision(textState, revisionId, false),
+    revisionId,
+    false,
+  );
 }
 
 function blockContainsSelectedParagraph(
@@ -432,6 +484,15 @@ export function collectSelectedRevisionIds(state: EditorState): Set<string> {
       if (blocks) {
         collectTableRevisionIds(blocks, selectedParagraphIds, revisionIds);
       }
+    }
+  }
+
+  // A section-level `w:sectPrChange` is selected when the selection touches
+  // any of that section's body paragraphs. Without this, the pane's per-row
+  // Accept/Reject would never offer the id to `acceptRevisionsInSelection`.
+  for (const revision of collectSectionRevisions(state)) {
+    if (revision.paragraphIds.some((id) => selectedParagraphIds.has(id))) {
+      revisionIds.add(revision.id);
     }
   }
 
