@@ -211,6 +211,71 @@ export function collectChangeBarParagraphIds(state: EditorState): Set<string> {
   return ids;
 }
 
+/** A visible revision's extent in the accepted (final) text of a paragraph. */
+export interface ChangeBarRange {
+  start: number;
+  end: number;
+}
+
+/**
+ * Per-paragraph extents of visible revisions, expressed in *final-text* offsets
+ * — the coordinate space of Simple Markup's projected layout. A `null` value
+ * means the whole paragraph is changed (a table/row/cell/grid revision covers
+ * every line), while an array marks only the lines overlapping those ranges.
+ *
+ * Inserted and property-revision runs survive the "final" projection, so their
+ * offsets are used directly. Deleted runs are removed from the projection, so
+ * they contribute a narrow marker at the join point instead: the line the text
+ * disappeared from is still marked. Show Markup filters are applied through
+ * `isRevisionMarkupShown`, keeping this in lockstep with
+ * `collectChangeBarParagraphIds`.
+ */
+export function collectChangeBarRanges(
+  state: EditorState,
+): Map<string, ChangeBarRange[] | null> {
+  const result = new Map<string, ChangeBarRange[] | null>();
+  for (const revision of collectTableRevisions(state)) {
+    if (!isRevisionMarkupShown(state, revision.type, revision.author)) continue;
+    for (const id of revision.paragraphIds) {
+      if (!result.has(id)) result.set(id, null);
+    }
+  }
+  for (const paragraph of getDocumentParagraphs(state.document)) {
+    const ranges: ChangeBarRange[] = [];
+    let offset = 0;
+    for (const run of paragraph.runs) {
+      const length = run.text.length;
+      const revision = run.revision;
+      const isDeletion = revision?.type === "delete";
+      const property = run.styles?.propertyRevision;
+      let shown = false;
+      if (
+        revision &&
+        (revision.type === "insert" || revision.type === "delete")
+      ) {
+        shown = isRevisionMarkupShown(state, revision.type, revision.author);
+      } else if (property) {
+        shown = isRevisionMarkupShown(state, "property", property.author);
+      }
+      if (shown) {
+        if (isDeletion) {
+          ranges.push({ start: Math.max(0, offset - 1), end: offset + 1 });
+        } else if (length > 0) {
+          ranges.push({ start: offset, end: offset + length });
+        }
+      }
+      if (!isDeletion) offset += length;
+    }
+    if (ranges.length === 0) continue;
+    const existing = result.get(paragraph.id);
+    if (existing === undefined) result.set(paragraph.id, ranges);
+    // A structural revision (null) already covers every line; keep it.
+    else if (existing !== null)
+      result.set(paragraph.id, [...existing, ...ranges]);
+  }
+  return result;
+}
+
 /** The explicit author allow-list, or null when all authors are shown. */
 export function visibleMarkupAuthors(state: EditorState): string[] | null {
   return state.markupAuthors ?? null;
