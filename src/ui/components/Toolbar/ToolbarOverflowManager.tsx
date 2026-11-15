@@ -2,11 +2,11 @@ import {
   createSignal,
   onCleanup,
   onMount,
-  For,
   type JSX,
   createMemo,
   children,
   createEffect,
+  mapArray,
 } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 
@@ -17,6 +17,10 @@ import { useI18n } from "@/i18n/I18nContext.js";
  * Why imperative? Because moving real DOM nodes preserves SolidJS event
  * listeners and internal component state (like open dropdowns) without
  * triggering unmount/remount cycles.
+ *
+ * The wrappers are therefore never rendered through `<For>`: its reconciler
+ * assumes every row is still a child of the strip and throws `insertBefore`
+ * errors once one of them has moved to the overflow menu.
  */
 export function ToolbarOverflowManager(props: {
   children: JSX.Element;
@@ -35,6 +39,25 @@ export function ToolbarOverflowManager(props: {
   const resolved = children((): JSX.Element => props.children);
   const items = createMemo(() =>
     resolved.toArray().filter((i): boolean => i !== null && i !== undefined),
+  );
+  // One wrapper per item, kept across updates like `<For>` would.
+  const wrappers = createMemo(
+    mapArray(
+      items,
+      (item): HTMLDivElement =>
+        (
+          <div
+            class="oasis-editor-toolbar-item-wrapper"
+            style={{
+              display: "flex",
+              "align-items": "center",
+              "flex-shrink": 0,
+            }}
+          >
+            {item}
+          </div>
+        ) as HTMLDivElement,
+    ),
   );
 
   /** Pull all item wrappers back into the strip for fresh measurement */
@@ -128,7 +151,17 @@ export function ToolbarOverflowManager(props: {
 
   // Measurement triggers
   createEffect((): void => {
-    items();
+    const current = wrappers();
+    if (stripRef && overflowMenuRef) {
+      const keep = new Set<Element>(current);
+      for (const host of [stripRef, overflowMenuRef]) {
+        for (const child of Array.from(host.children)) {
+          if (!keep.has(child)) child.remove();
+        }
+      }
+      // Back to the strip in item order; `updateOverflow` redistributes.
+      for (const w of current) stripRef.appendChild(w);
+    }
     // Run multiple times during stabilization
     setTimeout(updateOverflow, 50);
     setTimeout(updateOverflow, 300);
@@ -273,22 +306,7 @@ export function ToolbarOverflowManager(props: {
           "min-width": "0",
           overflow: "hidden",
         }}
-      >
-        <For each={items()}>
-          {(item): JSX.Element => (
-            <div
-              class="oasis-editor-toolbar-item-wrapper"
-              style={{
-                display: "flex",
-                "align-items": "center",
-                "flex-shrink": 0,
-              }}
-            >
-              {item}
-            </div>
-          )}
-        </For>
-      </div>
+      />
 
       {/* "..." button — display:none when not needed so it doesn't steal flex space */}
       <div
