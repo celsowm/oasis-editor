@@ -4,6 +4,8 @@ import { render } from "solid-js/web";
 import { ToolbarOverflowManager } from "@/ui/components/Toolbar/ToolbarOverflowManager.js";
 
 beforeEach(() => {
+  // The manager re-measures on timers; keep them from firing after teardown.
+  vi.useFakeTimers();
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -14,6 +16,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.clearAllTimers();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   document.body.innerHTML = "";
 });
