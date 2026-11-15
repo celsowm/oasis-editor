@@ -7,7 +7,9 @@
  * checkbox), formatting revisions, Reviewing Pane formatting rows with their
  * accept/reject, structural table-cell revision outlines with their Simple
  * Markup change bars and pane rows, row/table/grid-level revision outlines,
- * per-line/page-margin change bars, and the persisted Reviewing Pane open state.
+ * per-line/page-margin change bars, section-level `w:sectPrChange` revisions
+ * (outline, change bars, pane row, filter following and per-row accept), and
+ * the persisted Reviewing Pane open state.
  */
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
@@ -1715,7 +1717,169 @@ try {
     assert.deepEqual(await paintedChangeBarIds(), perLineIds);
     await setReviewMode("all");
 
-    // 19. The Reviewing Pane's open state persists across reloads through
+    // 19. Section-level `w:sectPrChange` revisions are first-class: a dashed
+    // section outline in All Markup, Simple Markup change bars over every
+    // paragraph in the revised section, a localized Reviewing Pane row, Show
+    // Markup filter following, and per-row Accept that actually resolves the
+    // marker (the pane path used to no-op because acceptRevision ignored
+    // sections). Seed two sections; only the first carries the property change.
+    await setReviewMode("all");
+    await applyShowMarkup(page, { allAuthors: true });
+    await loadFixture(page, "table");
+    await page.evaluate(() => {
+      const client = window.ribbonReference.client;
+      const doc = client.document.get();
+      const paragraph = (id, text) => ({
+        id,
+        type: "paragraph",
+        runs: [{ id: `${id}-r`, kind: "text", text }],
+      });
+      const first = doc.sections[0];
+      client.document.load({
+        ...doc,
+        sections: [
+          {
+            ...first,
+            blocks: [
+              paragraph("sec-p1", "First section paragraph."),
+              paragraph("sec-p2", "Second section paragraph."),
+            ],
+            propertyRevision: {
+              id: "section-rev",
+              type: "property",
+              author: "Section author",
+              date: 5000,
+              previous: {
+                pageSettings: first.pageSettings,
+                nextBreakType: "continuous",
+              },
+            },
+          },
+          {
+            ...first,
+            id: "s2-plain",
+            breakType: "nextPage",
+            blocks: [paragraph("sec-p3", "Plain second section.")],
+          },
+        ],
+      });
+    });
+    const sectionOutlineSelector =
+      '[data-testid="editor-revision-markup"][data-revision-section="true"]';
+    const sectionOutlines = () => page.locator(sectionOutlineSelector);
+    await page.waitForFunction(
+      (selector) => document.querySelectorAll(selector).length > 0,
+      sectionOutlineSelector,
+      { timeout: 5000 },
+    );
+    assert.equal(
+      await sectionOutlines().count(),
+      1,
+      "one dashed outline for the revised section",
+    );
+    assert.equal(
+      await sectionOutlines().first().getAttribute("data-revision-id"),
+      "section-rev",
+    );
+    assert.ok(
+      (await sectionOutlines().first().getAttribute("class"))?.includes(
+        "oasis-editor-revision-markup-section",
+      ),
+      "the outline uses the dedicated section class",
+    );
+    const sectionIds = await page.evaluate(async () => {
+      const { collectAllRevisionIds } =
+        await import("/src/core/commands/history.ts");
+      return [
+        ...collectAllRevisionIds(window.ribbonReference.client.getState()),
+      ];
+    });
+    assert.ok(
+      sectionIds.includes("section-rev"),
+      "the bulk accept/reject model counts the section id",
+    );
+
+    // Simple Markup marks every paragraph in the revised section, but not the
+    // second, unrevised section's paragraph.
+    await setReviewMode("simple");
+    assert.equal(await reviewMode(), "simple");
+    const sectionBarIds = await changeBarIds();
+    assert.deepEqual(
+      sectionBarIds,
+      ["sec-p1", "sec-p2"],
+      "only the revised section's paragraphs carry a change bar",
+    );
+    await waitForChangeBarCount(sectionBarIds.length);
+    assert.deepEqual(await paintedChangeBarIds(), sectionBarIds);
+    await setReviewMode("all");
+
+    // The Reviewing Pane lists a localized "Section properties change" row.
+    await page.evaluate(() => {
+      window.ribbonReference.client.commands.execute("toggleRevisionsPanel");
+    });
+    await page
+      .getByTestId("review-revisions-panel")
+      .waitFor({ state: "visible", timeout: 5000 });
+    const sectionRow = page.locator(
+      '[data-testid="review-revisions-list"] > li[data-revision-section="true"]',
+    );
+    assert.equal(await sectionRow.count(), 1, "one section row in the pane");
+    assert.ok(
+      (await sectionRow.first().textContent())?.includes(
+        locale === "en"
+          ? "Section properties change"
+          : "Alteração das propriedades da seção",
+      ),
+      "the section row uses its localized label",
+    );
+
+    // The dedicated Formatting checkbox hides both the outline and the row.
+    await applyShowMarkup(page, { section: "formatting" });
+    await page.waitForFunction(
+      (selector) => document.querySelectorAll(selector).length === 0,
+      sectionOutlineSelector,
+      { timeout: 5000 },
+    );
+    assert.equal(
+      await sectionRow.count(),
+      0,
+      "Formatting off hides the section row",
+    );
+    await applyShowMarkup(page, { section: "formatting" });
+    await page.waitForFunction(
+      (selector) => document.querySelectorAll(selector).length > 0,
+      sectionOutlineSelector,
+      { timeout: 5000 },
+    );
+    assert.equal(
+      await sectionRow.count(),
+      1,
+      "Formatting on restores the section row",
+    );
+
+    // Per-row Accept actually resolves the section marker (the fix-all gap:
+    // the pane path used to no-op because acceptRevision ignored sections).
+    await sectionRow.first().getByTestId("review-revision-accept").click();
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll('[data-revision-id="section-rev"]').length ===
+        0,
+      undefined,
+      { timeout: 5000 },
+    );
+    const idsAfterSectionAccept = await page.evaluate(async () => {
+      const { collectAllRevisionIds } =
+        await import("/src/core/commands/history.ts");
+      return [
+        ...collectAllRevisionIds(window.ribbonReference.client.getState()),
+      ];
+    });
+    assert.ok(!idsAfterSectionAccept.includes("section-rev"));
+    assert.equal(await sectionOutlines().count(), 0);
+    assert.equal(await sectionRow.count(), 0);
+    await page.getByTestId("review-revisions-close").click();
+
+    // 20. The Reviewing Pane's open state persists across reloads through
     // localStorage, like Word's pane visibility. This runs last: a reload
     // intentionally discards every earlier step's document/view state.
     const paneStorage = () =>
@@ -1826,6 +1990,11 @@ try {
         "per-line-change-bars-only-mark-changed-lines",
         "per-line-change-bars-align-in-page-margin",
         "per-line-change-bars-follow-show-markup-filters",
+        "section-revisions-paint-dashed-outline",
+        "section-revisions-simple-markup-change-bars",
+        "section-revisions-pane-row-listed",
+        "section-revisions-follow-formatting-checkbox",
+        "section-revisions-pane-row-accept-resolves",
         "reviewing-pane-open-state-persists-across-reload",
         "reviewing-pane-closed-state-persists-across-reload",
       ],
@@ -1837,7 +2006,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject, structural table-cell revision outlines with their Simple Markup change bars and pane rows, row/table/grid-level revision outlines, per-line/page-margin change bars, and the persisted Reviewing Pane open state.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject, structural table-cell revision outlines with their Simple Markup change bars and pane rows, row/table/grid-level revision outlines, per-line/page-margin change bars, section-level w:sectPrChange revisions (outline, change bars, localized pane row, filter following and per-row accept), and the persisted Reviewing Pane open state.`,
   );
 } finally {
   await browser.close();
