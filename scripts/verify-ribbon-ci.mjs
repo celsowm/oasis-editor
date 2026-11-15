@@ -4,6 +4,8 @@ import { basename } from "node:path";
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 const baseUrl = "http://127.0.0.1:5174";
+const engine = process.env.RIBBON_BROWSER ?? "chromium";
+const galleryOnly = process.env.RIBBON_SUITE === "style-gallery";
 const server = spawn(
   process.execPath,
   [
@@ -23,7 +25,7 @@ const run = (script) =>
       env: {
         ...process.env,
         RIBBON_BASE_URL: baseUrl,
-        RIBBON_BROWSER: "chromium",
+        RIBBON_BROWSER: engine,
         RIBBON_OUTPUT: `test-results/ribbon/${basename(script, ".mjs").replace("verify-ribbon-", "")}`,
       },
     });
@@ -48,7 +50,10 @@ try {
     await delay(200);
   }
   if (!ready) throw new Error("Reference server startup timed out");
-  await run("scripts/verify-ribbon-reference.mjs");
+  if (galleryOnly) {
+    await run("scripts/verify-ribbon-style-gallery.mjs");
+  } else {
+    await run("scripts/verify-ribbon-reference.mjs");
   await run("scripts/verify-ribbon-resize.mjs");
   await run("scripts/verify-ribbon-contexts.mjs");
   await run("scripts/verify-ribbon-icons.mjs");
@@ -58,6 +63,7 @@ try {
   await run("scripts/verify-ribbon-inherited-formatting.mjs");
   await run("scripts/verify-ribbon-font-values.mjs");
   await run("scripts/verify-ribbon-colors-styles.mjs");
+  }
 } finally {
   server.kill("SIGTERM");
 }

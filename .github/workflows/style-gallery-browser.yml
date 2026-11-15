@@ -1,0 +1,44 @@
+name: Style Gallery Browser Regression
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/ui/**'
+      - 'src/core/**'
+      - 'src/i18n/**'
+      - 'scripts/verify-ribbon*.mjs'
+      - 'scripts/lib/ribbon-suite.mjs'
+      - 'tests/browser/ribbon/**'
+      - '.github/workflows/style-gallery-browser.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gallery:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: npm run test:ribbon:ci
+        env:
+          RIBBON_BROWSER: ${{ matrix.browser }}
+          RIBBON_SUITE: style-gallery
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: style-gallery-${{ matrix.browser }}
+          path: test-results/ribbon/style-gallery
