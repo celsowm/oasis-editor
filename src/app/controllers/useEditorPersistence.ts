@@ -1,3 +1,4 @@
+import { migrateBuiltinStyles } from "@/core/editorState/migrateBuiltinStyles.js";
 import { createEffect, createSignal, onMount, on } from "solid-js";
 import { unwrap } from "solid-js/store";
 import { debounce } from "@/utils/throttle.js";
@@ -76,7 +77,7 @@ export function useEditorPersistence(
     try {
       const loadedDoc = await persistence.loadDocument();
       if (loadedDoc) {
-        onLoaded(loadedDoc);
+        onLoaded(migrateBuiltinStyles(loadedDoc));
       }
     } catch (err) {
       options.logger?.error("persistence:load failed", err);

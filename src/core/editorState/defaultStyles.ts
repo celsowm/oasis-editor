@@ -120,6 +120,7 @@ export const DEFAULT_TABLE_STYLES: Record<string, EditorNamedStyle> = {
 export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
   normal: {
     id: "normal",
+    builtinStyle: "normal",
     name: "Normal",
     type: "paragraph",
     qFormat: true,
@@ -135,6 +136,7 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
   },
   header: {
     id: "header",
+    builtinStyle: "header",
     name: "Header",
     type: "paragraph",
     semiHidden: true,
@@ -146,6 +148,7 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
   },
   footer: {
     id: "footer",
+    builtinStyle: "footer",
     name: "Footer",
     type: "paragraph",
     semiHidden: true,
@@ -157,6 +160,7 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
   },
   heading1: {
     id: "heading1",
+    builtinStyle: "heading1",
     name: "Heading 1",
     type: "paragraph",
     qFormat: true,
@@ -175,6 +179,7 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
   },
   heading2: {
     id: "heading2",
+    builtinStyle: "heading2",
     name: "Heading 2",
     type: "paragraph",
     qFormat: true,
@@ -193,6 +198,7 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
   },
   heading3: {
     id: "heading3",
+    builtinStyle: "heading3",
     name: "Heading 3",
     type: "paragraph",
     qFormat: true,
@@ -211,6 +217,7 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
   },
   footnoteText: {
     id: "footnoteText",
+    builtinStyle: "footnoteText",
     name: "Footnote Text",
     type: "paragraph",
     semiHidden: true,
@@ -226,6 +233,7 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
   },
   footnoteReference: {
     id: "footnoteReference",
+    builtinStyle: "footnoteReference",
     name: "Footnote Reference",
     type: "character",
     semiHidden: true,
@@ -236,6 +244,7 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
   },
   Caption: {
     id: "Caption",
+    builtinStyle: "caption",
     name: "Caption",
     type: "paragraph",
     qFormat: true,

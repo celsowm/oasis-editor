@@ -210,7 +210,7 @@ function serializeNamedStyle(style: EditorNamedStyle): string {
       : style.type === "table"
         ? "table"
         : "paragraph";
-  return `<w:style w:type="${typeAttr}" w:styleId="${escapeXml(style.id)}"${style.isDefault ? ' w:default="1"' : ""}>${parts.join("")}</w:style>`;
+  return `<w:style w:type="${typeAttr}" w:styleId="${escapeXml(style.id)}"${style.isDefault ? ' w:default="1"' : ""}${style.customStyle !== undefined ? ` w:customStyle="${style.customStyle ? "1" : "0"}"` : ""}>${parts.join("")}</w:style>`;
 }
 
 export function buildStylesXml(

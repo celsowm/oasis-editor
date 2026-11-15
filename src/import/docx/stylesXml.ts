@@ -1,4 +1,5 @@
 import { DOMParser } from "@xmldom/xmldom";
+import { identifyImportedBuiltinStyle } from "@/core/model/builtinStyles.js";
 import type {
   EditorNamedStyle,
   EditorTableConditionalFormat,
@@ -89,6 +90,9 @@ export function parseImportedStyles(
         getFirstChildByTagNameNS(styleElement, WORD_NS, "name"),
         "val",
       ) ?? id;
+    const customAttr = getAttributeValue(styleElement, "customStyle");
+    const customStyle = customAttr == null ? undefined : isWordTrue(customAttr);
+    const builtinStyle = identifyImportedBuiltinStyle({ id, name, type, customStyle });
     const basedOn =
       getAttributeValue(
         getFirstChildByTagNameNS(styleElement, WORD_NS, "basedOn"),
@@ -222,6 +226,8 @@ export function parseImportedStyles(
       id,
       name,
       type,
+      ...(builtinStyle ? { builtinStyle } : {}),
+      ...(customStyle !== undefined ? { customStyle } : {}),
       isDefault: isWordTrue(getAttributeValue(styleElement, "default")),
       basedOn,
       nextStyle,
@@ -250,6 +256,7 @@ export function parseImportedStyles(
       id: "Normal",
       name: "Normal",
       type: "paragraph",
+      builtinStyle: "normal",
       paragraphStyle: defaultParagraphStyle,
       textStyle: defaultTextStyle,
     };

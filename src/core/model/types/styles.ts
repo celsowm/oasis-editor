@@ -351,10 +351,37 @@ export interface EditorTableStyle {
   };
 }
 
+/** Stable semantic identity; independent of the stored style ID and locale. */
+export type BuiltinStyleId =
+  | "normal"
+  | "heading1"
+  | "heading2"
+  | "heading3"
+  | "heading4"
+  | "heading5"
+  | "heading6"
+  | "heading7"
+  | "heading8"
+  | "heading9"
+  | "title"
+  | "subtitle"
+  | "caption"
+  | "quote"
+  | "emphasis"
+  | "strong"
+  | "header"
+  | "footer"
+  | "footnoteText"
+  | "footnoteReference";
+
 export interface EditorNamedStyle {
   id: string;
   name: string;
   type: "paragraph" | "character" | "table";
+  /** Semantic built-in identity, persisted independently of the display name. */
+  builtinStyle?: BuiltinStyleId;
+  /** Explicit OOXML w:customStyle, when available. */
+  customStyle?: boolean;
   isDefault?: boolean;
   basedOn?: string;
   nextStyle?: string;

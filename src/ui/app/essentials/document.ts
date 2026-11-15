@@ -69,7 +69,7 @@ export function buildEssentialsDocument(
         return {
           id: style.id,
           name: style.name,
-          labelKey: document.sourcePackage ? undefined : builtinStyleLabel(style),
+          labelKey: builtinStyleLabel(style, !document.sourcePackage),
           type: style.type,
           qFormat: style.qFormat,
           uiPriority: style.uiPriority,
