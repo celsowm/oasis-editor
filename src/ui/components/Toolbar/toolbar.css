@@ -266,9 +266,16 @@
   > .oasis-editor-ribbon-group-collapsed-trigger {
   display: block;
 }
+/* Word keeps the group's name under a collapsed group: without it a row of
+ * bare icons gives no hint of what each popup holds. The name may widen the
+ * section past collapsedMinWidth; the measurement copy includes it, so the
+ * resolver budgets the real width. The trigger stays centred above it. */
 .oasis-editor-ribbon-group-collapsed > .oasis-editor-ribbon-group-label {
-  visibility: hidden;
-  width: 0;
+  max-width: none;
+}
+.oasis-editor-ribbon-group-collapsed
+  > .oasis-editor-ribbon-group-collapsed-trigger {
+  justify-self: center;
 }
 
 .oasis-editor-ribbon-group-launcher {
@@ -358,8 +365,7 @@
   white-space: nowrap;
 }
 
-.oasis-editor-ribbon-group-compact .oasis-editor-ribbon-group-label,
-.oasis-editor-ribbon-group-collapsed .oasis-editor-ribbon-group-label {
+.oasis-editor-ribbon-group-compact .oasis-editor-ribbon-group-label {
   max-width: 100%;
 }
 
