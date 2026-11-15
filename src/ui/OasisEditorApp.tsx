@@ -123,6 +123,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     showMenubar,
     showToolbar,
     showOutline,
+    showRuler,
     toggleOutline,
     toolbarView,
     toolbarLayout,
@@ -776,6 +777,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
             showMenubar,
             showToolbar,
             showOutline,
+            showRuler,
             toolbarView,
             toolbarLayout,
           }}

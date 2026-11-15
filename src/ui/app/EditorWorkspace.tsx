@@ -45,6 +45,7 @@ export interface EditorWorkspaceChrome {
   showMenubar: () => boolean;
   showToolbar: () => boolean;
   showOutline: () => boolean;
+  showRuler: () => boolean;
   toolbarView: () => ToolbarViewMode;
   toolbarLayout: () => ToolbarLayoutMode;
 }
@@ -119,6 +120,7 @@ export function EditorWorkspace(props: EditorWorkspaceProps): JSX.Element {
         showMenubar={chrome.showMenubar()}
         showToolbar={chrome.showToolbar()}
         showOutline={chrome.showOutline}
+        showRuler={chrome.showRuler()}
         toolbarView={chrome.toolbarView()}
         toolbarLayout={chrome.toolbarLayout()}
         isReadOnly={view.isReadOnly()}

@@ -42,6 +42,7 @@ export interface ShellProps {
   showMenubar: boolean;
   showToolbar: boolean;
   showOutline: () => boolean;
+  showRuler: boolean;
   toolbarView: ToolbarViewMode;
   toolbarLayout: ToolbarLayoutMode;
   isReadOnly: boolean;
@@ -144,7 +145,7 @@ export function DocumentShell(props: ShellProps): JSX.Element {
               layout={{
                 ...props.layout,
                 documentLayout: props.documentLayout,
-                showHorizontalRuler: props.showChrome,
+                showHorizontalRuler: props.showChrome && props.showRuler,
                 measuredBlockHeights: (): Record<string, number> =>
                   props.measuredBlockHeights(),
                 measuredParagraphLayouts: (): Record<

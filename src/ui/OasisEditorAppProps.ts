@@ -36,6 +36,8 @@ export interface OasisEditorAppUiProps {
   showMenubar?: boolean;
   showToolbar?: boolean;
   showOutline?: boolean;
+  /** Horizontal ruler above the page (document shell). Defaults to `showChrome`. */
+  showRuler?: boolean;
   locale?: "pt-BR" | "en";
   viewportHeight?: number | string;
   class?: string;

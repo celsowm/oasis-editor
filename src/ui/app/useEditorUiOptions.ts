@@ -25,6 +25,7 @@ export interface EditorUiOptions {
   showMenubar: () => boolean;
   showToolbar: () => boolean;
   showOutline: () => boolean;
+  showRuler: () => boolean;
   /** Flip the outline panel visibility through the host UI overrides. */
   toggleOutline: () => void;
   toolbarView: () => ToolbarViewMode;
@@ -58,6 +59,7 @@ export function createEditorUiOptions(
     showTitleBar: (): boolean => ui().showTitleBar ?? true,
     showMenubar: (): boolean => ui().showMenubar ?? true,
     showToolbar: (): boolean => ui().showToolbar ?? true,
+    showRuler: (): boolean => ui().showRuler ?? ui().showChrome ?? true,
     showOutline: (): boolean => ui().showOutline ?? true,
     toggleOutline: (): void => {
       updateUiState({ showOutline: !(ui().showOutline ?? true) });
