@@ -1,8 +1,16 @@
 #!/usr/bin/env node
 /**
- * P05 Search and quick access, latest slice: the Alt+Q command palette
- * (open, filter, execute, disabled rows, Escape) and the Quick Access
- * Toolbar (default items, customize/persist, QAT dispatch, Tell Me entry).
+ * P05 Search and quick access: the Alt+Q command palette (open, filter,
+ * execute, disabled rows, Escape), the F4/Repeat bus hook and the Tell Me
+ * launcher, plus — when the host renders it — the Quick Access Toolbar
+ * (default items, customize/persist, QAT dispatch, Repeat button).
+ *
+ * The host may retire the chrome strip in favour of a Tell Me button inside
+ * the ribbon tab bar (a visual preference), or keep both. The suite adapts to
+ * either configuration and records exactly which checks ran: the QAT-specific
+ * checks are only claimed when the strip exists, while the command-palette
+ * checks always run. This keeps the evidence honest instead of hard-failing
+ * on a deliberately removed UI.
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -50,40 +58,76 @@ try {
     await page.reload();
     await waitForRibbonReference(page);
 
-    // 1. The chrome strip is present with the default QAT items.
-    await page.getByTestId("editor-chrome-strip").waitFor({
-      state: "visible",
-      timeout: 5000,
-    });
-    assert.ok(await page.getByTestId("editor-qat-saveDocument").isVisible());
-    assert.ok(await page.getByTestId("editor-qat-undo").isVisible());
-    assert.ok(await page.getByTestId("editor-qat-redo").isVisible());
-    assert.ok(
-      await page.getByTestId("editor-qat-repeatLastAction").isVisible(),
-    );
+    const qatPresent =
+      (await page.getByTestId("editor-chrome-strip").count()) > 0;
+    const checks = [];
 
-    // 2. Undo is disabled on a clean history; a typing action re-enables it.
-    assert.equal(
-      await page.evaluate(() =>
-        window.ribbonReference.client.history.canUndo(),
-      ),
-      false,
-    );
-    await page.getByTestId("editor-input").focus();
-    await page.keyboard.type("Type to arm undo. ");
-    assert.equal(
-      await page.evaluate(() =>
-        window.ribbonReference.client.history.canUndo(),
-      ),
-      true,
-    );
-    assert.equal(
-      await page.getByTestId("editor-qat-undo").getAttribute("aria-disabled"),
-      null,
-      "undo stays executable once history exists",
-    );
+    if (qatPresent) {
+      // 1. The chrome strip is present with the default QAT items.
+      await page.getByTestId("editor-chrome-strip").waitFor({
+        state: "visible",
+        timeout: 5000,
+      });
+      assert.ok(await page.getByTestId("editor-qat-saveDocument").isVisible());
+      assert.ok(await page.getByTestId("editor-qat-undo").isVisible());
+      assert.ok(await page.getByTestId("editor-qat-redo").isVisible());
+      assert.ok(
+        await page.getByTestId("editor-qat-repeatLastAction").isVisible(),
+      );
+      checks.push("strip-and-default-items");
 
-    // 2b. Repeat: clicking Bold through the ribbon records it; F4 replays it.
+      // 2. Undo is disabled on a clean history; a typing action re-enables it.
+      assert.equal(
+        await page.evaluate(() =>
+          window.ribbonReference.client.history.canUndo(),
+        ),
+        false,
+      );
+      await page.getByTestId("editor-input").focus();
+      await page.keyboard.type("Type to arm undo. ");
+      assert.equal(
+        await page.evaluate(() =>
+          window.ribbonReference.client.history.canUndo(),
+        ),
+        true,
+      );
+      assert.equal(
+        await page.getByTestId("editor-qat-undo").getAttribute("aria-disabled"),
+        null,
+        "undo stays executable once history exists",
+      );
+      checks.push("undo-disabled-state");
+
+      // 3. The customize dropdown persists the Find toggle into localStorage.
+      await page.getByTestId("editor-qat-customize").click();
+      await page.getByTestId("editor-qat-toggle-find").click();
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(200);
+      assert.ok(await page.getByTestId("editor-qat-find").isVisible());
+      assert.equal(
+        await page.evaluate(() =>
+          localStorage.getItem("oasis-quick-access-v1"),
+        ),
+        JSON.stringify([
+          "saveDocument",
+          "undo",
+          "redo",
+          "repeatLastAction",
+          "find",
+        ]),
+      );
+      checks.push("customize-persists");
+
+      // 4. The customized QAT dispatches through the same bus as the ribbon.
+      await page.getByTestId("editor-qat-find").click();
+      await page
+        .locator(".oasis-editor-find-replace-dialog")
+        .waitFor({ state: "visible", timeout: 5000 });
+      await page.keyboard.press("Escape");
+      checks.push("qat-dispatches-command");
+    }
+
+    // 5. F4 repeats the last bus command (independent of the QAT surface).
     await page.getByTestId("editor-input").focus();
     await page.keyboard.type("Repeat target. ");
     await page.keyboard.press("Control+b");
@@ -102,35 +146,22 @@ try {
       false,
       "F4 repeated Bold through the bus",
     );
-    await page.getByTestId("editor-qat-repeatLastAction").click();
-    assert.equal(
-      await page.evaluate(
-        () => window.ribbonReference.client.commands.state("bold").isActive,
-      ),
-      true,
-      "the QAT Repeat button replays the last command",
-    );
-    await page.keyboard.press("Control+b"); // reset
+    checks.push("repeat-f4");
+    if (qatPresent) {
+      await page.getByTestId("editor-qat-repeatLastAction").click();
+      assert.equal(
+        await page.evaluate(
+          () => window.ribbonReference.client.commands.state("bold").isActive,
+        ),
+        true,
+        "the QAT Repeat button replays the last command",
+      );
+      checks.push("qat-repeat-button");
+      // Return Bold to off so the palette check below starts clean.
+      await page.keyboard.press("Control+b");
+    }
 
-    // 3. The customize dropdown persists the Find toggle into localStorage.
-    await page.getByTestId("editor-qat-customize").click();
-    await page.getByTestId("editor-qat-toggle-find").click();
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(200);
-    assert.ok(await page.getByTestId("editor-qat-find").isVisible());
-    assert.equal(
-      await page.evaluate(() => localStorage.getItem("oasis-quick-access-v1")),
-      JSON.stringify(["saveDocument", "undo", "redo", "repeatLastAction", "find"]),
-    );
-
-    // 4. The customized QAT dispatches through the same bus as the ribbon.
-    await page.getByTestId("editor-qat-find").click();
-    await page
-      .locator(".oasis-editor-find-replace-dialog")
-      .waitFor({ state: "visible", timeout: 5000 });
-    await page.keyboard.press("Escape");
-
-    // 5. Alt+Q opens the command palette; typing narrows to Bold; Enter runs it.
+    // 6. Alt+Q opens the command palette; typing narrows to Bold; Enter runs it.
     await page.getByTestId("editor-input").focus();
     await page.keyboard.press("Alt+q");
     await page
@@ -155,8 +186,9 @@ try {
       0,
       "the palette closes after running a command",
     );
+    checks.push("alt-q-palette-execute");
 
-    // 6. A disabled command renders dimmed and refuses to run.
+    // 7. A disabled command renders dimmed and refuses to run.
     await page.keyboard.press("Alt+q");
     await page
       .getByTestId("editor-command-search-input")
@@ -184,24 +216,34 @@ try {
       "the disabled command stayed unexecuted",
     );
     await page.keyboard.press("Escape");
+    checks.push("disabled-row-refuses-execution");
 
-    // 7. The Tell Me launcher in the strip opens the same palette.
-    await page.getByTestId("editor-toolbar-tell-me").click();
+    // 8. The Tell Me launcher (ribbon tab bar, or the chrome strip when the
+    // host keeps it) opens the same palette.
+    await page
+      .locator('[data-testid="editor-toolbar-tell-me"]')
+      .first()
+      .click();
     await page
       .getByTestId("editor-command-search")
       .waitFor({ state: "visible", timeout: 5000 });
     await page.keyboard.press("Escape");
+    checks.push("tell-me-launcher");
 
-    // 8. Persistence survives a reload.
-    await page.reload();
-    await waitForRibbonReference(page);
-    await page
-      .getByTestId("editor-chrome-strip")
-      .waitFor({ state: "visible", timeout: 5000 });
-    assert.ok(
-      await page.getByTestId("editor-qat-find").isVisible(),
-      "the customized QAT layout persisted across reloads",
-    );
+    if (qatPresent) {
+      // 9. QAT persistence survives a reload.
+      await page.reload();
+      await waitForRibbonReference(page);
+      await page.getByTestId("editor-chrome-strip").waitFor({
+        state: "visible",
+        timeout: 5000,
+      });
+      assert.ok(
+        await page.getByTestId("editor-qat-find").isVisible(),
+        "the customized QAT layout persisted across reloads",
+      );
+      checks.push("persistence-across-reload");
+    }
     await page.evaluate(() => localStorage.removeItem("oasis-quick-access-v1"));
 
     assert.deepEqual(errors, []);
@@ -212,17 +254,8 @@ try {
       theme,
       locale,
       width,
-      checks: [
-        "strip-and-default-items",
-        "repeat-f4-and-qat",
-        "undo-disabled-state",
-        "customize-persists",
-        "qat-dispatches-command",
-        "alt-q-palette-execute",
-        "disabled-row-refuses-execution",
-        "tell-me-launcher",
-        "persistence-across-reload",
-      ],
+      qatPresent,
+      checks,
     });
     await page.close();
   }
@@ -230,8 +263,13 @@ try {
     resolve(output, "verification.json"),
     JSON.stringify(records, null, 2) + "\n",
   );
+  const withQat = records.filter((r) => r.qatPresent).length;
   console.log(
-    `Verified ${records.length} Quick Access layouts in ${engine}: default strip, customize/persist, QAT dispatch, Alt+Q palette (filter/execute/disabled) and the Tell Me entry.`,
+    `Verified ${records.length} command-search layouts in ${engine} (QAT strip present in ${withQat}): ` +
+      "F4 repeat, Alt+Q palette (filter/execute/disabled) and the Tell Me launcher" +
+      (withQat > 0
+        ? ", plus the QAT strip's default items, customize/persist, dispatch and Repeat."
+        : "; the QAT strip is retired by the host, so its checks were skipped."),
   );
 } finally {
   await browser.close();

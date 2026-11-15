@@ -72,6 +72,43 @@ try {
         expand,
         `${theme}/${locale}: Escape restores the gallery trigger`,
       ).toBeFocused();
+      // Regression: the yellow highlight pencil's triangular tip must span the
+      // same width as its trunk and eraser band (each short edge is (4.8, 4.8)).
+      const pencilPaths = await page.evaluate(() => {
+        const btn = document.querySelector(
+          '[data-testid="editor-toolbar-highlight"]',
+        );
+        const svg = Array.from(btn?.querySelectorAll("svg") ?? []).find((s) =>
+          s.querySelector('path[fill="#facc15"]'),
+        );
+        return svg
+          ? Array.from(svg.querySelectorAll("path")).map(
+              (el) => el.getAttribute("d") ?? "",
+            )
+          : [];
+      });
+      assert.equal(
+        pencilPaths.length,
+        3,
+        "highlight pencil has trunk, eraser and tip paths",
+      );
+      const [trunk, eraser, tip] = pencilPaths.map((d) =>
+        (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number),
+      );
+      const widthSquared = (a, b, c, d) => (c - a) ** 2 + (d - b) ** 2;
+      const trunkWidth = widthSquared(trunk[0], trunk[1], trunk[2], trunk[3]);
+      const eraserWidth = widthSquared(
+        eraser[0],
+        eraser[1],
+        eraser[2],
+        eraser[3],
+      );
+      const tipWidth = widthSquared(tip[0], tip[1], tip[4], tip[5]);
+      assert.ok(
+        Math.abs(trunkWidth - tipWidth) < 0.01 &&
+          Math.abs(eraserWidth - tipWidth) < 0.01,
+        `${theme}/${locale}: pencil tip must match trunk/eraser width`,
+      );
       await page.getByTestId("editor-ribbon-tab-insert").click();
       assert.equal(
         await page.locator('[data-ribbon-group="accessibility"]').count(),
@@ -181,6 +218,41 @@ try {
         }),
         "Keyboard-selected tab must be focused and visible",
       );
+      // Regression: the compact style select must show the active style even
+      // when that style is filtered out of the quick-style option list (it used
+      // to render a blank / "just white" control).
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.evaluate(() =>
+        window.ribbonReference.client.ui.update({
+          toolbar: { view: "compact" },
+        }),
+      );
+      await page.waitForTimeout(200);
+      await page.evaluate(() =>
+        window.ribbonReference.client.commands.execute("setStyleId", "header"),
+      );
+      await page.waitForTimeout(200);
+      const compactStyle = await page.evaluate(() => {
+        const select = document.querySelector(
+          ".oasis-editor-style-gallery-compact",
+        );
+        if (!select) return null;
+        return {
+          value: select.value,
+          text: select.options[select.selectedIndex]?.textContent?.trim() ?? "",
+        };
+      });
+      assert.ok(
+        compactStyle &&
+          compactStyle.value === "header" &&
+          compactStyle.text.length > 0,
+        `${theme}/${locale}: compact style select must show the active style`,
+      );
+      await page.evaluate(() =>
+        window.ribbonReference.client.ui.update({
+          toolbar: { view: "ribbon" },
+        }),
+      );
       assert.deepEqual(errors, []);
       evidence.push({
         browser: engine,
@@ -191,6 +263,8 @@ try {
         ribbonBackground,
         keyboardTabs: "pass",
         emptyGroups: "pass",
+        pencilTipWidth: "pass",
+        compactStyleVisible: "pass",
         errors,
       });
       await page.close();
@@ -200,7 +274,7 @@ try {
     JSON.stringify(evidence, null, 2) + "\n",
   );
   console.log(
-    `Verified ${evidence.length} theme/language combinations in ${engine}: composition, gallery, keyboard tabs.`,
+    `Verified ${evidence.length} theme/language combinations in ${engine}: composition, gallery, keyboard tabs, highlight-pencil tip width and the compact style select.`,
   );
 } finally {
   await browser.close();
