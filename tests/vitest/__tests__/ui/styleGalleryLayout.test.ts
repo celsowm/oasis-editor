@@ -9,8 +9,8 @@ const ids = (styles: ToolbarDocumentStyle[]) => styles.map((style) => style.id);
 
 describe("responsive style gallery layout", () => {
   it("keeps a flexible card around the 106px boundary", () => {
-    expect([0, 79.9, 80, 105, 105.9, 106, 211.9, 212].map(styleGallerySlots))
-      .toEqual([0, 0, 1, 1, 1, 1, 1, 2]);
+    expect([0, 60, 79.9, 80, 105, 105.9, 106, 211.9, 212].map(styleGallerySlots))
+      .toEqual([1, 1, 1, 1, 1, 1, 1, 1, 2]);
   });
   it("follows the active style while preserving canonical order", () => {
     expect(ids(visibleGalleryStyles(quick, quick, "heading3", 1))).toEqual(["heading3"]);

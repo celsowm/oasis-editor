@@ -2644,8 +2644,16 @@
 
 /* A single preview may shrink to the width allocated by the ribbon. */
 .oasis-editor-style-gallery-strip > .oasis-editor-style-gallery-card:only-child {
-  flex: 0 1 var(--oasis-style-card-width, 106px);
+  flex: 1 1 var(--oasis-style-card-width, 106px);
   max-width: 100%;
+  container-type: inline-size;
+}
+
+/* Keep the typographic sample readable inside a narrow single-card strip.
+ * Container units scale only the preview, never the document formatting. */
+.oasis-editor-style-gallery-strip > .oasis-editor-style-gallery-card:only-child .oasis-editor-style-gallery-sample {
+  font-size: min(var(--oasis-style-preview-font-size, 14px), 36cqw);
+  overflow: hidden;
 }
 
 .oasis-editor-style-gallery-placeholder {
@@ -2683,6 +2691,7 @@
   display: block;
   height: 29px;
   line-height: 29px;
+  font-size: var(--oasis-style-preview-font-size, 14px);
   color: #222;
   background: #fff;
   white-space: nowrap;

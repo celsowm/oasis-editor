@@ -4,12 +4,12 @@ import type { ToolbarDocumentStyle } from "./schema/items.js";
 export const STYLE_GALLERY_CARD_WIDTH = 106;
 export const STYLE_GALLERY_EXPAND_WIDTH = 24;
 export const STYLE_GALLERY_BORDER_WIDTH = 2;
-// Provisional minimum for a flexible preview; verify in real browsers.
-export const STYLE_GALLERY_MIN_CARD_WIDTH = 80;
-
+/** A mounted strip always keeps a real preview, even while temporarily hidden.
+ * The ribbon owns collapse; a narrow strip must not degrade into a name-only
+ * placeholder when the document has available styles.
+ */
 export function styleGallerySlots(width: number): number {
-  if (!Number.isFinite(width) || width < STYLE_GALLERY_MIN_CARD_WIDTH) return 0;
-  return Math.max(1, Math.floor(width / STYLE_GALLERY_CARD_WIDTH));
+  return Math.max(1, Math.floor((Number.isFinite(width) ? width : 0) / STYLE_GALLERY_CARD_WIDTH));
 }
 
 /** Follow the active style without changing the canonical quick-style order. */

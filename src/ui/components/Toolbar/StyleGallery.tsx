@@ -57,7 +57,7 @@ function previewStyle(style: ToolbarDocumentStyle): JSX.CSSProperties {
   const fontSize = Math.min(28, Math.max(12, style.fontSize ?? 14));
   return {
     "font-family": style.fontFamily,
-    "font-size": `${fontSize}px`,
+    "--oasis-style-preview-font-size": `${fontSize}px`,
     color: style.color,
     "font-weight": style.bold ? "700" : "400",
     "font-style": style.italic ? "italic" : "normal",

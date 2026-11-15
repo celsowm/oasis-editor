@@ -45,7 +45,8 @@ async function verifyStyleGalleryPreview(page) {
         if (!strip) return false;
         const w = strip.getBoundingClientRect().width;
         const cards = strip.querySelectorAll(".oasis-editor-style-gallery-card");
-        return w >= 80 ? cards.length === 1 : Boolean(strip.querySelector(".oasis-editor-style-gallery-placeholder"));
+        return cards.length === Math.max(1, Math.floor(w / 106)) &&
+          Boolean(cards[0]?.querySelector(".oasis-editor-style-gallery-sample"));
       });
       const geometry = await gallery.evaluate((el) => {
         const strip = el.querySelector(".oasis-editor-style-gallery-strip");

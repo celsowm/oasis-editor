@@ -251,10 +251,15 @@ describe("StyleGallery", () => {
     stripWidth = 105;
     resizeCallbacks.forEach((callback) => callback());
     expect(inlineCards()).toBe(1);
-    stripWidth = 79;
-    resizeCallbacks.forEach((callback) => callback());
-    expect(inlineCards()).toBe(0);
-    expect(host.querySelector(".oasis-editor-style-gallery-placeholder")?.textContent).toBe("Normal");
+    for (const width of [79, 60, 0]) {
+      stripWidth = width;
+      resizeCallbacks.forEach((callback) => callback());
+      expect(inlineCards()).toBe(1);
+      const preview = host.querySelector(".oasis-editor-style-gallery-strip .oasis-editor-style-gallery-card");
+      expect(preview?.querySelector(".oasis-editor-style-gallery-sample")?.textContent).toBe("AaBb");
+      expect(preview?.querySelector(".oasis-editor-style-gallery-name")?.textContent).toBe("Normal");
+      expect(preview?.getAttribute("aria-selected")).toBe("true");
+    }
     stripWidth = 211;
     resizeCallbacks.forEach((callback) => callback());
     expect(inlineCards()).toBe(1);
