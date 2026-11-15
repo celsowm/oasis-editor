@@ -12,7 +12,7 @@ export function SectionGroup(props: { api: ToolbarActionApi }): JSX.Element {
 
   return (
     <Menu
-      icon="layout-template"
+      icon="pageOrientation"
       label={t("section.orientation")}
       testId="editor-toolbar-section-dropdown"
       tooltip={t("section.pageSetup")}

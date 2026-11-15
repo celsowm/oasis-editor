@@ -24,15 +24,27 @@
   overflow: hidden;
 }
 
-.oasis-editor-ribbon-tabs {
+.oasis-editor-ribbon-tabbar {
   display: flex;
-  align-items: flex-end;
-  gap: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   height: 34px;
   padding: 0 8px;
   box-sizing: border-box;
   background: var(--oasis-ribbon-tabs-bg, #f2f2f2);
   border-bottom: 1px solid var(--oasis-ribbon-border, #d0d0d0);
+}
+
+.oasis-editor-ribbon-tabs {
+  display: flex;
+  align-items: flex-end;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 0;
+  height: 34px;
+  padding: 0;
+  box-sizing: border-box;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -40,6 +52,49 @@
 
 .oasis-editor-ribbon-tabs::-webkit-scrollbar {
   display: none;
+}
+
+.oasis-editor-ribbon-tell-me {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--oasis-ribbon-border, #d4d4d8);
+  border-radius: 999px;
+  background: var(--oasis-ribbon-panel-bg, #ffffff);
+  color: var(--oasis-text-muted, #52525b);
+  font: inherit;
+  font-size: 11.5px;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.oasis-editor-ribbon-tell-me:hover {
+  border-color: var(--oasis-accent, #2563eb);
+  color: var(--oasis-ribbon-active-text, #111111);
+  background: var(--oasis-ribbon-panel-bg, #ffffff);
+}
+
+.oasis-editor-ribbon-tell-me:focus-visible {
+  outline: 2px solid var(--oasis-accent, #2563eb);
+  outline-offset: 1px;
+}
+
+@media (max-width: 720px) {
+  .oasis-editor-ribbon-tell-me {
+    padding: 0 7px;
+  }
+
+  .oasis-editor-ribbon-tell-me-label {
+    display: none;
+  }
 }
 
 .oasis-editor-ribbon-tab {
@@ -70,6 +125,8 @@
   background: var(--oasis-ribbon-panel-bg, #ffffff);
   border-color: var(--oasis-ribbon-border, #cfcfcf);
   color: var(--oasis-ribbon-active-text, #111111);
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 0 var(--oasis-accent, #2563eb);
 }
 
 /*
@@ -418,11 +475,11 @@
   justify-content: center;
   gap: 2px;
   min-width: 64px;
-  width: 64px;
-  max-width: 72px;
+  width: auto;
+  max-width: 80px;
   min-height: 63px;
   height: 63px;
-  padding: 5px 4px 3px;
+  padding: 5px 5px 3px;
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 0;
@@ -440,7 +497,7 @@
   overflow: hidden;
   text-align: center;
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-height: 11px;
@@ -952,6 +1009,46 @@
   padding: 0;
 }
 
+.oasis-editor-metric-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.oasis-editor-metric-group-inline {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  grid-template-rows: repeat(2, 28px);
+  gap: 3px 10px;
+  align-items: center;
+}
+
+.oasis-editor-ui-field.oasis-editor-tool-metric.oasis-editor-metric-inline-field {
+  grid-template-columns: minmax(44px, auto) 58px auto;
+  gap: 4px;
+}
+
+.oasis-editor-metric-inline-field .oasis-editor-tool-number {
+  height: 24px;
+  min-height: 24px;
+  padding: 0 4px;
+  font-size: 11px;
+}
+
+.oasis-editor-toolbar-view-compact .oasis-editor-metric-group-inline {
+  display: none;
+}
+
+.oasis-editor-ribbon-normal-rows:has(.oasis-editor-metric-group) {
+  grid-template-rows: 63px;
+}
+
+.oasis-editor-ribbon-row:has(.oasis-editor-metric-group) {
+  height: 63px;
+  min-height: 63px;
+  max-height: 63px;
+}
+
 .oasis-editor-ui-field-suffix {
   align-self: center;
   color: var(--oasis-text-muted);
@@ -1301,8 +1398,9 @@
   left: 2px;
   right: 2px;
   bottom: 0;
-  height: 3px;
-  border: 1px solid rgba(0, 0, 0, 0.22);
+  height: 3.5px;
+  border-radius: 1px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
 }
 
@@ -2586,7 +2684,8 @@
 }
 
 .oasis-editor-style-gallery-card-active {
-  border-color: var(--oasis-ribbon-active-text, #737373);
+  border-color: var(--oasis-accent, #2563eb);
+  background: var(--oasis-accent-soft, rgba(37, 99, 235, 0.06));
 }
 
 .oasis-editor-style-gallery-expand {

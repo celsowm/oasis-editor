@@ -13,7 +13,7 @@ export function ListOptionsControl(props: {
   const api = props.api;
   return (
     <Menu
-      icon="list-filter"
+      icon="multilevelList"
       tooltip={t("toolbar.listFormat")}
       testId="editor-toolbar-list-options-dropdown"
       hideChevron

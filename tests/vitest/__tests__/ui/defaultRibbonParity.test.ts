@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { OASIS_BUILTIN_COMMANDS } from "@/core/commands/builtinCommands.js";
 import type { TranslateFn } from "@/i18n/index.js";
 import { createDefaultToolbarPreset } from "@/ui/components/Toolbar/presets/defaultToolbar.js";
-import { buildRibbonTabDefinitions } from "@/ui/components/Toolbar/ribbon/ribbonModel.js";
+import { fontFamilyOptions } from "@/ui/components/Toolbar/presets/defaultToolbar/optionBuilders.js";
+import {
+  buildRibbonGroups,
+  buildRibbonTabDefinitions,
+  resolveResponsiveRibbonGroups,
+} from "@/ui/components/Toolbar/ribbon/ribbonModel.js";
+import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 
 const t: TranslateFn = (key) => key;
 const items = createDefaultToolbarPreset(t);
@@ -155,5 +161,58 @@ describe("WordCraft Ribbon parity: first Oasis exposure slice", () => {
     expect(items.find((item) => item.id === "editor-toolbar-redo")?.group).toBe(
       "history",
     );
+  });
+
+  it("strips CSS fallback stacks from font-family display labels while preserving values", () => {
+    const mockApi = {
+      commands: {
+        state: () => ({ isEnabled: true, isActive: false, value: undefined }),
+      },
+    } as unknown as ToolbarActionApi;
+    const options = fontFamilyOptions(mockApi);
+    const calibri = options.find((opt) => opt.value === "Calibri, sans-serif");
+    const openSans = options.find(
+      (opt) => opt.value === "Open Sans, sans-serif",
+    );
+    expect(calibri?.label).toBe("Calibri");
+    expect(openSans?.label).toBe("Open Sans");
+  });
+
+  it("renders Design page-background and formatting actions as large buttons with custom icons", () => {
+    const expected = [
+      ["editor-toolbar-design-themes", "themes"],
+      ["editor-toolbar-design-default", "designDefault"],
+      ["editor-toolbar-design-watermark", "watermark"],
+      ["editor-toolbar-design-page-color", "pageColor"],
+      ["editor-toolbar-design-page-borders", "pageBorders"],
+    ] as const;
+    for (const [id, iconName] of expected) {
+      const item = items.find((candidate) => candidate.id === id);
+      expect(item).toMatchObject({
+        tab: "design",
+        row: 1,
+        ribbonSize: "large",
+        iconName,
+      });
+    }
+  });
+
+  it("places Symbols as the rightmost group on the Insert tab", () => {
+    const groups = buildRibbonGroups(items, "insert", t);
+    expect(groups.at(-1)?.id).toBe("symbols");
+  });
+
+  it("compacts Comments before Changes and Tracking on the Review tab", () => {
+    const groups = buildRibbonGroups(items, "review", t);
+    const resolved = resolveResponsiveRibbonGroups(groups, 650, {
+      tracking: { full: 220, compact: 150, collapsed: 68 },
+      changes: { full: 220, compact: 150, collapsed: 68 },
+      comments: { full: 420, compact: 180, collapsed: 68 },
+    });
+    expect(resolved.map((g) => [g.id, g.resizeState])).toEqual([
+      ["tracking", "full"],
+      ["changes", "full"],
+      ["comments", "compact"],
+    ]);
   });
 });

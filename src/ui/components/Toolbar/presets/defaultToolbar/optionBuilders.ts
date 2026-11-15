@@ -19,6 +19,11 @@ export const tableStyleOptions = (api: ToolbarActionApi): SelectOption[] =>
     .filter((s) => s.type === "table")
     .map((s) => ({ value: s.id, label: s.name }));
 
+const formatFontFamilyLabel = (value: string): string => {
+  const primary = value.split(",")[0]?.trim() ?? value;
+  return primary.replace(/^["']|["']$/g, "") || value;
+};
+
 export const fontFamilyOptions = (api: ToolbarActionApi): SelectOption[] => {
   const values = new Set<string>([
     "Arial",
@@ -39,7 +44,7 @@ export const fontFamilyOptions = (api: ToolbarActionApi): SelectOption[] => {
   if (current) values.add(current);
   return Array.from(values)
     .sort((a, b) => a.localeCompare(b))
-    .map((value) => ({ value, label: value }));
+    .map((value) => ({ value, label: formatFontFamilyLabel(value) }));
 };
 
 export const fontSizeOptions = (api: ToolbarActionApi): SelectOption[] => {

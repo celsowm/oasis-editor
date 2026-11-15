@@ -84,7 +84,7 @@ export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
 
   return (
     <Menu
-      icon="square-dashed"
+      icon="pageMargins"
       label={t("section.margins")}
       testId="editor-toolbar-margins-dropdown"
       tooltip={t("section.margins")}

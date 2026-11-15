@@ -12,25 +12,25 @@ export const ALIGN_BUTTONS: Array<{
 }> = [
   {
     command: "alignLeft",
-    icon: "align-left",
+    icon: "alignLeft",
     testId: "editor-toolbar-align-left",
     tooltipKey: "toolbar.alignLeft",
   },
   {
     command: "alignCenter",
-    icon: "align-center",
+    icon: "alignCenter",
     testId: "editor-toolbar-align-center",
     tooltipKey: "toolbar.alignCenter",
   },
   {
     command: "alignRight",
-    icon: "align-right",
+    icon: "alignRight",
     testId: "editor-toolbar-align-right",
     tooltipKey: "toolbar.alignRight",
   },
   {
     command: "alignJustify",
-    icon: "align-justify",
+    icon: "alignJustify",
     testId: "editor-toolbar-align-justify",
     tooltipKey: "toolbar.justify",
   },

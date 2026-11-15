@@ -282,7 +282,7 @@ The three dimensions below are independent of overall status. A legacy Ribbon-bo
 | `shape.textDirection` | `shape.textDirection` | `setTextBoxTextDirection` | — | core-only | core-only | partial | unverified |
 | `shape.textAlignment` | `shape.alignText` | `setTextBoxVerticalAlign` | — | core-only | core-only | partial | unverified |
 | `file.autoSave` | `file.autosave` | — | — | missing | missing | missing | partial |
-| `titleBar.commandSearch` | `tools.search` | `openCommandSearch` | Chrome strip > Tell Me; Tools > Command Search; Alt+Q | menu-only | menu-only | partial | not-applicable |
+| `titleBar.commandSearch` | `tools.search` | `openCommandSearch` | Ribbon tab bar > Tell Me; Tools > Command Search; Alt+Q | menu-only | menu-only | partial | not-applicable |
 | `home.clipboardPane` | `edit.clipboardPane` | — | — | missing | missing | missing | unverified |
 | `home.phoneticGuide` | `format.phonetic` | — | — | missing | missing | missing | unverified |
 | `home.encloseCharacters` | `format.enclose` | — | — | missing | missing | missing | unverified |

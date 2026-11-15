@@ -136,7 +136,7 @@ export function RibbonGroup(props: RibbonGroupProps): JSX.Element {
               stroke-linecap="round"
               stroke-linejoin="round"
             >
-              <path d="M18 6 6 18M6 6l12 12" />
+              <path d="M14 4H5a1 1 0 0 0-1 1v9M11 11l8 8M19 13v6h-6" />
             </svg>
           </span>
         </button>

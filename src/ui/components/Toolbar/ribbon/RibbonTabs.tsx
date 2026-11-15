@@ -73,46 +73,76 @@ export function RibbonTabs(props: RibbonTabsProps): JSX.Element {
   };
 
   return (
-    <div ref={tablistRef} class="oasis-editor-ribbon-tabs" role="tablist">
-      <For each={tabs()}>
-        {(tab): JSX.Element => (
-          <button
-            type="button"
-            class="oasis-editor-ribbon-tab"
-            classList={{
-              "oasis-editor-ribbon-tab-active": props.activeTab() === tab.id,
-              "oasis-editor-ribbon-tab-contextual": tab.contextual === true,
-            }}
-            role="tab"
-            aria-selected={props.activeTab() === tab.id}
-            aria-controls={`oasis-editor-ribbon-panel-${tab.id}`}
-            id={`oasis-editor-ribbon-tab-${tab.id}`}
-            data-testid={`editor-ribbon-tab-${tab.id}`}
-            tabIndex={props.activeTab() === tab.id ? 0 : -1}
-            onClick={() => props.setActiveTab(tab.id)}
-            onKeyDown={(event): void => {
-              if (event.key === "ArrowRight") {
-                event.preventDefault();
-                moveTab(tab.id, 1);
-              } else if (event.key === "ArrowLeft") {
-                event.preventDefault();
-                moveTab(tab.id, -1);
-              } else if (event.key === "Home") {
-                event.preventDefault();
-                props.setActiveTab(tabs()[0]!.id);
-                revealTab(tabs()[0]!.id, true);
-              } else if (event.key === "End") {
-                event.preventDefault();
-                const list = tabs();
-                props.setActiveTab(list[list.length - 1]!.id);
-                revealTab(list[list.length - 1]!.id, true);
-              }
-            }}
-          >
-            {tab.label}
-          </button>
-        )}
-      </For>
+    <div class="oasis-editor-ribbon-tabbar">
+      <div ref={tablistRef} class="oasis-editor-ribbon-tabs" role="tablist">
+        <For each={tabs()}>
+          {(tab): JSX.Element => (
+            <button
+              type="button"
+              class="oasis-editor-ribbon-tab"
+              classList={{
+                "oasis-editor-ribbon-tab-active": props.activeTab() === tab.id,
+                "oasis-editor-ribbon-tab-contextual": tab.contextual === true,
+              }}
+              role="tab"
+              aria-selected={props.activeTab() === tab.id}
+              aria-controls={`oasis-editor-ribbon-panel-${tab.id}`}
+              id={`oasis-editor-ribbon-tab-${tab.id}`}
+              data-testid={`editor-ribbon-tab-${tab.id}`}
+              tabIndex={props.activeTab() === tab.id ? 0 : -1}
+              onClick={() => props.setActiveTab(tab.id)}
+              onKeyDown={(event): void => {
+                if (event.key === "ArrowRight") {
+                  event.preventDefault();
+                  moveTab(tab.id, 1);
+                } else if (event.key === "ArrowLeft") {
+                  event.preventDefault();
+                  moveTab(tab.id, -1);
+                } else if (event.key === "Home") {
+                  event.preventDefault();
+                  props.setActiveTab(tabs()[0]!.id);
+                  revealTab(tabs()[0]!.id, true);
+                } else if (event.key === "End") {
+                  event.preventDefault();
+                  const list = tabs();
+                  props.setActiveTab(list[list.length - 1]!.id);
+                  revealTab(list[list.length - 1]!.id, true);
+                }
+              }}
+            >
+              {tab.label}
+            </button>
+          )}
+        </For>
+      </div>
+      <button
+        type="button"
+        class="oasis-editor-ribbon-tell-me"
+        data-testid="editor-toolbar-tell-me"
+        title={`${props.api.t("toolbar.tellMe")} (Alt+Q)`}
+        aria-label={props.api.t("toolbar.tellMe")}
+        onClick={(): void => {
+          props.api.commands.execute("openCommandSearch");
+        }}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="13"
+          height="13"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
+        <span class="oasis-editor-ribbon-tell-me-label">
+          {props.api.t("toolbar.tellMe")}
+        </span>
+      </button>
     </div>
   );
 }

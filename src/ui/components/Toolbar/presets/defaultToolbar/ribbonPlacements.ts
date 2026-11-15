@@ -19,7 +19,7 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-design-default": {
     tab: "design",
     group: "documentFormatting",
-    row: 2,
+    row: 1,
   },
   "editor-toolbar-design-watermark": {
     tab: "design",
@@ -34,7 +34,7 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-design-page-borders": {
     tab: "design",
     group: "pageBackground",
-    row: 2,
+    row: 1,
   },
   "editor-toolbar-paste": { tab: "home", group: "clipboard", row: 1 },
   "editor-toolbar-copy": { tab: "home", group: "clipboard", row: 2 },

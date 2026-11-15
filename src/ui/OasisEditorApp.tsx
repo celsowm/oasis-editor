@@ -15,9 +15,6 @@ import "./components/FindReplace/findReplace.css";
 import "./components/CommandSearch/commandSearch.css";
 import { CommandSearchDialog } from "./components/CommandSearch/CommandSearchDialog.js";
 import { buildCommandSearchEntries } from "./app/commandSearchEntries.js";
-import { ChromeStrip } from "./components/QuickAccess/ChromeStrip.js";
-import { createQuickAccess } from "./app/createQuickAccess.js";
-import { QUICK_ACCESS_CATALOG } from "./app/quickAccessCatalog.js";
 import type { CommandSearchEntry } from "@/core/commands/commandSearch.js";
 import { createTranslator, type Locale } from "@/i18n/index.js";
 import { I18nProvider } from "@/i18n/I18nContext.js";
@@ -299,26 +296,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   } = interaction;
 
   const [commandSearchOpen, setCommandSearchOpen] = createSignal(false);
-  const [qatTick, setQatTick] = createSignal(0);
   const revisionsPanel = createRevisionsPanel();
-  const quickAccess = createQuickAccess(QUICK_ACCESS_CATALOG);
-  const canExecuteCommand = (command: string): boolean => {
-    // Track the live state so the strip's disabled affordances recompute on
-    // every editor commit (a plain `void state` tracks nothing).
-    void state.selection.anchor.offset;
-    try {
-      return runtimeEditor().commands.canExecute(command) !== false;
-    } catch {
-      return false;
-    }
-  };
-  const executeCommand = (command: string): void => {
-    try {
-      runtimeEditor().commands.execute(command);
-    } catch (error) {
-      logger.error("quick-access execute failed", error);
-    }
-  };
   const commentComposer = createEditorCommentComposer({
     state: (): EditorState => state,
     isReadOnly,
@@ -328,9 +306,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   });
 
   const commandRuntime = createEditorCommandRuntime({
-    onExecutedTap: (): void => {
-      setQatTick((tick): number => tick + 1);
-    },
     commandSearch: {
       isOpen: commandSearchOpen,
       setIsOpen: (open: boolean): void => {
@@ -600,27 +575,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           "--oasis-editor-gutter-x": `${EDITOR_SCROLL_PADDING_PX}px`,
         }}
       >
-        <Show
-          when={
-            showChrome() &&
-            showTitleBar() &&
-            showToolbar() &&
-            toolbarView() === "ribbon"
-          }
-        >
-          <ChromeStrip
-            catalog={QUICK_ACCESS_CATALOG}
-            visible={quickAccess.visible}
-            onToggle={quickAccess.toggle}
-            onExecute={executeCommand}
-            canExecute={canExecuteCommand}
-            tick={qatTick}
-            onOpenCommandSearch={(): void => {
-              setCommandSearchOpen(true);
-            }}
-          />
-        </Show>
-
         <Show when={!useComposedShell() && showChrome() && showToolbar()}>
           <Toolbar
             host={toolbarHost}

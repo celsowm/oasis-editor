@@ -136,7 +136,7 @@ export function TableBordersMenu(props: {
         label="Linha Horizontal"
         onClick={(): void => apply("bottom")}
       >
-        <Text class="oasis-editor-table-borders-text-icon">A</Text>
+        <ToolIcon name="horizontalLine" />
         <Text>Linha Horizontal</Text>
       </SurfaceButton>
       <SurfaceButton
@@ -148,7 +148,7 @@ export function TableBordersMenu(props: {
           setOpen(false);
         }}
       >
-        <ToolIcon name="tableBorders" />
+        <ToolIcon name="tableDrawBorders" />
         <Text>Desenhar Tabela</Text>
       </SurfaceButton>
       <SurfaceButton
@@ -160,7 +160,7 @@ export function TableBordersMenu(props: {
           setOpen(false);
         }}
       >
-        <ToolIcon name="tableBorders" />
+        <ToolIcon name="tableGridlines" />
         <Text>Exibir Linhas de Grade</Text>
       </SurfaceButton>
       <SurfaceButton

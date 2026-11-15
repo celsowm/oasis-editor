@@ -58,14 +58,18 @@ export function SvgIcon(props: SvgIconProps): JSX.Element {
 const FootnoteIcon: CustomIconRenderer = (): JSX.Element => (
   <SvgIcon
     stroke="currentColor"
-    stroke-width={1.8}
+    stroke-width={1.7}
     stroke-linecap="round"
     stroke-linejoin="round"
   >
-    <path d="M8.5 12.5c-1.4-1.8-5.5-1.2-5.5 2.9 0 4.4 4.4 4.9 5.5 2.5M8.5 12v8M12 6v14m0-7c1.4-1.8 5.8-1.6 5.8 2.9 0 4.2-4.1 5-5.8 2.5" />
+    <rect x="4.5" y="2.5" width="13" height="19" rx="1.2" />
+    <path d="M7.5 6.5h7M7.5 9.5h5" opacity={0.65} />
+    <path d="M7.5 14.5h4.5" stroke="var(--oasis-accent, #1a73e8)" />
+    <path d="M7.5 17.5h7" />
     <path
-      d="m18 4.8 2-1.3V10m-1.8 0h3.5"
+      d="m18 4.8 1.8-1.3V9.5m-1.6 0h3.2"
       stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.85}
     />
   </SvgIcon>
 );
@@ -231,18 +235,40 @@ const TableIcon = (props: { children: JSX.Element }): JSX.Element => (
 );
 
 const DeleteTableIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-    <rect x="4" y="4" width="16" height="16" rx="0.8" />
-    <path d="M4 12h16M9 4v16M15 4v16" stroke-width={1.4} />
-    <path d="M11.5 14.5 14.5 11.5M14.5 14.5 11.5 11.5" stroke-width={1.6} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.75}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M4 11V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v6M4 9.5h16M9.5 4v16M4 9.5v9.5a1 1 0 0 0 1 1h6.5" />
+    <path d="m14.5 14.5 5 5m0-5-5 5" stroke="#d14343" stroke-width={2} />
   </SvgIcon>
 );
 
 const RepeatHeaderRowIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-    <rect x="4" y="4" width="16" height="16" rx="0.8" />
-    <path d="M4 8.5h16M4 8.5 8 5.25 12 8.5 16 5.25 20 8.5" stroke-width={1.4} />
-    <path d="M7.5 12h9M7.5 15h9M7.5 18h9" stroke-width={1.3} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.75}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect
+      x="4"
+      y="4"
+      width="16"
+      height="4.5"
+      rx="0.8"
+      fill="var(--oasis-accent, #1a73e8)"
+      stroke="none"
+    />
+    <rect x="4" y="4" width="16" height="16" rx="1" />
+    <path d="M4 8.5h16M9.5 8.5V20M14.5 8.5V14" stroke-width={1.4} />
+    <path
+      d="M14.5 17.5a2.5 2.5 0 1 1 2.5-2.5m-1.5-1.5 1.5 1.5 1.5-1.5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.75}
+    />
   </SvgIcon>
 );
 
@@ -270,18 +296,6 @@ const TableAutoFitIcon: CustomIconRenderer = (): JSX.Element => (
   </TableIcon>
 );
 
-const _TableAlignIcon = (
-  alignment: "left" | "center" | "right",
-): JSX.Element => {
-  const x = alignment === "left" ? 6.75 : alignment === "center" ? 10.5 : 14.25;
-  return (
-    <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-      <rect x="4" y="4" width="16" height="16" rx="0.8" />
-      <path d={`M${x} 9h6M${x} 12h6M${x} 15h6`} />
-    </SvgIcon>
-  );
-};
-
 const TableNoBordersIcon: CustomIconRenderer = (): JSX.Element => (
   <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
     <rect
@@ -296,111 +310,213 @@ const TableNoBordersIcon: CustomIconRenderer = (): JSX.Element => (
   </SvgIcon>
 );
 
-/** Clipboard family: shared silhouette with action-specific accents. */
+/** Clipboard family: Office/WordCraft silhouettes with semantic accents. */
 const ClipboardIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
-    <rect x="5.5" y="3.5" width="13" height="17" rx="1" />
-    <path d="M8 3.5v4M16 3.5v4" />
-    <path d="M8 11h8M8 14h8M8 17h8" stroke-width={1.3} opacity={0.7} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M9 4H6a1.5 1.5 0 0 0-1.5 1.5v13A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 18 4h-3" />
+    <rect x="8.5" y="2.5" width="7" height="3.2" rx="1" />
+    <path d="M8 10.5h8M8 13.5h8M8 16.5h5.5" opacity={0.75} />
   </SvgIcon>
 );
 
 const ClipboardPasteIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
-    <rect x="5.5" y="3.5" width="13" height="17" rx="1" />
-    <path d="M8 3.5v4M16 3.5v4" />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M8.5 4H5.8A1.3 1.3 0 0 0 4.5 5.3v12.4A1.3 1.3 0 0 0 5.8 19H9" />
     <rect
-      x="8.5"
-      y="9.5"
-      width="7"
-      height="9"
-      rx="0.5"
+      x="7.5"
+      y="2.5"
+      width="6"
+      height="3"
+      rx="0.9"
       fill="var(--oasis-accent, #1a73e8)"
       stroke="none"
     />
-    <path d="M12 12v4M10 14h4" stroke="#fff" stroke-width={1.5} />
+    <rect
+      x="9.5"
+      y="7.5"
+      width="10"
+      height="13"
+      rx="1.1"
+      fill="var(--oasis-paper, #ffffff)"
+      stroke="var(--oasis-accent, #1a73e8)"
+    />
+    <path
+      d="M12 11h5M12 14h5M12 17h3.5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.55}
+    />
   </SvgIcon>
 );
 
 const ClipboardCutIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
-    <rect x="5.5" y="3.5" width="13" height="17" rx="1" />
-    <path d="M8 3.5v4M16 3.5v4" />
-    <path d="M10 12 14 16M14 12 10 16" stroke="#d14343" stroke-width={2} />
-    <path d="M12 12h4M12 15h4" stroke-width={1.3} opacity={0.7} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.8}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <circle cx="6.5" cy="17.5" r="2.6" stroke="var(--oasis-accent, #1a73e8)" />
+    <circle cx="17.5" cy="17.5" r="2.6" stroke="var(--oasis-accent, #1a73e8)" />
+    <path d="M8.6 15.4 18.5 4.5M15.4 15.4 5.5 4.5" />
   </SvgIcon>
 );
 
 const FormatPainterIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
-    <rect x="5.5" y="3.5" width="13" height="17" rx="1" />
-    <path d="M8 3.5v4M16 3.5v4" />
-    <path d="M11.5 11c0-1.5 1.5-2.5 3-2.5s3 1 3 2.5" stroke-width={2} />
-    <path d="M10 14h4M10 17h4" stroke-width={1.3} opacity={0.7} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.75}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect
+      x="4.5"
+      y="3.5"
+      width="12.5"
+      height="5.5"
+      rx="1"
+      fill="#f59e0b"
+      fill-opacity={0.32}
+    />
+    <path d="M17 6.2h2a1 1 0 0 1 1 1v3.3a1 1 0 0 1-1 1h-7.5v2" />
+    <rect
+      x="9.8"
+      y="13.5"
+      width="3.4"
+      height="7"
+      rx="1"
+      fill="var(--oasis-accent, #1a73e8)"
+      stroke="none"
+    />
   </SvgIcon>
 );
 
 const FormatPainterContinuousIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
-    <rect x="5.5" y="3.5" width="13" height="17" rx="1" />
-    <path d="M8 3.5v4M16 3.5v4" />
-    <path
-      d="M10 11c0-1.5 1.5-2.5 3-2.5s3 1 3 2.5M10 14c0-1.5 1.5-2.5 3-2.5s3 1 3 2.5"
-      stroke-width={2}
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.75}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect
+      x="4"
+      y="3.5"
+      width="11.5"
+      height="5"
+      rx="1"
+      fill="#f59e0b"
+      fill-opacity={0.32}
     />
-    <path d="M10 17h4" stroke-width={1.3} opacity={0.7} />
+    <path d="M15.5 6h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-7v2" />
+    <rect
+      x="9"
+      y="13"
+      width="3"
+      height="7"
+      rx="0.9"
+      fill="var(--oasis-accent, #1a73e8)"
+      stroke="none"
+    />
+    <path
+      d="M15.5 16.5a2.3 2.3 0 1 1 2.3 2.3"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.8}
+    />
   </SvgIcon>
 );
 
 const FormatPainterCancelIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
-    <rect x="5.5" y="3.5" width="13" height="17" rx="1" />
-    <path d="M8 3.5v4M16 3.5v4" />
-    <path d="M9 9 15 15M15 9 9 15" stroke="#d14343" stroke-width={2} />
-    <path d="M10 14h4M10 17h4" stroke-width={1.3} opacity={0.7} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.75}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="4" y="3.5" width="11.5" height="5" rx="1" />
+    <path d="M15.5 6h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-7v2" />
+    <rect x="9" y="13" width="3" height="7" rx="0.9" />
+    <path d="m15 15 4.5 4.5m0-4.5L15 19.5" stroke="#d14343" stroke-width={2} />
   </SvgIcon>
 );
 
-/** Table borders — simple diagonal cross. */
+/** Table borders — 2x2 windowpane grid with emphasized bottom/outer border. */
 const TableBordersIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M3 3l18 18" stroke-width={2} />
-  </TableIcon>
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect
+      x="4.5"
+      y="4.5"
+      width="15"
+      height="15"
+      rx="0.9"
+      stroke-dasharray="2 1.8"
+      opacity={0.75}
+    />
+    <path d="M4.5 12h15M12 4.5v15" stroke-dasharray="2 1.8" opacity={0.75} />
+    <path
+      d="M4.5 19.5h15"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2.4}
+    />
+  </SvgIcon>
 );
 
-/** Font family: shared A glyph with action-specific accents. */
+/** Font family: crisp glyphs positioned above the ColorPicker swatch bar. */
 const FontColorIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round">
-    <path d="M12 4v3M9 12l3-6 3 6M7 16h10" />
-    <path
-      d="M6 19h12"
-      stroke="var(--oasis-accent, #1a73e8)"
-      stroke-width={2.5}
-    />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={2}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M7.2 16 12 4.2 16.8 16M9 12.2h6M5.8 16h2.8M15.4 16h2.8" />
   </SvgIcon>
 );
 
 const HighlightIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round">
-    <path d="M12 4v3M9 12l3-6 3 6M7 16h10" />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.75}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
     <path
-      d="M5 14.5 19 14.5"
-      stroke="var(--oasis-accent, #f6c100)"
-      stroke-width={5}
-      stroke-linecap="butt"
+      d="m14.2 3.5 4.8 4.8-7.2 7.2-4.8-4.8Z"
+      fill="#facc15"
+      fill-opacity={0.38}
     />
+    <path d="m7 10.7-2.2 5.3 5.3-2.2M12.2 5.5l4.8 4.8" />
   </SvgIcon>
 );
 
 const ShadingIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round">
-    <rect x="4" y="5" width="16" height="14" rx="1" />
-    <path d="M6 8.5h12M6 12h12M6 15.5h12" stroke-width={1.4} opacity={0.6} />
-    <rect
-      x="6"
-      y="10"
-      width="12"
-      height="5"
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.75}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path
+      d="M10.8 3.8 17.5 10.5 10.8 16.5 4.5 10.5Z"
+      fill="var(--oasis-accent, #1a73e8)"
+      fill-opacity={0.18}
+    />
+    <path d="M8.5 6 5.8 3.3" />
+    <path
+      d="M19.2 14c0 1.3-1 2.2-1.7 2.2s-1.7-.9-1.7-2.2c0-1 1.7-2.8 1.7-2.8s1.7 1.8 1.7 2.8Z"
       fill="var(--oasis-accent, #1a73e8)"
       stroke="none"
     />
@@ -411,330 +527,517 @@ const ShadingIcon: CustomIconRenderer = (): JSX.Element => (
 const TableInsertRowAboveIcon: CustomIconRenderer = (): JSX.Element => (
   <TableIcon>
     <path d="M12 1.75v3M10.5 3.25 12 1.75l1.5 1.5" stroke-width={1.8} />
-    <path d="M5.25 8h13.5" stroke-width={2.5} />
+    <path
+      d="M5.25 7.5h13.5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2.5}
+    />
   </TableIcon>
 );
 
 const TableInsertRowBelowIcon: CustomIconRenderer = (): JSX.Element => (
   <TableIcon>
     <path d="M12 22.25v-3M10.5 20.75 12 22.25l1.5-1.5" stroke-width={1.8} />
-    <path d="M5.25 16h13.5" stroke-width={2.5} />
+    <path
+      d="M5.25 16.5h13.5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2.5}
+    />
   </TableIcon>
 );
 
 const TableDeleteRowIcon: CustomIconRenderer = (): JSX.Element => (
   <TableIcon>
-    <path d="M4.5 12h15" stroke="#d14343" stroke-width={2.0} />
+    <path d="M4.5 12h15" stroke="#d14343" stroke-width={2.2} />
   </TableIcon>
 );
 
 const TableInsertColumnLeftIcon: CustomIconRenderer = (): JSX.Element => (
   <TableIcon>
     <path d="M1.75 12h3M3.25 10.5 1.75 12l1.5 1.5" stroke-width={1.8} />
-    <path d="M8 5.25v13.5" stroke-width={2.5} />
+    <path
+      d="M7.5 5.25v13.5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2.5}
+    />
   </TableIcon>
 );
 
 const TableInsertColumnRightIcon: CustomIconRenderer = (): JSX.Element => (
   <TableIcon>
     <path d="M22.25 12h-3M20.75 10.5l1.5 1.5-1.5 1.5" stroke-width={1.8} />
-    <path d="M16 5.25v13.5" stroke-width={2.5} />
+    <path
+      d="M16.5 5.25v13.5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2.5}
+    />
   </TableIcon>
 );
 
 const TableDeleteColumnIcon: CustomIconRenderer = (): JSX.Element => (
   <TableIcon>
-    <path d="M12 4.5v15" stroke="#d14343" stroke-width={2.0} />
+    <path d="M12 4.5v15" stroke="#d14343" stroke-width={2.2} />
   </TableIcon>
 );
 
 const TableMergeIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path
-      d="M7.25 12h9.5M9.25 10l-2 2 2 2M14.75 10l2 2-2 2"
-      stroke-width={1.8}
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="4" y="4" width="16" height="16" rx="1" />
+    <path d="M4 9.5h16M4 14.5h16" opacity={0.55} />
+    <rect
+      x="6"
+      y="9.5"
+      width="12"
+      height="5"
+      fill="var(--oasis-accent, #1a73e8)"
+      fill-opacity={0.18}
+      stroke="var(--oasis-accent, #1a73e8)"
     />
-    <path d="M5.25 12h13.5" stroke-width={1.65} opacity={0.5} />
-  </TableIcon>
+    <path
+      d="M9 12h6m-4.5-1.5L9 12l1.5 1.5m3-3L15 12l-1.5 1.5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.6}
+    />
+  </SvgIcon>
 );
 
 const TableSplitIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M12 8v8M10 10l2-2 2 2M10 14l2 2 2-2" stroke-width={1.8} />
-    <path d="M3 12h18M7.5 12v9M16.5 12v9" stroke-width={1.6} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="4" y="4" width="16" height="16" rx="1" />
     <path
-      d="M4.5 8.5 3 12l1.5 3.5M19.5 8.5 21 12l-1.5 3.5"
-      stroke-width={1.4}
+      d="M12 4v16"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2}
+      stroke-dasharray="2.5 2"
     />
-  </TableIcon>
+    <path
+      d="M9.5 12H6m1.5-2L6 12l1.5 2M14.5 12H18m-1.5-2L18 12l-1.5 2"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.7}
+    />
+  </SvgIcon>
 );
 
 const TableToTextIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
-    <rect x="4" y="4" width="16" height="16" rx="0.8" />
-    <path d="M8.5 10h7M8.5 14h7" />
-    <path d="M11 7l-2 2 2 2M15 7l2 2-2 2" stroke-width={1.6} />
-    <path d="M17 12 20 12M19 10 20 12 19 14" stroke-width={2.0} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="3.5" y="3.5" width="8.5" height="7.5" rx="0.8" />
+    <path d="M3.5 7.25h8.5M7.75 3.5V11" stroke-width={1.4} />
+    <path
+      d="M14 7.25h5.5m-2-2 2 2-2 2"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.8}
+    />
+    <path d="M3.5 15h17M3.5 18.5h12.5" stroke-width={1.8} />
   </SvgIcon>
 );
 
 const TextToTableIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.65} stroke-linecap="round">
-    <rect x="4" y="4" width="16" height="16" rx="0.8" />
-    <path d="M9 11v2M13 11v2M7 11h8M7 15h8" />
-    <path d="M10 6l-2 2 2 2M14 6l2 2-2 2" stroke-width={1.6} />
-    <path d="M4 12 7 12M5 10 7 12 5 14" stroke-width={2.0} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M3.5 5.5h8.5M3.5 9h6.5" stroke-width={1.8} />
+    <path
+      d="M14 7.25h5.5m-2-2 2 2-2 2"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.8}
+    />
+    <rect x="3.5" y="13" width="17" height="7.5" rx="0.8" />
+    <path d="M3.5 16.75h17M9.2 13v7.5M14.8 13v7.5" stroke-width={1.4} />
   </SvgIcon>
 );
 
 const SplitTableIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M3 12h18M7.5 12v9M16.5 12v9" stroke-width={1.6} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="4" y="3.5" width="16" height="6" rx="0.8" />
+    <path d="M9.5 3.5v6M14.5 3.5v6" stroke-width={1.4} />
     <path
-      d="M4.5 8.5 3 12l1.5 3.5M19.5 8.5 21 12l-1.5 3.5"
-      stroke-width={1.4}
+      d="M3 12h18"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2}
+      stroke-dasharray="3 2"
     />
-    <path d="M12 5.25v13.5" stroke-width={2.0} />
-  </TableIcon>
+    <rect x="4" y="14.5" width="16" height="6" rx="0.8" />
+    <path d="M9.5 14.5v6M14.5 14.5v6" stroke-width={1.4} />
+  </SvgIcon>
 );
 
 const SortAscendingIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-    <path d="M4 17l4-4 3 3 4-5" stroke-width={1.8} />
-    <path d="M15 12V6h3M14.5 7.5 15 6l3 .5" stroke-width={1.8} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.8}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M4.5 10.5 7 4.5l2.5 6M5.2 8.8h3.6" />
+    <path d="M4.6 14h4.8l-4.8 5.5h4.8" />
+    <path d="M16.5 4.5v15m-3-3 3 3 3-3" stroke="var(--oasis-accent, #1a73e8)" />
   </SvgIcon>
 );
 
 const SortDescendingIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-    <path d="M4 8l4 4 3-3 4 6" stroke-width={1.8} />
-    <path d="M15 18v-6h3M14.5 16.5 15 18l3-.5" stroke-width={1.8} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.8}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M4.6 4.5h4.8L4.6 10h4.8" />
+    <path d="M4.5 19.5 7 13.5l2.5 6M5.2 17.8h3.6" />
+    <path d="M16.5 4.5v15m-3-3 3 3 3-3" stroke="var(--oasis-accent, #1a73e8)" />
   </SvgIcon>
 );
 
 const TableVerticalAlignIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-    <rect x="4" y="4" width="16" height="16" rx="0.8" />
-    <path d="M8 8h8M8 12h8M8 16h8" stroke-width={1.8} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.75}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="4" y="4" width="16" height="16" rx="1" />
     <path
-      d="M7.5 10.5 9 12 10.5 10.5M13.5 10.5 15 12 16.5 10.5"
+      d="M7.5 10.5h9M7.5 13.5h6"
+      stroke="var(--oasis-accent, #1a73e8)"
       stroke-width={1.8}
     />
+    <path d="M12 6v2.2M12 15.8V18" opacity={0.7} />
   </SvgIcon>
 );
 
-/** Paragraph alignment — 1.8px stroke matching underline-glyph family. */
+/** Paragraph alignment — properly aligned horizontal lines without translate hacks. */
 const AlignLeftIcon: CustomIconRenderer = (): JSX.Element => (
   <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-    <path d="M6 6h12M6 10h12M6 14h8M6 18h12" />
+    <path d="M4 6h16M4 10h11M4 14h16M4 18h9" />
   </SvgIcon>
 );
 
 const AlignCenterIcon: CustomIconRenderer = (): JSX.Element => (
   <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-    <path d="M6 6h12M6 10h12M6 14h8M6 18h12" transform="translate(2, 0)" />
+    <path d="M4 6h16M6.5 10h11M4 14h16M7.5 18h9" />
   </SvgIcon>
 );
 
 const AlignRightIcon: CustomIconRenderer = (): JSX.Element => (
   <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-    <path d="M6 6h12M6 10h12M6 14h8M6 18h12" transform="translate(4, 0)" />
+    <path d="M4 6h16M9 10h11M4 14h16M11 18h9" />
   </SvgIcon>
 );
 
 const AlignJustifyIcon: CustomIconRenderer = (): JSX.Element => (
   <SvgIcon stroke="currentColor" stroke-width={1.8} stroke-linecap="round">
-    <path d="M6 6h12M6 10h9M6 14h6M6 18h12" />
+    <path d="M4 6h16M4 10h16M4 14h16M4 18h16" />
   </SvgIcon>
 );
 
-/** Table alignment — TableIcon shell with 1.8px stroke. */
+/** Table alignment — cell frame with properly left/center/right aligned lines. */
 const TableAlignLeftIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M7.25 8h8M7.25 12h8M7.25 16h5" stroke-width={1.8} />
-  </TableIcon>
+  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round">
+    <rect x="4" y="4" width="16" height="16" rx="1" />
+    <path
+      d="M7 8.5h10M7 12h6.5M7 15.5h8"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.8}
+    />
+  </SvgIcon>
 );
 
 const TableAlignCenterIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
+  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round">
+    <rect x="4" y="4" width="16" height="16" rx="1" />
     <path
-      d="M7.25 8h8M7.25 12h8M7.25 16h5"
-      transform="translate(2.5, 0)"
+      d="M7 8.5h10M8.75 12h6.5M8 15.5h8"
+      stroke="var(--oasis-accent, #1a73e8)"
       stroke-width={1.8}
     />
-  </TableIcon>
+  </SvgIcon>
 );
 
 const TableAlignRightIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
+  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round">
+    <rect x="4" y="4" width="16" height="16" rx="1" />
     <path
-      d="M7.25 8h8M7.25 12h8M7.25 16h5"
-      transform="translate(5, 0)"
-      stroke-width={1.8}
-    />
-  </TableIcon>
-);
-
-/** Table properties — Table shell with properties badge. */
-const TablePropertiesIcon: CustomIconRenderer = (): JSX.Element => (
-  <TableIcon>
-    <path d="M14 5 16 7 13 10" stroke-width={1.8} />
-    <rect x="13" y="4" width="6" height="6" rx="1" stroke-width={1.5} />
-  </TableIcon>
-);
-
-/** Page setup family — 1.7px stroke. */
-const PageMarginsIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="5" y="3" width="14" height="18" rx="1" />
-    <path d="M5 7h14M5 14h14" stroke-width={1.4} />
-    <path
-      d="M9 3v4M15 3v4M9 20v-4M15 20v-4"
+      d="M7 8.5h10M10.5 12h6.5M9 15.5h8"
       stroke="var(--oasis-accent, #1a73e8)"
       stroke-width={1.8}
+    />
+  </SvgIcon>
+);
+
+/** Table properties — Table grid with clean bottom-right sliders badge. */
+const TablePropertiesIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M11.5 19H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1v6.5M4 9h15M9 4v15" />
+    <circle
+      cx="17"
+      cy="17"
+      r="3.2"
+      fill="var(--oasis-paper, #ffffff)"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.8}
+    />
+    <path
+      d="M17 12.6v1.2M17 20.2v1.2M12.6 17h1.2M20.2 17h1.2"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.7}
+    />
+  </SvgIcon>
+);
+
+/** Page setup family — 1.7px stroke with clean Office geometry. */
+const PageMarginsIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
+    <rect x="4.5" y="2.5" width="15" height="19" rx="1.2" />
+    <rect
+      x="7.5"
+      y="5.5"
+      width="9"
+      height="13"
+      rx="0.4"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.5}
+      stroke-dasharray="2.2 1.8"
     />
   </SvgIcon>
 );
 
 const PageOrientationIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="3" y="5" width="8.5" height="14" rx="0.5" />
-    <rect x="12.5" y="5" width="8.5" height="14" rx="0.5" />
-    <path
-      d="M11.5 8 12.5 12 11.5 16"
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="3.5" y="3" width="10" height="14" rx="1" opacity={0.65} />
+    <rect
+      x="8.5"
+      y="10"
+      width="12"
+      height="9.5"
+      rx="1"
+      fill="var(--oasis-paper, #ffffff)"
       stroke="var(--oasis-accent, #1a73e8)"
-      stroke-width={2}
+      stroke-width={1.8}
     />
-    <path d="M5 8.5h7M5 15.5h7" stroke-width={1.4} opacity={0.6} />
-    <path d="M12.5 8.5h7M12.5 15.5h7" stroke-width={1.4} opacity={0.6} />
+    <path
+      d="M16 4.5a3 3 0 0 1 3 3m-1.5-1.2L19 7.8l1.2-1.5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.6}
+    />
   </SvgIcon>
 );
 
 const PageSizeIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="5" y="3" width="14" height="18" rx="1" />
-    <path d="M3 12 5 12M19 12 21 12" stroke-width={1.8} />
-    <path d="M12 1 12 3M12 21 12 23" stroke-width={1.8} />
-    <path d="M8 9h8M8 15h8" stroke-width={1.4} opacity={0.6} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="6.5" y="5.5" width="13" height="15.5" rx="1.1" />
+    <path
+      d="M6.5 3h13M8 1.8 6.5 3 8 4.2M18 1.8 19.5 3 18 4.2M3.5 5.5V21M2.3 7 3.5 5.5 4.7 7M2.3 19.5 3.5 21l1.2-1.5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.6}
+    />
   </SvgIcon>
 );
 
 const PageColumnsIcon: CustomIconRenderer = (): JSX.Element => (
   <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="5" y="3" width="14" height="18" rx="1" />
-    <path d="M12 5v14" stroke-width={2.0} />
-    <path d="M5 8.5h14M5 15.5h14" stroke-width={1.4} opacity={0.6} />
+    <rect x="4.5" y="2.5" width="15" height="19" rx="1.2" />
+    <path
+      d="M12 5.5v13"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.6}
+    />
+    <path d="M7 7h3M7 10h3M7 13h3M7 16h2.5M14 7h3M14 10h3M14 13h3M14 16h2.5" />
   </SvgIcon>
 );
 
 const PageBreakIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="5" y="3" width="14" height="18" rx="1" />
-    <path d="M5 12h14" stroke-width={2.0} />
-    <path d="M11 9 12 12 11 15" stroke="#d14343" stroke-width={2} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M5 9V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v5H5ZM5 15v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5H5Z" />
+    <path
+      d="M3 12h18"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2}
+      stroke-dasharray="3 2"
+    />
   </SvgIcon>
 );
 
 const SectionBreakIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="3" y="3" width="9" height="18" rx="0.8" />
-    <rect x="12" y="3" width="9" height="18" rx="0.8" />
-    <path d="M12 12h-9M12 12h9" stroke-width={2.0} stroke-dasharray="3 2" />
-    <path d="M7.5 8.5h7M7.5 15.5h7" stroke-width={1.4} opacity={0.6} />
-    <path d="M16.5 8.5h7M16.5 15.5h7" stroke-width={1.4} opacity={0.6} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M5 8.5V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v4.5H5ZM5 15.5V20a1 1 0 0 0 1 1h5v-5.5H5Zm8 0V21h5a1 1 0 0 0 1-1v-4.5h-6Z" />
+    <path
+      d="M3 11.2h18M3 12.8h18"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.5}
+      stroke-dasharray="2.5 2"
+    />
   </SvgIcon>
 );
 
-/** Themes/styles — 1.7px stroke. */
+/** Themes/styles — WordCraft 2x2 palette & page design icons. */
 const ThemesIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="3" y="3" width="9" height="18" rx="0.8" />
-    <rect x="12" y="3" width="9" height="18" rx="0.8" />
-    <rect x="6" y="3" width="9" height="18" rx="0.8" />
-    <path
-      d="M5 6h5M5 10h5M5 14h5"
-      stroke="var(--oasis-accent, #1a73e8)"
-      stroke-width={2}
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.6}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect
+      x="3.5"
+      y="3.5"
+      width="7.5"
+      height="7.5"
+      rx="1.2"
+      fill="var(--oasis-accent, #1a73e8)"
     />
-    <path
-      d="M14 6h5M14 10h5M14 14h5"
-      stroke="var(--oasis-accent, #1a73e8)"
-      stroke-width={2}
-    />
-    <path
-      d="M17 6h5M17 10h5M17 14h5"
-      stroke="var(--oasis-accent, #1a73e8)"
-      stroke-width={2}
-    />
+    <rect x="13" y="3.5" width="7.5" height="7.5" rx="1.2" fill="#e07b1f" />
+    <rect x="3.5" y="13" width="7.5" height="7.5" rx="1.2" fill="#2e8b57" />
+    <rect x="13" y="13" width="7.5" height="7.5" rx="1.2" fill="#f2c811" />
   </SvgIcon>
 );
 
 const ColorSchemeIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="5" y="3" width="14" height="18" rx="1" />
-    <path
-      d="M8 6h8M8 10h8M8 14h8M8 18h8"
-      stroke="var(--oasis-accent, #1a73e8)"
-      stroke-width={2.5}
+  <SvgIcon stroke="currentColor" stroke-width={1.6} stroke-linecap="round">
+    <circle cx="9" cy="9" r="4.2" fill="#d13b3b" fill-opacity={0.85} />
+    <circle
+      cx="15"
+      cy="9"
+      r="4.2"
+      fill="var(--oasis-accent, #1a73e8)"
+      fill-opacity={0.85}
     />
+    <circle cx="12" cy="14.5" r="4.2" fill="#2e8b57" fill-opacity={0.85} />
   </SvgIcon>
 );
 
 const FontSchemeIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="5" y="3" width="14" height="18" rx="1" />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.85}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M3.5 18.5 8 5.5l4.5 13M5.1 14.5h5.8" />
     <path
-      d="M10 8 12 6 14 8M10 14 12 12 14 14M10 18 12 16 14 18"
-      stroke-width={1.8}
+      d="m14.5 18.5 2.8-8 2.8 8M15.4 16.2h4"
+      stroke="var(--oasis-accent, #1a73e8)"
     />
-    <path d="M6 11h12M6 17h12" stroke-width={1.5} opacity={0.6} />
   </SvgIcon>
 );
 
 const EffectsIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="5" y="3" width="14" height="18" rx="1" />
-    <path
-      d="M8 6 10 4 16 10M8 14 10 12 16 18M8 18 10 16 16 22"
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.75}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <circle
+      cx="11"
+      cy="13"
+      r="5.5"
+      fill="var(--oasis-accent, #1a73e8)"
+      fill-opacity={0.22}
       stroke="var(--oasis-accent, #1a73e8)"
-      stroke-width={1.8}
     />
-    <path d="M6 8h12M6 14h12" stroke-width={1.5} opacity={0.6} />
+    <path d="M17.5 3.5v4M15.5 5.5h4M6 4.5v2.5M4.75 5.75h2.5" stroke="#f59e0b" />
   </SvgIcon>
 );
 
 const ParagraphSpacingIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="5" y="3" width="14" height="18" rx="1" />
-    <path d="M5 8h14M5 12h14M5 16h14" stroke-width={1.8} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.75}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M10 6h10M10 9.5h7M10 14.5h10M10 18h7" />
     <path
-      d="M11 6 12 8 13 6"
+      d="M5.5 4.5v15m-2-12.5 2-2.5 2 2.5m-4 10 2 2.5 2-2.5"
       stroke="var(--oasis-accent, #1a73e8)"
-      stroke-width={2}
-    />
-    <path
-      d="M11 20 12 18 13 20"
-      stroke="var(--oasis-accent, #1a73e8)"
-      stroke-width={2}
     />
   </SvgIcon>
 );
 
 const WatermarkIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="5" y="3" width="14" height="18" rx="1" />
-    <path d="M7 7h10M7 11h8M7 15h6" stroke-width={1.2} opacity="0.3" />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="4.5" y="2.5" width="15" height="19" rx="1.2" />
+    <path
+      d="M9 16 12 8l3 8M10 13.5h4"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.85}
+      opacity={0.85}
+    />
   </SvgIcon>
 );
 
 const PageColorIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="5" y="3" width="14" height="18" rx="1" />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="4.5" y="2.5" width="15" height="19" rx="1.2" />
     <rect
-      x="7"
-      y="5"
-      width="10"
-      height="14"
+      x="6.5"
+      y="9.5"
+      width="11"
+      height="9.5"
+      rx="0.6"
+      fill="var(--oasis-accent, #1a73e8)"
+      fill-opacity={0.35}
+      stroke="none"
+    />
+    <path
+      d="M12 5.2c0 1.2-.9 2-1.5 2S9 6.4 9 5.2C9 4.3 10.5 2.8 10.5 2.8S12 4.3 12 5.2Z"
       fill="var(--oasis-accent, #1a73e8)"
       stroke="none"
     />
@@ -742,17 +1045,185 @@ const PageColorIcon: CustomIconRenderer = (): JSX.Element => (
 );
 
 const PageBordersIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="5" y="3" width="14" height="18" rx="1" />
-    <rect x="6.5" y="4.5" width="11" height="15" rx="0.5" stroke-width={1.8} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="4.5" y="2.5" width="15" height="19" rx="1.2" />
+    <rect
+      x="7"
+      y="5"
+      width="10"
+      height="14"
+      rx="0.5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.85}
+    />
   </SvgIcon>
 );
 
 const DesignDefaultIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon stroke="currentColor" stroke-width={1.7} stroke-linecap="round">
-    <rect x="5" y="3" width="14" height="18" rx="1" />
-    <path d="M12 16 10 12l2-2M12 16 14 12l-2-2" stroke-width={2} />
-    <path d="M12 8 12 16" stroke-width={1.8} />
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.75}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <rect x="4.5" y="2.5" width="15" height="19" rx="1.2" />
+    <path d="m8.5 12.5 2.5 2.5 5-5" stroke="#16a34a" stroke-width={2.2} />
+  </SvgIcon>
+);
+
+const MultilevelListIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.8}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <circle
+      cx="4.5"
+      cy="5.5"
+      r="1.2"
+      fill="var(--oasis-accent, #1a73e8)"
+      stroke="none"
+    />
+    <path d="M8 5.5h12" />
+    <circle cx="7.5" cy="11.5" r="1.2" fill="currentColor" stroke="none" />
+    <path d="M11 11.5h9" />
+    <circle
+      cx="10.5"
+      cy="17.5"
+      r="1.2"
+      fill="var(--oasis-accent, #1a73e8)"
+      stroke="none"
+    />
+    <path d="M14 17.5h6" />
+  </SvgIcon>
+);
+
+const CommentsPaneIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.75}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path
+      d="M4 5.5A1.5 1.5 0 0 1 5.5 4h11A1.5 1.5 0 0 1 18 5.5v7a1.5 1.5 0 0 1-1.5 1.5H9.5L6 17v-3H5.5A1.5 1.5 0 0 1 4 12.5v-7Z"
+      fill="var(--oasis-accent, #1a73e8)"
+      fill-opacity={0.14}
+    />
+    <path
+      d="M7.5 8h7M7.5 10.8h4.5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.7}
+    />
+    <path d="M18 9h1.5A1.5 1.5 0 0 1 21 10.5v6a1.5 1.5 0 0 1-1.5 1.5H18v2.2L15.5 18H12" />
+  </SvgIcon>
+);
+
+const HorizontalLineIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round">
+    <path d="M5 6.5h14M5 17.5h10" opacity={0.6} />
+    <path
+      d="M3.5 12h17"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={2.4}
+    />
+  </SvgIcon>
+);
+
+const TableDrawBordersIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M11 19H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1v6M4 11.5h8.5M11.5 4v8.5" />
+    <path
+      d="m13.5 17.5 4.8-4.8 2.2 2.2-4.8 4.8-2.6.4.4-2.6Z"
+      fill="var(--oasis-accent, #1a73e8)"
+      fill-opacity={0.22}
+      stroke="var(--oasis-accent, #1a73e8)"
+    />
+  </SvgIcon>
+);
+
+const TableGridlinesIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon stroke="currentColor" stroke-width={1.75} stroke-linecap="round">
+    <rect
+      x="4.5"
+      y="4.5"
+      width="15"
+      height="15"
+      rx="0.9"
+      stroke-dasharray="2 2"
+    />
+    <path
+      d="M4.5 12h15M12 4.5v15"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-dasharray="2 2"
+    />
+  </SvgIcon>
+);
+
+const FileExportDocxIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M14 2.5H6A1.5 1.5 0 0 0 4.5 4v16A1.5 1.5 0 0 0 6 21.5h12a1.5 1.5 0 0 0 1.5-1.5V8L14 2.5Z" />
+    <path d="M14 2.5V8h5.5" />
+    <path
+      d="M8 12.5 9.4 17l1.6-3.8L12.6 17 14 12.5"
+      stroke="#2563eb"
+      stroke-width={1.85}
+    />
+  </SvgIcon>
+);
+
+const FileExportPdfIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M14 2.5H6A1.5 1.5 0 0 0 4.5 4v16A1.5 1.5 0 0 0 6 21.5h12a1.5 1.5 0 0 0 1.5-1.5V8L14 2.5Z" />
+    <path d="M14 2.5V8h5.5" />
+    <rect
+      x="7"
+      y="12"
+      width="10"
+      height="5.5"
+      rx="1"
+      fill="#dc2626"
+      stroke="none"
+    />
+    <path d="M9 14.75h6" stroke="#ffffff" stroke-width={1.6} />
+  </SvgIcon>
+);
+
+const FileImportDocxIcon: CustomIconRenderer = (): JSX.Element => (
+  <SvgIcon
+    stroke="currentColor"
+    stroke-width={1.7}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M14 2.5H6A1.5 1.5 0 0 0 4.5 4v16A1.5 1.5 0 0 0 6 21.5h12a1.5 1.5 0 0 0 1.5-1.5V8L14 2.5Z" />
+    <path d="M14 2.5V8h5.5" />
+    <path
+      d="M12 17v-6m-2.5 2.5L12 11l2.5 2.5"
+      stroke="var(--oasis-accent, #1a73e8)"
+      stroke-width={1.9}
+    />
   </SvgIcon>
 );
 
@@ -848,8 +1319,17 @@ const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   alignCenter: AlignCenterIcon,
   alignRight: AlignRightIcon,
   alignJustify: AlignJustifyIcon,
-  // Table properties (replaced from Lucide)
+  // Table properties & border tools
   tableProperties: TablePropertiesIcon,
+  tableDrawBorders: TableDrawBordersIcon,
+  tableGridlines: TableGridlinesIcon,
+  horizontalLine: HorizontalLineIcon,
+  // List & Review & File custom icons
+  multilevelList: MultilevelListIcon,
+  commentsPane: CommentsPaneIcon,
+  fileExportDocx: FileExportDocxIcon,
+  fileExportPdf: FileExportPdfIcon,
+  fileImportDocx: FileImportDocxIcon,
 };
 
 export function getCustomIcon(name?: string): CustomIconRenderer | undefined {

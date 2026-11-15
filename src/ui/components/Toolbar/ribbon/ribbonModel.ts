@@ -181,11 +181,13 @@ const RIBBON_GROUP_ORDER: Partial<Record<RibbonTabId, Record<string, number>>> =
     },
     insert: {
       pages: 5,
-      illustrations: 10,
-      tables: 20,
+      tables: 10,
+      illustrations: 20,
+      headerFooter: 25,
       links: 30,
       footnotes: 40,
       accessibility: 50,
+      symbols: 60,
     },
     design: {
       documentFormatting: 10,
@@ -302,17 +304,23 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
   design: {
     documentFormatting: {
       priority: 10,
-      collapsedIcon: "palette",
+      collapsedIcon: "themes",
     },
-    pageBackground: { priority: 20, collapsedIcon: "shading" },
+    pageBackground: { priority: 20, collapsedIcon: "pageColor" },
   },
   layout: {
-    paragraph: { priority: 30, compactMinWidth: 112, collapsedIcon: "ruler" },
+    paragraph: {
+      priority: 30,
+      compactMinWidth: 112,
+      collapsedIcon: "paragraphSpacing",
+      launcher: "openParagraphDialog",
+      launcherTooltip: "Paragraph options",
+    },
     table: { priority: 20, collapsedIcon: "table" },
     section: {
       priority: 40,
       compactMinWidth: 148,
-      collapsedIcon: "layout",
+      collapsedIcon: "pageOrientation",
     },
   },
   file: {
@@ -323,8 +331,21 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
     footnotes: { priority: 20, collapsedIcon: "footnote" },
   },
   review: {
-    tracking: { priority: 10, collapsedIcon: "file-check" },
-    changes: { priority: 20, collapsedIcon: "check-check" },
+    tracking: {
+      priority: 40,
+      compactLabels: "hide",
+      collapsedIcon: "file-check",
+    },
+    changes: {
+      priority: 30,
+      compactLabels: "hide",
+      collapsedIcon: "check-check",
+    },
+    comments: {
+      priority: 10,
+      compactLabels: "hide",
+      collapsedIcon: "commentsPane",
+    },
   },
   view: {
     show: { priority: 10, collapsedIcon: "eye" },
@@ -343,14 +364,16 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
     borders: {
       priority: 30,
       states: ["full", "collapsed"],
-      collapsedIcon: "frame",
+      collapsedIcon: "tableBorders",
+      launcher: "tableCellBorders",
+      launcherTooltip: "Borders and shading",
     },
   },
   tableLayout: {
     table: {
       priority: 15,
       states: ["full", "collapsed"],
-      collapsedIcon: "table-properties",
+      collapsedIcon: "tableProperties",
     },
     rowsColumns: {
       priority: 20,
@@ -360,22 +383,24 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
     merge: {
       priority: 30,
       states: ["full", "collapsed"],
-      collapsedIcon: "combine",
+      collapsedIcon: "tableMerge",
     },
     sort: {
       priority: 35,
       states: ["full", "collapsed"],
-      collapsedIcon: "arrow-down",
+      collapsedIcon: "sortAscending",
     },
     cellSize: {
       priority: 40,
       states: ["full", "collapsed"],
-      collapsedIcon: "move-horizontal",
+      collapsedIcon: "tableWidth",
+      launcher: "tableProperties",
+      launcherTooltip: "Table properties",
     },
     alignment: {
       priority: 50,
       states: ["full", "collapsed"],
-      collapsedIcon: "align-left",
+      collapsedIcon: "tableAlignCenter",
     },
   },
   imageFormat: {

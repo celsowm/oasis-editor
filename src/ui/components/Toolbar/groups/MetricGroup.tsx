@@ -50,52 +50,10 @@ export function MetricGroup(props: { api: ToolbarActionApi }): JSX.Element {
     api.commands.state(command).isEnabled;
 
   return (
-    <Menu
-      icon="sliders-horizontal"
-      testId="editor-toolbar-metrics-dropdown"
-      tooltip={t("paragraph.title")}
-      hideChevron
-      panelClass="oasis-editor-toolbar-panel"
-      keepMounted
-    >
-      <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
-        <Button
-          icon="file-up"
-          active={api.commands.state("togglePageBreakBefore").isActive}
-          disabled={!enabled("togglePageBreakBefore")}
-          data-testid="editor-toolbar-page-break-before"
-          onClick={() => api.commands.execute("togglePageBreakBefore")}
-          tooltip={t("metric.pageBreakBefore")}
-        />
-        <Button
-          icon="link-2"
-          active={api.commands.state("toggleKeepWithNext").isActive}
-          disabled={!enabled("toggleKeepWithNext")}
-          data-testid="editor-toolbar-keep-with-next"
-          onClick={() => api.commands.execute("toggleKeepWithNext")}
-          tooltip={t("metric.keepWithNext")}
-        />
-      </div>
-
-      <div class="oasis-editor-toolbar-panel-grid">
+    <div class="oasis-editor-metric-group">
+      <div class="oasis-editor-metric-group-inline">
         <MetricField
-          disabled={!enabled("setSpacingAfter")}
-          label={t("metric.after")}
-          title={t("metric.spacingAfter")}
-          unit="pt"
-          testId="editor-toolbar-spacing-after"
-          min="0"
-          step="1"
-          value={ptValue(api, "setSpacingAfter")}
-          onChange={(value) =>
-            api.commands.execute(
-              "setSpacingAfter",
-              value == null ? null : ptToPx(value),
-            )
-          }
-        />
-
-        <MetricField
+          class="oasis-editor-metric-inline-field"
           disabled={!enabled("setIndentLeft")}
           label={t("metric.indent")}
           title={t("metric.leftIndent")}
@@ -113,6 +71,25 @@ export function MetricGroup(props: { api: ToolbarActionApi }): JSX.Element {
         />
 
         <MetricField
+          class="oasis-editor-metric-inline-field"
+          disabled={!enabled("setSpacingAfter")}
+          label={t("metric.after")}
+          title={t("metric.spacingAfter")}
+          unit="pt"
+          testId="editor-toolbar-spacing-after"
+          min="0"
+          step="1"
+          value={ptValue(api, "setSpacingAfter")}
+          onChange={(value) =>
+            api.commands.execute(
+              "setSpacingAfter",
+              value == null ? null : ptToPx(value),
+            )
+          }
+        />
+
+        <MetricField
+          class="oasis-editor-metric-inline-field"
           disabled={!enabled("setIndentFirstLine")}
           label={t("metric.first")}
           title={t("metric.firstLineIndent")}
@@ -129,6 +106,7 @@ export function MetricGroup(props: { api: ToolbarActionApi }): JSX.Element {
         />
 
         <MetricField
+          class="oasis-editor-metric-inline-field"
           disabled={!enabled("setIndentHanging")}
           label={t("metric.hang")}
           title={t("metric.hangingIndent")}
@@ -144,30 +122,60 @@ export function MetricGroup(props: { api: ToolbarActionApi }): JSX.Element {
             )
           }
         />
-
-        <TextField
-          class="oasis-editor-tool-color"
-          labelClass="oasis-editor-tool-metric-label"
-          title={t("metric.paragraphBgColor")}
-          label={t("metric.paraBg")}
-          type="color"
-          controlClass="oasis-editor-tool-color-input"
-          data-testid="editor-toolbar-paragraph-shading"
-          disabled={!enabled("setParagraphShading")}
-          value={numValue(api, "setParagraphShading") || "#ffffff"}
-          onChange={(value) =>
-            api.commands.execute("setParagraphShading", value)
-          }
-        />
-
-        <Button
-          icon="frame"
-          disabled={!enabled("applyParagraphBorders")}
-          data-testid="editor-toolbar-paragraph-borders"
-          onClick={() => api.commands.execute("applyParagraphBorders")}
-          tooltip={t("metric.applyBorders")}
-        />
       </div>
-    </Menu>
+
+      <Menu
+        icon="paragraphSpacing"
+        label={t("paragraph.title")}
+        testId="editor-toolbar-metrics-dropdown"
+        tooltip={t("paragraph.title")}
+        panelClass="oasis-editor-toolbar-panel"
+        keepMounted
+      >
+        <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
+          <Button
+            icon="file-up"
+            active={api.commands.state("togglePageBreakBefore").isActive}
+            disabled={!enabled("togglePageBreakBefore")}
+            data-testid="editor-toolbar-page-break-before"
+            onClick={() => api.commands.execute("togglePageBreakBefore")}
+            tooltip={t("metric.pageBreakBefore")}
+          />
+          <Button
+            icon="link-2"
+            active={api.commands.state("toggleKeepWithNext").isActive}
+            disabled={!enabled("toggleKeepWithNext")}
+            data-testid="editor-toolbar-keep-with-next"
+            onClick={() => api.commands.execute("toggleKeepWithNext")}
+            tooltip={t("metric.keepWithNext")}
+          />
+        </div>
+
+        <div class="oasis-editor-toolbar-panel-grid">
+          <TextField
+            class="oasis-editor-tool-color"
+            labelClass="oasis-editor-tool-metric-label"
+            title={t("metric.paragraphBgColor")}
+            label={t("metric.paraBg")}
+            type="color"
+            controlClass="oasis-editor-tool-color-input"
+            data-testid="editor-toolbar-paragraph-shading"
+            disabled={!enabled("setParagraphShading")}
+            value={numValue(api, "setParagraphShading") || "#ffffff"}
+            onChange={(value) =>
+              api.commands.execute("setParagraphShading", value)
+            }
+          />
+
+          <Button
+            icon="pageBorders"
+            disabled={!enabled("applyParagraphBorders")}
+            data-testid="editor-toolbar-paragraph-borders"
+            onClick={() => api.commands.execute("applyParagraphBorders")}
+            tooltip={t("metric.applyBorders")}
+          />
+        </div>
+      </Menu>
+    </div>
   );
 }
