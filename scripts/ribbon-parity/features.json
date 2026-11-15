@@ -3506,7 +3506,7 @@
       "exposure": "menu-only",
       "semantics": "partial",
       "persistence": "not-applicable",
-      "notes": "Command search shipped in Delivery 124: Alt+Q (or the Tell Me launcher in the chrome strip, or Tools > Command Search) opens a fuzzy-matched palette over the Ribbon and menubar command surface (buildCommandSearchEntries), with label-first scoring and a command-id fallback so English command names still resolve in other locales. Disabled commands are announced but refuse to run. Verified end-to-end (verify-ribbon-quickaccess.mjs). WordCraft's tools.search options, recents/pinned and per-command scoping remain open.",
+      "notes": "Command search shipped in Delivery 124: Alt+Q (or the Tell Me launcher in the ribbon tab bar — or the chrome strip when the host keeps it — or Tools > Command Search) opens a fuzzy-matched palette over the Ribbon and menubar command surface (buildCommandSearchEntries), with label-first scoring and a command-id fallback so English command names still resolve in other locales. Disabled commands are announced but refuse to run. Verified end-to-end (verify-ribbon-quickaccess.mjs, which adapts to hosts that retire the QAT chrome strip and records exactly which checks ran). WordCraft's tools.search options, recents/pinned and per-command scoping remain open.",
       "uiPath": "Ribbon tab bar > Tell Me; Tools > Command Search; Alt+Q",
       "uiEvidence": {
         "file": "src/ui/components/Toolbar/ribbon/RibbonTabs.tsx",
