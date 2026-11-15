@@ -9,6 +9,7 @@ import { projectTrackedRevisions } from "@/core/document/trackedRevisions.js";
 import { reviewDisplayProjection } from "@/core/commands/reviewMarkup.js";
 import { computeCommentHighlights } from "@/ui/canvas/CanvasCommentGeometry.js";
 import { computeRevisionMarkup } from "@/ui/canvas/CanvasRevisionGeometry.js";
+import { computeRevisionBalloons } from "@/ui/canvas/CanvasRevisionBalloonGeometry.js";
 import { computeChangeBars } from "@/ui/canvas/CanvasChangeBarGeometry.js";
 import {
   bumpLayoutMetricsEpoch,
@@ -231,7 +232,12 @@ function useEditorLayoutImpl(props: UseEditorLayoutProps) {
     setRevisionMarkupBoxes(
       props.state.showRevisionMarkup === false
         ? []
-        : computeRevisionMarkup(snapshot, props.state),
+        : [
+            ...computeRevisionMarkup(snapshot, props.state),
+            // Reviewer balloons share the decoration signal so they follow the
+            // same All-Markup / showRevisionMarkup gating with no new plumbing.
+            ...computeRevisionBalloons(snapshot, props.state),
+          ],
     );
     setCommentHighlights(computeCommentHighlights(snapshot, props.state));
     setSelectedImageBox(geometry.selectedImageBox);

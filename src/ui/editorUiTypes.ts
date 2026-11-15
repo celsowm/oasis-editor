@@ -65,14 +65,22 @@ export interface RevisionMarkupBox {
   type: "insert" | "delete" | "property" | "merge" | "grid";
   /**
    * `cell` paints a full table-cell outline; `section` paints the union of a
-   * section's paragraphs on each page as a section-properties outline. Both
-   * replace the text underline.
+   * section's paragraphs on each page; `balloon` paints a right-margin reviewer
+   * card. All three replace the text underline.
    */
-  variant?: "cell" | "section";
+  variant?: "cell" | "section" | "balloon";
   left: number;
   top: number;
   width: number;
   height: number;
+  /** `balloon` payload — author/date/snippet for the card. */
+  author?: string;
+  date?: number;
+  snippet?: string;
+  /** Connector line from the card back toward the anchor text. */
+  connectorLeft?: number;
+  connectorTop?: number;
+  connectorWidth?: number;
 }
 
 /** One highlight rectangle over a commented text range, tagged with its id. */
