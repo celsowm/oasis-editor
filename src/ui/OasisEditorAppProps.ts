@@ -38,6 +38,11 @@ export interface OasisEditorAppUiProps {
   showOutline?: boolean;
   /** Horizontal ruler above the page (document shell). Defaults to `showChrome`. */
   showRuler?: boolean;
+  /**
+   * First-run welcome dialog (precise local fonts offer). Defaults to `true`;
+   * embedded hosts (e.g. a form field) can turn it off.
+   */
+  showWelcome?: boolean;
   locale?: "pt-BR" | "en";
   viewportHeight?: number | string;
   class?: string;
