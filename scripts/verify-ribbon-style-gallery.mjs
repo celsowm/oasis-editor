@@ -45,6 +45,22 @@ try {
         const originalWidth = await gallery.evaluate((el) => el.style.width);
         for (const width of [131, 131.5, 132, 105, 212, 238]) {
           await gallery.evaluate((el, width) => { el.style.width = `${width}px`; }, width);
+          // Visibility alone is not sufficient: Playwright considers a card
+          // clipped by its parent visible, and ResizeObserver runs asynchronously.
+          // Wait for the actual slot count AND unclipped geometry to converge.
+          await expect.poll(async () => strip.evaluate((el) => {
+            const r = el.getBoundingClientRect();
+            const cards = [...el.querySelectorAll(".oasis-editor-style-gallery-card")];
+            const placeholder = el.querySelector(".oasis-editor-style-gallery-placeholder");
+            const expected = r.width < 80 ? 0 : Math.max(1, Math.floor(r.width / 106));
+            return cards.length === expected &&
+              (expected > 0
+                ? cards.every((card) => {
+                    const b = card.getBoundingClientRect();
+                    return b.left >= r.left - 0.5 && b.right <= r.right + 0.5;
+                  }) && cards.some((card) => card.dataset.styleId === "GalleryRegressionHeading" && card.getAttribute("aria-selected") === "true")
+                : placeholder?.textContent === "Custom regression heading");
+          }), { message: `Style gallery did not settle at ${width}px in ${engine}` }).toBe(true);
           if (width === 105) {
             await expect(strip.locator(".oasis-editor-style-gallery-placeholder")).toHaveText("Custom regression heading");
           } else {
