@@ -92,7 +92,7 @@ try {
                 const rows = [...content.querySelectorAll(".oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row")].map((row) =>
                   [...row.querySelectorAll(".oasis-editor-tool-button")].filter((b) => b.getBoundingClientRect().width > 0).map(rect)
                 );
-                return { id: group.dataset.ribbonGroup, large, rows, group: rect(group), caption: rect(group.querySelector(".oasis-editor-ribbon-group-label")) };
+                return { id: group.dataset.ribbonGroup, large, rows, body: rect(content), group: rect(group), caption: rect(group.querySelector(".oasis-editor-ribbon-group-label")) };
               });
             });
             const primary = alignment.flatMap((g) => g.large);
@@ -101,6 +101,19 @@ try {
               assert.ok(Math.max(...primary.map((b) => b.label.y)) - Math.min(...primary.map((b) => b.label.y)) <= 1, JSON.stringify(alignment));
             }
             for (const g of alignment) {
+              // Every small command stays in its own horizontal band and above
+              // the caption. Detect a fourth row caused by implicit grid tracks.
+              for (const row of g.rows) {
+                if (!row.length) continue;
+                const top = Math.min(...row.map((b) => b.y));
+                for (const button of row) {
+                  assert.ok(Math.abs(button.y - top) <= 1, "Wrapped review row: " + JSON.stringify(g));
+                  assert.ok(button.y + button.height <= g.caption.y + 1, "Command overlaps group caption: " + JSON.stringify(g));
+                }
+              }
+              if (g.id === "comments") {
+                assert.deepEqual(g.rows.map((row) => row.length), [2, 2, 3], JSON.stringify(g));
+              }
               // Border accounts for the half-pixel center difference.
               assert.ok(Math.abs(g.group.x + (g.group.width - 1) / 2 - (g.caption.x + g.caption.width / 2)) <= 1.5, JSON.stringify(g));
               if (g.id === "tracking" && g.rows[0]?.length && g.rows[1]?.length) {

@@ -3535,12 +3535,13 @@
  * This aligns icons despite translated labels having different lengths. */
 [data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-ribbon-normal-rows {
-  grid-template-columns: repeat(2, max-content);
+  grid-template-columns: repeat(var(--oasis-review-columns, 2), max-content);
   column-gap: 4px;
 }
-[data-ribbon-content-group="comments"]:not(.oasis-editor-ribbon-simplified *)
-  > .oasis-editor-ribbon-normal-rows {
-  grid-template-columns: repeat(3, max-content);
+[data-ribbon-content-group="comments"] {
+  /* Set the track count via an inherited token. A less-specific override
+     of grid-template-columns previously lost to the shared selector. */
+  --oasis-review-columns: 3;
 }
 [data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row {

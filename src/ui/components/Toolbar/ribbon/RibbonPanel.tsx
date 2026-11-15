@@ -165,7 +165,7 @@ export function RibbonPanel(props: RibbonPanelProps): JSX.Element {
             <RibbonGroup
               group={resolvedGroups().find(
                 (candidate) => candidate.id === group.id,
-              )!}
+              ) ?? { ...group, resizeState: "full" }}
               api={props.api}
               measurements={widths()[group.id]}
             />

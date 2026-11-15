@@ -234,7 +234,9 @@ export function Popover(props: PopoverProps): JSX.Element {
     <>
       {props.trigger({
         ref: (el): HTMLElement => (anchorRef = el),
-        open: props.open,
+        // Keep the trigger DOM stable while exposing reactive state to it.
+        // Reading props.open here eagerly remounted the trigger on toggle.
+        get open(): boolean { return props.open; },
         setOpen: (next): void => {
           if (!next || !props.disabled) props.onOpenChange(next);
         },
