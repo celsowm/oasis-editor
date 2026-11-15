@@ -5,7 +5,10 @@ import type {
   EditorTableCellNode,
 } from "@/core/model.js";
 import { createEditorStateFromDocument } from "@/core/editorState.js";
-import { collectCellRevisions } from "@/core/commands/cellRevisions.js";
+import {
+  collectCellRevisions,
+  collectTableRevisions,
+} from "@/core/commands/cellRevisions.js";
 import {
   applyShowMarkup,
   collectChangeBarParagraphIds,
@@ -59,10 +62,15 @@ function cell(
   } as unknown as EditorTableCellNode;
 }
 
-function tableDocument(
-  cell2Style?: EditorTableCellNode["style"],
-  cell3Style?: EditorTableCellNode["style"],
-): EditorDocument {
+interface TableExtras {
+  cell2Style?: EditorTableCellNode["style"];
+  cell3Style?: EditorTableCellNode["style"];
+  row1Style?: unknown;
+  tableStyle?: unknown;
+  gridRevision?: unknown;
+}
+
+function tableDocument(extras: TableExtras = {}): EditorDocument {
   return {
     id: "doc",
     sections: [
@@ -73,6 +81,10 @@ function tableDocument(
           {
             id: "t1",
             type: "table",
+            ...(extras.tableStyle ? { style: extras.tableStyle } : {}),
+            ...(extras.gridRevision
+              ? { gridRevision: extras.gridRevision }
+              : {}),
             rows: [
               {
                 id: "row0",
@@ -80,9 +92,10 @@ function tableDocument(
               },
               {
                 id: "row1",
+                ...(extras.row1Style ? { style: extras.row1Style } : {}),
                 cells: [
-                  cell("c2", "p2", "Alpha", cell2Style),
-                  cell("c3", "p3", "2", cell3Style),
+                  cell("c2", "p2", "Alpha", extras.cell2Style),
+                  cell("c3", "p3", "2", extras.cell3Style),
                 ],
               },
             ],
@@ -120,7 +133,9 @@ const propertyStyle = (): EditorTableCellNode["style"] =>
   }) as EditorTableCellNode["style"];
 
 const state = () =>
-  createEditorStateFromDocument(tableDocument(insertStyle(), propertyStyle()));
+  createEditorStateFromDocument(
+    tableDocument({ cell2Style: insertStyle(), cell3Style: propertyStyle() }),
+  );
 
 describe("collectCellRevisions", () => {
   it("describes cell-level structural and property revisions", () => {
@@ -153,7 +168,7 @@ describe("collectCellRevisions", () => {
         },
       ],
     };
-    const doc = tableDocument(insertStyle());
+    const doc = tableDocument({ cell2Style: insertStyle() });
     const table = doc.sections![0]!.blocks[0] as unknown as {
       rows: { cells: EditorTableCellNode[] }[];
     };
@@ -169,7 +184,7 @@ describe("collectCellRevisions", () => {
       ...propertyStyle(),
     } as EditorTableCellNode["style"];
     const cells = collectCellRevisions(
-      createEditorStateFromDocument(tableDocument(both)),
+      createEditorStateFromDocument(tableDocument({ cell2Style: both })),
     );
     expect(cells.map((c) => c.id)).toEqual(["cell-ins", "cell-prop"]);
     expect(cells.every((c) => c.paragraphIds[0] === "p2")).toBe(true);
@@ -232,5 +247,122 @@ describe("cell revisions in navigation and the Reviewing Pane", () => {
     );
     expect(collectAllRevisionIds(rejected).has("cell-prop")).toBe(false);
     expect(collectAllRevisionIds(rejected).has("cell-ins")).toBe(true);
+  });
+});
+
+describe("row/table/grid-level revisions", () => {
+  const rowStructural = {
+    revision: {
+      id: "row-ins",
+      type: "insert",
+      author: "Row author",
+      date: 3000,
+    },
+  };
+  const rowProperty = {
+    propertyRevision: {
+      id: "row-prop",
+      type: "property",
+      author: "Row author",
+      date: 3100,
+      previous: {},
+    },
+  };
+  const tableProperty = {
+    revision: {
+      id: "table-prop",
+      type: "property",
+      author: "Table author",
+      date: 3200,
+      previous: {},
+    },
+  };
+  const grid = {
+    id: "grid-rev",
+    type: "grid",
+    author: "Table author",
+    date: 3300,
+    previous: [],
+  };
+
+  const fullState = () =>
+    createEditorStateFromDocument(
+      tableDocument({
+        cell2Style: insertStyle(),
+        row1Style: { ...rowStructural, ...rowProperty },
+        tableStyle: tableProperty,
+        gridRevision: grid,
+      }),
+    );
+
+  it("describes row, table and grid revisions with their scopes", () => {
+    const revisions = collectTableRevisions(fullState());
+    expect(revisions.map((entry) => entry.id)).toEqual([
+      "table-prop",
+      "grid-rev",
+      "row-ins",
+      "row-prop",
+      "cell-ins",
+    ]);
+    const byId = new Map(revisions.map((entry) => [entry.id, entry]));
+    expect(byId.get("table-prop")).toMatchObject({
+      scope: "table",
+      type: "property",
+      tableId: "t1",
+      rowIndex: undefined,
+      paragraphIds: ["p0", "p1", "p2", "p3"],
+      snippet: "ItemQtyAlpha2",
+    });
+    expect(byId.get("grid-rev")).toMatchObject({
+      scope: "table",
+      type: "grid",
+    });
+    expect(byId.get("row-ins")).toMatchObject({
+      scope: "row",
+      type: "insert",
+      rowIndex: 1,
+      paragraphIds: ["p2", "p3"],
+      snippet: "Alpha2",
+    });
+    expect(byId.get("row-prop")).toMatchObject({
+      scope: "row",
+      type: "property",
+    });
+    expect(byId.get("cell-ins")).toMatchObject({ scope: "cell" });
+  });
+
+  it("collectCellRevisions stays limited to cell scope", () => {
+    expect(collectCellRevisions(fullState()).map((entry) => entry.id)).toEqual([
+      "cell-ins",
+    ]);
+  });
+
+  it("change bars cover all paragraphs under a row/table scope", () => {
+    const ids = collectChangeBarParagraphIds(fullState());
+    expect([...ids].sort()).toEqual(["p0", "p1", "p2", "p3"]);
+    // Grid has no category, so a reviewer filter is what clears every bar.
+    const hidden = setMarkupAuthors(fullState(), ["Someone else"]);
+    expect(collectChangeBarParagraphIds(hidden).size).toBe(0);
+  });
+
+  it("navigation lists row/table/grid ids in document order", () => {
+    expect(
+      collectNavigableRevisions(fullState()).map((range) => range.id),
+    ).toEqual(["table-prop", "grid-rev", "row-ins", "row-prop", "cell-ins"]);
+  });
+
+  it("focuses a row revision onto its first paragraph", () => {
+    const focused = focusRevisionById(fullState(), "row-ins");
+    expect(focused).not.toBe(fullState());
+    expect(focused.selection.anchor.paragraphId).toBe("p2");
+  });
+
+  it("per-row Accept resolves a row-level marker", () => {
+    const initial = fullState();
+    expect(collectAllRevisionIds(initial).has("row-ins")).toBe(true);
+    const accepted = acceptRevisionsInSelection(
+      focusRevisionById(initial, "row-ins"),
+    );
+    expect(collectAllRevisionIds(accepted).has("row-ins")).toBe(false);
   });
 });

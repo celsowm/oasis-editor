@@ -360,6 +360,67 @@ interface CellSpec {
   height: number;
 }
 
+/** Real table document whose cells carry the revisions in `cells`. */
+function tableState(
+  cells: CellSpec[],
+): ReturnType<typeof createEditorStateFromDocument> {
+  const maxRowIndex = Math.max(...cells.map((cell) => cell.rowIndex));
+  // Keep every row index 0..max so array position equals the document row
+  // index the canvas snapshot reports (empty rows stand in for gaps).
+  const rows = Array.from({ length: maxRowIndex + 1 }, (_, rowIndex) => ({
+    id: `row-${rowIndex}`,
+    cells: cells
+      .filter((cell) => cell.rowIndex === rowIndex)
+      .sort((left, right): number => left.cellIndex - right.cellIndex)
+      .map((cell) => ({
+        id: `cell-${cell.rowIndex}-${cell.cellIndex}`,
+        blocks: [
+          {
+            id: cell.paragraphId,
+            type: "paragraph",
+            runs: [
+              {
+                id: `${cell.paragraphId}-r`,
+                kind: "text",
+                text: "plain",
+              },
+            ],
+          },
+        ],
+        style:
+          cell.type === "property"
+            ? {
+                propertyRevision: {
+                  id: cell.revisionId,
+                  type: "property",
+                  author: cell.author,
+                  date: 1,
+                  previous: {},
+                },
+              }
+            : {
+                revision: {
+                  id: cell.revisionId,
+                  type: cell.type,
+                  author: cell.author,
+                  date: 1,
+                },
+              },
+      })),
+  }));
+  const document = {
+    id: "doc",
+    sections: [
+      {
+        id: "s1",
+        pageSettings: pageSettings(),
+        blocks: [{ id: "t1", type: "table", rows }],
+      },
+    ],
+  } as unknown as EditorDocument;
+  return createEditorStateFromDocument(document);
+}
+
 /** Snapshot whose paragraphs each carry a revised table cell. */
 function cellSnapshot(cells: CellSpec[]): CanvasLayoutSnapshot {
   const base = buildSnapshot(paragraph("p0", [textRun("a", "plain")]));
@@ -413,11 +474,7 @@ describe("computeRevisionMarkup table-cell revisions", () => {
       height: 24,
     },
   ];
-  const rawState = () =>
-    stateWith([
-      paragraph("p-ins", [textRun("a", "plain")]),
-      paragraph("p-prop", [textRun("b", "plain")]),
-    ]);
+  const rawState = () => tableState(cells);
 
   it("paints one full-cell outline box per revised cell", () => {
     const boxes = computeRevisionMarkup(cellSnapshot(cells), rawState());
@@ -466,10 +523,139 @@ describe("computeRevisionMarkup table-cell revisions", () => {
     const merge: CellSpec[] = [
       { ...cells[0]!, type: "merge", revisionId: "cell-merge" },
     ];
-    const state = applyShowMarkup(rawState(), { section: "insertions" });
+    const state = applyShowMarkup(tableState(merge), {
+      section: "insertions",
+    });
     const boxes = computeRevisionMarkup(cellSnapshot(merge), state);
     expect(boxes.map((box) => box.type)).toEqual(["merge"]);
-    const hidden = setMarkupAuthors(rawState(), ["Someone else"]);
+    const hidden = setMarkupAuthors(tableState(merge), ["Someone else"]);
     expect(computeRevisionMarkup(cellSnapshot(merge), hidden)).toHaveLength(0);
+  });
+});
+
+describe("computeRevisionMarkup row/table revisions", () => {
+  const fourCells: CellSpec[] = [
+    [0, 0, 100, 100],
+    [0, 1, 180, 100],
+    [1, 0, 100, 120],
+    [1, 1, 180, 120],
+  ].map(([rowIndex, cellIndex, left, top], index) => ({
+    paragraphId: `p${index}`,
+    rowIndex,
+    cellIndex,
+    revisionId: `unused-${index}`,
+    type: "insert" as const,
+    author: "A",
+    left,
+    top,
+    width: 80,
+    height: 20,
+  }));
+
+  const scopedState = () => {
+    const paragraphBlock = (id: string) => ({
+      id,
+      type: "paragraph",
+      runs: [{ id: `${id}-r`, kind: "text", text: "x" }],
+    });
+    const plainCell = (id: string, paragraphId: string) => ({
+      id,
+      blocks: [paragraphBlock(paragraphId)],
+    });
+    const document = {
+      id: "doc",
+      sections: [
+        {
+          id: "s1",
+          pageSettings: pageSettings(),
+          blocks: [
+            {
+              id: "t1",
+              type: "table",
+              style: {
+                revision: {
+                  id: "table-prop",
+                  type: "property",
+                  author: "A",
+                  date: 1,
+                  previous: {},
+                },
+              },
+              gridRevision: {
+                id: "grid-rev",
+                type: "grid",
+                author: "A",
+                date: 2,
+                previous: [],
+              },
+              rows: [
+                {
+                  id: "row0",
+                  cells: [plainCell("c0", "p0"), plainCell("c1", "p1")],
+                },
+                {
+                  id: "row1",
+                  style: {
+                    revision: {
+                      id: "row-ins",
+                      type: "insert",
+                      author: "A",
+                      date: 3,
+                    },
+                  },
+                  cells: [plainCell("c2", "p2"), plainCell("c3", "p3")],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } as unknown as EditorDocument;
+    return createEditorStateFromDocument(document);
+  };
+
+  it("unions a row's cells and the whole table into their own outlines", () => {
+    const boxes = computeRevisionMarkup(cellSnapshot(fourCells), scopedState());
+    expect(boxes).toHaveLength(3);
+    const byId = new Map(boxes.map((box) => [box.revisionId, box]));
+    // Table + grid span all four cells: left 100..260, top 100..140.
+    expect(byId.get("table-prop")).toEqual({
+      revisionId: "table-prop",
+      type: "property",
+      variant: "cell",
+      left: 100,
+      top: 100,
+      width: 160,
+      height: 40,
+    });
+    expect(byId.get("grid-rev")).toMatchObject({ type: "grid", width: 160 });
+    // Row 1 spans only its two cells: top 120..140.
+    expect(byId.get("row-ins")).toEqual({
+      revisionId: "row-ins",
+      type: "insert",
+      variant: "cell",
+      left: 100,
+      top: 120,
+      width: 160,
+      height: 20,
+    });
+  });
+
+  it("hides a row outline when its category is off", () => {
+    const state = applyShowMarkup(scopedState(), { section: "insertions" });
+    const ids = computeRevisionMarkup(cellSnapshot(fourCells), state).map(
+      (box) => box.revisionId,
+    );
+    expect(ids).not.toContain("row-ins");
+    expect(ids).toContain("table-prop");
+  });
+
+  it("hides table property but keeps grid when Formatting is off", () => {
+    const state = applyShowMarkup(scopedState(), { section: "formatting" });
+    const ids = computeRevisionMarkup(cellSnapshot(fourCells), state).map(
+      (box) => box.revisionId,
+    );
+    expect(ids).not.toContain("table-prop");
+    expect(ids).toContain("grid-rev");
   });
 });

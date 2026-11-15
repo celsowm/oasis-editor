@@ -1,5 +1,6 @@
 import type { EditorRevision, EditorState } from "@/core/model.js";
 import { isRevisionMarkupShown } from "@/core/commands/reviewMarkup.js";
+import { collectTableRevisions } from "@/core/commands/cellRevisions.js";
 import type { RevisionMarkupBox } from "@/ui/editorUiTypes.js";
 import type { CanvasLayoutSnapshot } from "./CanvasLayoutSnapshot.js";
 
@@ -75,50 +76,84 @@ function collectRevisionRanges(
   return ranges;
 }
 
+interface CellBox {
+  tableId: string;
+  rowIndex: number;
+  cellIndex: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 /**
- * Collect structural/formatting revisions on table cells. A cell's revision
- * (`w:tcPr` insert/delete/merge or `w:tcPrChange` property) is carried on the
- * snapshot's `tableCell` geometry; dedupe by cell because a cell can hold many
- * paragraphs. Show Markup category/reviewer filters apply through the shared
- * `isRevisionMarkupShown`; merge has no category and is reviewer-filtered only.
- * Grid (`w:tblGridChange`) and table-level revisions are preservation-only and
- * not painted.
+ * Collect revisions on tables, rows and cells. The document walker supplies
+ * which scopes are revised; the snapshot supplies each cell's painted box, so
+ * a row/table outline is the union of its cells (a cell can hold many
+ * paragraphs). Show Markup category/reviewer filters apply through the shared
+ * `isRevisionMarkupShown`; merge and grid have no category and are
+ * reviewer-filtered only.
  */
-function collectTableCellRevisions(
+function collectTableRevisionBoxes(
   snapshot: CanvasLayoutSnapshot,
   state: EditorState,
 ): RevisionMarkupBox[] {
   const { surfaceRect } = snapshot;
-  const boxes: RevisionMarkupBox[] = [];
-  const seen = new Set<string>();
+  const cells: CellBox[] = [];
+  const seenCells = new Set<string>();
   for (const segment of snapshot.paragraphs) {
     const cell = segment.tableCell;
-    if (!cell?.revisionId) continue;
+    if (!cell) continue;
     const key = `${cell.tableId}:${cell.rowIndex}:${cell.cellIndex}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const type = cell.revisionType ?? "property";
-    if (!isRevisionMarkupShown(state, type, cell.revisionAuthor ?? "")) {
-      continue;
-    }
-    boxes.push({
-      revisionId: cell.revisionId,
-      type,
-      variant: "cell",
-      left: cell.left - surfaceRect.left,
-      top: cell.top - surfaceRect.top,
+    if (seenCells.has(key)) continue;
+    seenCells.add(key);
+    cells.push({
+      tableId: cell.tableId,
+      rowIndex: cell.rowIndex,
+      cellIndex: cell.cellIndex,
+      left: cell.left,
+      top: cell.top,
       width: cell.width,
       height: cell.height,
+    });
+  }
+
+  const boxes: RevisionMarkupBox[] = [];
+  for (const revision of collectTableRevisions(state)) {
+    if (!isRevisionMarkupShown(state, revision.type, revision.author)) continue;
+    const matched = cells.filter((cell): boolean => {
+      if (cell.tableId !== revision.tableId) return false;
+      if (revision.scope === "table") return true;
+      if (cell.rowIndex !== revision.rowIndex) return false;
+      return revision.scope === "row" || cell.cellIndex === revision.cellIndex;
+    });
+    if (matched.length === 0) continue;
+    const left = Math.min(...matched.map((cell): number => cell.left));
+    const top = Math.min(...matched.map((cell): number => cell.top));
+    const right = Math.max(
+      ...matched.map((cell): number => cell.left + cell.width),
+    );
+    const bottom = Math.max(
+      ...matched.map((cell): number => cell.top + cell.height),
+    );
+    boxes.push({
+      revisionId: revision.id,
+      type: revision.type,
+      variant: "cell",
+      left: left - surfaceRect.left,
+      top: top - surfaceRect.top,
+      width: right - left,
+      height: bottom - top,
     });
   }
   return boxes;
 }
 
 /**
- * Project insert/delete/formatting text ranges and structural/formatting table
- * cell revisions into highlight rectangles. Text ranges reuse the canvas layout
- * snapshot's per-line slot positions; cell revisions use the cell box. Show
- * Markup filters come from the live editor state, not from the document.
+ * Project insert/delete/formatting text ranges and table/row/cell revisions
+ * into highlight rectangles. Text ranges reuse the canvas layout snapshot's
+ * per-line slot positions; table revisions use the union of their cells' boxes.
+ * Show Markup filters come from the live editor state, not from the document.
  */
 export function computeRevisionMarkup(
   snapshot: CanvasLayoutSnapshot,
@@ -152,7 +187,7 @@ export function computeRevisionMarkup(
       }
     }
   }
-  boxes.push(...collectTableCellRevisions(snapshot, state));
+  boxes.push(...collectTableRevisionBoxes(snapshot, state));
   return boxes;
 }
 

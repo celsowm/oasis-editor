@@ -15,7 +15,7 @@ import {
   positionToParagraphOffset,
 } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
-import { collectCellRevisions } from "@/core/commands/cellRevisions.js";
+import { collectTableRevisions } from "@/core/commands/cellRevisions.js";
 
 interface ReviewRange {
   id: string;
@@ -111,19 +111,20 @@ export function collectNavigableRevisions(state: EditorState): ReviewRange[] {
   // paragraph inside the cell so Next/Previous Change and the Reviewing Pane
   // (whose per-row Accept first focuses the id) can reach it. Inserting during
   // the paragraph pass keeps the ranges in document order for `findNextRange`.
-  const cellByFirstParagraph = new Map<string, string>();
-  for (const cell of collectCellRevisions(state)) {
-    const first = cell.paragraphIds[0];
-    if (first && !cellByFirstParagraph.has(first)) {
-      cellByFirstParagraph.set(first, cell.id);
-    }
+  const tableIdsByFirstParagraph = new Map<string, string[]>();
+  for (const revision of collectTableRevisions(state)) {
+    const first = revision.paragraphIds[0];
+    if (!first) continue;
+    const existing = tableIdsByFirstParagraph.get(first) ?? [];
+    existing.push(revision.id);
+    tableIdsByFirstParagraph.set(first, existing);
   }
   paragraphs.forEach((paragraph, index) => {
-    const cellId = cellByFirstParagraph.get(paragraph.id);
-    if (cellId && !seen.has(cellId)) {
-      seen.add(cellId);
+    for (const revisionId of tableIdsByFirstParagraph.get(paragraph.id) ?? []) {
+      if (seen.has(revisionId)) continue;
+      seen.add(revisionId);
       ranges.push({
-        id: cellId,
+        id: revisionId,
         startIndex: index,
         startOffset: 0,
         endIndex: index,

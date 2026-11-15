@@ -2,25 +2,46 @@ import type {
   EditorBlockNode,
   EditorState,
   EditorTableCellNode,
+  EditorTableNode,
+  EditorTableRowNode,
 } from "@/core/model.js";
 import { getDocumentSections } from "@/core/model.js";
 
 /**
- * A structural or formatting revision attached to a table cell
- * (`w:tcPr` insert/delete/merge or `w:tcPrChange`). Cell revisions live on the
- * cell's `style`, not on any run, so every surface that lists or marks changes
- * needs this walker. Grid (`w:tblGridChange`) and table/row-level revisions are
- * preservation-only here and deliberately excluded.
+ * Structural or property revisions attached to a table, one of its rows, or
+ * one of its cells (`w:tblPrChange`/`w:tblGridChange`, `w:trPrChange`,
+ * `w:tcPr` insert/delete/merge and `w:tcPrChange`). These live on the node's
+ * `style`, not on any run, so every surface that lists, marks or navigates
+ * changes needs this walker. Section-level `w:sectPrChange` and pending merge
+ * state remain preservation-only here.
  */
-export interface CellRevisionDescriptor {
+export type TableRevisionScope = "table" | "row" | "cell";
+
+export interface TableRevisionDescriptor {
   id: string;
-  type: "insert" | "delete" | "merge" | "property";
+  type: "insert" | "delete" | "merge" | "property" | "grid";
   author: string;
   date: number;
-  /** Every paragraph id inside the cell's block story (nested tables included). */
+  scope: TableRevisionScope;
+  tableId: string;
+  /** Document row index; absent for table-scoped revisions. */
+  rowIndex?: number;
+  /** Cell index; absent for row- and table-scoped revisions. */
+  cellIndex?: number;
+  /** Every paragraph id under this scope (nested tables included). */
   paragraphIds: string[];
-  /** Concatenated cell text, used as the Reviewing Pane snippet. */
+  /** Concatenated text, used as the Reviewing Pane snippet. */
   snippet: string;
+}
+
+/** Backwards-compatible name for the cell-scoped subset. */
+export type CellRevisionDescriptor = TableRevisionDescriptor;
+
+interface RevisionMeta {
+  id: string;
+  type: TableRevisionDescriptor["type"];
+  author: string;
+  date: number;
 }
 
 function collectParagraphIds(
@@ -39,7 +60,7 @@ function collectParagraphIds(
   }
 }
 
-function cellText(blocks: EditorBlockNode[] | undefined): string {
+function blockText(blocks: EditorBlockNode[] | undefined): string {
   const parts: string[] = [];
   const walk = (items: EditorBlockNode[] | undefined): void => {
     if (!items) return;
@@ -57,73 +78,131 @@ function cellText(blocks: EditorBlockNode[] | undefined): string {
   return parts.join("").trim();
 }
 
-function cellRevisionMeta(
-  cell: EditorTableCellNode,
-): Omit<CellRevisionDescriptor, "paragraphIds" | "snippet">[] {
-  const result: Omit<CellRevisionDescriptor, "paragraphIds" | "snippet">[] = [];
-  const structural = cell.style?.revision;
-  if (structural) {
-    result.push({
-      id: structural.id,
-      type: structural.type,
-      author: structural.author,
-      date: structural.date,
-    });
+function rowBlocks(row: EditorTableRowNode): EditorBlockNode[] {
+  return row.cells.flatMap((cell): EditorBlockNode[] => cell.blocks);
+}
+
+function tableBlocks(table: EditorTableNode): EditorBlockNode[] {
+  return table.rows.flatMap(rowBlocks);
+}
+
+function structuralMeta(revision: {
+  id: string;
+  type: string;
+  author: string;
+  date: number;
+}): RevisionMeta {
+  return {
+    id: revision.id,
+    type: revision.type as RevisionMeta["type"],
+    author: revision.author,
+    date: revision.date,
+  };
+}
+
+function propertyMeta(revision: {
+  id: string;
+  author: string;
+  date: number;
+}): RevisionMeta {
+  // Any `w:*PrChange` belongs to Word's dedicated Formatting category.
+  return {
+    id: revision.id,
+    type: "property",
+    author: revision.author,
+    date: revision.date,
+  };
+}
+
+function cellRevisions(cell: EditorTableCellNode): RevisionMeta[] {
+  const result: RevisionMeta[] = [];
+  if (cell.style?.revision) result.push(structuralMeta(cell.style.revision));
+  if (cell.style?.propertyRevision) {
+    result.push(propertyMeta(cell.style.propertyRevision));
   }
-  const property = cell.style?.propertyRevision;
-  if (property) {
-    // Match the painted overlay: any cell property change uses the dedicated
-    // Formatting category (Word's Show Markup "Formatting" checkbox).
+  return result;
+}
+
+function rowRevisions(row: EditorTableRowNode): RevisionMeta[] {
+  const result: RevisionMeta[] = [];
+  if (row.style?.revision) result.push(structuralMeta(row.style.revision));
+  if (row.style?.propertyRevision) {
+    result.push(propertyMeta(row.style.propertyRevision));
+  }
+  if (row.propertyExceptionsRevision) {
+    result.push(propertyMeta(row.propertyExceptionsRevision));
+  }
+  return result;
+}
+
+function tableRevisions(table: EditorTableNode): RevisionMeta[] {
+  const result: RevisionMeta[] = [];
+  if (table.style?.revision) result.push(propertyMeta(table.style.revision));
+  if (table.gridRevision) {
     result.push({
-      id: property.id,
-      type: "property",
-      author: property.author,
-      date: property.date,
+      id: table.gridRevision.id,
+      type: "grid",
+      author: table.gridRevision.author,
+      date: table.gridRevision.date,
     });
   }
   return result;
 }
 
 /**
- * Every cell-level revision in the document, in document order, de-duplicated
- * by id. Unfiltered by Show Markup: the Reviewing Pane and navigation apply
- * their own visibility rules, while change bars filter at the call site.
+ * Every table-level revision in the document, in document order,
+ * de-duplicated by id. Unfiltered by Show Markup: the Reviewing Pane and
+ * navigation apply their own visibility rules, while painting and change bars
+ * filter at the call site through `isRevisionMarkupShown`.
  */
-export function collectCellRevisions(
+export function collectTableRevisions(
   state: EditorState,
-): CellRevisionDescriptor[] {
-  const result: CellRevisionDescriptor[] = [];
+): TableRevisionDescriptor[] {
+  const result: TableRevisionDescriptor[] = [];
   const seen = new Set<string>();
 
-  const visitCell = (cell: EditorTableCellNode): void => {
-    for (const meta of cellRevisionMeta(cell)) {
-      if (seen.has(meta.id)) continue;
-      seen.add(meta.id);
-      const paragraphIds: string[] = [];
-      collectParagraphIds(cell.blocks, paragraphIds);
-      result.push({
-        ...meta,
-        paragraphIds,
-        snippet: cellText(cell.blocks),
-      });
-    }
+  const push = (
+    meta: RevisionMeta,
+    scope: TableRevisionScope,
+    tableId: string,
+    rowIndex: number | undefined,
+    cellIndex: number | undefined,
+    blocks: EditorBlockNode[],
+  ): void => {
+    if (seen.has(meta.id)) return;
+    seen.add(meta.id);
+    const paragraphIds: string[] = [];
+    collectParagraphIds(blocks, paragraphIds);
+    result.push({
+      ...meta,
+      scope,
+      tableId,
+      rowIndex,
+      cellIndex,
+      paragraphIds,
+      snippet: blockText(blocks),
+    });
   };
 
   const walkBlocks = (blocks: EditorBlockNode[] | undefined): void => {
     if (!blocks) return;
     for (const block of blocks) {
       if (block.type === "paragraph") continue;
-      for (const row of block.rows) {
-        for (const cell of row.cells) {
-          visitCell(cell);
-          walkBlocks(cell.blocks);
-        }
+      for (const meta of tableRevisions(block)) {
+        push(meta, "table", block.id, undefined, undefined, tableBlocks(block));
       }
+      block.rows.forEach((row, rowIndex) => {
+        for (const meta of rowRevisions(row)) {
+          push(meta, "row", block.id, rowIndex, undefined, rowBlocks(row));
+        }
+        row.cells.forEach((cell, cellIndex) => {
+          for (const meta of cellRevisions(cell)) {
+            push(meta, "cell", block.id, rowIndex, cellIndex, cell.blocks);
+          }
+          walkBlocks(cell.blocks);
+        });
+      });
     }
-  };
-
-  const walkStories = (blocks: EditorBlockNode[] | undefined): void => {
-    walkBlocks(blocks);
   };
 
   for (const section of getDocumentSections(state.document)) {
@@ -136,15 +215,24 @@ export function collectCellRevisions(
       section.firstPageFooter,
       section.evenPageFooter,
     ]) {
-      walkStories(blocks);
+      walkBlocks(blocks);
     }
   }
   for (const footnote of Object.values(state.document.footnotes?.items ?? {})) {
-    walkStories(footnote.blocks);
+    walkBlocks(footnote.blocks);
   }
   for (const endnote of Object.values(state.document.endnotes?.items ?? {})) {
-    walkStories(endnote.blocks);
+    walkBlocks(endnote.blocks);
   }
 
   return result;
+}
+
+/** Cell-scoped revisions only (the Delivery 137 surface). */
+export function collectCellRevisions(
+  state: EditorState,
+): TableRevisionDescriptor[] {
+  return collectTableRevisions(state).filter(
+    (entry): boolean => entry.scope === "cell",
+  );
 }

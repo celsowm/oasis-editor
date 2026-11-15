@@ -62,7 +62,7 @@ export interface RevisionBox {
 /** One decoration rectangle over a tracked insert/delete/formatting range. */
 export interface RevisionMarkupBox {
   revisionId: string;
-  type: "insert" | "delete" | "property" | "merge";
+  type: "insert" | "delete" | "property" | "merge" | "grid";
   /** `cell` paints a full table-cell outline instead of a text underline. */
   variant?: "cell";
   left: number;
