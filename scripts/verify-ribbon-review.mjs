@@ -7,7 +7,7 @@
  * checkbox), formatting revisions, Reviewing Pane formatting rows with their
  * accept/reject, structural table-cell revision outlines with their Simple
  * Markup change bars and pane rows, row/table/grid-level revision outlines,
- * and the persisted Reviewing Pane open state.
+ * per-line/page-margin change bars, and the persisted Reviewing Pane open state.
  */
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
@@ -439,17 +439,34 @@ try {
           ),
         ].sort();
       });
+    // Delivery 139 paints one bar per *changed line*, so a paragraph can own
+    // several bars. Deduplicate ids for the model-parity assertions and wait on
+    // distinct paragraph ids rather than raw bar counts.
     const paintedChangeBarIds = () =>
       changeBars().evaluateAll((bars) =>
-        bars.map((bar) => bar.getAttribute("data-paragraph-id")).sort(),
+        [
+          ...new Set(bars.map((bar) => bar.getAttribute("data-paragraph-id"))),
+        ].sort(),
       );
     const waitForChangeBarCount = (count) =>
       page.waitForFunction(
         (expected) =>
-          document.querySelectorAll('[data-testid="editor-change-bar"]')
-            .length === expected,
+          new Set(
+            [
+              ...document.querySelectorAll('[data-testid="editor-change-bar"]'),
+            ].map((bar) => bar.getAttribute("data-paragraph-id")),
+          ).size === expected,
         count,
         { timeout: 5000 },
+      );
+    const changeBarGeometry = () =>
+      changeBars().evaluateAll((bars) =>
+        bars.map((bar) => ({
+          paragraphId: bar.getAttribute("data-paragraph-id"),
+          left: parseFloat(bar.style.left),
+          top: parseFloat(bar.style.top),
+          height: parseFloat(bar.style.height),
+        })),
       );
 
     await (
@@ -1551,7 +1568,154 @@ try {
     assert.ok(scopedIds.includes("row-insert"));
     await page.getByTestId("review-revisions-close").click();
 
-    // 18. The Reviewing Pane's open state persists across reloads through
+    // 18. Simple Markup change bars are per-*line* and sit in the page margin
+    // (one constant x per page), not beside each paragraph's own text edge.
+    // Reset to All Markup and a pristine fixture before seeding a fresh doc.
+    await setReviewMode("all");
+    await applyShowMarkup(page, { allAuthors: true });
+    await loadFixture(page, "table");
+    await page.evaluate(() => {
+      const client = window.ribbonReference.client;
+      const doc = client.document.get();
+      const long = "Word marks each changed line in the left margin. ".repeat(
+        8,
+      );
+      const tail =
+        "Unchanged continuation text that wraps onto further lines. ".repeat(8);
+      const run = (id, text, revision) => ({
+        id,
+        kind: "text",
+        text,
+        ...(revision ? { revision } : {}),
+      });
+      const insert = (id) => ({
+        id,
+        type: "insert",
+        author: "Line author",
+        date: 9000,
+      });
+      const cellParagraph = {
+        id: "cell-p",
+        type: "paragraph",
+        runs: [run("cell-r", "Cell text")],
+      };
+      client.document.load({
+        ...doc,
+        sections: doc.sections.map((section, index) =>
+          index !== 0
+            ? section
+            : {
+                ...section,
+                blocks: [
+                  {
+                    id: "p-long",
+                    type: "paragraph",
+                    runs: [run("p-long-r", long, insert("line-all"))],
+                  },
+                  {
+                    id: "p-partial",
+                    type: "paragraph",
+                    runs: [
+                      run(
+                        "p-partial-r",
+                        "Changed prefix. ",
+                        insert("line-part"),
+                      ),
+                      run("p-partial-tail", tail),
+                    ],
+                  },
+                  {
+                    id: "p-plain",
+                    type: "paragraph",
+                    runs: [run("p-plain-r", "No revisions at all.")],
+                  },
+                  {
+                    id: "t-per-line",
+                    type: "table",
+                    rows: [
+                      {
+                        id: "row-per-line",
+                        cells: [
+                          {
+                            id: "cell-per-line",
+                            blocks: [cellParagraph],
+                            style: { revision: insert("line-cell") },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+        ),
+      });
+    });
+    await setReviewMode("simple");
+    assert.equal(await reviewMode(), "simple");
+    const perLineIds = await changeBarIds();
+    assert.deepEqual(
+      perLineIds,
+      ["cell-p", "p-long", "p-partial"],
+      "the seeded document has exactly three revision-bearing paragraphs",
+    );
+    await waitForChangeBarCount(perLineIds.length);
+    assert.deepEqual(await paintedChangeBarIds(), perLineIds);
+    const perLineGeometry = await changeBarGeometry();
+    const longBars = perLineGeometry.filter(
+      (bar) => bar.paragraphId === "p-long",
+    );
+    const partialBars = perLineGeometry.filter(
+      (bar) => bar.paragraphId === "p-partial",
+    );
+    const cellBars = perLineGeometry.filter(
+      (bar) => bar.paragraphId === "cell-p",
+    );
+    // A long inserted run marks every line: several short bars, not one tall
+    // paragraph-level bar.
+    assert.ok(
+      longBars.length >= 2,
+      "one bar per changed line of the fully inserted paragraph",
+    );
+    assert.equal(
+      new Set(longBars.map((bar) => bar.top)).size,
+      longBars.length,
+      "each bar sits on its own line",
+    );
+    assert.ok(
+      longBars.every((bar) => bar.height > 0 && bar.height < 60),
+      "bars span one line, not the whole paragraph",
+    );
+    // A short insertion marks only its own line, and a plain paragraph none.
+    assert.equal(
+      partialBars.length,
+      1,
+      "only the line containing the insertion is marked",
+    );
+    assert.equal(
+      perLineGeometry.some((bar) => bar.paragraphId === "p-plain"),
+      false,
+      "unchanged paragraphs paint no bar",
+    );
+    assert.equal(cellBars.length, 1, "the revised cell's line is marked");
+    // Body and table-cell bars align at one page-margin x; the old per-paragraph
+    // text-edge placement would have given the cell a different left.
+    const perLineLefts = [...new Set(perLineGeometry.map((bar) => bar.left))];
+    assert.equal(
+      perLineLefts.length,
+      1,
+      "every bar on the page shares one page-margin x",
+    );
+    assert.ok(perLineLefts[0] >= 0, "the bar sits in the left page margin");
+    // Show Markup filters still govern the per-line bars.
+    await applyShowMarkup(page, { allAuthors: false });
+    await waitForChangeBarCount(0);
+    assert.equal(await changeBars().count(), 0);
+    await applyShowMarkup(page, { allAuthors: true });
+    await waitForChangeBarCount(perLineIds.length);
+    assert.deepEqual(await paintedChangeBarIds(), perLineIds);
+    await setReviewMode("all");
+
+    // 19. The Reviewing Pane's open state persists across reloads through
     // localStorage, like Word's pane visibility. This runs last: a reload
     // intentionally discards every earlier step's document/view state.
     const paneStorage = () =>
@@ -1658,6 +1822,10 @@ try {
         "row-table-grid-revisions-follow-show-markup-categories",
         "row-table-grid-revisions-simple-markup-change-bars",
         "reviewing-pane-lists-row-table-grid-revisions",
+        "per-line-change-bars-paint-one-bar-per-changed-line",
+        "per-line-change-bars-only-mark-changed-lines",
+        "per-line-change-bars-align-in-page-margin",
+        "per-line-change-bars-follow-show-markup-filters",
         "reviewing-pane-open-state-persists-across-reload",
         "reviewing-pane-closed-state-persists-across-reload",
       ],
@@ -1669,7 +1837,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject, structural table-cell revision outlines with their Simple Markup change bars and pane rows, row/table/grid-level revision outlines, and the persisted Reviewing Pane open state.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject, structural table-cell revision outlines with their Simple Markup change bars and pane rows, row/table/grid-level revision outlines, per-line/page-margin change bars, and the persisted Reviewing Pane open state.`,
   );
 } finally {
   await browser.close();
