@@ -66,9 +66,45 @@ try {
               // checking all state for this action; openGroup locates the next.
               await page.keyboard.press("Escape");
             }
+            // Check the actual anchor coordinates, not just group allocation.
+            const alignment = await page.locator('[data-testid="editor-ribbon-panel"] > [data-ribbon-group]').evaluateAll((groups) => {
+              const rect = (el) => {
+                const r = el.getBoundingClientRect();
+                return { x: r.x, y: r.y, width: r.width, height: r.height };
+              };
+              return groups.filter((g) => g.dataset.ribbonState !== "collapsed").map((group) => {
+                const content = group.querySelector("[data-ribbon-content-group]");
+                const large = [...content.querySelectorAll(".oasis-editor-ribbon-large-items .oasis-editor-tool-button")].map((button) => ({
+                  icon: rect(button.querySelector("svg")),
+                  label: rect(button.querySelector(".oasis-editor-tool-button-label")),
+                }));
+                const rows = [...content.querySelectorAll(".oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row")].map((row) =>
+                  [...row.querySelectorAll(".oasis-editor-tool-button")].filter((b) => b.getBoundingClientRect().width > 0).map(rect)
+                );
+                return { id: group.dataset.ribbonGroup, large, rows, group: rect(group), caption: rect(group.querySelector(".oasis-editor-ribbon-group-label")) };
+              });
+            });
+            const primary = alignment.flatMap((g) => g.large);
+            if (primary.length > 1) {
+              assert.ok(Math.max(...primary.map((b) => b.icon.y)) - Math.min(...primary.map((b) => b.icon.y)) <= 1, JSON.stringify(alignment));
+              assert.ok(Math.max(...primary.map((b) => b.label.y)) - Math.min(...primary.map((b) => b.label.y)) <= 1, JSON.stringify(alignment));
+            }
+            for (const g of alignment) {
+              // Border accounts for the half-pixel center difference.
+              assert.ok(Math.abs(g.group.x + (g.group.width - 1) / 2 - (g.caption.x + g.caption.width / 2)) <= 1.5, JSON.stringify(g));
+              if (g.id === "tracking" && g.rows[0]?.length && g.rows[1]?.length) {
+                assert.ok(Math.abs(g.rows[0][0].x - g.rows[1][0].x) <= 1, JSON.stringify(g));
+                assert.ok(Math.abs(g.rows[0][0].width - g.rows[1][0].width) <= 1, JSON.stringify(g));
+              }
+              if (g.id === "changes" || g.id === "comments") {
+                for (const row of g.rows.slice(1)) for (let i = 0; i < Math.min(row.length, g.rows[0].length); i++) {
+                  assert.ok(Math.abs(row[i].x - g.rows[0][i].x) <= 1, JSON.stringify(g));
+                }
+              }
+            }
             const file = `${engine}-${theme}-${locale}-${fixture}-${width}.png`;
             await page.screenshot({ path: resolve(output, file) });
-            records.push({ sha, engine, theme, locale, fixture, width, geometry, screenshot: file });
+            records.push({ sha, engine, theme, locale, fixture, width, geometry, alignment, screenshot: file });
           }
         }
         assert.deepEqual(errors, []);

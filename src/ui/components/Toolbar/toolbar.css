@@ -3503,7 +3503,84 @@
   .oasis-editor-tool-button:disabled {
   opacity: 0.55;
 }
-.oasis-editor-ribbon-group[data-ribbon-group="tracking"]
-  [data-testid="editor-toolbar-display-for-review"] {
+/* Shared alignment geometry for the classic Review ribbon and its popups.
+ * Use stable layout attributes, not test IDs (measurement strips test IDs).
+ * The simplified ribbon retains its existing one-line layout. */
+:where(.oasis-editor-ribbon-group:is([data-ribbon-group="tracking"], [data-ribbon-group="changes"], [data-ribbon-group="comments"]))
+  > .oasis-editor-ribbon-group-label {
+  justify-self: center;
+}
+
+[data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-large-items .oasis-editor-tool-button:not(.oasis-editor-tool-button-dropdown) {
+  display: grid;
+  grid-template-rows: 24px 22px;
+  align-content: center;
+  align-items: start;
+  justify-items: center;
+  gap: 2px;
+  padding: 4px 5px;
+}
+
+[data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-large-items .oasis-editor-tool-button:not(.oasis-editor-tool-button-dropdown)
+  > .oasis-editor-tool-button-label {
+  align-self: start;
+  max-width: 100%;
+  width: 100%;
+  line-height: 11px;
+}
+
+/* Grid columns are intrinsic, measured once across every row by subgrid.
+ * This aligns icons despite translated labels having different lengths. */
+[data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows {
+  grid-template-columns: repeat(2, max-content);
+  column-gap: 4px;
+}
+[data-ribbon-content-group="comments"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows {
+  grid-template-columns: repeat(3, max-content);
+}
+[data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  column-gap: 4px;
+  align-items: center;
+}
+[data-ribbon-content-group="tracking"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row:nth-child(-n + 2)
+  > .oasis-editor-toolbar-item {
+  grid-column: 1 / -1;
+}
+[data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row
+  > .oasis-editor-toolbar-item > :is(.oasis-editor-tool-button, .oasis-editor-toolbar-dropdown),
+[data-ribbon-content-group="tracking"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows .oasis-editor-toolbar-dropdown > .oasis-editor-tool-button {
+  width: 100%;
+}
+[data-ribbon-content-group="tracking"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows .oasis-editor-toolbar-dropdown > .oasis-editor-tool-button {
+  justify-content: flex-start;
+}
+[data-ribbon-content-group="tracking"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows .oasis-editor-toolbar-dropdown .oasis-editor-dropdown-chevron {
+  margin-left: auto;
+}
+[data-ribbon-content-group="tracking"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row:first-child
+  .oasis-editor-tool-button-dropdown {
   border: 1px solid var(--oasis-ribbon-border, #b9b9b9);
 }
+[data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows .oasis-editor-tool-button:has(.oasis-editor-tool-button-label) {
+  justify-content: flex-start;
+}
+.oasis-editor-ribbon-group-compact-hide-labels [data-ribbon-content-group="comments"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows .oasis-editor-tool-button {
+  justify-content: center;
+}
+

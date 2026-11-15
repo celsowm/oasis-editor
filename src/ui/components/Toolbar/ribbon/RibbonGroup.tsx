@@ -28,6 +28,7 @@ function RibbonGroupContent(props: RibbonGroupProps): JSX.Element {
   return (
     <div
       class="oasis-editor-ribbon-group-rows"
+      data-ribbon-content-group={props.group.id}
       classList={{
         "oasis-editor-ribbon-group-three-rows": usesStackedRows(
           props.group.layout,
