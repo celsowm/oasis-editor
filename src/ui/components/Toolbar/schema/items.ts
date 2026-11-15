@@ -38,6 +38,8 @@ export interface ToolbarCommandState {
 export interface ToolbarDocumentStyle {
   id: string;
   name: string;
+  /** Optional presentation label for positively identified native styles. */
+  labelKey?: TranslationKey;
   type: "paragraph" | "character" | "table";
   qFormat?: boolean;
   uiPriority?: number;

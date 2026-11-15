@@ -222,6 +222,7 @@ export interface EssentialsFormattingCapability {
 export interface EssentialsDocumentStyleDescriptor {
   id: string;
   name: string;
+  labelKey?: import("@/i18n/index.js").TranslationKey;
   type: "paragraph" | "character" | "table";
   qFormat?: boolean;
   uiPriority?: number;

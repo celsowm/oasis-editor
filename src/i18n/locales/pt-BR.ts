@@ -177,6 +177,15 @@ export const ptBR = {
 
   // Style
   "toolbar.style": "Estilos",
+  "toolbar.style.builtin.normal": "Normal",
+  "toolbar.style.builtin.heading1": "Título 1",
+  "toolbar.style.builtin.heading2": "Título 2",
+  "toolbar.style.builtin.heading3": "Título 3",
+  "toolbar.style.builtin.header": "Cabeçalho",
+  "toolbar.style.builtin.footer": "Rodapé",
+  "toolbar.style.builtin.caption": "Legenda",
+  "toolbar.style.builtin.footnoteText": "Texto de nota de rodapé",
+  "toolbar.style.builtin.footnoteReference": "Referência de nota de rodapé",
   "toolbar.style.empty": "Sem estilos",
   "toolbar.style.unselected": "Estilos",
   "toolbar.style.unknown": "Estilo desconhecido: {0}",

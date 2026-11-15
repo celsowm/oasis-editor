@@ -107,9 +107,11 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
   );
   const knownActive = () =>
     allStyles().find((style) => style.id === activeId() && style.type !== "table");
+  const labelFor = (style: ToolbarDocumentStyle): string =>
+    style.labelKey ? props.api.t(style.labelKey) : style.name;
   const activeLabel = (): string => {
     const known = knownActive();
-    if (known) return known.name;
+    if (known) return labelFor(known);
     if (activeId()) return props.api.t("toolbar.style.unknown", [activeId()]);
     return props.api.t(styles().length ? "toolbar.style.unselected" : "toolbar.style.empty");
   };
@@ -216,7 +218,7 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
           classList={{
             "oasis-editor-style-gallery-card-active": isActive(style),
           }}
-          title={style.name}
+          title={labelFor(style)}
           role="option"
           aria-selected={isActive(style)}
           data-style-id={style.id}
@@ -229,7 +231,7 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
           >
             AaBb
           </span>
-          <span class="oasis-editor-style-gallery-name">{style.name}</span>
+          <span class="oasis-editor-style-gallery-name">{labelFor(style)}</span>
         </button>
       )}
     </For>
@@ -283,7 +285,7 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
             <For each={styles()}>
               {(style): JSX.Element => (
                 <option value={style.id} disabled={disabled(style)}>
-                  {style.name}
+                  {labelFor(style)}
                 </option>
               )}
             </For>

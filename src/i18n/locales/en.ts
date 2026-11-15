@@ -177,6 +177,15 @@ export const en = {
 
   // Style
   "toolbar.style": "Styles",
+  "toolbar.style.builtin.normal": "Normal",
+  "toolbar.style.builtin.heading1": "Heading 1",
+  "toolbar.style.builtin.heading2": "Heading 2",
+  "toolbar.style.builtin.heading3": "Heading 3",
+  "toolbar.style.builtin.header": "Header",
+  "toolbar.style.builtin.footer": "Footer",
+  "toolbar.style.builtin.caption": "Caption",
+  "toolbar.style.builtin.footnoteText": "Footnote Text",
+  "toolbar.style.builtin.footnoteReference": "Footnote Reference",
   "toolbar.style.empty": "No styles",
   "toolbar.style.unselected": "Styles",
   "toolbar.style.unknown": "Unknown style: {0}",

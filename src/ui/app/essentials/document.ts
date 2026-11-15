@@ -39,6 +39,7 @@ import type {
   EssentialsDocumentStyleDescriptor,
 } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
+import { builtinStyleLabel } from "./builtinStyleLabel.js";
 
 export function buildEssentialsDocument(
   options: CreateEditorEssentialsPluginOptions,
@@ -68,6 +69,7 @@ export function buildEssentialsDocument(
         return {
           id: style.id,
           name: style.name,
+          labelKey: document.sourcePackage ? undefined : builtinStyleLabel(style),
           type: style.type,
           qFormat: style.qFormat,
           uiPriority: style.uiPriority,
