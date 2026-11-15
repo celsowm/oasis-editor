@@ -8,6 +8,17 @@ import {
   collectSelectedRevisionIds,
   rejectRevision,
 } from "@/core/commands/history.js";
+import {
+  applyShowMarkup,
+  collectChangeBarParagraphIds,
+  collectChangeBarRanges,
+  isRevisionMarkupShown,
+  setMarkupAuthors,
+} from "@/core/commands/reviewMarkup.js";
+import {
+  collectNavigableRevisions,
+  focusRevisionById,
+} from "@/core/commands/reviewNavigation.js";
 
 function pageSettings(
   overrides: Partial<EditorPageSettings> = {},
@@ -182,5 +193,45 @@ describe("section revisions in the accept/reject model", () => {
     const after = acceptRevision(before, "some-other-id");
     expect(after.document.sections![0]!.propertyRevision).toBeDefined();
     expect(collectAllRevisionIds(after).has("sect-rev")).toBe(true);
+  });
+});
+
+describe("section revisions in change bars, navigation and filters", () => {
+  it("Simple Markup paints a bar over every paragraph in the section", () => {
+    expect([...collectChangeBarParagraphIds(state())].sort()).toEqual([
+      "p1",
+      "p2",
+      "pc1",
+    ]);
+  });
+
+  it("section paragraphs get a null range (every line is marked)", () => {
+    const ranges = collectChangeBarRanges(state());
+    for (const id of ["p1", "p2", "pc1"]) {
+      expect(ranges.get(id)).toBeNull();
+    }
+    expect(ranges.has("p3")).toBe(false);
+  });
+
+  it("the Formatting checkbox hides the section bars and pane row", () => {
+    const hidden = applyShowMarkup(state(), { section: "formatting" });
+    expect(collectChangeBarParagraphIds(hidden).size).toBe(0);
+    expect(collectChangeBarRanges(hidden).size).toBe(0);
+    expect(isRevisionMarkupShown(hidden, "property", "Section author")).toBe(
+      false,
+    );
+  });
+
+  it("reviewer filters hide the section bars", () => {
+    const hidden = setMarkupAuthors(state(), ["Someone else"]);
+    expect(collectChangeBarParagraphIds(hidden).size).toBe(0);
+  });
+
+  it("navigation lists the section id and focuses its first paragraph", () => {
+    expect(collectNavigableRevisions(state()).map((r) => r.id)).toEqual([
+      "sect-rev",
+    ]);
+    const focused = focusRevisionById(state(), "sect-rev");
+    expect(focused.selection.anchor.paragraphId).toBe("p1");
   });
 });

@@ -94,6 +94,7 @@ export const ptBR = {
   "review.revisionDelete": "Exclusão",
   "review.revisionProperty": "Alteração de formatação",
   "review.revisionGrid": "Alteração de grade da tabela",
+  "review.revisionSection": "Alteração das propriedades da seção",
   "review.revisionOther": "Alteração",
   "review.displayForReview": "Exibir para revisão",
   "review.displayModeSimple": "Marcação simples",

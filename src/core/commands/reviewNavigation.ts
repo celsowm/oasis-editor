@@ -15,7 +15,10 @@ import {
   positionToParagraphOffset,
 } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
-import { collectTableRevisions } from "@/core/commands/cellRevisions.js";
+import {
+  collectSectionRevisions,
+  collectTableRevisions,
+} from "@/core/commands/cellRevisions.js";
 
 interface ReviewRange {
   id: string;
@@ -107,20 +110,27 @@ export function collectNavigableRevisions(state: EditorState): ReviewRange[] {
   const paragraphs = getParagraphs(state);
   const ranges: ReviewRange[] = [];
   const seen = new Set<string>();
-  // A cell-level revision has no run to carry its id. Anchor it to the first
-  // paragraph inside the cell so Next/Previous Change and the Reviewing Pane
-  // (whose per-row Accept first focuses the id) can reach it. Inserting during
-  // the paragraph pass keeps the ranges in document order for `findNextRange`.
-  const tableIdsByFirstParagraph = new Map<string, string[]>();
-  for (const revision of collectTableRevisions(state)) {
+  // A table/row/cell/grid or section-level revision has no run to carry its
+  // id. Anchor it to the first paragraph under its scope so Next/Previous
+  // Change and the Reviewing Pane (whose per-row Accept first focuses the id)
+  // can reach it. Inserting during the paragraph pass keeps the ranges in
+  // document order for `findNextRange`. A section revision is anchored to its
+  // first body paragraph; like every other revision it is only reachable while
+  // that section is the active editing zone (getParagraphs is zone-scoped).
+  const structuralIdsByFirstParagraph = new Map<string, string[]>();
+  for (const revision of [
+    ...collectTableRevisions(state),
+    ...collectSectionRevisions(state),
+  ]) {
     const first = revision.paragraphIds[0];
     if (!first) continue;
-    const existing = tableIdsByFirstParagraph.get(first) ?? [];
+    const existing = structuralIdsByFirstParagraph.get(first) ?? [];
     existing.push(revision.id);
-    tableIdsByFirstParagraph.set(first, existing);
+    structuralIdsByFirstParagraph.set(first, existing);
   }
   paragraphs.forEach((paragraph, index) => {
-    for (const revisionId of tableIdsByFirstParagraph.get(paragraph.id) ?? []) {
+    for (const revisionId of structuralIdsByFirstParagraph.get(paragraph.id) ??
+      []) {
       if (seen.has(revisionId)) continue;
       seen.add(revisionId);
       ranges.push({

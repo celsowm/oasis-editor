@@ -659,3 +659,118 @@ describe("computeRevisionMarkup row/table revisions", () => {
     expect(ids).toContain("grid-rev");
   });
 });
+
+describe("computeRevisionMarkup section-level revisions", () => {
+  /** A document whose first section carries a `w:sectPrChange` revision. */
+  const sectionState = () => {
+    const document = {
+      id: "doc",
+      sections: [
+        {
+          id: "s1",
+          pageSettings: pageSettings(),
+          blocks: [
+            paragraph("a", [textRun("a-r", "AAAA")]),
+            paragraph("b", [textRun("b-r", "BBBB")]),
+            paragraph("c", [textRun("c-r", "CCCC")]),
+          ],
+          propertyRevision: {
+            id: "sect-rev",
+            type: "property",
+            author: "Section author",
+            date: 1,
+            previous: { pageSettings: pageSettings() },
+          },
+        },
+      ],
+    } as unknown as EditorDocument;
+    return createEditorStateFromDocument(document);
+  };
+
+  /** Three plain paragraphs spread over two pages. */
+  const sectionSnapshot = () => {
+    const base = buildSnapshot(paragraph("a", [textRun("a-r", "AAAA")]));
+    const specs = [
+      {
+        paragraphId: "a",
+        pageIndex: 0,
+        left: 100,
+        top: 100,
+        width: 200,
+        height: 20,
+      },
+      {
+        paragraphId: "b",
+        pageIndex: 0,
+        left: 140,
+        top: 140,
+        width: 240,
+        height: 20,
+      },
+      {
+        paragraphId: "c",
+        pageIndex: 1,
+        left: 100,
+        top: 200,
+        width: 200,
+        height: 20,
+      },
+    ];
+    const paragraphs = specs.map((s) => ({
+      ...(base.paragraphs[0] as object),
+      paragraphId: s.paragraphId,
+      pageIndex: s.pageIndex,
+      left: s.left,
+      top: s.top,
+      width: s.width,
+      height: s.height,
+    }));
+    return { ...base, paragraphs } as unknown as CanvasLayoutSnapshot;
+  };
+
+  it("paints one section outline per page as the union of its paragraphs", () => {
+    const boxes = computeRevisionMarkup(sectionSnapshot(), sectionState());
+    expect(boxes).toHaveLength(2);
+    expect(boxes[0]).toEqual({
+      revisionId: "sect-rev",
+      type: "property",
+      variant: "section",
+      left: 100,
+      top: 100,
+      width: 280,
+      height: 60,
+    });
+    expect(boxes[1]).toMatchObject({
+      revisionId: "sect-rev",
+      variant: "section",
+      left: 100,
+      top: 200,
+      width: 200,
+      height: 20,
+    });
+  });
+
+  it("hides the section outline when the Formatting category is off", () => {
+    const state = applyShowMarkup(sectionState(), { section: "formatting" });
+    expect(computeRevisionMarkup(sectionSnapshot(), state)).toHaveLength(0);
+  });
+
+  it("hides the section outline when the reviewer is filtered out", () => {
+    const state = setMarkupAuthors(sectionState(), ["Someone else"]);
+    expect(computeRevisionMarkup(sectionSnapshot(), state)).toHaveLength(0);
+  });
+
+  it("paints nothing when no section is revised", () => {
+    const plain = createEditorStateFromDocument({
+      id: "doc",
+      sections: [
+        {
+          id: "s1",
+          pageSettings: pageSettings(),
+          blocks: [paragraph("a", [textRun("a-r", "AAAA")])],
+        },
+      ],
+    } as unknown as EditorDocument);
+    expect(computeRevisionMarkup(sectionSnapshot(), plain)).toHaveLength(0);
+  });
+});

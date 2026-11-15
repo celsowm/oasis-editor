@@ -3,7 +3,10 @@ import type { EditorState } from "@/core/model.js";
 import { getParagraphs } from "@/core/model.js";
 import { collectNavigableRevisions } from "@/core/commands/reviewNavigation.js";
 import { isRevisionMarkupShown } from "@/core/commands/reviewMarkup.js";
-import { collectTableRevisions } from "@/core/commands/cellRevisions.js";
+import {
+  collectSectionRevisions,
+  collectTableRevisions,
+} from "@/core/commands/cellRevisions.js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Button } from "@/ui/public/Button.js";
 import { Text } from "@/ui/public/Text.js";
@@ -30,6 +33,8 @@ interface RevisionEntry {
   author: string;
   date: number | undefined;
   snippet: string;
+  /** Row describes a section-level `w:sectPrChange` revision. */
+  section?: boolean;
 }
 
 /** The revision's own text (all runs bearing its text or formatting id). */
@@ -94,15 +99,27 @@ export function ReviewingPane(props: ReviewingPaneProps): JSX.Element {
     const tableById = new Map(
       collectTableRevisions(state).map((entry) => [entry.id, entry]),
     );
+    // Section-level `w:sectPrChange` revisions also live off-run; fill their
+    // author/date/type/snippet from the section walker (same seam as tables).
+    const sectionById = new Map(
+      collectSectionRevisions(state).map((entry) => [entry.id, entry]),
+    );
     return collectNavigableRevisions(state).map((range) => {
       const meta = dateById.get(range.id);
       const table = tableById.get(range.id);
+      const section = sectionById.get(range.id);
       return {
         id: range.id,
-        type: meta?.type ?? table?.type ?? "insert",
-        author: authorById.get(range.id) ?? table?.author ?? "—",
-        date: meta?.date ?? table?.date,
-        snippet: revisionSnippet(state, range.id) || table?.snippet || "",
+        type: meta?.type ?? table?.type ?? section?.type ?? "insert",
+        author:
+          authorById.get(range.id) ?? table?.author ?? section?.author ?? "—",
+        date: meta?.date ?? table?.date ?? section?.date,
+        snippet:
+          revisionSnippet(state, range.id) ||
+          table?.snippet ||
+          section?.snippet ||
+          "",
+        section: section !== undefined,
       };
     });
   });
@@ -118,7 +135,8 @@ export function ReviewingPane(props: ReviewingPaneProps): JSX.Element {
   });
   const hiddenCount = (): number => allEntries().length - entries().length;
 
-  const typeLabel = (type: string): string => {
+  const typeLabel = (type: string, section?: boolean): string => {
+    if (section) return t("review.revisionSection");
     if (type === "insert" || type === "delete")
       return type === "insert"
         ? t("review.revisionInsert")
@@ -130,14 +148,16 @@ export function ReviewingPane(props: ReviewingPaneProps): JSX.Element {
   const typeIcon = (type: string): string =>
     type === "delete" ? "minus" : type === "insert" ? "plus" : "pencil";
 
-  const typeIconClass = (type: string): string =>
-    type === "delete"
-      ? "review-revisions-icon-delete"
-      : type === "property"
-        ? "review-revisions-icon-property"
-        : type === "grid"
-          ? "review-revisions-icon-grid"
-          : "review-revisions-icon-insert";
+  const typeIconClass = (type: string, section?: boolean): string =>
+    section
+      ? "review-revisions-icon-section"
+      : type === "delete"
+        ? "review-revisions-icon-delete"
+        : type === "property"
+          ? "review-revisions-icon-property"
+          : type === "grid"
+            ? "review-revisions-icon-grid"
+            : "review-revisions-icon-insert";
 
   return (
     <div
@@ -182,15 +202,19 @@ export function ReviewingPane(props: ReviewingPaneProps): JSX.Element {
         >
           <For each={entries()}>
             {(item): JSX.Element => (
-              <li class="oasis-review-revision-item" data-comment-id={item.id}>
+              <li
+                class="oasis-review-revision-item"
+                data-comment-id={item.id}
+                data-revision-section={item.section ? "true" : undefined}
+              >
                 <div class="oasis-review-revision-body">
                   <Text
                     as="span"
-                    class={`oasis-review-revision-type ${typeIconClass(item.type)}`}
+                    class={`oasis-review-revision-type ${typeIconClass(item.type, item.section)}`}
                     data-revision-type={item.type}
                   >
                     <ToolIcon name={typeIcon(item.type)} />
-                    <Text as="span">{typeLabel(item.type)}</Text>
+                    <Text as="span">{typeLabel(item.type, item.section)}</Text>
                   </Text>
                   <Text as="p">{item.snippet || "—"}</Text>
                   <Text as="span">{item.author}</Text>

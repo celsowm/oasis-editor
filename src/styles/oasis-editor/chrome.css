@@ -259,6 +259,9 @@
 .oasis-review-revision-type.oasis-review-revisions-icon-grid {
   color: #0891b2;
 }
+.oasis-review-revision-type.oasis-review-revisions-icon-section {
+  color: #db2777;
+}
 .oasis-review-revision-actions {
   display: flex;
   flex-direction: column;

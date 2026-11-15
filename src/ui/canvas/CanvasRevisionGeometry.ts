@@ -1,8 +1,12 @@
 import type { EditorRevision, EditorState } from "@/core/model.js";
 import { isRevisionMarkupShown } from "@/core/commands/reviewMarkup.js";
-import { collectTableRevisions } from "@/core/commands/cellRevisions.js";
+import {
+  collectSectionRevisions,
+  collectTableRevisions,
+} from "@/core/commands/cellRevisions.js";
 import type { RevisionMarkupBox } from "@/ui/editorUiTypes.js";
 import type { CanvasLayoutSnapshot } from "./CanvasLayoutSnapshot.js";
+import type { CanvasSnapshotParagraph } from "./canvasSnapshotTypes.js";
 
 interface RevisionRange {
   start: number;
@@ -150,9 +154,54 @@ function collectTableRevisionBoxes(
 }
 
 /**
- * Project insert/delete/formatting text ranges and table/row/cell revisions
- * into highlight rectangles. Text ranges reuse the canvas layout snapshot's
- * per-line slot positions; table revisions use the union of their cells' boxes.
+ * Collect section-level `w:sectPrChange` outlines. A section property change
+ * has no run or cell of its own: the walker supplies the section's body
+ * paragraph ids, and the snapshot supplies their painted rects. One dashed
+ * outline is emitted per page spanning the union of that section's paragraphs
+ * on the page (a section can flow across pages). Show Markup's Formatting
+ * checkbox and reviewer filters apply through `isRevisionMarkupShown`. The same
+ * all-markup mode gating as every other decoration is applied at the call site.
+ */
+function collectSectionRevisionBoxes(
+  snapshot: CanvasLayoutSnapshot,
+  state: EditorState,
+): RevisionMarkupBox[] {
+  const { surfaceRect } = snapshot;
+  const boxes: RevisionMarkupBox[] = [];
+  for (const revision of collectSectionRevisions(state)) {
+    if (!isRevisionMarkupShown(state, revision.type, revision.author)) continue;
+    const ids = new Set(revision.paragraphIds);
+    const byPage = new Map<number, CanvasSnapshotParagraph[]>();
+    for (const segment of snapshot.paragraphs) {
+      if (!ids.has(segment.paragraphId)) continue;
+      const group = byPage.get(segment.pageIndex) ?? [];
+      group.push(segment);
+      byPage.set(segment.pageIndex, group);
+    }
+    for (const segments of byPage.values()) {
+      const left = Math.min(...segments.map((s): number => s.left));
+      const top = Math.min(...segments.map((s): number => s.top));
+      const right = Math.max(...segments.map((s): number => s.left + s.width));
+      const bottom = Math.max(...segments.map((s): number => s.top + s.height));
+      boxes.push({
+        revisionId: revision.id,
+        type: revision.type,
+        variant: "section",
+        left: left - surfaceRect.left,
+        top: top - surfaceRect.top,
+        width: right - left,
+        height: bottom - top,
+      });
+    }
+  }
+  return boxes;
+}
+
+/**
+ * Project insert/delete/formatting text ranges and table/row/cell/section
+ * revisions into highlight rectangles. Text ranges reuse the canvas layout
+ * snapshot's per-line slot positions; table revisions use the union of their
+ * cells' boxes and section revisions the union of their paragraphs per page.
  * Show Markup filters come from the live editor state, not from the document.
  */
 export function computeRevisionMarkup(
@@ -188,6 +237,7 @@ export function computeRevisionMarkup(
     }
   }
   boxes.push(...collectTableRevisionBoxes(snapshot, state));
+  boxes.push(...collectSectionRevisionBoxes(snapshot, state));
   return boxes;
 }
 

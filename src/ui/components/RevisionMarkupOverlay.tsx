@@ -10,8 +10,10 @@ export interface RevisionMarkupOverlayProps {
  * Paints Word-style track-changes decorations over the canvas: a solid green
  * underline for insertions, a red strike-through for deletions and a violet
  * underline for formatting (property) revisions. Structural table-cell
- * revisions (`variant === "cell"`) instead draw a full coloured cell outline.
- * Presentational only — hit-testing and editing stay on the canvas underneath.
+ * revisions (`variant === "cell"`) instead draw a full coloured cell outline,
+ * and section-level `w:sectPrChange` revisions (`variant === "section"`) draw
+ * an outline around the section's paragraphs on each page. Presentational only
+ * — hit-testing and editing stay on the canvas underneath.
  */
 export function RevisionMarkupOverlay(
   props: RevisionMarkupOverlayProps,
@@ -29,11 +31,15 @@ export function RevisionMarkupOverlay(
               "oasis-editor-revision-markup-merge": box.type === "merge",
               "oasis-editor-revision-markup-grid": box.type === "grid",
               "oasis-editor-revision-markup-cell": box.variant === "cell",
+              "oasis-editor-revision-markup-section": box.variant === "section",
             }}
             data-testid="editor-revision-markup"
             data-revision-type={box.type}
             data-revision-id={box.revisionId}
             data-revision-cell={box.variant === "cell" ? "true" : undefined}
+            data-revision-section={
+              box.variant === "section" ? "true" : undefined
+            }
             style={{
               left: `${box.left}px`,
               top: `${box.top}px`,

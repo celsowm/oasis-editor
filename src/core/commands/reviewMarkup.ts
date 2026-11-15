@@ -5,7 +5,10 @@ import type {
 } from "@/core/model/types/nodes.js";
 import { getDocumentParagraphs } from "@/core/model.js";
 import { getDocumentSections } from "@/core/model.js";
-import { collectTableRevisions } from "@/core/commands/cellRevisions.js";
+import {
+  collectSectionRevisions,
+  collectTableRevisions,
+} from "@/core/commands/cellRevisions.js";
 
 /** The display sections Word's Show Markup menu filters. */
 export type MarkupSection =
@@ -189,13 +192,30 @@ function paragraphHasVisibleRevision(
 }
 
 /**
+ * Body paragraph ids of visible `w:sectPrChange` revisions. A section property
+ * change has no run of its own, so Simple Markup marks every line of every
+ * paragraph under that section (a `null` range in `collectChangeBarRanges`).
+ * The revision type is `"property"`, so the dedicated Formatting checkbox and
+ * reviewer filters govern those bars through `isRevisionMarkupShown`.
+ */
+function visibleSectionChangeBarParagraphIds(state: EditorState): string[] {
+  const ids: string[] = [];
+  for (const revision of collectSectionRevisions(state)) {
+    if (!isRevisionMarkupShown(state, revision.type, revision.author)) continue;
+    ids.push(...revision.paragraphIds);
+  }
+  return ids;
+}
+
+/**
  * Paragraph ids that should carry a Simple Markup change bar: every paragraph
  * in the raw document with at least one visible insert/delete text revision,
- * run-level formatting (property) revision, or a revised table/row/cell (the
- * bar covers each paragraph under that scope). Show Markup category and reviewer
- * filters are applied through `isRevisionMarkupShown`, so hiding insertions,
- * deletions, formatting or a reviewer removes the matching bar. Endnotes have
- * no editable zone and are not walked.
+ * run-level formatting (property) revision, a revised table/row/cell (the
+ * bar covers each paragraph under that scope), or a revised section (every
+ * paragraph in the section). Show Markup category and reviewer filters are
+ * applied through `isRevisionMarkupShown`, so hiding insertions, deletions,
+ * formatting or a reviewer removes the matching bar. Endnotes have no editable
+ * zone and are not walked.
  */
 export function collectChangeBarParagraphIds(state: EditorState): Set<string> {
   const ids = new Set<string>();
@@ -208,6 +228,7 @@ export function collectChangeBarParagraphIds(state: EditorState): Set<string> {
     if (!isRevisionMarkupShown(state, revision.type, revision.author)) continue;
     for (const id of revision.paragraphIds) ids.add(id);
   }
+  for (const id of visibleSectionChangeBarParagraphIds(state)) ids.add(id);
   return ids;
 }
 
@@ -220,8 +241,9 @@ export interface ChangeBarRange {
 /**
  * Per-paragraph extents of visible revisions, expressed in *final-text* offsets
  * — the coordinate space of Simple Markup's projected layout. A `null` value
- * means the whole paragraph is changed (a table/row/cell/grid revision covers
- * every line), while an array marks only the lines overlapping those ranges.
+ * means the whole paragraph is changed (a table/row/cell/grid or section
+ * revision covers every line), while an array marks only the lines overlapping
+ * those ranges.
  *
  * Inserted and property-revision runs survive the "final" projection, so their
  * offsets are used directly. Deleted runs are removed from the projection, so
@@ -239,6 +261,9 @@ export function collectChangeBarRanges(
     for (const id of revision.paragraphIds) {
       if (!result.has(id)) result.set(id, null);
     }
+  }
+  for (const id of visibleSectionChangeBarParagraphIds(state)) {
+    if (!result.has(id)) result.set(id, null);
   }
   for (const paragraph of getDocumentParagraphs(state.document)) {
     const ranges: ChangeBarRange[] = [];

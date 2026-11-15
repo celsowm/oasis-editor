@@ -470,6 +470,18 @@
   border-color: #0891b2;
 }
 
+/* Section-level w:sectPrChange revisions outline the section's paragraphs on
+   each page. A dashed border distinguishes them from solid cell/table
+   outlines; the colour matches the Reviewing Pane's section badge. */
+.oasis-editor-revision-markup-section {
+  border: 2px dashed #db2777;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+.oasis-editor-revision-markup-section::after {
+  display: none;
+}
+
 .oasis-editor-change-bar-root {
   pointer-events: none;
 }

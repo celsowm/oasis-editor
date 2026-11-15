@@ -63,8 +63,12 @@ export interface RevisionBox {
 export interface RevisionMarkupBox {
   revisionId: string;
   type: "insert" | "delete" | "property" | "merge" | "grid";
-  /** `cell` paints a full table-cell outline instead of a text underline. */
-  variant?: "cell";
+  /**
+   * `cell` paints a full table-cell outline; `section` paints the union of a
+   * section's paragraphs on each page as a section-properties outline. Both
+   * replace the text underline.
+   */
+  variant?: "cell" | "section";
   left: number;
   top: number;
   width: number;

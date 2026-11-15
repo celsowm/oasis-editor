@@ -94,6 +94,7 @@ export const en = {
   "review.revisionDelete": "Deletion",
   "review.revisionProperty": "Formatting change",
   "review.revisionGrid": "Table grid change",
+  "review.revisionSection": "Section properties change",
   "review.revisionOther": "Change",
   "review.displayForReview": "Display for Review",
   "review.displayModeSimple": "Simple Markup",
