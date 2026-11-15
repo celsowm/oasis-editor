@@ -35,6 +35,8 @@ export interface PopoverProps {
   children: JSX.Element;
   placement?: PopoverPlacement;
   panelClass?: string;
+  /** Optional panel-specific sizing; positioning remains owned by Popover. */
+  panelStyle?: JSX.CSSProperties;
   panelRole?: JSX.HTMLAttributes<HTMLDivElement>["role"];
   panelTestId?: string;
   /** Reposition tall panels so they remain within the viewport vertically. */
@@ -210,6 +212,7 @@ export function Popover(props: PopoverProps): JSX.Element {
       style={
         portalled
           ? {
+              ...props.panelStyle,
               position: "absolute",
               top: `${coords().top}px`,
               left: `${coords().left}px`,

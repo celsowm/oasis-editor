@@ -1,6 +1,6 @@
 # Responsive Style Gallery — correction and regression plan
 
-Status: planned; implementation and browser reproduction pending.
+Status: initial implementation committed; browser reproduction and validation pending.
 Target: `main`. Scope: reusable editor UI, not the demo alone.
 Reported 2026-11-15: Safari on macOS, Portuguese demo with sidebar open; Heading 1 is applied and highlighted in the expanded gallery, but its inline strip is blank.
 
@@ -124,3 +124,7 @@ Keep edits in editor UI and tests. No Canvas, CRDT, WASM, document engine or pub
 - [ ] Published demo verified with sidebar open at the reported layout.
 
 No implementation or test result is claimed by this plan.
+
+## 10. Initial implementation status
+
+Implemented shared geometry constants, flexible single-card preview, labeled fallback below the provisional minimum, active-style window, scoped panel sizing, local focus refs, and targeted unit regression cases. No browser or test execution is claimed: the execution environment could not clone the repository. Remaining: prove built-in provenance for localization (the named-style model has no custom/built-in flag), distinguish mixed paragraph selection from Normal in command state, observer-based popover geometry, full browser matrix and deployment validation. The 80 px readability threshold remains provisional.

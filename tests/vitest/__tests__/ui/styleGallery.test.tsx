@@ -248,6 +248,13 @@ describe("StyleGallery", () => {
         ".oasis-editor-style-gallery-strip .oasis-editor-style-gallery-card",
       ).length;
     expect(inlineCards()).toBe(2);
+    stripWidth = 105;
+    resizeCallbacks.forEach((callback) => callback());
+    expect(inlineCards()).toBe(1);
+    stripWidth = 79;
+    resizeCallbacks.forEach((callback) => callback());
+    expect(inlineCards()).toBe(0);
+    expect(host.querySelector(".oasis-editor-style-gallery-placeholder")?.textContent).toBe("Normal");
     stripWidth = 211;
     resizeCallbacks.forEach((callback) => callback());
     expect(inlineCards()).toBe(1);

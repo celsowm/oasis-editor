@@ -10,6 +10,13 @@ import {
   type JSX,
 } from "solid-js";
 import { compactStyleFallback } from "./styleGalleryFallback.js";
+import {
+  STYLE_GALLERY_CARD_WIDTH,
+  STYLE_GALLERY_EXPAND_WIDTH,
+  STYLE_GALLERY_BORDER_WIDTH,
+  styleGallerySlots,
+  visibleGalleryStyles,
+} from "./styleGalleryLayout.js";
 import type {
   StyleGalleryItem,
   ToolbarActionApi,
@@ -67,11 +74,15 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
   const [open, setOpen] = createSignal(false);
   const [visibleSlots, setVisibleSlots] = createSignal(1);
   let stripRef: HTMLDivElement | undefined;
+  let gridRef: HTMLDivElement | undefined;
+  let expandRef: HTMLButtonElement | undefined;
   onMount((): void => {
     const strip = stripRef;
     if (!strip) return;
     const measure = (): void => {
-      setVisibleSlots(Math.max(0, Math.floor(strip.clientWidth / 106)));
+      // The strip has no border or padding. Preserve fractional CSS widths.
+      const width = strip.getBoundingClientRect().width || strip.clientWidth;
+      setVisibleSlots(styleGallerySlots(width));
     };
     const observer = new ResizeObserver(measure);
     observer.observe(strip);
@@ -90,11 +101,18 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
     String(props.api.commands.state(props.item.paragraphCommand).value ?? "");
   const characterStyleId = (): string =>
     String(props.api.commands.state(props.item.characterCommand).value ?? "");
+  const activeId = (): string => characterStyleId() || paragraphStyleId();
+  const inlineStyles = createMemo(() =>
+    visibleGalleryStyles(styles(), allStyles(), activeId(), visibleSlots()),
+  );
+  const activeLabel = (): string =>
+    allStyles().find((style) => style.id === activeId() && style.type !== "table")?.name ||
+    activeId() || props.api.t("toolbar.style");
   // Keep the compact select readable when the active style is filtered out of
   // the quick-style list (otherwise the native select shows a blank value).
   const fallbackStyle = createMemo(() =>
     compactStyleFallback(
-      characterStyleId() || paragraphStyleId(),
+      activeId(),
       styles(),
       allStyles(),
     ),
@@ -116,9 +134,7 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
     hasEnabledStyles();
     queueMicrotask((): void => {
       if (!open()) return;
-      const panel = document.querySelector<HTMLElement>(
-        `[data-testid="${panelTestId}"]`,
-      );
+      const panel = gridRef;
       const target =
         panel?.querySelector<HTMLButtonElement>(
           ".oasis-editor-style-gallery-card-active:not(:disabled)",
@@ -155,13 +171,7 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
       event.preventDefault();
       event.stopPropagation();
       setOpen(false);
-      window.setTimeout(
-        (): void | undefined =>
-          document
-            .querySelector<HTMLButtonElement>(`[data-testid="${expandTestId}"]`)
-            ?.focus(),
-        0,
-      );
+      window.setTimeout(() => expandRef?.focus({ preventScroll: true }), 0);
       return;
     }
     const buttons = Array.from(
@@ -227,14 +237,25 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
       disabled={!hasEnabledStyles()}
       onUnavailableFocus={props.api.focusEditor}
       placement="bottom-end"
+      fitViewport
+      closeOnEscape={false}
       panelClass="oasis-editor-style-gallery-panel"
+      panelStyle={{ width: `min(${Math.min(6, Math.max(1, styles().length)) * (STYLE_GALLERY_CARD_WIDTH + 8) + 2}px, 660px, calc(100vw - 16px))` }}
       panelRole="listbox"
       panelTestId={panelTestId}
       trigger={(popover): JSX.Element => (
-        <div ref={popover.ref} class="oasis-editor-style-gallery">
+        <div
+          ref={popover.ref}
+          class="oasis-editor-style-gallery"
+          style={{
+            "--oasis-style-card-width": `${STYLE_GALLERY_CARD_WIDTH}px`,
+            "--oasis-style-expand-width": `${STYLE_GALLERY_EXPAND_WIDTH}px`,
+            "--oasis-style-border-width": `${STYLE_GALLERY_BORDER_WIDTH / 2}px`,
+          }}
+        >
           <Select
             class="oasis-editor-style-gallery-compact"
-            value={characterStyleId() || paragraphStyleId()}
+            value={activeId()}
             disabled={!hasEnabledStyles()}
             data-testid={props.item.testId}
             tooltip={props.api.t("toolbar.style")}
@@ -266,9 +287,19 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
               role="listbox"
               aria-label={props.api.t("toolbar.style")}
             >
-              {cards(styles().slice(0, visibleSlots()))}
+              <Show
+                when={inlineStyles().length > 0}
+                fallback={
+                  <span class="oasis-editor-style-gallery-placeholder" title={activeLabel()}>
+                    {activeLabel()}
+                  </span>
+                }
+              >
+                {cards(inlineStyles())}
+              </Show>
             </div>
             <button
+              ref={expandRef}
               type="button"
               disabled={!hasEnabledStyles()}
               class="oasis-editor-style-gallery-expand"
@@ -285,7 +316,11 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
         </div>
       )}
     >
-      <div class="oasis-editor-style-gallery-grid" onKeyDown={onPanelKeyDown}>
+      <div
+        ref={gridRef}
+        class="oasis-editor-style-gallery-grid"
+        onKeyDown={onPanelKeyDown}
+      >
         {cards(styles())}
       </div>
     </Popover>

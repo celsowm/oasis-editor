@@ -13,6 +13,11 @@ import {
 } from "@/ui/components/Toolbar/schema/items.js";
 import type { CommandRef } from "@/core/commands/CommandRef.js";
 import type { TranslateFn, TranslationKey } from "@/i18n/index.js";
+import {
+  STYLE_GALLERY_CARD_WIDTH,
+  STYLE_GALLERY_EXPAND_WIDTH,
+  STYLE_GALLERY_BORDER_WIDTH,
+} from "../styleGalleryLayout.js";
 
 export interface RibbonTabDefinition {
   id: RibbonTabId;
@@ -249,9 +254,7 @@ const DEFAULT_GROUP_RESIZE_POLICY: MergedRibbonGroupResizePolicy = {
   launcherTooltip: undefined,
 };
 
-const STYLE_GALLERY_CARD_WIDTH = 106;
-const STYLE_GALLERY_EXPAND_WIDTH = 24;
-const STYLE_GALLERY_BORDER_WIDTH = 2;
+
 
 const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
   Record<RibbonTabId, Record<string, RibbonGroupResizePolicy>>
@@ -260,7 +263,7 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
     styles: {
       priority: 10,
       states: ["full", "compact", "collapsed"],
-      compactMinWidth: 132,
+      compactMinWidth: STYLE_GALLERY_CARD_WIDTH + STYLE_GALLERY_EXPAND_WIDTH + STYLE_GALLERY_BORDER_WIDTH,
       collapsedIcon: "palette",
     },
     paragraph: {

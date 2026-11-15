@@ -2626,7 +2626,7 @@
   display: flex;
   width: clamp(360px, 48vw, 640px);
   height: 58px;
-  border: 1px solid var(--oasis-ribbon-border, #9a9a9a);
+  border: var(--oasis-style-border-width, 1px) solid var(--oasis-ribbon-border, #9a9a9a);
   background: var(--oasis-ribbon-panel-bg, #fff);
   box-sizing: border-box;
 }
@@ -2642,12 +2642,31 @@
   overflow: hidden;
 }
 
+/* A single preview may shrink to the width allocated by the ribbon. */
+.oasis-editor-style-gallery-strip > .oasis-editor-style-gallery-card:only-child {
+  flex: 0 1 var(--oasis-style-card-width, 106px);
+  max-width: 100%;
+}
+
+.oasis-editor-style-gallery-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  text-align: center;
+  font: 11px/12px system-ui, sans-serif;
+  color: var(--oasis-ribbon-text, #222);
+}
+
 .oasis-editor-style-gallery-card {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
-  flex: 0 0 106px;
+  flex: 0 0 var(--oasis-style-card-width, 106px);
   min-width: 0;
   height: 56px;
   padding: 2px 4px;
@@ -2698,8 +2717,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 24px;
-  width: 24px;
+  flex: 0 0 var(--oasis-style-expand-width, 24px);
+  width: var(--oasis-style-expand-width, 24px);
   height: 100%;
   box-sizing: border-box;
   padding: 0;
@@ -2732,7 +2751,7 @@
 
 .oasis-editor-style-gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(98px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(98px, 100%), 1fr));
   gap: 7px 8px;
 }
 
@@ -3211,11 +3230,6 @@
   display: none;
 }
 
-@media (max-width: 720px) {
-  .oasis-editor-style-gallery-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
 
 /* The formatting brush is instance-scoped: mounted editors never share state.
    Only the document surface changes the pointer while a brush is armed. */
