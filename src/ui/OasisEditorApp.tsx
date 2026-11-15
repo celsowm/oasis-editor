@@ -557,7 +557,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     // otherwise offer it once via the welcome dialog when the browser supports
     // the Local Font Access API.
     void applyStoredPreciseFontPreference();
-    if ((ui().showWelcome ?? true) && !getWelcomeSeen() && isLocalFontAccessSupported()) {
+    if (
+      (ui().showWelcome ?? true) &&
+      !getWelcomeSeen() &&
+      isLocalFontAccessSupported()
+    ) {
       setWelcomeOpen(true);
     }
   });
