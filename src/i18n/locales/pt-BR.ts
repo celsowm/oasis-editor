@@ -177,6 +177,9 @@ export const ptBR = {
 
   // Style
   "toolbar.style": "Estilos",
+  "toolbar.style.empty": "Sem estilos",
+  "toolbar.style.unselected": "Estilos",
+  "toolbar.style.unknown": "Estilo desconhecido: {0}",
   "toolbar.fontFamily": "Família da Fonte",
   "toolbar.font": "Fonte",
   "toolbar.fontSize": "Tamanho da Fonte",

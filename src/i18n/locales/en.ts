@@ -177,6 +177,9 @@ export const en = {
 
   // Style
   "toolbar.style": "Styles",
+  "toolbar.style.empty": "No styles",
+  "toolbar.style.unselected": "Styles",
+  "toolbar.style.unknown": "Unknown style: {0}",
   "toolbar.fontFamily": "Font Family",
   "toolbar.font": "Font",
   "toolbar.fontSize": "Font Size",

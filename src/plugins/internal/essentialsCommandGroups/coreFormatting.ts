@@ -681,7 +681,10 @@ export function buildCoreFormattingCommands({
     setStyleId: valueCommand(
       "setStyleId",
       (p): boolean => formatting.setStyleId(String(p)),
-      (): string => s().styleId || "normal",
+      (): string => {
+        const current = s();
+        return current.mixedParagraphStyles ? "" : current.styleId || "normal";
+      },
     ),
     setCharacterStyleId: valueCommand(
       "setCharacterStyleId",

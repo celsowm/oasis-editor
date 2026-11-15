@@ -3,6 +3,7 @@ import { createEditorStateFromParagraphRuns } from "@/core/editorState.js";
 import { setTextStyleValue } from "@/core/commands/textFormatting.js";
 import { setParagraphNamedStyle } from "@/core/commands/block.js";
 import { getParagraphs } from "@/core/model.js";
+import { getToolbarStyleState } from "@/ui/toolbarStyleState.js";
 
 describe("named style commands", () => {
   it("applies a character style to every selected run", () => {
@@ -26,6 +27,20 @@ describe("named style commands", () => {
         (run) => run.styles?.styleId === "Emphasis",
       ),
     ).toBe(true);
+  });
+
+  it("distinguishes mixed paragraph styles from Normal", () => {
+    const state = createEditorStateFromParagraphRuns(
+      [[{ text: "One" }], [{ text: "Two" }]],
+      {
+        anchor: { blockIndex: 0, offset: 0 },
+        focus: { blockIndex: 1, offset: 3 },
+      },
+    );
+    expect(getToolbarStyleState(state).mixedParagraphStyles).toBe(false);
+    getParagraphs(state)[1]!.style = { styleId: "heading1" };
+    expect(getToolbarStyleState(state).mixedParagraphStyles).toBe(true);
+    expect(getToolbarStyleState(state).styleId).toBe("");
   });
 
   it("applies a paragraph style across a multi-paragraph selection", () => {

@@ -105,9 +105,14 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
   const inlineStyles = createMemo(() =>
     visibleGalleryStyles(styles(), allStyles(), activeId(), visibleSlots()),
   );
-  const activeLabel = (): string =>
-    allStyles().find((style) => style.id === activeId() && style.type !== "table")?.name ||
-    activeId() || props.api.t("toolbar.style");
+  const knownActive = () =>
+    allStyles().find((style) => style.id === activeId() && style.type !== "table");
+  const activeLabel = (): string => {
+    const known = knownActive();
+    if (known) return known.name;
+    if (activeId()) return props.api.t("toolbar.style.unknown", [activeId()]);
+    return props.api.t(styles().length ? "toolbar.style.unselected" : "toolbar.style.empty");
+  };
   // Keep the compact select readable when the active style is filtered out of
   // the quick-style list (otherwise the native select shows a blank value).
   const fallbackStyle = createMemo(() =>
@@ -260,16 +265,19 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
             data-testid={props.item.testId}
             tooltip={props.api.t("toolbar.style")}
             onChange={(event): void => {
-              const style = styles().find(
+              const style = allStyles().find(
                 (candidate): boolean =>
-                  candidate.id === event.currentTarget.value,
+                  candidate.id === event.currentTarget.value && candidate.type !== "table",
               );
               if (style) apply(style);
             }}
           >
+            <Show when={!activeId()}>
+              <option value="" disabled>{props.api.t(styles().length ? "toolbar.style.unselected" : "toolbar.style.empty")}</option>
+            </Show>
             <Show when={fallbackStyle()}>
               {(fallback): JSX.Element => (
-                <option value={fallback().id}>{fallback().name}</option>
+                <option value={fallback().id} disabled={!knownActive() || disabled(knownActive()!)}>{activeLabel()}</option>
               )}
             </Show>
             <For each={styles()}>

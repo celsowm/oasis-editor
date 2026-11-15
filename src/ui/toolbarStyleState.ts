@@ -124,6 +124,8 @@ export interface ToolbarStyleState {
   link: string;
   snapToGrid: boolean | undefined;
   styleId: string;
+  /** Distinguish a mixed paragraph selection from the implicit Normal style. */
+  mixedParagraphStyles?: boolean;
   characterStyleId: string;
   align: string;
   lineHeight: string;
@@ -518,6 +520,7 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     link: resolveUniformStyleValue(styles, "link"),
     snapToGrid: resolveUniformRunBoolean(styles, "snapToGrid"),
     styleId: resolveUniformParagraphStyleValue(paragraphStyles, "styleId"),
+    mixedParagraphStyles: new Set(paragraphStyles.map((item) => item.styleId ?? "")).size > 1,
     characterStyleId: resolveUniformStyleValue(styles, "styleId"),
     align: resolveUniformParagraphStyleValue(paragraphStyles, "align"),
     lineHeight: resolveUniformParagraphStyleValue(
