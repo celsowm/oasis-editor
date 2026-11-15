@@ -595,10 +595,32 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           "--oasis-editor-gutter-x": `${EDITOR_SCROLL_PADDING_PX}px`,
         }}
       >
+        <Show
+          when={
+            showChrome() &&
+            showTitleBar() &&
+            showToolbar() &&
+            toolbarView() === "ribbon"
+          }
+        >
+          <ChromeStrip
+            catalog={QUICK_ACCESS_CATALOG}
+            visible={quickAccess.visible}
+            onToggle={quickAccess.toggle}
+            onExecute={executeCommand}
+            canExecute={canExecuteCommand}
+            tick={qatTick}
+            onOpenCommandSearch={(): void => {
+              setCommandSearchOpen(true);
+            }}
+          />
+        </Show>
+
         <Show when={!useComposedShell() && showChrome() && showToolbar()}>
           <Toolbar
             host={toolbarHost}
             registry={toolbarRegistry}
+            showFileGroup={toolbarView() === "ribbon" ? true : !showMenubar()}
             view={toolbarView()}
             layout={toolbarLayout()}
           />
@@ -737,19 +759,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           closeContextMenu={closeContextMenu}
         />
 
-        <Show when={showToolbar()}>
-          <ChromeStrip
-            catalog={QUICK_ACCESS_CATALOG}
-            visible={quickAccess.visible}
-            onToggle={quickAccess.toggle}
-            onExecute={executeCommand}
-            canExecute={canExecuteCommand}
-            tick={qatTick}
-            onOpenCommandSearch={(): void => {
-              setCommandSearchOpen(true);
-            }}
-          />
-        </Show>
         <EditorWorkspace
           useComposedShell={useComposedShell}
           shellComponent={shellComponent}

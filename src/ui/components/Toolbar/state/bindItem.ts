@@ -1,4 +1,5 @@
 import type { CommandRef } from "@/core/commands/CommandRef.js";
+import { isRibbonTabVisible } from "@/ui/components/Toolbar/ribbon/ribbonModel.js";
 import type {
   ToolbarActionApi,
   ToolbarItem,
@@ -36,7 +37,9 @@ export function bindItem(
     disabled: (): boolean =>
       overrides?.isDisabled?.(api) ?? !cmdState().isEnabled,
     value: (): unknown => overrides?.value?.(api) ?? cmdState().value,
-    visible: (): boolean => item.isVisible?.(api) ?? true,
+    visible: (): boolean =>
+      (item.tab ? isRibbonTabVisible(item.tab, api) : true) &&
+      (item.isVisible?.(api) ?? true),
   };
 }
 

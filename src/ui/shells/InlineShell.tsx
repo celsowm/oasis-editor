@@ -22,6 +22,9 @@ export function InlineShell(props: ShellProps): JSX.Element {
         <Toolbar
           host={props.toolbarHost}
           registry={props.toolbarRegistry}
+          showFileGroup={
+            props.toolbarView === "ribbon" ? true : !props.showMenubar
+          }
           view={props.toolbarView}
           layout={props.toolbarLayout}
         />

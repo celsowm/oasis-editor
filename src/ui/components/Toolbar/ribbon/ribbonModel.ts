@@ -468,7 +468,7 @@ export function visibleRibbonItems(
 }
 
 /** Separators only separate actions; they never create a group by themselves. */
-function trimRibbonSeparators(items: ToolbarItem[]): ToolbarItem[] {
+export function trimRibbonSeparators(items: ToolbarItem[]): ToolbarItem[] {
   const result: ToolbarItem[] = [];
   for (const item of items) {
     if (

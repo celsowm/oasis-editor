@@ -22,13 +22,79 @@ import type {
 } from "@/ui/OasisEditorAppProps.js";
 import { RibbonTabs } from "./ribbon/RibbonTabs.js";
 import {
+  isRibbonTabVisible,
+  normalizeRibbonTab,
   resolveContextualTabTransition,
   sameRibbonComposition,
+  trimRibbonSeparators,
   visibleRibbonItems,
 } from "./ribbon/ribbonModel.js";
 import { RibbonPanel } from "./ribbon/RibbonPanel.js";
 import { CONTEXTUAL_TABS, type RibbonTabId } from "./schema/items.js";
-import type { ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
+import type {
+  ToolbarActionApi,
+  ToolbarItem,
+} from "@/ui/components/Toolbar/schema/items.js";
+
+const COMPACT_TAB_PRIORITY: Partial<Record<RibbonTabId, number>> = {
+  file: 0,
+  home: 1,
+  insert: 2,
+  imageFormat: 3,
+  tableDesign: 4,
+  tableLayout: 5,
+  plugins: 6,
+};
+
+function buildCompactToolbarItems(
+  items: ToolbarItem[],
+  api: ToolbarActionApi,
+): ToolbarItem[] {
+  const buckets = new Map<number, ToolbarItem[]>();
+  let lastBucketPriority: number | undefined;
+
+  for (const item of items) {
+    if (item.type === "separator") {
+      if (lastBucketPriority !== undefined) {
+        buckets.get(lastBucketPriority)?.push(item);
+      }
+      continue;
+    }
+    const tab = normalizeRibbonTab(item.tab);
+    const priority = COMPACT_TAB_PRIORITY[tab];
+    if (priority === undefined || !isRibbonTabVisible(tab, api)) {
+      lastBucketPriority = undefined;
+      continue;
+    }
+    let bucket = buckets.get(priority);
+    if (!bucket) {
+      bucket = [];
+      buckets.set(priority, bucket);
+    }
+    bucket.push(item);
+    lastBucketPriority = priority;
+  }
+
+  const orderedPriorities = Array.from(buckets.keys()).sort(
+    (a, b): number => a - b,
+  );
+  const combined: ToolbarItem[] = [];
+  orderedPriorities.forEach((priority, index): void => {
+    const bucket = trimRibbonSeparators(
+      visibleRibbonItems(buckets.get(priority) ?? [], api),
+    );
+    if (bucket.length === 0) return;
+    if (combined.length > 0 && index > 0) {
+      combined.push({
+        id: `compact-tab-sep-${priority}`,
+        type: "separator",
+      });
+    }
+    combined.push(...bucket);
+  });
+
+  return trimRibbonSeparators(combined);
+}
 
 const shouldAllowNativeMouseDown = (target: EventTarget | null): boolean =>
   target instanceof Element &&
@@ -52,6 +118,7 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
   const [version, setVersion] = createSignal(0);
   const [activeTab, setActiveTab] = createSignal<RibbonTabId>("home");
   let previousRibbonItems: ToolbarItem[] | undefined;
+  let previousCompactItems: ToolbarItem[] | undefined;
 
   // Word-style contextual tabs (table tools, image format, …): the pure
   // `resolveContextualTabTransition` policy decides the tab a context snapshot
@@ -88,9 +155,23 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
     version();
     const ordered = props.registry.getOrdered();
     if (props.showFileGroup === false) {
-      return ordered.filter((item): boolean => item.group !== "file");
+      return ordered.filter(
+        (item): boolean => item.group !== "file" && item.tab !== "file",
+      );
     }
     return ordered;
+  });
+
+  const compactItems = createMemo((): ToolbarItem[] => {
+    const next = buildCompactToolbarItems(items(), api);
+    if (
+      previousCompactItems &&
+      sameRibbonComposition(previousCompactItems, next)
+    ) {
+      return previousCompactItems;
+    }
+    previousCompactItems = next;
+    return next;
   });
 
   const ribbonItems = createMemo((): ToolbarItem[] => {
@@ -114,7 +195,7 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
   const view = (): ToolbarViewMode => props.view ?? "ribbon";
   const layout = (): ToolbarLayoutMode => props.layout ?? "overflow";
   const renderItems = (): JSX.Element => (
-    <For each={items()}>
+    <For each={compactItems()}>
       {(item): JSX.Element => <ToolbarItemRenderer item={item} api={api} />}
     </For>
   );

@@ -443,6 +443,38 @@ export function createOasisEditorClient(): OasisEditorClientController {
   let savedDocumentFingerprint: string | undefined;
   let version = 0;
   const idempotent = new Map<string, OasisResult<ApplyEditValue>>();
+  let pendingUiPatch: OasisEditorUiState = {};
+  let pendingZoom: number | undefined;
+  let pendingZoomDelta = 0;
+  let pendingDocument:
+    { mode: "set" | "load"; document: EditorDocument } | undefined;
+  let pendingFocus: "focus" | "blur" | undefined;
+
+  const mergeUiPatch = (patch: OasisEditorUiState): OasisEditorUiState => {
+    pendingUiPatch = {
+      ...pendingUiPatch,
+      ...patch,
+      ...(patch.toolbar || pendingUiPatch.toolbar
+        ? { toolbar: { ...pendingUiPatch.toolbar, ...patch.toolbar } }
+        : {}),
+    };
+    return { ...pendingUiPatch };
+  };
+
+  const applyUiPatch = (
+    patch: OasisEditorUiState,
+    emitChange = false,
+  ): OasisEditorUiState => {
+    const merged = mergeUiPatch(patch);
+    if (disposed) return merged;
+    if (!host) {
+      if (emitChange) emit("uiChange", merged);
+      return merged;
+    }
+    const next = host.updateUiState?.(patch) ?? merged;
+    if (emitChange) emit("uiChange", next);
+    return next;
+  };
 
   const ready = new Promise<Editor>((resolve, reject): void => {
     resolveReady = resolve;
@@ -567,6 +599,32 @@ export function createOasisEditorClient(): OasisEditorClientController {
     commands,
     connectHost(nextHost): void {
       host = nextHost;
+      if (Object.keys(pendingUiPatch).length > 0) {
+        nextHost.updateUiState?.(pendingUiPatch);
+      }
+      if (pendingZoom !== undefined) {
+        nextHost.setZoom?.(pendingZoom);
+        pendingZoom = undefined;
+      }
+      if (pendingZoomDelta !== 0) {
+        nextHost.adjustZoom?.(pendingZoomDelta);
+        pendingZoomDelta = 0;
+      }
+      if (pendingDocument) {
+        const queued = pendingDocument;
+        pendingDocument = undefined;
+        nextHost.setDocument(queued.document);
+        if (queued.mode === "load") {
+          dirty = false;
+          rememberCleanDocument();
+        }
+      }
+      if (pendingFocus) {
+        const focusAction = pendingFocus;
+        pendingFocus = undefined;
+        if (focusAction === "focus") nextHost.focus();
+        else nextHost.blur();
+      }
     },
     setDispose(dispose): void {
       disposeHost = dispose;
@@ -585,20 +643,37 @@ export function createOasisEditorClient(): OasisEditorClientController {
     dispose(): void | Promise<void> {
       if (disposed) return;
       disposed = true;
+      host = null;
       return disposeHost?.();
     },
     getState(): EditorState {
       return requireHost().getState();
     },
     getDocument(): EditorDocument {
+      if (!host && pendingDocument) return pendingDocument.document;
       return requireHost().getDocument();
     },
     setDocument(document): void {
-      requireHost().setDocument(document);
+      if (disposed) return;
+      if (!host) {
+        pendingDocument = { mode: "set", document };
+        version += 1;
+        dirty = true;
+        return;
+      }
+      host.setDocument(document);
       version += 1;
     },
     loadDocument(document): void {
-      requireHost().setDocument(document);
+      if (disposed) return;
+      if (!host) {
+        pendingDocument = { mode: "load", document };
+        version += 1;
+        dirty = false;
+        savedDocumentFingerprint = documentFingerprint(document);
+        return;
+      }
+      host.setDocument(document);
       version += 1;
       dirty = false;
       rememberCleanDocument();
@@ -614,7 +689,15 @@ export function createOasisEditorClient(): OasisEditorClientController {
       version += 1;
     },
     resetDocument(): void {
-      requireHost().resetDocument();
+      if (disposed) return;
+      if (!host) {
+        pendingDocument = undefined;
+        version += 1;
+        dirty = false;
+        savedDocumentFingerprint = undefined;
+        return;
+      }
+      host.resetDocument();
       version += 1;
       dirty = false;
       rememberCleanDocument();
@@ -638,19 +721,47 @@ export function createOasisEditorClient(): OasisEditorClientController {
       requireHost().setSelection(selection);
     },
     focusEditor(): void {
-      requireHost().focus();
+      if (disposed) return;
+      if (!host) {
+        pendingFocus = "focus";
+        return;
+      }
+      host.focus();
     },
     blurEditor(): void {
-      requireHost().blur();
+      if (disposed) return;
+      if (!host) {
+        pendingFocus = "blur";
+        return;
+      }
+      host.blur();
     },
     document: {
-      get: (): EditorDocument => requireHost().getDocument(),
+      get: (): EditorDocument => {
+        if (!host && pendingDocument) return pendingDocument.document;
+        return requireHost().getDocument();
+      },
       set: (document): void => {
-        requireHost().setDocument(document);
+        if (disposed) return;
+        if (!host) {
+          pendingDocument = { mode: "set", document };
+          version += 1;
+          dirty = true;
+          return;
+        }
+        host.setDocument(document);
         version += 1;
       },
       load: (document): void => {
-        requireHost().setDocument(document);
+        if (disposed) return;
+        if (!host) {
+          pendingDocument = { mode: "load", document };
+          version += 1;
+          dirty = false;
+          savedDocumentFingerprint = documentFingerprint(document);
+          return;
+        }
+        host.setDocument(document);
         version += 1;
         dirty = false;
         rememberCleanDocument();
@@ -666,7 +777,15 @@ export function createOasisEditorClient(): OasisEditorClientController {
         version += 1;
       },
       reset: (): void => {
-        requireHost().resetDocument();
+        if (disposed) return;
+        if (!host) {
+          pendingDocument = undefined;
+          version += 1;
+          dirty = false;
+          savedDocumentFingerprint = undefined;
+          return;
+        }
+        host.resetDocument();
         version += 1;
         dirty = false;
         rememberCleanDocument();
@@ -688,8 +807,22 @@ export function createOasisEditorClient(): OasisEditorClientController {
       set: (selection): void => requireHost().setSelection(selection),
     },
     focus: {
-      focus: (): void => requireHost().focus(),
-      blur: (): void => requireHost().blur(),
+      focus: (): void => {
+        if (disposed) return;
+        if (!host) {
+          pendingFocus = "focus";
+          return;
+        }
+        host.focus();
+      },
+      blur: (): void => {
+        if (disposed) return;
+        if (!host) {
+          pendingFocus = "blur";
+          return;
+        }
+        host.blur();
+      },
     },
     history: {
       undo: (): unknown => commands.execute("undo"),
@@ -887,33 +1020,51 @@ export function createOasisEditorClient(): OasisEditorClientController {
       },
     },
     ui: {
-      state: (): OasisEditorUiState => requireHost().getUiState?.() ?? {},
-      update: (patch: OasisEditorUiState): OasisEditorUiState => {
-        const next = requireHost().updateUiState?.(patch) ?? {};
-        emit("uiChange", next);
-        return next;
-      },
+      state: (): OasisEditorUiState =>
+        host
+          ? (host.getUiState?.() ?? { ...pendingUiPatch })
+          : { ...pendingUiPatch },
+      update: (patch: OasisEditorUiState): OasisEditorUiState =>
+        applyUiPatch(patch, true),
       setReadOnly: (value): void => {
-        requireHost().updateUiState?.({ readOnly: value });
+        applyUiPatch({ readOnly: value });
       },
       zoom: {
-        get: (): number => requireHost().getZoom?.() ?? 100,
-        set: (value): void => requireHost().setZoom?.(value),
-        adjust: (delta): void => requireHost().adjustZoom?.(delta),
+        get: (): number =>
+          host
+            ? (host.getZoom?.() ?? 100)
+            : (pendingZoom ?? 100) + pendingZoomDelta,
+        set: (value): void => {
+          if (disposed) return;
+          if (!host) {
+            pendingZoom = value;
+            pendingZoomDelta = 0;
+            return;
+          }
+          host.setZoom?.(value);
+        },
+        adjust: (delta): void => {
+          if (disposed) return;
+          if (!host) {
+            pendingZoomDelta += delta;
+            return;
+          }
+          host.adjustZoom?.(delta);
+        },
       },
       chrome: {
         setVisible: (value): void => {
-          requireHost().updateUiState?.({ showChrome: value });
+          applyUiPatch({ showChrome: value });
         },
       },
       titleBar: {
         setVisible: (value): void => {
-          requireHost().updateUiState?.({ showTitleBar: value });
+          applyUiPatch({ showTitleBar: value });
         },
       },
       menubar: {
         setVisible: (value): void => {
-          requireHost().updateUiState?.({ showMenubar: value });
+          applyUiPatch({ showMenubar: value });
         },
         items: {
           register: (...args) => requireHost().menuRegistry?.register(...args),
@@ -923,7 +1074,7 @@ export function createOasisEditorClient(): OasisEditorClientController {
       },
       toolbar: {
         setVisible: (value): void => {
-          requireHost().updateUiState?.({ showToolbar: value });
+          applyUiPatch({ showToolbar: value });
         },
         items: {
           register: (...args) =>
@@ -946,17 +1097,17 @@ export function createOasisEditorClient(): OasisEditorClientController {
       },
       outline: {
         setVisible: (value): void => {
-          requireHost().updateUiState?.({ showOutline: value });
+          applyUiPatch({ showOutline: value });
         },
       },
       shell: {
         set: (shell): void => {
-          requireHost().updateUiState?.({ shell });
+          applyUiPatch({ shell });
         },
       },
       locale: {
         set: (locale): void => {
-          requireHost().updateUiState?.({ locale });
+          applyUiPatch({ locale });
         },
       },
     },

@@ -689,8 +689,27 @@
   gap: 4px;
 }
 
-.oasis-editor-toolbar-view-compact .oasis-editor-color-split-label {
+.oasis-editor-toolbar-view-compact .oasis-editor-color-split-label,
+.oasis-editor-toolbar-view-compact
+  .oasis-editor-toolbar-item
+  > .oasis-editor-tool-button:has(> svg, > i)
+  > .oasis-editor-tool-button-label,
+.oasis-editor-toolbar-view-compact
+  .oasis-editor-toolbar-item
+  > .oasis-editor-toolbar-dropdown
+  > .oasis-editor-tool-button:has(> svg, > i)
+  > .oasis-editor-tool-button-label {
   display: none;
+}
+
+.oasis-editor-toolbar-view-compact
+  .oasis-editor-toolbar-item
+  > .oasis-editor-toolbar-dropdown
+  > .oasis-editor-wide-menu-button {
+  min-width: 32px;
+  height: 32px;
+  padding: 6px 8px;
+  gap: 4px;
 }
 
 .oasis-editor-toolbar-layout-wrap {

@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
 import { createTranslator } from "@/i18n/index.js";
+import { I18nProvider } from "@/i18n/I18nContext.js";
+import { Toolbar } from "@/ui/components/Toolbar/Toolbar.js";
+import { createToolbarRegistry } from "@/ui/components/Toolbar/registry/ToolbarRegistry.js";
+import { createDefaultToolbarPreset } from "@/ui/components/Toolbar/presets/defaultToolbar.js";
 import { ToolbarItemRenderer } from "@/ui/components/Toolbar/renderers/ToolbarItemRenderer.js";
 import type {
   ToolbarActionApi,
@@ -179,5 +183,78 @@ describe("toolbar action semantics", () => {
     expect(submenu?.getAttribute("aria-haspopup")).toBe("menu");
 
     topLevel.dispose();
+  });
+
+  it("filters Ribbon-only, File (when showFileGroup=false), and inactive contextual tabs in compact view", () => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe(): void {}
+        disconnect(): void {}
+      },
+    );
+    const t = createTranslator(() => "pt-BR");
+    const registry = createToolbarRegistry();
+    for (const item of createDefaultToolbarPreset(t)) {
+      registry.register(item);
+    }
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+
+    const dispose = render(
+      () => (
+        <I18nProvider translator={t}>
+          <Toolbar
+            view="compact"
+            layout="wrap"
+            showFileGroup={false}
+            registry={registry}
+            host={() => ({
+              commands: {
+                canExecute: () => true,
+                execute: vi.fn(),
+                state: () => ({
+                  isEnabled: true,
+                  isActive: false,
+                  value: undefined,
+                }),
+              },
+              focusEditor: vi.fn(),
+            })}
+          />
+        </I18nProvider>
+      ),
+      host,
+    );
+
+    // Core Home & Insert controls are present
+    expect(
+      host.querySelector('[data-testid="editor-toolbar-bold"]'),
+    ).not.toBeNull();
+    expect(
+      host.querySelector('[data-testid="editor-toolbar-header-footer"]'),
+    ).not.toBeNull();
+
+    // File group items (tab: "file") are excluded when showFileGroup=false
+    expect(host.querySelector('[data-testid="editor-toolbar-save"]')).toBeNull();
+    expect(
+      host.querySelector('[data-testid="editor-toolbar-new-document"]'),
+    ).toBeNull();
+
+    // Ribbon-only tabs (design, review, layout) and inactive contextual tabs (imageFormat, tableDesign) are excluded
+    expect(
+      host.querySelector('[data-testid="editor-toolbar-design-themes"]'),
+    ).toBeNull();
+    expect(
+      host.querySelector('[data-testid="editor-toolbar-design-watermark"]'),
+    ).toBeNull();
+    expect(
+      host.querySelector('[data-testid="editor-toolbar-image-crop"]'),
+    ).toBeNull();
+    expect(
+      host.querySelector('[data-testid="editor-toolbar-image-border"]'),
+    ).toBeNull();
+
+    dispose();
   });
 });
