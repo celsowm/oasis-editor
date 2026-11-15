@@ -1,5 +1,6 @@
 import {
   For,
+  Show,
   createEffect,
   createMemo,
   createSignal,
@@ -8,6 +9,7 @@ import {
   useContext,
   type JSX,
 } from "solid-js";
+import { compactStyleFallback } from "./styleGalleryFallback.js";
 import type {
   StyleGalleryItem,
   ToolbarActionApi,
@@ -78,13 +80,25 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
   });
   const panelTestId = `${props.item.testId ?? props.item.id}-panel`;
   const expandTestId = `${props.item.testId ?? props.item.id}-expand`;
+  const allStyles = createMemo((): ToolbarDocumentStyle[] =>
+    props.item.styles(props.api),
+  );
   const styles = createMemo((): ToolbarDocumentStyle[] =>
-    getQuickStyles(props.item.styles(props.api)),
+    getQuickStyles(allStyles()),
   );
   const paragraphStyleId = (): string =>
     String(props.api.commands.state(props.item.paragraphCommand).value ?? "");
   const characterStyleId = (): string =>
     String(props.api.commands.state(props.item.characterCommand).value ?? "");
+  // Keep the compact select readable when the active style is filtered out of
+  // the quick-style list (otherwise the native select shows a blank value).
+  const fallbackStyle = createMemo(() =>
+    compactStyleFallback(
+      characterStyleId() || paragraphStyleId(),
+      styles(),
+      allStyles(),
+    ),
+  );
   const commandFor = (style: ToolbarDocumentStyle): CommandRef =>
     style.type === "character"
       ? props.item.characterCommand
@@ -232,6 +246,11 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
               if (style) apply(style);
             }}
           >
+            <Show when={fallbackStyle()}>
+              {(fallback): JSX.Element => (
+                <option value={fallback().id}>{fallback().name}</option>
+              )}
+            </Show>
             <For each={styles()}>
               {(style): JSX.Element => (
                 <option value={style.id} disabled={disabled(style)}>

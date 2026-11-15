@@ -493,12 +493,18 @@ const HighlightIcon: CustomIconRenderer = (): JSX.Element => (
     stroke-linecap="round"
     stroke-linejoin="round"
   >
+    {/* Yellow trunk: a rectangle rotated 45°, short edges vector (4.8, 4.8). */}
     <path
-      d="m14.2 3.5 4.8 4.8-7.2 7.2-4.8-4.8Z"
+      d="M14.2 3.5 L19 8.3 L11.8 15.5 L7 10.7 Z"
       fill="#facc15"
       fill-opacity={0.38}
     />
-    <path d="m7 10.7-2.2 5.3 5.3-2.2M12.2 5.5l4.8 4.8" />
+    {/* Eraser band spans the full short-edge width (4.8, 4.8). */}
+    <path d="M12.2 5.5 L17 10.3" />
+    {/* Triangular tip: its base IS the trunk's bottom short edge
+        (7 10.7 -> 11.8 15.5), so tip, trunk and eraser share one width.
+        The apex is centred on that edge (midpoint + outward normal). */}
+    <path d="M7 10.7 L6 16.5 L11.8 15.5" />
   </SvgIcon>
 );
 
