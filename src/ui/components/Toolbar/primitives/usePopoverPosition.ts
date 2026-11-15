@@ -1,6 +1,6 @@
 import { createEffect, createSignal, onCleanup, type Accessor } from "solid-js";
 
-export type PopoverPlacement = "bottom-start" | "bottom-end";
+export type PopoverPlacement = "bottom-start" | "bottom-end" | "bottom-auto";
 
 export interface PopoverPositionOptions {
   /** The element the panel is anchored to. */
@@ -12,6 +12,8 @@ export interface PopoverPositionOptions {
   placement?: PopoverPlacement;
   /** Clamp the panel's vertical position to the visible viewport. */
   fitViewport?: boolean;
+  /** Watch anchor and panel size while open (opt-in for dynamic galleries). */
+  observeSize?: boolean;
   /** Vertical gap between anchor and panel, in px. */
   gap?: number;
   /** Minimum distance from the viewport edges, in px. */
@@ -53,7 +55,8 @@ export function usePopoverPosition(
     const maxLeft = window.scrollX + window.innerWidth - panelWidth - pad;
 
     const preferredLeft =
-      options.placement === "bottom-end"
+      options.placement === "bottom-end" ||
+      (options.placement === "bottom-auto" && rect.left + window.scrollX > maxLeft)
         ? rect.right + window.scrollX - panelWidth
         : rect.left + window.scrollX;
 
@@ -83,10 +86,25 @@ export function usePopoverPosition(
     }
     updateCoords();
     // A second measure once the panel has rendered gives an accurate width.
-    requestAnimationFrame(updateCoords);
+    let observer: ResizeObserver | undefined;
+    const frame = requestAnimationFrame(() => {
+      updateCoords();
+      if (options.observeSize && typeof ResizeObserver !== "undefined") {
+        observer = new ResizeObserver(updateCoords);
+        const anchor = options.anchor();
+        const panel = options.panel();
+        if (anchor) observer.observe(anchor);
+        if (panel) observer.observe(panel);
+        // A sidebar or host resize may move the anchor without resizing it.
+        const owner = anchor?.closest<HTMLElement>(".oasis-editor-toolbar");
+        if (owner && owner !== anchor) observer.observe(owner);
+      }
+    });
     window.addEventListener("resize", updateCoords);
     window.addEventListener("scroll", updateCoords, true);
     onCleanup((): void => {
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
       window.removeEventListener("resize", updateCoords);
       window.removeEventListener("scroll", updateCoords, true);
     });

@@ -32,6 +32,38 @@ const snapshot = async (page) => {
     })),
   }));
 };
+// Regression for the reported blank gallery at fractional/compact widths.
+async function verifyStyleGalleryPreview(page) {
+  const gallery = page.locator(".oasis-editor-style-gallery-ribbon:visible").first();
+  if (!(await gallery.isVisible())) return;
+  const originalWidth = await gallery.evaluate((el) => el.style.width);
+  try {
+    for (const width of [131, 131.5, 132, 105]) {
+      await gallery.evaluate((el, width) => { el.style.width = `${width}px`; }, width);
+      await page.waitForFunction(() => {
+        const strip = document.querySelector(".oasis-editor-style-gallery-strip");
+        if (!strip) return false;
+        const w = strip.getBoundingClientRect().width;
+        const cards = strip.querySelectorAll(".oasis-editor-style-gallery-card");
+        return w >= 80 ? cards.length === 1 : Boolean(strip.querySelector(".oasis-editor-style-gallery-placeholder"));
+      });
+      const geometry = await gallery.evaluate((el) => {
+        const strip = el.querySelector(".oasis-editor-style-gallery-strip");
+        const card = strip.querySelector(".oasis-editor-style-gallery-card");
+        return {
+          galleryWidth: el.getBoundingClientRect().width,
+          stripWidth: strip.getBoundingClientRect().width,
+          cardWidth: card?.getBoundingClientRect().width ?? null,
+          placeholder: strip.querySelector(".oasis-editor-style-gallery-placeholder")?.textContent ?? null,
+        };
+      });
+      assert.ok(geometry.cardWidth === null || geometry.cardWidth <= geometry.stripWidth + 0.5, JSON.stringify(geometry));
+      records.push({ kind: "style-gallery-preview", width, ...geometry });
+    }
+  } finally {
+    await gallery.evaluate((el, width) => { el.style.width = width; }, originalWidth);
+  }
+}
 const validate = (value) => {
   for (const group of value.groups)
     assert.ok(
@@ -174,6 +206,7 @@ try {
       );
       await waitForRibbonReference(page);
       await page.evaluate(() => document.fonts.ready);
+      await verifyStyleGalleryPreview(page);
       const original = await page.evaluate(() => ({
         version: window.ribbonReference.client.document.version(),
         selection: window.ribbonReference.client.selection.get(),

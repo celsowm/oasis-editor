@@ -236,9 +236,9 @@ export function StyleGallery(props: StyleGalleryProps): JSX.Element {
       onOpenChange={setOpen}
       disabled={!hasEnabledStyles()}
       onUnavailableFocus={props.api.focusEditor}
-      placement="bottom-end"
+      placement="bottom-auto"
       fitViewport
-      closeOnEscape={false}
+      observeSize
       panelClass="oasis-editor-style-gallery-panel"
       panelStyle={{ width: `min(${Math.min(6, Math.max(1, styles().length)) * (STYLE_GALLERY_CARD_WIDTH + 8) + 2}px, 660px, calc(100vw - 16px))` }}
       panelRole="listbox"
