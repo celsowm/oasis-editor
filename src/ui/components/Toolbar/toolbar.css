@@ -3292,3 +3292,161 @@
   > .oasis-editor-tool-select-control {
   display: inline-flex;
 }
+
+/* ── Simplified ribbon (ui.toolbar.ribbonStyle = "simplified") ─────────────
+ * Office's one-line ribbon for embedded editors: the panel is a single row of
+ * small commands, groups lose their captions (separators remain), large items
+ * shrink to icon + inline caption, and a collapsed group's trigger shows the
+ * group's name next to its icon. Everything is scoped to the inline panel
+ * (`> .oasis-editor-ribbon-group-content`), so the popups of collapsed groups
+ * keep the classic arrangement. */
+.oasis-editor-ribbon-simplified .oasis-editor-toolbar-view-ribbon {
+  /* tabs (34px) + one-line panel (40px) */
+  min-height: 74px;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel {
+  --oasis-ribbon-body-height: 32px;
+  height: 40px;
+  min-height: 40px;
+}
+.oasis-editor-ribbon-simplified
+  .oasis-editor-toolbar-view-ribbon
+  .oasis-editor-ribbon-scroll-button {
+  min-height: 40px;
+}
+.oasis-editor-ribbon-simplified
+  .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group {
+  grid-template-rows: 32px;
+  align-items: center;
+  max-height: 36px;
+  padding: 0 6px;
+}
+.oasis-editor-ribbon-simplified
+  .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group
+  > :is(.oasis-editor-ribbon-group-label, .oasis-editor-ribbon-group-launcher) {
+  display: none;
+}
+.oasis-editor-ribbon-simplified
+  .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group
+  > .oasis-editor-ribbon-group-content
+  :is(
+    .oasis-editor-ribbon-group-rows,
+    .oasis-editor-ribbon-large-items,
+    .oasis-editor-ribbon-normal-rows
+  ) {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+  min-height: 0;
+}
+.oasis-editor-ribbon-simplified
+  .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group
+  > .oasis-editor-ribbon-group-content
+  .oasis-editor-ribbon-row {
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
+}
+.oasis-editor-ribbon-simplified
+  .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group
+  > .oasis-editor-ribbon-group-content
+  :is(
+    .oasis-editor-tool-button-ribbon-large,
+    .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button
+  ) {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: none;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 6px;
+  font-size: 12px;
+}
+.oasis-editor-ribbon-simplified
+  .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group
+  > .oasis-editor-ribbon-group-content
+  :is(
+    .oasis-editor-tool-button-ribbon-large,
+    .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button
+  )
+  > span {
+  display: inline;
+  line-height: normal;
+  white-space: nowrap;
+}
+.oasis-editor-ribbon-simplified
+  .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group
+  > .oasis-editor-ribbon-group-content
+  :is(
+    .oasis-editor-tool-button-ribbon-large,
+    .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button
+  )
+  svg {
+  width: var(--oasis-ribbon-small-icon);
+  height: var(--oasis-ribbon-small-icon);
+}
+/* Collapsed group: small "icon  Name ▾" trigger instead of a tall icon. */
+.oasis-editor-ribbon-simplified
+  .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group-collapsed
+  > .oasis-editor-ribbon-group-collapsed-trigger {
+  width: auto;
+}
+.oasis-editor-ribbon-simplified
+  .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group-collapsed
+  > .oasis-editor-ribbon-group-collapsed-trigger
+  > .oasis-editor-toolbar-dropdown
+  > .oasis-editor-tool-button-ribbon-large {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 6px;
+  font-size: 12px;
+}
+.oasis-editor-ribbon-simplified
+  .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group-collapsed
+  > .oasis-editor-ribbon-group-collapsed-trigger
+  > .oasis-editor-toolbar-dropdown
+  > .oasis-editor-tool-button-ribbon-large
+  svg {
+  width: var(--oasis-ribbon-small-icon);
+  height: var(--oasis-ribbon-small-icon);
+}
+.oasis-editor-ribbon-simplified
+  .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group-collapsed
+  > .oasis-editor-ribbon-group-collapsed-trigger
+  > .oasis-editor-toolbar-dropdown
+  > .oasis-editor-tool-button-ribbon-large::after {
+  content: attr(data-group-label);
+  order: 1;
+  white-space: nowrap;
+}
+.oasis-editor-ribbon-simplified
+  .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group-collapsed
+  > .oasis-editor-ribbon-group-collapsed-trigger
+  > .oasis-editor-toolbar-dropdown
+  > .oasis-editor-tool-button-ribbon-large
+  > .oasis-editor-dropdown-chevron {
+  order: 2;
+}

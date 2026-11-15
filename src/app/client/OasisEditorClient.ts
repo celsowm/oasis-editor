@@ -57,7 +57,11 @@ export interface OasisEditorUiState {
   showOutline?: boolean;
   shell?: "document" | "inline" | "balloon";
   locale?: "pt-BR" | "en";
-  toolbar?: { view?: "ribbon" | "compact"; layout?: "overflow" | "wrap" };
+  toolbar?: {
+    view?: "ribbon" | "compact";
+    layout?: "overflow" | "wrap";
+    ribbonStyle?: "classic" | "simplified";
+  };
   viewportHeight?: number | string;
   readOnly?: boolean;
 }

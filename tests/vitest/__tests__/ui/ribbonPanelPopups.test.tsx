@@ -207,6 +207,29 @@ describe("ribbon group popup lifecycle", () => {
     dispose();
   });
 
+  it("names a collapsed group: caption under it and on its trigger", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const dispose = render(
+      () => <RibbonGroup group={baseGroup()} api={createApi()} />,
+      host,
+    );
+    await flush();
+
+    // The caption stays in the DOM (CSS no longer hides it when collapsed),
+    // and the trigger exposes the name for the simplified ribbon's caption.
+    expect(
+      host.querySelector(".oasis-editor-ribbon-group-label")?.textContent,
+    ).toBe("Fonte");
+    expect(
+      host
+        .querySelector('[data-testid="editor-ribbon-group-font"]')
+        ?.getAttribute("data-group-label"),
+    ).toBe("Fonte");
+
+    dispose();
+  });
+
   it("closes a collapsed group popup when the group expands again", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);

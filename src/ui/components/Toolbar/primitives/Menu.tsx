@@ -18,6 +18,11 @@ export interface MenuProps {
   disabled?: boolean;
   hideChevron?: boolean;
   ribbonSize?: "normal" | "large";
+  /**
+   * Name of the Ribbon group a collapsed-group trigger stands for. Exposed as
+   * `data-group-label` so the simplified ribbon can caption the trigger.
+   */
+  groupLabel?: string;
   /** Extra class for the popover panel. */
   panelClass?: string;
   /** Reposition tall panels so they remain within the viewport vertically. */
@@ -86,6 +91,7 @@ export function Menu(props: MenuProps): JSX.Element {
               "oasis-editor-tool-button-dropdown-icon-only":
                 props.ribbonSize === "large" && !props.label,
             }}
+            data-group-label={props.groupLabel}
             onClick={(): void => api.toggle()}
             disabled={props.disabled}
             title={props.tooltip}

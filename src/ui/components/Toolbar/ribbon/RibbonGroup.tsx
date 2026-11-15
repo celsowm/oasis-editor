@@ -146,6 +146,7 @@ export function RibbonGroup(props: RibbonGroupProps): JSX.Element {
           <Menu
             icon={props.group.resizePolicy.collapsedIcon}
             tooltip={props.group.label}
+            groupLabel={props.group.label}
             testId={`editor-ribbon-group-${props.group.id}`}
             ribbonSize="large"
             fitViewport

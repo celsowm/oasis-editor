@@ -31,6 +31,13 @@ export interface OasisEditorAppUiProps {
   toolbar?: {
     view?: ToolbarViewMode;
     layout?: ToolbarLayoutMode;
+    /**
+     * Ribbon density. `simplified` is Office's one-line ribbon: the tabs stay,
+     * each panel is a single row of small commands with no group captions, and
+     * groups that do not fit open as popups. Meant for embedded editors (form
+     * fields) where the ~90px classic ribbon costs too much height.
+     */
+    ribbonStyle?: "classic" | "simplified";
   };
   showTitleBar?: boolean;
   showMenubar?: boolean;
