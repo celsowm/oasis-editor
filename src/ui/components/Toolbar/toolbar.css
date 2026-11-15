@@ -1023,15 +1023,22 @@
 
 .oasis-editor-metric-group-inline {
   display: grid;
-  grid-template-columns: repeat(2, max-content);
+  /* Two sets of shared label / value / unit tracks. Individual field
+   * labels must not shift the input or suffix on the second row. */
+  grid-template-columns: repeat(2, minmax(44px, max-content) 58px max-content);
   grid-template-rows: repeat(2, 28px);
-  gap: 3px 10px;
+  gap: 3px 4px;
   align-items: center;
 }
 
 .oasis-editor-ui-field.oasis-editor-tool-metric.oasis-editor-metric-inline-field {
-  grid-template-columns: minmax(44px, auto) 58px auto;
+  grid-column: span 3;
+  grid-template-columns: subgrid;
   gap: 4px;
+}
+
+.oasis-editor-metric-inline-field:nth-child(odd) .oasis-editor-ui-field-suffix {
+  padding-inline-end: 8px;
 }
 
 .oasis-editor-metric-inline-field .oasis-editor-tool-number {
@@ -3592,3 +3599,56 @@
   justify-content: center;
 }
 
+
+/* Layout tab: keep the fields and page-setup controls on the same grid
+ * in both live and measured groups. Do not target the Home paragraph group. */
+.oasis-editor-ribbon-group:has(> .oasis-editor-ribbon-group-content .oasis-editor-metric-group)
+  > .oasis-editor-ribbon-group-label,
+.oasis-editor-ribbon-group[data-ribbon-group="section"] > .oasis-editor-ribbon-group-label {
+  justify-self: center;
+}
+
+.oasis-editor-toolbar-view-ribbon .oasis-editor-metric-group-inline:not(.oasis-editor-ribbon-simplified *)
+  .oasis-editor-tool-number {
+  height: 26px;
+  min-height: 26px;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  padding-inline: 5px;
+}
+.oasis-editor-toolbar-view-ribbon .oasis-editor-metric-group-inline
+  .oasis-editor-tool-metric-label {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+[data-ribbon-content-group="section"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-large-items
+  > .oasis-editor-toolbar-item > .oasis-editor-toolbar-dropdown
+  > .oasis-editor-tool-button-dropdown {
+  width: 76px;
+  min-width: 76px;
+  grid-template-rows: 24px 22px 12px;
+  padding: 2px 4px 3px;
+  align-content: center;
+  gap: 0;
+}
+[data-ribbon-content-group="section"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-large-items
+  > .oasis-editor-toolbar-item > .oasis-editor-toolbar-dropdown
+  > .oasis-editor-tool-button-dropdown > .oasis-editor-tool-button-label {
+  align-self: start;
+  width: 100%;
+  line-height: 11px;
+}
+[data-ribbon-content-group="section"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-large-items
+  > .oasis-editor-toolbar-item > .oasis-editor-toolbar-dropdown
+  > .oasis-editor-tool-button-dropdown > svg:not(.oasis-editor-dropdown-chevron) {
+  width: 24px;
+  height: 24px;
+  flex-basis: 24px;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-metric-group-inline {
+  display: none;
+}

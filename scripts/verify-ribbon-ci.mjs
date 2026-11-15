@@ -51,6 +51,7 @@ try {
   }
   if (!ready) throw new Error("Reference server startup timed out");
   if (suite === "review") {
+    await run("scripts/verify-ribbon-layout-alignment.mjs");
     await run("scripts/verify-ribbon-review-layout.mjs");
     await run("scripts/verify-ribbon-review.mjs");
     await run("scripts/verify-ribbon-comments.mjs");
