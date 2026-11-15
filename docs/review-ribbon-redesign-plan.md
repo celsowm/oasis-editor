@@ -1,6 +1,6 @@
 # Review ribbon visual redesign — implementation plan
 
-Status: planned; no implementation or validation claimed.
+Status: initial redesign implemented; CI and baseline/final screenshots pending.
 Target: main. Scope: reusable Oasis Editor Review ribbon, not the demo sidebar.
 Report: 2026-11-15, Safari/macOS, pt-BR, demo embedded beside its sidebar.
 
@@ -111,3 +111,7 @@ Run npm run typecheck, npm run lint, npm test, npm run audit:ribbon, npm run aud
 - [ ] Review in real Safari with demo sidebar verified or separately marked outstanding.
 
 Decisions: retain existing three groups, use original Word-inspired icon semantics rather than proprietary artwork, and keep visual hierarchy distinct from command enablement. Split buttons are conditional on proving independent action gating. This is a planning artifact only.
+
+## Implementation notes
+
+Added 19 shared original semantic SVGs, distinct forward/backward navigation, labeled current display mode and markup filter, revised tracking rows, primary New Comment ordering, compact label preservation for tracking/changes and large comment actions, scoped disabled-state contrast, and updated icon inventories. All commands and test IDs remain unchanged. Bulk accept/reject remain separate labeled actions to preserve independent command enablement; split buttons are not required. No browser or visual certification is claimed yet.

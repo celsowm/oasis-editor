@@ -102,7 +102,8 @@ export function ShowMarkupButton(props: ShowMarkupButtonProps): JSX.Element {
 
   return (
     <Menu
-      icon="list-checks"
+      icon="reviewMarkupFilter"
+      label={t("review.showMarkup")}
       testId="editor-toolbar-show-markup"
       tooltip={t("review.showMarkup")}
       panelClass="oasis-editor-show-markup-menu"

@@ -1254,7 +1254,111 @@ export const CheckIcon = (props: { size?: number }): JSX.Element => (
   </SvgIcon>
 );
 
+/** Shared original document/comment geometry for review actions. */
+function ReviewActionIcon(props: {
+  family: "page" | "pages" | "comment";
+  mark: string;
+  tone: "info" | "positive" | "negative";
+}): JSX.Element {
+  const color = (): string => `var(--oasis-review-${props.tone}, ${props.tone === "positive" ? "#21834e" : props.tone === "negative" ? "#bd3d41" : "#347caf"})`;
+  return (
+    <SvgIcon class="oasis-review-icon" stroke="currentColor" stroke-width={1.65}
+      stroke-linecap="round" stroke-linejoin="round">
+      <Show when={props.family === "pages"}>
+        <path d="M6 2h12l3 3v6" />
+      </Show>
+      <Show when={props.family === "comment"} fallback={
+        <><path d="M3 3h10l4 4v14H3z M13 3v5h4" />
+          <path d="M6 11h7M6 14h4M6 17h3" opacity={0.75} /></>
+      }>
+        <path d="M2 4h16v12H8l-4 4v-4H2z M5 8h9M5 11h6" />
+      </Show>
+      <rect x="11" y="10" width="12" height="13" rx="2.2"
+        fill="var(--oasis-review-icon-bg, var(--oasis-ribbon-panel-bg, #fff))"
+        stroke="none" />
+      <path d={props.mark} stroke={color()} stroke-width={1.9} />
+    </SvgIcon>
+  );
+}
+
+const reviewTrackChangesIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="page" mark="M13 20l1-4 5-5 3 3-5 5z M18 12l3 3" tone="info" />
+);
+const reviewMarkupIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="page" mark="M13 13h8 M13 16h5 M13 19h8 M13 15v2" tone="info" />
+);
+const reviewPaneIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="page" mark="M13 11h8v10h-8z M16 11v10 M18 14h1 M18 17h1" tone="info" />
+);
+const reviewAcceptIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="page" mark="M13 17l3 3 6-7" tone="positive" />
+);
+const reviewRejectIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="page" mark="M14 13l7 7 M21 13l-7 7" tone="negative" />
+);
+const reviewAcceptAllIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="pages" mark="M13 17l3 3 6-7" tone="positive" />
+);
+const reviewRejectAllIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="pages" mark="M14 13l7 7 M21 13l-7 7" tone="negative" />
+);
+const reviewPreviousIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="page" mark="M21 16h-8l3-3 M13 16l3 3" tone="info" />
+);
+const reviewNextIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="page" mark="M13 16h8l-3-3 M21 16l-3 3" tone="info" />
+);
+const commentNewIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="comment" mark="M13 16h8 M17 12v8" tone="positive" />
+);
+const commentReplyIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="comment" mark="M13 15l3-3 M13 15l3 3 M13 15h5a3 3 0 0 1 3 3v2" tone="info" />
+);
+const commentEditIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="comment" mark="M13 20l1-4 5-5 3 3-5 5z M18 12l3 3" tone="info" />
+);
+const commentPreviousIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="comment" mark="M21 16h-8l3-3 M13 16l3 3" tone="info" />
+);
+const commentNextIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="comment" mark="M13 16h8l-3-3 M21 16l-3 3" tone="info" />
+);
+const commentResolveIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="comment" mark="M13 17l3 3 6-7" tone="positive" />
+);
+const commentReopenIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="comment" mark="M14 12v4h4 M14 16a4 4 0 1 1 1 4" tone="info" />
+);
+const commentDeleteIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="comment" mark="M14 13l7 7 M21 13l-7 7" tone="negative" />
+);
+const reviewDisplayIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="page" mark="M12 16s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4z M17 15v2" tone="info" />
+);
+const reviewMarkupFilterIcon: CustomIconRenderer = () => (
+  <ReviewActionIcon family="page" mark="M12 12h10l-4 5v4l-2-1v-3z" tone="info" />
+);
+
 const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
+  reviewTrackChanges: reviewTrackChangesIcon,
+  reviewMarkup: reviewMarkupIcon,
+  reviewPane: reviewPaneIcon,
+  reviewAccept: reviewAcceptIcon,
+  reviewReject: reviewRejectIcon,
+  reviewAcceptAll: reviewAcceptAllIcon,
+  reviewRejectAll: reviewRejectAllIcon,
+  reviewPrevious: reviewPreviousIcon,
+  reviewNext: reviewNextIcon,
+  commentNew: commentNewIcon,
+  commentReply: commentReplyIcon,
+  commentEdit: commentEditIcon,
+  commentPrevious: commentPreviousIcon,
+  commentNext: commentNextIcon,
+  commentResolve: commentResolveIcon,
+  commentReopen: commentReopenIcon,
+  commentDelete: commentDeleteIcon,
+  reviewDisplay: reviewDisplayIcon,
+  reviewMarkupFilter: reviewMarkupFilterIcon,
   footnote: FootnoteIcon,
   underlineGlyph: UnderlineGlyphIcon,
   pageHeader: PageHeaderIcon,

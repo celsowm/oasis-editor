@@ -42,9 +42,11 @@ export function ReviewDisplayModeButton(
 
   return (
     <Menu
-      icon="file-diff"
+      icon="reviewDisplay"
+      label={t(MODES.find((item) => item.mode === current())!.labelKey)}
+      disabled={!api.commands.state("setReviewDisplayMode").isEnabled}
       testId="editor-toolbar-display-for-review"
-      tooltip={t("review.displayForReview")}
+      tooltip={`${t("review.displayForReview")}: ${t(MODES.find((item) => item.mode === current())!.labelKey)}`}
       panelClass="oasis-editor-review-display-mode-menu"
     >
       <For each={MODES}>

@@ -57,18 +57,18 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-revision-markup": {
     tab: "review",
     group: "tracking",
-    row: 2,
+    row: 3,
   },
   "editor-toolbar-display-for-review": {
     tab: "review",
     group: "tracking",
-    row: 3,
+    row: 1,
   },
-  "editor-toolbar-show-markup": { tab: "review", group: "tracking", row: 3 },
+  "editor-toolbar-show-markup": { tab: "review", group: "tracking", row: 2 },
   "editor-toolbar-revisions-panel": {
     tab: "review",
     group: "tracking",
-    row: 2,
+    row: 3,
   },
   "editor-toolbar-accept-revisions": {
     tab: "review",

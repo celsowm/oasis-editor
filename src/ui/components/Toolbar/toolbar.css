@@ -3473,3 +3473,37 @@
   > .oasis-editor-dropdown-chevron {
   order: 2;
 }
+
+
+
+/* Review ribbon uses the same button primitives and dimensions as other tabs.
+ * Semantic marks stay subtle; the actual command state remains authoritative. */
+.oasis-editor-review-icon,
+.oasis-review-icon {
+  --oasis-review-info: var(--oasis-accent, #347caf);
+  --oasis-review-positive: #21834e;
+  --oasis-review-negative: #bd3d41;
+}
+[data-theme="dark"] .oasis-review-icon {
+  --oasis-review-positive: #71c990;
+  --oasis-review-negative: #f099a0;
+}
+.oasis-editor-tool-button:disabled .oasis-review-icon {
+  --oasis-review-info: currentColor;
+  --oasis-review-positive: currentColor;
+  --oasis-review-negative: currentColor;
+}
+/* Preserve primary labels in compact comments; secondary glyphs keep
+ * their accessible names and regain full text in the collapsed popup. */
+.oasis-editor-ribbon-group[data-ribbon-group="comments"].oasis-editor-ribbon-group-compact
+  .oasis-editor-ribbon-large-items .oasis-editor-tool-button-label {
+  display: -webkit-box;
+}
+.oasis-editor-ribbon-group:is([data-ribbon-group="tracking"], [data-ribbon-group="changes"], [data-ribbon-group="comments"])
+  .oasis-editor-tool-button:disabled {
+  opacity: 0.55;
+}
+.oasis-editor-ribbon-group[data-ribbon-group="tracking"]
+  [data-testid="editor-toolbar-display-for-review"] {
+  border: 1px solid var(--oasis-ribbon-border, #b9b9b9);
+}

@@ -336,13 +336,13 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
   review: {
     tracking: {
       priority: 40,
-      compactLabels: "hide",
-      collapsedIcon: "file-check",
+      compactLabels: "show",
+      collapsedIcon: "reviewTrackChanges",
     },
     changes: {
       priority: 30,
-      compactLabels: "hide",
-      collapsedIcon: "check-check",
+      compactLabels: "show",
+      collapsedIcon: "reviewAcceptAll",
     },
     comments: {
       priority: 10,

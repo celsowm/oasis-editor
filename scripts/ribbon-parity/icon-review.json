@@ -1,9 +1,21 @@
 {
   "schemaVersion": 1,
   "reference": "Classic Word document-story semantics; original Oasis vectors, not copied product assets.",
-  "sizes": [16, 20, 24],
-  "surfaces": ["button", "menu", "collapsed"],
-  "states": ["normal", "active", "disabled"],
+  "sizes": [
+    16,
+    20,
+    24
+  ],
+  "surfaces": [
+    "button",
+    "menu",
+    "collapsed"
+  ],
+  "states": [
+    "normal",
+    "active",
+    "disabled"
+  ],
   "candidates": [
     {
       "id": "header-footer",
@@ -538,6 +550,181 @@
       "decision": "replace",
       "defect": "Uses 'panel-bottom' (footer); design default is a reset action.",
       "result": "Page with a reset arrow; 1.7px stroke."
+    },
+    {
+      "id": "review-track-changes",
+      "command": "toggleTrackChanges",
+      "before": "file-check",
+      "after": "reviewTrackChanges",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-revision-markup",
+      "command": "toggleRevisionMarkup",
+      "before": "highlighter",
+      "after": "reviewMarkup",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-revisions-panel",
+      "command": "toggleRevisionsPanel",
+      "before": "list-checks",
+      "after": "reviewPane",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-accept-revisions",
+      "command": "acceptRevisions",
+      "before": "check",
+      "after": "reviewAccept",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-reject-revisions",
+      "command": "rejectRevisions",
+      "before": "x",
+      "after": "reviewReject",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-accept-all-revisions",
+      "command": "requestAcceptAllRevisions",
+      "before": "check-check",
+      "after": "reviewAcceptAll",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-reject-all-revisions",
+      "command": "requestRejectAllRevisions",
+      "before": "undo-2",
+      "after": "reviewRejectAll",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-previous-revision",
+      "command": "previousRevision",
+      "before": "chevron-up",
+      "after": "reviewPrevious",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-next-revision",
+      "command": "nextRevision",
+      "before": "chevron-down",
+      "after": "reviewNext",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-new-comment",
+      "command": "newComment",
+      "before": "message-square-plus",
+      "after": "commentNew",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-reply-comment",
+      "command": "replyComment",
+      "before": "reply",
+      "after": "commentReply",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-edit-comment",
+      "command": "editComment",
+      "before": "pencil",
+      "after": "commentEdit",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-previous-comment",
+      "command": "previousComment",
+      "before": "message-square",
+      "after": "commentPrevious",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-next-comment",
+      "command": "nextComment",
+      "before": "messages-square",
+      "after": "commentNext",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-resolve-comment",
+      "command": "resolveComment",
+      "before": "message-square-check",
+      "after": "commentResolve",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-reopen-comment",
+      "command": "reopenComment",
+      "before": "message-square-more",
+      "after": "commentReopen",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-delete-comment",
+      "command": "deleteComment",
+      "before": "message-square-x",
+      "after": "commentDelete",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark."
+    },
+    {
+      "id": "review-display-for-review",
+      "command": null,
+      "before": "file-diff",
+      "after": "reviewDisplay",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark.",
+      "menuId": "editor-toolbar-display-for-review",
+      "action": "display-for-review"
+    },
+    {
+      "id": "review-show-markup",
+      "command": null,
+      "before": "list-checks",
+      "after": "reviewMarkupFilter",
+      "decision": "replace",
+      "defect": "Generic glyph does not identify the review action.",
+      "result": "Shared original page/comment silhouette with a distinct semantic mark.",
+      "menuId": "editor-toolbar-show-markup",
+      "action": "show-markup"
     }
   ],
   "remainingReview": [

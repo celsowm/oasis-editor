@@ -14,6 +14,14 @@
     "clipboardCut",
     "clipboardPaste",
     "colorScheme",
+    "commentDelete",
+    "commentEdit",
+    "commentNew",
+    "commentNext",
+    "commentPrevious",
+    "commentReopen",
+    "commentReply",
+    "commentResolve",
     "commentsPane",
     "deleteTable",
     "designDefault",
@@ -47,6 +55,17 @@
     "pageSize",
     "paragraphSpacing",
     "repeatHeaderRow",
+    "reviewAccept",
+    "reviewAcceptAll",
+    "reviewDisplay",
+    "reviewMarkup",
+    "reviewMarkupFilter",
+    "reviewNext",
+    "reviewPane",
+    "reviewPrevious",
+    "reviewReject",
+    "reviewRejectAll",
+    "reviewTrackChanges",
     "sectionBreak",
     "shading",
     "sortAscending",
@@ -659,127 +678,127 @@
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 894,
       "role": "iconName",
-      "name": "file-check",
-      "origin": "lucide"
+      "name": "reviewTrackChanges",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 904,
       "role": "iconName",
-      "name": "highlighter",
-      "origin": "lucide"
+      "name": "reviewMarkup",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 925,
       "role": "iconName",
-      "name": "list-checks",
-      "origin": "lucide"
+      "name": "reviewPane",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 934,
       "role": "iconName",
-      "name": "check",
-      "origin": "lucide"
+      "name": "reviewAccept",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 944,
       "role": "iconName",
-      "name": "x",
-      "origin": "lucide"
+      "name": "reviewReject",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 955,
       "role": "iconName",
-      "name": "check-check",
-      "origin": "lucide"
+      "name": "reviewAcceptAll",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 964,
       "role": "iconName",
-      "name": "undo-2",
-      "origin": "lucide"
+      "name": "reviewRejectAll",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 974,
       "role": "iconName",
-      "name": "chevron-up",
-      "origin": "lucide"
+      "name": "reviewPrevious",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 983,
       "role": "iconName",
-      "name": "chevron-down",
-      "origin": "lucide"
+      "name": "reviewNext",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 992,
       "role": "iconName",
-      "name": "commentsPane",
+      "name": "commentNew",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 1002,
       "role": "iconName",
-      "name": "message-square-plus",
-      "origin": "lucide"
+      "name": "commentsPane",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 1012,
       "role": "iconName",
-      "name": "reply",
-      "origin": "lucide"
+      "name": "commentReply",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 1021,
       "role": "iconName",
-      "name": "pencil",
-      "origin": "lucide"
+      "name": "commentEdit",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 1030,
       "role": "iconName",
-      "name": "message-square",
-      "origin": "lucide"
+      "name": "commentPrevious",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 1039,
       "role": "iconName",
-      "name": "messages-square",
-      "origin": "lucide"
+      "name": "commentNext",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 1048,
       "role": "iconName",
-      "name": "message-square-check",
-      "origin": "lucide"
+      "name": "commentResolve",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 1057,
       "role": "iconName",
-      "name": "message-square-more",
-      "origin": "lucide"
+      "name": "commentReopen",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 1066,
       "role": "iconName",
-      "name": "message-square-x",
-      "origin": "lucide"
+      "name": "commentDelete",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
@@ -1037,8 +1056,8 @@
       "file": "src/ui/components/Toolbar/ReviewDisplayModeButton.tsx",
       "line": 45,
       "role": "icon",
-      "name": "file-diff",
-      "origin": "lucide"
+      "name": "reviewDisplay",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
@@ -1191,15 +1210,15 @@
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
       "line": 340,
       "role": "collapsedIcon",
-      "name": "file-check",
-      "origin": "lucide"
+      "name": "reviewTrackChanges",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
       "line": 345,
       "role": "collapsedIcon",
-      "name": "check-check",
-      "origin": "lucide"
+      "name": "reviewAcceptAll",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
@@ -1303,8 +1322,8 @@
       "file": "src/ui/components/Toolbar/ShowMarkupButton.tsx",
       "line": 105,
       "role": "icon",
-      "name": "list-checks",
-      "origin": "lucide"
+      "name": "reviewMarkupFilter",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/SymbolMenu.tsx",
