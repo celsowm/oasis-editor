@@ -81,31 +81,37 @@ export async function waitForRibbonSettled(page) {
 }
 
 /**
- * The full ribbon and the collapsed-group popup both render the same controls.
- * Playwright's `.visible()` engine does not require a non-empty box, but the
- * click actionability check does — a full-size button inside a collapsed group
- * keeps `display:flex` at 0x0. Choose by measured bounding box instead of
- * pseudo-classes; when no copy is actionable, open the collapsed popup and
- * scope the locator to it.
+ * Resolve commands inside their actual ribbon group or its open popup.
+ * Never select inert measurement copies or hidden duplicate controls:
+ * a non-empty bounding box alone does not establish accessibility.
  */
 export async function openGroup(page, group, testId) {
   await waitForRibbonSettled(page);
-  const item = page.locator(`[data-testid="${testId}"]`);
-  const count = await item.count();
-  if (count > 0) {
-    const boxes = await Promise.all(
-      [...Array(count)].map((_, index) => item.nth(index).boundingBox()),
-    );
-    const index = boxes.findIndex(
-      (box) => box !== null && box.width > 0 && box.height > 0,
-    );
-    if (index >= 0) return item.nth(index);
-  }
+  const section = page.locator(`[data-testid="editor-ribbon-panel"] > [data-ribbon-group="${group}"]`);
+  const inline = section.locator(`.oasis-editor-ribbon-group-content [data-testid="${testId}"]`);
+  const popup = page.locator(".oasis-editor-ribbon-collapsed-menu:visible");
+  const visible = async (item) => {
+    for (let index = 0; index < await item.count(); index++) {
+      const candidate = item.nth(index);
+      if (await candidate.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        return box.width > 0 && box.height > 0 &&
+          !el.closest('[inert], [aria-hidden="true"]') &&
+          getComputedStyle(el).visibility === "visible";
+      })) return candidate;
+    }
+    return null;
+  };
+  const direct = await visible(inline);
+  if (direct) return direct;
+  const existing = await visible(popup.locator(`[data-testid="${testId}"]`));
+  if (existing) return existing;
   await page.keyboard.press("Escape");
-  await page.getByTestId(`editor-ribbon-group-${group}`).click();
-  const popup = page.locator(".oasis-editor-ribbon-collapsed-menu");
-  await popup.waitFor({ state: "visible", timeout: 5000 });
-  return popup.locator(`[data-testid="${testId}"]`);
+  const trigger = section.getByTestId(`editor-ribbon-group-${group}`);
+  await trigger.click();
+  const target = popup.locator(`[data-testid="${testId}"]`);
+  await target.waitFor({ state: "visible", timeout: 5000 });
+  return target;
 }
 
 export async function loadFixture(page, fixture) {

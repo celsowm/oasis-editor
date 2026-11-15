@@ -59,6 +59,7 @@ try {
               const enabled = await page.evaluate((name) => window.ribbonReference.client.commands.state(name).isEnabled, command);
               if (enabled) await expect(control).toBeEnabled();
               else await expect(control).toBeDisabled();
+              await expect(control).toBeVisible();
               await expect(control).toHaveAccessibleName(/\S/);
               await expect(control.locator("svg.oasis-review-icon")).toHaveCount(1);
               // A collapsed group may have a portalled copy. Close only after

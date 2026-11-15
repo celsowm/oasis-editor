@@ -1483,11 +1483,11 @@ try {
     await applyShowMarkup(page, { section: "formatting" });
     await waitForCellCount(2);
     assert.equal(
-      await page.locator('[data-revision-id="table-property"]').count(),
+      await cellMarkup().and(page.locator('[data-revision-id="table-property"]')).count(),
       0,
     );
     assert.equal(
-      await page.locator('[data-revision-id="table-grid"]').count(),
+      await cellMarkup().and(page.locator('[data-revision-id="table-grid"]')).count(),
       1,
     );
     await applyShowMarkup(page, { section: "formatting" });
@@ -1495,7 +1495,7 @@ try {
     await applyShowMarkup(page, { section: "insertions" });
     await waitForCellCount(2);
     assert.equal(
-      await page.locator('[data-revision-id="row-insert"]').count(),
+      await cellMarkup().and(page.locator('[data-revision-id="row-insert"]')).count(),
       0,
     );
     await applyShowMarkup(page, { section: "insertions" });
