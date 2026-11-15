@@ -263,6 +263,31 @@ describe("ribbon group popup lifecycle", () => {
     dispose();
   });
 
+  it("keeps the same collapsed trigger mounted for measurement across resize states", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const [collapsed, setCollapsed] = createSignal(false);
+    const dispose = render(
+      () => <RibbonGroup group={{ ...baseGroup(), resizeState: collapsed() ? "collapsed" : "full" }} api={createApi()} />,
+      host,
+    );
+    await flush();
+    const trigger = host.querySelector<HTMLButtonElement>(".oasis-editor-ribbon-group-collapsed-trigger button");
+    expect(trigger).not.toBeNull();
+    expect(trigger?.hasAttribute("data-testid")).toBe(false);
+    setCollapsed(true);
+    await flush();
+    expect(host.querySelector('[data-testid="editor-ribbon-group-font"]')).toBe(trigger);
+    trigger?.click();
+    await flush();
+    expect(document.querySelector('[role="menu"]')).not.toBeNull();
+    setCollapsed(false);
+    await flush();
+    expect(document.querySelector('[role="menu"]')).toBeNull();
+    expect(host.querySelector(".oasis-editor-ribbon-group-collapsed-trigger button")).toBe(trigger);
+    dispose();
+  });
+
   it("renders StyleGallery in collapsed popup with inline strip and keyboard navigation", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);

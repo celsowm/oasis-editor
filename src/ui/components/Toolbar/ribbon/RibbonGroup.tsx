@@ -142,21 +142,22 @@ export function RibbonGroup(props: RibbonGroupProps): JSX.Element {
           </span>
         </button>
       )}
-      <Show when={props.group.resizeState === "collapsed"}>
-        <div class="oasis-editor-ribbon-group-collapsed-trigger">
-          <Menu
-            icon={props.group.resizePolicy.collapsedIcon}
-            tooltip={props.group.label}
-            groupLabel={props.group.label}
-            testId={`editor-ribbon-group-${props.group.id}`}
-            ribbonSize="large"
-            fitViewport
-            panelClass="oasis-editor-ribbon-collapsed-menu oasis-editor-toolbar-view-ribbon"
-          >
-            <RibbonGroupContent group={props.group} api={props.api} />
-          </Menu>
-        </div>
-      </Show>
+      {/* Keep the collapsed trigger available to the inert measurement clones
+          in every state. CSS owns its visibility; expanding closes its menu. */}
+      <div class="oasis-editor-ribbon-group-collapsed-trigger">
+        <Menu
+          icon={props.group.resizePolicy.collapsedIcon}
+          tooltip={props.group.label}
+          groupLabel={props.group.label}
+          testId={props.group.resizeState === "collapsed" ? `editor-ribbon-group-${props.group.id}` : undefined}
+          open={props.group.resizeState === "collapsed" ? undefined : false}
+          ribbonSize="large"
+          fitViewport
+          panelClass="oasis-editor-ribbon-collapsed-menu oasis-editor-toolbar-view-ribbon"
+        >
+          <RibbonGroupContent group={props.group} api={props.api} />
+        </Menu>
+      </div>
       <div class="oasis-editor-ribbon-group-label" title={props.group.label}>
         {props.group.label}
       </div>

@@ -70,11 +70,34 @@ export async function writeVerification(output, records) {
  * button but is really the responsive planner re-running.
  */
 export async function waitForRibbonSettled(page) {
+  // A previous measurement can still be present immediately after a host
+  // resize. Require matching measured/actual widths and a stable snapshot
+  // over several animation frames; never accept a transient collapsed state.
   await page.waitForFunction(
-    () =>
-      [...document.querySelectorAll("[data-ribbon-group]")].every(
-        (section) => section.getAttribute("data-ribbon-width-full") !== null,
-      ),
+    async () => {
+      const snapshot = () => {
+        const panel = document.querySelector('[data-testid="editor-ribbon-panel"]');
+        if (!panel) return null;
+        const sections = [...panel.children].filter((el) => el.hasAttribute("data-ribbon-group"));
+        if (!sections.length || sections.some((el) => !el.hasAttribute("data-ribbon-width-full"))) return null;
+        return JSON.stringify([
+          panel.clientWidth, panel.scrollWidth,
+          ...sections.map((el) => [
+            el.dataset.ribbonGroup, el.dataset.ribbonState,
+            el.dataset.ribbonWidthFull, el.dataset.ribbonWidthCompact,
+            el.dataset.ribbonWidthCollapsed, el.dataset.ribbonWidthAllocated,
+            Math.round(el.getBoundingClientRect().width * 100) / 100,
+          ]),
+        ]);
+      };
+      const first = snapshot();
+      if (first === null) return false;
+      for (let i = 0; i < 4; i++) {
+        await new Promise(requestAnimationFrame);
+        if (snapshot() !== first) return false;
+      }
+      return true;
+    },
     undefined,
     { timeout: 10000 },
   );

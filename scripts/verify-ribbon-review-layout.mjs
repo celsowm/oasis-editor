@@ -45,13 +45,24 @@ try {
           await expect(display.locator("svg.oasis-review-icon")).toHaveCount(1);
           const markup = await openGroup(page, "tracking", "editor-toolbar-show-markup");
           await expect(markup).toContainText(locale === "pt-BR" ? "Filtrar marcações" : "Markup Filters");
-          for (const width of [1440, 1152, 960, 800, 640, 480]) {
+          let initialMeasurements;
+          for (const width of [1440, 1152, 960, 800, 640, 480, 1440]) {
             await page.locator("#ribbon-reference-root").evaluate((el, w) => { el.style.width = `${w}px`; }, width);
             await waitForRibbonSettled(page);
-            await expect.poll(async () => page.locator("[data-ribbon-group]").evaluateAll((groups) =>
+            await expect.poll(async () => page.locator('[data-testid="editor-ribbon-panel"] > [data-ribbon-group]').evaluateAll((groups) =>
               groups.every((g) => Math.abs(Math.ceil(g.getBoundingClientRect().width) - Number(g.dataset.ribbonWidthAllocated)) <= 1)
             )).toBe(true);
-            const geometry = await page.locator("[data-ribbon-group]").evaluateAll((groups) =>
+            const measured = await page.locator('[data-testid="editor-ribbon-panel"] > [data-ribbon-group]').evaluateAll((groups) =>
+              groups.map((g) => ({
+                id: g.dataset.ribbonGroup,
+                full: Number(g.dataset.ribbonWidthFull),
+                compact: Number(g.dataset.ribbonWidthCompact),
+                collapsed: Number(g.dataset.ribbonWidthCollapsed),
+              }))
+            );
+            if (!initialMeasurements) initialMeasurements = measured;
+            else assert.deepEqual(measured, initialMeasurements, "Intrinsic review widths changed with resize state");
+            const geometry = await page.locator('[data-testid="editor-ribbon-panel"] > [data-ribbon-group]').evaluateAll((groups) =>
               groups.map((g) => ({ id: g.dataset.ribbonGroup, state: g.dataset.ribbonState, width: g.getBoundingClientRect().width }))
             );
             for (const [group, id, command] of commandIds) {

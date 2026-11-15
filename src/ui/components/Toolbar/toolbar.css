@@ -3560,7 +3560,14 @@
   > .oasis-editor-toolbar-item > :is(.oasis-editor-tool-button, .oasis-editor-toolbar-dropdown),
 [data-ribbon-content-group="tracking"]:not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-ribbon-normal-rows .oasis-editor-toolbar-dropdown > .oasis-editor-tool-button {
-  width: 100%;
+  /* Avoid cyclic percentage sizing in max-content tracks. Flex growth
+     stretches the controls after intrinsic track sizes are resolved. */
+  flex: 1 0 auto;
+  width: auto;
+}
+[data-ribbon-content-group="tracking"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows .oasis-editor-toolbar-dropdown {
+  display: flex;
 }
 [data-ribbon-content-group="tracking"]:not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-ribbon-normal-rows .oasis-editor-toolbar-dropdown > .oasis-editor-tool-button {
