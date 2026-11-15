@@ -27,6 +27,7 @@ export function RevisionMarkupOverlay(
               "oasis-editor-revision-markup-delete": box.type === "delete",
               "oasis-editor-revision-markup-property": box.type === "property",
               "oasis-editor-revision-markup-merge": box.type === "merge",
+              "oasis-editor-revision-markup-grid": box.type === "grid",
               "oasis-editor-revision-markup-cell": box.variant === "cell",
             }}
             data-testid="editor-revision-markup"

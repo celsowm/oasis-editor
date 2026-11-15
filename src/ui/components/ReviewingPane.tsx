@@ -3,7 +3,7 @@ import type { EditorState } from "@/core/model.js";
 import { getParagraphs } from "@/core/model.js";
 import { collectNavigableRevisions } from "@/core/commands/reviewNavigation.js";
 import { isRevisionMarkupShown } from "@/core/commands/reviewMarkup.js";
-import { collectCellRevisions } from "@/core/commands/cellRevisions.js";
+import { collectTableRevisions } from "@/core/commands/cellRevisions.js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Button } from "@/ui/public/Button.js";
 import { Text } from "@/ui/public/Text.js";
@@ -91,18 +91,18 @@ export function ReviewingPane(props: ReviewingPaneProps): JSX.Element {
     // Cell-level revisions live on the cell's style, not on any run, so the
     // run-based maps above cannot describe them. Their ids still appear in
     // collectNavigableRevisions; fill in author/date/type/snippet here.
-    const cellById = new Map(
-      collectCellRevisions(state).map((cell) => [cell.id, cell]),
+    const tableById = new Map(
+      collectTableRevisions(state).map((entry) => [entry.id, entry]),
     );
     return collectNavigableRevisions(state).map((range) => {
       const meta = dateById.get(range.id);
-      const cell = cellById.get(range.id);
+      const table = tableById.get(range.id);
       return {
         id: range.id,
-        type: meta?.type ?? cell?.type ?? "insert",
-        author: authorById.get(range.id) ?? cell?.author ?? "—",
-        date: meta?.date ?? cell?.date,
-        snippet: revisionSnippet(state, range.id) || cell?.snippet || "",
+        type: meta?.type ?? table?.type ?? "insert",
+        author: authorById.get(range.id) ?? table?.author ?? "—",
+        date: meta?.date ?? table?.date,
+        snippet: revisionSnippet(state, range.id) || table?.snippet || "",
       };
     });
   });
@@ -123,6 +123,7 @@ export function ReviewingPane(props: ReviewingPaneProps): JSX.Element {
       return type === "insert"
         ? t("review.revisionInsert")
         : t("review.revisionDelete");
+    if (type === "grid") return t("review.revisionGrid");
     return t("review.revisionProperty");
   };
 
@@ -134,7 +135,9 @@ export function ReviewingPane(props: ReviewingPaneProps): JSX.Element {
       ? "review-revisions-icon-delete"
       : type === "property"
         ? "review-revisions-icon-property"
-        : "review-revisions-icon-insert";
+        : type === "grid"
+          ? "review-revisions-icon-grid"
+          : "review-revisions-icon-insert";
 
   return (
     <div

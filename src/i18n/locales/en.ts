@@ -93,6 +93,7 @@ export const en = {
   "review.revisionInsert": "Insertion",
   "review.revisionDelete": "Deletion",
   "review.revisionProperty": "Formatting change",
+  "review.revisionGrid": "Table grid change",
   "review.revisionOther": "Change",
   "review.displayForReview": "Display for Review",
   "review.displayModeSimple": "Simple Markup",
