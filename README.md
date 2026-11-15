@@ -279,6 +279,17 @@ export function PluginDialog(props: { open: boolean; onClose: () => void }) {
 
 ## Toolbar And Menubar Customization
 
+`ui.toolbar` picks how the toolbar looks:
+
+- `view`: `"ribbon"` (default, Word-like tabs and groups) or `"compact"` (one strip).
+- `layout`: `"overflow"` (default) or `"wrap"` for the compact strip.
+- `ribbonStyle`: `"classic"` (default) or `"simplified"`, Office's one-line
+  ribbon for embedded editors: tabs stay, each panel is a single row of small
+  commands, and groups that do not fit become "icon Name ▾" popups. The
+  toolbar drops from 118px to 74px.
+
+Collapsed groups keep their name in both styles.
+
 Customize the toolbar and menubar after built-ins and plugin contributions are
 registered:
 
