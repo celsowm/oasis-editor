@@ -115,3 +115,5 @@ Decisions: retain existing three groups, use original Word-inspired icon semanti
 ## Implementation notes
 
 Added 19 shared original semantic SVGs, distinct forward/backward navigation, labeled current display mode and markup filter, revised tracking rows, primary New Comment ordering, compact label preservation for tracking/changes and large comment actions, scoped disabled-state contrast, and updated icon inventories. All commands and test IDs remain unchanged. Bulk accept/reject remain separate labeled actions to preserve independent command enablement; split buttons are not required. No browser or visual certification is claimed yet.
+
+Added a dedicated review layout browser suite and separate Chromium/Firefox/WebKit workflow. It runs the existing review and comments functional scenarios unchanged, and captures enabled/disabled fixtures under independently constrained host widths with actual command-state assertions. The new suite is not yet validated; existing deployment gate remains unchanged. Real Safari and baseline screenshot reconciliation remain outstanding.

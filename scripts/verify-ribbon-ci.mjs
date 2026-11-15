@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 const baseUrl = "http://127.0.0.1:5174";
 const engine = process.env.RIBBON_BROWSER ?? "chromium";
-const galleryOnly = process.env.RIBBON_SUITE === "style-gallery";
+const suite = process.env.RIBBON_SUITE;
 const server = spawn(
   process.execPath,
   [
@@ -50,7 +50,11 @@ try {
     await delay(200);
   }
   if (!ready) throw new Error("Reference server startup timed out");
-  if (galleryOnly) {
+  if (suite === "review") {
+    await run("scripts/verify-ribbon-review-layout.mjs");
+    await run("scripts/verify-ribbon-review.mjs");
+    await run("scripts/verify-ribbon-comments.mjs");
+  } else if (suite === "style-gallery") {
     await run("scripts/verify-ribbon-style-gallery.mjs");
   } else {
     await run("scripts/verify-ribbon-reference.mjs");
