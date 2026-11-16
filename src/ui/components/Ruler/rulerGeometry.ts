@@ -1,5 +1,5 @@
 import type { EditorPageSettings } from "@/core/model.js";
-import { PX_PER_INCH, PX_PER_CM } from "@/core/units.js";
+import { PX_PER_INCH, PX_PER_CM, PX_PER_POINT } from "@/core/units.js";
 
 /**
  * Horizontal ruler geometry. The editor stores page dimensions, margins and
@@ -136,4 +136,25 @@ export function computeRulerTicks(
   pushSide(1);
   pushSide(-1);
   return ticks;
+}
+
+/** Inverse ruler transforms: tab positions are stored in pt, page geometry in px. */
+export function tabPositionToPageX(positionPt: number, originPx: number): number {
+  return originPx + positionPt * PX_PER_POINT;
+}
+
+export function rulerPointerToTabPosition(
+  clientX: number,
+  pageClientLeft: number,
+  zoom: number,
+  originPx: number,
+  endPx: number,
+  unit: "in" | "cm",
+  free = false,
+): number {
+  if (!Number.isFinite(zoom) || zoom <= 0) return 0;
+  const relative = (clientX - pageClientLeft) / zoom - originPx;
+  const step = unit === "in" ? PX_PER_INCH / 8 : PX_PER_CM / 10;
+  const snapped = free ? relative : Math.round(relative / step) * step;
+  return Math.round(clamp(snapped, 0, Math.max(0, endPx - originPx)) / PX_PER_POINT * 20) / 20;
 }

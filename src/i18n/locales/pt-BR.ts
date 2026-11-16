@@ -868,6 +868,8 @@ export const ptBR = {
   "outline.toggle": "Alternar estrutura",
   "outline.empty": "Os títulos adicionados ao documento aparecerão aqui.",
   "ruler.horizontal": "Régua horizontal",
+  "ruler.tabSelector": "Tipo de tabulação",
+  "ruler.addTab": "Adicionar tabulação",
   "ruler.firstLineIndent": "Recuo da primeira linha",
   "ruler.hangingIndent": "Recuo deslocado",
   "ruler.leftIndent": "Recuo esquerdo",

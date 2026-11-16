@@ -8,11 +8,17 @@ import {
 } from "solid-js";
 import {
   getActiveSectionIndex,
+  getParagraphs,
+  findParagraphTablePathLocation,
+  resolveEffectiveParagraphStyle,
+  type EditorTabStop,
   getDocumentPageSettings,
   normalizePageSettings,
   type EditorPageSettings,
   type EditorState,
 } from "@/core/model.js";
+import { normalizeSelection } from "@/core/selection.js";
+import { TAB_POS_EPS, type ParagraphTabStopsChange } from "@/core/commands/paragraphTabs.js";
 import { getToolbarStyleState } from "@/ui/toolbarStyleState.js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import type { ToolbarHost } from "@/ui/components/Toolbar/state/createToolbarApi.js";
@@ -25,6 +31,8 @@ import {
   measurePageLeft,
   MIN_CONTENT_WIDTH_PX,
   resolveFirstLineOffset,
+  rulerPointerToTabPosition,
+  tabPositionToPageX,
   type RulerGeometry,
   type RulerIndents,
 } from "./rulerGeometry.js";
@@ -59,6 +67,24 @@ interface DragState {
   previewX: number;
 }
 
+type RulerTabType = Exclude<EditorTabStop["type"], "clear">;
+const TAB_TYPES: RulerTabType[] = ["left", "center", "right", "decimal", "bar"];
+const TAB_GLYPHS: Record<RulerTabType, string> = {
+  left: "M4 2V12H12", center: "M8 2V12M2 12H14",
+  right: "M12 2V12H4", decimal: "M8 2V12M2 12H14M12 7H13",
+  bar: "M8 2V14",
+};
+function TabGlyph(props: { type: RulerTabType }): JSX.Element {
+  return <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+    <path d={TAB_GLYPHS[props.type]} fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" />
+  </svg>;
+}
+interface TabDrag {
+  stop: EditorTabStop;
+  position: number;
+  remove: boolean;
+}
+
 function getActivePageSettings(state: EditorState): EditorPageSettings {
   const idx = getActiveSectionIndex(state);
   const section = state.document.sections?.[idx];
@@ -85,6 +111,11 @@ export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
   // the classic padding, used only until the first measurement lands.
   const [pageLeft, setPageLeft] = createSignal(EDITOR_SCROLL_PADDING_PX);
   const [drag, setDrag] = createSignal<DragState | null>(null);
+  const [tabType, setTabType] = createSignal<RulerTabType>("left");
+  const [tabDrag, setTabDrag] = createSignal<TabDrag | null>(null);
+  let rulerRef: HTMLDivElement | undefined;
+  let cancelTabGesture: (() => void) | undefined;
+  onCleanup(() => cancelTabGesture?.());
 
   const pageSettings = createMemo((): EditorPageSettings =>
     getActivePageSettings(props.state()),
@@ -181,6 +212,58 @@ export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
       ? "in"
       : "cm";
 
+  const selectedParagraphs = createMemo(() => {
+    const state = props.state();
+    const paragraphs = getParagraphs(state);
+    if (!paragraphs.length) return [];
+    const range = normalizeSelection(state, paragraphs);
+    return paragraphs.slice(range.startIndex, range.endIndex + 1);
+  });
+  const canPlaceTabs = (): boolean => {
+    const state = props.state();
+    if (props.readOnly() || (pageSettings().columns?.count ?? 1) > 1 ||
+        !props.toolbarHost().commands.canExecute("setParagraphTabStops")) return false;
+    const paragraphs = selectedParagraphs();
+    return paragraphs.length > 0 && paragraphs.every(p => {
+      const style = resolveEffectiveParagraphStyle(p.style, state.document.styles);
+      return !style.bidi && (!style.textDirection || style.textDirection === "lrTb") &&
+        !findParagraphTablePathLocation(state.document, p.id, getActiveSectionIndex(state));
+    });
+  };
+  const commonTabs = createMemo((): EditorTabStop[] => {
+    if (!canPlaceTabs()) return [];
+    const lists = selectedParagraphs().map(p =>
+      (resolveEffectiveParagraphStyle(p.style, props.state().document.styles).tabs ?? [])
+        .filter(tab => tab.type !== "clear" && Number.isFinite(tab.position)),
+    );
+    return (lists[0] ?? []).filter(tab => lists.every(list =>
+      list.some(other => Math.abs(other.position - tab.position) < TAB_POS_EPS &&
+        other.type === tab.type && (other.leader ?? "none") === (tab.leader ?? "none")),
+    )).filter(tab => {
+      const x = tabPositionToPageX(tab.position, baseGeometry().contentLeft);
+      return x >= 0 && x <= pageSettings().width;
+    });
+  });
+  const tabLabel = (type: RulerTabType): string => {
+    switch (type) {
+      case "left": return t("paragraph.tabAlignLeft");
+      case "center": return t("paragraph.tabAlignCenter");
+      case "right": return t("paragraph.tabAlignRight");
+      case "decimal": return t("paragraph.tabAlignDecimal");
+      case "bar": return t("paragraph.tabAlignBar");
+    }
+  };
+  const selectionKey = (): string => {
+    const state = props.state();
+    return JSON.stringify([state.activeSectionIndex, state.activeZone, state.selection]);
+  };
+  createEffect(() => {
+    selectionKey();
+    canPlaceTabs();
+    // Selection changes, protection and unmount cancel uncommitted previews.
+    cancelTabGesture?.();
+  });
+
   const ticks = createMemo((): RulerTick[] =>
     computeRulerTicks(pageSettings().width, baseGeometry().contentLeft, unit()),
   );
@@ -198,6 +281,93 @@ export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
     if (!rect) return 0;
     // rect is the scaled page element; map the screen offset back to document px.
     return clamp((clientX - rect.left) / z(), 0, pageSettings().width);
+  };
+
+  const tabPositionAt = (clientX: number, free: boolean): number =>
+    rulerPointerToTabPosition(clientX, pageRef?.getBoundingClientRect().left ?? 0,
+      z(), baseGeometry().contentLeft, baseGeometry().contentRight, unit(), free);
+
+  const commitTabs = (change: ParagraphTabStopsChange): void => {
+    if (!canPlaceTabs()) return;
+    props.toolbarHost().commands.execute("setParagraphTabStops", change);
+    props.toolbarHost().focusEditor();
+  };
+  const cycleTabType = (): void => {
+    setTabType(current => TAB_TYPES[(TAB_TYPES.indexOf(current) + 1) % TAB_TYPES.length]!);
+  };
+  const addTabAt = (position: number): void => {
+    commitTabs({ set: [{ position, type: tabType() }] });
+  };
+  const addTabFromPointer = (event: PointerEvent): void => {
+    if (!canPlaceTabs() || event.button !== 0 || !pageRef) return;
+    event.preventDefault();
+    event.stopPropagation();
+    // Existing markers consume their own pointerdown.
+    addTabAt(tabPositionAt(event.clientX, event.altKey));
+  };
+  const beginTabDrag = (stop: EditorTabStop, event: PointerEvent): void => {
+    if (!canPlaceTabs() || event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    cancelTabGesture?.();
+    const key = selectionKey();
+    const startX = event.clientX, startY = event.clientY;
+    let moved = false;
+    setTabDrag({ stop, position: stop.position, remove: false });
+
+    const move = (e: PointerEvent): void => {
+      if (e.pointerId !== event.pointerId) return;
+      if (Math.hypot(e.clientX - startX, e.clientY - startY) > 3) moved = true;
+      if (!moved) return;
+      const rect = rulerRef?.getBoundingClientRect();
+      setTabDrag({ stop, position: tabPositionAt(e.clientX, e.altKey),
+        remove: !!rect && (e.clientY < rect.top - 8 || e.clientY > rect.bottom + 8) });
+    };
+    const cancel = (): void => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", pointerCancel);
+      window.removeEventListener("keydown", keydown);
+      window.removeEventListener("blur", cancel);
+      setTabDrag(null);
+      cancelTabGesture = undefined;
+    };
+    const up = (e: PointerEvent): void => {
+      if (e.pointerId !== event.pointerId) return;
+      move(e);
+      const pending = tabDrag();
+      cancel();
+      if (!moved || !pending || selectionKey() !== key || !canPlaceTabs()) return;
+      if (pending.remove) commitTabs({ clear: [stop.position] });
+      else if (Math.abs(pending.position - stop.position) >= TAB_POS_EPS)
+        commitTabs({ clear: [stop.position], set: [{ ...stop, position: pending.position }] });
+    };
+    const pointerCancel = (e: PointerEvent): void => { if (e.pointerId === event.pointerId) cancel(); };
+    const keydown = (e: KeyboardEvent): void => { if (e.key === "Escape") { e.preventDefault(); cancel(); } };
+    cancelTabGesture = cancel;
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", pointerCancel);
+    window.addEventListener("keydown", keydown);
+    window.addEventListener("blur", cancel);
+  };
+  const markerKey = (stop: EditorTabStop, event: KeyboardEvent): void => {
+    if (!canPlaceTabs()) return;
+    if (event.key === "Delete" || event.key === "Backspace") {
+      event.preventDefault();
+      commitTabs({ clear: [stop.position] });
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      const delta = event.key === "ArrowLeft" ? -1 : 1;
+      const x = tabPositionToPageX(stop.position, baseGeometry().contentLeft);
+      const step = unit() === "in" ? 12 : 96 / 25.4;
+      const position = tabPositionAt((pageRef?.getBoundingClientRect().left ?? 0) + sx(x + delta * step), true);
+      if (Math.abs(position - stop.position) >= TAB_POS_EPS)
+        commitTabs({ clear: [stop.position], set: [{ ...stop, position }] });
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      props.toolbarHost().commands.execute("openParagraphDialog");
+    }
   };
 
   const beginDrag = (type: DragType, event: PointerEvent): void => {
@@ -318,11 +488,18 @@ export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
 
   return (
     <div
+      ref={rulerRef}
       class="oasis-editor-horizontal-ruler"
       data-testid="editor-horizontal-ruler"
       role="presentation"
       aria-label={t("ruler.horizontal")}
     >
+      <button type="button" class="oasis-editor-ruler-tab-selector"
+        disabled={!canPlaceTabs()} title={`${t("ruler.tabSelector")}: ${tabLabel(tabType())}`}
+        aria-label={`${t("ruler.tabSelector")}: ${tabLabel(tabType())}`}
+        data-testid="editor-ruler-tab-selector" onClick={cycleTabType}>
+        <TabGlyph type={tabType()} />
+      </button>
       <div
         class="oasis-editor-horizontal-ruler-track"
         style={{
@@ -377,6 +554,43 @@ export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
                 )}
               </>
             )}
+          </For>
+
+          {/* Dedicated lane, below the indent controls. */}
+          <button type="button" class="oasis-editor-ruler-tab-lane"
+            disabled={!canPlaceTabs()}
+            title={t("ruler.addTab")} aria-label={t("ruler.addTab")}
+            data-testid="editor-ruler-tab-lane"
+            style={{ left: `${sx(geometry().contentLeft)}px`,
+              width: `${sx(Math.max(0, geometry().contentRight - geometry().contentLeft))}px` }}
+            onPointerDown={addTabFromPointer}
+            onClick={event => {
+              if (event.detail === 0 && pageRef) {
+                const middle = (baseGeometry().contentLeft + baseGeometry().contentRight) / 2;
+                addTabAt(tabPositionAt(pageRef.getBoundingClientRect().left + sx(middle), false));
+              }
+            }}
+          />
+          <For each={commonTabs()}>
+            {(stop): JSX.Element => {
+              const moving = () => tabDrag()?.stop.position === stop.position;
+              const position = () => moving() ? tabDrag()!.position : stop.position;
+              return <button type="button" class="oasis-editor-ruler-tab-marker"
+                classList={{ "oasis-editor-ruler-tab-removing": moving() && !!tabDrag()?.remove }}
+                style={{ left: `${sx(tabPositionToPageX(position(), geometry().contentLeft))}px` }}
+                title={`${tabLabel(stop.type as RulerTabType)} · ${stop.position.toFixed(2)} pt`}
+                aria-label={`${tabLabel(stop.type as RulerTabType)} · ${stop.position.toFixed(2)} pt`}
+                data-testid="editor-ruler-tab-marker"
+                data-position-pt={stop.position}
+                onPointerDown={event => beginTabDrag(stop, event)}
+                onKeyDown={event => markerKey(stop, event)}
+                onDblClick={event => {
+                  event.preventDefault();
+                  if (canPlaceTabs()) props.toolbarHost().commands.execute("openParagraphDialog");
+                }}>
+                <TabGlyph type={stop.type as RulerTabType} />
+              </button>;
+            }}
           </For>
 
           {/* Margin handles */}

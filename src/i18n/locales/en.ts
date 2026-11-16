@@ -860,6 +860,8 @@ export const en = {
   "outline.toggle": "Toggle outline",
   "outline.empty": "Headings you add to the document will appear here.",
   "ruler.horizontal": "Horizontal ruler",
+  "ruler.tabSelector": "Tab stop type",
+  "ruler.addTab": "Add tab stop",
   "ruler.firstLineIndent": "First line indent",
   "ruler.hangingIndent": "Hanging indent",
   "ruler.leftIndent": "Left indent",

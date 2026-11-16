@@ -143,3 +143,43 @@
   cursor: default;
   pointer-events: none;
 }
+
+
+/* Tab markers occupy a distinct lower lane, so indent and margin gestures
+   retain their original targets. The selector remains fixed while scrolling. */
+.oasis-editor-horizontal-ruler { flex-basis: 34px; height: 34px; }
+.oasis-editor-horizontal-ruler-content,
+.oasis-editor-horizontal-ruler-margin { bottom: 16px; }
+.oasis-editor-horizontal-ruler-tick,
+.oasis-editor-horizontal-ruler-label { top: 11px; }
+.oasis-editor-ruler-marker-hanging,
+.oasis-editor-ruler-marker-right-indent { bottom: 17px; }
+.oasis-editor-ruler-marker-left-box { bottom: 12px; }
+.oasis-editor-horizontal-ruler-margin-handle { bottom: 12px; }
+.oasis-editor-ruler-tab-selector,
+.oasis-editor-ruler-tab-marker,
+.oasis-editor-ruler-tab-lane {
+  position: absolute; padding: 0; margin: 0; border: 0;
+  background: transparent; color: var(--oasis-text-color, #334155);
+}
+.oasis-editor-ruler-tab-selector {
+  left: 4px; top: 3px; width: 22px; height: 24px; z-index: 8;
+  display: grid; place-items: center; border: 1px solid var(--oasis-border-color);
+  border-radius: 3px; background: var(--oasis-toolbar-bg, #fff);
+  cursor: pointer;
+}
+.oasis-editor-ruler-tab-lane {
+  bottom: 0; height: 12px; cursor: crosshair; z-index: 2;
+}
+.oasis-editor-ruler-tab-marker {
+  bottom: 0; width: 16px; height: 14px; display: grid; place-items: center;
+  transform: translateX(-50%); z-index: 6; cursor: ew-resize;
+  color: var(--oasis-accent, #1a73e8);
+}
+.oasis-editor-ruler-tab-marker:hover,
+.oasis-editor-ruler-tab-selector:hover { background: rgba(127, 127, 127, .14); }
+.oasis-editor-ruler-tab-marker:focus-visible,
+.oasis-editor-ruler-tab-selector:focus-visible,
+.oasis-editor-ruler-tab-lane:focus-visible { outline: 2px solid var(--oasis-accent, #1a73e8); outline-offset: -2px; }
+.oasis-editor-ruler-tab-removing { opacity: .25; }
+.oasis-editor-ruler-tab-selector:disabled, .oasis-editor-ruler-tab-lane:disabled { opacity: .35; cursor: default; }

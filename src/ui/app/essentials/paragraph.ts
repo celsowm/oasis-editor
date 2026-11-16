@@ -275,6 +275,7 @@ export function buildEssentialsParagraph(
       options.focusInput();
     },
     setTabStops: (change): void => {
+      options.resetTransactionGrouping();
       options.applyTransactionalState(
         (current): EditorState => editParagraphTabStops(current, change),
         { mergeKey: MERGE_KEYS.paragraphDialog },
