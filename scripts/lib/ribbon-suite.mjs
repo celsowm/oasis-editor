@@ -77,7 +77,7 @@ export async function waitForRibbonSettled(page) {
     async () => {
       const snapshot = () => {
         const panel = document.querySelector('[data-testid="editor-ribbon-panel"]');
-        if (!panel) return null;
+        if (!panel || panel.dataset.ribbonMeasured !== "true") return null;
         const sections = [...panel.children].filter((el) => el.hasAttribute("data-ribbon-group"));
         if (!sections.length || sections.some((el) =>
           ["ribbonWidthFull", "ribbonWidthCompact", "ribbonWidthCollapsed"].some(key => !(Number(el.dataset[key]) > 0))

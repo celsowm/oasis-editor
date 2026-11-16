@@ -222,7 +222,8 @@
 
 .oasis-editor-ribbon-group {
   display: grid;
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  width: max-content;
   grid-template-rows: var(--oasis-ribbon-body-height) var(--oasis-ribbon-caption-height, 12px);
   align-items: stretch;
   padding: 0 9px;
@@ -382,10 +383,6 @@
 .oasis-editor-ribbon-group:has(> .oasis-editor-ribbon-group-launcher)
   > .oasis-editor-ribbon-group-label {
   margin-inline-end: var(--oasis-ribbon-launcher-width, 20px);
-}
-
-.oasis-editor-ribbon-group-compact .oasis-editor-ribbon-group-label {
-  max-width: 100%;
 }
 
 .oasis-editor-ribbon-group-compact-hide-labels .oasis-editor-tool-button-label,
@@ -897,8 +894,9 @@
 
 .oasis-editor-table-cell-alignment-matrix {
   display: grid;
-  grid-template-columns: repeat(3, 24px);
-  grid-auto-rows: 24px;
+  --oasis-alignment-cell: 19px;
+  grid-template-columns: repeat(3, var(--oasis-alignment-cell));
+  grid-auto-rows: var(--oasis-alignment-cell);
   gap: 2px;
   align-content: center;
   justify-content: center;
@@ -909,14 +907,22 @@
 .oasis-editor-toolbar-view-ribbon
   .oasis-editor-table-cell-alignment-matrix
   .oasis-editor-tool-button.oasis-editor-table-cell-alignment-option {
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  min-height: 24px;
+  width: var(--oasis-alignment-cell);
+  height: var(--oasis-alignment-cell);
+  min-width: var(--oasis-alignment-cell);
+  min-height: var(--oasis-alignment-cell);
   padding: 0;
-  flex: 0 0 24px;
+  flex: 0 0 var(--oasis-alignment-cell);
   border: 1px solid transparent;
   border-radius: 3px;
+}
+
+/* Keep all nine commands in a single row in the simplified ribbon. */
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-table-cell-alignment-matrix {
+  --oasis-alignment-cell: 24px;
+  grid-template-columns: repeat(9, var(--oasis-alignment-cell));
 }
 
 .oasis-editor-table-cell-alignment-glyph {
@@ -3556,14 +3562,21 @@
   grid-template-columns: repeat(var(--oasis-ribbon-grid-columns, 1), max-content);
   column-gap: 4px;
 }
+/* Logical rows share one intrinsic grid, avoiding nested subgrid sizing. */
 [data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
-  column-gap: 4px;
-  align-items: center;
+  display: contents;
 }
+[data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row > * {
+  align-self: center;
+}
+[data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row:nth-child(1) > * { grid-row: 1; }
+[data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row:nth-child(2) > * { grid-row: 2; }
+[data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row:nth-child(3) > * { grid-row: 3; }
 [data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-ribbon-normal-rows > [data-ribbon-row-span="full"]
   > .oasis-editor-toolbar-item {

@@ -2,6 +2,7 @@ import {
   For,
   Show,
   createEffect,
+  batch,
   createMemo,
   createSignal,
   onCleanup,
@@ -18,6 +19,7 @@ import {
   buildRibbonGroups,
   resolveResponsiveRibbonGroups,
   visibleRibbonItems,
+  sameRibbonComposition,
 } from "./ribbonModel.js";
 import type { RibbonGroupModel, RibbonGroupWidth } from "./ribbonModel.js";
 import { Button } from "../primitives/Button.js";
@@ -40,17 +42,26 @@ export function RibbonPanel(props: RibbonPanelProps): JSX.Element {
   let panelRef: HTMLDivElement | undefined;
   let frame: number | undefined;
   let disposed = false;
+  // Preserve the composition across unrelated command-state updates.
+  const visibleItems = createMemo(
+    () => visibleRibbonItems(props.items(), props.api),
+    [] as ToolbarItem[],
+    { equals: sameRibbonComposition },
+  );
   const groups = createMemo(() =>
-    buildRibbonGroups(
-      visibleRibbonItems(props.items(), props.api),
-      props.activeTab(),
-      props.api.t,
-    ),
+    buildRibbonGroups(visibleItems(), props.activeTab(), props.api.t),
   );
   // Measurements belong to a composition, not a group ID shared across tabs.
   // A newly translated/reconfigured group never sees another context's widths.
   const widths = createMemo(() =>
     measurement()?.groups === groups() ? measurement()!.widths : {},
+  );
+  const hasMeasurements = createMemo(() =>
+    measurement()?.groups === groups() &&
+    groups().every(group => {
+      const width = widths()[group.id];
+      return !!width && width.full > 0 && width.compact > 0 && width.collapsed > 0;
+    }),
   );
   const overflow = createMemo(
     () =>
@@ -76,21 +87,17 @@ export function RibbonPanel(props: RibbonPanelProps): JSX.Element {
     const current = groups();
     const next = measureRibbonGroups(panel, current);
     const previous = measurement();
-    if (
-      previous?.groups !== current ||
-      JSON.stringify(previous.widths) !== JSON.stringify(next)
-    ) {
-      setMeasurement({ groups: current, widths: next });
-    }
     const style = getComputedStyle(panel);
-    setAvailableWidth(
-      Math.max(
-        0,
-        frameRef!.clientWidth -
-          parseFloat(style.paddingLeft) -
-          parseFloat(style.paddingRight),
-      ),
-    );
+    const available = Math.max(0, frameRef!.clientWidth -
+      parseFloat(style.paddingLeft) - parseFloat(style.paddingRight));
+    // Widths and budget belong to one atomic layout snapshot.
+    batch(() => {
+      if (
+        previous?.groups !== current ||
+        JSON.stringify(previous.widths) !== JSON.stringify(next)
+      ) setMeasurement({ groups: current, widths: next });
+      setAvailableWidth(available);
+    });
   };
   const scheduleMeasure = (): void => {
     if (frame === undefined && !disposed)
@@ -155,6 +162,7 @@ export function RibbonPanel(props: RibbonPanelProps): JSX.Element {
         classList={{ "oasis-editor-ribbon-panel-overflow": overflow() }}
         tabIndex={overflow() ? 0 : undefined}
         data-ribbon-overflow={overflow()}
+        data-ribbon-measured={hasMeasurements() ? "true" : "false"}
         role="tabpanel"
         id={`oasis-editor-ribbon-panel-${props.activeTab()}`}
         aria-labelledby={`oasis-editor-ribbon-tab-${props.activeTab()}`}

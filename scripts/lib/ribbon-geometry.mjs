@@ -72,10 +72,24 @@ export async function readRibbonGeometry(page) {
       const rows = [];
       if (visible(content)) {
         const items = content.querySelectorAll(":scope > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row");
-        for (const row of items) {
-          if (!visible(row)) continue;
-          const r=rect(row);
+        for (const [index,row] of [...items].entries()) {
           const children=[...row.children].filter(visible).map(el=>({id:identity(el),rect:rect(el)}));
+          if (!children.length) continue;
+          let r;
+          if(getComputedStyle(row).display==="contents"){
+            // Reconstruct the intended grid track, not the union of child bounds.
+            const parent=row.parentElement;
+            const bounds=rect(parent);
+            const style=getComputedStyle(parent);
+            const heights=style.gridTemplateRows.split(/\s+/).map(parseFloat);
+            const gap=parseFloat(style.rowGap)||0;
+            const y=bounds.y+heights.slice(0,index).reduce((sum,height)=>sum+height+gap,0);
+            r={x:bounds.x,y,width:bounds.width,height:heights[index],right:bounds.right,bottom:y+heights[index]};
+            if(!Number.isFinite(r.height)) issue(group,"missing-logical-row-track",{index,tracks:style.gridTemplateRows});
+          }else{
+            if(!visible(row)) continue;
+            r=rect(row);
+          }
           for (const item of children) {
             if (item.rect.y < r.y-1 || item.rect.bottom>r.bottom+1)
               issue(group,"row-overflow",{ item,row:r });

@@ -14,12 +14,16 @@ export function measureRibbonGroups(
   const root = document.createElement("div");
   // Match selectors targeting direct panel children (notably simplified
   // ribbon), while keeping this temporary panel outside the live panel.
-  root.className = "oasis-editor-ribbon-panel";
+  root.className = panel.className;
   root.setAttribute("aria-hidden", "true");
   root.dataset.ribbonMeasurementCopy = "true";
   root.inert = true;
+  const bounds = panel.getBoundingClientRect();
+  // Match the definite containing block of the live flex panel.
   root.style.cssText =
-    "position:fixed;left:-100000px;top:0;display:flex;flex:none;width:max-content;min-width:0;height:auto;min-height:0;padding:0;overflow:visible;visibility:hidden;pointer-events:none;contain:layout style;";
+    "position:fixed;left:-100000px;top:0;display:flex;flex:none;min-width:0;min-height:0;overflow:visible;visibility:hidden;pointer-events:none;";
+  root.style.width = `${bounds.width}px`;
+  root.style.height = `${bounds.height}px`;
   const copies: Array<{
     id: string;
     state: RibbonGroupResizeState;
