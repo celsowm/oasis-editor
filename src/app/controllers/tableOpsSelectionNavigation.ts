@@ -3,6 +3,8 @@ import {
   findParagraphTablePathLocation,
   getBlockParagraphs,
   getDocumentSections,
+  getParagraphLength,
+  type EditorSelection,
   paragraphOffsetToPosition,
   resolveTablePath,
   type EditorBlockNode,
@@ -132,28 +134,32 @@ function resolveInnermostTable(
   return null;
 }
 
-export const resolveAdjacentTableCellPosition = (
+export type TableTabTarget =
+  | { kind: "outside" | "blocked" | "beforeFirst" | "afterLast" }
+  | { kind: "adjacent"; selection: EditorSelection };
+
+export const resolveTableTabTarget = (
   document: EditorDocument,
   paragraphId: string,
   delta: -1 | 1,
-): EditorPosition | null => {
+): TableTabTarget => {
   const paragraphLocation = findParagraphLocation(document, paragraphId);
-  if (!paragraphLocation) return null;
+  if (!paragraphLocation) return { kind: "outside" };
   const tableLocation = findParagraphTablePathLocation(
     document,
     paragraphId,
     paragraphLocation.sectionIndex,
   );
-  if (!tableLocation) return null;
+  if (!tableLocation) return { kind: "outside" };
 
   const table = resolveInnermostTable(
     getCandidateStories(document, paragraphId),
     tableLocation.tablePath,
     paragraphId,
   );
-  if (!table) return null;
+  if (!table) return { kind: "blocked" };
 
-  const cells = table.rows.flatMap((row): EditorTableCellNode[] =>
+  const cells = table.rows.filter(row => !row.style?.hidden).flatMap((row): EditorTableCellNode[] =>
     row.cells.filter(
       (cell): boolean => cell.vMerge !== "continue" && cell.blocks.length > 0,
     ),
@@ -161,8 +167,34 @@ export const resolveAdjacentTableCellPosition = (
   const currentCellIndex = cells.findIndex((cell): boolean =>
     cellContainsParagraph(cell, paragraphId),
   );
-  if (currentCellIndex === -1) return null;
+  if (currentCellIndex === -1) return { kind: "blocked" };
+  const targetIndex = currentCellIndex + delta;
+  if (targetIndex < 0) return { kind: "beforeFirst" };
+  if (targetIndex >= cells.length) return { kind: "afterLast" };
+  const target = cells[targetIndex]!;
+  // Do not create a destructive range spanning nested-table boundaries.
+  // Plain cells can safely select all their paragraphs.
+  const plain = target.blocks.every(block => block.type === "paragraph");
+  const paragraphs = target.blocks.flatMap(getBlockParagraphs);
+  const first = plain ? paragraphs[0] :
+    target.blocks.find((block): block is EditorParagraphNode => block.type === "paragraph") ?? paragraphs[0];
+  if (!first) return { kind: "blocked" };
+  const last = plain ? paragraphs[paragraphs.length - 1]! : first;
+  return {
+    kind: "adjacent",
+    selection: {
+      anchor: paragraphOffsetToPosition(first, 0),
+      focus: paragraphOffsetToPosition(last, getParagraphLength(last)),
+    },
+  };
+};
 
-  const targetParagraph = firstParagraphInCell(cells[currentCellIndex + delta]);
-  return targetParagraph ? paragraphOffsetToPosition(targetParagraph, 0) : null;
+/** Position-only projection retained for callers that do not select cell text. */
+export const resolveAdjacentTableCellPosition = (
+  document: EditorDocument,
+  paragraphId: string,
+  delta: -1 | 1,
+): EditorPosition | null => {
+  const target = resolveTableTabTarget(document, paragraphId, delta);
+  return target.kind === "adjacent" ? target.selection.anchor : null;
 };

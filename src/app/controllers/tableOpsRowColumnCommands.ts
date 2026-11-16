@@ -209,6 +209,37 @@ function createTableRowColumnOperationsImpl(
     );
   };
 
+  /** Final-cell Tab appends at the physical end and enters the first new cell.
+   * Existing vertical merges must not grow into the new row. */
+  const appendTableRowForTab = (current: EditorState): EditorState => {
+    const mut = resolveLocationTableMutation(current, deps.getTargetBlocks);
+    if (!mut) return current;
+    const { tableBlock, targetBlocks, location } = mut;
+    const last = tableBlock.rows[tableBlock.rows.length - 1];
+    if (!last || !last.cells.length) return current;
+    // Use the last physical row as a template. Explicit merge continuations
+    // become independent empty cells; the previous merge stays unchanged.
+    const cells = last.cells.map(cell => {
+      const blank = createEditorTableCell([createEditorParagraph("")], Math.max(1, cell.colSpan ?? 1));
+      if (cell.style) {
+        const { revision: _revision, ...style } = cell.style;
+        blank.style = style;
+      }
+      return blank;
+    });
+    // Imported implicit row spans may omit continuation cells. Fill any
+    // remaining grid width rather than extending the old vertical span.
+    const gridWidth = Math.max(tableBlock.gridCols?.length ?? 0, getTableVisualWidth(tableBlock));
+    const width = cells.reduce((sum, cell) => sum + Math.max(1, cell.colSpan ?? 1), 0);
+    for (let col = width; col < gridWidth; col++) {
+      cells.push(createEditorTableCell([createEditorParagraph("")]));
+    }
+    const blankRow = createEditorTableRow(cells);
+    if (current.trackChangesEnabled) markTableRevision(blankRow, "insert");
+    tableBlock.rows.push(blankRow);
+    return commitTableMutation(current, targetBlocks, location.zone, firstParagraphInCell(cells[0]));
+  };
+
   const deleteSelectedTableRow = (current: EditorState): EditorState => {
     const mut = resolveLocationTableMutation(current, deps.getTargetBlocks);
     if (!mut) return current;
@@ -522,6 +553,7 @@ function createTableRowColumnOperationsImpl(
 
   return {
     insertSelectedTableRow,
+    appendTableRowForTab,
     deleteSelectedTableRow,
     insertSelectedTableColumn,
     deleteSelectedTableColumn,

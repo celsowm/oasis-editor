@@ -111,6 +111,8 @@ export function createEditorKeyboardBinding(deps: EditorKeyboardBindingDeps): {
     moveVerticalSelection: navigation.moveVerticalSelection,
     moveVerticalByBlock: navigation.moveVerticalByBlock,
     resolveAdjacentTableCellPosition: tableOps.resolveAdjacentTableCellPosition,
+    resolveTableTabTarget: tableOps.resolveTableTabTarget,
+    appendTableRowForTab: tableOps.appendTableRowForTab,
     applySelectionPreservingStructure:
       historyActions.applySelectionPreservingStructure,
     toggleFindReplace: (open): void => {

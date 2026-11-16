@@ -8,6 +8,7 @@ import {
   getRowVisualWidth,
   getTableVisualWidth,
   resolveAdjacentTableCellPosition,
+  resolveTableTabTarget,
 } from "./tableOpsSelectionNavigation.js";
 import {
   applyTableAwareParagraphEdit as applyTableAwareParagraphEditInternal,
@@ -87,6 +88,7 @@ function createEditorTableOperationsImpl(deps: EditorTableOperationsDeps) {
 
   const {
     insertSelectedTableRow,
+    appendTableRowForTab,
     deleteSelectedTableRow,
     insertSelectedTableColumn,
     deleteSelectedTableColumn,
@@ -144,6 +146,7 @@ function createEditorTableOperationsImpl(deps: EditorTableOperationsDeps) {
     splitSelectedTableCell,
     splitSelectedTable,
     insertSelectedTableRow,
+    appendTableRowForTab,
     deleteSelectedTableRow,
     insertSelectedTableColumn,
     deleteSelectedTableColumn,
@@ -153,6 +156,7 @@ function createEditorTableOperationsImpl(deps: EditorTableOperationsDeps) {
     findFirstNavigableParagraphInTable,
     updateBlocksInCurrentSection,
     resolveAdjacentTableCellPosition,
+    resolveTableTabTarget,
     applyTableAwareParagraphEdit,
     withExpandedTableCellSelection,
     applySelectionAwareTextCommand,

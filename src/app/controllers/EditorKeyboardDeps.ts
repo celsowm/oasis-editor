@@ -4,6 +4,7 @@ import type {
   EditorState,
   EditorTextStyle,
 } from "@/core/model.js";
+import type { TableTabTarget } from "./tableOpsSelectionNavigation.js";
 import type { BooleanStyleKey } from "@/ui/toolbarStyleState.js";
 import type {
   EditorTransactionPort,
@@ -60,6 +61,8 @@ export interface EditorKeyboardDeps
     paragraphId: string,
     delta: -1 | 1,
   ) => EditorPosition | null;
+  resolveTableTabTarget?: (document: EditorDocument, paragraphId: string, delta: -1 | 1) => TableTabTarget;
+  appendTableRowForTab?: (current: EditorState) => EditorState;
   applySelectionPreservingStructure: (
     selection: EditorState["selection"],
   ) => void;

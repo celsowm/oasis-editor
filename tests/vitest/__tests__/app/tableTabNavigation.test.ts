@@ -1,0 +1,65 @@
+import { describe, expect, it } from "vitest";
+import { createEditorDocument, createEditorParagraph, createEditorStateFromDocument, createEditorTable, createEditorTableCell, createEditorTableRow } from "@/core/editorState.js";
+import { getDocumentSectionsCanonical, getParagraphLength, getParagraphText, paragraphOffsetToPosition, type EditorState, type EditorTableNode } from "@/core/model.js";
+import { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
+import { insertTextAtSelection } from "@/core/commands/text.js";
+
+function fixture() {
+  const a = createEditorParagraph("A");
+  const b = createEditorParagraph("Second");
+  const c = createEditorParagraph("paragraph");
+  const d = createEditorParagraph("D");
+  const table = createEditorTable([
+    createEditorTableRow([createEditorTableCell([a]), createEditorTableCell([b, c])]),
+    createEditorTableRow([createEditorTableCell([createEditorParagraph("C")]), createEditorTableCell([d])]),
+  ]);
+  const base = createEditorStateFromDocument(createEditorDocument([table]));
+  const position = paragraphOffsetToPosition(a, 0);
+  const state: EditorState = { ...base, selection: { anchor: position, focus: position } };
+  const ops = createEditorTableOperations({
+    applyTransactionalState: () => undefined,
+    applySelectionToStatePreservingStructure: (s, selection) => ({ ...s, selection }),
+    focusInput: () => undefined,
+  });
+  const root = (s: EditorState) => getDocumentSectionsCanonical(s.document)[0]!.blocks[0] as EditorTableNode;
+  return { a, b, c, d, state, ops, root };
+}
+
+describe("Word-style table Tab", () => {
+  it("selects all paragraphs of next cell and selects previous cell on reverse", () => {
+    const f = fixture();
+    const next = f.ops.resolveTableTabTarget(f.state.document, f.a.id, 1);
+    expect(next).toEqual({ kind: "adjacent", selection: {
+      anchor: paragraphOffsetToPosition(f.b, 0), focus: paragraphOffsetToPosition(f.c, getParagraphLength(f.c)),
+    } });
+    const prev = f.ops.resolveTableTabTarget(f.state.document, f.c.id, -1);
+    expect(prev).toEqual({ kind: "adjacent", selection: {
+      anchor: paragraphOffsetToPosition(f.a, 0), focus: paragraphOffsetToPosition(f.a, 1),
+    } });
+    expect(f.ops.resolveTableTabTarget(f.state.document, f.a.id, -1)).toEqual({kind: "beforeFirst"});
+  });
+  it("replaces selected multi-paragraph cell text without changing sibling cells", () => {
+    const f = fixture();
+    const target = f.ops.resolveTableTabTarget(f.state.document, f.a.id, 1);
+    if (target.kind !== "adjacent") throw new Error("missing selection");
+    const edited = f.ops.applyTableAwareParagraphEdit({ ...f.state, selection: target.selection }, s => insertTextAtSelection(s, "new"));
+    const rows = f.root(edited).rows;
+    expect(rows[0]!.cells[1]!.blocks).toHaveLength(1);
+    expect(getParagraphText(rows[0]!.cells[1]!.blocks[0] as typeof f.b)).toBe("new");
+    expect(getParagraphText(rows[1]!.cells[1]!.blocks[0] as typeof f.d)).toBe("D");
+    expect(f.root(f.state).rows[0]!.cells[1]!.blocks).toHaveLength(2);
+  });
+  it("appends one row and selects its first empty cell without mutating original", () => {
+    const f = fixture();
+    const pos = paragraphOffsetToPosition(f.d, 1);
+    const selected = {...f.state, selection: {anchor: pos, focus: pos}};
+    expect(f.ops.resolveTableTabTarget(selected.document, f.d.id, 1)).toEqual({kind: "afterLast"});
+    const result = f.ops.appendTableRowForTab(selected);
+    const rows = f.root(result).rows;
+    expect(rows).toHaveLength(3);
+    expect(rows[2]!.cells).toHaveLength(2);
+    expect(result.selection.focus.paragraphId).toBe(rows[2]!.cells[0]!.blocks[0]!.id);
+    expect(result.selection.anchor).toEqual(result.selection.focus);
+    expect(f.root(selected).rows).toHaveLength(2);
+  });
+});

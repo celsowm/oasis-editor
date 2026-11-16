@@ -85,11 +85,17 @@ export function handleDocumentTab(
       break;
     }
     case "navigateCell": {
-      const next = deps.resolveAdjacentTableCellPosition(
-        state.document, paragraphId, event.shiftKey ? -1 : 1,
-      );
-      if (next) deps.applySelectionPreservingStructure({ anchor: next, focus: next });
-      // Boundary is consumed even before the atomic new-row operation lands.
+      const direction = event.shiftKey ? -1 : 1;
+      const target = deps.resolveTableTabTarget?.(state.document, paragraphId, direction);
+      if (target?.kind === "adjacent") {
+        deps.applySelectionPreservingStructure(target.selection);
+      } else if (target?.kind === "afterLast" && direction === 1 &&
+                 deps.appendTableRowForTab && deps.canExecuteCommand?.("tableInsertRowAfter") !== false) {
+        deps.applyTransactionalState(deps.appendTableRowForTab);
+      } else if (!target) {
+        const next = deps.resolveAdjacentTableCellPosition(state.document, paragraphId, direction);
+        if (next) deps.applySelectionPreservingStructure({ anchor: next, focus: next });
+      }
       break;
     }
     case "changeParagraphIndent": {

@@ -1,12 +1,15 @@
 import { cloneBlock } from "@/core/cloneState.js";
 import { cloneParagraph } from "@/core/document/clone.js";
 import { createEditorDocument } from "@/core/editorState.js";
+import { transformBookmarksAcrossParagraphEdit } from "@/core/document/bookmarkAnchors.js";
+import { transformCommentsAcrossParagraphEdit } from "@/core/document/commentAnchors.js";
 import {
   findParagraphLocation,
   findParagraphTablePathLocation,
   getActiveSectionIndex,
   getBlockParagraphs,
   getDocumentSectionsCanonical,
+  getParagraphs,
   paragraphOffsetToPosition,
   resolveTablePath,
   type EditorBlockNode,
@@ -286,11 +289,20 @@ export const applyTableAwareParagraphEdit = (
     current.selection.focus.paragraphId,
     getActiveSectionIndex(current),
   );
-  if (
-    !location ||
-    current.selection.anchor.paragraphId !== current.selection.focus.paragraphId
-  ) {
-    return edit(current);
+  if (!location) return edit(current);
+  const multiParagraph = current.selection.anchor.paragraphId !== current.selection.focus.paragraphId;
+  if (multiParagraph) {
+    const anchorLocation = findParagraphTablePathLocation(
+      current.document, current.selection.anchor.paragraphId, getActiveSectionIndex(current),
+    );
+    const sameCell = anchorLocation && anchorLocation.zone === location.zone &&
+      anchorLocation.tablePath.length === location.tablePath.length &&
+      anchorLocation.tablePath.every((segment, index) => {
+        const other = location.tablePath[index];
+        return other && segment.tableBlockIndex === other.tableBlockIndex &&
+          segment.rowIndex === other.rowIndex && segment.cellIndex === other.cellIndex;
+      });
+    if (!sameCell) return current;
   }
 
   const mutation = resolveTableParagraphEditMutation(
@@ -298,17 +310,21 @@ export const applyTableAwareParagraphEdit = (
     getTargetBlocks,
     location,
   );
-  if (!mutation) return edit(current);
+  if (!mutation) return multiParagraph ? current : edit(current);
+  // A multi-paragraph edit must never flatten a nested-table story.
+  if (multiParagraph && mutation.targetCell.blocks.some(block => block.type === "table")) return current;
 
   const tempState: EditorState = {
     ...current,
+    activeSectionIndex: 0,
+    activeZone: "main",
     document: createEditorDocument(
       mutation.targetCell.blocks.map((block) =>
         block.type === "paragraph" ? cloneParagraph(block) : block,
       ),
       undefined,
       undefined,
-      undefined,
+      current.document.styles,
       undefined,
       current.document.assets,
     ),
@@ -331,8 +347,17 @@ export const applyTableAwareParagraphEdit = (
     mutation.targetBlocks,
     location.zone,
   );
+  const before = getParagraphs(current);
+  const after = getParagraphs(nextState);
+  const bookmarks = current.document.bookmarks;
+  const comments = current.document.comments;
   return {
     ...nextState,
+    document: {
+      ...nextState.document,
+      ...(bookmarks ? { bookmarks: transformBookmarksAcrossParagraphEdit(bookmarks, before, after) } : {}),
+      ...(comments ? { comments: transformCommentsAcrossParagraphEdit(comments, before, after) } : {}),
+    },
     selection: tempResult.selection,
   };
 };
