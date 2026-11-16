@@ -1361,7 +1361,36 @@ const reviewMarkupFilterIcon: CustomIconRenderer = () => (
   <ReviewActionIcon family="page" mark="M12 12h10l-4 5v4l-2-1v-3z" tone="info" />
 );
 
+/** Paragraph flow and decoration: distinguish paragraph operations from pages. */
+const ParagraphPageBreakBeforeIcon: CustomIconRenderer = () => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7}
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 4h16M4 7.5h11M4 16.5h16M4 20h11" />
+    <path d="M3 12h18" stroke="var(--oasis-accent, #1a73e8)" stroke-dasharray="2 2" />
+    <path d="m17 8.5 3.5 3.5-3.5 3.5" stroke="var(--oasis-accent, #1a73e8)" />
+  </SvgIcon>
+);
+const ParagraphKeepWithNextIcon: CustomIconRenderer = () => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7}
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3.5 4.5h12M3.5 8h8M3.5 16h12M3.5 19.5h8" />
+    <path d="M17.5 5.5h3v13h-3M20.5 12h-4"
+      stroke="var(--oasis-accent, #1a73e8)" />
+  </SvgIcon>
+);
+const ParagraphBordersIcon: CustomIconRenderer = () => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7}
+    stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="5" width="18" height="14" rx=".7"
+      stroke="var(--oasis-accent, #1a73e8)" />
+    <path d="M6 9h12M6 12h12M6 15h8" />
+  </SvgIcon>
+);
+
 const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
+  paragraphPageBreakBefore: ParagraphPageBreakBeforeIcon,
+  paragraphKeepWithNext: ParagraphKeepWithNextIcon,
+  paragraphBorders: ParagraphBordersIcon,
   reviewTrackChanges: reviewTrackChangesIcon,
   reviewMarkup: reviewMarkupIcon,
   reviewPane: reviewPaneIcon,

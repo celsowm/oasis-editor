@@ -231,3 +231,7 @@ The first expanded matrix (f366578) reports 976 Chromium and 956 Firefox finding
 ### References visual review (real Safari)
 
 The 12e5100 browser matrices and deployment passed, but a real Safari screenshot of References exposed a visual hierarchy gap rather than a bounds violation: Insert TOC and Footnote used large actions while Update TOC occupied a lone secondary row. Promote Update TOC to the same large-action primitive and primary placement. Preserve its localized label, tooltip, disabled behavior and command. Extend the geometry auditor to require all visible classic References actions to use the large variant and share icon, caption and button bands across groups. No per-tab CSS override. New CI validation pending.
+
+### Layout paragraph menu visual follow-up
+
+Real Safari screenshot showed anonymous page-break/keep-next icons and a centered color control with an abbreviated label. Replace the loose icon grid with reusable labelled command-menu rows, section separation, a visible shading swatch and explicit pressed state for pagination toggles. Add original paragraph-flow/border icons, use existing localized labels and retain command IDs/read-only behavior. The existing context-unit browser regression now verifies four named rows, aligned icons and labels, minimum row height and no overlap. Pending CI and real Safari review.

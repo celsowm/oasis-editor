@@ -3,6 +3,7 @@ import { Button } from "@/ui/components/Toolbar/primitives/Button.js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Menu } from "@/ui/components/Toolbar/primitives/Menu.js";
 import { TextField } from "@/ui/public/TextField.js";
+import { ToolIcon } from "@/ui/utils/customIcons.js";
 import { MetricField } from "@/ui/components/Toolbar/primitives/MetricField.js";
 import { pxToPt, ptToPx } from "@/export/pdf/units.js";
 import { cmToPx, pxToCm } from "@/ui/components/Toolbar/marginPresets.js";
@@ -129,46 +130,53 @@ export function MetricGroup(props: { api: ToolbarActionApi }): JSX.Element {
         label={t("paragraph.title")}
         testId="editor-toolbar-metrics-dropdown"
         tooltip={t("paragraph.title")}
-        panelClass="oasis-editor-toolbar-panel"
+        panelClass="oasis-editor-toolbar-panel oasis-editor-command-menu"
+        fitViewport
         keepMounted
       >
-        <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
+        <div class="oasis-editor-command-menu-section">
           <Button
-            icon="file-up"
+            icon="paragraphPageBreakBefore"
+            label={t("paragraph.pageBreakBeforeLabel")}
             active={api.commands.state("togglePageBreakBefore").isActive}
+            pressed={api.commands.state("togglePageBreakBefore").isActive}
             disabled={!enabled("togglePageBreakBefore")}
             data-testid="editor-toolbar-page-break-before"
             onClick={() => api.commands.execute("togglePageBreakBefore")}
             tooltip={t("metric.pageBreakBefore")}
           />
           <Button
-            icon="link-2"
+            icon="paragraphKeepWithNext"
+            label={t("paragraph.keepWithNextLabel")}
             active={api.commands.state("toggleKeepWithNext").isActive}
+            pressed={api.commands.state("toggleKeepWithNext").isActive}
             disabled={!enabled("toggleKeepWithNext")}
             data-testid="editor-toolbar-keep-with-next"
             onClick={() => api.commands.execute("toggleKeepWithNext")}
             tooltip={t("metric.keepWithNext")}
           />
         </div>
-
-        <div class="oasis-editor-toolbar-panel-grid">
-          <TextField
-            class="oasis-editor-tool-color"
-            labelClass="oasis-editor-tool-metric-label"
-            title={t("metric.paragraphBgColor")}
-            label={t("metric.paraBg")}
-            type="color"
-            controlClass="oasis-editor-tool-color-input"
-            data-testid="editor-toolbar-paragraph-shading"
-            disabled={!enabled("setParagraphShading")}
-            value={numValue(api, "setParagraphShading") || "#ffffff"}
-            onChange={(value) =>
-              api.commands.execute("setParagraphShading", value)
-            }
-          />
-
+        <div class="oasis-editor-command-menu-section">
+          <div class="oasis-editor-command-menu-field">
+            <ToolIcon name="shading" />
+            <TextField
+              class="oasis-editor-tool-color"
+              title={t("metric.paragraphBgColor")}
+              label={t("paragraph.shadingLabel")}
+              aria-label={t("metric.paragraphBgColor")}
+              type="color"
+              controlClass="oasis-editor-tool-color-input"
+              data-testid="editor-toolbar-paragraph-shading"
+              disabled={!enabled("setParagraphShading")}
+              value={numValue(api, "setParagraphShading") || "#ffffff"}
+              onChange={(value) =>
+                api.commands.execute("setParagraphShading", value)
+              }
+            />
+          </div>
           <Button
-            icon="pageBorders"
+            icon="paragraphBorders"
+            label={t("metric.applyBorders")}
             disabled={!enabled("applyParagraphBorders")}
             data-testid="editor-toolbar-paragraph-borders"
             onClick={() => api.commands.execute("applyParagraphBorders")}

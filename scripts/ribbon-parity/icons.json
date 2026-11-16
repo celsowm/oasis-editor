@@ -53,6 +53,9 @@
     "pageNumberTop",
     "pageOrientation",
     "pageSize",
+    "paragraphBorders",
+    "paragraphKeepWithNext",
+    "paragraphPageBreakBefore",
     "paragraphSpacing",
     "repeatHeaderRow",
     "reviewAccept",
@@ -160,30 +163,30 @@
     },
     {
       "file": "src/ui/components/Toolbar/groups/MetricGroup.tsx",
-      "line": 128,
+      "line": 129,
       "role": "icon",
       "name": "paragraphSpacing",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/groups/MetricGroup.tsx",
-      "line": 137,
+      "line": 139,
       "role": "icon",
-      "name": "file-up",
-      "origin": "lucide"
+      "name": "paragraphPageBreakBefore",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/groups/MetricGroup.tsx",
-      "line": 145,
+      "line": 149,
       "role": "icon",
-      "name": "link-2",
-      "origin": "lucide"
+      "name": "paragraphKeepWithNext",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/groups/MetricGroup.tsx",
-      "line": 171,
+      "line": 178,
       "role": "icon",
-      "name": "pageBorders",
+      "name": "paragraphBorders",
       "origin": "oasis"
     },
     {

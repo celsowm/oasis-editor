@@ -119,6 +119,28 @@ export async function verifySectionUnits(page, ctx) {
   assert.equal(unitGeometry.width, 1440, "Unit capture host width mismatch");
   assert.equal(unitGeometry.dpr, 1, "Unit capture DPR mismatch");
   await page.getByTestId("editor-toolbar-metrics-dropdown").click();
+  const paragraphMenu = page.locator(".oasis-editor-command-menu:visible");
+  const rows = await paragraphMenu.evaluate(menu => {
+    const rect = el => {
+      const r = el.getBoundingClientRect();
+      return { x:r.x, y:r.y, right:r.right, bottom:r.bottom, height:r.height };
+    };
+    return [...menu.querySelectorAll(".oasis-editor-command-menu-section > .oasis-editor-tool-button, .oasis-editor-command-menu-field")].map(row => ({
+      rect:rect(row),
+      icon:rect(row.querySelector("svg")),
+      label:row.querySelector(".oasis-editor-tool-button-label, .oasis-editor-ui-field-label")?.textContent?.trim(),
+      text:rect(row.querySelector(".oasis-editor-tool-button-label, .oasis-editor-ui-field-label")),
+    }));
+  });
+  assert.equal(rows.length, 4);
+  for (const [index,row] of rows.entries()) {
+    assert.ok(row.label, "Each paragraph menu action needs a visible label");
+    assert.ok(row.rect.height >= 34, "Paragraph menu action is too short");
+    assert.ok(Math.abs(row.icon.x - rows[0].icon.x) <= 1, "Paragraph icons must align");
+    assert.ok(Math.abs(row.text.x - rows[0].text.x) <= 1, "Paragraph labels must align");
+    assert.ok(row.text.right <= row.rect.right + 1, "Paragraph menu text is clipped");
+    if (index) assert.ok(row.rect.y >= rows[index-1].rect.bottom - 1, "Paragraph menu rows overlap");
+  }
   await assertUnit(page, "editor-toolbar-spacing-after", "pt");
   await assertUnit(page, "editor-toolbar-indent-left", "cm");
   await assertUnit(page, "editor-toolbar-indent-first-line", "cm");

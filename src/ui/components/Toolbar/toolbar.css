@@ -3824,3 +3824,85 @@
   min-height: 0;
   height: 28px;
 }
+
+/* Compact command menus use labelled rows instead of isolated icon buttons.
+ * These primitives also work in portal hosts and nested collapsed groups. */
+.oasis-editor-toolbar-panel.oasis-editor-command-menu {
+  width: min(286px, calc(100vw - 16px));
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+}
+.oasis-editor-command-menu-section {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.oasis-editor-command-menu-section + .oasis-editor-command-menu-section {
+  border-top: 1px solid var(--oasis-toolbar-border);
+  padding-top: 4px;
+}
+.oasis-editor-command-menu .oasis-editor-command-menu-section > .oasis-editor-tool-button,
+.oasis-editor-command-menu .oasis-editor-command-menu-field {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: 34px;
+  height: auto;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  gap: 9px;
+  border-radius: 4px;
+  color: var(--oasis-ribbon-text, var(--oasis-text));
+  font-size: 12px;
+  text-align: start;
+}
+.oasis-editor-command-menu .oasis-editor-command-menu-section > .oasis-editor-tool-button > svg,
+.oasis-editor-command-menu-field > svg {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+}
+.oasis-editor-command-menu .oasis-editor-tool-button-label {
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-align: start;
+  line-height: 16px;
+}
+.oasis-editor-command-menu .oasis-editor-command-menu-field > .oasis-editor-tool-color {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  min-width: 0;
+  gap: 8px;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+}
+.oasis-editor-command-menu-field .oasis-editor-ui-field-label {
+  min-width: 0;
+  color: inherit;
+  font: inherit;
+}
+.oasis-editor-command-menu-field .oasis-editor-tool-color-input {
+  flex: 0 0 32px;
+  width: 32px;
+  min-width: 32px;
+  height: 24px;
+  min-height: 24px;
+  padding: 2px;
+  box-sizing: border-box;
+}
+.oasis-editor-command-menu-field:has(input:disabled) {
+  opacity: .45;
+}
+.oasis-editor-command-menu-field:has(input:disabled) .oasis-editor-tool-color {
+  opacity: 1;
+}
