@@ -89,6 +89,7 @@
     "tableInsertRowBelow",
     "tableMerge",
     "tableNoBorders",
+    "tableOfContents",
     "tableProperties",
     "tableSplit",
     "tableToText",
@@ -97,6 +98,7 @@
     "textToTable",
     "themes",
     "underlineGlyph",
+    "updateTableOfContents",
     "watermark"
   ],
   "uses": [
@@ -664,15 +666,15 @@
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 873,
       "role": "iconName",
-      "name": "list-tree",
-      "origin": "lucide"
+      "name": "tableOfContents",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
       "line": 883,
       "role": "iconName",
-      "name": "refresh-cw",
-      "origin": "lucide"
+      "name": "updateTableOfContents",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
@@ -1196,8 +1198,8 @@
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
       "line": 335,
       "role": "collapsedIcon",
-      "name": "list",
-      "origin": "lucide"
+      "name": "tableOfContents",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",

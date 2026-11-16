@@ -54,23 +54,45 @@ export function SvgIcon(props: SvgIconProps): JSX.Element {
   );
 }
 
-/** Original path glyphs keep superscript metrics independent of system fonts. */
+/** Reference actions use editorial notation rather than generic file symbols.
+ * All lettering and dots are vectors, legible without a system font. */
+function ContentsGlyph(props: { update?: boolean }): JSX.Element {
+  return (
+    <SvgIcon stroke="currentColor" stroke-width={1.65}
+      stroke-linecap="round" stroke-linejoin="round">
+      {/* A miniature contents page: heading, entries, dotted leaders, page numbers. */}
+      <rect x="3.5" y="2.5" width="17" height="19" rx="1.2" />
+      <path d="M6.5 6h10.5" stroke="var(--oasis-accent, #1a73e8)" stroke-width={2} />
+      <path d="M6.5 10h4.5M8 13.5h3M6.5 17h4.5" />
+      <path d="M12.7 10h3.1M12.7 13.5h3.1M12.7 17h3.1"
+        stroke-dasharray=".1 1.45" stroke-width={1.35} />
+      <path d="M17.5 9h.8v2m-1 0h2M17.2 12.7h1.8v1l-1.8 1.1H19M17.2 16.2H19v2h-1.8"
+        stroke-width={1.15} />
+      <Show when={props.update}>
+        {/* Same visual object with a local refresh mark, not a bare reload icon. */}
+        <rect x="11" y="10.5" width="12" height="12" rx="2"
+          fill="var(--oasis-ribbon-panel-bg, #fff)" stroke="none" />
+        <path d="M21.4 15.4a4.6 4.6 0 0 0-8-1.8l-.8 1.8m0-3.8v3.8h3.9
+                 M12.6 18.1a4.6 4.6 0 0 0 8 1.8l.8-1.8m0 3.8v-3.8h-3.9"
+          stroke="var(--oasis-accent, #1a73e8)" stroke-width={1.7} />
+      </Show>
+    </SvgIcon>
+  );
+}
+const TableOfContentsIcon: CustomIconRenderer = () => <ContentsGlyph />;
+const UpdateTableOfContentsIcon: CustomIconRenderer = () => <ContentsGlyph update />;
+
+/** Footnote: text anchor ab¹ and a separated note line, not another page icon. */
 const FootnoteIcon: CustomIconRenderer = (): JSX.Element => (
-  <SvgIcon
-    stroke="currentColor"
-    stroke-width={1.7}
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    <rect x="4.5" y="2.5" width="13" height="19" rx="1.2" />
-    <path d="M7.5 6.5h7M7.5 9.5h5" opacity={0.65} />
-    <path d="M7.5 14.5h4.5" stroke="var(--oasis-accent, #1a73e8)" />
-    <path d="M7.5 17.5h7" />
-    <path
-      d="m18 4.8 1.8-1.3V9.5m-1.6 0h3.2"
-      stroke="var(--oasis-accent, #1a73e8)"
-      stroke-width={1.85}
-    />
+  <SvgIcon stroke="currentColor" stroke-width={1.7}
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 9.5v5.8M9 11.1a3 3 0 1 0 0 2.8M12 5.5v9.8M12 11.1a3 3 0 1 1 0 2.8" />
+    <path d="M19 4.8l1.8-1.4v6.1m-1.8 0h3.6"
+      stroke="var(--oasis-accent, #1a73e8)" stroke-width={1.65} />
+    <path d="M3 17.8h10" stroke-width={1.35} />
+    <path d="M4 20.1l1-.8v2.7m-1 0h2"
+      stroke="var(--oasis-accent, #1a73e8)" stroke-width={1.3} />
+    <path d="M8.5 20.6h12" stroke-width={1.5} />
   </SvgIcon>
 );
 
@@ -1360,6 +1382,8 @@ const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   reviewDisplay: reviewDisplayIcon,
   reviewMarkupFilter: reviewMarkupFilterIcon,
   footnote: FootnoteIcon,
+  tableOfContents: TableOfContentsIcon,
+  updateTableOfContents: UpdateTableOfContentsIcon,
   underlineGlyph: UnderlineGlyphIcon,
   pageHeader: PageHeaderIcon,
   pageFooter: PageFooterIcon,

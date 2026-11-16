@@ -332,7 +332,7 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
     document: { priority: 10, collapsedIcon: "file" },
   },
   references: {
-    tableOfContents: { priority: 10, collapsedIcon: "list" },
+    tableOfContents: { priority: 10, collapsedIcon: "tableOfContents" },
     footnotes: { priority: 20, collapsedIcon: "footnote" },
   },
   review: {

@@ -45,3 +45,7 @@ Each engine records 54 review scenes, with nine current samples per scene. The c
 This is artwork/rendering evidence. It does not certify screen-reader behavior, every visual contrast/state combination, every command, or Office-equivalent workflows. The suite captures the chosen surfaces, while actual toolbar/menu placement is also exercised by synthetic reference captures.
 
 Clipboard optical weights, font color/highlight/shading, margins/orientation, table operation grids, distribution/AutoFit, alignment/sort, themes/styles and advanced-tool families remain in the review queue. Keep readable existing artwork; refine or replace each remaining family only with an observed defect and a comparison at its final control size.
+
+## References family — current revision
+
+Following visual review in Safari, replace the generic tree-list and refresh icons with original contents-page vectors. A miniature title, indented entries, dotted leaders and numerals distinguish the TOC from an ordinary list. The update action uses the same document silhouette with a refresh mark. The footnote now depicts ab¹ above a separator and a numbered note line, rather than another page outline. Use these icons on the ribbon, collapsed groups and menubar. All geometry is path-based and uses the existing theme accent. The existing icon review matrix now includes the new TOC pair; browser verification and human review are pending.

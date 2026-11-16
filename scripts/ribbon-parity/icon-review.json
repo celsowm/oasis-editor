@@ -88,8 +88,8 @@
       "before": "legacyFootnote",
       "after": "footnote",
       "decision": "refine",
-      "defect": "SVG text depends on platform font metrics; the fixed dark-red superscript has no theme adaptation.",
-      "result": "Original paths for ab and superscript 1 with a theme accent; no SVG text or external font."
+      "defect": "The page silhouette resembles page numbering and hides the relation between a superscript reference and its note.",
+      "result": "Original ab¹ paths, a footnote separator and a numbered note line; theme-aware accent and no font dependency."
     },
     {
       "id": "underline-glyph",
@@ -725,6 +725,24 @@
       "result": "Shared original page/comment silhouette with a distinct semantic mark.",
       "menuId": "editor-toolbar-show-markup",
       "action": "show-markup"
+    },
+    {
+      "id": "table-of-contents",
+      "command": "insertTableOfContents",
+      "before": "list-tree",
+      "after": "tableOfContents",
+      "decision": "replace",
+      "defect": "A tree list is not recognizably a contents page.",
+      "result": "Contents page with a heading, nested entries, dot leaders and miniature page numerals."
+    },
+    {
+      "id": "update-table-of-contents",
+      "command": "updateTableOfContents",
+      "before": "refresh-cw",
+      "after": "updateTableOfContents",
+      "decision": "replace",
+      "defect": "A standalone refresh symbol is unrelated to document structure.",
+      "result": "The same contents page with an accent-colored refresh mark."
     }
   ],
   "remainingReview": [
