@@ -87,6 +87,43 @@ try {
           `${base}/tests/browser/ribbon/?theme=${theme}&locale=${locale}`,
         );
         await waitForRibbonReference(page);
+        // Reproduce typing blablabla, putting the caret before the first b,
+        // and reversing both formatting Tabs via real browser keyboard events.
+        if (theme === "light" && locale === "en" && width === 1440) {
+          await page.evaluate(async () => {
+            const { getDocumentParagraphs, paragraphOffsetToPosition } = await import("/src/core/model.ts");
+            const c = window.ribbonReference.client;
+            await c.import.html("<p>blablabla</p>");
+            const p = getDocumentParagraphs(c.document.get())[0];
+            const caret = paragraphOffsetToPosition(p,0);
+            c.selection.set({anchor:caret,focus:caret});
+            c.history.clear();
+          });
+          await page.getByTestId("editor-input").focus();
+          const readIndent = () => page.evaluate(async () => {
+            const {getDocumentParagraphs,getParagraphText,resolveEffectiveParagraphStyle,positionToParagraphOffset} = await import("/src/core/model.ts");
+            const c = window.ribbonReference.client;
+            const d = c.document.get(), p = getDocumentParagraphs(d)[0];
+            const s = resolveEffectiveParagraphStyle(p.style,d.styles);
+            return {text:getParagraphText(p),offset:positionToParagraphOffset(p,c.selection.get().focus),
+              left:s.indentLeft??0,first:s.indentFirstLine??0};
+          });
+          const initialIndent = await readIndent();
+          await page.keyboard.press("Tab");
+          await page.keyboard.press("Tab");
+          const twice = await readIndent();
+          assert.ok(twice.left>initialIndent.left && twice.first>initialIndent.first);
+          await page.keyboard.press("Backspace");
+          const once = await readIndent();
+          assert.equal(once.left,initialIndent.left);
+          assert.equal(once.first,twice.first);
+          await page.keyboard.press("Backspace");
+          assert.deepEqual(await readIndent(),initialIndent);
+          await page.evaluate(()=>window.ribbonReference.client.history.undo());
+          assert.deepEqual(await readIndent(),once);
+          await page.evaluate(()=>window.ribbonReference.client.history.redo());
+          assert.deepEqual(await readIndent(),initialIndent);
+        }
         await page.evaluate(async () => {
           const { getDocumentParagraphs, paragraphOffsetToPosition } =
             await import("/src/core/model.ts");

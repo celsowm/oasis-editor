@@ -12,6 +12,7 @@ import {
 } from "@/core/commands/selection.js";
 import { deleteBackward, deleteForward } from "@/core/commands/text.js";
 import { handleDocumentTab } from "./handleDocumentTab.js";
+import { outdentParagraphAtBoundary, resolveParagraphBoundaryOutdent } from "@/core/commands/paragraphTabIndent.js";
 import {
   getParagraphs,
   getParagraphText,
@@ -236,6 +237,20 @@ function createEditorKeyboardControllerImpl(deps: EditorKeyboardDeps) {
       case "Backspace":
         if (deps.commandsController.handleListBoundaryBackspace(event)) {
           event.preventDefault();
+          return;
+        }
+        // Formatting at paragraph offset zero is not a literal tab character.
+        // Consume Backspace here before deleteBackward can merge paragraphs.
+        if (!event.altKey && !event.ctrlKey && !event.metaKey &&
+            resolveParagraphBoundaryOutdent(currentState)) {
+          event.preventDefault();
+          deps.clearPreferredColumn();
+          deps.resetTransactionGrouping();
+          if (deps.canExecuteCommand?.("outdent") !== false) {
+            deps.applySelectionAwareParagraphCommand(outdentParagraphAtBoundary);
+          }
+          event.currentTarget.value = "";
+          deps.focusInput();
           return;
         }
         event.preventDefault();

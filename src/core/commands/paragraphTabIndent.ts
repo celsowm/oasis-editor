@@ -76,3 +76,32 @@ export function stepFirstLineIndent(state: EditorState, direction: -1 | 1): Edit
   );
   return cloneStateWithParagraphs(state, next, state.selection);
 }
+
+
+/**
+ * Ordinary Backspace at a collapsed paragraph start reverses indentation
+ * before deleting a paragraph boundary. Reverse the body indent first, then
+ * the first-line indent, matching the order established by consecutive Tabs.
+ * List-item boundaries are handled by the existing list-specific policy.
+ */
+export function resolveParagraphBoundaryOutdent(
+  state: EditorState,
+): "paragraph" | "firstLine" | null {
+  const paragraphs = getParagraphs(state);
+  if (!paragraphs.length) return null;
+  const range = normalizeSelection(state, paragraphs);
+  if (!range.isCollapsed || range.startParagraphOffset !== 0) return null;
+  const paragraph = paragraphs[range.startIndex];
+  if (!paragraph || paragraph.list) return null;
+  const effective = resolveEffectiveParagraphStyle(paragraph.style, state.document.styles);
+  if ((effective.indentLeft ?? 0) > 0) return "paragraph";
+  if ((effective.indentFirstLine ?? 0) > 0 && (effective.indentHanging ?? 0) <= 0) return "firstLine";
+  return null;
+}
+
+export function outdentParagraphAtBoundary(state: EditorState): EditorState {
+  const action = resolveParagraphBoundaryOutdent(state);
+  if (action === "paragraph") return stepTabParagraphIndent(state, -1);
+  if (action === "firstLine") return stepFirstLineIndent(state, -1);
+  return state;
+}

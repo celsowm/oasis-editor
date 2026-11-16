@@ -4,7 +4,7 @@ import { resolveTabAction, type TabContext } from "@/app/controllers/handleDocum
 import type { EditorKeyboardDeps } from "@/app/controllers/EditorKeyboardDeps.js";
 import { createEditorStateFromTexts } from "@/core/editorState.js";
 import { toggleParagraphList } from "@/core/commands/list.js";
-import { getParagraphs, getParagraphText, paragraphOffsetToPosition, type EditorState } from "@/core/model.js";
+import { getParagraphs, getParagraphText, paragraphOffsetToPosition, positionToParagraphOffset, type EditorState } from "@/core/model.js";
 
 function harness(text: string, offset: number, opts: { list?: boolean; readOnly?: boolean; pendingBold?: boolean; autoIndent?: boolean; defaultTab?: number } = {}) {
   let state = createEditorStateFromTexts([text], { offset });
@@ -19,10 +19,12 @@ function harness(text: string, offset: number, opts: { list?: boolean; readOnly?
     focusInput,
     clearPreferredColumn: vi.fn(),
     resetTransactionGrouping: vi.fn(),
+    applyState: (next: EditorState) => { state = next; },
     applyTransactionalState: (producer: (current: EditorState) => EditorState) => { state = producer(state); },
     applySelectionAwareParagraphCommand: (producer: (current: EditorState) => EditorState) => { state = producer(state); },
     applyTableAwareParagraphEdit: (current: EditorState, edit: (current: EditorState) => EditorState) => edit(current),
     resolveAdjacentTableCellPosition: vi.fn(() => null),
+    commandsController: { handleListBoundaryBackspace: () => false },
   } as unknown as EditorKeyboardDeps;
   const controller = createEditorKeyboardController(deps);
   function press(overrides: Partial<KeyboardEvent> = {}) {
@@ -69,6 +71,41 @@ describe("document Tab typing", () => {
     expect(h.paragraph().style?.indentLeft).toBe(0);
     h.press({shiftKey: true});
     expect(h.paragraph().style?.indentFirstLine).toBe(0);
+  });
+  it("reverses two consecutive Tabs using two Backspaces without deleting the first letter", () => {
+    const h = harness("blablabla", 0);
+    h.press();
+    h.press();
+    expect(h.paragraph().style?.indentLeft).toBe(48);
+    expect(h.paragraph().style?.indentFirstLine).toBe(48);
+    const e = h.press({key:"Backspace"});
+    expect(e.preventDefault).toHaveBeenCalledOnce();
+    expect(h.paragraph().style?.indentLeft).toBe(0);
+    expect(h.paragraph().style?.indentFirstLine).toBe(48);
+    h.press({key:"Backspace"});
+    expect(h.paragraph().style?.indentFirstLine).toBe(0);
+    expect(h.text()).toBe("blablabla");
+    expect(positionToParagraphOffset(h.paragraph(),h.state().selection.focus)).toBe(0);
+    h.press({key:"Backspace"});
+    expect(h.text()).toBe("blablabla");
+  });
+  it("Backspace removes a literal tab or selected text normally", () => {
+    const h = harness("abc", 1);
+    h.press();
+    expect(h.text()).toBe("a\tbc");
+    h.press({key:"Backspace"});
+    expect(h.text()).toBe("abc");
+    h.selectAll();
+    h.press({key:"Backspace"});
+    expect(h.text()).toBe("");
+  });
+  it("deletes a character inside an indented paragraph instead of outdenting", () => {
+    const h = harness("abc", 0);
+    h.press();
+    h.press({key:"ArrowRight"});
+    h.press({key:"Backspace"});
+    expect(h.text()).toBe("bc");
+    expect(h.paragraph().style?.indentFirstLine).toBe(48);
   });
   it("types a literal tab at paragraph start when auto-indent is disabled", () => {
     const h = harness("existing", 0, {autoIndent: false});
