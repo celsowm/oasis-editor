@@ -30,12 +30,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps ${{ matrix.browser }}
-      - run: npm run test:ribbon:ci
+      - name: Verify geometry in both densities
+        id: geometry
+        run: npm run test:ribbon:ci
         env:
           RIBBON_BROWSER: ${{ matrix.browser }}
           RIBBON_SUITE: geometry
+      - name: Verify simplified command reachability
+        if: steps.geometry.outcome == 'success' || steps.geometry.outcome == 'failure'
+        run: npm run test:ribbon:ci
+        env:
+          RIBBON_BROWSER: ${{ matrix.browser }}
+          RIBBON_SUITE: simplified
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ribbon-geometry-${{ matrix.browser }}
-          path: test-results/ribbon/geometry
+          path: |
+            test-results/ribbon/geometry
+            test-results/ribbon/simplified
