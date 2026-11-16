@@ -2,7 +2,7 @@ import {
   findParagraphTablePathLocation,
   getActiveSectionIndex,
   getBlockParagraphs,
-  getParagraphText,
+  getParagraphLength,
   paragraphOffsetToPosition,
   resolveTablePath,
   type EditorBlockNode,
@@ -263,7 +263,7 @@ function createTableSelectionResolversImpl(deps: TableSelectionResolversDeps) {
       anchor: paragraphOffsetToPosition(startParagraph, 0),
       focus: paragraphOffsetToPosition(
         endParagraph,
-        getParagraphText(endParagraph).length,
+        getParagraphLength(endParagraph),
       ),
     };
   };

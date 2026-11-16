@@ -3,6 +3,7 @@ import { createEditorDocument, createEditorParagraph, createEditorStateFromDocum
 import { getDocumentSectionsCanonical, getParagraphLength, getParagraphText, paragraphOffsetToPosition, type EditorState, type EditorTableNode } from "@/core/model.js";
 import { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
 import { insertTextAtSelection } from "@/core/commands/text.js";
+import { stepTabParagraphIndent } from "@/core/commands/paragraphTabIndent.js";
 
 function fixture() {
   const a = createEditorParagraph("A");
@@ -61,5 +62,37 @@ describe("Word-style table Tab", () => {
     expect(result.selection.focus.paragraphId).toBe(rows[2]!.cells[0]!.blocks[0]!.id);
     expect(result.selection.anchor).toEqual(result.selection.focus);
     expect(f.root(selected).rows).toHaveLength(2);
+  });
+});
+
+
+describe("multi-cell formatting projections", () => {
+  it("retains the custom tab interval and inherited paragraph indents", () => {
+    const f = fixture();
+    let current = {
+      ...f.state,
+      document: {
+        ...f.state.document,
+        settings: {...f.state.document.settings,defaultTabStop:72},
+        styles: {...f.state.document.styles, CellIndent: {id:"CellIndent",name:"CellIndent",type:"paragraph" as const,paragraphStyle:{indentLeft:20}}},
+      },
+      selection: {anchor:paragraphOffsetToPosition(f.a,0),focus:paragraphOffsetToPosition(f.c,getParagraphLength(f.c))},
+    };
+    // The first selected paragraph inherits a nonzero indent; the others start at zero.
+    const first = f.root(current).rows[0]!.cells[0]!.blocks[0]!;
+    if (first.type !== "paragraph") throw new Error("missing paragraph");
+    first.style = {styleId:"CellIndent"};
+    const ops = createEditorTableOperations({
+      applyTransactionalState: producer => { current = producer(current) as typeof current; },
+      applySelectionToStatePreservingStructure:(s,selection)=>({...s,selection}),
+      focusInput:()=>undefined,
+    });
+    ops.applySelectionAwareParagraphCommand(s=>stepTabParagraphIndent(s,1));
+    const row = f.root(current).rows[0]!;
+    expect((row.cells[0]!.blocks[0] as typeof f.a).style?.indentLeft).toBe(116);
+    expect((row.cells[1]!.blocks[0] as typeof f.b).style?.indentLeft).toBe(96);
+    expect((row.cells[1]!.blocks[1] as typeof f.c).style?.indentLeft).toBe(96);
+    expect((f.root(current).rows[1]!.cells[1]!.blocks[0] as typeof f.d).style?.indentLeft??0).toBe(0);
+    expect(current.document.settings.defaultTabStop).toBe(72);
   });
 });

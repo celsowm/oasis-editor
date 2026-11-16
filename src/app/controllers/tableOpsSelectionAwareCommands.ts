@@ -4,7 +4,7 @@ import { replaceParagraphsInBlocks } from "@/core/document/blockReplacement.js";
 import {
   getBlockParagraphs,
   getParagraphs,
-  getParagraphText,
+  getParagraphLength,
   paragraphOffsetToPosition,
   type EditorBlockNode,
   type EditorEditingZone,
@@ -100,25 +100,36 @@ function createTableSelectionAwareCommandsImpl(
 
       const tempState: EditorState = {
         ...current,
-        document: createEditorDocument(
-          allParagraphs,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          current.document.assets,
-        ),
+        activeSectionIndex: 0,
+        activeZone: "main",
+        // Preserve the original style cascade and document tab interval.
+        // The temporary story is only a projection of the selected cells.
+        document: {
+          ...createEditorDocument(
+            allParagraphs,
+            current.document.pageSettings,
+            undefined,
+            current.document.styles,
+            undefined,
+            current.document.assets,
+          ),
+          settings: current.document.settings,
+        },
         selection: {
           anchor: paragraphOffsetToPosition(allParagraphs[0], 0),
           focus: paragraphOffsetToPosition(
             allParagraphs[allParagraphs.length - 1],
-            getParagraphText(allParagraphs[allParagraphs.length - 1]).length,
+            getParagraphLength(allParagraphs[allParagraphs.length - 1]),
           ),
         },
       };
 
       const tempResult = command(tempState);
+      if (tempResult === tempState) return current;
       const resultParagraphs = getParagraphs(tempResult);
+      // Formatting projections cannot insert/remove paragraphs: doing so
+      // would redistribute content to the wrong cells.
+      if (resultParagraphs.length !== allParagraphs.length) return current;
       const lastSegment = tablePath[tablePath.length - 1];
       if (!lastSegment) return current;
 

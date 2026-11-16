@@ -2,12 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 import { createEditorKeyboardController } from "@/app/controllers/useEditorKeyboard.js";
 import { resolveTabAction, type TabContext } from "@/app/controllers/handleDocumentTab.js";
 import type { EditorKeyboardDeps } from "@/app/controllers/EditorKeyboardDeps.js";
-import { createEditorStateFromTexts } from "@/core/editorState.js";
+import { createEditorStateFromTexts, createEditorDocument, createEditorParagraphFromRuns, createEditorStateFromDocument } from "@/core/editorState.js";
 import { toggleParagraphList } from "@/core/commands/list.js";
 import { getParagraphs, getParagraphText, paragraphOffsetToPosition, positionToParagraphOffset, type EditorState } from "@/core/model.js";
 
-function harness(text: string, offset: number, opts: { list?: boolean; readOnly?: boolean; pendingBold?: boolean; autoIndent?: boolean; defaultTab?: number } = {}) {
+function harness(text: string, offset: number, opts: { list?: boolean; readOnly?: boolean; pendingBold?: boolean; autoIndent?: boolean; defaultTab?: number; rich?: boolean } = {}) {
   let state = createEditorStateFromTexts([text], { offset });
+  if (opts.rich) {
+    const p = createEditorParagraphFromRuns([{text:text.slice(0,4)}, {text:text.slice(4),styles:{bold:true}}]);
+    const caret = paragraphOffsetToPosition(p,offset);
+    state = {...createEditorStateFromDocument(createEditorDocument([p])),selection:{anchor:caret,focus:caret}};
+  }
   if (opts.list) state = toggleParagraphList(state, "bullet");
   if (opts.defaultTab) state = { ...state, document: { ...state.document, settings: { ...state.document.settings, defaultTabStop: opts.defaultTab } } };
   const focusInput = vi.fn();
@@ -106,6 +111,17 @@ describe("document Tab typing", () => {
     h.press({key:"Backspace"});
     expect(h.text()).toBe("bc");
     expect(h.paragraph().style?.indentFirstLine).toBe(48);
+  });
+  it("Ctrl+Backspace deletes from the actual paragraph offset across formatted runs", () => {
+    const h = harness("one two", 7, {rich:true});
+    h.press({key:"Backspace",ctrlKey:true});
+    expect(h.text()).toBe("one ");
+    expect(positionToParagraphOffset(h.paragraph(),h.state().selection.focus)).toBe(4);
+  });
+  it("Ctrl+Delete deletes the next word, not a word in the preceding run", () => {
+    const h = harness("one two three", 5, {rich:true});
+    h.press({key:"Delete",ctrlKey:true});
+    expect(h.text()).toBe("one tthree");
   });
   it("types a literal tab at paragraph start when auto-indent is disabled", () => {
     const h = harness("existing", 0, {autoIndent: false});

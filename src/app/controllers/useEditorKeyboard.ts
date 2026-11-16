@@ -21,7 +21,7 @@ import {
   EditorState,
 } from "@/core/model.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
-import { resolveWordSelection } from "@/core/wordBoundaries.js";
+import { findPreviousWordBoundary, findNextWordBoundary } from "@/core/wordBoundaries.js";
 import {
   defaultEditorKeyBindings,
   EditorCommandRegistry,
@@ -155,12 +155,14 @@ function createEditorKeyboardControllerImpl(deps: EditorKeyboardDeps) {
           }
         }
 
-        const focusOffset = currentState.selection.focus.offset;
+        const focusOffset = positionToParagraphOffset(focusParagraph, currentState.selection.focus);
         const paragraphText = getParagraphText(focusParagraph);
-        const word = resolveWordSelection(paragraphText, focusOffset);
+        const boundary = event.key === "Backspace"
+          ? findPreviousWordBoundary(paragraphText, focusOffset)
+          : findNextWordBoundary(paragraphText, focusOffset);
 
         if (event.key === "Backspace") {
-          if (focusOffset === 0 || word.start === focusOffset) {
+          if (focusOffset === 0 || boundary === focusOffset) {
             deps.applyTransactionalState((current): EditorState =>
               deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
                 deleteBackward(temp),
@@ -170,7 +172,7 @@ function createEditorKeyboardControllerImpl(deps: EditorKeyboardDeps) {
             deps.applyTransactionalState((current): EditorState =>
               deps.applyTableAwareParagraphEdit(
                 setSelection(current, {
-                  anchor: paragraphOffsetToPosition(focusParagraph, word.start),
+                  anchor: paragraphOffsetToPosition(focusParagraph, boundary),
                   focus: paragraphOffsetToPosition(focusParagraph, focusOffset),
                 }),
                 (temp): EditorState => deleteBackward(temp),
@@ -183,12 +185,12 @@ function createEditorKeyboardControllerImpl(deps: EditorKeyboardDeps) {
               deleteForward(temp),
             ),
           );
-        } else if (word.end > focusOffset) {
+        } else if (boundary > focusOffset) {
           deps.applyTransactionalState((current): EditorState =>
             deps.applyTableAwareParagraphEdit(
               setSelection(current, {
                 anchor: paragraphOffsetToPosition(focusParagraph, focusOffset),
-                focus: paragraphOffsetToPosition(focusParagraph, word.end),
+                focus: paragraphOffsetToPosition(focusParagraph, boundary),
               }),
               (temp): EditorState => deleteBackward(temp),
             ),

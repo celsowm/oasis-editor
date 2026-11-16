@@ -153,7 +153,7 @@ function createEditorNavigationImpl(deps: UseEditorNavigationProps) {
     }
 
     const paragraphText = getParagraphText(focusParagraph);
-    const focusOffset = state.selection.focus.offset;
+    const focusOffset = positionToParagraphOffset(focusParagraph, state.selection.focus);
     const paragraphLength = paragraphText.length;
 
     if (!extend && !isSelectionCollapsed(state.selection)) {
