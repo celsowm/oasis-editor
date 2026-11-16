@@ -29,6 +29,12 @@ export function normalizeRuns(
       previous &&
       previous.kind === "text" &&
       run.kind === "text" &&
+      // Equal visual formatting is insufficient: joining tracked or wrapped
+      // runs can absorb an insertion into unchanged text, or extend a revision
+      // to text that was never changed. Keep these semantic boundaries intact.
+      !previous.revision && !run.revision &&
+      !previous.revisionRangeMarker && !run.revisionRangeMarker &&
+      !previous.sdtWrappers?.length && !run.sdtWrappers?.length &&
       stylesEqual(previous.styles, run.styles)
     ) {
       previous.text += run.text;

@@ -7,7 +7,7 @@ import { createEditorStateFromTexts, createEditorDocument, createEditorParagraph
 import { toggleParagraphList } from "@/core/commands/list.js";
 import { getParagraphs, getParagraphText, paragraphOffsetToPosition, positionToParagraphOffset, type EditorState } from "@/core/model.js";
 
-function harness(text: string, offset: number, opts: { list?: boolean; readOnly?: boolean; pendingBold?: boolean; autoIndent?: boolean; defaultTab?: number; rich?: boolean; wrappedStart?: boolean } = {}) {
+function harness(text: string, offset: number, opts: { list?: boolean; readOnly?: boolean; pendingBold?: boolean; autoIndent?: boolean; defaultTab?: number; rich?: boolean; wrappedStart?: boolean; trackChanges?: boolean } = {}) {
   let state = createEditorStateFromTexts([text], { offset });
   if (opts.rich) {
     const p = createEditorParagraphFromRuns([{text:text.slice(0,4)}, {text:text.slice(4),styles:{bold:true}}]);
@@ -15,6 +15,7 @@ function harness(text: string, offset: number, opts: { list?: boolean; readOnly?
     state = {...createEditorStateFromDocument(createEditorDocument([p])),selection:{anchor:caret,focus:caret}};
   }
   if (opts.list) state = toggleParagraphList(state, "bullet");
+  if (opts.trackChanges) state = {...state,trackChangesEnabled:true};
   if (opts.defaultTab) state = { ...state, document: { ...state.document, settings: { ...state.document.settings, defaultTabStop: opts.defaultTab } } };
   const focusInput = vi.fn();
   const deps = {
@@ -143,6 +144,22 @@ describe("document Tab typing", () => {
     h.press();
     expect(h.text()).toBe("\texisting");
     expect(h.paragraph().style?.indentFirstLine ?? 0).toBe(0);
+  });
+  it("keeps a tracked literal Tab separate from unchanged neighboring text", () => {
+    const h = harness("abcd",2,{trackChanges:true});
+    h.press();
+    expect(h.text()).toBe("ab\tcd");
+    expect(h.paragraph().runs.filter(r=>r.revision?.type==="insert").map(r=>r.text)).toEqual(["\t"]);
+    expect(h.paragraph().runs.filter(r=>!r.revision).map(r=>r.text).join("")).toBe("abcd");
+    h.press({key:"Backspace"});
+    expect(h.text()).toBe("abcd");
+    expect(h.paragraph().runs.every(r=>!r.revision)).toBe(true);
+  });
+  it("records deletion of an existing literal tab without marking surrounding text", () => {
+    const h = harness("a\tb",2,{trackChanges:true});
+    h.press({key:"Backspace"});
+    expect(h.paragraph().runs.filter(r=>r.revision?.type==="delete").map(r=>r.text)).toEqual(["\t"]);
+    expect(h.paragraph().runs.filter(r=>!r.revision).map(r=>r.text).join("")).toBe("ab");
   });
   it("uses pending text formatting for a literal tab", () => {
     const h = harness("abcd", 2, { pendingBold: true });
