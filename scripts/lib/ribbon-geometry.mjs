@@ -66,6 +66,14 @@ export async function readRibbonGeometry(page, expectedTab, expectedWidth) {
       const content = group.querySelector(":scope > .oasis-editor-ribbon-group-content > .oasis-editor-ribbon-group-rows");
       const trigger = group.querySelector(":scope > .oasis-editor-ribbon-group-collapsed-trigger");
       const expected = state === "collapsed" ? trigger : content;
+      if (simplified && state !== "collapsed" && group.dataset.ribbonGroup === "paragraph" &&
+          expectedTab.endsWith("-layout")) {
+        for (const id of ["indent-left", "spacing-after", "indent-first-line", "indent-hanging"]) {
+          if (!visible(content?.querySelector(`[data-testid="editor-toolbar-${id}"]`)))
+            issue(group, "missing-inline-metric", { id });
+        }
+      }
+      if (simplified && launcher && !visible(launcher)) issue(group,"hidden-dialog-launcher",{});
       if (!visible(expected)) issue(group, "presentation-visible", { state });
       if (state === "collapsed" && visible(content)) issue(group,"collapsed-content-visible",{});
       if (state !== "collapsed" && visible(trigger)) issue(group,"expanded-trigger-visible",{});

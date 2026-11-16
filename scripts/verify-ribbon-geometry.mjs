@@ -10,12 +10,12 @@ const widths=[1440,1152,960,640,480,1440];
 const failures=[];
 const coverage=new Set();
 try{
-  for(const theme of ["light","dark"]) for(const locale of ["en","pt-BR"]){
+  for(const ribbonStyle of ["classic","simplified"]) for(const theme of ["light","dark"]) for(const locale of ["en","pt-BR"]){
     const page=await browser.newPage({viewport:{width:1440,height:900}});
     const errors=[];
     page.on("pageerror",e=>errors.push(e.message));
     try{
-      await page.goto(`${base}/tests/browser/ribbon/?theme=${theme}&locale=${locale}`);
+      await page.goto(`${base}/tests/browser/ribbon/?theme=${theme}&locale=${locale}&ribbonStyle=${ribbonStyle}`);
       await waitForRibbonReference(page);
       for(const fixture of ["text","table","image","sections","review","styles"]){
         await loadFixture(page,fixture);
@@ -31,23 +31,24 @@ try{
           for(const [step,width] of widths.entries()){
             await page.locator("#ribbon-reference-root").evaluate((el,w)=>{el.style.width=`${w}px`},width);
             const evidence=await readRibbonGeometry(page, tab, width);
-            coverage.add(tab);
-            const record={sha,engine,theme,locale,fixture,tab,width,step,...evidence};
+            assert.equal(evidence.simplified, ribbonStyle === "simplified", "Wrong ribbon density");
+            coverage.add(`${ribbonStyle}/${tab}`);
+            const record={sha,engine,ribbonStyle,theme,locale,fixture,tab,width,step,...evidence};
             if(!evidence.groups.length) record.failures.push({rule:"empty-tab"});
             if(record.failures.length || step===0){
-              record.screenshot=`${engine}-${theme}-${locale}-${fixture}-${tab}-${step}.png`;
+              record.screenshot=`${engine}-${ribbonStyle}-${theme}-${locale}-${fixture}-${tab}-${step}.png`;
               await page.screenshot({path:resolve(output,record.screenshot)});
             }
             records.push(record);
-            for(const issue of record.failures) failures.push({theme,locale,fixture,tab,width,...issue});
+            for(const issue of record.failures) failures.push({ribbonStyle,theme,locale,fixture,tab,width,...issue});
           }
         }
       }
-      for(const message of errors) failures.push({theme,locale,rule:"pageerror",message});
+      for(const message of errors) failures.push({ribbonStyle,theme,locale,rule:"pageerror",message});
     }finally{await page.close();}
   }
-  for(const tab of ["home","insert","design","layout","references","review","view","file","tableDesign","tableLayout","imageFormat"]){
-    assert.ok(coverage.has(`editor-ribbon-tab-${tab}`),`Missing required tab ${tab}`);
+  for(const ribbonStyle of ["classic","simplified"]) for(const tab of ["home","insert","design","layout","references","review","view","file","tableDesign","tableLayout","imageFormat"]){
+    assert.ok(coverage.has(`${ribbonStyle}/editor-ribbon-tab-${tab}`),`Missing required tab ${ribbonStyle}/${tab}`);
   }
 }finally{
   await writeVerification(output,{sha,engine,coverage:[...coverage],records,failures});
@@ -56,7 +57,7 @@ try{
 if(failures.length) {
   const byRule = Object.create(null);
   for (const failure of failures) {
-    const key = failure.tab + "/" + (failure.group ?? "-") + "/" + failure.rule;
+    const key = failure.ribbonStyle + "/" + failure.tab + "/" + (failure.group ?? "-") + "/" + failure.rule;
     (byRule[key] ??= { count: 0, example: failure }).count++;
   }
   console.error(JSON.stringify(byRule,null,2));

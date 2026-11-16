@@ -3652,6 +3652,124 @@
   height: 24px;
   flex-basis: 24px;
 }
-.oasis-editor-ribbon-simplified .oasis-editor-metric-group-inline {
+/* Simplified geometry applies only to the inline live/measured panel.
+ * Collapsed popovers retain the complete classic controls. */
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-metric-group-inline {
+  grid-template-columns: repeat(4, minmax(44px, max-content) 58px max-content);
+  grid-template-rows: 28px;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-ribbon-row:has(.oasis-editor-metric-group) {
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
+}
+
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group {
+  grid-template-columns: max-content;
+  max-height: 32px;
+}
+/* Keep dialog launchers reachable as independent one-line actions. */
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group:has(> .oasis-editor-ribbon-group-launcher) {
+  grid-template-columns: max-content 24px;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-launcher {
+  position: static;
+  display: flex;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  width: 24px;
+  height: 28px;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > :is(.oasis-editor-ribbon-group-content, .oasis-editor-ribbon-group-collapsed-trigger) {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+/* Large split actions retain both independently clickable halves. */
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-color-split-ribbon-large {
+  display: inline-flex;
+  min-width: 0;
+  max-width: none;
+  height: 30px;
+  min-height: 30px;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-color-split-ribbon-large
+  :is(.oasis-editor-color-split-main, .oasis-editor-color-split-menu-button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 28px;
+  min-height: 0;
+  padding: 0 4px;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-color-split-ribbon-large .oasis-editor-color-split-menu-label {
   display: none;
 }
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-color-split-ribbon-large .oasis-editor-color-split-main > svg {
+  width: 18px;
+  height: 18px;
+  flex-basis: 18px;
+}
+
+/* Keep genuine style previews, with the label beside the sample. */
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  :is(.oasis-editor-style-gallery-ribbon, .oasis-editor-table-style-gallery, .oasis-editor-table-style-gallery-empty) {
+  height: 30px;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-style-gallery-card {
+  height: 28px;
+  flex-direction: row;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 2px;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-style-gallery-sample {
+  flex: 0 1 45%;
+  min-width: 0;
+  height: 22px;
+  line-height: 22px;
+  font-size: min(14px, var(--oasis-style-preview-font-size, 14px));
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-style-gallery-name {
+  min-width: 0;
+  flex: 1;
+  -webkit-line-clamp: 2;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-table-style-card {
+  height: 28px;
+  padding: 1px 3px;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-table-style-preview {
+  height: 20px;
+  max-height: 20px;
+}
+

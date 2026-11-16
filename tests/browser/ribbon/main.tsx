@@ -14,6 +14,7 @@ import "@/styles/oasis-editor.css";
 const params = new URLSearchParams(location.search);
 const theme = params.get("theme") === "dark" ? "dark" : "light";
 const locale = params.get("locale") === "pt-BR" ? "pt-BR" : "en";
+const ribbonStyle = params.get("ribbonStyle") === "simplified" ? "simplified" : "classic";
 const requestedFixture = params.get("fixture") ?? "text";
 if (!(requestedFixture in ribbonFixtures))
   throw new Error("Unknown reference fixture");
@@ -46,6 +47,7 @@ render(
       ui={{
         theme,
         locale,
+        toolbar: { view: "ribbon", ribbonStyle },
         showTitleBar: false,
         showMenubar: false,
         showOutline: false,
