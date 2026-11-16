@@ -20,8 +20,9 @@ export function buildLauncherCommands({
     openFontDialog: actionCommand("openFontDialog", (): void => {
       dialog.openFontDialog();
     }),
-    openParagraphDialog: actionCommand("openParagraphDialog", (): void => {
-      dialog.openParagraphDialog();
+    openParagraphDialog: actionCommand("openParagraphDialog", (payload): void => {
+      const position = typeof payload === "number" && Number.isFinite(payload) ? payload : undefined;
+      dialog.openParagraphDialog(position);
     }),
   };
 }

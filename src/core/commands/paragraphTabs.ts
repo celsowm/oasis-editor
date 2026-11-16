@@ -22,7 +22,6 @@ import type {
 import { getParagraphs, resolveNamedParagraphStyle } from "@/core/model.js";
 import { cloneParagraph } from "@/core/document/clone.js";
 import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
-import { preserveSelectionByParagraphOffsets } from "@/core/selection/rangeEditing.js";
 import { normalizeSelection } from "@/core/selection.js";
 
 /** The most tab stops a paragraph keeps (WordCraft's `MAX_TABS`). */
@@ -73,8 +72,9 @@ export function editParagraphTabStops(
   const paragraphs = getParagraphs(state);
   const styles = state.document.styles;
 
-  const setStops = change.set ?? [];
-  const clearPositions = change.clear ?? [];
+  const validPosition = (position: number): boolean => Number.isFinite(position) && Math.abs(position) <= MAX_TAB_POSITION;
+  const setStops = (change.set ?? []).filter(t => validPosition(t.position));
+  const clearPositions = (change.clear ?? []).filter(validPosition);
   const clearAll = Boolean(change.clearAll);
   const hasReplace = change.tabs !== undefined;
   const paragraphWork =
@@ -127,7 +127,8 @@ export function editParagraphTabStops(
         list.push(makeTabStop(t.position, t));
       }
       list.sort((a, b) => a.position - b.position);
-      list = list.slice(0, MAX_TAB_STOPS);
+      list = list.filter(t => validPosition(t.position)).slice(0, MAX_TAB_STOPS);
+      if (JSON.stringify(list) === JSON.stringify(paragraph.style?.tabs ?? [])) return paragraph;
 
       const next = cloneParagraph(paragraph);
       const nextStyle: EditorParagraphStyle = {
@@ -143,7 +144,7 @@ export function editParagraphTabStops(
   // Default tab interval is a document-level setting, applied once regardless
   // of the selection.
   let changed = paragraphChanged;
-  const hasDefault = change.default !== undefined && change.default !== null;
+  const hasDefault = typeof change.default === "number" && Number.isFinite(change.default);
   const currentDefault = state.document.settings?.defaultTabStop;
   const nextDefault =
     hasDefault && change.default !== undefined && change.default !== null
@@ -166,7 +167,7 @@ export function editParagraphTabStops(
   let next = cloneStateWithParagraphs(
     state,
     nextParagraphs,
-    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+    state.selection,
   );
 
   if (hasDefault || change.default === null) {

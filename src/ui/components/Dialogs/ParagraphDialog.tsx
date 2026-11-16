@@ -83,6 +83,9 @@ export function ParagraphDialog(props: ParagraphDialogProps): JSX.Element {
     setWidowControl,
     tabs,
     setTabs,
+    defaultTabStop,
+    setDefaultTabStop,
+    setTabChanges,
     atEnabled,
     previewStyle,
     handleApply,
@@ -421,7 +424,7 @@ export function ParagraphDialog(props: ParagraphDialogProps): JSX.Element {
   return (
     <div>
       <Dialog
-        isOpen={props.isOpen}
+        isOpen={props.isOpen && !tabsDialogOpen() && !props.initial.tabsOnly}
         title={t("paragraph.title")}
         onClose={props.onClose}
         size="lg"
@@ -495,12 +498,20 @@ export function ParagraphDialog(props: ParagraphDialogProps): JSX.Element {
       </Dialog>
 
       <TabStopsDialog
-        isOpen={tabsDialogOpen()}
+        isOpen={props.isOpen && (tabsDialogOpen() || !!props.initial.tabsOnly)}
         initial={tabs()}
+        initialDefault={defaultTabStop()}
+        selectedPosition={props.initial.selectedTabPosition}
         onClose={(): void => {
           setTabsDialogOpen(false);
+          if (props.initial.tabsOnly) props.onClose();
         }}
-        onApply={setTabs}
+        onApply={(newTabs, changes): void => {
+          setTabs(newTabs);
+          setTabChanges(previous => [...previous, ...changes]);
+          for (const change of changes) if (typeof change.default === "number") setDefaultTabStop(change.default);
+          if (props.initial.tabsOnly) handleApply();
+        }}
       />
     </div>
   );

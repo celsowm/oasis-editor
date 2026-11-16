@@ -366,7 +366,7 @@ export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
         commitTabs({ clear: [stop.position], set: [{ ...stop, position }] });
     } else if (event.key === "Enter") {
       event.preventDefault();
-      props.toolbarHost().commands.execute("openParagraphDialog");
+      props.toolbarHost().commands.execute("openParagraphDialog", stop.position);
     }
   };
 
@@ -586,7 +586,7 @@ export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
                 onKeyDown={event => markerKey(stop, event)}
                 onDblClick={event => {
                   event.preventDefault();
-                  if (canPlaceTabs()) props.toolbarHost().commands.execute("openParagraphDialog");
+                  if (canPlaceTabs()) props.toolbarHost().commands.execute("openParagraphDialog", stop.position);
                 }}>
                 <TabGlyph type={stop.type as RulerTabType} />
               </button>;

@@ -103,7 +103,7 @@ export interface EditorCommandsControllerDeps
   openImageAltDialog: (initialAlt: string) => void;
   openImageCaptionDialog: (initialCaption: string) => void;
   openFontDialog: () => void;
-  openParagraphDialog: () => void;
+  openParagraphDialog: (tabPosition?: number) => void;
   imageCaptionLabel: () => string;
 }
 
@@ -528,7 +528,7 @@ function createEditorCommandsControllerImpl(
   };
 
   const openFontDialogCommand = (): void => deps.openFontDialog();
-  const openParagraphDialogCommand = (): void => deps.openParagraphDialog();
+  const openParagraphDialogCommand = (tabPosition?: number): void => deps.openParagraphDialog(tabPosition);
   const openStylesDialogCommand = (): void => {
     logger.warn("stylesDialog not yet implemented");
   };

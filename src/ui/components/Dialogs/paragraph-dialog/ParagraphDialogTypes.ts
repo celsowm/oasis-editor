@@ -1,3 +1,4 @@
+import type { ParagraphTabStopsChange } from "@/core/commands/paragraphTabs.js";
 import type {
   EditorBorderStyle,
   EditorParagraphStyle,
@@ -43,6 +44,9 @@ export interface ParagraphDialogInitialValues {
   keepLinesTogether: boolean;
   widowControl: boolean;
   tabs: EditorTabStop[];
+  defaultTabStop?: number;
+  tabsOnly?: boolean;
+  selectedTabPosition?: number;
 }
 
 export interface ParagraphDialogBorders {
@@ -76,6 +80,7 @@ export interface ParagraphDialogApplyValues {
   keepLinesTogether: boolean;
   widowControl: boolean;
   tabs: EditorTabStop[];
+  tabChanges?: ParagraphTabStopsChange[];
 }
 
 export interface ParagraphDialogProps {

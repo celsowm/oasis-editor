@@ -541,3 +541,15 @@
   border-radius: 4px;
 }
 .oasis-editor-comment-composer-parent p { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.oasis-editor-word-tabs-fields {
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px;
+}
+.oasis-editor-word-tabs-list {
+  min-height:100px; max-height:156px; overflow:auto; display:flex; flex-direction:column;
+  border:1px solid var(--oasis-border-color,#dadce0); border-radius:4px; margin-top:5px; padding:3px;
+}
+.oasis-editor-word-tabs-option { justify-content:flex-start; }
+.oasis-editor-word-tabs-option[aria-pressed="true"] { background:color-mix(in srgb,var(--oasis-accent,#1a73e8) 18%,transparent); }
+.oasis-editor-word-tabs-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
+.oasis-editor-word-tabs-fields .oasis-editor-ui-radio-group { display:flex; flex-direction:column; gap:7px; }

@@ -1,4 +1,5 @@
 import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
+import { editParagraphTabStops } from "@/core/commands/paragraphTabs.js";
 import { setParagraphStyle } from "@/core/commands/block.js";
 import { resolveDefaultParagraphStyleId } from "@/core/model.js";
 import type {
@@ -126,6 +127,11 @@ export function createParagraphDialogBridge(
 
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
+    if (original.tabsOnly) {
+      deps.applyTransactionalState(current => (values.tabChanges ?? []).reduce(editParagraphTabStops, current));
+      deps.focusInput();
+      return;
+    }
 
     const originalNumber = (value: string): number | null => {
       if (value.trim() === "") return null;
@@ -215,7 +221,9 @@ export function createParagraphDialogBridge(
         if (values.widowControl !== (original.widowControl ?? true)) {
           next = setParagraphStyle(next, "widowControl", values.widowControl);
         }
-        if (
+        if (values.tabChanges?.length) {
+          next = values.tabChanges.reduce(editParagraphTabStops, next);
+        } else if (
           JSON.stringify(values.tabs) !== JSON.stringify(original.tabs ?? [])
         ) {
           next = setParagraphStyle(

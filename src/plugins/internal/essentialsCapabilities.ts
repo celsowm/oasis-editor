@@ -614,7 +614,7 @@ export interface EssentialsFieldsCapability {
 
 export interface EssentialsDialogCapability {
   openFontDialog: () => void;
-  openParagraphDialog: () => void;
+  openParagraphDialog: (tabPosition?: number) => void;
   requestAcceptAllRevisions: () => void;
   requestRejectAllRevisions: () => void;
 }

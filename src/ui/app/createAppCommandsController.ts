@@ -94,10 +94,14 @@ function createAppCommandsControllerImpl(deps: AppCommandsControllerDeps) {
         initial: createFontDialogInitialValues(deps.toolbarStyleState()),
       });
     },
-    openParagraphDialog: (): void => {
+    openParagraphDialog: (tabPosition?: number): void => {
       deps.setParagraphDialog({
         isOpen: true,
-        initial: createParagraphDialogInitialValues(deps.toolbarStyleState()),
+        initial: {
+          ...createParagraphDialogInitialValues(deps.toolbarStyleState()),
+          defaultTabStop: deps.state.document.settings?.defaultTabStop ?? 36,
+          ...(tabPosition !== undefined ? {tabsOnly:true, selectedTabPosition:tabPosition} : {}),
+        },
       });
     },
     imageCaptionLabel: (): "Figure" | "Figura" =>

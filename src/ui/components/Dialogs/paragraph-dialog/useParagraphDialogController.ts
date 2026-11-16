@@ -49,6 +49,8 @@ export function useParagraphDialogController(props: ParagraphDialogProps) {
   const [keepLinesTogether, setKeepLinesTogether] = createSignal(false);
   const [widowControl, setWidowControl] = createSignal(true);
   const [tabs, setTabs] = createSignal<EditorTabStop[]>([]);
+  const [tabChanges, setTabChanges] = createSignal<import("@/core/commands/paragraphTabs.js").ParagraphTabStopsChange[]>([]);
+  const [defaultTabStop, setDefaultTabStop] = createSignal(36);
 
   createEffect((): void => {
     if (props.isOpen) {
@@ -89,6 +91,8 @@ export function useParagraphDialogController(props: ParagraphDialogProps) {
       setKeepLinesTogether(props.initial.keepLinesTogether ?? false);
       setWidowControl(props.initial.widowControl ?? true);
       setTabs(props.initial.tabs ?? []);
+      setTabChanges([]);
+      setDefaultTabStop(props.initial.defaultTabStop ?? 36);
 
       const firstLine = parseNumber(props.initial.indentFirstLine ?? "");
       const hanging = parseNumber(props.initial.indentHanging ?? "");
@@ -214,6 +218,7 @@ export function useParagraphDialogController(props: ParagraphDialogProps) {
       keepLinesTogether: keepLinesTogether(),
       widowControl: widowControl(),
       tabs: tabs(),
+      ...(tabChanges().length ? {tabChanges: tabChanges()} : {}),
     };
   };
 
@@ -278,6 +283,9 @@ export function useParagraphDialogController(props: ParagraphDialogProps) {
     setWidowControl,
     tabs,
     setTabs,
+    defaultTabStop,
+    setDefaultTabStop,
+    setTabChanges,
     atEnabled,
     previewStyle,
     handleApply,

@@ -51,7 +51,7 @@ export interface CreateEditorEssentialsPluginOptions {
   /** Opens the Font dialog. */
   openFontDialog: () => void;
   /** Opens the Paragraph dialog. */
-  openParagraphDialog: () => void;
+  openParagraphDialog: (tabPosition?: number) => void;
   /** Opens the Accept All confirmation dialog. */
   requestAcceptAllRevisions: () => void;
   /** Opens the Reject All confirmation dialog. */
