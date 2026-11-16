@@ -3890,3 +3890,75 @@
   background: var(--oasis-accent-soft);
   border-color: var(--oasis-accent);
 }
+
+/* Watermark uses document thumbnails rather than form controls in its menu. */
+.oasis-editor-watermark-panel {
+  width: min(340px, calc(100vw - 16px));
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 8px;
+}
+.oasis-editor-watermark-section h3 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 6px 4px;
+  color: var(--oasis-text-muted);
+}
+.oasis-editor-watermark-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 4px;
+}
+.oasis-editor-watermark-card {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 5px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 5px 3px;
+  background: transparent;
+  color: var(--oasis-ribbon-text, var(--oasis-text));
+  font: inherit;
+  font-size: 10px;
+  min-width: 0;
+  cursor: pointer;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.oasis-editor-watermark-card:hover,.oasis-editor-watermark-card:focus-visible,
+.oasis-editor-watermark-card[aria-pressed="true"] {
+  background: var(--oasis-accent-soft);
+  border-color: var(--oasis-accent);
+}
+.oasis-editor-watermark-card:disabled { opacity: .45; cursor: not-allowed; }
+.oasis-editor-watermark-preview {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  box-sizing: border-box;
+  border: 1px solid #c6cbd1;
+  background: white;
+}
+.oasis-editor-watermark-card .oasis-editor-watermark-preview { width: min(80px,100%); }
+.oasis-editor-watermark-actions { margin-top: 8px; padding-top: 5px; border-top: 1px solid var(--oasis-toolbar-border); }
+.oasis-editor-watermark-dialog { min-width: 0; color: var(--oasis-text); background: var(--oasis-paper); }
+.oasis-editor-watermark-dialog :is(.oasis-editor-dialog-header,.oasis-editor-dialog-footer) {
+  background: var(--oasis-ribbon-panel-bg, var(--oasis-paper));
+  border-color: var(--oasis-toolbar-border);
+}
+.oasis-editor-watermark-dialog .oasis-editor-dialog-title { color: var(--oasis-text); }
+.oasis-editor-watermark-editor { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); gap: 20px; align-items: start; }
+.oasis-editor-watermark-fields, .oasis-editor-watermark-field { display: grid; min-width: 0; gap: 8px; color: var(--oasis-text); }
+.oasis-editor-watermark-field { font-size: 12px; gap: 4px; }
+.oasis-editor-watermark-field-pair { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; }
+.oasis-editor-watermark-fields :is(.oasis-editor-ui-input,.oasis-editor-tool-select) {
+  width: 100%; min-width: 0; min-height: 32px; box-sizing: border-box;
+}
+.oasis-editor-watermark-editor-preview { display: grid; gap: 8px; font-size: 12px; color: var(--oasis-text-muted); }
+.oasis-editor-watermark-editor-preview .oasis-editor-watermark-preview { width: min(240px,100%); margin-inline: auto; }
+@media(max-width: 560px) {
+  .oasis-editor-watermark-editor { grid-template-columns: minmax(0,1fr); }
+  .oasis-editor-watermark-editor-preview .oasis-editor-watermark-preview { width: 140px; }
+}

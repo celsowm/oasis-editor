@@ -85,7 +85,8 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     iconName: "watermark",
     label: t("design.watermark"),
     tooltip: t("design.watermark"),
-    panelClass: "oasis-editor-design-background-panel-wrap",
+    panelClass: "oasis-editor-watermark-panel oasis-editor-command-menu",
+    isDisabled: (api) => !api.commands.state("setDocumentWatermark").isEnabled,
     content: { kind: "custom", render: (api) => DesignWatermarkPanel({ api }) },
   });
   items.push({
