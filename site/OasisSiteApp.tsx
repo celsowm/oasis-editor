@@ -4,6 +4,8 @@ import type { OasisEditorAppProps } from "../src/ui/OasisEditorApp.js";
 
 type RouteId = "editor" | "about" | "api" | "plugins";
 type Language = "pt" | "en";
+type EditorShell = "document" | "inline" | "balloon";
+const editorShells: readonly EditorShell[] = ["document", "inline", "balloon"];
 
 declare global {
   interface Window {
@@ -93,7 +95,13 @@ const copy = {
       title: "Editor",
       subtitle:
         "A rota padrao preserva a experiencia atual: editor documental com shell docs, toolbar, menus e import/export.",
-      tip: "Dica: use ?shell=inline ou ?shell=balloon para testar outros shells.",
+      modeLabel: "Modo do editor",
+      modes: { document: "Documento", inline: "Inline", balloon: "Balloon" },
+      tips: {
+        document: "Editor completo, com faixa de opções e estrutura de documento.",
+        inline: "Editor integrado: barra de ferramentas no próprio campo de edição, sem o chrome documental completo.",
+        balloon: "Editor sem barra de ferramentas fixa. Selecione texto para testar as ações contextuais disponíveis.",
+      },
     },
     about: {
       title: "Por que Oasis Editor",
@@ -237,7 +245,13 @@ export const TimestampPlugin: OasisPlugin = {
       title: "Editor",
       subtitle:
         "The default route preserves the current experience: document editor with docs shell, toolbar, menus, and import/export.",
-      tip: "Tip: use ?shell=inline or ?shell=balloon to test other shells.",
+      modeLabel: "Editor mode",
+      modes: { document: "Document", inline: "Inline", balloon: "Balloon" },
+      tips: {
+        document: "Full document editor with a ribbon and document layout.",
+        inline: "Embedded editor: a toolbar inside the editing field, without the full document chrome.",
+        balloon: "Editor without a fixed toolbar. Select text to try available contextual actions.",
+      },
     },
     about: {
       title: "Why Oasis Editor",
@@ -374,7 +388,7 @@ function getHashRoute(): RouteId {
   return routes.some((item) => item.id === route) ? (route as RouteId) : "editor";
 }
 
-function getRequestedShell() {
+function getRequestedShell(): EditorShell {
   const params = new URLSearchParams(window.location.search);
   const requestedShell = params.get("shell");
   return requestedShell === "inline" || requestedShell === "balloon" ? requestedShell : "document";
@@ -389,6 +403,7 @@ export function OasisSiteApp() {
   const [activeRoute, setActiveRoute] = createSignal<RouteId>(getHashRoute());
   const [language, setLanguage] = createSignal<Language>(loadLanguage());
   const [navOpen, setNavOpen] = createSignal(false);
+  const [shell, setShell] = createSignal<EditorShell>(getRequestedShell());
   const text = createMemo(() => copy[language()]);
 
   const syncRoute = () => {
@@ -397,6 +412,18 @@ export function OasisSiteApp() {
     if (!window.location.hash) {
       window.history.replaceState(null, "", "#/editor");
     }
+  };
+
+  const syncShell = () => setShell(getRequestedShell());
+  const selectShell = (next: EditorShell) => {
+    if (next === shell()) return;
+    const url = new URL(window.location.href);
+    // Keep other demo parameters and the hash intact. The History API makes
+    // the selected mode linkable without reloading the editor runtime.
+    if (next === "document") url.searchParams.delete("shell");
+    else url.searchParams.set("shell", next);
+    window.history.pushState(null, "", url);
+    setShell(next);
   };
 
   const toggleLanguage = () => {
@@ -408,10 +435,12 @@ export function OasisSiteApp() {
   onMount(() => {
     syncRoute();
     window.addEventListener("hashchange", syncRoute);
+    window.addEventListener("popstate", syncShell);
   });
 
   onCleanup(() => {
     window.removeEventListener("hashchange", syncRoute);
+    window.removeEventListener("popstate", syncShell);
   });
 
   return (
@@ -474,7 +503,12 @@ export function OasisSiteApp() {
           </button>
           <span class="oasis-site-strip-title">{routeLabels[language()][activeRoute()]}</span>
           <Show when={activeRoute() === "editor"}>
-            <div class="oasis-site-strip-actions" style={{ "margin-left": "auto", display: "flex", "align-items": "center", "justify-content": "flex-end", gap: "10px", "flex-shrink": "0" }}>
+            <div class="oasis-site-shell-switch" role="group" aria-label={text().editor.modeLabel} data-testid="site-editor-mode">
+              <For each={editorShells}>
+                {mode => <button type="button" aria-pressed={shell() === mode} data-testid={`site-shell-${mode}`} onClick={() => selectShell(mode)}>{text().editor.modes[mode]}</button>}
+              </For>
+            </div>
+            <div class="oasis-site-strip-actions">
               <a
                 class="oasis-site-support-link"
                 href="https://ko-fi.com/L4L11VB7JN"
@@ -504,7 +538,7 @@ export function OasisSiteApp() {
 
         <Switch>
           <Match when={activeRoute() === "editor"}>
-            <EditorPage language={language()} />
+            <EditorPage language={language()} shell={shell()} />
           </Match>
           <Match when={activeRoute() === "about"}>
             <AboutPage language={language()} />
@@ -521,7 +555,7 @@ export function OasisSiteApp() {
   );
 }
 
-function EditorPage(props: { language: Language }) {
+function EditorPage(props: { language: Language; shell: EditorShell }) {
   const t = () => copy[props.language];
   const testProps = () => window.__oasisEditorTestProps ?? {};
 
@@ -535,15 +569,15 @@ function EditorPage(props: { language: Language }) {
         <a class="oasis-site-more-link" href="#/about">{t().moreAbout}</a>
         <div class="oasis-site-tip">
           <span class="oasis-site-tip-dot" aria-hidden="true" />
-          <span>{t().editor.tip}</span>
+          <span>{t().editor.tips[props.shell]}</span>
         </div>
       </aside>
       <div class="oasis-site-editor-col">
-        <div class="oasis-site-editor-host">
+        <div class="oasis-site-editor-host" data-demo-shell={props.shell}>
           <OasisEditorAppLazy
             ui={{
               ...testProps().ui,
-              shell: getRequestedShell(),
+              shell: props.shell,
               uiVariant: "docs",
               locale: props.language === "pt" ? "pt-BR" : "en",
             }}

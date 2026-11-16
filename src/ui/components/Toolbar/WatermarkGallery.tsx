@@ -59,7 +59,7 @@ function WatermarkPreview(props: { value: EditorWatermark }): JSX.Element {
         }>
           <text text-anchor="middle" dominant-baseline="central"
             fill={props.value.color ?? "#94a3b8"} font-family={props.value.fontFamily ?? "Arial"}
-            font-size={Math.max(8, (props.value.fontSize ?? 48) * PX_PER_POINT)}
+            font-size={String(Math.max(8, (props.value.fontSize ?? 48) * PX_PER_POINT))}
             >{props.value.text}</text>
         </Show>
       </g>

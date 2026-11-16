@@ -736,3 +736,79 @@
     display: none;
   }
 }
+
+
+/* Demo mode selection belongs to the site, not the editor's own ribbon. */
+.oasis-site-shell-switch {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 3px;
+  margin-inline-start: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.oasis-site-shell-switch button {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  padding: 5px 10px;
+  min-height: 28px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.oasis-site-shell-switch button:hover {
+  color: var(--ink);
+  background: var(--surface);
+}
+.oasis-site-shell-switch button[aria-pressed="true"] {
+  color: var(--accent-strong);
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.oasis-site-shell-switch button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.oasis-site-shell-switch + .oasis-site-strip-actions { margin-left: 0; }
+/* On narrow screens the selector gets its own full-width row while the
+ * title and support controls remain on the main strip. */
+@media (max-width: 840px) {
+  .oasis-site-strip:has(.oasis-site-shell-switch) {
+    height: auto;
+    min-height: var(--strip);
+    flex-wrap: wrap;
+    padding-block: 6px;
+    column-gap: 8px;
+    row-gap: 5px;
+  }
+  .oasis-site-shell-switch {
+    order: 2;
+    flex: 1 0 100%;
+    margin-inline: 0;
+    box-sizing: border-box;
+  }
+  .oasis-site-shell-switch button { flex: 1; }
+  .oasis-site-shell-switch + .oasis-site-strip-actions { margin-left: auto; }
+}
+@media (max-width: 420px) {
+  .oasis-site-strip:has(.oasis-site-shell-switch) .oasis-site-support-link img { max-width: 110px; height: auto; }
+}
+/* Embedded presentations use the same bounded editor host; no fake DOM
+ * or separate document instance is mounted for a mode switch. */
+.oasis-site-editor-host .oasis-inline-shell,
+.oasis-site-editor-host .oasis-balloon-shell {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
