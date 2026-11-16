@@ -6,14 +6,16 @@ import { createEditorStateFromTexts } from "@/core/editorState.js";
 import { toggleParagraphList } from "@/core/commands/list.js";
 import { getParagraphs, getParagraphText, paragraphOffsetToPosition, type EditorState } from "@/core/model.js";
 
-function harness(text: string, offset: number, opts: { list?: boolean; readOnly?: boolean; pendingBold?: boolean } = {}) {
+function harness(text: string, offset: number, opts: { list?: boolean; readOnly?: boolean; pendingBold?: boolean; autoIndent?: boolean; defaultTab?: number } = {}) {
   let state = createEditorStateFromTexts([text], { offset });
   if (opts.list) state = toggleParagraphList(state, "bullet");
+  if (opts.defaultTab) state = { ...state, document: { ...state.document, settings: { ...state.document.settings, defaultTabStop: opts.defaultTab } } };
   const focusInput = vi.fn();
   const deps = {
     state: () => state,
     isReadOnly: () => Boolean(opts.readOnly),
     pendingCaretTextStyle: () => opts.pendingBold ? { bold: true } : undefined,
+    autoTabIndentEnabled: () => opts.autoIndent ?? true,
     focusInput,
     clearPreferredColumn: vi.fn(),
     resetTransactionGrouping: vi.fn(),
@@ -55,6 +57,24 @@ describe("document Tab typing", () => {
     const h = harness("", 0);
     h.press();
     expect(h.text()).toBe("\t");
+  });
+  it("uses a first-line indent at the start of existing text, then whole-paragraph indent", () => {
+    const h = harness("existing", 0, {defaultTab: 72});
+    h.press();
+    expect(h.text()).toBe("existing");
+    expect(h.paragraph().style?.indentFirstLine).toBe(96);
+    h.press();
+    expect(h.paragraph().style?.indentLeft).toBe(96);
+    h.press({shiftKey: true});
+    expect(h.paragraph().style?.indentLeft).toBe(0);
+    h.press({shiftKey: true});
+    expect(h.paragraph().style?.indentFirstLine).toBe(0);
+  });
+  it("types a literal tab at paragraph start when auto-indent is disabled", () => {
+    const h = harness("existing", 0, {autoIndent: false});
+    h.press();
+    expect(h.text()).toBe("\texisting");
+    expect(h.paragraph().style?.indentFirstLine ?? 0).toBe(0);
   });
   it("uses pending text formatting for a literal tab", () => {
     const h = harness("abcd", 2, { pendingBold: true });

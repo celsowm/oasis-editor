@@ -26,6 +26,7 @@ export interface EditorKeyboardDeps
   state: () => EditorState;
   isReadOnly: () => boolean;
   pendingCaretTextStyle?: () => EditorTextStyle | undefined;
+  autoTabIndentEnabled?: () => boolean;
   commandsController: {
     promptForImageAlt: () => void;
     promptForLink: () => void;

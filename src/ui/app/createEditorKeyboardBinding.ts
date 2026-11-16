@@ -8,6 +8,7 @@ import type { createEditorTableOperations } from "@/app/controllers/useEditorTab
 import type { createEditorNavigation } from "@/app/controllers/useEditorNavigation.js";
 import type { createEditorHistoryActions } from "@/app/controllers/useEditorHistoryActions.js";
 import type { useEditorRuntimeBootstrap } from "./useEditorRuntimeBootstrap.js";
+import { getAutoTabIndentPreference } from "@/app/services/userPreferences.js";
 import { markEnd, markStart } from "@/utils/performanceMetrics.js";
 
 type EditorTableOperations = ReturnType<typeof createEditorTableOperations>;
@@ -99,6 +100,7 @@ export function createEditorKeyboardBinding(deps: EditorKeyboardBindingDeps): {
     focusInput,
     commandsController,
     pendingCaretTextStyle: styleController.pendingCaretTextStyle,
+    autoTabIndentEnabled: getAutoTabIndentPreference,
     selectedImageRun,
     setForcePlainTextPaste,
     moveSelectionByWord: navigation.moveSelectionByWord,

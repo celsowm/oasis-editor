@@ -1,10 +1,11 @@
 import { insertTextAtSelection } from "@/core/commands/text.js";
-import { stepTabParagraphIndent } from "@/core/commands/paragraphTabIndent.js";
+import { stepFirstLineIndent, stepTabParagraphIndent } from "@/core/commands/paragraphTabIndent.js";
 import {
   findParagraphLocation,
   findParagraphTablePathLocation,
   getParagraphs,
   getParagraphText,
+  resolveEffectiveParagraphStyle,
   type EditorState,
 } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
@@ -15,7 +16,8 @@ export type TabAction =
   | "passThrough"
   | "insertLiteralTab"
   | "navigateCell"
-  | "changeParagraphIndent";
+  | "changeParagraphIndent"
+  | "changeFirstLineIndent";
 
 export interface TabContext {
   inTable: boolean;
@@ -25,6 +27,8 @@ export interface TabContext {
   alt: boolean;
   wholeParagraphs: boolean;
   atListStart: boolean;
+  autoIndentAtStart?: boolean;
+  reverseFirstLineIndent?: boolean;
 }
 
 /** Pure routing policy: table context and host modifiers take precedence. */
@@ -35,6 +39,9 @@ export function resolveTabAction(context: TabContext): TabAction {
       : "passThrough";
   }
   if (context.inTable) return "navigateCell";
+  if (context.reverseFirstLineIndent || (!context.shift && context.autoIndentAtStart)) {
+    return "changeFirstLineIndent";
+  }
   if (context.shift || context.wholeParagraphs || context.atListStart) {
     return "changeParagraphIndent";
   }
@@ -60,6 +67,9 @@ export function handleDocumentTab(
     (range.startIndex !== range.endIndex ||
       (range.startParagraphOffset === 0 &&
         range.endParagraphOffset === getParagraphText(paragraph).length));
+  const style = resolveEffectiveParagraphStyle(paragraph.style, state.document.styles);
+  const atStart = range.isCollapsed && range.startParagraphOffset === 0 && !paragraph.list;
+  const autoFormat = deps.autoTabIndentEnabled?.() ?? true;
   const action = resolveTabAction({
     inTable,
     shift: event.shiftKey,
@@ -68,6 +78,9 @@ export function handleDocumentTab(
     alt: event.altKey,
     wholeParagraphs,
     atListStart: Boolean(paragraph.list) && range.isCollapsed && range.startParagraphOffset === 0,
+    autoIndentAtStart: autoFormat && atStart && getParagraphText(paragraph).length > 0,
+    reverseFirstLineIndent: event.shiftKey && autoFormat && atStart &&
+      (style.indentLeft ?? 0) <= 0 && (style.indentFirstLine ?? 0) > 0,
   });
   if (action === "passThrough") return;
 
@@ -98,11 +111,14 @@ export function handleDocumentTab(
       }
       break;
     }
+    case "changeFirstLineIndent":
     case "changeParagraphIndent": {
       const command = event.shiftKey ? "outdent" : "indent";
       if (deps.canExecuteCommand?.(command) === false) break;
       deps.applySelectionAwareParagraphCommand((current): EditorState =>
-        stepTabParagraphIndent(current, event.shiftKey ? -1 : 1),
+        action === "changeFirstLineIndent"
+          ? stepFirstLineIndent(current, event.shiftKey ? -1 : 1)
+          : stepTabParagraphIndent(current, event.shiftKey ? -1 : 1),
       );
       break;
     }

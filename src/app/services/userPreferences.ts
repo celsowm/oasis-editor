@@ -6,6 +6,7 @@
  */
 const WELCOME_SEEN_KEY = "oasis.welcomeSeen";
 const PRECISE_FONT_KEY = "oasis.preciseFontMode";
+const AUTO_TAB_INDENT_KEY = "oasis.autoTabIndent";
 
 function safeGet(key: string): string | null {
   try {
@@ -41,4 +42,13 @@ export function getPreciseFontPreference(): boolean {
 /** @param on - Whether precise font rendering should be enabled. */
 export function setPreciseFontPreference(on: boolean): void {
   safeSet(PRECISE_FONT_KEY, on ? "on" : "off");
+}
+
+/** Word-style first-line indentation is enabled by default, independently of the document. */
+export function getAutoTabIndentPreference(): boolean {
+  return safeGet(AUTO_TAB_INDENT_KEY) !== "off";
+}
+
+export function setAutoTabIndentPreference(enabled: boolean): void {
+  safeSet(AUTO_TAB_INDENT_KEY, enabled ? "on" : "off");
 }

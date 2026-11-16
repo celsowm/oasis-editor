@@ -7,11 +7,17 @@ import {
 import { cloneParagraphWithListLevel } from "@/core/document/paragraphRunBuild.js";
 import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
 import { normalizeSelection } from "@/core/selection.js";
-import { preserveSelectionByParagraphOffsets } from "@/core/selection/rangeEditing.js";
 import { PX_PER_POINT } from "@/core/units.js";
 import { MAX_LIST_LEVEL } from "./paragraphListLevel.js";
 
 export const DEFAULT_TAB_INTERVAL_PT = 36;
+
+export function tabIntervalPx(state: EditorState): number {
+  const configured = state.document.settings?.defaultTabStop;
+  const interval = typeof configured === "number" && Number.isFinite(configured) && configured > 0
+    ? configured : DEFAULT_TAB_INTERVAL_PT;
+  return interval * PX_PER_POINT;
+}
 
 /**
  * Relative keyboard indentation for a whole/selected paragraph or list item.
@@ -23,10 +29,7 @@ export function stepTabParagraphIndent(state: EditorState, direction: -1 | 1): E
   const paragraphs = getParagraphs(state);
   if (!paragraphs.length) return state;
   const range = normalizeSelection(state, paragraphs);
-  const configured = state.document.settings?.defaultTabStop;
-  const intervalPt = typeof configured === "number" && Number.isFinite(configured) && configured > 0
-    ? configured : DEFAULT_TAB_INTERVAL_PT;
-  const stepPx = intervalPt * PX_PER_POINT;
+  const stepPx = tabIntervalPx(state);
   let changed = false;
   const next = paragraphs.map((p, index): EditorParagraphNode => {
     if (index < range.startIndex || index > range.endIndex) return p;
@@ -48,5 +51,28 @@ export function stepTabParagraphIndent(state: EditorState, direction: -1 | 1): E
     return { ...p, style: { ...p.style, indentLeft: after } };
   });
   if (!changed) return state;
-  return cloneStateWithParagraphs(state, next, preserveSelectionByParagraphOffsets(next, range));
+  // Paragraph text/run identities are unchanged, so preserve selection direction.
+  return cloneStateWithParagraphs(state, next, state.selection);
+}
+
+/** AutoFormat at a nonempty paragraph's first line, or its inverse. */
+export function stepFirstLineIndent(state: EditorState, direction: -1 | 1): EditorState {
+  const paragraphs = getParagraphs(state);
+  if (!paragraphs.length) return state;
+  const range = normalizeSelection(state, paragraphs);
+  if (!range.isCollapsed || range.startParagraphOffset !== 0) return state;
+  const p = paragraphs[range.startIndex];
+  if (!p || p.list) return state;
+  const style = resolveEffectiveParagraphStyle(p.style, state.document.styles);
+  const old = style.indentFirstLine ?? 0;
+  const hanging = style.indentHanging ?? 0;
+  if (direction > 0 && (old !== 0 || hanging !== 0)) return stepTabParagraphIndent(state, 1);
+  if (direction < 0 && old <= 0) return state;
+  const nextValue = direction > 0 ? tabIntervalPx(state) : Math.max(0, old - tabIntervalPx(state));
+  const next = paragraphs.map((paragraph, index): EditorParagraphNode =>
+    index === range.startIndex
+      ? { ...paragraph, style: { ...paragraph.style, indentFirstLine: nextValue, indentHanging: 0 } }
+      : paragraph,
+  );
+  return cloneStateWithParagraphs(state, next, state.selection);
 }

@@ -1,4 +1,5 @@
 import { MERGE_KEYS } from "@/core/transactionMergeKeys.js";
+import { stepTabParagraphIndent } from "@/core/commands/paragraphTabIndent.js";
 import { setParagraphStyle } from "@/core/commands/block.js";
 import {
   canMoveSelectedParagraphs,
@@ -215,10 +216,18 @@ export function buildEssentialsParagraph(
       );
       options.focusInput();
     },
-    outdent: (): undefined =>
-      void options.commandsController.handleListTab("outdent"),
-    indent: (): undefined =>
-      void options.commandsController.handleListTab("indent"),
+    outdent: (): void => {
+      options.clearPreferredColumn();
+      options.resetTransactionGrouping();
+      options.tableOps.applySelectionAwareParagraphCommand(current => stepTabParagraphIndent(current, -1));
+      options.focusInput();
+    },
+    indent: (): void => {
+      options.clearPreferredColumn();
+      options.resetTransactionGrouping();
+      options.tableOps.applySelectionAwareParagraphCommand(current => stepTabParagraphIndent(current, 1));
+      options.focusInput();
+    },
     moveParagraphsUp: (): void => {
       const current = options.state();
       if (!canMoveSelectedParagraphs(current, "up")) {
