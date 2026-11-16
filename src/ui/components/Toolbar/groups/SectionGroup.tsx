@@ -9,6 +9,8 @@ import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 export function SectionGroup(props: { api: ToolbarActionApi }): JSX.Element {
   const t = useI18n();
   const api = props.api;
+  const orientation = () => api.commands.state("toggleOrientation");
+  const editable = () => api.commands.state("setOrientation").isEnabled;
 
   return (
     <Menu
@@ -16,15 +18,19 @@ export function SectionGroup(props: { api: ToolbarActionApi }): JSX.Element {
       label={t("section.orientation")}
       testId="editor-toolbar-section-dropdown"
       tooltip={t("section.pageSetup")}
-      panelClass="oasis-editor-toolbar-panel oasis-editor-section-panel"
+      panelClass="oasis-editor-toolbar-panel oasis-editor-section-panel oasis-editor-command-menu"
+      fitViewport
       keepMounted
     >
-      <div class="oasis-editor-toolbar-panel-section oasis-editor-section-panel-section">
+      <div class="oasis-editor-command-menu-section">
+        <div class="oasis-editor-command-menu-heading">{t("section.orientation")}</div>
         <Button
-          icon="rectangle-vertical"
+          icon="pagePortrait"
           label={t("section.portrait")}
-          class="oasis-editor-section-option"
-          active={!api.commands.state("toggleOrientation").isActive}
+          class="oasis-editor-section-action"
+          active={!orientation().isActive}
+          pressed={!orientation().isActive}
+          disabled={!editable()}
           data-testid="editor-toolbar-orientation-portrait"
           onClick={(): unknown =>
             api.commands.execute({
@@ -35,10 +41,12 @@ export function SectionGroup(props: { api: ToolbarActionApi }): JSX.Element {
           tooltip={t("section.portrait")}
         />
         <Button
-          icon="rectangle-horizontal"
+          icon="pageLandscape"
           label={t("section.landscape")}
-          class="oasis-editor-section-option"
-          active={api.commands.state("toggleOrientation").isActive}
+          class="oasis-editor-section-action"
+          active={orientation().isActive}
+          pressed={orientation().isActive}
+          disabled={!editable()}
           data-testid="editor-toolbar-orientation-landscape"
           onClick={(): unknown =>
             api.commands.execute({
@@ -50,19 +58,22 @@ export function SectionGroup(props: { api: ToolbarActionApi }): JSX.Element {
         />
       </div>
 
-      <div class="oasis-editor-toolbar-panel-section oasis-editor-section-panel-section">
+      <div class="oasis-editor-command-menu-section">
+        <div class="oasis-editor-command-menu-heading">{t("section.breaksHeading")}</div>
         <Button
-          icon="scissors"
+          icon="sectionBreakNext"
           label={t("section.secNext")}
-          class="oasis-editor-section-option"
+          class="oasis-editor-section-action"
+          disabled={!api.commands.state("sectionBreakNextPage").isEnabled}
           data-testid="editor-toolbar-section-break-next"
           onClick={(): unknown => api.commands.execute("sectionBreakNextPage")}
           tooltip={t("section.secNextTooltip")}
         />
         <Button
-          icon="scissors-line-dashed"
+          icon="sectionBreakContinuous"
           label={t("section.secCont")}
-          class="oasis-editor-section-option"
+          class="oasis-editor-section-action"
+          disabled={!api.commands.state("sectionBreakContinuous").isEnabled}
           data-testid="editor-toolbar-section-break-continuous"
           onClick={(): unknown =>
             api.commands.execute("sectionBreakContinuous")

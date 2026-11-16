@@ -28,16 +28,17 @@ describe("SectionGroup", () => {
 
     const panel = container.querySelector(".oasis-editor-section-panel");
     expect(panel).not.toBeNull();
-    expect(panel?.querySelectorAll(".oasis-editor-section-option")).toHaveLength(
+    expect(panel?.querySelectorAll(".oasis-editor-section-action")).toHaveLength(
       4,
     );
     expect(panel?.textContent).toContain("Retrato");
     expect(panel?.textContent).toContain("Paisagem");
     expect(panel?.textContent).toContain("Próxima Página");
     expect(panel?.textContent).toContain("Contínua");
-    expect(
-      panel?.querySelector('[data-lucide="scissors-line-dashed"]'),
-    ).not.toBeNull();
+    expect(panel?.textContent).toContain("Quebras de seção");
+    expect(panel?.querySelectorAll(".oasis-editor-section-action > svg")).toHaveLength(4);
+    expect(panel?.querySelector('[data-testid="editor-toolbar-orientation-portrait"]')?.getAttribute("aria-pressed")).toBe("true");
+    expect(panel?.querySelector('[data-testid="editor-toolbar-orientation-landscape"]')?.getAttribute("aria-pressed")).toBe("false");
 
     dispose();
   });

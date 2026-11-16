@@ -358,6 +358,7 @@ export const en = {
   "section.marginValue": "{0} cm",
   "section.marginApply": "Apply",
   "number.decimalSeparator": ".",
+  "section.breaksHeading": "Section breaks",
   "section.secNext": "Next Page",
   "section.secNextTooltip": "Insert Section Break (Next Page)",
   "section.secCont": "Continuous",

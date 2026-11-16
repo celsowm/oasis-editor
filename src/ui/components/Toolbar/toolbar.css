@@ -1826,34 +1826,6 @@
   width: min(248px, calc(100vw - 16px));
 }
 
-.oasis-editor-section-panel-section {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
-  padding-bottom: 8px;
-}
-
-.oasis-editor-section-panel-section:last-child {
-  padding-bottom: 0;
-}
-
-.oasis-editor-section-option {
-  flex-direction: column;
-  min-width: 0 !important;
-  min-height: 56px;
-  padding: 7px 5px;
-  gap: 4px;
-  font-size: 11px;
-  line-height: 13px;
-}
-
-.oasis-editor-section-option > span {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .oasis-editor-toolbar-table-panel {
   width: min(280px, calc(100vw - 16px));
 }
@@ -3905,4 +3877,16 @@
 }
 .oasis-editor-command-menu-field:has(input:disabled) .oasis-editor-tool-color {
   opacity: 1;
+}
+
+.oasis-editor-command-menu-heading {
+  padding: 5px 8px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: start;
+  color: var(--oasis-text-muted);
+}
+.oasis-editor-command-menu .oasis-editor-section-action[aria-pressed="true"] {
+  background: var(--oasis-accent-soft);
+  border-color: var(--oasis-accent);
 }

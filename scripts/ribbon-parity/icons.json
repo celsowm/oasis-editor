@@ -47,11 +47,13 @@
     "pageFooter",
     "pageHeader",
     "pageHeaderFooter",
+    "pageLandscape",
     "pageMargins",
     "pageNumber",
     "pageNumberBottom",
     "pageNumberTop",
     "pageOrientation",
+    "pagePortrait",
     "pageSize",
     "paragraphBorders",
     "paragraphKeepWithNext",
@@ -70,6 +72,8 @@
     "reviewRejectAll",
     "reviewTrackChanges",
     "sectionBreak",
+    "sectionBreakContinuous",
+    "sectionBreakNext",
     "shading",
     "sortAscending",
     "sortDescending",
@@ -191,38 +195,38 @@
     },
     {
       "file": "src/ui/components/Toolbar/groups/SectionGroup.tsx",
-      "line": 15,
+      "line": 17,
       "role": "icon",
       "name": "pageOrientation",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/groups/SectionGroup.tsx",
-      "line": 24,
+      "line": 28,
       "role": "icon",
-      "name": "rectangle-vertical",
-      "origin": "lucide"
+      "name": "pagePortrait",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/groups/SectionGroup.tsx",
-      "line": 38,
+      "line": 44,
       "role": "icon",
-      "name": "rectangle-horizontal",
-      "origin": "lucide"
+      "name": "pageLandscape",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/groups/SectionGroup.tsx",
-      "line": 55,
+      "line": 64,
       "role": "icon",
-      "name": "scissors",
-      "origin": "lucide"
+      "name": "sectionBreakNext",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/groups/SectionGroup.tsx",
-      "line": 63,
+      "line": 73,
       "role": "icon",
-      "name": "scissors-line-dashed",
-      "origin": "lucide"
+      "name": "sectionBreakContinuous",
+      "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/LineSpacingButton.tsx",

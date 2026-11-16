@@ -235,3 +235,7 @@ The 12e5100 browser matrices and deployment passed, but a real Safari screenshot
 ### Layout paragraph menu visual follow-up
 
 Real Safari screenshot showed anonymous page-break/keep-next icons and a centered color control with an abbreviated label. Replace the loose icon grid with reusable labelled command-menu rows, section separation, a visible shading swatch and explicit pressed state for pagination toggles. Add original paragraph-flow/border icons, use existing localized labels and retain command IDs/read-only behavior. The existing context-unit browser regression now verifies four named rows, aligned icons and labels, minimum row height and no overlap. Pending CI and real Safari review.
+
+### Page setup menu
+
+Apply the reusable labelled command-menu rows to SectionGroup. Separate page orientation from section breaks, use four document-specific SVG vectors, retain the active orientation with an explicit pressed state and apply existing command availability to all actions. Remove obsolete two-column tile styling that could truncate labels. Unit and browser checks cover names, icons, row geometry and selection. Pending visual and CI confirmation.

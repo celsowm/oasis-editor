@@ -1387,7 +1387,46 @@ const ParagraphBordersIcon: CustomIconRenderer = () => (
   </SvgIcon>
 );
 
+/** Page setup: a page's proportions identify orientation, not a bare rectangle. */
+function PageOrientationChoice(props: { landscape?: boolean }): JSX.Element {
+  return (
+    <SvgIcon stroke="currentColor" stroke-width={1.7}
+      stroke-linecap="round" stroke-linejoin="round">
+      <Show when={props.landscape} fallback={
+        <><rect x="5.5" y="2.5" width="13" height="19" rx="1" />
+          <path d="M8.5 7h7M8.5 10.5h7M8.5 14h7M8.5 17.5H13"
+            stroke="var(--oasis-accent, #1a73e8)" /></>
+      }>
+        <rect x="2.5" y="5.5" width="19" height="13" rx="1" />
+        <path d="M6 9h12M6 12h12M6 15h8"
+          stroke="var(--oasis-accent, #1a73e8)" />
+      </Show>
+    </SvgIcon>
+  );
+}
+const PagePortraitIcon: CustomIconRenderer = () => <PageOrientationChoice />;
+const PageLandscapeIcon: CustomIconRenderer = () => <PageOrientationChoice landscape />;
+const SectionBreakContinuousIcon: CustomIconRenderer = () => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7}
+    stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4.5" y="2.5" width="15" height="19" rx="1" />
+    <path d="M8 6h8M8 9h6M8 15h8M8 18h6" />
+    <path d="M6.8 11.5h10.4M6.8 13h10.4" stroke="var(--oasis-accent, #1a73e8)" stroke-width="1.2" stroke-dasharray="1.8 1.4" />
+  </SvgIcon>
+);
+const SectionBreakNextIcon: CustomIconRenderer = () => (
+  <SvgIcon stroke="currentColor" stroke-width={1.7}
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 9V3h11v6H5ZM8 15h11v6H8zM8 6h5M11 18h5" />
+    <path d="M4 11.5h16M4 13h16" stroke="var(--oasis-accent, #1a73e8)" stroke-width="1.2" stroke-dasharray="2 1.5" />
+  </SvgIcon>
+);
+
 const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
+  pagePortrait: PagePortraitIcon,
+  pageLandscape: PageLandscapeIcon,
+  sectionBreakNext: SectionBreakNextIcon,
+  sectionBreakContinuous: SectionBreakContinuousIcon,
   paragraphPageBreakBefore: ParagraphPageBreakBeforeIcon,
   paragraphKeepWithNext: ParagraphKeepWithNextIcon,
   paragraphBorders: ParagraphBordersIcon,

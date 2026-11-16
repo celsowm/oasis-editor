@@ -118,6 +118,26 @@ export async function verifySectionUnits(page, ctx) {
     }));
   assert.equal(unitGeometry.width, 1440, "Unit capture host width mismatch");
   assert.equal(unitGeometry.dpr, 1, "Unit capture DPR mismatch");
+  await page.getByTestId("editor-toolbar-section-dropdown").click();
+  const setup = page.locator(".oasis-editor-section-panel:visible");
+  const options = await setup.evaluate(menu => [...menu.querySelectorAll(".oasis-editor-section-action")].map(row => {
+    const bounds = row.getBoundingClientRect();
+    const icon = row.querySelector("svg").getBoundingClientRect();
+    const label = row.querySelector(".oasis-editor-tool-button-label");
+    return { x: icon.x, right: bounds.right, height: bounds.height, y: bounds.y, bottom: bounds.bottom,
+      text: label.textContent.trim(), labelX: label.getBoundingClientRect().x,
+      labelRight: label.getBoundingClientRect().right, pressed: row.getAttribute("aria-pressed") };
+  }));
+  assert.equal(options.length, 4);
+  for (const [index, option] of options.entries()) {
+    assert.ok(option.text && option.height >= 34);
+    assert.ok(Math.abs(option.x-options[0].x)<=1 && Math.abs(option.labelX-options[0].labelX)<=1, "Page setup menu columns are misaligned");
+    assert.ok(option.labelRight<=option.right+1, "Page setup option clipped");
+    if(index) assert.ok(option.y>=options[index-1].bottom-1, "Page setup options overlap");
+  }
+  assert.equal(options.filter(option => option.pressed === "true").length, 1, "Exactly one orientation must be selected");
+  await setup.screenshot({ path: resolve(output, `${theme}-${locale}-page-setup-menu.png`) });
+  await page.keyboard.press("Escape");
   await page.getByTestId("editor-toolbar-metrics-dropdown").click();
   const paragraphMenu = page.locator(".oasis-editor-command-menu:visible");
   const rows = await paragraphMenu.evaluate(menu => {

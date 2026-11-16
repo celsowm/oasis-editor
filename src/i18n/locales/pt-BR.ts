@@ -358,6 +358,7 @@ export const ptBR = {
   "section.marginValue": "{0} cm",
   "section.marginApply": "Aplicar",
   "number.decimalSeparator": ",",
+  "section.breaksHeading": "Quebras de seção",
   "section.secNext": "Próxima Página",
   "section.secNextTooltip": "Inserir Quebra de Seção (Próxima Página)",
   "section.secCont": "Contínua",
