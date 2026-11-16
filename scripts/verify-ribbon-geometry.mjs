@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
 import { resolve } from "node:path";
-import { createSuite, loadFixture, waitForRibbonSettled, writeVerification } from "./lib/ribbon-suite.mjs";
+import { createSuite, loadFixture, writeVerification } from "./lib/ribbon-suite.mjs";
 import { readRibbonGeometry } from "./lib/ribbon-geometry.mjs";
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
 
@@ -30,8 +30,7 @@ try{
           await page.getByTestId(tab).click();
           for(const [step,width] of widths.entries()){
             await page.locator("#ribbon-reference-root").evaluate((el,w)=>{el.style.width=`${w}px`},width);
-            await waitForRibbonSettled(page);
-            const evidence=await readRibbonGeometry(page);
+            const evidence=await readRibbonGeometry(page, tab, width);
             coverage.add(tab);
             const record={sha,engine,theme,locale,fixture,tab,width,step,...evidence};
             if(!evidence.groups.length) record.failures.push({rule:"empty-tab"});

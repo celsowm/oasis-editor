@@ -80,7 +80,7 @@ export async function waitForRibbonSettled(page) {
         if (!panel || panel.dataset.ribbonMeasured !== "true") return null;
         const sections = [...panel.children].filter((el) => el.hasAttribute("data-ribbon-group"));
         if (!sections.length || sections.some((el) =>
-          ["ribbonWidthFull", "ribbonWidthCompact", "ribbonWidthCollapsed"].some(key => !(Number(el.dataset[key]) > 0))
+          ["ribbonWidthFull", "ribbonWidthCompact", "ribbonWidthCollapsed", "ribbonWidthAllocated"].some(key => !(Number(el.dataset[key]) > 0))
         )) return null;
         return JSON.stringify([
           panel.clientWidth, panel.scrollWidth,

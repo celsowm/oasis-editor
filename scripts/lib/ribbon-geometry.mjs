@@ -1,8 +1,39 @@
 /** Geometry evidence from the active ribbon, never from inert measurement copies. */
-export async function readRibbonGeometry(page) {
-  return page.evaluate(() => {
-    const panel = document.querySelector('[data-testid="editor-ribbon-panel"]');
-    if (!panel) throw new Error("Missing live ribbon panel");
+export async function readRibbonGeometry(page, expectedTab, expectedWidth) {
+  // Acquire the stable snapshot and measure the bounds in the very same
+  // browser evaluation. A separate waitForFunction followed by evaluate can
+  // race a tab/fixture transition between the two protocol calls.
+  return page.evaluate(async ({ expectedTab, expectedWidth }) => {
+    const snapshot = () => {
+      const panel = document.querySelector('[data-testid="editor-ribbon-panel"]');
+      const root = document.querySelector("#ribbon-reference-root");
+      if (!panel || panel.dataset.ribbonMeasured !== "true" ||
+          panel.getAttribute("aria-labelledby") !== expectedTab.replace("editor-ribbon-tab-", "oasis-editor-ribbon-tab-") ||
+          !root || Math.abs(root.getBoundingClientRect().width - expectedWidth) > 1) return null;
+      const sections = [...panel.children].filter(el => el.hasAttribute("data-ribbon-group"));
+      if (!sections.length || sections.some(el =>
+        ["ribbonWidthFull", "ribbonWidthCompact", "ribbonWidthCollapsed", "ribbonWidthAllocated"]
+          .some(key => !(Number(el.dataset[key]) > 0))
+      )) return null;
+      return { panel, signature: JSON.stringify([panel.clientWidth, panel.scrollWidth,
+        ...sections.map(el => [el.dataset.ribbonGroup, el.dataset.ribbonState,
+          el.dataset.ribbonWidthAllocated, el.dataset.ribbonWidthFull, el.dataset.ribbonWidthCompact,
+          el.dataset.ribbonWidthCollapsed, el.getBoundingClientRect().width])]) };
+    };
+    let previous = null;
+    let stable = 0;
+    const deadline = performance.now() + 10000;
+    let ready;
+    do {
+      await new Promise(requestAnimationFrame);
+      const next = snapshot();
+      stable = next && previous && next.panel === previous.panel &&
+        next.signature === previous.signature ? stable + 1 : 0;
+      previous = next;
+      if (next && stable >= 4) { ready = next; break; }
+    } while (performance.now() < deadline);
+    if (!ready) throw new Error("No stable measured ribbon snapshot: " + JSON.stringify({ expectedTab, expectedWidth, last: previous?.signature }));
+    const panel = ready.panel;
     const rect = (el) => {
       const r = el.getBoundingClientRect();
       return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom };
@@ -29,7 +60,7 @@ export async function readRibbonGeometry(page) {
       const state = group.dataset.ribbonState;
       const allocated = Number(group.dataset.ribbonWidthAllocated);
       if (!Number.isFinite(allocated) || Math.abs(Math.ceil(box.width)-allocated)>1)
-        issue(group, "allocation", { allocated, actual: box.width });
+        issue(group, "allocation", { allocated, actual: box.width, state, full: group.dataset.ribbonWidthFull, compact: group.dataset.ribbonWidthCompact, collapsed: group.dataset.ribbonWidthCollapsed });
       const caption = group.querySelector(":scope > .oasis-editor-ribbon-group-label");
       const launcher = group.querySelector(":scope > .oasis-editor-ribbon-group-launcher");
       const content = group.querySelector(":scope > .oasis-editor-ribbon-group-content > .oasis-editor-ribbon-group-rows");
@@ -137,5 +168,5 @@ export async function readRibbonGeometry(page) {
       groupEvidence.push({id:group.dataset.ribbonGroup,state,allocated,rect:box,caption:captionEvidence,rows,large,controls});
     }
     return { simplified,panel:rect(panel),groups:groupEvidence,failures };
-  });
+  }, { expectedTab, expectedWidth });
 }

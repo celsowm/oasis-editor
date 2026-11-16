@@ -51,40 +51,47 @@ export function RibbonPanel(props: RibbonPanelProps): JSX.Element {
   const groups = createMemo(() =>
     buildRibbonGroups(visibleItems(), props.activeTab(), props.api.t),
   );
-  // Measurements belong to a composition, not a group ID shared across tabs.
-  // A newly translated/reconfigured group never sees another context's widths.
-  const widths = createMemo(() =>
-    measurement()?.groups === groups() ? measurement()!.widths : {},
-  );
-  const hasMeasurements = createMemo(() =>
-    measurement()?.groups === groups() &&
-    groups().every(group => {
-      const width = widths()[group.id];
+  // Resolve each presentation and its evidence from a single snapshot.
+  // Reading a separate widths memo while changing tabs can expose the
+  // previous composition's readiness or an estimated allocation.
+  const layout = createMemo(() => {
+    const current = groups();
+    const measured = measurement();
+    const available = availableWidth();
+    const widths = measured?.groups === current ? measured.widths : {};
+    const ready = available !== null && current.every(group => {
+      const width = widths[group.id];
       return !!width && width.full > 0 && width.compact > 0 && width.collapsed > 0;
-    }),
-  );
-  const overflow = createMemo(
-    () =>
-      availableWidth() !== null &&
-      resolveResponsiveRibbonGroups(groups(), 0, widths()).reduce(
-        (sum, group) => sum + (group.measuredWidth ?? 0),
-        0,
-      ) > availableWidth()!,
-  );
-  const resolvedGroups = createMemo(() =>
-    resolveResponsiveRibbonGroups(
-      groups(),
-      availableWidth() === null
-        ? null
-        : Math.max(0, availableWidth()! - (overflow() ? 56 : 0)),
-      widths(),
-    ),
-  );
+    }) && measured?.groups === current;
+    const overflow = ready &&
+      resolveResponsiveRibbonGroups(current, 0, widths).reduce(
+        (sum, group) => sum + (group.measuredWidth ?? 0), 0,
+      ) > (available ?? 0);
+    const resolved = ready
+      ? resolveResponsiveRibbonGroups(
+          current, Math.max(0, (available ?? 0) - (overflow ? 56 : 0)), widths,
+        )
+      // Unmeasured groups render their intrinsic full layout for this frame,
+      // but do not advertise estimates as a committed allocation.
+      : current.map(group => ({ ...group, resizeState: "full" as const }));
+    return { ready, overflow, widths, byGroup: new Map(current.map((group, index) => [group, resolved[index]!])) };
+  });
+  const overflow = (): boolean => layout().overflow;
   const measure = (): void => {
     frame = undefined;
     const panel = panelRef;
     if (!panel || disposed) return;
     const current = groups();
+    // Never associate DOM from a retiring tab with the next composition.
+    const sections = Array.from(panel.children).filter(
+      (el): el is HTMLElement => el instanceof HTMLElement && !!el.dataset.ribbonGroup,
+    );
+    if (sections.length !== current.length ||
+        sections.some((el, index) => el.dataset.ribbonGroup !== current[index]?.id) ||
+        panel.id !== `oasis-editor-ribbon-panel-${props.activeTab()}`) {
+      scheduleMeasure();
+      return;
+    }
     const next = measureRibbonGroups(panel, current);
     const previous = measurement();
     const style = getComputedStyle(panel);
@@ -162,7 +169,7 @@ export function RibbonPanel(props: RibbonPanelProps): JSX.Element {
         classList={{ "oasis-editor-ribbon-panel-overflow": overflow() }}
         tabIndex={overflow() ? 0 : undefined}
         data-ribbon-overflow={overflow()}
-        data-ribbon-measured={hasMeasurements() ? "true" : "false"}
+        data-ribbon-measured={layout().ready ? "true" : "false"}
         role="tabpanel"
         id={`oasis-editor-ribbon-panel-${props.activeTab()}`}
         aria-labelledby={`oasis-editor-ribbon-tab-${props.activeTab()}`}
@@ -171,11 +178,9 @@ export function RibbonPanel(props: RibbonPanelProps): JSX.Element {
         <For each={groups()}>
           {(group): JSX.Element => (
             <RibbonGroup
-              group={resolvedGroups().find(
-                (candidate) => candidate.id === group.id,
-              ) ?? { ...group, resizeState: "full" }}
+              group={layout().byGroup.get(group) ?? { ...group, resizeState: "full" }}
               api={props.api}
-              measurements={widths()[group.id]}
+              measurements={layout().byGroup.has(group) && layout().ready ? layout().widths[group.id] : undefined}
             />
           )}
         </For>
