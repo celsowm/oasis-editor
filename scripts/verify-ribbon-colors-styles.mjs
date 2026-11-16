@@ -17,10 +17,21 @@ const modes = [
 async function control(page, id, group = "font") {
   const result = page.locator(`[data-testid="editor-toolbar-${id}"]:visible`);
   if (!(await result.isVisible())) {
+    const trigger = page.getByTestId(`editor-ribbon-group-${group}`);
+    // Revoking command availability can close a child popover and restore
+    // focus asynchronously. Do not blindly toggle the collapsed group:
+    // if it is already open, a click would hide the requested control.
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
-    await page.getByTestId(`editor-ribbon-group-${group}`).click();
+    if (!(await result.isVisible())) {
+      await expect(trigger).toBeVisible();
+      if ((await trigger.getAttribute("aria-expanded")) !== "true") {
+        await trigger.click();
+      }
+      await expect(trigger).toHaveAttribute("aria-expanded", "true");
+    }
   }
+  await expect(result).toBeVisible();
   return result;
 }
 async function seed(page) {
