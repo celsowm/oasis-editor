@@ -195,3 +195,7 @@ Added RibbonGroupGrid to the neutral contribution contract and plugin adapter, w
 ### Initial global geometry auditor
 
 Added shared geometry reader and a dedicated three-engine workflow. It enumerates real visible tabs, explicitly requires the eight standard tabs and all three table/image contextual tabs, evaluates real control bounds, caption and launcher intersections, allocations, row clipping/overlap, large bands, active style previews, and duplicate action identifiers. Records all failures and screenshots across themes/locales and a host-width cycle. This is the first auditor increment, not full acceptance: simplified/zoom/multi-editor/plugin and reachable-command/optical/performance cases still need expansion; CI workflow is independent until the initial baseline is understood and green. No default deployment gate was weakened.
+
+### First CI geometry feedback
+
+Commit 4495727 passed the previous failing reference-mode-switch scenario (the deployment job proceeded into contextual browser tests). The contextual chevron guard then reported Paste offset 7 px rather than the established 8 px. Account for the split wrapper's 1 px border in its icon and bottom track geometry; retain the existing 8 px assertion. New CI still required.

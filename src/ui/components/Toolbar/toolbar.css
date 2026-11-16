@@ -159,6 +159,7 @@
   --oasis-ribbon-action-label: 22px;
   --oasis-ribbon-action-top: 3px;
   --oasis-ribbon-action-bottom: 2px;
+  --oasis-ribbon-split-border: 1px;
   --oasis-ribbon-inline-icon: 18px;
   --oasis-ribbon-control-radius: 3px;
   --oasis-ribbon-stack-row-height: 20px;
@@ -593,7 +594,9 @@
 }
 .oasis-editor-toolbar-view-ribbon .oasis-editor-color-split-ribbon-large {
   display: grid;
-  grid-template-rows: calc(var(--oasis-ribbon-action-icon, 24px) + var(--oasis-ribbon-action-top, 3px)) minmax(0, 1fr);
+  /* The split wrapper owns a border: subtract it from the shared bands. */
+  grid-template-rows: calc(var(--oasis-ribbon-action-icon, 24px) + var(--oasis-ribbon-action-top, 3px) - var(--oasis-ribbon-split-border, 1px)) minmax(0, 1fr);
+  border-width: var(--oasis-ribbon-split-border, 1px);
   min-width: 64px;
   max-width: 96px;
   min-height: 63px;
@@ -603,9 +606,9 @@
   .oasis-editor-color-split-ribbon-large
   .oasis-editor-color-split-main {
   width: 100%;
-  height: calc(var(--oasis-ribbon-action-icon, 24px) + var(--oasis-ribbon-action-top, 3px));
+  height: calc(var(--oasis-ribbon-action-icon, 24px) + var(--oasis-ribbon-action-top, 3px) - var(--oasis-ribbon-split-border, 1px));
   min-height: 0;
-  padding: var(--oasis-ribbon-action-top, 3px) 0 0;
+  padding: calc(var(--oasis-ribbon-action-top, 3px) - var(--oasis-ribbon-split-border, 1px)) 0 0;
   box-sizing: border-box;
 }
 .oasis-editor-toolbar-view-ribbon
@@ -649,7 +652,7 @@
   width: 100%;
   height: auto;
   min-height: 0;
-  padding: 0 3px var(--oasis-ribbon-action-bottom, 2px);
+  padding: 0 3px calc(var(--oasis-ribbon-action-bottom, 2px) - var(--oasis-ribbon-split-border, 1px));
   border: 0;
   box-sizing: border-box;
 }
