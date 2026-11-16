@@ -12,6 +12,7 @@ import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
 import {
   createSuite,
   openGroup,
+  waitForRibbonSettled,
   loadFixture,
   selectRangeInParagraph,
   placeCaretInParagraph,
@@ -228,6 +229,14 @@ try {
     );
     await page.evaluate(() =>
       window.ribbonReference.client.ui.setReadOnly(false),
+    );
+    await waitForRibbonSettled(page);
+    // Read-only can change the visible contribution graph. Confirm that
+    // the command is restored and resolve its current visible presentation.
+    assert.equal(
+      await page.evaluate(() => window.ribbonReference.client.commands.state("newComment").isEnabled),
+      true,
+      "Comment authoring must recover after leaving read-only",
     );
 
     // 9. Resolve, export and reimport: text, anchors, parent and state survive.

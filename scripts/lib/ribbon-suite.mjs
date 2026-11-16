@@ -70,39 +70,41 @@ export async function writeVerification(output, records) {
  * button but is really the responsive planner re-running.
  */
 export async function waitForRibbonSettled(page) {
-  // A previous measurement can still be present immediately after a host
-  // resize. Require matching measured/actual widths and a stable snapshot
-  // over several animation frames; never accept a transient collapsed state.
-  await page.waitForFunction(
-    async () => {
-      const snapshot = () => {
-        const panel = document.querySelector('[data-testid="editor-ribbon-panel"]');
-        if (!panel || panel.dataset.ribbonMeasured !== "true") return null;
-        const sections = [...panel.children].filter((el) => el.hasAttribute("data-ribbon-group"));
-        if (!sections.length || sections.some((el) =>
-          ["ribbonWidthFull", "ribbonWidthCompact", "ribbonWidthCollapsed", "ribbonWidthAllocated"].some(key => !(Number(el.dataset[key]) > 0))
-        )) return null;
-        return JSON.stringify([
-          panel.clientWidth, panel.scrollWidth,
-          ...sections.map((el) => [
-            el.dataset.ribbonGroup, el.dataset.ribbonState,
-            el.dataset.ribbonWidthFull, el.dataset.ribbonWidthCompact,
-            el.dataset.ribbonWidthCollapsed, el.dataset.ribbonWidthAllocated,
-            Math.round(el.getBoundingClientRect().width * 100) / 100,
-          ]),
-        ]);
-      };
-      const first = snapshot();
-      if (first === null) return false;
-      for (let i = 0; i < 4; i++) {
-        await new Promise(requestAnimationFrame);
-        if (snapshot() !== first) return false;
-      }
-      return true;
-    },
-    undefined,
-    { timeout: 10000 },
-  );
+  // Do not give waitForFunction an async predicate: a truthy Promise can
+  // satisfy its polling loop before the resolved boolean is examined.
+  // The complete frame loop runs inside one browser evaluation instead.
+  await page.evaluate(async () => {
+    const snapshot = () => {
+      const panel = document.querySelector('[data-testid="editor-ribbon-panel"]');
+      if (!panel || panel.dataset.ribbonMeasured !== "true") return null;
+      const sections = [...panel.children].filter(el => el.hasAttribute("data-ribbon-group"));
+      if (!sections.length || sections.some(el =>
+        ["ribbonWidthFull", "ribbonWidthCompact", "ribbonWidthCollapsed", "ribbonWidthAllocated"]
+          .some(key => !(Number(el.dataset[key]) > 0))
+      )) return null;
+      return { panel, signature: JSON.stringify([
+        panel.id, panel.clientWidth, panel.scrollWidth,
+        ...sections.map(el => [
+          el.dataset.ribbonGroup, el.dataset.ribbonState,
+          el.dataset.ribbonWidthFull, el.dataset.ribbonWidthCompact,
+          el.dataset.ribbonWidthCollapsed, el.dataset.ribbonWidthAllocated,
+          el.getBoundingClientRect().width,
+        ]),
+      ]) };
+    };
+    let previous = null;
+    let stable = 0;
+    const deadline = performance.now() + 10000;
+    do {
+      await new Promise(requestAnimationFrame);
+      const next = snapshot();
+      stable = next && previous && next.panel === previous.panel &&
+        next.signature === previous.signature ? stable + 1 : 0;
+      if (stable >= 4) return;
+      previous = next;
+    } while (performance.now() < deadline);
+    throw new Error("Ribbon did not settle: " + (previous?.signature ?? "no committed layout"));
+  });
 }
 
 /**
@@ -113,7 +115,7 @@ export async function waitForRibbonSettled(page) {
 export async function openGroup(page, group, testId) {
   await waitForRibbonSettled(page);
   const section = page.locator(`[data-testid="editor-ribbon-panel"] > [data-ribbon-group="${group}"]`);
-  const inline = section.locator(`.oasis-editor-ribbon-group-content [data-testid="${testId}"]`);
+  const inline = section.locator(`.oasis-editor-ribbon-group-content [data-testid="${testId}"]:visible`);
   const popup = page.locator(".oasis-editor-ribbon-collapsed-menu:visible");
   const visible = async (item) => {
     for (let index = 0; index < await item.count(); index++) {
@@ -132,7 +134,10 @@ export async function openGroup(page, group, testId) {
   const existing = await visible(popup.locator(`[data-testid="${testId}"]`));
   if (existing) return existing;
   await page.keyboard.press("Escape");
-  const trigger = section.getByTestId(`editor-ribbon-group-${group}`);
+  await waitForRibbonSettled(page);
+  const afterEscape = await visible(inline);
+  if (afterEscape) return afterEscape;
+  const trigger = section.locator(`[data-testid="editor-ribbon-group-${group}"]:visible`);
   await trigger.click();
   const target = popup.locator(`[data-testid="${testId}"]`);
   await target.waitFor({ state: "visible", timeout: 5000 });
