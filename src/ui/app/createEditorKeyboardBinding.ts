@@ -101,6 +101,8 @@ export function createEditorKeyboardBinding(deps: EditorKeyboardBindingDeps): {
     commandsController,
     pendingCaretTextStyle: styleController.pendingCaretTextStyle,
     autoTabIndentEnabled: getAutoTabIndentPreference,
+    isMacPlatform: () => typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform),
+    isCaretAtWrappedLineStart: navigation.isCaretAtWrappedLineStart,
     selectedImageRun,
     setForcePlainTextPaste,
     moveSelectionByWord: navigation.moveSelectionByWord,

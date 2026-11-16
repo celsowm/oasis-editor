@@ -27,6 +27,8 @@ export interface EditorKeyboardDeps
   isReadOnly: () => boolean;
   pendingCaretTextStyle?: () => EditorTextStyle | undefined;
   autoTabIndentEnabled?: () => boolean;
+  isMacPlatform?: () => boolean;
+  isCaretAtWrappedLineStart?: () => boolean;
   commandsController: {
     promptForImageAlt: () => void;
     promptForLink: () => void;

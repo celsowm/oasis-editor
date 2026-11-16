@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { createEditorKeyboardController } from "@/app/controllers/useEditorKeyboard.js";
+import { isWrappedLineStart } from "@/app/controllers/useEditorNavigation.js";
 import { resolveTabAction, type TabContext } from "@/app/controllers/handleDocumentTab.js";
 import type { EditorKeyboardDeps } from "@/app/controllers/EditorKeyboardDeps.js";
 import { createEditorStateFromTexts, createEditorDocument, createEditorParagraphFromRuns, createEditorStateFromDocument } from "@/core/editorState.js";
 import { toggleParagraphList } from "@/core/commands/list.js";
 import { getParagraphs, getParagraphText, paragraphOffsetToPosition, positionToParagraphOffset, type EditorState } from "@/core/model.js";
 
-function harness(text: string, offset: number, opts: { list?: boolean; readOnly?: boolean; pendingBold?: boolean; autoIndent?: boolean; defaultTab?: number; rich?: boolean } = {}) {
+function harness(text: string, offset: number, opts: { list?: boolean; readOnly?: boolean; pendingBold?: boolean; autoIndent?: boolean; defaultTab?: number; rich?: boolean; wrappedStart?: boolean } = {}) {
   let state = createEditorStateFromTexts([text], { offset });
   if (opts.rich) {
     const p = createEditorParagraphFromRuns([{text:text.slice(0,4)}, {text:text.slice(4),styles:{bold:true}}]);
@@ -21,6 +22,7 @@ function harness(text: string, offset: number, opts: { list?: boolean; readOnly?
     isReadOnly: () => Boolean(opts.readOnly),
     pendingCaretTextStyle: () => opts.pendingBold ? { bold: true } : undefined,
     autoTabIndentEnabled: () => opts.autoIndent ?? true,
+    isCaretAtWrappedLineStart: () => opts.wrappedStart ?? false,
     focusInput,
     clearPreferredColumn: vi.fn(),
     resetTransactionGrouping: vi.fn(),
@@ -59,6 +61,19 @@ describe("document Tab typing", () => {
     expect(h.text()).toBe("ab\tcd");
     expect(e.preventDefault).toHaveBeenCalledOnce();
     expect(h.focusInput).toHaveBeenCalledOnce();
+  });
+  it("indents the paragraph when Tab is at a confirmed wrapped-line start", () => {
+    const h = harness("first second",6,{wrappedStart:true});
+    h.press();
+    expect(h.text()).toBe("first second");
+    expect(h.paragraph().style?.indentLeft).toBe(48);
+    expect(h.paragraph().style?.indentFirstLine??0).toBe(0);
+    expect(positionToParagraphOffset(h.paragraph(),h.state().selection.focus)).toBe(6);
+  });
+  it("keeps a literal tab at a wrapped-line start when AutoFormat is disabled", () => {
+    const h = harness("first second",6,{wrappedStart:true,autoIndent:false});
+    h.press();
+    expect(h.text()).toBe("first \tsecond");
   });
   it("inserts a tab at an empty paragraph", () => {
     const h = harness("", 0);
@@ -196,5 +211,23 @@ describe("pure Tab routing", () => {
     expect(resolveTabAction({ ...plain, inTable: true, ctrl: true })).toBe("insertLiteralTab");
     expect(resolveTabAction({ ...plain, ctrl: true })).toBe("passThrough");
     expect(resolveTabAction({ ...plain, meta: true })).toBe("passThrough");
+  });
+});
+
+
+describe("visual-line Tab routing",()=>{
+  const lines=[{startOffset:0,endOffset:6,top:10,height:20},{startOffset:6,endOffset:12,top:30,height:20}];
+  it("distinguishes the previous line end from the next line start",()=>{
+    expect(isWrappedLineStart(lines,6,15)).toBe(false);
+    expect(isWrappedLineStart(lines,6,35)).toBe(true);
+    expect(isWrappedLineStart(lines,7,35)).toBe(false);
+    expect(isWrappedLineStart(lines,6,80)).toBe(false);
+  });
+  it("routes the macOS Option+Tab chord only in a cell",()=>{
+    const mac:TabContext={inTable:true,shift:false,ctrl:false,meta:false,alt:true,wholeParagraphs:false,atListStart:false,isMac:true};
+    expect(resolveTabAction(mac)).toBe("insertLiteralTab");
+    expect(resolveTabAction({...mac,inTable:false})).toBe("passThrough");
+    expect(resolveTabAction({...mac,isMac:false})).toBe("passThrough");
+    expect(resolveTabAction({...mac,shift:true})).toBe("passThrough");
   });
 });

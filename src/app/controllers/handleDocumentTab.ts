@@ -29,21 +29,23 @@ export interface TabContext {
   wholeParagraphs: boolean;
   atListStart: boolean;
   autoIndentAtStart?: boolean;
+  atWrappedLineStart?: boolean;
+  isMac?: boolean;
   reverseFirstLineIndent?: boolean;
 }
 
 /** Pure routing policy: table context and host modifiers take precedence. */
 export function resolveTabAction(context: TabContext): TabAction {
   if (context.alt || context.ctrl || context.meta) {
-    return context.inTable && context.ctrl && !context.alt && !context.meta && !context.shift
-      ? "insertLiteralTab"
-      : "passThrough";
+    const literalChord = !context.meta && !context.shift &&
+      ((context.ctrl && !context.alt) || (context.isMac && context.alt && !context.ctrl));
+    return context.inTable && literalChord ? "insertLiteralTab" : "passThrough";
   }
   if (context.inTable) return "navigateCell";
   if (context.reverseFirstLineIndent || (!context.shift && context.autoIndentAtStart)) {
     return "changeFirstLineIndent";
   }
-  if (context.shift || context.wholeParagraphs || context.atListStart) {
+  if (context.shift || context.wholeParagraphs || context.atListStart || context.atWrappedLineStart) {
     return "changeParagraphIndent";
   }
   return "insertLiteralTab";
@@ -77,6 +79,10 @@ export function handleDocumentTab(
     ctrl: event.ctrlKey,
     meta: event.metaKey,
     alt: event.altKey,
+    isMac: deps.isMacPlatform?.() ?? false,
+    atWrappedLineStart: autoFormat && range.isCollapsed && range.startParagraphOffset > 0 &&
+      !inTable && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey &&
+      (deps.isCaretAtWrappedLineStart?.() ?? false),
     wholeParagraphs,
     atListStart: Boolean(paragraph.list) && range.isCollapsed && range.startParagraphOffset === 0,
     autoIndentAtStart: autoFormat && atStart && getParagraphText(paragraph).length > 0,

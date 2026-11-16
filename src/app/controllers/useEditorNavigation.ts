@@ -72,6 +72,22 @@ function getBoundaryParagraphInCell(
     : paragraphs[paragraphs.length - 1];
 }
 
+/**
+ * At shared wrap offsets, the rendered caret's y selects the line.
+ * If geometry is stale or ambiguous, preserve literal tab typing.
+ */
+export function isWrappedLineStart(
+  lines: readonly {startOffset:number;endOffset:number;top:number;height:number}[],
+  offset: number,
+  caretY: number,
+): boolean {
+  if (offset <= 0 || !Number.isFinite(caretY)) return false;
+  const matches = lines.filter(line => line.startOffset <= offset &&
+    line.endOffset >= offset && caretY >= line.top - 0.5 &&
+    caretY < line.top + line.height - 0.5);
+  return matches.length === 1 && matches[0]!.startOffset === offset;
+}
+
 export function createEditorNavigation(
   deps: UseEditorNavigationProps,
 ): ReturnType<typeof createEditorNavigationImpl> {
@@ -396,7 +412,27 @@ function createEditorNavigationImpl(deps: UseEditorNavigationProps) {
     return true;
   };
 
+  const isCaretAtWrappedLineStart = (): boolean => {
+    const state = deps.state();
+    if (!isSelectionCollapsed(state.selection)) return false;
+    const surface = deps.surfaceRef();
+    const caret = deps.caretBox();
+    if (!surface || !caret.visible) return false;
+    const p = getParagraphs(state).find(p => p.id === state.selection.focus.paragraphId);
+    if (!p) return false;
+    const offset = positionToParagraphOffset(p, state.selection.focus);
+    if (offset <= 0) return false;
+    const snapshot = deps.canvasSnapshotProvider.getCanvasLayoutSnapshot({
+      surface, state, documentLayout: deps.documentLayout(), zoomFactor: deps.zoomFactor?.(),
+    });
+    if (!snapshot) return false;
+    const entries = getParagraphEntries(snapshot,p.id);
+    return isWrappedLineStart(entries.flatMap(entry => entry.lines), offset,
+      caret.top + snapshot.surfaceRect.top + Math.min(1, caret.height / 2));
+  };
+
   return {
+    isCaretAtWrappedLineStart,
     moveSelectionToParagraphBoundary,
     moveSelectionToDocumentBoundary,
     moveSelectionByWord,
