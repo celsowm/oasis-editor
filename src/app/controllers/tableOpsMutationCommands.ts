@@ -359,9 +359,14 @@ export const applyTableAwareParagraphEdit = (
     },
   };
   const tempResult = edit(tempState);
-  if (tempResult === tempState) return current;
   const replacementBlocks =
     getDocumentSectionsCanonical(tempResult.document)[0]?.blocks ?? [];
+  // This port also supports callbacks that mutate their private projection
+  // in place. Identity alone cannot distinguish them from a true no-op.
+  // Restrict the structural comparison to that uncommon return path.
+  if (tempResult === tempState &&
+      JSON.stringify(replacementBlocks) === JSON.stringify(siblingBlocks.slice(range.start, range.end)) &&
+      JSON.stringify(tempResult.selection) === JSON.stringify(current.selection)) return current;
   siblingBlocks.splice(range.start, range.end - range.start, ...replacementBlocks);
 
   const nextState = updateBlocksInCurrentSection(current, targetBlocks, zone);
