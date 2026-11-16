@@ -1,6 +1,6 @@
 # Ribbon UI Design System Refactor
 
-Status: proposed; implementation and acceptance evidence pending.
+Status: P1 global geometry foundation in progress; acceptance evidence pending.
 Baseline inspected: bd2210f93573fae2d3fe3b51541c6365a8dc778c.
 Scope: all classic and simplified ribbon tabs, contextual tabs, plugin contributions and collapsed/nested surfaces. Preserve the document command semantics. Internal presentation contracts may be redesigned without compatibility shims where justified; document any public contribution API changes and update adapters/examples atomically.
 
@@ -178,3 +178,12 @@ Each stage must keep a reviewable diff and run appropriate checks before advanci
 - [ ] Docs, parity data, changelog and release/deploy evidence updated.
 
 Decisions: preserve established command semantics and reduction invariants; reuse existing token values unless measured evidence warrants change; prefer declarative composition over CSS selectors keyed by group IDs. No code implementation or validation result is claimed by this document.
+
+## Implementation ledger — first foundation commit
+
+- Global caption track now stretches and centers, with a reserved launcher slot and a launcher constrained to the caption height. Removed redundant Review/Layout caption overrides.
+- Shared action icon, label and chevron tracks apply to classic large buttons and menus; the split-button bands consume the same tokens. Removed Review's conflicting large-button stack and Layout's separate vertical tracks. Simplified rules remain scoped.
+- Normal row/body/caption/icon/radius tokens introduced or reused; gallery active ring is lighter and expand background neutral without altering slot allocation.
+- Inert measurement copies now expose the state they are actually measuring and not stale allocated-width metadata.
+- Previous Pages gate failed with a Solid cleanNode exception while switching ribbon to compact. Removed Menu's local signal write during disposal (plausible cause, not yet verified); portal cleanup should follow ownership. Preserve the existing mode-switch test, do not claim the failure fixed until CI passes.
+- P0 baseline browser capture, full P1 measurement invariants, declarative group composition, remaining primitive migration, cross-engine visual evidence and release gates remain outstanding.

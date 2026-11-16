@@ -2,7 +2,6 @@ import {
   Show,
   createSignal,
   createEffect,
-  onCleanup,
   type JSX,
 } from "solid-js";
 import { Popover } from "./Popover.js";
@@ -56,11 +55,8 @@ export function Menu(props: MenuProps): JSX.Element {
   createEffect((): void => {
     if (props.open === false) setOpen(false);
   });
-  // Uncontrolled menus close their panel on unmount so a collapsed Ribbon
-  // group that expands again doesn't leave a dangling portalled panel.
-  onCleanup((): void => {
-    if (props.open === undefined) setOpen(false);
-  });
+  // The local signal and Portal are disposed with this owner. Do not
+  // write reactive state while Solid is recursively cleaning its graph.
   const updateOpen = (nextOpen: boolean): void => {
     setOpen(nextOpen);
     props.onOpenChange?.(nextOpen);

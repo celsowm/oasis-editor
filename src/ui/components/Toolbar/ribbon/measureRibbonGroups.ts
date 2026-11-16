@@ -38,6 +38,8 @@ export function measureRibbonGroups(
         node.removeAttribute("id");
         node.removeAttribute("data-testid");
       }
+      copy.dataset.ribbonState = state;
+      copy.removeAttribute("data-ribbon-width-allocated");
       copy.classList.toggle(
         "oasis-editor-ribbon-group-compact",
         state === "compact",

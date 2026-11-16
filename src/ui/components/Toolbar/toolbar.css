@@ -149,9 +149,18 @@
 }
 
 .oasis-editor-toolbar-view-ribbon {
-  --oasis-ribbon-body-height: 63px;
+  /* Shared intrinsic geometry. The classic body is two normal rows + gap. */
   --oasis-ribbon-row-height: 30px;
   --oasis-ribbon-row-gap: 3px;
+  --oasis-ribbon-body-height: calc(2 * var(--oasis-ribbon-row-height) + var(--oasis-ribbon-row-gap));
+  --oasis-ribbon-caption-height: 12px;
+  --oasis-ribbon-launcher-width: 20px;
+  --oasis-ribbon-action-icon: 24px;
+  --oasis-ribbon-action-label: 22px;
+  --oasis-ribbon-action-top: 3px;
+  --oasis-ribbon-action-bottom: 2px;
+  --oasis-ribbon-inline-icon: 18px;
+  --oasis-ribbon-control-radius: 3px;
   --oasis-ribbon-stack-row-height: 20px;
   --oasis-ribbon-stack-row-gap: 1px;
   --oasis-ribbon-small-icon: 16px;
@@ -213,7 +222,7 @@
 .oasis-editor-ribbon-group {
   display: grid;
   flex-shrink: 0;
-  grid-template-rows: var(--oasis-ribbon-body-height) 12px;
+  grid-template-rows: var(--oasis-ribbon-body-height) var(--oasis-ribbon-caption-height, 12px);
   align-items: stretch;
   padding: 0 9px;
   box-sizing: border-box;
@@ -280,10 +289,10 @@
 
 .oasis-editor-ribbon-group-launcher {
   position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 20px;
-  height: 20px;
+  bottom: 0;
+  inset-inline-end: 2px;
+  width: var(--oasis-ribbon-launcher-width, 20px);
+  height: var(--oasis-ribbon-caption-height, 12px);
   border: none;
   background: transparent;
   color: var(--oasis-text-muted);
@@ -328,8 +337,8 @@
   display: grid;
   grid-template-rows: repeat(2, var(--oasis-ribbon-row-height));
   align-content: start;
-  gap: 3px;
-  min-height: 63px;
+  gap: var(--oasis-ribbon-row-gap);
+  min-height: var(--oasis-ribbon-body-height);
 }
 
 .oasis-editor-ribbon-large-items {
@@ -347,22 +356,31 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  height: 30px;
-  min-height: 30px;
-  max-height: 30px;
+  height: var(--oasis-ribbon-row-height, 30px);
+  min-height: var(--oasis-ribbon-row-height, 30px);
+  max-height: var(--oasis-ribbon-row-height, 30px);
   overflow: visible;
 }
 
 .oasis-editor-ribbon-group-label {
+  /* Center the caption track itself, not merely its text. */
+  justify-self: stretch;
+  box-sizing: border-box;
   min-width: 0;
-  max-width: 144px;
+  max-width: none;
   overflow: hidden;
   color: var(--oasis-ribbon-muted, #6f6f6f);
   font-size: 10px;
-  line-height: 12px;
+  line-height: var(--oasis-ribbon-caption-height, 12px);
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Reserve a launcher slot only in groups that actually expose it. */
+.oasis-editor-ribbon-group:has(> .oasis-editor-ribbon-group-launcher)
+  > .oasis-editor-ribbon-group-label {
+  margin-inline-end: var(--oasis-ribbon-launcher-width, 20px);
 }
 
 .oasis-editor-ribbon-group-compact .oasis-editor-ribbon-group-label {
@@ -462,15 +480,15 @@
 .oasis-editor-toolbar-view-ribbon .oasis-editor-tool-button,
 .oasis-editor-toolbar-view-ribbon .oasis-editor-tool-select,
 .oasis-editor-toolbar-view-ribbon .oasis-editor-color-split {
-  min-height: 30px;
-  height: 30px;
+  min-height: var(--oasis-ribbon-row-height);
+  height: var(--oasis-ribbon-row-height);
   box-sizing: border-box;
 }
 
 .oasis-editor-toolbar-view-ribbon .oasis-editor-tool-button {
-  min-width: 30px;
+  min-width: var(--oasis-ribbon-row-height);
   padding: 4px 7px;
-  border-radius: 3px;
+  border-radius: var(--oasis-ribbon-control-radius, 3px);
 }
 
 .oasis-editor-toolbar-view-ribbon
@@ -536,37 +554,46 @@
   margin-left: 0;
 }
 
-/* Large actions use the same icon/caption/chevron bands, including split actions. */
+/* Shared large-action bands, including icon-only triggers. A simple button
+ * reserves the chevron track rather than centering a shorter stack.
+ * The simplified shell retains its separate one-line layout. */
 .oasis-editor-toolbar-view-ribbon
-  .oasis-editor-tool-button-ribbon-large.oasis-editor-tool-button-dropdown-icon-only
-  > .oasis-editor-dropdown-chevron {
-  /* icon / empty caption slot / chevron: pin the chevron to row 3 so it
-   * anchors to the same 8px bottom rhythm as captioned large dropdowns */
-  grid-row: 3;
-}
-.oasis-editor-toolbar-view-ribbon
-  .oasis-editor-tool-button-ribbon-large.oasis-editor-tool-button-dropdown:has(
-    > .oasis-editor-dropdown-chevron
-  ),
-.oasis-editor-toolbar-view-ribbon
-  .oasis-editor-toolbar-item-ribbon-large
-  .oasis-editor-tool-button-dropdown:has(> .oasis-editor-dropdown-chevron),
-.oasis-editor-toolbar-view-ribbon
-  .oasis-editor-toolbar-item-ribbon-large
-  .oasis-editor-table-borders-trigger {
+  :is(.oasis-editor-tool-button-ribbon-large, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-table-borders-trigger):not(.oasis-editor-ribbon-simplified *) {
   display: grid;
-  grid-template-rows: 24px minmax(0, 1fr) var(
-      --oasis-dropdown-chevron-size,
-      12px
-    );
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: var(--oasis-ribbon-action-icon, 24px) var(--oasis-ribbon-action-label, 22px) var(--oasis-dropdown-chevron-size, 12px);
   justify-items: center;
   align-items: center;
+  align-content: start;
   gap: 0;
-  padding: 3px 4px 2px;
+  padding: var(--oasis-ribbon-action-top, 3px) 4px var(--oasis-ribbon-action-bottom, 2px);
+}
+.oasis-editor-toolbar-view-ribbon
+  :is(.oasis-editor-tool-button-ribbon-large, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-table-borders-trigger):not(.oasis-editor-ribbon-simplified *)
+  > svg:not(.oasis-editor-dropdown-chevron) {
+  grid-column: 1;
+  grid-row: 1;
+  width: var(--oasis-ribbon-action-icon, 24px);
+  height: var(--oasis-ribbon-action-icon, 24px);
+}
+.oasis-editor-toolbar-view-ribbon
+  :is(.oasis-editor-tool-button-ribbon-large, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-table-borders-trigger):not(.oasis-editor-ribbon-simplified *)
+  > :is(.oasis-editor-tool-button-label, .oasis-editor-ui-text) {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: start;
+  width: 100%;
+}
+.oasis-editor-toolbar-view-ribbon
+  :is(.oasis-editor-tool-button-ribbon-large, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-table-borders-trigger):not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-dropdown-chevron {
+  grid-column: 1;
+  grid-row: 3;
+  margin: 0;
 }
 .oasis-editor-toolbar-view-ribbon .oasis-editor-color-split-ribbon-large {
   display: grid;
-  grid-template-rows: 26px minmax(0, 1fr);
+  grid-template-rows: calc(var(--oasis-ribbon-action-icon, 24px) + var(--oasis-ribbon-action-top, 3px)) minmax(0, 1fr);
   min-width: 64px;
   max-width: 96px;
   min-height: 63px;
@@ -576,9 +603,9 @@
   .oasis-editor-color-split-ribbon-large
   .oasis-editor-color-split-main {
   width: 100%;
-  height: 26px;
+  height: calc(var(--oasis-ribbon-action-icon, 24px) + var(--oasis-ribbon-action-top, 3px));
   min-height: 0;
-  padding: 2px 0 0;
+  padding: var(--oasis-ribbon-action-top, 3px) 0 0;
   box-sizing: border-box;
 }
 .oasis-editor-toolbar-view-ribbon
@@ -616,13 +643,13 @@
   .oasis-editor-color-split-ribbon-large
   .oasis-editor-color-split-menu-button {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) var(--oasis-dropdown-chevron-size, 12px);
+  grid-template-rows: var(--oasis-ribbon-action-label, 22px) var(--oasis-dropdown-chevron-size, 12px);
   justify-items: center;
   align-items: center;
   width: 100%;
   height: auto;
   min-height: 0;
-  padding: 0 3px 1px;
+  padding: 0 3px var(--oasis-ribbon-action-bottom, 2px);
   border: 0;
   box-sizing: border-box;
 }
@@ -631,7 +658,8 @@
   .oasis-editor-color-split-menu-label {
   display: -webkit-box;
   width: 100%;
-  max-height: 22px;
+  max-height: var(--oasis-ribbon-action-label, 22px);
+  align-self: start;
   overflow: hidden;
   text-align: center;
   white-space: normal;
@@ -2725,7 +2753,8 @@
 }
 
 .oasis-editor-style-gallery-card-active {
-  border-color: var(--oasis-accent, #2563eb);
+  border-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--oasis-accent, #2563eb);
   background: var(--oasis-accent-soft, rgba(37, 99, 235, 0.06));
 }
 
@@ -2740,7 +2769,7 @@
   padding: 0;
   border: 0;
   border-left: 1px solid var(--oasis-ribbon-border, #9a9a9a);
-  background: var(--oasis-ribbon-hover, #ededed);
+  background: var(--oasis-ribbon-panel-bg, #ffffff);
   color: var(--oasis-ribbon-text, #333);
   cursor: pointer;
 }
@@ -3513,31 +3542,6 @@
 /* Shared alignment geometry for the classic Review ribbon and its popups.
  * Use stable layout attributes, not test IDs (measurement strips test IDs).
  * The simplified ribbon retains its existing one-line layout. */
-:where(.oasis-editor-ribbon-group:is([data-ribbon-group="tracking"], [data-ribbon-group="changes"], [data-ribbon-group="comments"]))
-  > .oasis-editor-ribbon-group-label {
-  justify-self: center;
-}
-
-[data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
-  > .oasis-editor-ribbon-large-items .oasis-editor-tool-button:not(.oasis-editor-tool-button-dropdown) {
-  display: grid;
-  grid-template-rows: 24px 22px;
-  align-content: center;
-  align-items: start;
-  justify-items: center;
-  gap: 2px;
-  padding: 4px 5px;
-}
-
-[data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
-  > .oasis-editor-ribbon-large-items .oasis-editor-tool-button:not(.oasis-editor-tool-button-dropdown)
-  > .oasis-editor-tool-button-label {
-  align-self: start;
-  max-width: 100%;
-  width: 100%;
-  line-height: 11px;
-}
-
 /* Grid columns are intrinsic, measured once across every row by subgrid.
  * This aligns icons despite translated labels having different lengths. */
 [data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
@@ -3602,12 +3606,6 @@
 
 /* Layout tab: keep the fields and page-setup controls on the same grid
  * in both live and measured groups. Do not target the Home paragraph group. */
-.oasis-editor-ribbon-group:has(> .oasis-editor-ribbon-group-content .oasis-editor-metric-group)
-  > .oasis-editor-ribbon-group-label,
-.oasis-editor-ribbon-group[data-ribbon-group="section"] > .oasis-editor-ribbon-group-label {
-  justify-self: center;
-}
-
 .oasis-editor-toolbar-view-ribbon .oasis-editor-metric-group-inline:not(.oasis-editor-ribbon-simplified *)
   .oasis-editor-tool-number {
   height: 26px;
@@ -3628,10 +3626,7 @@
   > .oasis-editor-tool-button-dropdown {
   width: 76px;
   min-width: 76px;
-  grid-template-rows: 24px 22px 12px;
-  padding: 2px 4px 3px;
-  align-content: center;
-  gap: 0;
+  /* Width is the page-setup variant; vertical tracks are shared. */
 }
 [data-ribbon-content-group="section"]:not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-ribbon-large-items
