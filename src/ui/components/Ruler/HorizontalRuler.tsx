@@ -312,6 +312,7 @@ export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
     cancelTabGesture?.();
     const key = selectionKey();
     const startX = event.clientX, startY = event.clientY;
+    const target = event.currentTarget as HTMLElement;
     let moved = false;
     setTabDrag({ stop, position: stop.position, remove: false });
 
@@ -329,6 +330,8 @@ export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
       window.removeEventListener("pointercancel", pointerCancel);
       window.removeEventListener("keydown", keydown);
       window.removeEventListener("blur", cancel);
+      target.removeEventListener("lostpointercapture", pointerCancel);
+      if (target.hasPointerCapture?.(event.pointerId)) target.releasePointerCapture(event.pointerId);
       setTabDrag(null);
       cancelTabGesture = undefined;
     };
@@ -350,6 +353,8 @@ export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
     window.addEventListener("pointercancel", pointerCancel);
     window.addEventListener("keydown", keydown);
     window.addEventListener("blur", cancel);
+    target.addEventListener("lostpointercapture", pointerCancel);
+    target.setPointerCapture?.(event.pointerId);
   };
   const markerKey = (stop: EditorTabStop, event: KeyboardEvent): void => {
     if (!canPlaceTabs()) return;
@@ -385,17 +390,21 @@ export function HorizontalRuler(props: HorizontalRulerProps): JSX.Element {
           : current,
       );
     };
-    const onUp = (): void => {
-      target.releasePointerCapture?.(event.pointerId);
+    const finish = (commit: boolean): void => {
       target.removeEventListener("pointermove", onMove);
       target.removeEventListener("pointerup", onUp);
-      target.removeEventListener("pointercancel", onUp);
-      commitDrag();
+      target.removeEventListener("pointercancel", onCancel);
+      target.removeEventListener("lostpointercapture", onCancel);
+      if (target.hasPointerCapture?.(event.pointerId)) target.releasePointerCapture(event.pointerId);
+      if (commit && !props.readOnly()) commitDrag();
       setDrag(null);
     };
+    const onUp = (): void => finish(true);
+    const onCancel = (): void => finish(false);
     target.addEventListener("pointermove", onMove);
     target.addEventListener("pointerup", onUp);
-    target.addEventListener("pointercancel", onUp);
+    target.addEventListener("pointercancel", onCancel);
+    target.addEventListener("lostpointercapture", onCancel);
   };
 
   const commitDrag = (): void => {

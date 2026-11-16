@@ -73,7 +73,12 @@ export function editParagraphTabStops(
   const styles = state.document.styles;
 
   const validPosition = (position: number): boolean => Number.isFinite(position) && Math.abs(position) <= MAX_TAB_POSITION;
-  const setStops = (change.set ?? []).filter(t => validPosition(t.position));
+  const validTypes = new Set(["left", "center", "right", "decimal", "bar", "clear"]);
+  const validLeaders = new Set(["none", "dot", "hyphen", "underscore", "heavy", "middleDot"]);
+  const validStop = (stop: EditorTabStop): boolean =>
+    !!stop && validPosition(stop.position) && validTypes.has(stop.type) &&
+    (stop.leader === undefined || validLeaders.has(stop.leader));
+  const setStops = (change.set ?? []).filter(validStop);
   const clearPositions = (change.clear ?? []).filter(validPosition);
   const clearAll = Boolean(change.clearAll);
   const hasReplace = change.tabs !== undefined;
@@ -101,7 +106,7 @@ export function editParagraphTabStops(
       // otherwise the paragraph's current direct stops.
       const start =
         change.tabs !== undefined
-          ? (change.tabs ?? []).map((t) => ({ ...t }))
+          ? (change.tabs ?? []).filter(validStop).map((t) => ({ ...t }))
           : (paragraph.style?.tabs ?? []).map((t) => ({ ...t }));
 
       const clearAt = (list: EditorTabStop[], pos: number): EditorTabStop[] => {
@@ -127,7 +132,13 @@ export function editParagraphTabStops(
         list.push(makeTabStop(t.position, t));
       }
       list.sort((a, b) => a.position - b.position);
-      list = list.filter(t => validPosition(t.position)).slice(0, MAX_TAB_STOPS);
+      list = list.filter(validStop);
+      // Incremental ruler/dialog edits must never evict an unrelated existing
+      // stop just because the new position sorts earlier in a full list.
+      // Keep the legacy replacement-list cap for explicit API replacements.
+      if (!hasReplace && list.length > MAX_TAB_STOPS &&
+          list.length > (paragraph.style?.tabs?.length ?? 0)) return paragraph;
+      if (hasReplace) list = list.slice(0, MAX_TAB_STOPS);
       if (JSON.stringify(list) === JSON.stringify(paragraph.style?.tabs ?? [])) return paragraph;
 
       const next = cloneParagraph(paragraph);
@@ -144,11 +155,12 @@ export function editParagraphTabStops(
   // Default tab interval is a document-level setting, applied once regardless
   // of the selection.
   let changed = paragraphChanged;
-  const hasDefault = typeof change.default === "number" && Number.isFinite(change.default);
+  const hasDefault = typeof change.default === "number" &&
+    Number.isFinite(change.default) && change.default >= 1 && change.default <= MAX_TAB_POSITION;
   const currentDefault = state.document.settings?.defaultTabStop;
   const nextDefault =
     hasDefault && change.default !== undefined && change.default !== null
-      ? Math.min(MAX_TAB_POSITION, Math.max(1, change.default))
+      ? change.default
       : undefined;
   if (hasDefault || change.default === null) {
     const settingChanged =

@@ -83,6 +83,12 @@ test("tab stop lab opens the actual editable document and ruler", async ({ page 
   await marker.dblclick();
   await expect(page.getByTestId("editor-tab-stops-dialog")).toBeVisible();
   await expect(page.getByTestId("editor-tab-stops-position")).toHaveValue("360");
+  await expect(page.getByTestId("editor-tab-stops-position")).toBeFocused();
+  await page.getByTestId("editor-tab-stops-apply").focus();
+  await page.keyboard.press("Tab");
+  await expect(page.getByTestId("editor-tab-stops-dialog").getByTestId("editor-dialog-close")).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.getByTestId("editor-tab-stops-apply")).toBeFocused();
   await page.getByTestId("editor-tab-stops-cancel").click();
   await expect(page.getByTestId("editor-tab-stops-dialog")).toHaveCount(0);
   await page.getByTestId("site-shell-inline").click();

@@ -99,6 +99,7 @@ export function TabStopsDialog(props: TabStopsDialogProps): JSX.Element {
   ];
   return <Dialog isOpen={props.isOpen} title={t("paragraph.tabsTitle")} onClose={props.onClose}
     testId="editor-tab-stops-dialog" class="oasis-editor-word-tabs-dialog"
+    initialFocusTestId="editor-tab-stops-position"
     footer={<>
       <Button variant="secondary" onClick={props.onClose} data-testid="editor-tab-stops-cancel">{t("generic.cancel")}</Button>
       <Button variant="primary" disabled={!validInterval()} onClick={apply} data-testid="editor-tab-stops-apply">{t("generic.apply")}</Button>

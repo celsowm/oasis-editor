@@ -185,3 +185,12 @@ Land independently reviewable commits: evidence/stabilization; common input reso
 Highest risks: data loss on full or cross-cell selection, pt/px conversion bugs, wrong leader selection, bar stops affecting text, stale pointer gestures, browser keyboard traps, incorrect list-level removal, hidden duplication in undo/revisions, regressions in TOCs and imported documents. Mitigate with explicit action matrix, atomic transactions, shared geometry, fixture coverage and independent CI checkpoints. Roll back a failing work package with a normal revert, not a forced history rewrite or removal of safety gates.
 
 Definition of done: Word-documented behavior is verified, ambiguous cases are either evidenced or clearly scoped, user can use tabs in actual Pages demo, layouts and export agree, and all required tests/deployments pass. Full desktop Word equivalence is not claimed for unsupported Word features or OS-owned shortcuts.
+
+
+## 8. Implementation evidence and remaining parity gaps (2026-11-16)
+
+The first public tab lab release passed the full deploy, npm publish, style-gallery, geometry and review workflows for commit `9126c2e`. Pages deployment: [43859647680](https://github.com/celsowm/oasis-editor/actions/runs/43859647680); [build and browser gates](https://github.com/celsowm/oasis-editor/actions/runs/43857864871). The [opt-in tab lab](https://celsowm.github.io/oasis-editor/?demo=tabs#/editor) is separate from the persisted default document.
+
+The implementation includes contextual Tab, table navigation, positional inheritance, measured geometry, primitive-based Tabs dialog, ruler gestures, DOCX round trips, PDF strokes and rich clipboard tests. The current follow-up hardens API input validation and tab-capacity behavior, dialog focus, and pointer cancellation; its own CI must pass before treating it as released.
+
+**Still open:** active column/cell ruler origins, RTL and mirrored margins, default-tab marks and mixed marker display, localized position units, complete desktop Word K01–K24 evidence, w:ptab and numbering-suffix edge cases, tracked-revision and story-specific round trips, browser shortcut differences, cross-engine and real-device validation, and representative layout performance baseline. The opt-in lab is not proof of complete Word parity. Preserve the existing gates and record measured evidence instead of checking off these items prematurely.

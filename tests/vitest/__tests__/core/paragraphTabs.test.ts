@@ -197,3 +197,28 @@ describe("edit paragraph tab stops (para.tabs)", () => {
     expect(editParagraphTabStops(state, { default: 72 })).toBe(state);
   });
 });
+
+
+describe("tab command validation", () => {
+  it("does not evict unrelated stops on incremental insertion at capacity", () => {
+    const full = Array.from({length:MAX_TAB_STOPS}, (_,i)=>tab((i+1)*10));
+    const state = buildState([paragraphWithTabs("hi",full)]);
+    expect(editParagraphTabStops(state,{set:[tab(1)]})).toBe(state);
+    const moved = editParagraphTabStops(state,{clear:[10],set:[tab(1)]});
+    expect(getParagraphs(moved)[0]!.style?.tabs).toEqual([tab(1),...full.slice(1)]);
+  });
+  it("rejects invalid programmatic default intervals without altering document settings", () => {
+    const state = buildState([paragraphWithTabs("hi",[])]);
+    for (const value of [NaN,Infinity,0,-1,2000]) {
+      expect(editParagraphTabStops(state,{default:value})).toBe(state);
+    }
+  });
+  it("ignores invalid runtime type, leader and position", () => {
+    const state = buildState([paragraphWithTabs("hi",[tab(36)])]);
+    expect(editParagraphTabStops(state,{set:[
+      {position:72,type:"unsupported"} as unknown as EditorTabStop,
+      {position:72,type:"left",leader:"bad"} as unknown as EditorTabStop,
+      tab(Infinity),
+    ]})).toBe(state);
+  });
+});

@@ -24,6 +24,8 @@ export interface DialogProps {
   closeOnOverlayClick?: boolean;
   /** Overrides the default `editor-dialog` test id on the dialog element. */
   testId?: string;
+  /** Opt-in focus containment for dialogs that own their entire keyboard interaction. */
+  initialFocusTestId?: string;
 }
 
 export function Dialog(props: DialogProps): JSX.Element {
@@ -44,17 +46,44 @@ export function Dialog(props: DialogProps): JSX.Element {
   );
 
   const handleKeyDown = (e: KeyboardEvent): void => {
-    if (e.key === "Escape" && props.isOpen) {
+    if (!props.isOpen) return;
+    if (e.key === "Escape") {
+      if (props.initialFocusTestId) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
       props.onClose();
+      return;
     }
+    if (e.key !== "Tab" || !props.initialFocusTestId || !dialogRef) return;
+    const controls = Array.from(dialogRef.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )).filter(el => el.tabIndex >= 0 && el.getClientRects().length > 0 &&
+      !el.closest('[inert], [aria-hidden="true"]'));
+    const items = controls.filter(el => {
+      if (!(el instanceof HTMLInputElement) || el.type !== "radio" || !el.name) return true;
+      const group = controls.filter(other => other instanceof HTMLInputElement &&
+        other.type === "radio" && other.name === el.name) as HTMLInputElement[];
+      return el === (group.find(radio => radio.checked) ?? group[0]);
+    });
+    if (!items.length) return;
+    const first = items[0]!, last = items[items.length - 1]!;
+    const active = document.activeElement;
+    if (!dialogRef.contains(active) || active === dialogRef ||
+        (e.shiftKey ? active === first : active === last)) {
+      e.preventDefault();
+      (e.shiftKey ? last : first).focus({preventScroll:true});
+    }
+    // Do not let the hidden editor input or host shortcuts process dialog Tab.
+    e.stopPropagation();
   };
 
   onMount((): void => {
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, Boolean(props.initialFocusTestId));
   });
 
   onCleanup((): void => {
-    window.removeEventListener("keydown", handleKeyDown);
+    window.removeEventListener("keydown", handleKeyDown, Boolean(props.initialFocusTestId));
   });
 
   return (
@@ -68,7 +97,13 @@ export function Dialog(props: DialogProps): JSX.Element {
         }}
       >
         <div
-          ref={dialogRef}
+          ref={el => {
+            dialogRef = el;
+            if (props.initialFocusTestId) queueMicrotask(() => {
+              if (!props.isOpen || !el.isConnected) return;
+              el.querySelector<HTMLElement>(`[data-testid="${props.initialFocusTestId}"]`)?.focus({preventScroll:true});
+            });
+          }}
           class={dialogClass()}
           onClick={(e): void => e.stopPropagation()}
           role="dialog"

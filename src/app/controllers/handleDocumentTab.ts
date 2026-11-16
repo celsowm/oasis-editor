@@ -5,6 +5,7 @@ import {
   findParagraphTablePathLocation,
   getParagraphs,
   getParagraphText,
+  getParagraphLength,
   resolveEffectiveParagraphStyle,
   type EditorState,
 } from "@/core/model.js";
@@ -66,7 +67,7 @@ export function handleDocumentTab(
   const wholeParagraphs = !range.isCollapsed &&
     (range.startIndex !== range.endIndex ||
       (range.startParagraphOffset === 0 &&
-        range.endParagraphOffset === getParagraphText(paragraph).length));
+        range.endParagraphOffset === getParagraphLength(paragraph)));
   const style = resolveEffectiveParagraphStyle(paragraph.style, state.document.styles);
   const atStart = range.isCollapsed && range.startParagraphOffset === 0 && !paragraph.list;
   const autoFormat = deps.autoTabIndentEnabled?.() ?? true;
