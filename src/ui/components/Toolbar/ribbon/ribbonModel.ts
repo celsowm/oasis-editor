@@ -1,6 +1,7 @@
 import type {
   RibbonGroupResizePolicy,
   RibbonGroupLayout,
+  RibbonGroupGrid,
   RibbonGroupResizeState,
   RibbonRow,
   RibbonTabId,
@@ -31,6 +32,7 @@ export interface RibbonGroupModel {
   label: string;
   largeItems: ToolbarItem[];
   layout: RibbonGroupLayout;
+  grid?: RibbonGroupGrid;
   rows: Record<RibbonRow, ToolbarItem[]>;
   order: number;
   resizePolicy: MergedRibbonGroupResizePolicy;
@@ -577,6 +579,7 @@ export function buildRibbonGroups(
     }
     if (item.groupLabel?.trim()) group.label = item.groupLabel.trim();
     if (item.ribbonGroupLayout) group.layout = item.ribbonGroupLayout;
+    if (item.ribbonGroupGrid) group.grid = item.ribbonGroupGrid;
     group.order = Math.min(group.order, groupOrder);
     group.resizePolicy = {
       ...group.resizePolicy,
@@ -606,6 +609,15 @@ export function buildRibbonGroups(
   return Array.from(groups.values())
     .map((group) => ({
       ...group,
+      // A column schema is a minimum: never wrap commands into extra rows.
+      grid: group.grid ? {
+        columns: Math.max(
+          1,
+          Number.isFinite(group.grid.columns) ? Math.floor(group.grid.columns) : 1,
+          ...([1, 2, 3] as const).map((row) => trimRibbonSeparators(group.rows[row]).length),
+        ),
+        fullRows: group.grid.fullRows?.filter((row) => trimRibbonSeparators(group.rows[row]).length === 1),
+      } : undefined,
       rows: {
         1: trimRibbonSeparators(group.rows[1]),
         2: trimRibbonSeparators(group.rows[2]),

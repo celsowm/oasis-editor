@@ -29,6 +29,8 @@ function RibbonGroupContent(props: RibbonGroupProps): JSX.Element {
     <div
       class="oasis-editor-ribbon-group-rows"
       data-ribbon-content-group={props.group.id}
+      data-ribbon-grid={props.group.grid ? "true" : undefined}
+      style={props.group.grid ? { "--oasis-ribbon-grid-columns": String(props.group.grid.columns) } : undefined}
       classList={{
         "oasis-editor-ribbon-group-three-rows": usesStackedRows(
           props.group.layout,
@@ -45,10 +47,10 @@ function RibbonGroupContent(props: RibbonGroupProps): JSX.Element {
         </div>
       </Show>
       <div class="oasis-editor-ribbon-normal-rows">
-        <RibbonRow items={props.group.rows[1]} api={props.api} />
-        <RibbonRow items={props.group.rows[2]} api={props.api} />
+        <RibbonRow items={props.group.rows[1]} api={props.api} fullSpan={props.group.grid?.fullRows?.includes(1)} />
+        <RibbonRow items={props.group.rows[2]} api={props.api} fullSpan={props.group.grid?.fullRows?.includes(2)} />
         <Show when={usesStackedRows(props.group.layout)}>
-          <RibbonRow items={props.group.rows[3]} api={props.api} />
+          <RibbonRow items={props.group.rows[3]} api={props.api} fullSpan={props.group.grid?.fullRows?.includes(3)} />
         </Show>
       </div>
     </div>

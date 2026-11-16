@@ -4,6 +4,7 @@ import type { CommandRef } from "./commands/CommandRef.js";
 import type {
   RibbonGroupResizePolicy,
   RibbonGroupLayout,
+  RibbonGroupGrid,
   RibbonRow,
   RibbonSize,
   RibbonTabId,
@@ -116,6 +117,7 @@ export interface PluginAction {
   ribbonSize?: RibbonSize;
   ribbonGroupResize?: RibbonGroupResizePolicy;
   ribbonGroupLayout?: RibbonGroupLayout;
+  ribbonGroupGrid?: RibbonGroupGrid;
   order?: number;
 }
 

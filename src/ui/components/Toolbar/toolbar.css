@@ -3542,19 +3542,13 @@
 /* Shared alignment geometry for the classic Review ribbon and its popups.
  * Use stable layout attributes, not test IDs (measurement strips test IDs).
  * The simplified ribbon retains its existing one-line layout. */
-/* Grid columns are intrinsic, measured once across every row by subgrid.
- * This aligns icons despite translated labels having different lengths. */
-[data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
+/* Generic intrinsic grid for declaratively paired rows. */
+[data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-ribbon-normal-rows {
-  grid-template-columns: repeat(var(--oasis-review-columns, 2), max-content);
+  grid-template-columns: repeat(var(--oasis-ribbon-grid-columns, 1), max-content);
   column-gap: 4px;
 }
-[data-ribbon-content-group="comments"] {
-  /* Set the track count via an inherited token. A less-specific override
-     of grid-template-columns previously lost to the shared selector. */
-  --oasis-review-columns: 3;
-}
-[data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
+[data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row {
   display: grid;
   grid-column: 1 / -1;
@@ -3562,47 +3556,40 @@
   column-gap: 4px;
   align-items: center;
 }
-[data-ribbon-content-group="tracking"]:not(.oasis-editor-ribbon-simplified *)
-  > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row:nth-child(-n + 2)
+[data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows > [data-ribbon-row-span="full"]
   > .oasis-editor-toolbar-item {
   grid-column: 1 / -1;
 }
-[data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
+[data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row
   > .oasis-editor-toolbar-item > :is(.oasis-editor-tool-button, .oasis-editor-toolbar-dropdown),
-[data-ribbon-content-group="tracking"]:not(.oasis-editor-ribbon-simplified *)
+[data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-ribbon-normal-rows .oasis-editor-toolbar-dropdown > .oasis-editor-tool-button {
-  /* Avoid cyclic percentage sizing in max-content tracks. Flex growth
-     stretches the controls after intrinsic track sizes are resolved. */
   flex: 1 0 auto;
   width: auto;
 }
-[data-ribbon-content-group="tracking"]:not(.oasis-editor-ribbon-simplified *)
+[data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-ribbon-normal-rows .oasis-editor-toolbar-dropdown {
   display: flex;
 }
-[data-ribbon-content-group="tracking"]:not(.oasis-editor-ribbon-simplified *)
-  > .oasis-editor-ribbon-normal-rows .oasis-editor-toolbar-dropdown > .oasis-editor-tool-button {
-  justify-content: flex-start;
-}
-[data-ribbon-content-group="tracking"]:not(.oasis-editor-ribbon-simplified *)
-  > .oasis-editor-ribbon-normal-rows .oasis-editor-toolbar-dropdown .oasis-editor-dropdown-chevron {
-  margin-left: auto;
-}
-[data-ribbon-content-group="tracking"]:not(.oasis-editor-ribbon-simplified *)
-  > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row:first-child
-  .oasis-editor-tool-button-dropdown {
-  border: 1px solid var(--oasis-ribbon-border, #b9b9b9);
-}
-[data-ribbon-content-group]:is([data-ribbon-content-group="tracking"], [data-ribbon-content-group="changes"], [data-ribbon-content-group="comments"]):not(.oasis-editor-ribbon-simplified *)
+[data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-ribbon-normal-rows .oasis-editor-tool-button:has(.oasis-editor-tool-button-label) {
   justify-content: flex-start;
 }
-.oasis-editor-ribbon-group-compact-hide-labels [data-ribbon-content-group="comments"]:not(.oasis-editor-ribbon-simplified *)
+[data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows .oasis-editor-toolbar-dropdown .oasis-editor-dropdown-chevron {
+  margin-left: auto;
+}
+[data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
+  > .oasis-editor-ribbon-normal-rows > [data-ribbon-row-span="full"]:first-child
+  .oasis-editor-tool-button-dropdown {
+  border: 1px solid var(--oasis-ribbon-border, #b9b9b9);
+}
+.oasis-editor-ribbon-group-compact-hide-labels [data-ribbon-grid="true"]:not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-ribbon-normal-rows .oasis-editor-tool-button {
   justify-content: center;
 }
-
 
 /* Layout tab: keep the fields and page-setup controls on the same grid
  * in both live and measured groups. Do not target the Home paragraph group. */

@@ -187,3 +187,7 @@ Decisions: preserve established command semantics and reduction invariants; reus
 - Inert measurement copies now expose the state they are actually measuring and not stale allocated-width metadata.
 - Previous Pages gate failed with a Solid cleanNode exception while switching ribbon to compact. Removed Menu's local signal write during disposal (plausible cause, not yet verified); portal cleanup should follow ownership. Preserve the existing mode-switch test, do not claim the failure fixed until CI passes.
 - P0 baseline browser capture, full P1 measurement invariants, declarative group composition, remaining primitive migration, cross-engine visual evidence and release gates remain outstanding.
+
+### Declarative grid migration
+
+Added RibbonGroupGrid to the neutral contribution contract and plugin adapter, with explicit column count and whole-row spans. Group composition normalizes the columns to the longest surviving row and only retains a whole-row span when exactly one action remains. Review now opts into this shared variant through the preset; group-specific Review geometry selectors are removed. Added pure composition regression, including plugin contributions. Browser verification pending.

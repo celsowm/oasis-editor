@@ -1,5 +1,6 @@
 import type {
   RibbonRow,
+  RibbonGroupGrid,
   RibbonTabId,
   ToolbarItem,
 } from "@/ui/components/Toolbar/schema/items.js";
@@ -9,6 +10,15 @@ interface RibbonPlacement {
   group: string;
   row: RibbonRow;
 }
+
+/** Only deliberately paired rows opt into shared intrinsic columns. */
+const RIBBON_GRIDS: Partial<Record<RibbonTabId, Record<string, RibbonGroupGrid>>> = {
+  review: {
+    tracking: { columns: 2, fullRows: [1, 2] },
+    changes: { columns: 2 },
+    comments: { columns: 3 },
+  },
+};
 
 const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-design-themes": {
@@ -409,6 +419,7 @@ export function withDefaultRibbonPlacement(
       tab: item.tab ?? placement.tab,
       group: placement.group,
       row: item.row ?? placement.row,
+      ribbonGroupGrid: item.ribbonGroupGrid ?? RIBBON_GRIDS[item.tab ?? placement.tab]?.[placement.group],
       order: item.order ?? index,
     };
   });

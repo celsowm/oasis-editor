@@ -12,6 +12,7 @@ export {
   type RibbonTabId,
   type RibbonRow,
   type RibbonGroupLayout,
+  type RibbonGroupGrid,
   type RibbonSize,
   type RibbonGroupResizePolicy,
   type RibbonGroupResizeState,
@@ -21,6 +22,7 @@ import type {
   RibbonTabId,
   RibbonRow,
   RibbonGroupLayout,
+  RibbonGroupGrid,
   RibbonSize,
 } from "@/core/pluginUiTypes.js";
 
@@ -115,6 +117,7 @@ interface ToolbarItemBase extends ItemReactiveOverrides {
   /** Group-level responsive behavior. First item wins per property. */
   ribbonGroupResize?: RibbonGroupResizePolicy;
   ribbonGroupLayout?: RibbonGroupLayout;
+  ribbonGroupGrid?: RibbonGroupGrid;
   testId?: string;
   tooltipKey?: TranslationKey;
   tooltip?: string;
@@ -248,6 +251,7 @@ export interface SeparatorItem {
   row?: RibbonRow;
   ribbonGroupResize?: RibbonGroupResizePolicy;
   ribbonGroupLayout?: RibbonGroupLayout;
+  ribbonGroupGrid?: RibbonGroupGrid;
   /**
    * @param api - The toolbar action API.
    * @returns Whether the separator should be visible.

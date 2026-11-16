@@ -58,6 +58,7 @@ export function useEditorRuntimePlugins(
         ribbonSize: item.ribbonSize,
         ribbonGroupResize: item.ribbonGroupResize,
         ribbonGroupLayout: item.ribbonGroupLayout,
+        ribbonGroupGrid: item.ribbonGroupGrid,
         order: item.order,
       };
       toolbarRegistry.register(contributed);

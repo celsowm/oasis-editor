@@ -45,6 +45,12 @@ export type RibbonRow = 1 | 2 | 3;
  * "large action + small-command stack" shape (stacked rows, icon-led inline).
  */
 export type RibbonGroupLayout = "two-rows" | "three-rows" | "compact";
+/** Intrinsic shared columns for intentional paired action rows. */
+export interface RibbonGroupGrid {
+  columns: number;
+  /** Rows occupied by one action spanning the whole grid. */
+  fullRows?: readonly RibbonRow[];
+}
 export type RibbonSize = "normal" | "large";
 export type RibbonGroupResizeState = "full" | "compact" | "collapsed";
 

@@ -132,6 +132,16 @@ describe("effective Ribbon composition", () => {
 });
 
 describe("declarative Ribbon group layouts", () => {
+  it("supports shared columns without wrapping plugin actions into extra rows", () => {
+    const grid = { columns: 2, fullRows: [1, 2] as const };
+    const items = [
+      button("wide", { row: 1, ribbonGroupGrid: grid }),
+      button("a", { row: 2 }), button("b", { row: 2 }), button("c", { row: 2 }),
+    ];
+    const [group] = buildRibbonGroups(items, "insert", t);
+    expect(group.grid).toEqual({ columns: 3, fullRows: [1] });
+    expect(grid).toEqual({ columns: 2, fullRows: [1, 2] });
+  });
   it("keeps existing two-row contributions and enables a third row without dropping actions", () => {
     const groups = buildRibbonGroups(
       [
