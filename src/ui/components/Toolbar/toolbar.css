@@ -465,7 +465,7 @@
 
 .oasis-editor-toolbar-view-ribbon .oasis-editor-toolbar-item-ribbon-large {
   align-items: stretch !important;
-  height: 63px;
+  height: var(--oasis-ribbon-body-height);
 }
 
 .oasis-editor-toolbar-view-ribbon
@@ -3764,7 +3764,10 @@
   > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
   .oasis-editor-table-style-card {
   height: 28px;
+  min-height: 28px;
+  max-height: 28px;
   padding: 1px 3px;
+  box-sizing: border-box;
 }
 .oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
   > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
@@ -3773,3 +3776,51 @@
   max-height: 20px;
 }
 
+
+/* Single-line specialized primitives share the same definite body track.
+ * Their classic geometry remains unchanged in group popovers. */
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-table-style-options {
+  grid-template-columns: none;
+  grid-auto-columns: max-content;
+  grid-template-rows: 28px;
+  grid-auto-flow: column;
+  min-width: 0;
+  height: 30px;
+  column-gap: 8px;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-table-cell-alignment-matrix
+  .oasis-editor-tool-button.oasis-editor-table-cell-alignment-option {
+  width: var(--oasis-alignment-cell);
+  min-width: var(--oasis-alignment-cell);
+  height: var(--oasis-alignment-cell);
+  min-height: var(--oasis-alignment-cell);
+  max-height: var(--oasis-alignment-cell);
+  padding: 0;
+  align-self: center;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-tool-select-ribbon-large-wrap {
+  flex-direction: row;
+  min-width: 0;
+  max-width: none;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 4px;
+  gap: 4px;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-tool-select-ribbon-large-wrap > .oasis-editor-tool-select-control {
+  width: auto;
+}
+.oasis-editor-ribbon-simplified .oasis-editor-ribbon-panel
+  > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-content
+  .oasis-editor-table-style-expand {
+  min-height: 0;
+  height: 28px;
+}
