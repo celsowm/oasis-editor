@@ -80,7 +80,7 @@ describe("TableStyleGallery", () => {
 
     expect(
       host.querySelectorAll(".oasis-editor-table-style-card"),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
     expect(
       host
         .querySelector("[data-style-id='accent']")
@@ -93,6 +93,7 @@ describe("TableStyleGallery", () => {
       "[data-testid='tables-panel']",
     ) as HTMLElement;
     expect(panel).not.toBeNull();
+    expect(panel.querySelectorAll('.oasis-editor-table-style-card')).toHaveLength(2);
     (
       panel.querySelector("[data-style-id='plain']") as HTMLButtonElement
     ).click();

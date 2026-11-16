@@ -4,6 +4,7 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  onCleanup,
   type JSX,
 } from "solid-js";
 import type { ToolbarActionApi, ToolbarDocumentStyle } from "./schema/items.js";
@@ -11,6 +12,7 @@ import { Popover } from "./primitives/Popover.js";
 import { DropdownChevron } from "./primitives/DropdownChevron.js";
 import { SurfaceButton } from "@/ui/public/SurfaceButton.js";
 import { Text } from "@/ui/public/Text.js";
+import { gallerySlots, TABLE_STYLE_GALLERY_CARD_WIDTH, visibleGalleryStyles } from "./styleGalleryLayout.js";
 
 export interface TableStyleGalleryProps {
   api: ToolbarActionApi;
@@ -31,11 +33,28 @@ const tableStyles = (styles: ToolbarDocumentStyle[]): ToolbarDocumentStyle[] =>
 
 export function TableStyleGallery(props: TableStyleGalleryProps): JSX.Element {
   const [open, setOpen] = createSignal(false);
+  const [strip, setStrip] = createSignal<HTMLDivElement>();
+  const [slots, setSlots] = createSignal(1);
+  let panelRef: HTMLDivElement | undefined;
+  let expandRef: HTMLButtonElement | undefined;
+  createEffect(() => {
+    const element = strip();
+    if (!element) return;
+    const measure = (): void => {
+      setSlots(gallerySlots(element.getBoundingClientRect().width || element.clientWidth, TABLE_STYLE_GALLERY_CARD_WIDTH));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    onCleanup(() => observer.disconnect());
+  });
   const testId = (): string => props.testId ?? "editor-toolbar-tbl-style";
   const panelTestId = (): string => `${testId()}-panel`;
   const styles = createMemo(() => tableStyles(props.styles));
   const activeId = (): string =>
     String(props.api.commands.state("setTableStyle").value ?? "");
+  const inlineStyles = createMemo(() => visibleGalleryStyles(styles(), styles(), activeId(), slots()));
   const isActive = (style: ToolbarDocumentStyle): boolean =>
     style.id === activeId();
   const apply = (style: ToolbarDocumentStyle): void => {
@@ -48,12 +67,9 @@ export function TableStyleGallery(props: TableStyleGalleryProps): JSX.Element {
   createEffect((): void => {
     if (!open()) return;
     queueMicrotask((): void => {
-      document
-        .querySelector<HTMLButtonElement>(
-          `[data-testid="${panelTestId()}"] .oasis-editor-table-style-card-active, ` +
-            `[data-testid="${panelTestId()}"] .oasis-editor-table-style-card`,
-        )
-        ?.focus();
+      if (!open()) return;
+      (panelRef?.querySelector<HTMLButtonElement>(".oasis-editor-table-style-card-active") ??
+        panelRef?.querySelector<HTMLButtonElement>(".oasis-editor-table-style-card"))?.focus();
     });
   });
 
@@ -63,6 +79,7 @@ export function TableStyleGallery(props: TableStyleGalleryProps): JSX.Element {
     if (event.key === "Escape") {
       event.preventDefault();
       setOpen(false);
+      expandRef?.focus();
       return;
     }
     const cards = Array.from(
@@ -87,8 +104,8 @@ export function TableStyleGallery(props: TableStyleGalleryProps): JSX.Element {
     cards[Math.max(0, Math.min(cards.length - 1, next))]?.focus();
   };
 
-  const cards = (): JSX.Element => (
-    <For each={styles()}>
+  const cards = (items: ToolbarDocumentStyle[]): JSX.Element => (
+    <For each={items}>
       {(style): JSX.Element => {
         const preview = (): NonNullable<ToolbarDocumentStyle["tablePreview"]> =>
           style.tablePreview ?? {};
@@ -151,11 +168,12 @@ export function TableStyleGallery(props: TableStyleGalleryProps): JSX.Element {
         panelRole="listbox"
         panelTestId={panelTestId()}
         trigger={(popover): JSX.Element => (
-          <div ref={popover.ref} class="oasis-editor-table-style-gallery">
-            <div class="oasis-editor-table-style-strip" role="listbox">
-              {cards()}
+          <div ref={popover.ref} class="oasis-editor-table-style-gallery" style={{ "--oasis-table-style-card-width": `${TABLE_STYLE_GALLERY_CARD_WIDTH}px` }}>
+            <div ref={setStrip} class="oasis-editor-table-style-strip" role="listbox" aria-label={props.api.t("table.tableStyle")}>
+              {cards(inlineStyles())}
             </div>
             <SurfaceButton
+              ref={expandRef}
               class="oasis-editor-table-style-expand"
               label={props.api.t("table.tableStyle")}
               aria-haspopup="listbox"
@@ -168,8 +186,8 @@ export function TableStyleGallery(props: TableStyleGalleryProps): JSX.Element {
           </div>
         )}
       >
-        <div class="oasis-editor-table-style-grid" onKeyDown={onPanelKeyDown}>
-          {cards()}
+        <div ref={panelRef} class="oasis-editor-table-style-grid" onKeyDown={onPanelKeyDown}>
+          {cards(styles())}
         </div>
       </Popover>
     </Show>

@@ -2,6 +2,7 @@ import type { ToolbarDocumentStyle } from "./schema/items.js";
 
 /** Shared geometry for the ribbon allocator and the rendered gallery. */
 export const STYLE_GALLERY_CARD_WIDTH = 106;
+export const TABLE_STYLE_GALLERY_CARD_WIDTH = 72;
 export const STYLE_GALLERY_EXPAND_WIDTH = 24;
 export const STYLE_GALLERY_BORDER_WIDTH = 2;
 /** A mounted strip always keeps a real preview, even while temporarily hidden.
@@ -9,7 +10,12 @@ export const STYLE_GALLERY_BORDER_WIDTH = 2;
  * placeholder when the document has available styles.
  */
 export function styleGallerySlots(width: number): number {
-  return Math.max(1, Math.floor((Number.isFinite(width) ? width : 0) / STYLE_GALLERY_CARD_WIDTH));
+  return gallerySlots(width, STYLE_GALLERY_CARD_WIDTH);
+}
+
+/** Whole-card capacity shared by paragraph and table preview strips. */
+export function gallerySlots(width: number, cardWidth: number): number {
+  return Math.max(1, Math.floor((Number.isFinite(width) ? width : 0) / cardWidth));
 }
 
 /** Follow the active style without changing the canonical quick-style order. */

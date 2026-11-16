@@ -50,8 +50,12 @@ try {
             await page.locator("#ribbon-reference-root").evaluate((el, w) => { el.style.width = `${w}px`; }, width);
             await waitForRibbonSettled(page);
             await expect.poll(async () => page.locator('[data-testid="editor-ribbon-panel"] > [data-ribbon-group]').evaluateAll((groups) =>
-              groups.every((g) => Math.abs(Math.ceil(g.getBoundingClientRect().width) - Number(g.dataset.ribbonWidthAllocated)) <= 1)
-            )).toBe(true);
+              groups.flatMap((g) => {
+                const actual = Math.ceil(g.getBoundingClientRect().width);
+                const allocated = Number(g.dataset.ribbonWidthAllocated);
+                return Math.abs(actual - allocated) <= 1 ? [] : [{ group: g.dataset.ribbonGroup, state: g.dataset.ribbonState, actual, allocated, full: g.dataset.ribbonWidthFull, compact: g.dataset.ribbonWidthCompact, collapsed: g.dataset.ribbonWidthCollapsed }];
+              })
+            ), { message: `${engine}/${locale}/${theme}/${fixture}/${width}: allocation mismatch` }).toEqual([]);
             const measured = await page.locator('[data-testid="editor-ribbon-panel"] > [data-ribbon-group]').evaluateAll((groups) =>
               groups.map((g) => ({
                 id: g.dataset.ribbonGroup,

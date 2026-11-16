@@ -79,7 +79,9 @@ export async function waitForRibbonSettled(page) {
         const panel = document.querySelector('[data-testid="editor-ribbon-panel"]');
         if (!panel) return null;
         const sections = [...panel.children].filter((el) => el.hasAttribute("data-ribbon-group"));
-        if (!sections.length || sections.some((el) => !el.hasAttribute("data-ribbon-width-full"))) return null;
+        if (!sections.length || sections.some((el) =>
+          ["ribbonWidthFull", "ribbonWidthCompact", "ribbonWidthCollapsed"].some(key => !(Number(el.dataset[key]) > 0))
+        )) return null;
         return JSON.stringify([
           panel.clientWidth, panel.scrollWidth,
           ...sections.map((el) => [

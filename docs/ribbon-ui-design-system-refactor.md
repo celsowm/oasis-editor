@@ -199,3 +199,7 @@ Added shared geometry reader and a dedicated three-engine workflow. It enumerate
 ### First CI geometry feedback
 
 Commit 4495727 passed the previous failing reference-mode-switch scenario (the deployment job proceeded into contextual browser tests). The contextual chevron guard then reported Paste offset 7 px rather than the established 8 px. Account for the split wrapper's 1 px border in its icon and bottom track geometry; retain the existing 8 px assertion. New CI still required.
+
+### CI feedback and gallery unification
+
+The last completed d816352 run passed style-gallery regression in all engines and npm publication, but failed the Pages gate for image-border wide-menu chevron offset (23.5 px), Review WebKit allocation, and initial geometry matrix (311 Chromium, 355 Firefox, 304 WebKit findings). Restore the explicitly horizontal WideMenuButton variant rather than force it into stacked tracks. TableStyleGallery now renders only whole-card capacity, follows the active style, and leaves the full inventory in the popup; scope focus to its own refs. Correct the geometry auditor's confusion of aria-hidden decorative previews/icons with non-painted DOM; retain actual bounds assertions and explicitly detect both gallery strips' clipped cards. Log findings by rule/group and provide exact WebKit allocation differences. Remaining width mismatches require live CI evidence, not a weakened tolerance. No release confirmed.

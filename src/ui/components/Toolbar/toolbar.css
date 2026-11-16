@@ -559,7 +559,7 @@
  * reserves the chevron track rather than centering a shorter stack.
  * The simplified shell retains its separate one-line layout. */
 .oasis-editor-toolbar-view-ribbon
-  :is(.oasis-editor-tool-button-ribbon-large, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-table-borders-trigger):not(.oasis-editor-ribbon-simplified *) {
+  :is(.oasis-editor-tool-button-ribbon-large:not(.oasis-editor-wide-menu-button), .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button:not(.oasis-editor-wide-menu-button), .oasis-editor-toolbar-item-ribbon-large .oasis-editor-table-borders-trigger):not(.oasis-editor-ribbon-simplified *) {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: var(--oasis-ribbon-action-icon, 24px) var(--oasis-ribbon-action-label, 22px) var(--oasis-dropdown-chevron-size, 12px);
@@ -570,7 +570,7 @@
   padding: var(--oasis-ribbon-action-top, 3px) 4px var(--oasis-ribbon-action-bottom, 2px);
 }
 .oasis-editor-toolbar-view-ribbon
-  :is(.oasis-editor-tool-button-ribbon-large, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-table-borders-trigger):not(.oasis-editor-ribbon-simplified *)
+  :is(.oasis-editor-tool-button-ribbon-large:not(.oasis-editor-wide-menu-button), .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button:not(.oasis-editor-wide-menu-button), .oasis-editor-toolbar-item-ribbon-large .oasis-editor-table-borders-trigger):not(.oasis-editor-ribbon-simplified *)
   > svg:not(.oasis-editor-dropdown-chevron) {
   grid-column: 1;
   grid-row: 1;
@@ -578,7 +578,7 @@
   height: var(--oasis-ribbon-action-icon, 24px);
 }
 .oasis-editor-toolbar-view-ribbon
-  :is(.oasis-editor-tool-button-ribbon-large, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-table-borders-trigger):not(.oasis-editor-ribbon-simplified *)
+  :is(.oasis-editor-tool-button-ribbon-large:not(.oasis-editor-wide-menu-button), .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button:not(.oasis-editor-wide-menu-button), .oasis-editor-toolbar-item-ribbon-large .oasis-editor-table-borders-trigger):not(.oasis-editor-ribbon-simplified *)
   > :is(.oasis-editor-tool-button-label, .oasis-editor-ui-text) {
   grid-column: 1;
   grid-row: 2;
@@ -586,7 +586,7 @@
   width: 100%;
 }
 .oasis-editor-toolbar-view-ribbon
-  :is(.oasis-editor-tool-button-ribbon-large, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button, .oasis-editor-toolbar-item-ribbon-large .oasis-editor-table-borders-trigger):not(.oasis-editor-ribbon-simplified *)
+  :is(.oasis-editor-tool-button-ribbon-large:not(.oasis-editor-wide-menu-button), .oasis-editor-toolbar-item-ribbon-large .oasis-editor-tool-button:not(.oasis-editor-wide-menu-button), .oasis-editor-toolbar-item-ribbon-large .oasis-editor-table-borders-trigger):not(.oasis-editor-ribbon-simplified *)
   > .oasis-editor-dropdown-chevron {
   grid-column: 1;
   grid-row: 3;
@@ -2870,8 +2870,8 @@
 
 .oasis-editor-table-style-card {
   display: block;
-  flex: 0 0 72px;
-  width: 72px;
+  flex: 0 0 var(--oasis-table-style-card-width, 72px);
+  width: var(--oasis-table-style-card-width, 72px);
   min-width: 0;
   height: 61px;
   padding: 3px;
@@ -2882,6 +2882,11 @@
   box-sizing: border-box;
   border-radius: 0;
   font-weight: 400;
+}
+
+.oasis-editor-table-style-strip > .oasis-editor-table-style-card:only-child {
+  flex: 1 1 var(--oasis-table-style-card-width, 72px);
+  max-width: 100%;
 }
 
 .oasis-editor-table-style-preview {

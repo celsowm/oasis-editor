@@ -7,9 +7,12 @@ export async function readRibbonGeometry(page) {
       const r = el.getBoundingClientRect();
       return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom };
     };
-    const visible = (el) => !!el && !el.closest('[inert], [aria-hidden="true"]') &&
+    // Paint visibility is different from accessibility visibility: a preview
+    // or icon intentionally marked aria-hidden must still be painted.
+    const painted = (el) => !!el && !el.closest('[inert]') &&
       getComputedStyle(el).visibility === "visible" && el.getClientRects().length > 0 &&
       el.getBoundingClientRect().width > 0 && el.getBoundingClientRect().height > 0;
+    const visible = (el) => painted(el) && !el.closest('[aria-hidden="true"]');
     const identity = (el) => el.dataset.testid || el.dataset.styleId ||
       el.getAttribute("aria-label") || el.getAttribute("title") || el.textContent?.trim() || el.className;
     const groups = [...panel.children].filter((el) => el.hasAttribute("data-ribbon-group") && visible(el));
@@ -89,15 +92,26 @@ export async function readRibbonGeometry(page) {
             issue(group,"empty-style-strip",{rect:rect(strip)});
           for(const card of cards){
             const sample=card.querySelector(".oasis-editor-style-gallery-sample");
-            if(!visible(sample))issue(group,"missing-style-preview",{id:identity(card)});
+            if(!painted(sample))issue(group,"missing-style-preview",{id:identity(card)});
           }
+        }
+      }
+      // Both galleries must render whole, reachable cards inside their strip.
+      for (const gallery of group.querySelectorAll(".oasis-editor-style-gallery-strip, .oasis-editor-table-style-strip")) {
+        if (!visible(gallery)) continue;
+        const bounds = rect(gallery);
+        for (const card of gallery.querySelectorAll("[data-style-id]")) {
+          if (!visible(card)) continue;
+          const r = rect(card);
+          if (r.x < bounds.x-1 || r.right > bounds.right+1 || r.y < bounds.y-1 || r.bottom > bounds.bottom+1)
+            issue(group, "gallery-card-clipped", { id: identity(card), rect: r, strip: bounds });
         }
       }
       const large=[...group.querySelectorAll(".oasis-editor-tool-button-ribbon-large, .oasis-editor-toolbar-item-ribbon-large > .oasis-editor-tool-button, .oasis-editor-toolbar-item-ribbon-large > .oasis-editor-toolbar-dropdown > .oasis-editor-tool-button")].filter(visible).map(el=>{
         const icon=el.querySelector(":scope > svg:not(.oasis-editor-dropdown-chevron)");
         const label=el.querySelector(":scope > .oasis-editor-tool-button-label");
         const chevron=el.querySelector(":scope > .oasis-editor-dropdown-chevron");
-        return { id:identity(el), icon:visible(icon)?rect(icon):null,label:visible(label)?rect(label):null,chevron:visible(chevron)?rect(chevron):null };
+        return { id:identity(el), icon:painted(icon)?rect(icon):null,label:painted(label)?rect(label):null,chevron:painted(chevron)?rect(chevron):null };
       });
       if(!simplified && state!=="collapsed"){
         for(const key of ["icon","label","chevron"]){

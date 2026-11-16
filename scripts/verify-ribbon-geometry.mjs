@@ -54,5 +54,12 @@ try{
   await writeVerification(output,{sha,engine,coverage:[...coverage],records,failures});
   await browser.close();
 }
-if(failures.length) console.error(JSON.stringify(failures.slice(0,15),null,2));
+if(failures.length) {
+  const byRule = Object.create(null);
+  for (const failure of failures) {
+    const key = failure.tab + "/" + (failure.group ?? "-") + "/" + failure.rule;
+    (byRule[key] ??= { count: 0, example: failure }).count++;
+  }
+  console.error(JSON.stringify(byRule,null,2));
+}
 assert.equal(failures.length,0,`Ribbon geometry violations: ${failures.length}; see verification.json`);
