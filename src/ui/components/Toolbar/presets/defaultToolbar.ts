@@ -17,8 +17,8 @@ import { TableCellAlignmentMatrix } from "@/ui/components/Toolbar/controls/Table
 import {
   DesignGallery,
   DesignPageBorderPanel,
-  DesignWatermarkPanel,
 } from "@/ui/components/Toolbar/DesignGallery.js";
+import { DesignWatermarkPanel } from "@/ui/components/Toolbar/WatermarkGallery.js";
 import {
   ImageSizeField,
   ImageCropMenu,
