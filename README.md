@@ -30,6 +30,16 @@ bundle you can import into your app.
 
 Try the [Playground](https://celsowm.github.io/oasis-editor/).
 
+## Page spacing for embedded editors
+
+Set `ui.pageGutter` to a non-negative number of CSS pixels to control the space
+outside the pages. The default remains unchanged when the option is omitted.
+This controls the editor viewport, not the page margins or exported document.
+
+```ts
+const options = { ui: { pageGutter: 4 } };
+```
+
 ## Why Oasis?
 
 Oasis is built around a document model and rendering pipeline that are separate

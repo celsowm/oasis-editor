@@ -10,3 +10,8 @@
  * the DOM as a backstop.
  */
 export const EDITOR_SCROLL_PADDING_PX = 34;
+
+/** Normaliza o espaço externo configurado pelo hospedeiro. */
+export function resolvePageGutter(value: number | undefined): number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : EDITOR_SCROLL_PADDING_PX;
+}

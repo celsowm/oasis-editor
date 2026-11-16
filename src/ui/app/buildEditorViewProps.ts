@@ -37,6 +37,7 @@ type ImportProgress = NonNullable<
 export interface EditorViewLayoutInput {
   documentLayout: Accessor<EditorLayoutDocument>;
   remoteWebFonts?: boolean;
+  pageGutter?: number;
   viewportHeight: number | string | undefined;
   className: string | undefined;
   style: JSX.CSSProperties | undefined;
@@ -153,6 +154,7 @@ export function buildEditorViewProps(
   const layout: OasisEditorEditorLayoutProps = {
     documentLayout: layoutInput.documentLayout,
     remoteWebFonts: layoutInput.remoteWebFonts,
+    pageGutter: layoutInput.pageGutter,
     viewportHeight: layoutInput.viewportHeight,
     class: layoutInput.className,
     style: layoutInput.style,

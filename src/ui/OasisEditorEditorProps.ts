@@ -28,6 +28,7 @@ export interface OasisEditorEditorLayoutProps {
   remoteWebFonts?: boolean;
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
+  pageGutter?: number;
   viewportHeight?: number | string;
   class?: string;
   style?: JSX.CSSProperties;

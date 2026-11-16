@@ -36,7 +36,7 @@ import { EditorDragLayers } from "./app/EditorDragLayers.js";
 import { EditorDialogsLayer } from "./app/EditorDialogsLayer.js";
 import { buildEditorViewProps } from "./app/buildEditorViewProps.js";
 import { EditorWorkspace } from "./app/EditorWorkspace.js";
-import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
+import { resolvePageGutter } from "./editorLayoutConstants.js";
 import { OasisEditorLoading } from "./OasisEditorLoading.js";
 import { WelcomeOverlay } from "./components/WelcomeOverlay.js";
 import { createOasisEditorClient } from "@/app/client/OasisEditorClient.js";
@@ -426,6 +426,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
     layout: {
       documentLayout,
       remoteWebFonts: documentOptions().remoteWebFonts,
+      pageGutter: ui().pageGutter,
       viewportHeight: ui().viewportHeight,
       className: ui().class,
       style: ui().style,
@@ -570,11 +571,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
             interaction.formatPainter.mode() !== null,
         }}
         style={{
-          // Single source of truth for the horizontal page gutter: the same TS
-          // constant drives both the editor shell width (pageWidth + 2 * gutter)
-          // and the scroll-content padding the page is centered within. CSS only
-          // consumes it via var(--oasis-editor-gutter-x).
-          "--oasis-editor-gutter-x": `${EDITOR_SCROLL_PADDING_PX}px`,
+          // Keep CSS padding and the scroll-content width in sync, including
+          // when the host configures a smaller page gutter.
+          "--oasis-editor-gutter-x": `${resolvePageGutter(ui().pageGutter)}px`,
+          ...(ui().pageGutter !== undefined ? {
+            "--oasis-editor-gutter-top": `${resolvePageGutter(ui().pageGutter)}px`,
+            "--oasis-editor-gutter-bottom": `${resolvePageGutter(ui().pageGutter)}px`,
+          } : {}),
         }}
       >
         <Show when={!useComposedShell() && showChrome() && showToolbar()}>

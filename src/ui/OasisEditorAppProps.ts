@@ -51,6 +51,8 @@ export interface OasisEditorAppUiProps {
    */
   showWelcome?: boolean;
   locale?: "pt-BR" | "en";
+  /** Espaço externo em pixels ao redor das páginas; não altera as margens do documento. Padrão preservado quando omitido. */
+  pageGutter?: number;
   viewportHeight?: number | string;
   class?: string;
   style?: JSX.CSSProperties;

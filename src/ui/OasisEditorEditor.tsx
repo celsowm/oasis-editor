@@ -8,7 +8,7 @@ import {
 } from "solid-js";
 import { CanvasEditorSurface } from "./components/CanvasEditorSurface.js";
 import { HorizontalRuler } from "./components/Ruler/HorizontalRuler.js";
-import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
+import { resolvePageGutter } from "./editorLayoutConstants.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
 import { RevisionOverlay } from "./components/RevisionOverlay.js";
@@ -148,7 +148,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
   });
 
   const unscaledContentWidth = (): number =>
-    widestPageWidth() + EDITOR_SCROLL_PADDING_PX * 2;
+    widestPageWidth() + resolvePageGutter(layout().pageGutter) * 2;
 
   const zoomSizerWidth = createMemo((): number =>
     Math.max(unscaledContentWidth() * zoomFactor(), viewportSize().width),
