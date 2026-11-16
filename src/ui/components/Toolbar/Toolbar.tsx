@@ -30,6 +30,7 @@ import {
   visibleRibbonItems,
 } from "./ribbon/ribbonModel.js";
 import { RibbonPanel } from "./ribbon/RibbonPanel.js";
+import { TwoLineRibbonPanel } from "./ribbon/TwoLineRibbonPanel.js";
 import { CONTEXTUAL_TABS, type RibbonTabId } from "./schema/items.js";
 import type {
   ToolbarActionApi,
@@ -116,6 +117,8 @@ export interface ToolbarProps {
 export function Toolbar(props: ToolbarProps): JSX.Element {
   const api = createToolbarApi(props.host, useI18n());
   const [version, setVersion] = createSignal(0);
+  const [twoLine, setTwoLine] = createSignal(false);
+  let toolbarElement: HTMLElement | undefined;
   const [activeTab, setActiveTab] = createSignal<RibbonTabId>("home");
   let previousRibbonItems: ToolbarItem[] | undefined;
   let previousCompactItems: ToolbarItem[] | undefined;
@@ -145,6 +148,20 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
   });
 
   onMount((): void => {
+    const owner = toolbarElement?.closest(".oasis-editor-app");
+    const syncRibbonStyle = (): void => {
+      setTwoLine(
+        Boolean(owner?.classList.contains("oasis-editor-ribbon-two-line")),
+      );
+    };
+    syncRibbonStyle();
+    const styleObserver = new MutationObserver(syncRibbonStyle);
+    if (owner)
+      styleObserver.observe(owner, {
+        attributes: true,
+        attributeFilter: ["class"],
+      });
+    onCleanup(() => styleObserver.disconnect());
     const unsubscribe = props.registry.onChange((): number =>
       setVersion((v): number => v + 1),
     );
@@ -202,6 +219,7 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
 
   return (
     <section
+      ref={toolbarElement}
       class="oasis-editor-toolbar"
       classList={{
         "oasis-editor-toolbar-view-ribbon": view() === "ribbon",
@@ -224,7 +242,15 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
             api={api}
             items={ribbonItems}
           />
-          <RibbonPanel activeTab={activeTab} items={ribbonItems} api={api} />
+          {twoLine() ? (
+            <TwoLineRibbonPanel
+              activeTab={activeTab}
+              items={ribbonItems}
+              api={api}
+            />
+          ) : (
+            <RibbonPanel activeTab={activeTab} items={ribbonItems} api={api} />
+          )}
         </>
       ) : layout() === "overflow" ? (
         <ToolbarOverflowManager>{renderItems()}</ToolbarOverflowManager>

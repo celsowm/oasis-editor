@@ -37,8 +37,14 @@ outside the pages. The default remains unchanged when the option is omitted.
 This controls the editor viewport, not the page margins or exported document.
 
 ```ts
-const options = { ui: { pageGutter: 4 } };
+const options = { ui: { pageGutter: 4, zoom: { initialMode: "fit-width" } } };
 ```
+
+`fit-width` is optional: it fits the widest page to the viewport, up to 100%,
+and follows resizing until the user adjusts zoom manually. The status-bar fit
+control re-enables automatic sizing. The existing 50% minimum still applies,
+so extremely narrow viewports can require horizontal page scrolling. Omit the
+option to keep the default 100% initial zoom.
 
 ## Why Oasis?
 
@@ -296,9 +302,12 @@ export function PluginDialog(props: { open: boolean; onClose: () => void }) {
 - `ribbonStyle`: `"classic"` (default) or `"simplified"`, Office's one-line
   ribbon for embedded editors: tabs stay, each panel is a single row of small
   commands, and groups that do not fit become "icon Name ▾" popups. The
-  toolbar drops from 118px to 74px.
+  toolbar drops from 118px to 74px. `"two-line"` is an opt-in embedded
+  variant with up to two rows of commands below the tabs; groups that cannot
+  fit remain available through the accessible More options menu, without
+  horizontal ribbon scrolling.
 
-Collapsed groups keep their name in both styles.
+Collapsed groups keep their name in the classic and simplified styles.
 
 Customize the toolbar and menubar after built-ins and plugin contributions are
 registered:

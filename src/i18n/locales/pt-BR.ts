@@ -587,6 +587,7 @@ export const ptBR = {
 
   // Ribbon groups
   "ribbon.scrollPrevious": "Rolar faixa de opções para a esquerda",
+  "ribbon.moreOptions": "Mais opções",
   "ribbon.scrollNext": "Rolar faixa de opções para a direita",
   "ribbon.group.history": "Histórico",
   "ribbon.group.clipboard": "Área de Transferência",

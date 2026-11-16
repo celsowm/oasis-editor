@@ -60,7 +60,7 @@ export interface OasisEditorUiState {
   toolbar?: {
     view?: "ribbon" | "compact";
     layout?: "overflow" | "wrap";
-    ribbonStyle?: "classic" | "simplified";
+    ribbonStyle?: "classic" | "simplified" | "two-line";
   };
   viewportHeight?: number | string;
   readOnly?: boolean;

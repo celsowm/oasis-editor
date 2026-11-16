@@ -581,6 +581,7 @@ export const en = {
 
   // Ribbon groups
   "ribbon.scrollPrevious": "Scroll ribbon left",
+  "ribbon.moreOptions": "More options",
   "ribbon.scrollNext": "Scroll ribbon right",
   "ribbon.group.history": "History",
   "ribbon.group.clipboard": "Clipboard",

@@ -3968,3 +3968,18 @@
 }
 
 .oasis-editor-watermark-gallery > div:first-child { max-height: min(420px,calc(100vh - 32px)); overflow-y: auto; }
+
+/* Optional embedded ribbon: two command rows below the tabs. */
+.oasis-editor-ribbon-two-line .oasis-editor-toolbar.oasis-editor-toolbar-view-ribbon { min-height: 0; flex-shrink: 0; }
+.oasis-editor-ribbon-two-line-frame { position: relative; width: 100%; min-width: 0; }
+.oasis-editor-ribbon-two-line-panel { height: 72px; min-height: 72px; overflow: hidden; }
+.oasis-editor-ribbon-two-line-panel > .oasis-editor-ribbon-group { grid-template-rows: 63px; max-height: 63px; padding: 0 5px; }
+.oasis-editor-ribbon-two-line-panel > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-label,
+.oasis-editor-ribbon-two-line-panel > .oasis-editor-ribbon-group > .oasis-editor-ribbon-group-launcher { display: none; }
+.oasis-editor-ribbon-two-line-panel .oasis-editor-ribbon-normal-rows { grid-template-rows: repeat(2, 30px); gap: 2px; }
+.oasis-editor-ribbon-two-line-panel .oasis-editor-ribbon-row { height: 30px; min-height: 30px; max-height: 30px; }
+.oasis-editor-ribbon-two-line-measure { position: fixed; left: -100000px; top: 0; width: max-content; visibility: hidden; pointer-events: none; }
+.oasis-editor-ribbon-more { display: flex; align-items: center; flex: 0 0 36px; justify-content: center; }
+.oasis-editor-ribbon-more-menu.oasis-editor-toolbar-view-ribbon { width: max-content; min-height: 0; max-width: min(90vw, 620px); max-height: min(75vh, 600px); overflow: auto; }
+.oasis-editor-ribbon-more-menu > div { display: flex; flex-direction: column; align-items: flex-start; }
+.oasis-editor-ribbon-more-menu .oasis-editor-ribbon-group { border: 0; }

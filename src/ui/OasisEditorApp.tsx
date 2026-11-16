@@ -566,6 +566,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           "oasis-editor-app": true,
           "oasis-editor-docs": useComposedShell(),
           "oasis-editor-read-only": isReadOnly(),
+          "oasis-editor-ribbon-two-line": ui().toolbar?.ribbonStyle === "two-line",
           "oasis-editor-ribbon-simplified":
             ui().toolbar?.ribbonStyle === "simplified",
           "oasis-editor-format-painter-active":

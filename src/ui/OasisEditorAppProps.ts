@@ -37,7 +37,7 @@ export interface OasisEditorAppUiProps {
      * groups that do not fit open as popups. Meant for embedded editors (form
      * fields) where the ~90px classic ribbon costs too much height.
      */
-    ribbonStyle?: "classic" | "simplified";
+    ribbonStyle?: "classic" | "simplified" | "two-line";
   };
   showTitleBar?: boolean;
   showMenubar?: boolean;
