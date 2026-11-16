@@ -138,10 +138,14 @@ export async function openGroup(page, group, testId) {
   const afterEscape = await visible(inline);
   if (afterEscape) return afterEscape;
   const trigger = section.locator(`[data-testid="editor-ribbon-group-${group}"]:visible`);
-  await trigger.click();
+  // A child Escape can leave the parent open. Never toggle an open group
+  // blindly, and resolve the command only against the settled layout.
+  if ((await trigger.getAttribute("aria-expanded")) !== "true") await trigger.click();
   const target = popup.locator(`[data-testid="${testId}"]`);
   await target.waitFor({ state: "visible", timeout: 5000 });
-  return target;
+  const resolved = await visible(target);
+  if (!resolved) throw new Error(`Command ${testId} is not accessible in group ${group}`);
+  return resolved;
 }
 
 export async function loadFixture(page, fixture) {

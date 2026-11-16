@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import { expect } from "@playwright/test";
 import JSZip from "jszip";
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
-import { createSuite } from "./lib/ribbon-suite.mjs";
+import { createSuite, openGroup } from "./lib/ribbon-suite.mjs";
 const { base, engine, output, sha, dirty, records, browser } =
   await createSuite("ribbon-colors-styles");
 const modes = [
@@ -15,24 +15,7 @@ const modes = [
   { id: "text-shading", key: "shading", initial: "00b050", pick: "ff0000" },
 ];
 async function control(page, id, group = "font") {
-  const result = page.locator(`[data-testid="editor-toolbar-${id}"]:visible`);
-  if (!(await result.isVisible())) {
-    const trigger = page.getByTestId(`editor-ribbon-group-${group}`);
-    // Revoking command availability can close a child popover and restore
-    // focus asynchronously. Do not blindly toggle the collapsed group:
-    // if it is already open, a click would hide the requested control.
-    await page.keyboard.press("Escape");
-    await page.keyboard.press("Escape");
-    if (!(await result.isVisible())) {
-      await expect(trigger).toBeVisible();
-      if ((await trigger.getAttribute("aria-expanded")) !== "true") {
-        await trigger.click();
-      }
-      await expect(trigger).toHaveAttribute("aria-expanded", "true");
-    }
-  }
-  await expect(result).toBeVisible();
-  return result;
+  return openGroup(page, group, `editor-toolbar-${id}`);
 }
 async function seed(page) {
   await page.evaluate(async () => {

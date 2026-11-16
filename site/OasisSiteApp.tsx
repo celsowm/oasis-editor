@@ -1,6 +1,7 @@
 import { For, Match, Show, Switch, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { OasisEditorAppLazy } from "../src/ui/OasisEditorAppLazy.js";
 import type { OasisEditorAppProps } from "../src/ui/OasisEditorApp.js";
+import { createTabDemo } from "./tabDemo.js";
 
 type RouteId = "editor" | "about" | "api" | "plugins";
 type Language = "pt" | "en";
@@ -558,6 +559,16 @@ export function OasisSiteApp() {
 function EditorPage(props: { language: Language; shell: EditorShell }) {
   const t = () => copy[props.language];
   const testProps = () => window.__oasisEditorTestProps ?? {};
+  const isTabDemo = new URLSearchParams(window.location.search).get("demo") === "tabs";
+  // One fixture per mount: locale/shell changes do not overwrite live edits.
+  const tabDemoDocument = isTabDemo ? createTabDemo(props.language) : undefined;
+  const demoLink = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("demo", "tabs");
+    url.searchParams.delete("shell");
+    url.hash = "#/editor";
+    return url.href;
+  };
 
   return (
     <div class="oasis-site-content oasis-site-editor-split">
@@ -567,6 +578,18 @@ function EditorPage(props: { language: Language; shell: EditorShell }) {
         <h2 class="oasis-site-editor-headline">{t().headline}</h2>
         <p class="oasis-site-lead">{t().description}</p>
         <a class="oasis-site-more-link" href="#/about">{t().moreAbout}</a>
+        <Show when={isTabDemo} fallback={
+          <a class="oasis-site-tab-demo-link" data-testid="site-tab-demo-link" href={demoLink()} target="_blank" rel="noopener">
+            {props.language === "pt" ? "Testar tabulações ↗" : "Try tab stops ↗"}
+          </a>}>
+          <div class="oasis-site-tab-demo-help" data-testid="site-tab-demo-help">
+            <strong>{props.language === "pt" ? "Laboratório de tabulações" : "Tab stop lab"}</strong>
+            <p>{props.language === "pt"
+              ? "Sumário, valores decimais, recuos, tabelas e régua. Selecione uma linha e explore os marcadores. Use o modo Documento para a régua e as exportações."
+              : "Contents, decimal amounts, indents, tables and ruler. Select a line and explore its markers. Use Document mode for the ruler and exports."}</p>
+            <p>{props.language === "pt" ? "Esta demonstração é isolada: recarregar restaura o exemplo." : "This isolated demo resets on reload."}</p>
+          </div>
+        </Show>
         <div class="oasis-site-tip">
           <span class="oasis-site-tip-dot" aria-hidden="true" />
           <span>{t().editor.tips[props.shell]}</span>
@@ -576,6 +599,7 @@ function EditorPage(props: { language: Language; shell: EditorShell }) {
         <div class="oasis-site-editor-host" data-demo-shell={props.shell}>
           <OasisEditorAppLazy
             ui={{
+              ...(isTabDemo ? {showRuler:true,showWelcome:false} : {}),
               ...testProps().ui,
               shell: props.shell,
               uiVariant: "docs",
@@ -583,6 +607,7 @@ function EditorPage(props: { language: Language; shell: EditorShell }) {
             }}
             document={{
               remoteWebFonts: true,
+              ...(tabDemoDocument ? {initialDocument:tabDemoDocument,persistenceEnabled:false} : {}),
               ...testProps().document,
             }}
             runtime={testProps().runtime}

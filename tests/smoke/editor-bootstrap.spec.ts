@@ -67,3 +67,27 @@ test("site editor modes use real shells and share browser history", async ({ pag
   await expect(page.getByTestId("site-shell-inline")).toHaveAttribute("aria-pressed", "true");
   expect(pageErrors).toEqual([]);
 });
+
+
+test("tab stop lab opens the actual editable document and ruler", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto("/oasis-editor/?demo=tabs#/editor");
+  await expect(page.getByTestId("site-tab-demo-help")).toBeVisible();
+  await expect(page.getByTestId("editor-page").first()).toBeVisible();
+  const ruler = page.getByTestId("editor-horizontal-ruler");
+  await expect(ruler).toBeVisible();
+  await expect(ruler.getByTestId("editor-ruler-tab-selector")).toBeEnabled();
+  const marker = ruler.locator('[data-testid="editor-ruler-tab-marker"][data-position-pt="360"]');
+  await expect(marker).toBeVisible();
+  await marker.dblclick();
+  await expect(page.getByTestId("editor-tab-stops-dialog")).toBeVisible();
+  await expect(page.getByTestId("editor-tab-stops-position")).toHaveValue("360");
+  await page.getByTestId("editor-tab-stops-cancel").click();
+  await expect(page.getByTestId("editor-tab-stops-dialog")).toHaveCount(0);
+  await page.getByTestId("site-shell-inline").click();
+  await expect(page.locator(".oasis-inline-shell")).toBeVisible();
+  await page.getByTestId("site-shell-document").click();
+  await expect(marker).toBeVisible();
+  expect(errors).toEqual([]);
+});

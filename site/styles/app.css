@@ -812,3 +812,7 @@
   display: flex;
   flex-direction: column;
 }
+
+.oasis-site-tab-demo-link { display:inline-flex; align-self:flex-start; margin:12px 0 0; padding:8px 12px; border:1px solid currentColor; border-radius:6px; font-size:13px; text-decoration:none; font-weight:600; }
+.oasis-site-tab-demo-help { margin:14px 0; font-size:13px; line-height:1.5; }
+.oasis-site-tab-demo-help p { margin:6px 0; }

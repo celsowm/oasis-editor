@@ -5,17 +5,11 @@ import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import JSZip from "jszip";
 import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
-import { createSuite } from "./lib/ribbon-suite.mjs";
+import { createSuite, openGroup } from "./lib/ribbon-suite.mjs";
 const { base, engine, output, sha, dirty, records, browser } =
   await createSuite("ribbon-editing");
 async function control(page, id, group = "font") {
-  const target = page.locator(`[data-testid="editor-toolbar-${id}"]:visible`);
-  if (!(await target.isVisible())) {
-    await page.keyboard.press("Escape");
-    await page.keyboard.press("Escape");
-    await page.getByTestId(`editor-ribbon-group-${group}`).click();
-  }
-  return target;
+  return openGroup(page, group, `editor-toolbar-${id}`);
 }
 async function click(page, id, group) {
   await (await control(page, id, group)).click();
@@ -189,11 +183,7 @@ try {
           "Read-only underline main remained enabled",
         );
         assert.equal(
-          await page
-            .locator(
-              '[data-testid="editor-toolbar-underline-dropdown"]:visible',
-            )
-            .isDisabled(),
+          await (await control(page, "underline-dropdown")).isDisabled(),
           true,
           "Read-only underline menu remained enabled",
         );
