@@ -3912,7 +3912,7 @@
   grid-template-columns: repeat(3, minmax(0,1fr));
   gap: 4px;
 }
-.oasis-editor-watermark-card {
+.oasis-editor-watermark-card.oasis-editor-ui-surface-button {
   display: grid;
   align-content: start;
   justify-items: center;
@@ -3929,12 +3929,13 @@
   text-align: center;
   overflow-wrap: anywhere;
 }
-.oasis-editor-watermark-card:hover,.oasis-editor-watermark-card:focus-visible,
-.oasis-editor-watermark-card[aria-pressed="true"] {
+.oasis-editor-watermark-card.oasis-editor-ui-surface-button:hover,.oasis-editor-watermark-card.oasis-editor-ui-surface-button:focus-visible,
+.oasis-editor-watermark-card.oasis-editor-ui-surface-button[aria-pressed="true"] {
   background: var(--oasis-accent-soft);
   border-color: var(--oasis-accent);
 }
 .oasis-editor-watermark-card:disabled { opacity: .45; cursor: not-allowed; }
+.oasis-editor-watermark-card .oasis-editor-ui-text { font: inherit; }
 .oasis-editor-watermark-preview {
   display: block;
   width: 100%;

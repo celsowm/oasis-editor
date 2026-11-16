@@ -4,6 +4,10 @@ import { PX_PER_POINT } from "@/core/units.js";
 import { Dialog } from "@/ui/components/Dialogs/Dialog.js";
 import { Button as DialogButton } from "@/ui/public/Button.js";
 import { TextField } from "@/ui/public/TextField.js";
+import { FormField } from "@/ui/public/FormField.js";
+import { Heading } from "@/ui/public/Heading.js";
+import { Text } from "@/ui/public/Text.js";
+import { SurfaceButton } from "@/ui/public/SurfaceButton.js";
 import { Button } from "./primitives/Button.js";
 import { Select } from "./primitives/Select.js";
 import { PopoverBranchContext } from "./primitives/popoverBranch.js";
@@ -85,6 +89,8 @@ function WatermarkEditor(props: { api: ToolbarActionApi; initial: EditorWatermar
   let generation = 0;
   let root!: HTMLDivElement;
   const fontList = createUniqueId();
+  const kindId = createUniqueId();
+  const rotationId = createUniqueId();
   const number = (raw: string, min: number, max: number): number | null => {
     const n = parseDecimal(raw);
     return n !== null && n >= min && n <= max ? n : null;
@@ -138,11 +144,11 @@ function WatermarkEditor(props: { api: ToolbarActionApi; initial: EditorWatermar
           <DialogButton variant="primary" data-testid="editor-watermark-apply" disabled={!valid()} onClick={() => { if(valid()) props.onApply(draft()); }}>{t("generic.apply")}</DialogButton></>}>
         <div class="oasis-editor-watermark-editor">
           <div class="oasis-editor-watermark-fields">
-            <label class="oasis-editor-watermark-field">{t("design.watermarkType")}
-              <Select aria-label={t("design.watermarkType")} value={kind()} data-testid="editor-watermark-kind" onChange={e => setKind(e.currentTarget.value as EditorWatermark["kind"])}>
+            <FormField class="oasis-editor-watermark-field" label={t("design.watermarkType")} for={kindId}>
+              <Select id={kindId} aria-label={t("design.watermarkType")} value={kind()} data-testid="editor-watermark-kind" onChange={e => setKind(e.currentTarget.value as EditorWatermark["kind"])}>
                 <option value="text">{t("design.text")}</option><option value="image">{t("design.useImage")}</option>
               </Select>
-            </label>
+            </FormField>
             <Show when={kind()==="text"} fallback={
               <div class="oasis-editor-watermark-field">
                 <TextField label={t("design.useImage")} aria-label={t("design.useImage")} type="file" data-testid="editor-watermark-image" accept="image/png,image/jpeg,image/gif,image/svg+xml" onInput={fileChanged} />
@@ -159,16 +165,16 @@ function WatermarkEditor(props: { api: ToolbarActionApi; initial: EditorWatermar
               </div>
             </Show>
             {numeric(t("design.watermarkTransparency"),"editor-watermark-transparency",transparency,setTransparency,0,100)}
-            <label class="oasis-editor-watermark-field">{t("design.rotation")}
-              <Select aria-label={t("design.rotation")} value={rotation()==="0"?"0":rotation()==="-45"?"-45":"custom"} onChange={e=>setRotation(e.currentTarget.value==="custom"?"-30":e.currentTarget.value)}>
+            <FormField class="oasis-editor-watermark-field" label={t("design.rotation")} for={rotationId}>
+              <Select id={rotationId} aria-label={t("design.rotation")} value={rotation()==="0"?"0":rotation()==="-45"?"-45":"custom"} onChange={e=>setRotation(e.currentTarget.value==="custom"?"-30":e.currentTarget.value)}>
                 <option value="-45">{t("design.watermarkDiagonal")}</option><option value="0">{t("design.watermarkHorizontal")}</option><option value="custom">{t("design.watermarkCustomAngle")}</option>
               </Select>
-            </label>
+            </FormField>
             {numeric(t("design.rotation"),"editor-watermark-rotation",rotation,setRotation,-180,180)}
             {numeric(t("design.scale"),"editor-watermark-scale",scale,setScale,.1,5)}
           </div>
           <div class="oasis-editor-watermark-editor-preview">
-            <span>{t("design.watermarkPreview")}</span><WatermarkPreview value={draft()}/>
+            <Text size="sm" tone="muted">{t("design.watermarkPreview")}</Text><WatermarkPreview value={draft()}/>
           </div>
         </div>
       </Dialog>
@@ -197,19 +203,19 @@ export function DesignWatermarkPanel(props: DesignWatermarkPanelProps): JSX.Elem
     <div class="oasis-editor-watermark-gallery" data-testid="editor-watermark-gallery">
       <div inert={editing()}>
         <For each={[{ key: "design.watermarkConfidentiality", presets:PRESETS.slice(0,3) },{ key:"design.watermarkDrafts",presets:PRESETS.slice(3) }] as const}>
-          {group => <section class="oasis-editor-watermark-section">
-            <h3>{t(group.key)}</h3>
+          {group => <div class="oasis-editor-watermark-section" role="group" aria-label={t(group.key)}>
+            <Heading level={3}>{t(group.key)}</Heading>
             <div class="oasis-editor-watermark-grid">
               <For each={group.presets}>{preset => {
                 const value = () => defaults(t(preset.key),preset.rotation);
                 const caption = () => preset.id==="draft-horizontal" ? `${t(preset.key)} · ${t("design.watermarkHorizontal")}` : t(preset.key);
-                return <button type="button" class="oasis-editor-watermark-card" aria-pressed={samePreset(current(),value())}
+                return <SurfaceButton type="button" class="oasis-editor-watermark-card" aria-pressed={samePreset(current(),value())}
                   disabled={!editable()} data-testid={`editor-watermark-preset-${preset.id}`} onClick={() => apply(value())}>
-                  <WatermarkPreview value={value()}/><span>{caption()}</span>
-                </button>;
+                  <WatermarkPreview value={value()}/><Text>{caption()}</Text>
+                </SurfaceButton>;
               }}</For>
             </div>
-          </section>}
+          </div>}
         </For>
         <div class="oasis-editor-command-menu-section oasis-editor-watermark-actions">
           <Button ref={customButton} icon="settings-2" label={t("design.watermarkCustom")} disabled={!editable()}

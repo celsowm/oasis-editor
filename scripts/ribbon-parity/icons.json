@@ -1343,14 +1343,14 @@
     },
     {
       "file": "src/ui/components/Toolbar/WatermarkGallery.tsx",
-      "line": 215,
+      "line": 221,
       "role": "icon",
       "name": "settings-2",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/WatermarkGallery.tsx",
-      "line": 217,
+      "line": 223,
       "role": "icon",
       "name": "eraser",
       "origin": "lucide"
