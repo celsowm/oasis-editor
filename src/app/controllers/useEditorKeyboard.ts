@@ -10,17 +10,16 @@ import {
   moveSelectionUp,
   setSelection,
 } from "@/core/commands/selection.js";
-import { deleteBackward, deleteForward, insertTextAtSelection } from "@/core/commands/text.js";
+import { deleteBackward, deleteForward } from "@/core/commands/text.js";
+import { handleDocumentTab } from "./handleDocumentTab.js";
 import {
-  findParagraphLocation,
-  findParagraphTablePathLocation,
   getParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
   positionToParagraphOffset,
   EditorState,
 } from "@/core/model.js";
-import { isSelectionCollapsed, normalizeSelection } from "@/core/selection.js";
+import { isSelectionCollapsed } from "@/core/selection.js";
 import { resolveWordSelection } from "@/core/wordBoundaries.js";
 import {
   defaultEditorKeyBindings,
@@ -46,12 +45,14 @@ function createEditorKeyboardControllerImpl(deps: EditorKeyboardDeps) {
   const handleKeyDown = (
     event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
   ): void => {
+    if (event.defaultPrevented) return;
     const currentState = deps.state();
 
     if (deps.isReadOnly()) {
       const key = event.key;
       const lowerKey = key.toLowerCase();
       const isNavigationKey =
+        key === "Tab" ||
         key === "ArrowLeft" ||
         key === "ArrowRight" ||
         key === "ArrowUp" ||
@@ -260,71 +261,9 @@ function createEditorKeyboardControllerImpl(deps: EditorKeyboardDeps) {
         event.currentTarget.value = "";
         deps.focusInput();
         return;
-      case "Tab": {
-        if (event.altKey) return;
-        const paragraphId = currentState.selection.focus.paragraphId;
-        const location = findParagraphLocation(currentState.document, paragraphId);
-        const inTable = location
-          ? Boolean(findParagraphTablePathLocation(
-              currentState.document, paragraphId, location.sectionIndex,
-            ))
-          : false;
-        const insertTab = (): void => {
-          event.preventDefault();
-          deps.clearPreferredColumn();
-          deps.resetTransactionGrouping();
-          deps.applyTransactionalState((current): EditorState =>
-            deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-              insertTextAtSelection(temp, "\t"),
-            ),
-          );
-          event.currentTarget.value = "";
-          deps.focusInput();
-        };
-
-        if (event.ctrlKey || event.metaKey) {
-          if (event.ctrlKey && !event.metaKey && !event.shiftKey && inTable) insertTab();
-          return;
-        }
-
-        // Tables take precedence over list formatting in their cells.
-        if (inTable) {
-          const nextPosition = deps.resolveAdjacentTableCellPosition(
-            currentState.document, paragraphId, event.shiftKey ? -1 : 1,
-          );
-          if (nextPosition) {
-            event.preventDefault();
-            deps.clearPreferredColumn();
-            deps.resetTransactionGrouping();
-            deps.applySelectionPreservingStructure({
-              anchor: nextPosition,
-              focus: nextPosition,
-            });
-            deps.focusInput();
-          }
-          // Row creation at the last cell requires a separate table operation.
-          return;
-        }
-
-        const paragraphs = getParagraphs(currentState);
-        const range = normalizeSelection(currentState, paragraphs);
-        const paragraph = paragraphs[range.startIndex];
-        if (!paragraph) return;
-        const wholeParagraphs = !range.isCollapsed &&
-          (range.startIndex !== range.endIndex ||
-            (range.startParagraphOffset === 0 &&
-              range.endParagraphOffset === getParagraphText(paragraph).length));
-        // In the middle of a list item, Tab is text rather than demotion.
-        if ((event.shiftKey || wholeParagraphs ||
-             (range.isCollapsed && range.startParagraphOffset === 0)) &&
-            deps.commandsController.handleListTab(event.shiftKey ? "outdent" : "indent")) {
-          event.preventDefault();
-          return;
-        }
-        // Never replace a whole paragraph selection with a tab.
-        if (!event.shiftKey && !wholeParagraphs) insertTab();
+      case "Tab":
+        handleDocumentTab(deps, currentState, event);
         return;
-      }
       case "ArrowLeft":
         event.preventDefault();
         deps.resetTransactionGrouping();

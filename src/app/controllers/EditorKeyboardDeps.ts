@@ -2,6 +2,7 @@ import type {
   EditorDocument,
   EditorPosition,
   EditorState,
+  EditorTextStyle,
 } from "@/core/model.js";
 import type { BooleanStyleKey } from "@/ui/toolbarStyleState.js";
 import type {
@@ -23,6 +24,7 @@ export interface EditorKeyboardDeps
   extends EditorTransactionPort, FocusInputPort, SelectedImageQueryPort {
   state: () => EditorState;
   isReadOnly: () => boolean;
+  pendingCaretTextStyle?: () => EditorTextStyle | undefined;
   commandsController: {
     promptForImageAlt: () => void;
     promptForLink: () => void;

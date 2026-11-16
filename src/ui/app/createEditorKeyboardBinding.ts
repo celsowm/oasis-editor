@@ -1,4 +1,4 @@
-import type { EditorState } from "@/core/model.js";
+import type { EditorState, EditorTextStyle } from "@/core/model.js";
 import type { SelectedImageRun } from "@/core/commands/image.js";
 import type { EditorLogger } from "@/utils/logger.js";
 import type { EditorTransactionPort } from "@/app/controllers/controllerPorts.js";
@@ -44,7 +44,10 @@ export interface EditorKeyboardBindingDeps {
   tableOps: EditorTableOperations;
   navigation: EditorNavigation;
   historyActions: EditorHistoryActions;
-  styleController: { clearPendingCaretTextStyle: () => void };
+  styleController: {
+    clearPendingCaretTextStyle: () => void;
+    pendingCaretTextStyle?: () => EditorTextStyle | undefined;
+  };
   findReplace: { isOpen: () => boolean; setIsOpen: (open: boolean) => void };
   commandSearch: { isOpen: () => boolean; setIsOpen: (open: boolean) => void };
   runtimeEditor: RuntimeEditorAccessor;
@@ -95,6 +98,7 @@ export function createEditorKeyboardBinding(deps: EditorKeyboardBindingDeps): {
       tableOps.applySelectionAwareParagraphCommand,
     focusInput,
     commandsController,
+    pendingCaretTextStyle: styleController.pendingCaretTextStyle,
     selectedImageRun,
     setForcePlainTextPaste,
     moveSelectionByWord: navigation.moveSelectionByWord,
