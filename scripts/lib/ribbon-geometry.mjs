@@ -1,0 +1,113 @@
+/** Geometry evidence from the active ribbon, never from inert measurement copies. */
+export async function readRibbonGeometry(page) {
+  return page.evaluate(() => {
+    const panel = document.querySelector('[data-testid="editor-ribbon-panel"]');
+    if (!panel) throw new Error("Missing live ribbon panel");
+    const rect = (el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom };
+    };
+    const visible = (el) => !!el && !el.closest('[inert], [aria-hidden="true"]') &&
+      getComputedStyle(el).visibility === "visible" && el.getClientRects().length > 0 &&
+      el.getBoundingClientRect().width > 0 && el.getBoundingClientRect().height > 0;
+    const identity = (el) => el.dataset.testid || el.dataset.styleId ||
+      el.getAttribute("aria-label") || el.getAttribute("title") || el.textContent?.trim() || el.className;
+    const groups = [...panel.children].filter((el) => el.hasAttribute("data-ribbon-group") && visible(el));
+    const failures = [];
+    const issue = (g, rule, detail) => failures.push({ group: g.dataset.ribbonGroup, rule, detail });
+    const near = (a,b) => Math.abs(a-b) <= 1.01;
+    const intersects = (a,b) => Math.min(a.right,b.right)-Math.max(a.x,b.x)>1.01 &&
+      Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)>1.01;
+    const groupEvidence = [];
+    const allIds = new Set();
+    const simplified = !!panel.closest(".oasis-editor-ribbon-simplified");
+    for (const group of groups) {
+      const box = rect(group);
+      const state = group.dataset.ribbonState;
+      const allocated = Number(group.dataset.ribbonWidthAllocated);
+      if (!Number.isFinite(allocated) || Math.abs(Math.ceil(box.width)-allocated)>1)
+        issue(group, "allocation", { allocated, actual: box.width });
+      const caption = group.querySelector(":scope > .oasis-editor-ribbon-group-label");
+      const launcher = group.querySelector(":scope > .oasis-editor-ribbon-group-launcher");
+      const content = group.querySelector(":scope > .oasis-editor-ribbon-group-content > .oasis-editor-ribbon-group-rows");
+      const trigger = group.querySelector(":scope > .oasis-editor-ribbon-group-collapsed-trigger");
+      const expected = state === "collapsed" ? trigger : content;
+      if (!visible(expected)) issue(group, "presentation-visible", { state });
+      if (state === "collapsed" && visible(content)) issue(group,"collapsed-content-visible",{});
+      if (state !== "collapsed" && visible(trigger)) issue(group,"expanded-trigger-visible",{});
+      const controlSelector = 'button, select, input, [role="button"], [role="option"]';
+      const controls = [...group.querySelectorAll(controlSelector)].filter(visible).map((el) => {
+        const r = rect(el);
+        const id = el.dataset.testid;
+        if (id && allIds.has(id)) issue(group,"duplicate-action-id",{ id });
+        if (id) allIds.add(id);
+        if (r.x < box.x-1 || r.right > box.right+1 || r.y < box.y-1 || r.bottom>box.bottom+1)
+          issue(group,"control-outside-group",{ id: identity(el), rect:r, groupRect:box });
+        if (!el.getAttribute("aria-label") && !el.getAttribute("aria-labelledby") &&
+            !el.getAttribute("title") && !el.textContent?.trim() && !el.labels?.length)
+          issue(group,"missing-control-name",{ id:identity(el) });
+        return { id: identity(el), rect:r, disabled:!!el.disabled };
+      });
+      let captionEvidence = null;
+      if (visible(caption)) {
+        const c = rect(caption);
+        const style = getComputedStyle(group);
+        // Caption track center excludes the reserved launcher gutter.
+        const start=box.x+parseFloat(style.borderLeftWidth)+parseFloat(style.paddingLeft);
+        const end=box.right-parseFloat(style.borderRightWidth)-parseFloat(style.paddingRight)-
+          (visible(launcher)?parseFloat(getComputedStyle(caption).marginInlineEnd):0);
+        if (!near((c.x+c.right)/2,(start+end)/2))
+          issue(group,"caption-center",{ actual:(c.x+c.right)/2, expected:(start+end)/2 });
+        if (visible(launcher) && intersects(c,rect(launcher)))
+          issue(group,"caption-launcher-overlap",{ caption:c, launcher:rect(launcher) });
+        for (const control of controls) {
+          // The launcher owns a reserved track beside the caption, never over it.
+          if (intersects(c,control.rect)) issue(group,"caption-control-overlap",{ caption:c, control });
+        }
+        captionEvidence={rect:c,text:caption.textContent};
+      }
+      const rows = [];
+      if (visible(content)) {
+        const items = content.querySelectorAll(":scope > .oasis-editor-ribbon-normal-rows > .oasis-editor-ribbon-row");
+        for (const row of items) {
+          if (!visible(row)) continue;
+          const r=rect(row);
+          const children=[...row.children].filter(visible).map(el=>({id:identity(el),rect:rect(el)}));
+          for (const item of children) {
+            if (item.rect.y < r.y-1 || item.rect.bottom>r.bottom+1)
+              issue(group,"row-overflow",{ item,row:r });
+          }
+          for (let i=0;i<children.length;i++) for(let j=i+1;j<children.length;j++)
+            if (intersects(children[i].rect,children[j].rect))
+              issue(group,"row-overlap",{ a:children[i], b:children[j] });
+          rows.push({rect:r,items:children});
+        }
+        const strip=content.querySelector(".oasis-editor-style-gallery-strip");
+        if (visible(strip)) {
+          const cards=[...strip.querySelectorAll(".oasis-editor-style-gallery-card")].filter(visible);
+          if (!cards.length && !strip.querySelector(".oasis-editor-style-gallery-placeholder"))
+            issue(group,"empty-style-strip",{rect:rect(strip)});
+          for(const card of cards){
+            const sample=card.querySelector(".oasis-editor-style-gallery-sample");
+            if(!visible(sample))issue(group,"missing-style-preview",{id:identity(card)});
+          }
+        }
+      }
+      const large=[...group.querySelectorAll(".oasis-editor-tool-button-ribbon-large, .oasis-editor-toolbar-item-ribbon-large > .oasis-editor-tool-button, .oasis-editor-toolbar-item-ribbon-large > .oasis-editor-toolbar-dropdown > .oasis-editor-tool-button")].filter(visible).map(el=>{
+        const icon=el.querySelector(":scope > svg:not(.oasis-editor-dropdown-chevron)");
+        const label=el.querySelector(":scope > .oasis-editor-tool-button-label");
+        const chevron=el.querySelector(":scope > .oasis-editor-dropdown-chevron");
+        return { id:identity(el), icon:visible(icon)?rect(icon):null,label:visible(label)?rect(label):null,chevron:visible(chevron)?rect(chevron):null };
+      });
+      if(!simplified && state!=="collapsed"){
+        for(const key of ["icon","label","chevron"]){
+          const entries=large.filter(el=>el[key]);
+          if(entries.length>1 && entries.some(el=>!near(el[key].y,entries[0][key].y)))
+            issue(group,"large-"+key+"-band",entries);
+        }
+      }
+      groupEvidence.push({id:group.dataset.ribbonGroup,state,allocated,rect:box,caption:captionEvidence,rows,large,controls});
+    }
+    return { simplified,panel:rect(panel),groups:groupEvidence,failures };
+  });
+}

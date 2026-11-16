@@ -191,3 +191,7 @@ Decisions: preserve established command semantics and reduction invariants; reus
 ### Declarative grid migration
 
 Added RibbonGroupGrid to the neutral contribution contract and plugin adapter, with explicit column count and whole-row spans. Group composition normalizes the columns to the longest surviving row and only retains a whole-row span when exactly one action remains. Review now opts into this shared variant through the preset; group-specific Review geometry selectors are removed. Added pure composition regression, including plugin contributions. Browser verification pending.
+
+### Initial global geometry auditor
+
+Added shared geometry reader and a dedicated three-engine workflow. It enumerates real visible tabs, explicitly requires the eight standard tabs and all three table/image contextual tabs, evaluates real control bounds, caption and launcher intersections, allocations, row clipping/overlap, large bands, active style previews, and duplicate action identifiers. Records all failures and screenshots across themes/locales and a host-width cycle. This is the first auditor increment, not full acceptance: simplified/zoom/multi-editor/plugin and reachable-command/optical/performance cases still need expansion; CI workflow is independent until the initial baseline is understood and green. No default deployment gate was weakened.

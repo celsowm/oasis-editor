@@ -50,7 +50,9 @@ try {
     await delay(200);
   }
   if (!ready) throw new Error("Reference server startup timed out");
-  if (suite === "review") {
+  if (suite === "geometry") {
+    await run("scripts/verify-ribbon-geometry.mjs");
+  } else if (suite === "review") {
     await run("scripts/verify-ribbon-layout-alignment.mjs");
     await run("scripts/verify-ribbon-review-layout.mjs");
     await run("scripts/verify-ribbon-review.mjs");

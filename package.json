@@ -77,6 +77,7 @@
     "test:ribbon:browser": "node scripts/verify-ribbon-reference.mjs",
     "test:ribbon:resize": "node scripts/verify-ribbon-resize.mjs",
     "test:ribbon:ci": "node scripts/verify-ribbon-ci.mjs",
+    "test:ribbon:geometry": "node scripts/verify-ribbon-geometry.mjs",
     "test:ribbon:contexts": "node scripts/verify-ribbon-contexts.mjs",
     "test:ribbon:icons": "node scripts/verify-ribbon-icons.mjs",
     "test:ribbon:editing": "node scripts/verify-ribbon-editing.mjs",

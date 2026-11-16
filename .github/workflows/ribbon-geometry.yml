@@ -1,0 +1,41 @@
+name: Ribbon Geometry Regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/ui/**'
+      - 'src/core/**'
+      - 'src/i18n/**'
+      - 'src/styles/**'
+      - 'scripts/**ribbon**'
+      - 'tests/browser/ribbon/**'
+      - '.github/workflows/ribbon-geometry.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  geometry:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: npm run test:ribbon:ci
+        env:
+          RIBBON_BROWSER: ${{ matrix.browser }}
+          RIBBON_SUITE: geometry
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ribbon-geometry-${{ matrix.browser }}
+          path: test-results/ribbon/geometry
