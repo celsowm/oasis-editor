@@ -54,7 +54,7 @@ function getListTextFirstLineInset(
   }
   const nextTabStop = (paragraphStyle.tabs ?? [])
     .filter(
-      (tab): boolean => tab.type !== "clear" && Number.isFinite(tab.position),
+      (tab): boolean => tab.type !== "clear" && tab.type !== "bar" && Number.isFinite(tab.position),
     )
     .map((tab): number => tab.position * PX_PER_POINT)
     .filter((positionPx): boolean => positionPx > numberStart + 0.01)

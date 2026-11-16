@@ -24,7 +24,8 @@ import {
 import { getLineStartInset } from "./indentation.js";
 import { resolveLineFlowBox, type LineFlowBox } from "./lineFlow.js";
 import { getParagraphLineHeight } from "./paragraphLineHeight.js";
-import { resolveTabAdvancePx } from "./tabStops.js";
+import { prepareTabLayout } from "./tabStops.js";
+import type { EditorResolvedTab } from "@/core/model.js";
 import { commitLine } from "./layoutLine.js";
 import { applyParagraphAlignment } from "./alignment.js";
 import { measureCharacterWidth } from "./characterWidth.js";
@@ -86,6 +87,7 @@ export function composeMeasuredParagraphLines(
     ? undefined
     : options.hyphenation;
   const measuredChars = buildMeasuredChars(paragraph, fragments, styles);
+  const tabLayout = prepareTabLayout(effectiveParagraphStyle.tabs ?? [], defaultTabStop, measuredChars);
   const tokens = tokenizeMeasuredChars(measuredChars);
   const charByOffset = new Map<number, string>(
     measuredChars.map(
@@ -132,6 +134,7 @@ export function composeMeasuredParagraphLines(
         },
       ],
       fragments: [],
+      ...(tabLayout.barPositionsPx.length ? { barTabPositionsPx: tabLayout.barPositionsPx } : {}),
     };
 
     if (exclusions.length > 0) {
@@ -189,6 +192,7 @@ export function composeMeasuredParagraphLines(
   let lineStartInset = currentFlow.segments[0]!.left;
   let lineAvailableWidth = currentFlow.segments[0]!.width;
   let lineSlotLefts = [lineStartInset];
+  let lineTabs: Record<number, EditorResolvedTab> | undefined;
 
   const applySegment = (nextOffset: number): void => {
     lineStartOffset = nextOffset;
@@ -200,6 +204,7 @@ export function composeMeasuredParagraphLines(
     lineStartInset = segment.left;
     lineAvailableWidth = segment.width;
     lineSlotLefts = [lineStartInset];
+    lineTabs = undefined;
   };
 
   // Count of consecutive lines ending with an automatic hyphen, for
@@ -223,6 +228,9 @@ export function composeMeasuredParagraphLines(
       effectiveHeight,
       lineAvailableWidth,
     );
+    const committedLine = lines[lines.length - 1]!;
+    if (lineTabs) committedLine.resolvedTabs = lineTabs;
+    if (tabLayout.barPositionsPx.length) committedLine.barTabPositionsPx = tabLayout.barPositionsPx;
     if (trailingHyphenWidth !== undefined) {
       const committed = lines[lines.length - 1]!;
       committed.trailingHyphen = true;
@@ -260,15 +268,7 @@ export function composeMeasuredParagraphLines(
     for (const char of chars) {
       widthAt +=
         char.char === "\t"
-          ? resolveTabAdvancePx(
-              paragraph,
-              styles,
-              defaultTabStop,
-              lineStartInset,
-              widthAt,
-              char.offset,
-              measuredChars,
-            )
+          ? tabLayout.resolve(lineStartInset + widthAt, char.offset).advancePx
           : char.width;
     }
     return widthAt - startLineWidth;
@@ -281,18 +281,13 @@ export function composeMeasuredParagraphLines(
 
   const appendChars = (chars: MeasuredChar[]): void => {
     for (const char of chars) {
-      lineWidth +=
-        char.char === "\t"
-          ? resolveTabAdvancePx(
-              paragraph,
-              styles,
-              defaultTabStop,
-              lineStartInset,
-              lineWidth,
-              char.offset,
-              measuredChars,
-            )
-          : char.width;
+      if (char.char === "\t") {
+        const resolved = tabLayout.resolve(lineStartInset + lineWidth, char.offset);
+        (lineTabs ??= {})[char.offset] = resolved.stop;
+        lineWidth += resolved.advancePx;
+      } else {
+        lineWidth += char.width;
+      }
       if (char.objectHeight !== undefined) {
         lineMaxObjectHeight = Math.max(lineMaxObjectHeight, char.objectHeight);
       }
@@ -310,15 +305,7 @@ export function composeMeasuredParagraphLines(
     for (const char of chars) {
       const charWidth =
         char.char === "\t"
-          ? resolveTabAdvancePx(
-              paragraph,
-              styles,
-              defaultTabStop,
-              lineStartInset,
-              currentChunkWidth,
-              char.offset,
-              measuredChars,
-            )
+          ? tabLayout.resolve(lineStartInset + currentChunkWidth, char.offset).advancePx
           : char.width;
       if (
         currentChunk.length > 0 &&
@@ -419,7 +406,13 @@ export function composeMeasuredParagraphLines(
     const isEmptyLine = lineStartOffset === lineEndOffset;
 
     if (token.kind === "whitespace") {
-      if (fitsCurrentLine || isEmptyLine) {
+      // Unlike ordinary trailing spaces, a literal tab must retain its caret
+      // slot when it crosses a wrap boundary.
+      if (!fitsCurrentLine && !isEmptyLine && token.chars[0]?.char === "\t") {
+        flushLine();
+        resetLine(token.chars[0].offset);
+        appendChars(token.chars);
+      } else if (fitsCurrentLine || isEmptyLine) {
         appendChars(token.chars);
       } else {
         flushLine();

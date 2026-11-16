@@ -515,6 +515,7 @@ export function applyMeasuredLineGeometry(
     startOffset: measured.startOffset ?? projected.startOffset,
     endOffset: measured.endOffset ?? projected.endOffset,
     lines: measured.lines.map((line, index) => ({
+      ...line,
       paragraphId: projected.paragraphId,
       index: line.index,
       startOffset: line.startOffset,

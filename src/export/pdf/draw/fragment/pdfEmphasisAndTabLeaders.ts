@@ -1,14 +1,10 @@
 import type {
-  EditorDocument,
   EditorLayoutFragment,
   EditorLayoutLine,
-  EditorParagraphNode,
   EditorTextStyle,
   EditorCaretSlot,
 } from "@/core/model.js";
-import { resolveEffectiveParagraphStyle } from "@/core/model.js";
 import { EMPHASIS_GLYPH } from "@/core/textStyleMappings.js";
-import { PX_PER_POINT } from "@/layoutProjection/constants.js";
 import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import { pxToPt } from "@/export/pdf/units.js";
 import { resolveFragmentSlots } from "../fragmentGeometry.js";
@@ -53,10 +49,8 @@ export function drawFragmentEmphasis(
 export function drawTabLeaders(
   writer: OasisPdfWriter,
   pageIndex: number,
-  paragraph: EditorParagraphNode,
   line: EditorLayoutLine,
   fragment: EditorLayoutFragment,
-  document: EditorDocument,
   originX: number,
   baselineY: number,
   color: string,
@@ -67,28 +61,14 @@ export function drawTabLeaders(
         [slot.offset, slot] as const,
     ),
   );
-  const paragraphStyle = resolveEffectiveParagraphStyle(
-    paragraph.style,
-    document.styles,
-  );
-  const tabs = paragraphStyle.tabs ?? [];
-
   for (const char of fragment.chars) {
     if (char.char !== "\t") continue;
     const slot = slotByOffset.get(char.paragraphOffset);
     const nextSlot = slotByOffset.get(char.paragraphOffset + 1);
     if (!slot || !nextSlot) continue;
 
-    const lineStart = line.slots[0]?.left ?? 0;
-    const relativeLeft = slot.left - lineStart;
-    const stop = tabs
-      .filter((tab): boolean => tab.type !== "clear")
-      .map((tab) => ({ ...tab, positionPx: tab.position * PX_PER_POINT }))
-      .filter((tab): boolean => tab.positionPx > relativeLeft + 0.01)
-      .sort((a, b): number => a.positionPx - b.positionPx)[0];
-    const leader =
-      stop?.leader && stop.leader !== "none" ? stop.leader : undefined;
-    if (!leader) continue;
+    const leader = line.resolvedTabs?.[char.paragraphOffset]?.leader;
+    if (!leader || nextSlot.left <= slot.left + 2) continue;
 
     const y = leader === "underscore" ? baselineY + 2 : baselineY;
     writer.drawLine(pageIndex, {

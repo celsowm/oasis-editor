@@ -417,10 +417,8 @@ export async function drawFragmentText(
   drawTabLeaders(
     writer,
     pageIndex,
-    paragraph,
     line,
     fragment,
-    document,
     originX,
     baselineY,
     styles.color ?? "#000000",

@@ -6,7 +6,7 @@
 import type { EditorBlockNode, EditorTextBoxData } from "./nodes.js";
 import type { EditorMathExpression } from "./math.js";
 import type { EditorPageSettings } from "./document.js";
-import type { EditorRevision, EditorImageRunData } from "./primitives.js";
+import type { EditorRevision, EditorImageRunData, EditorTabStop } from "./primitives.js";
 import type { EditorTextStyle } from "./styles.js";
 
 export interface EditorCaretSlot {
@@ -37,6 +37,13 @@ export interface EditorLayoutFragment {
   chars: EditorLayoutFragmentChar[];
 }
 
+/** Resolved tab identity; the associated caret slots define final paint bounds. */
+export interface EditorResolvedTab {
+  stopPositionPx: number;
+  type: Exclude<EditorTabStop["type"], "bar" | "clear">;
+  leader?: Exclude<NonNullable<EditorTabStop["leader"]>, "none">;
+}
+
 export interface EditorLayoutLine {
   paragraphId: string;
   index: number;
@@ -47,6 +54,10 @@ export interface EditorLayoutLine {
   slots: EditorCaretSlot[];
   fragments: EditorLayoutFragment[];
   availableWidth?: number;
+  /** Resolved tabs keyed by document paragraph offset, not shifted screen x. */
+  resolvedTabs?: Record<number, EditorResolvedTab>;
+  /** Column-relative x positions of independent vertical bar decorations. */
+  barTabPositionsPx?: number[];
   /**
    * Set when the line ends mid-word due to automatic hyphenation. Renderers draw
    * a trailing hyphen glyph after the last fragment; it is not part of the text

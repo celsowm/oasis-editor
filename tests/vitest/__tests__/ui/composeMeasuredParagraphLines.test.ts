@@ -503,3 +503,50 @@ describe("composeMeasuredParagraphLines polygon wrapping", () => {
     }
   });
 });
+
+describe("canonical tab geometry", () => {
+  it("resolves the actual leader from the column margin, not the indented line start", () => {
+    const p = createEditorParagraph("\tvalue");
+    p.style = { indentLeft: 60, tabs: [
+      { position: 36, type: "left", leader: "dot" },
+      { position: 72, type: "left", leader: "hyphen" },
+    ] };
+    const line = measure(p, 600)[0]!;
+    expect(line.slots[0]?.left).toBe(60);
+    expect(line.slots[1]?.left).toBeCloseTo(96);
+    expect(line.resolvedTabs?.[0]).toEqual({stopPositionPx: 96, type: "left", leader: "hyphen"});
+  });
+  it("draws independent bar positions without altering ordinary tab advance", () => {
+    const p = createEditorParagraph("\tvalue");
+    p.style = { tabs: [{ position: 18, type: "bar" }, { position: 72, type: "left" }] };
+    const line = measure(p, 600)[0]!;
+    expect(line.barTabPositionsPx).toEqual([24]);
+    expect(line.slots[1]?.left).toBeCloseTo(96);
+    expect(line.resolvedTabs?.[0]?.type).toBe("left");
+    const empty = createEditorParagraph("");
+    empty.style = { tabs: [{position: 18, type: "bar"}] };
+    expect(measure(empty, 600)[0]?.barTabPositionsPx).toEqual([24]);
+  });
+  it("uses a finite default interval on malformed input", () => {
+    const p = createEditorParagraph("\tX");
+    for (const bad of [0, -10, Number.NaN, Infinity]) {
+      expect(measure(p, 600, bad)[0]?.slots[1]?.left).toBeCloseTo(48);
+    }
+  });
+  it("preserves literal tab slots across wrapping", () => {
+    const p = createEditorParagraph("abcdef\tX");
+    const lines = measure(p, 65, 36);
+    const offset = 6;
+    const line = lines.find(l => l.resolvedTabs?.[offset]);
+    expect(line).toBeDefined();
+    expect(line?.slots.some(s => s.offset === offset)).toBe(true);
+    expect(line?.slots.some(s => s.offset === offset + 1)).toBe(true);
+  });
+  it("uses the run language decimal separator when available", () => {
+    const p = createEditorParagraph("\t1.234,56");
+    p.style = { tabs: [{position: 144, type: "decimal"}] };
+    p.runs[0]!.styles = {language: {value: "pt-BR"}};
+    const line = measure(p, 600)[0]!;
+    expect(line.slots.find(s => s.offset === 6)?.left).toBeCloseTo(192);
+  });
+});

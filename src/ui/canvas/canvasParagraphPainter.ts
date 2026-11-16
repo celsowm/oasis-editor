@@ -113,7 +113,6 @@ function logCanvasFontUse(options: {
 // ---------------------------------------------------------------------------
 function drawTextFragment(
   ctx: CanvasRenderingContext2D,
-  paragraph: EditorParagraphNode,
   line: EditorLayoutLine,
   fragment: EditorLayoutLine["fragments"][number],
   slotByOffset: Map<number, EditorLayoutLine["slots"][number]>,
@@ -165,7 +164,7 @@ function drawTextFragment(
     if (char.char === "\t") {
       flushSegment();
       const nextSlot = slotByOffset.get(char.paragraphOffset + 1);
-      const leader = resolveTabLeader(paragraph, line, slot.left, state);
+      const leader = resolveTabLeader(line, char.paragraphOffset);
       if (nextSlot && leader) {
         drawTabLeader(
           ctx,
@@ -174,6 +173,12 @@ function drawTextFragment(
           originX + nextSlot.left,
           baselineY,
         );
+      }
+      if (state.showParagraphMarks) {
+        ctx.save();
+        ctx.fillStyle = CANVAS_MUTED_MARK_COLOR;
+        ctx.fillText("→", originX + slot.left, baselineY);
+        ctx.restore();
       }
       continue;
     }
@@ -242,6 +247,19 @@ export function drawParagraph(
       slotByOffset.set(slot.offset, slot);
     }
     const baselineY = originY + line.top + line.height * TEXT_BASELINE_RATIO;
+    if (line.barTabPositionsPx?.length) {
+      ctx.save();
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      for (const x of line.barTabPositionsPx) {
+        ctx.beginPath();
+        ctx.moveTo(originX + x, originY + line.top);
+        ctx.lineTo(originX + x, originY + line.top + line.height);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
     const paragraphStyle = resolveEffectiveParagraphStyle(
       paragraph.style,
       state.document.styles,
@@ -404,7 +422,6 @@ export function drawParagraph(
       } else {
         drawTextFragment(
           ctx,
-          paragraph,
           line,
           fragment,
           slotByOffset,

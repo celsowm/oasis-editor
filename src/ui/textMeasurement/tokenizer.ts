@@ -148,6 +148,11 @@ export function tokenizeMeasuredChars(chars: MeasuredChar[]): MeasuredToken[] {
       continue;
     }
 
+    if (char.char === "\t") {
+      flush();
+      tokens.push({ kind: "whitespace", chars: [char], width: char.width });
+      continue;
+    }
     const nextKind: MeasuredToken["kind"] = /\s/.test(char.char)
       ? "whitespace"
       : "text";

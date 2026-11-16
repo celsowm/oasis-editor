@@ -125,6 +125,13 @@ export async function drawParagraph(
   drawers: BlockDrawers,
 ): Promise<void> {
   for (const line of lines) {
+    for (const x of line.barTabPositionsPx ?? []) {
+      writer.drawLine(pageIndex, {
+        x1: pxToPt(originX + x), y1: pxToPt(originY + line.top),
+        x2: pxToPt(originX + x), y2: pxToPt(originY + line.top + line.height),
+        stroke: "#000000", lineWidth: pxToPt(1),
+      });
+    }
     drawListPrefix(
       writer,
       pageIndex,
