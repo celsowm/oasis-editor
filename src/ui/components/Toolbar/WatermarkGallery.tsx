@@ -8,7 +8,7 @@ import { Button } from "./primitives/Button.js";
 import { Select } from "./primitives/Select.js";
 import { PopoverBranchContext } from "./primitives/popoverBranch.js";
 import type { ToolbarActionApi } from "./schema/items.js";
-import { parseDecimal } from "@/utils/parseNumber.js";
+import { formatDecimal, parseDecimal } from "@/utils/parseNumber.js";
 
 const PRESETS = [
   { id: "confidential", key: "design.watermarkConfidential", rotation: -45 },
@@ -24,7 +24,7 @@ const defaults = (text: string, rotation = -45): EditorWatermark => ({
   scale: 1, fontFamily: "Arial", fontSize: 48,
 });
 const samePreset = (current: EditorWatermark | null, preset: EditorWatermark): boolean =>
-  current?.kind === "text" && current.text === preset.text &&
+  current?.kind === "text" && current.text === preset.text && (current.scale ?? 1) === (preset.scale ?? 1) &&
   (current.rotation ?? -45) === preset.rotation &&
   (current.color ?? "#94a3b8").toLowerCase() === preset.color &&
   (current.opacity ?? .25) === preset.opacity &&
@@ -69,15 +69,16 @@ function WatermarkPreview(props: { value: EditorWatermark }): JSX.Element {
 
 function WatermarkEditor(props: { api: ToolbarActionApi; initial: EditorWatermark; onCancel: () => void; onApply: (value: EditorWatermark) => void }): JSX.Element {
   const t = props.api.t;
+  const format = (value: number) => formatDecimal(String(value), t("number.decimalSeparator"));
   const [kind, setKind] = createSignal(props.initial.kind);
   const [text, setText] = createSignal(props.initial.text ?? t("design.watermarkConfidential"));
   const [src, setSrc] = createSignal(props.initial.src ?? "");
   const [color, setColor] = createSignal(props.initial.color ?? "#94a3b8");
   const [font, setFont] = createSignal(props.initial.fontFamily ?? "Arial");
-  const [size, setSize] = createSignal(String(props.initial.fontSize ?? 48));
-  const [transparency, setTransparency] = createSignal(String(Math.round((1-(props.initial.opacity ?? .25))*10000)/100));
-  const [rotation, setRotation] = createSignal(String(props.initial.rotation ?? -45));
-  const [scale, setScale] = createSignal(String(props.initial.scale ?? 1));
+  const [size, setSize] = createSignal(format(props.initial.fontSize ?? 48));
+  const [transparency, setTransparency] = createSignal(format(Math.round((1-(props.initial.opacity ?? .25))*10000)/100));
+  const [rotation, setRotation] = createSignal(format(props.initial.rotation ?? -45));
+  const [scale, setScale] = createSignal(format(props.initial.scale ?? 1));
   const [loading, setLoading] = createSignal(false);
   const [imageError, setImageError] = createSignal(false);
   let reader: FileReader | undefined;
@@ -144,7 +145,7 @@ function WatermarkEditor(props: { api: ToolbarActionApi; initial: EditorWatermar
             </label>
             <Show when={kind()==="text"} fallback={
               <div class="oasis-editor-watermark-field">
-                <TextField label={t("design.useImage")} aria-label={t("design.useImage")} type="file" data-testid="editor-watermark-image" accept="image/png,image/jpeg,image/gif,image/svg+xml" onChange={() => undefined} onInput={fileChanged} />
+                <TextField label={t("design.useImage")} aria-label={t("design.useImage")} type="file" data-testid="editor-watermark-image" accept="image/png,image/jpeg,image/gif,image/svg+xml" onInput={fileChanged} />
                 <Show when={loading()}><small role="status">{t("design.watermarkLoading")}</small></Show>
                 <Show when={imageError()}><small role="alert">{t("design.watermarkImageError")}</small></Show>
               </div>
@@ -182,6 +183,7 @@ export function DesignWatermarkPanel(props: DesignWatermarkPanelProps): JSX.Elem
   const current = (): EditorWatermark | null => (props.api.commands.state("setDocumentWatermark").value as EditorWatermark | null | undefined) ?? null;
   const editable = () => props.api.commands.state("setDocumentWatermark").isEnabled;
   const [editing,setEditing] = createSignal(false);
+  createEffect(() => { if (!editable()) setEditing(false); });
   let customButton: HTMLButtonElement | undefined;
   const closeEditor = () => { setEditing(false); queueMicrotask(() => customButton?.focus()); };
   const apply = (value: EditorWatermark | null) => {

@@ -42,6 +42,12 @@ jobs:
         env:
           RIBBON_BROWSER: ${{ matrix.browser }}
           RIBBON_SUITE: simplified
+      - name: Verify watermark gallery and custom editor
+        if: always()
+        run: npm run test:ribbon:ci
+        env:
+          RIBBON_BROWSER: ${{ matrix.browser }}
+          RIBBON_SUITE: watermark
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -49,3 +55,4 @@ jobs:
           path: |
             test-results/ribbon/geometry
             test-results/ribbon/simplified
+            test-results/ribbon/watermark

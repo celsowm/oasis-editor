@@ -54,6 +54,8 @@ try {
     await run("scripts/verify-ribbon-geometry.mjs");
   } else if (suite === "simplified") {
     await run("scripts/verify-ribbon-simplified.mjs");
+  } else if (suite === "watermark") {
+    await run("scripts/verify-ribbon-watermark.mjs");
   } else if (suite === "review") {
     await run("scripts/verify-ribbon-layout-alignment.mjs");
     await run("scripts/verify-ribbon-review-layout.mjs");
