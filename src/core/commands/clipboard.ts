@@ -13,7 +13,7 @@ import {
 } from "@/core/model.js";
 import { createEditorParagraphFromRuns } from "@/core/editorState.js";
 import { isSelectionCollapsed, normalizeSelection } from "@/core/selection.js";
-import { paragraphStyleToCssText } from "@/core/html/styleCss.js";
+import { paragraphHtmlAttributes } from "@/core/html/htmlTabStops.js";
 import { serializeParagraphRunsToHtml } from "@/core/html/htmlTextSerializer.js";
 import { cloneStyle } from "@/core/textStyle/textStyleMutations.js";
 import {
@@ -77,8 +77,7 @@ export function serializeEditorSelectionToHtml(state: EditorState): string {
         ? normalized.endParagraphOffset
         : getParagraphLength(paragraph);
     const runs = sliceRuns(paragraph, startOffset, endOffset);
-    const css = paragraphStyleToCssText(paragraph.style);
-    const attrs = css.length > 0 ? ` style="${css}"` : "";
+    const attrs = paragraphHtmlAttributes(paragraph, state.document, runs.map(run => run.text).join(""));
     const paragraphHtml = serializeParagraphRunsToHtml(runs, state.document);
 
     if (paragraph.list?.kind) {
@@ -113,6 +112,7 @@ export function insertClipboardParagraphsAtSelection(
     : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
   const paragraphs = getParagraphs(collapsedState);
+  const emptyDestination = getParagraphLength(paragraph) === 0;
   const beforeRuns = sliceRuns(paragraph, 0, offset);
   const afterRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
   const pastedParagraphs = paragraphsSpec.map((spec): EditorParagraphNode => {
@@ -144,11 +144,9 @@ export function insertClipboardParagraphsAtSelection(
       [...beforeRuns, ...source.runs.map(cloneRun), ...afterRuns],
       getStyleAtOffset(paragraph, offset),
     );
-    mergedParagraph.style = paragraph.style
-      ? { ...paragraph.style }
-      : source.style
-        ? { ...source.style }
-        : undefined;
+    mergedParagraph.style = emptyDestination && source.style?.tabs !== undefined
+      ? { ...paragraph.style, tabs: source.style.tabs }
+      : paragraph.style ? { ...paragraph.style } : source.style ? { ...source.style } : undefined;
     mergedParagraph.list = paragraph.list
       ? { ...paragraph.list }
       : source.list
@@ -178,11 +176,9 @@ export function insertClipboardParagraphsAtSelection(
       [...beforeRuns, ...firstSource.runs.map(cloneRun)],
       getStyleAtOffset(paragraph, offset),
     );
-    firstParagraph.style = paragraph.style
-      ? { ...paragraph.style }
-      : firstSource.style
-        ? { ...firstSource.style }
-        : undefined;
+    firstParagraph.style = emptyDestination && firstSource.style?.tabs !== undefined
+      ? { ...paragraph.style, tabs: firstSource.style.tabs }
+      : paragraph.style ? { ...paragraph.style } : firstSource.style ? { ...firstSource.style } : undefined;
     firstParagraph.list = paragraph.list
       ? { ...paragraph.list }
       : firstSource.list

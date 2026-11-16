@@ -68,7 +68,19 @@ export function mergeParagraphStyles(
   resolved: EditorParagraphStyle,
   local: EditorParagraphStyle | undefined,
 ): EditorParagraphStyle {
-  return paragraphStyleMerger.merge(resolved, local);
+  const merged = paragraphStyleMerger.merge(resolved, local);
+  // Tab stops are positional exceptions, not a replacement array. Retain
+  // clear tombstones through the cascade for DOCX export; layout ignores them.
+  if (Array.isArray(local?.tabs)) {
+    const inherited = [...(resolved.tabs ?? [])];
+    for (const stop of local.tabs) {
+      const index = inherited.findIndex(t => Math.abs(t.position - stop.position) < 1e-6);
+      if (index >= 0) inherited.splice(index, 1);
+      inherited.push(stop);
+    }
+    merged.tabs = inherited.sort((a, b) => a.position - b.position);
+  }
+  return merged;
 }
 
 export function resolveDefaultParagraphStyleId(
@@ -129,10 +141,7 @@ export function resolveNamedParagraphStyle(
     ? resolveNamedParagraphStyle(namedStyle.basedOn, styles)
     : {};
 
-  return {
-    ...baseStyle,
-    ...(namedStyle.paragraphStyle ?? {}),
-  };
+  return mergeParagraphStyles(baseStyle, namedStyle.paragraphStyle);
 }
 
 /**

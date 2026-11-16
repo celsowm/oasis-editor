@@ -89,7 +89,7 @@ export function parseSettings(xml: string | null): DocxSettings {
       "val",
     ),
   );
-  if (defaultTabStop !== undefined) {
+  if (defaultTabStop !== undefined && Number.isFinite(defaultTabStop) && defaultTabStop > 0) {
     settings.defaultTabStop = defaultTabStop;
   }
   // Hyphenation settings are direct children of `w:settings` (not `w:compat`).

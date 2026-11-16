@@ -213,7 +213,7 @@ export function buildSettingsXml(
 ): string {
   const parts: string[] = [];
   const defaultTabStopTwips = pointsToTwips(defaultTabStop);
-  if (defaultTabStopTwips !== null) {
+  if (defaultTabStopTwips !== null && Number.isFinite(defaultTabStopTwips) && defaultTabStopTwips > 0) {
     parts.push(`<w:defaultTabStop w:val="${defaultTabStopTwips}"/>`);
   }
   if (hyphenation?.autoHyphenation) {

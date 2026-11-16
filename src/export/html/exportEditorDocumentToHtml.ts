@@ -6,17 +6,12 @@ import type {
 } from "@/core/model.js";
 import { getDocumentSectionsCanonical } from "@/core/model.js";
 import { escapeHtml } from "@/core/html/htmlEscape.js";
-import { paragraphStyleToCssText } from "@/core/html/styleCss.js";
+import { paragraphHtmlAttributes } from "@/core/html/htmlTabStops.js";
 import { serializeParagraphRunsToHtml } from "@/core/html/htmlTextSerializer.js";
 
 export interface HtmlExportOptions {
   /** HTML fragment for embedding (default), or a standalone HTML document. */
   fullDocument?: boolean;
-}
-
-function styleAttribute(paragraph: EditorParagraphNode): string {
-  const css = paragraphStyleToCssText(paragraph.style);
-  return css ? ' style="' + escapeHtml(css) + '"' : "";
 }
 
 function paragraphTag(paragraph: EditorParagraphNode): string {
@@ -92,7 +87,7 @@ function renderBlocks(
     }
 
     const content = serializeParagraphRunsToHtml(block.runs, document);
-    const attrs = styleAttribute(block);
+    const attrs = paragraphHtmlAttributes(block, document);
     if (!block.list) {
       closeLists();
       const tag = paragraphTag(block);

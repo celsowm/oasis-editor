@@ -1,10 +1,13 @@
 import type { EditorParagraphStyle } from "@/core/model.js";
+import { parseHtmlTabStops } from "./htmlTabStops.js";
 
 export function parseParagraphStyle(
   element: Element,
 ): EditorParagraphStyle | undefined {
   const style = (element as HTMLElement).style;
   const result: EditorParagraphStyle = {};
+  const tabs = parseHtmlTabStops(element.getAttribute("data-oasis-tab-stops"));
+  if (tabs !== undefined) result.tabs = tabs;
 
   const align = style.textAlign.trim();
   if (

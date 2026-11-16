@@ -374,8 +374,19 @@ export async function drawFragmentText(
   const text = chars
     .map((char): string => resolveRenderedTextChar(char.char, styles))
     .join("");
-  const firstChar = chars[0];
-  if (!firstChar || text.length === 0) return;
+  // A tab-only styled run has no glyph slots but still has a leader to paint.
+  if (chars.length === 0 || text.length === 0) {
+    drawTabLeaders(
+      writer,
+      pageIndex,
+      line,
+      fragment,
+      originX,
+      baselineY,
+      styles.color ?? "#000000",
+    );
+    return;
+  }
 
   drawLinkAnnotation(
     writer,
@@ -414,6 +425,7 @@ export async function drawFragmentText(
     originY,
     styles,
   );
+
   drawTabLeaders(
     writer,
     pageIndex,

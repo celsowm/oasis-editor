@@ -137,6 +137,11 @@ export function groupSlotChunksByWhitespace(
   const chunks: FragmentSlot[][] = [];
   let current: FragmentSlot[] = [];
   for (const char of chars) {
+    const prev = current[current.length - 1];
+    if (prev && char.offset > prev.offset + 1) {
+      chunks.push(current);
+      current = [];
+    }
     if (char.char === " ") {
       if (current.length > 0) {
         chunks.push(current);

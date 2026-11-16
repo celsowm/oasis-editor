@@ -57,6 +57,16 @@ export function collectInlineRuns(
     ...(inheritedStyle ?? {}),
     ...(parseInlineStyles(element) ?? {}),
   } as EditorTextStyle;
+  // Microsoft Word HTML uses mso-tab-count on spans containing NBSP filler.
+  // Only interpret a bounded integer; never execute or import arbitrary CSS.
+  if (element.tagName === "SPAN") {
+    const raw = element.getAttribute("style") ?? "";
+    const count = /(?:^|;)\s*mso-tab-count\s*:\s*(\d+)\s*(?:;|$)/i.exec(raw);
+    if (count && /^\s*$/u.test(element.textContent ?? "")) {
+      const n = Number(count[1]);
+      if (n > 0 && n <= 64) return [createEditorStyledRun("\t".repeat(n), nextStyle)];
+    }
+  }
   const childRuns: EditorTextRun[] = [];
   for (const child of Array.from(element.childNodes)) {
     childRuns.push(...collectInlineRuns(child, nextStyle));
