@@ -38,6 +38,7 @@ export interface EditorViewLayoutInput {
   documentLayout: Accessor<EditorLayoutDocument>;
   remoteWebFonts?: boolean;
   pageGutter?: number;
+  initialZoomMode?: "fit-width";
   viewportHeight: number | string | undefined;
   className: string | undefined;
   style: JSX.CSSProperties | undefined;
@@ -155,6 +156,7 @@ export function buildEditorViewProps(
     documentLayout: layoutInput.documentLayout,
     remoteWebFonts: layoutInput.remoteWebFonts,
     pageGutter: layoutInput.pageGutter,
+    initialZoomMode: layoutInput.initialZoomMode,
     viewportHeight: layoutInput.viewportHeight,
     class: layoutInput.className,
     style: layoutInput.style,

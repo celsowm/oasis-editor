@@ -11,6 +11,8 @@ export interface EditorStatusBarProps {
   zoomPercent: () => number;
   adjustZoom: (delta: number) => void;
   setZoomPercent: (value: number) => void;
+  fitWidth?: () => boolean;
+  onFitWidth?: () => void;
   persistenceStatus?: () => string;
 }
 
@@ -72,6 +74,18 @@ export function EditorStatusBar(props: EditorStatusBarProps): JSX.Element {
           >
             +
           </button>
+          <Show when={props.onFitWidth}>
+            <button
+              type="button"
+              class="oasis-editor-zoom-button"
+              aria-label={t("status.fitWidth")}
+              title={t("status.fitWidth")}
+              aria-pressed={props.fitWidth?.()}
+              onClick={props.onFitWidth}
+            >
+              ↔
+            </button>
+          </Show>
           <span
             class="oasis-editor-statusbar-item oasis-editor-zoom-value"
             data-testid="editor-statusbar-zoom"

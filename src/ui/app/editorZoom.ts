@@ -10,6 +10,32 @@ export function clampZoom(value: number): number {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value)));
 }
 
+/** Largest integral zoom that fits the page and outer gutter without horizontal overflow.
+ * Returns null until both measurements are valid. The existing minimum is preserved.
+ */
+export function calculateFitWidthZoom(
+  viewportWidth: number,
+  pageWidth: number,
+  pageGutter: number,
+): number | null {
+  if (
+    !Number.isFinite(viewportWidth) ||
+    viewportWidth <= 0 ||
+    !Number.isFinite(pageWidth) ||
+    pageWidth <= 0 ||
+    !Number.isFinite(pageGutter) ||
+    pageGutter < 0
+  )
+    return null;
+  return Math.max(
+    ZOOM_MIN,
+    Math.min(
+      ZOOM_DEFAULT,
+      Math.floor((viewportWidth * 100) / (pageWidth + 2 * pageGutter)),
+    ),
+  );
+}
+
 export interface EditorZoomController {
   /** Current zoom level as a percentage (clamped to [ZOOM_MIN, ZOOM_MAX]). */
   zoomPercent: Accessor<number>;

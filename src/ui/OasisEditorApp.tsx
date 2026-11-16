@@ -427,6 +427,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
       documentLayout,
       remoteWebFonts: documentOptions().remoteWebFonts,
       pageGutter: ui().pageGutter,
+      initialZoomMode: ui().zoom?.initialMode,
       viewportHeight: ui().viewportHeight,
       className: ui().class,
       style: ui().style,

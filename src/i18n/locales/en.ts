@@ -791,6 +791,7 @@ export const en = {
   "status.characters": "{0} characters",
   "status.page": "Page {0} of {1}",
   "status.zoom": "Zoom",
+  "status.fitWidth": "Fit to width",
   "status.saved": "Saved",
   "status.saving": "Saving...",
   "status.error": "Error saving",

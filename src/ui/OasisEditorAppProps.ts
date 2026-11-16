@@ -53,6 +53,8 @@ export interface OasisEditorAppUiProps {
   locale?: "pt-BR" | "en";
   /** Espaço externo em pixels ao redor das páginas; não altera as margens do documento. Padrão preservado quando omitido. */
   pageGutter?: number;
+  /** Automatically fit the page to the viewport until the user adjusts zoom. */
+  zoom?: { initialMode?: "fit-width" };
   viewportHeight?: number | string;
   class?: string;
   style?: JSX.CSSProperties;

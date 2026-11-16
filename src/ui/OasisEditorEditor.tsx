@@ -40,7 +40,7 @@ import type { EditorComment } from "@/core/model.js";
 import { ResizeHandlesOverlay } from "./overlays/ResizeHandlesOverlay.js";
 import { ImageCropPreviewOverlay } from "./overlays/ImageCropPreviewOverlay.js";
 import { TableHandlesOverlay } from "./overlays/TableHandlesOverlay.js";
-import { clampZoom } from "./app/editorZoom.js";
+import { calculateFitWidthZoom, clampZoom } from "./app/editorZoom.js";
 import { EditorImportProgressOverlay } from "./EditorImportProgressOverlay.js";
 import { EditorStatusBar } from "./EditorStatusBar.js";
 import type {
@@ -121,11 +121,18 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
   const [localZoomPercent, setLocalZoomPercent] = createSignal(100);
   const zoomPercent = (): number =>
     layout().zoomPercent?.() ?? localZoomPercent();
-  const setZoomPercent = (value: number): void => {
+  const [fitWidth, setFitWidth] = createSignal(
+    layout().initialZoomMode === "fit-width",
+  );
+  const applyZoomPercent = (value: number): void => {
     const clamped = clampZoom(value);
     const lift = layout().setZoomPercent;
     if (lift) lift(clamped);
     else setLocalZoomPercent(clamped);
+  };
+  const setZoomPercent = (value: number): void => {
+    setFitWidth(false);
+    applyZoomPercent(value);
   };
   const adjustZoom = (delta: number): void =>
     setZoomPercent(zoomPercent() + delta);
@@ -149,6 +156,16 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
 
   const unscaledContentWidth = (): number =>
     widestPageWidth() + resolvePageGutter(layout().pageGutter) * 2;
+
+  createEffect((): void => {
+    if (!fitWidth()) return;
+    const next = calculateFitWidthZoom(
+      viewportSize().width,
+      widestPageWidth(),
+      resolvePageGutter(layout().pageGutter),
+    );
+    if (next !== null && next !== zoomPercent()) applyZoomPercent(next);
+  });
 
   const zoomSizerWidth = createMemo((): number =>
     Math.max(unscaledContentWidth() * zoomFactor(), viewportSize().width),
@@ -631,6 +648,14 @@ export function OasisEditorEditor(props: OasisEditorEditorProps): JSX.Element {
         zoomPercent={zoomPercent}
         adjustZoom={adjustZoom}
         setZoomPercent={setZoomPercent}
+        fitWidth={fitWidth}
+        onFitWidth={
+          layout().initialZoomMode === "fit-width"
+            ? (): void => {
+                setFitWidth(true);
+              }
+            : undefined
+        }
         persistenceStatus={overlays().persistenceStatus}
       />
     </div>

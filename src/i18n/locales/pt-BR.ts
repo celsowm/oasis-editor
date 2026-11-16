@@ -799,6 +799,7 @@ export const ptBR = {
   "status.characters": "{0} caracteres",
   "status.page": "Página {0} de {1}",
   "status.zoom": "Zoom",
+  "status.fitWidth": "Ajustar à largura",
   "status.saved": "Salvo",
   "status.saving": "Salvando...",
   "status.error": "Erro ao salvar",

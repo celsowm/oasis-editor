@@ -29,6 +29,7 @@ export interface OasisEditorEditorLayoutProps {
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
   pageGutter?: number;
+  initialZoomMode?: "fit-width";
   viewportHeight?: number | string;
   class?: string;
   style?: JSX.CSSProperties;
