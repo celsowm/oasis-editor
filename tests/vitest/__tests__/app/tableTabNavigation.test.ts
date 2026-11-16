@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createEditorDocument, createEditorParagraph, createEditorStateFromDocument, createEditorTable, createEditorTableCell, createEditorTableRow } from "@/core/editorState.js";
 import { getDocumentSectionsCanonical, getParagraphLength, getParagraphText, paragraphOffsetToPosition, type EditorState, type EditorTableNode } from "@/core/model.js";
 import { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
-import { insertTextAtSelection } from "@/core/commands/text.js";
+import { insertTextAtSelection, deleteBackward, insertPlainTextAtSelection } from "@/core/commands/text.js";
 import { stepTabParagraphIndent } from "@/core/commands/paragraphTabIndent.js";
 
 function fixture() {
@@ -94,5 +94,59 @@ describe("multi-cell formatting projections", () => {
     expect((row.cells[1]!.blocks[1] as typeof f.c).style?.indentLeft).toBe(96);
     expect((f.root(current).rows[1]!.cells[1]!.blocks[0] as typeof f.d).style?.indentLeft??0).toBe(0);
     expect(current.document.settings.defaultTabStop).toBe(72);
+  });
+});
+
+
+describe("keyboard editing around table boundaries", () => {
+  it("inserts paragraphs before a table without moving cell content or trailing paragraphs", () => {
+    const f = fixture();
+    const before = createEditorParagraph("abcd");
+    const after = createEditorParagraph("after");
+    const table = f.root(f.state);
+    const base = createEditorStateFromDocument(createEditorDocument([before,table,after]));
+    const caret = paragraphOffsetToPosition(before,2);
+    const selected = {...base,selection:{anchor:caret,focus:caret}};
+    const result = f.ops.applyTableAwareParagraphEdit(selected,s=>insertPlainTextAtSelection(s,"\n"));
+    const blocks = getDocumentSectionsCanonical(result.document)[0]!.blocks;
+    expect(blocks.map(b=>b.type)).toEqual(["paragraph","paragraph","table","paragraph"]);
+    expect(getParagraphText(blocks[0] as typeof before)).toBe("ab");
+    expect(getParagraphText(blocks[1] as typeof before)).toBe("cd");
+    expect(blocks[2]).toBe(table);
+    expect(blocks[3]).toBe(after);
+  });
+  it("does not merge a paragraph after a table into the preceding cell on Backspace", () => {
+    const f = fixture();
+    const after = createEditorParagraph("after");
+    const base = createEditorStateFromDocument(createEditorDocument([f.root(f.state),after]));
+    const caret = paragraphOffsetToPosition(after,0);
+    const selected = {...base,selection:{anchor:caret,focus:caret}};
+    expect(f.ops.applyTableAwareParagraphEdit(selected,deleteBackward)).toBe(selected);
+  });
+  it("preserves a nested table when splitting text in its outer cell", () => {
+    const f = fixture();
+    const before = createEditorParagraph("abcd");
+    const after = createEditorParagraph("after");
+    const nested = f.root(f.state);
+    const outer = createEditorTable([createEditorTableRow([createEditorTableCell([before,nested,after])])]);
+    const base = createEditorStateFromDocument(createEditorDocument([outer]));
+    const caret = paragraphOffsetToPosition(before,2);
+    const result = f.ops.applyTableAwareParagraphEdit({...base,selection:{anchor:caret,focus:caret}},s=>insertPlainTextAtSelection(s,"\n"));
+    const blocks = f.root(result).rows[0]!.cells[0]!.blocks;
+    expect(blocks.map(b=>b.type)).toEqual(["paragraph","paragraph","table","paragraph"]);
+    expect(getParagraphText(blocks[0] as typeof before)).toBe("ab");
+    expect(getParagraphText(blocks[1] as typeof before)).toBe("cd");
+    expect(blocks[2]).toBe(nested);
+    expect(blocks[3]).toBe(after);
+  });
+  it("rejects cross-table text replacement in either selection direction", () => {
+    const f = fixture();
+    const after = createEditorParagraph("after");
+    const base = createEditorStateFromDocument(createEditorDocument([f.root(f.state),after]));
+    const a = paragraphOffsetToPosition(f.a,0), b = paragraphOffsetToPosition(after,2);
+    for (const selection of [{anchor:a,focus:b},{anchor:b,focus:a}]) {
+      const selected = {...base,selection};
+      expect(f.ops.applyTableAwareParagraphEdit(selected,s=>insertTextAtSelection(s,"\t"))).toBe(selected);
+    }
   });
 });

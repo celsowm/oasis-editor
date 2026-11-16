@@ -276,6 +276,26 @@ export function resolveTablePathMutation(
   return resolveClonedTablePath(targetBlocks, location);
 }
 
+/**
+ * A text-edit projection may grow or shrink its paragraphs. Never redistribute
+ * those paragraphs into a flat traversal of interleaved tables. Project only
+ * a contiguous group of direct paragraph siblings in the owning story/cell.
+ */
+function resolveParagraphSiblingRange(
+  blocks: EditorBlockNode[],
+  selection: EditorState["selection"],
+): { start: number; end: number } | null {
+  const anchor = blocks.findIndex(block => block.type === "paragraph" && block.id === selection.anchor.paragraphId);
+  const focus = blocks.findIndex(block => block.type === "paragraph" && block.id === selection.focus.paragraphId);
+  if (anchor < 0 || focus < 0) return null;
+  let start = Math.min(anchor, focus);
+  let end = Math.max(anchor, focus) + 1;
+  if (blocks.slice(start, end).some(block => block.type !== "paragraph")) return null;
+  while (start > 0 && blocks[start - 1]?.type === "paragraph") start--;
+  while (end < blocks.length && blocks[end]?.type === "paragraph") end++;
+  return { start, end };
+}
+
 export const applyTableAwareParagraphEdit = (
   current: EditorState,
   getTargetBlocks: (
@@ -284,69 +304,67 @@ export const applyTableAwareParagraphEdit = (
   ) => EditorBlockNode[],
   edit: (tempState: EditorState) => EditorState,
 ): EditorState => {
+  const focusLocation = findParagraphLocation(current.document, current.selection.focus.paragraphId);
+  const anchorLocation = findParagraphLocation(current.document, current.selection.anchor.paragraphId);
+  if (!focusLocation || !anchorLocation) return edit(current);
+  if (focusLocation.zone !== anchorLocation.zone ||
+      focusLocation.sectionIndex !== anchorLocation.sectionIndex ||
+      focusLocation.footnoteId !== anchorLocation.footnoteId) return current;
+
   const location = findParagraphTablePathLocation(
     current.document,
     current.selection.focus.paragraphId,
     getActiveSectionIndex(current),
   );
-  if (!location) return edit(current);
-  const multiParagraph = current.selection.anchor.paragraphId !== current.selection.focus.paragraphId;
-  if (multiParagraph) {
-    const anchorLocation = findParagraphTablePathLocation(
-      current.document, current.selection.anchor.paragraphId, getActiveSectionIndex(current),
-    );
-    const sameCell = anchorLocation && anchorLocation.zone === location.zone &&
-      anchorLocation.tablePath.length === location.tablePath.length &&
-      anchorLocation.tablePath.every((segment, index) => {
-        const other = location.tablePath[index];
-        return other && segment.tableBlockIndex === other.tableBlockIndex &&
-          segment.rowIndex === other.rowIndex && segment.cellIndex === other.cellIndex;
-      });
-    if (!sameCell) return current;
+  const zone = focusLocation.zone;
+  let targetBlocks: EditorBlockNode[];
+  let siblingBlocks: EditorBlockNode[];
+  if (location) {
+    const mutation = resolveTableParagraphEditMutation(current, getTargetBlocks, location);
+    if (!mutation) return current;
+    targetBlocks = mutation.targetBlocks;
+    siblingBlocks = mutation.targetCell.blocks;
+  } else {
+    const source = getTargetBlocks(current, zone);
+    // Ordinary text-only stories keep their normal editing path, including
+    // document-level effects and history, without a temporary document.
+    if (source.length && source.every(block => block.type === "paragraph") &&
+        source.some(block => block.id === current.selection.anchor.paragraphId) &&
+        source.some(block => block.id === current.selection.focus.paragraphId)) return edit(current);
+    targetBlocks = [...source];
+    siblingBlocks = targetBlocks;
   }
 
-  const mutation = resolveTableParagraphEditMutation(
-    current,
-    getTargetBlocks,
-    location,
+  const range = resolveParagraphSiblingRange(siblingBlocks, current.selection);
+  // Cross-cell, cross-table and cross-nested-table text deletion requires a
+  // dedicated structural selection command; refuse it symmetrically.
+  if (!range) return current;
+  const projected = createEditorDocument(
+    siblingBlocks.slice(range.start, range.end).map(block =>
+      block.type === "paragraph" ? cloneParagraph(block) : block),
+    current.document.pageSettings,
+    undefined,
+    current.document.styles,
+    undefined,
+    current.document.assets,
   );
-  if (!mutation) return multiParagraph ? current : edit(current);
-  // A multi-paragraph edit must never flatten a nested-table story.
-  if (multiParagraph && mutation.targetCell.blocks.some(block => block.type === "table")) return current;
-
   const tempState: EditorState = {
     ...current,
     activeSectionIndex: 0,
     activeZone: "main",
-    document: createEditorDocument(
-      mutation.targetCell.blocks.map((block) =>
-        block.type === "paragraph" ? cloneParagraph(block) : block,
-      ),
-      undefined,
-      undefined,
-      current.document.styles,
-      undefined,
-      current.document.assets,
-    ),
+    document: {...projected, settings:current.document.settings},
     selection: {
       anchor: { ...current.selection.anchor },
       focus: { ...current.selection.focus },
     },
   };
   const tempResult = edit(tempState);
+  if (tempResult === tempState) return current;
   const replacementBlocks =
     getDocumentSectionsCanonical(tempResult.document)[0]?.blocks ?? [];
+  siblingBlocks.splice(range.start, range.end - range.start, ...replacementBlocks);
 
-  mutation.targetCell.blocks.splice(
-    0,
-    mutation.targetCell.blocks.length,
-    ...replacementBlocks,
-  );
-  const nextState = updateBlocksInCurrentSection(
-    current,
-    mutation.targetBlocks,
-    location.zone,
-  );
+  const nextState = updateBlocksInCurrentSection(current, targetBlocks, zone);
   const before = getParagraphs(current);
   const after = getParagraphs(nextState);
   const bookmarks = current.document.bookmarks;
