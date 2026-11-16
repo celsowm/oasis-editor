@@ -61,7 +61,7 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-update-toc": {
     tab: "references",
     group: "tableOfContents",
-    row: 2,
+    row: 1,
   },
   "editor-toolbar-track-changes": { tab: "review", group: "tracking", row: 1 },
   "editor-toolbar-revision-markup": {

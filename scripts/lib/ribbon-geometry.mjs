@@ -175,6 +175,41 @@ export async function readRibbonGeometry(page, expectedTab, expectedWidth) {
       }
       groupEvidence.push({id:group.dataset.ribbonGroup,state,allocated,rect:box,caption:captionEvidence,rows,large,controls});
     }
+    // References uses three peer large actions, not one large action and
+    // a lone secondary button floating in a mostly empty row. Check across
+    // group boundaries as well as within the TOC group.
+    if (!simplified && expectedTab.endsWith("-references")) {
+      const entries = [];
+      for (const [groupId, id] of [
+        ["tableOfContents", "editor-toolbar-insert-toc"],
+        ["tableOfContents", "editor-toolbar-update-toc"],
+        ["footnotes", "editor-toolbar-footnote"],
+      ]) {
+        const group = groups.find(el => el.dataset.ribbonGroup === groupId);
+        if (!group || group.dataset.ribbonState === "collapsed") continue;
+        const button = group.querySelector(`[data-testid="${id}"]`);
+        if (!visible(button) || !button.classList.contains("oasis-editor-tool-button-ribbon-large")) {
+          issue(group, "reference-action-not-large", { id });
+          continue;
+        }
+        const icon = button.querySelector(":scope > svg:not(.oasis-editor-dropdown-chevron)");
+        const label = button.querySelector(":scope > .oasis-editor-tool-button-label");
+        if (!painted(icon) || !painted(label)) {
+          issue(group, "reference-action-missing-caption-or-icon", { id });
+          continue;
+        }
+        entries.push({ group, id, button: rect(button), icon: rect(icon), label: rect(label) });
+      }
+      for (const entry of entries.slice(1)) {
+        const first = entries[0];
+        for (const band of ["button", "icon", "label"]) {
+          if (!near(entry[band].y, first[band].y))
+            issue(entry.group, "reference-action-band", { id:entry.id, band, actual:entry[band].y, expected:first[band].y });
+        }
+        if (!near(entry.button.height, first.button.height))
+          issue(entry.group, "reference-action-height", { id:entry.id, actual:entry.button.height, expected:first.button.height });
+      }
+    }
     return { simplified,panel:rect(panel),groups:groupEvidence,failures };
   }, { expectedTab, expectedWidth });
 }

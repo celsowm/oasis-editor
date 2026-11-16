@@ -884,6 +884,7 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     labelKey: "ribbon.updateToc",
     tooltipKey: "menu.insert.updateToc",
     command: "updateTableOfContents",
+    ribbonSize: "large",
   });
 
   // --- Review: reuse existing tracked-revision commands ---
