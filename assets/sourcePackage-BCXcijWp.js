@@ -1,0 +1,1 @@
+import{n as s,t as o}from"./OasisEditorApp-wp1Zuv1t.js";export{s as captureDocxSourcePackage};
