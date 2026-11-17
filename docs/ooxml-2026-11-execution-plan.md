@@ -247,3 +247,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 - OX-003 slice C: prior opaque audit CI green. Dedicated opaque run projection for standalone source run children, shared placeholder measurements, Canvas/PDF paint, source-backed raw fragment serialization and mandatory loss audit for inventoried sources. Successful chart neighbor mutation required by test; deletion/cross-story copying remain guarded. New CI pending.
 
 - OX-003 slice D: v0.0.358 released with all CI green. Main-story single-object explicit deletion intents integrated into Delete/Backspace and audited on export; original package untouched, dependencies retained, history tested. Ambiguous, bulk, tracked and cross-story operations remain restricted. CI pending.
+
+- OX-003 slice E: v0.0.359 published, deletion/history CI green. Added default conservative deletion-local OPC graph pruning with pre/post audits and explicit opt-out; actual removal/undo and shared/cyclic closure tests. Ambiguous graphs retain data. CI pending.

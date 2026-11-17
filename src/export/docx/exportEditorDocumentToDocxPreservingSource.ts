@@ -1,4 +1,5 @@
 import { auditOpaqueObjectPreservation, OpaqueObjectPreservationError } from "@/ooxml/word/opaqueObjects.js";
+import { planOpaqueDependencyPruning, applyOpaqueDependencyPruning } from "./opc/opaqueDependencyPruning.js";
 import type { EditorDocument, EditorDocxSourcePackage } from "@/core/model.js";
 import {
   exportEditorDocumentToDocx,
@@ -50,6 +51,8 @@ function cloneSourcePackage(
 export interface DocxSourcePreservationOptions {
   /** Request an audit even without a recorded opaque inventory. Inventoried objects are always audited. */
   requireOpaquePreservation?: boolean;
+  /** Default true. Prune only proven exclusive dependencies of explicit deletions. */
+  pruneDeletedOpaqueDependencies?: boolean;
 }
 
 export async function exportEditorDocumentToDocxPreservingSource(
@@ -74,6 +77,17 @@ export async function exportEditorDocumentToDocxPreservingSource(
     const outputPackage = await captureDocxSourcePackage(output);
     const diagnostics = auditOpaqueObjectPreservation(document.sourcePackage, outputPackage, document.opaqueDeletionIntents);
     if (diagnostics.length) throw new OpaqueObjectPreservationError(diagnostics);
+    const intents = document.opaqueDeletionIntents ?? [];
+    if (intents.length && options.pruneDeletedOpaqueDependencies !== false) {
+      const plan = planOpaqueDependencyPruning(document.sourcePackage, outputPackage, intents);
+      if (plan.removeEdges.length || plan.removeParts.length) {
+        const pruned = await applyOpaqueDependencyPruning(output, plan);
+        const afterPruning = await captureDocxSourcePackage(pruned);
+        const finalDiagnostics = auditOpaqueObjectPreservation(document.sourcePackage, afterPruning, intents);
+        if (finalDiagnostics.length) throw new OpaqueObjectPreservationError(finalDiagnostics);
+        return pruned;
+      }
+    }
   }
   return output;
 }
