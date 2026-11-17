@@ -37,7 +37,75 @@ import { captureOpaqueTransferManifest, validateOpaqueTransferManifest } from "@
 
 import { planOpaqueTransferInsertion } from "@/ooxml/word/opaqueTransferInsertion.js";
 
+import { applyOpaqueTransferToDocx } from "@/export/docx/opc/applyOpaqueTransferToDocx.js";
+
 describe("opaque source inventory and loss detector",()=>{
+  it("applies a chart transfer to real DOCX bytes, preserves originals and supports repeated insertion",async()=>{
+    const chartPath="word/charts/chart1.xml",bookPath="word/embeddings/book.xlsx";
+    const make=async(label:string,bookValue:string,withChart:boolean)=>{
+      const zip=new JSZip();
+      const rel=(id:string,type:string,target:string)=>'<Relationship Id="'+id+'" Type="'+R+'/'+type+'" Target="'+target+'"/>';
+      const rels=(body:string)=>'<Relationships xmlns="'+P+'">'+body+'</Relationships>';
+      zip.file("[Content_Types].xml",'<Types xmlns="'+CT+'"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="bin" ContentType="application/octet-stream"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'+(withChart?'<Override PartName="/'+chartPath+'" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/><Override PartName="/'+bookPath+'" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/>':'')+'</Types>');
+      zip.file("_rels/.rels",rels(rel("rIdOffice","officeDocument","word/document.xml")));
+      zip.file("word/document.xml",root(withChart?drawing:"<wx:t>Empty destination</wx:t>").replace("Neighbor",label));
+      zip.file("custom/unrelated.bin",new Uint8Array([0,255,7,19]));
+      if(withChart){
+        zip.file("word/_rels/document.xml.rels",rels(rel("rIdChart","chart","charts/chart1.xml")));
+        zip.file(chartPath,'<c:chartSpace xmlns:c="'+C+'" xmlns:rel="'+R+'"><c:externalData rel:id="rIdData"/></c:chartSpace>');
+        zip.file("word/charts/_rels/chart1.xml.rels",rels(rel("rIdData","package","../embeddings/book.xlsx")));
+        const workbook=new JSZip();
+        workbook.file("[Content_Types].xml",'<Types xmlns="'+CT+'"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>');
+        workbook.file("_rels/.rels",rels(rel("rIdOffice","officeDocument","xl/workbook.xml")));
+        workbook.file("xl/workbook.xml",'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="'+R+'"><sheets><sheet name="Data" sheetId="1" r:id="rIdSheet"/></sheets></workbook>');
+        workbook.file("xl/_rels/workbook.xml.rels",rels(rel("rIdSheet","worksheet","worksheets/sheet1.xml")));
+        workbook.file("xl/worksheets/sheet1.xml",'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>'+bookValue+'</t></is></c></row></sheetData></worksheet>');
+        zip.file(bookPath,await workbook.generateAsync({type:"uint8array"}));
+      }
+      return zip.generateAsync({type:"arraybuffer"});
+    };
+    const sourceBytes=await make("Source","Original workbook",true);
+    const destinationBytes=await make("Destination","Different workbook",true);
+    const source=await captureDocxSourcePackage(sourceBytes),destination=await captureDocxSourcePackage(destinationBytes);
+    const manifest=captureOpaqueTransferManifest(source,source.opaqueObjects![0]!);
+    const pristine=destinationBytes.slice(0);
+    const first=await applyOpaqueTransferToDocx(destinationBytes,manifest,0);
+    expect(new Uint8Array(destinationBytes)).toEqual(new Uint8Array(pristine));
+    const actual=await captureDocxSourcePackage(first.buffer);
+    expect(actual.opaqueObjects).toHaveLength(2);
+    expect(actual.parts[bookPath]!.data).toBe(destination.parts[bookPath]!.data);
+    const copiedBook=first.plan.pathMapping.find(p=>p.from===bookPath)!.to;
+    expect(actual.parts[copiedBook]!.data).toBe(source.parts[bookPath]!.data);
+    expect(actual.parts["custom/unrelated.bin"]!.data).toBe(destination.parts["custom/unrelated.bin"]!.data);
+    expect(actual.parts[chartPath]!.data).toBe(destination.parts[chartPath]!.data);
+    expect(actual.opaqueObjects!.map(o=>o.signature)).toEqual(expect.arrayContaining([destination.opaqueObjects![0]!.signature,first.plan.destinationRun.signature]));
+    const second=await applyOpaqueTransferToDocx(first.buffer,manifest,0);
+    expect(second.plan.drawingId).not.toBe(first.plan.drawingId);
+    expect(second.plan.addedParts[0]!.path).not.toBe(first.plan.addedParts[0]!.path);
+    expect((await captureDocxSourcePackage(second.buffer)).opaqueObjects).toHaveLength(3);
+    const imported=await importDocxInWorker(second.buffer);
+    const paragraph=imported.sections?.[0]?.blocks[0];
+    if(paragraph?.type!=="paragraph")throw Error("Expected body paragraph");
+    expect(paragraph.runs.filter(r=>r.kind==="opaque")).toHaveLength(3);
+    expect(paragraph.runs.map(r=>r.text).join("")).toBe("Destination\uFFFC\uFFFC\uFFFC");
+    paragraph.runs.find(r=>r.text==="Destination")!.text="Edited destination";
+    const roundtrip=await exportEditorDocumentToDocxPreservingSource(imported);
+    expect(auditOpaqueObjectPreservation(imported.sourcePackage!,await captureDocxSourcePackage(roundtrip))).toEqual([]);
+    // A destination with no previous opaque objects or owner .rels.
+    const empty=await applyOpaqueTransferToDocx(await make("Blank","",false),manifest,0);
+    expect((await captureDocxSourcePackage(empty.buffer)).opaqueObjects).toHaveLength(1);
+    await expect(applyOpaqueTransferToDocx(destinationBytes,manifest,99)).rejects.toThrow(/paragraph index/);
+    const hostile=structuredClone(manifest);hostile.parts.pop();
+    await expect(applyOpaqueTransferToDocx(destinationBytes,hostile,0)).rejects.toThrow();
+    const signed=await JSZip.loadAsync(destinationBytes);
+    signed.file("_xmlsignatures/sig1.xml","<signature/>");
+    await expect(applyOpaqueTransferToDocx(await signed.generateAsync({type:"arraybuffer"}),manifest,0)).rejects.toThrow(/signed package/);
+    const duplicate=await JSZip.loadAsync(destinationBytes);
+    const types=await duplicate.file("[Content_Types].xml")!.async("string");
+    duplicate.file("[Content_Types].xml",types.replace("</Types>",'<Default Extension="XML" ContentType="application/xml"/></Types>'));
+    await expect(applyOpaqueTransferToDocx(await duplicate.generateAsync({type:"arraybuffer"}),manifest,0)).rejects.toThrow(/content type default/);
+  },30000);
+
   it("remaps chart parts and relationships into a collision-free destination plan without mutating either snapshot",()=>{
     const s=source();
     const chart=s.parts["word/charts/chart1.xml"]!,book=s.parts["word/embeddings/book.xlsx"]!;
