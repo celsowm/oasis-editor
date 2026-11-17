@@ -10,7 +10,8 @@
  * per-line/page-margin change bars, section-level `w:sectPrChange` revisions
  * (outline, change bars, pane row, filter following and per-row accept),
  * reviewer balloons (author/type/snippet, margin-safe stacking and filter
- * following), and the persisted Reviewing Pane open state.
+ * following), and the persisted Reviewing Pane open state plus revision-list
+ * scroll offset.
  */
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
@@ -2111,18 +2112,70 @@ try {
       { timeout: 5000 },
     );
 
-    // 21. The Reviewing Pane's open state persists across reloads through
-    // localStorage, like Word's pane visibility. This runs last: a reload
-    // intentionally discards every earlier step's document/view state.
+    // 21. The Reviewing Pane's open state and its revision-list scroll offset
+    // persist across reloads through localStorage, like Word's pane. This runs
+    // last: a reload intentionally discards every earlier step's document state.
     const paneStorage = () =>
-      page.evaluate(() =>
-        globalThis.localStorage.getItem("oasis-reviewing-pane-v1"),
-      );
+      page.evaluate(() => {
+        const raw = globalThis.localStorage.getItem("oasis-reviewing-pane-v1");
+        return raw === null ? null : JSON.parse(raw);
+      });
+    const seedPersistedRevisions = () =>
+      page.evaluate(() => {
+        const client = window.ribbonReference.client;
+        const doc = client.document.get();
+        const section = doc.sections[0];
+        const blocks = Array.from({ length: 40 }, (_, index) => ({
+          id: `persist-p${index}`,
+          type: "paragraph",
+          runs: [
+            {
+              id: `persist-r${index}`,
+              kind: "text",
+              text: `Persisted revision row ${index}.`,
+              revision: {
+                id: `persist-rev${index}`,
+                type: "insert",
+                author: "Persist author",
+                date: 1000 + index,
+              },
+            },
+          ],
+        }));
+        client.document.load({ ...doc, sections: [{ ...section, blocks }] });
+      });
+    const listScroll = () =>
+      page.evaluate(() => {
+        const list = document.querySelector(
+          '[data-testid="review-revisions-list"]',
+        );
+        return list
+          ? {
+              scrollTop: list.scrollTop,
+              scrollHeight: list.scrollHeight,
+              clientHeight: list.clientHeight,
+            }
+          : null;
+      });
+    const storedScrollTop = () =>
+      page.evaluate(() => {
+        const raw = globalThis.localStorage.getItem("oasis-reviewing-pane-v1");
+        if (!raw) return null;
+        try {
+          return JSON.parse(raw).scrollTop;
+        } catch {
+          return null;
+        }
+      });
+
     assert.equal(
       await page.locator('[data-testid="review-revisions-panel"]').count(),
       0,
       "the pane is closed before the persistence check",
     );
+    // Seed enough tracked changes that the list is taller than the pane, so a
+    // scroll offset is meaningful.
+    await seedPersistedRevisions();
     // Dispatch through the command bus (the same path the ribbon button uses)
     // so the check is independent of collapsed-group layout at narrow widths.
     await page.evaluate(() => {
@@ -2131,7 +2184,38 @@ try {
     await page
       .getByTestId("review-revisions-panel")
       .waitFor({ state: "visible", timeout: 5000 });
-    assert.equal(await paneStorage(), "true");
+    assert.deepEqual(await paneStorage(), { open: true, scrollTop: 0 });
+
+    const initialScroll = await listScroll();
+    assert.ok(
+      initialScroll && initialScroll.scrollHeight > initialScroll.clientHeight,
+      "the seeded revision list is taller than the pane",
+    );
+    const targetScroll = 120;
+    await page.evaluate((target) => {
+      const list = document.querySelector(
+        '[data-testid="review-revisions-list"]',
+      );
+      list.scrollTop = target;
+      list.dispatchEvent(new Event("scroll"));
+    }, targetScroll);
+    await page.waitForFunction(
+      (target) => {
+        const raw = globalThis.localStorage.getItem("oasis-reviewing-pane-v1");
+        if (!raw) return false;
+        try {
+          const parsed = JSON.parse(raw);
+          return (
+            parsed.open === true && Math.abs(parsed.scrollTop - target) <= 1
+          );
+        } catch {
+          return false;
+        }
+      },
+      targetScroll,
+      { timeout: 5000 },
+    );
+    assert.equal((await listScroll()).scrollTop, targetScroll);
 
     await page.reload();
     await waitForRibbonReference(page);
@@ -2144,9 +2228,31 @@ try {
       1,
       "an open Reviewing Pane is restored after reload",
     );
+    // A reloaded pane mounts before the document has revisions; the restore
+    // retries as rows arrive, so seeding the same list restores the offset.
+    await seedPersistedRevisions();
+    await page.waitForFunction(
+      (target) => {
+        const list = document.querySelector(
+          '[data-testid="review-revisions-list"]',
+        );
+        return !!list && Math.abs(list.scrollTop - target) <= 2;
+      },
+      targetScroll,
+      { timeout: 5000 },
+    );
+    assert.ok(
+      Math.abs((await storedScrollTop()) - targetScroll) <= 1,
+      "the stored scroll offset survives the reload",
+    );
 
+    // Closing keeps the offset (Word remembers the pane's position), while the
+    // closed state itself is what a reload restores.
     await page.getByTestId("review-revisions-close").click();
-    assert.equal(await paneStorage(), "false");
+    assert.deepEqual(await paneStorage(), {
+      open: false,
+      scrollTop: targetScroll,
+    });
     await page.reload();
     await waitForRibbonReference(page);
     await waitForRibbonSettled(page);
@@ -2154,6 +2260,26 @@ try {
       await page.locator('[data-testid="review-revisions-panel"]').count(),
       0,
       "a closed Reviewing Pane stays closed after reload",
+    );
+
+    // Reopening after the reload restores the offset again, so it survived the
+    // close and the reload rather than being reset by either.
+    await page.evaluate(() => {
+      window.ribbonReference.client.commands.execute("toggleRevisionsPanel");
+    });
+    await page
+      .getByTestId("review-revisions-panel")
+      .waitFor({ state: "visible", timeout: 5000 });
+    await seedPersistedRevisions();
+    await page.waitForFunction(
+      (target) => {
+        const list = document.querySelector(
+          '[data-testid="review-revisions-list"]',
+        );
+        return !!list && Math.abs(list.scrollTop - target) <= 2;
+      },
+      targetScroll,
+      { timeout: 5000 },
     );
 
     assert.deepEqual(errors, []);
@@ -2235,6 +2361,8 @@ try {
         "reviewer-balloons-are-all-markup-only",
         "reviewing-pane-open-state-persists-across-reload",
         "reviewing-pane-closed-state-persists-across-reload",
+        "reviewing-pane-scroll-offset-persists-across-reload",
+        "reviewing-pane-scroll-offset-survives-close-and-reopen",
       ],
     });
     await page.close();
@@ -2244,7 +2372,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject, structural table-cell revision outlines with their Simple Markup change bars and pane rows, row/table/grid-level revision outlines, per-line/page-margin change bars, section-level w:sectPrChange revisions (outline, change bars, localized pane row, filter following and per-row accept), reviewer balloons (author/type/snippet, margin-safe stacking, Show Markup category and reviewer following, All-Markup-only), and the persisted Reviewing Pane open state.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject, structural table-cell revision outlines with their Simple Markup change bars and pane rows, row/table/grid-level revision outlines, per-line/page-margin change bars, section-level w:sectPrChange revisions (outline, change bars, localized pane row, filter following and per-row accept), reviewer balloons (author/type/snippet, margin-safe stacking, Show Markup category and reviewer following, All-Markup-only), and the persisted Reviewing Pane open state and revision-list scroll offset.`,
   );
 } finally {
   await browser.close();
