@@ -1,0 +1,57 @@
+name: PDF Size and Reader Regression
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/export/pdf/**'
+      - 'src/text/fonts/**'
+      - 'tests/vitest/__tests__/export/pdfWriter.test.ts'
+      - '.github/workflows/pdf-size.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pdf-size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Verify PDF writer and export size budgets
+        run: npx vitest run tests/vitest/__tests__/export/pdfWriter.test.ts
+        env:
+          OASIS_PDF_SIZE_ARTIFACTS: '1'
+      - name: Install independent PDF reader
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Verify pages, searchable Unicode and rendering with Poppler
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          pdfs=(test-results/pdf-size/*.pdf)
+          test "${#pdfs[@]}" -eq 6
+          for file in "${pdfs[@]}"; do
+            stem="${file%.pdf}"
+            printf '%s: ' "$file"
+            wc -c < "$file"
+            pdfinfo "$file" > "$stem.info.txt"
+            grep -Eq '^Pages:[[:space:]]+1$' "$stem.info.txt"
+            pdffonts "$file" > "$stem.fonts.txt"
+            pdftotext -enc UTF-8 "$file" "$stem.txt"
+            grep -Fq 'Olá mundo' "$stem.txt"
+            pdftoppm -f 1 -l 1 -r 96 -png "$file" "$stem"
+            test -s "$stem-1.png"
+          done
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pdf-size-reader-evidence
+          path: test-results/pdf-size

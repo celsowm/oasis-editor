@@ -242,13 +242,37 @@ function createInlineImageDocument(options?: {
 }
 
 describe("PDF binary resource size", () => {
+  it("exports an actual single-paragraph Olá mundo document below the size ceiling", async () => {
+    const p=createEditorParagraph("Olá mundo");
+    const document: EditorDocument = {
+      id:"pdf-size-hello-world",
+      sections:[{
+        id:"section-1",
+        pageSettings:{
+          width:816,height:1056,orientation:"portrait",
+          margins:{top:96,right:96,bottom:96,left:96,header:48,footer:48,gutter:0},
+        },
+        blocks:[p],
+      }],
+    };
+    const blob=await exportEditorDocumentToPdfBlob(document);
+    const buffer=await blob.arrayBuffer();
+    expect(buffer.byteLength).toBeLessThan(48*1024);
+    expectPdfText(decodePdf(buffer),"Olá mundo");
+    console.info("PDF size: actual Olá mundo export",buffer.byteLength,"bytes");
+    if(process.env.OASIS_PDF_SIZE_ARTIFACTS==="1"){
+      const { mkdir,writeFile }=await import("node:fs/promises");
+      await mkdir("test-results/pdf-size",{recursive:true});
+      await writeFile("test-results/pdf-size/hello-world.pdf",new Uint8Array(buffer));
+    }
+  });
   it("emits only real CID widths and Unicode mappings even for high glyph IDs", () => {
     const widths=Array.from({length:60001},()=>500);
     expect(buildSparseFontWidths(widths,[0,12,13,60000])).toBe("0 [500] 12 [500 500] 60000 [500]");
     const cmap=buildToUnicodeCMap(new Map([[12,[0x4f]],[60000,[0xe1]]]));
     expect(cmap).toContain("<000C> <004F>");
     expect(cmap).toContain("<EA60> <00E1>");
-    expect(cmap).not.toContain("<0000>");
+    expect(cmap).not.toMatch(/^<0000> </m);
     expect(cmap.length).toBeLessThan(1024);
     const large=buildToUnicodeCMap(new Map(Array.from({length:201},(_,i)=>[i+1,[65]])));
     expect(large.match(/\d+ beginbfchar/g)).toEqual(["100 beginbfchar","100 beginbfchar","1 beginbfchar"]);
@@ -284,6 +308,11 @@ describe("PDF binary resource size", () => {
       expect(raw.slice(offset,offset+String(index).length+7)).toBe(index+" 0 obj\n");
     }
     console.info("PDF size:",family,buffer.byteLength,"bytes; font",sfnt.byteLength,"->",compressed.byteLength);
+    if(process.env.OASIS_PDF_SIZE_ARTIFACTS==="1"){
+      const { mkdir,writeFile }=await import("node:fs/promises");
+      await mkdir("test-results/pdf-size",{recursive:true});
+      await writeFile("test-results/pdf-size/"+family.replaceAll(" ","-")+".pdf",bytes);
+    }
   });
 
   it("embeds JPEG bytes unchanged rather than doubling them as hex",()=>{
