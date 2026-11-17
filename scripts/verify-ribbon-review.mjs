@@ -8,8 +8,9 @@
  * accept/reject, structural table-cell revision outlines with their Simple
  * Markup change bars and pane rows, row/table/grid-level revision outlines,
  * per-line/page-margin change bars, section-level `w:sectPrChange` revisions
- * (outline, change bars, pane row, filter following and per-row accept), and
- * the persisted Reviewing Pane open state.
+ * (outline, change bars, pane row, filter following and per-row accept),
+ * reviewer balloons (author/type/snippet, margin-safe stacking and filter
+ * following), and the persisted Reviewing Pane open state.
  */
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
@@ -1483,11 +1484,15 @@ try {
     await applyShowMarkup(page, { section: "formatting" });
     await waitForCellCount(2);
     assert.equal(
-      await cellMarkup().and(page.locator('[data-revision-id="table-property"]')).count(),
+      await cellMarkup()
+        .and(page.locator('[data-revision-id="table-property"]'))
+        .count(),
       0,
     );
     assert.equal(
-      await cellMarkup().and(page.locator('[data-revision-id="table-grid"]')).count(),
+      await cellMarkup()
+        .and(page.locator('[data-revision-id="table-grid"]'))
+        .count(),
       1,
     );
     await applyShowMarkup(page, { section: "formatting" });
@@ -1495,7 +1500,9 @@ try {
     await applyShowMarkup(page, { section: "insertions" });
     await waitForCellCount(2);
     assert.equal(
-      await cellMarkup().and(page.locator('[data-revision-id="row-insert"]')).count(),
+      await cellMarkup()
+        .and(page.locator('[data-revision-id="row-insert"]'))
+        .count(),
       0,
     );
     await applyShowMarkup(page, { section: "insertions" });
@@ -1879,7 +1886,209 @@ try {
     assert.equal(await sectionRow.count(), 0);
     await page.getByTestId("review-revisions-close").click();
 
-    // 20. The Reviewing Pane's open state persists across reloads through
+    // 20. Reviewer balloons: Word renders tracked changes as right-margin
+    // cards carrying the author, the change type and a snippet. One card paints
+    // per visible revision, in document order; cards stack so they never
+    // overlap, stay inside the page's right margin so body text is never
+    // covered, and obey the same All-Markup / Show Markup rules as the inline
+    // decorations.
+    await setReviewMode("all");
+    await applyShowMarkup(page, { allAuthors: true });
+    await loadFixture(page, "review");
+    await page.evaluate(() => {
+      const client = window.ribbonReference.client;
+      const doc = client.document.get();
+      const section = doc.sections[0];
+      const paragraph = section.blocks.find(
+        (block) => block.type === "paragraph",
+      );
+      const runs = [
+        {
+          id: "balloon-ins-run",
+          kind: "text",
+          text: "Inserted by Alice. ",
+          revision: {
+            id: "balloon-ins",
+            type: "insert",
+            author: "Alice",
+            date: 1000,
+          },
+        },
+        {
+          id: "balloon-del-run",
+          kind: "text",
+          text: "Deleted by Bob. ",
+          revision: {
+            id: "balloon-del",
+            type: "delete",
+            author: "Bob",
+            date: 2000,
+          },
+        },
+        {
+          id: "balloon-prop-run",
+          kind: "text",
+          text: "Formatted by Carol. ",
+          styles: {
+            bold: true,
+            propertyRevision: {
+              id: "balloon-prop",
+              type: "property",
+              author: "Carol",
+              date: 3000,
+              previous: { bold: false },
+            },
+          },
+        },
+        { id: "balloon-plain-run", kind: "text", text: "Plain tail." },
+      ];
+      client.document.load({
+        ...doc,
+        sections: doc.sections.map((candidate) =>
+          candidate.id !== section.id
+            ? candidate
+            : {
+                ...candidate,
+                blocks: candidate.blocks.map((block) =>
+                  block.id !== paragraph.id ? block : { ...paragraph, runs },
+                ),
+              },
+        ),
+      });
+    });
+    const balloonSelector = '[data-testid="editor-revision-balloon"]';
+    const balloons = () => page.locator(balloonSelector);
+    await page.waitForFunction(
+      (selector) => document.querySelectorAll(selector).length === 3,
+      balloonSelector,
+      { timeout: 5000 },
+    );
+    const balloonLabels = await balloons().evaluateAll((elements) =>
+      elements.map((element) => ({
+        id: element.getAttribute("data-revision-id"),
+        type: element.getAttribute("data-revision-type"),
+        text: (element.textContent ?? "").replace(/\s+/g, " ").trim(),
+      })),
+    );
+    assert.deepEqual(
+      balloonLabels.map((label) => label.id),
+      ["balloon-ins", "balloon-del", "balloon-prop"],
+      "one balloon per visible revision, in document order",
+    );
+    assert.deepEqual(
+      balloonLabels.map((label) => label.type),
+      ["insert", "delete", "property"],
+    );
+    assert.match(balloonLabels[0].text, /Alice/);
+    assert.match(balloonLabels[0].text, /Inserted by Alice/);
+    assert.match(balloonLabels[1].text, /Bob/);
+    assert.match(balloonLabels[2].text, /Carol/);
+    assert.match(balloonLabels[2].text, /Formatted by Carol/);
+
+    const balloonGeometry = await balloons().evaluateAll((elements) => {
+      const pageSlot = document.querySelector(".oasis-editor-canvas-page-slot");
+      const pageRect = pageSlot ? pageSlot.getBoundingClientRect() : null;
+      return {
+        page: pageRect
+          ? {
+              left: pageRect.left,
+              right: pageRect.right,
+              width: pageRect.width,
+            }
+          : null,
+        cards: elements.map((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            top: rect.top,
+            left: rect.left,
+            right: rect.right,
+            bottom: rect.bottom,
+          };
+        }),
+      };
+    });
+    assert.ok(balloonGeometry.page, "a page is painted");
+    const pageRect = balloonGeometry.page;
+    const stacked = [...balloonGeometry.cards].sort((a, b) => a.top - b.top);
+    for (let index = 1; index < stacked.length; index += 1) {
+      assert.ok(
+        stacked[index].top >= stacked[index - 1].bottom - 1,
+        "balloons stack without overlapping",
+      );
+    }
+    for (const card of balloonGeometry.cards) {
+      assert.ok(
+        card.left >= pageRect.left + pageRect.width * 0.75,
+        "balloons sit in the page's right margin",
+      );
+      assert.ok(
+        card.right <= pageRect.right + 1,
+        "balloons stay inside the page",
+      );
+    }
+
+    // The Formatting category hides only the formatting balloon.
+    await applyShowMarkup(page, { section: "formatting" });
+    await page.waitForFunction(
+      (selector) => document.querySelectorAll(selector).length === 2,
+      balloonSelector,
+      { timeout: 5000 },
+    );
+    assert.deepEqual(
+      await balloons().evaluateAll((elements) =>
+        elements.map((element) => element.getAttribute("data-revision-id")),
+      ),
+      ["balloon-ins", "balloon-del"],
+    );
+    await applyShowMarkup(page, { section: "formatting" });
+    await page.waitForFunction(
+      (selector) => document.querySelectorAll(selector).length === 3,
+      balloonSelector,
+      { timeout: 5000 },
+    );
+
+    // Hiding a reviewer removes their balloon; hiding everyone removes all.
+    await applyShowMarkup(page, { author: "Alice" });
+    await page.waitForFunction(
+      (selector) => document.querySelectorAll(selector).length === 2,
+      balloonSelector,
+      { timeout: 5000 },
+    );
+    assert.ok(
+      !(
+        await balloons().evaluateAll((elements) =>
+          elements.map((element) => element.getAttribute("data-revision-id")),
+        )
+      ).includes("balloon-ins"),
+    );
+    await applyShowMarkup(page, { allAuthors: false });
+    await page.waitForFunction(
+      (selector) => document.querySelectorAll(selector).length === 0,
+      balloonSelector,
+      { timeout: 5000 },
+    );
+    await applyShowMarkup(page, { allAuthors: true });
+    await page.waitForFunction(
+      (selector) => document.querySelectorAll(selector).length === 3,
+      balloonSelector,
+      { timeout: 5000 },
+    );
+
+    // Simple Markup paints change bars instead of balloons; All Markup restores.
+    await setReviewMode("simple");
+    assert.equal(
+      await balloons().count(),
+      0,
+      "Simple Markup paints no balloons",
+    );
+    await setReviewMode("all");
+    await page.waitForFunction(
+      (selector) => document.querySelectorAll(selector).length === 3,
+      balloonSelector,
+      { timeout: 5000 },
+    );
+
+    // 21. The Reviewing Pane's open state persists across reloads through
     // localStorage, like Word's pane visibility. This runs last: a reload
     // intentionally discards every earlier step's document/view state.
     const paneStorage = () =>
@@ -1995,6 +2204,11 @@ try {
         "section-revisions-pane-row-listed",
         "section-revisions-follow-formatting-checkbox",
         "section-revisions-pane-row-accept-resolves",
+        "reviewer-balloons-paint-author-type-and-snippet",
+        "reviewer-balloons-stack-inside-the-right-margin",
+        "reviewer-balloons-follow-show-markup-categories",
+        "reviewer-balloons-follow-reviewer-filters",
+        "reviewer-balloons-are-all-markup-only",
         "reviewing-pane-open-state-persists-across-reload",
         "reviewing-pane-closed-state-persists-across-reload",
       ],
@@ -2006,7 +2220,7 @@ try {
     JSON.stringify(records, null, 2) + "\n",
   );
   console.log(
-    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject, structural table-cell revision outlines with their Simple Markup change bars and pane rows, row/table/grid-level revision outlines, per-line/page-margin change bars, section-level w:sectPrChange revisions (outline, change bars, localized pane row, filter following and per-row accept), and the persisted Reviewing Pane open state.`,
+    `Verified ${records.length} Review layouts in ${engine}: Accept All / Reject All scope, confirmation, disabled states, undo, selection distinction, revision markup, Display for Review, Simple Markup change bars, Show Markup category/reviewer filters (including the Formatting checkbox), formatting revisions, Reviewing Pane formatting rows and their accept/reject, structural table-cell revision outlines with their Simple Markup change bars and pane rows, row/table/grid-level revision outlines, per-line/page-margin change bars, section-level w:sectPrChange revisions (outline, change bars, localized pane row, filter following and per-row accept), reviewer balloons (author/type/snippet, margin-safe stacking, Show Markup category and reviewer following, All-Markup-only), and the persisted Reviewing Pane open state.`,
   );
 } finally {
   await browser.close();
