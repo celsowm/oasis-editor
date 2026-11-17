@@ -249,3 +249,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 - OX-003 slice D: v0.0.358 released with all CI green. Main-story single-object explicit deletion intents integrated into Delete/Backspace and audited on export; original package untouched, dependencies retained, history tested. Ambiguous, bulk, tracked and cross-story operations remain restricted. CI pending.
 
 - OX-003 slice E: v0.0.359 published, deletion/history CI green. Added default conservative deletion-local OPC graph pruning with pre/post audits and explicit opt-out; actual removal/undo and shared/cyclic closure tests. Ambiguous graphs retain data. CI pending.
+
+- OX-003 slice F: v0.0.360 release green. Same-story single-object movement target correction; production round-trip tests; cross-story relationship relocation planner with collision/closure tests. Cross-story edit/export integration remains pending. CI pending.

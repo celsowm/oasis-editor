@@ -3,6 +3,8 @@ import { paragraphOffsetToPosition } from "@/core/model.js";
 import { deleteBackward, deleteForward } from "@/core/commands/text.js";
 import { createEmptyEditorHistoryState, applyEditorHistoryTransaction, takeEditorUndoStep, takeEditorRedoStep } from "@/ui/editorHistory.js";
 import { planOpaqueDependencyPruning } from "@/export/docx/opc/opaqueDependencyPruning.js";
+import { planOpaqueStoryRelocation } from "@/export/docx/opc/opaqueStoryRelocation.js";
+import { moveOrCopySelectionToPosition } from "@/core/commands/text.js";
 import { cloneRun } from "@/core/document/clone.js";
 import { buildParagraphFragments, buildMeasuredChars } from "@/ui/textMeasurement/tokenizer.js";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
@@ -106,6 +108,27 @@ describe("opaque source inventory and loss detector",()=>{
     expect(planOpaqueDependencyPruning(s,ambiguous,[intent]).skippedReason).toBeDefined();
     expect(planOpaqueDependencyPruning(s,ambiguous,[intent]).removeParts).toEqual([]);
   });
+  it("plans a namespace-aware story relationship remap without mutating original parts",()=>{
+    const s=source(),path="word/stories/header42.xml";
+    s.parts[path]=part(path,'<wx:hdr xmlns:wx="'+W+'" xmlns:rel="'+R+'"><wx:p><wx:r><wx:t>Header</wx:t><wx:t>rIdOasisOpaque2</wx:t></wx:r></wx:p></wx:hdr>',{
+      contentType:"application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml",
+      relationships:[{id:"rIdChart",type:R+"/image",target:"../media/p.png",resolvedTarget:"word/media/p.png"},{id:"rIdOasisOpaque1",type:R+"/image",target:"../media/p.png",resolvedTarget:"word/media/p.png"}]
+    });
+    s.parts["word/media/p.png"]=part("word/media/p.png","AQID",{kind:"binary",encoding:"base64"});
+    s.parts[s.mainDocumentPart]!.relationships!.push({id:"rIdHeader",type:R+"/header",target:"stories/header42.xml",resolvedTarget:path});
+    const object=inspectDocxOpaqueObjects(s).objects[0]!,before=structuredClone(s);
+    const plan=planOpaqueStoryRelocation(s,object,path);
+    expect(plan.idMapping).toEqual([{from:"rIdChart",to:"rIdOasisOpaque3"}]);
+    expect(plan.destinationRun.fragmentXml).toContain('rel:id="rIdOasisOpaque3"');
+    expect(plan.addedRelationships).toEqual([{id:"rIdOasisOpaque3",type:R+"/chart",target:"../charts/chart1.xml",resolvedTarget:"word/charts/chart1.xml",targetMode:"Internal"}]);
+    expect(plan.sharedPartPaths).toEqual(object.partPaths);
+    expect(s).toEqual(before);
+    expect(()=>planOpaqueStoryRelocation(s,object,s.mainDocumentPart)).toThrow(/Same-story/);
+    expect(()=>planOpaqueStoryRelocation(s,{...object,ordinal:99},path)).toThrow(/Ambiguous/);
+    const ambiguous=structuredClone(s);
+    ambiguous.parts[path]!.relationships!.push({...ambiguous.parts[path]!.relationships![0]!});
+    expect(()=>planOpaqueStoryRelocation(ambiguous,object,path)).toThrow(/Duplicate destination/);
+  });
   it("keeps a complete alternate-content wrapper and ignores foreign same-name elements",()=>{
     const s=source();
     const mc="http://schemas.openxmlformats.org/markup-compatibility/2006";
@@ -169,6 +192,21 @@ describe("opaque source inventory and loss detector",()=>{
     const offset=body.runs.slice(0,body.runs.findIndex(r=>r.kind==="opaque")).reduce((n,r)=>n+r.text.length,0);
     const at=createEditorStateFromDocument(clean,{offset});
     const selected={...at,selection:{anchor:paragraphOffsetToPosition(body,offset),focus:paragraphOffsetToPosition(body,offset+1)}};
+    // Move the object before its adjacent text using the real drag command.
+    const start=paragraphOffsetToPosition(body,0);
+    const moved=moveOrCopySelectionToPosition(selected,start);
+    const movedBody=moved.document.sections?.[0]?.blocks[0];
+    expect(movedBody?.type==="paragraph"&&movedBody.runs.map(r=>r.text).join("")).toBe("\uFFFCChanged neighbor");
+    const movedPackage=await captureDocxSourcePackage(await exportEditorDocumentToDocxPreservingSource(moved.document));
+    expect(auditOpaqueObjectPreservation(clean.sourcePackage!,movedPackage)).toEqual([]);
+    expect(movedPackage.opaqueObjects).toHaveLength(1);
+    expect(moveOrCopySelectionToPosition(selected,start,{copy:true})).toBe(selected);
+    const movedParagraph=moved.document.sections?.[0]?.blocks[0];
+    if(movedParagraph?.type!=="paragraph")throw Error("Expected moved paragraph");
+    const back=moveOrCopySelectionToPosition(moved,paragraphOffsetToPosition(movedParagraph,offset+1));
+    const backBody=back.document.sections?.[0]?.blocks[0];
+    expect(backBody?.type==="paragraph"&&backBody.runs.map(r=>r.text).join("")).toBe("Changed neighbor\uFFFC");
+    expect(auditOpaqueObjectPreservation(clean.sourcePackage!,await captureDocxSourcePackage(await exportEditorDocumentToDocxPreservingSource(back.document)))).toEqual([]);
     const removed=deleteForward(selected);
     expect(removed.document.opaqueDeletionIntents).toHaveLength(1);
     expect(clean.opaqueDeletionIntents).toBeUndefined();

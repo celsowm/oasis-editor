@@ -250,6 +250,28 @@ export function moveOrCopySelectionToPosition(
     return state;
   }
 
+  const selectedRuns = fragments.flatMap(fragment => fragment.runs);
+  if (selectedRuns.some(run => run.kind === "opaque")) {
+    // Same-story, untracked single-object move only. The existing paragraph
+    // stream cannot authorize a cross-story relationship remap or duplicate.
+    if (options.copy || state.trackChangesEnabled || selectedRuns.length !== 1 ||
+        selectedRuns[0]!.kind !== "opaque" || selectedRuns[0]!.revision ||
+        selectedRuns[0]!.sdtWrappers?.length || fragments.length !== 1) return state;
+    const paragraphs = getParagraphs(state);
+    const targetIndex = paragraphs.findIndex(p => p.id === targetPosition.paragraphId);
+    if (targetIndex < 0) return state;
+    const target = paragraphs[targetIndex]!;
+    const originalOffset = positionToParagraphOffset(target, targetPosition);
+    const removedLength = normalized.endParagraphOffset - normalized.startParagraphOffset;
+    const targetOffset = targetIndex === normalized.startIndex && originalOffset > normalized.endParagraphOffset
+      ? originalOffset - removedLength : originalOffset;
+    // Resolve target by stable paragraph identity plus logical offset AFTER
+    // deletion. The old run IDs are invalidated by sliceRuns/normalization.
+    const deleted = deleteSelectionRange(state);
+    const destination = getParagraphs(deleted).find(p => p.id === target.id);
+    if (!destination) return state;
+    return insertFragmentsAtPosition(deleted, paragraphOffsetToPosition(destination, targetOffset), fragments);
+  }
   if (options.copy) {
     return insertFragmentsAtPosition(state, targetPosition, fragments);
   }
