@@ -216,6 +216,44 @@ describe("opaque source inventory and loss detector",()=>{
     const redone=takeEditorRedoStep(undone.history,undone.nextState)!;
     expect((await captureDocxSourcePackage(await exportEditorDocumentToDocxPreservingSource(redone.nextState.document))).opaqueObjects?.[0]?.ownerPath).toBe(headerPath);
   },30000);
+  it("projects multiple opaque children interleaved with text in one w:r and preserves them through edits",async()=>{
+    const zip=new JSZip();
+    const chartPath="word/charts/chart1.xml";
+    zip.file("[Content_Types].xml",'<Types xmlns="'+CT+'"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/'+chartPath+'" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/></Types>');
+    zip.file("_rels/.rels",'<Relationships xmlns="'+P+'"><Relationship Id="rIdOffice" Type="'+R+'/officeDocument" Target="word/document.xml"/></Relationships>');
+    zip.file("word/_rels/document.xml.rels",'<Relationships xmlns="'+P+'"><Relationship Id="rIdChart" Type="'+R+'/chart" Target="charts/chart1.xml"/></Relationships>');
+    zip.file(chartPath,'<c:chartSpace xmlns:c="'+C+'"/>');
+    const mixed='<wx:rPr><wx:b/></wx:rPr><wx:t xml:space="preserve">Before </wx:t>'+drawing+
+      '<wx:tab/><wx:t>Middle</wx:t>'+drawing.replace('id="1" name="Chart"','id="2" name="Chart two"')+
+      '<wx:br/><wx:t>After</wx:t>';
+    zip.file("word/document.xml",root(mixed));
+    let doc=await importDocxInWorker(await zip.generateAsync({type:"arraybuffer"}));
+    const original=doc.sourcePackage!;
+    expect(original.opaqueObjects).toHaveLength(2);
+    const getBody=()=>{
+      const p=doc.sections?.[0]?.blocks[0];
+      if(p?.type!=="paragraph")throw Error("Expected mixed paragraph");
+      return p;
+    };
+    expect(getBody().runs.map(r=>r.text).join("")).toBe("NeighborBefore \uFFFC\tMiddle\uFFFC\nAfter");
+    const opaque=getBody().runs.filter(r=>r.kind==="opaque");
+    expect(opaque).toHaveLength(2);
+    expect(opaque.every(r=>r.styles?.bold===true)).toBe(true);
+    expect(opaque.map(r=>r.opaque.signature)).toEqual(original.opaqueObjects!.map(o=>o.signature));
+    const tail=getBody().runs.find(r=>r.text==="\nAfter")!;
+    expect(tail.styles?.bold).toBe(true);
+    tail.text="\nEdited after";
+    for(let cycle=0;cycle<3;cycle++){
+      const saved=await exportEditorDocumentToDocxPreservingSource(doc);
+      const actual=await captureDocxSourcePackage(saved);
+      expect(auditOpaqueObjectPreservation(original,actual)).toEqual([]);
+      expect(actual.parts[chartPath]?.data).toBe(original.parts[chartPath]?.data);
+      doc=await importDocxInWorker(saved);
+      expect(getBody().runs.map(r=>r.text).join("")).toBe("NeighborBefore \uFFFC\tMiddle\uFFFC\nEdited after");
+      expect(getBody().runs.filter(r=>r.kind==="opaque")).toHaveLength(2);
+    }
+  },30000);
+
   it("captures an actual package and retains a standalone chart through a source-backed neighboring edit",async()=>{
     const zip=new JSZip();
     zip.file("[Content_Types].xml",`<Types xmlns="${CT}"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/></Types>`);

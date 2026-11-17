@@ -565,12 +565,45 @@ export async function parseRunsContainer(
 
       const contentChildren=Array.from(element.childNodes).filter((node): node is XmlElement =>
         node.nodeType===1 && !(node.namespaceURI===WORD_NS && node.localName==="rPr"));
-      if(contentChildren.length===1){
-        const opaque=projectOpaqueRunElement(contentChildren[0]!);
-        if(opaque){
-          runs.push({text:"\uFFFC",opaque,...(runStyles?{styles:runStyles}:{})});
-          continue;
+      // Project the direct children in document order. Only split mixed
+      // runs whose non-object children are understood text content. Never
+      // clone the opaque element into a detached DOM: the complete original
+      // namespace scope (including MC Requires prefixes) is its authority.
+      const projected = contentChildren.map(child => ({ child, opaque: projectOpaqueRunElement(child) }));
+      const textChild = (child: XmlElement): boolean =>
+        child.namespaceURI === WORD_NS &&
+        ["t","delText","tab","noBreakHyphen","softHyphen","br","cr","lastRenderedPageBreak"].includes(child.localName ?? "");
+      const containsOpaque = projected.some(entry => entry.opaque);
+      if (containsOpaque && (contentChildren.length === 1 ||
+          (!fieldStack.length && projected.every(entry => entry.opaque || textChild(entry.child))))) {
+        let text = "";
+        const styles = inheritedLink ? { ...runStyles, link: inheritedLink } : runStyles;
+        const flush = (): void => {
+          if (!text.length) return;
+          runs.push({ text, ...(styles ? {styles: {...styles}} : {}) });
+          text = "";
+        };
+        for (const {child, opaque} of projected) {
+          if (opaque) {
+            flush();
+            runs.push({text:"\uFFFC", opaque, ...(styles ? {styles:{...styles}} : {})});
+            continue;
+          }
+          switch(child.localName) {
+            case "t": case "delText": text += child.textContent ?? ""; break;
+            case "tab": text += "\t"; break;
+            case "noBreakHyphen": text += "\u2011"; break;
+            case "softHyphen": text += "\u00AD"; break;
+            case "cr": text += "\n"; break;
+            case "br": {
+              const type = getAttributeValue(child,"type");
+              text += type === "page" ? PAGE_BREAK_MARKER : type === "column" ? COLUMN_BREAK_MARKER : "\n";
+              break;
+            }
+          }
         }
+        flush();
+        continue;
       }
 
       const hasFieldControl =

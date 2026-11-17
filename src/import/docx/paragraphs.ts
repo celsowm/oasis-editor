@@ -120,8 +120,11 @@ function captureImportedParagraphSource(
       ? serializer.serializeToString(paragraphProperties)
       : undefined;
   const collectedRunXml = collectParagraphRunXml(paragraphNode, serializer);
+  // An opaque run's fragment is independently provenance-checked. The
+  // positional source-run association is unsafe when an original w:r can
+  // project into multiple runs (counts may accidentally match after skips).
   const runXml =
-    collectedRunXml.length === importedRuns.length
+    !importedRuns.some(run => run.opaque) && collectedRunXml.length === importedRuns.length
       ? collectedRunXml
       : undefined;
 

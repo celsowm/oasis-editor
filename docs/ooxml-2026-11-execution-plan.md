@@ -257,3 +257,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 - OX-003 slice H: repair incorrect source-zone setup in the failed cross-story integration fixture, wire guarded controller dispatch by hit zone, block unsafe opaque clipboard writes/cuts. npm/Pages release gates retained. CI pending.
 
 - OX-003 slice I: fresh source inspection replaces cached-inventory trust, exact authorized raw fragment serialization, internal source-bound rebuild and explicit baseline source. Added regressions for stale snapshots and injected markup. Clipboard closure transfer remains pending. CI pending.
+
+- OX-003 slice J: mixed run projection for understood text and opaque objects, shared relationship fixture and repeated source-backed mutation; prevent unsafe positional run XML attachment. Complex mixed fields/unknown children remain open. CI pending.
