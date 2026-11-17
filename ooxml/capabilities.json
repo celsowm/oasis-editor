@@ -1,0 +1,318 @@
+{
+  "version": 1,
+  "sourceRef": "96007ab0dc2847770a7c4debac536053a1a1d6a3",
+  "auditRef": "ff6d7f681b275c3a1609fde8e3458f02c42f667a",
+  "auditDate": "2026-11-16",
+  "inventory": {
+    "status": "incomplete",
+    "reason": "Pinned declarations, direct QName links and effective attribute/particle projections. Restrictions, substitutions, external XSDs and complete DOCX reachability remain limited; not a coverage denominator.",
+    "counts": {
+      "all": 7,
+      "any": 23,
+      "attribute": 6292,
+      "attributeGroup": 179,
+      "choice": 299,
+      "complexContent": 81,
+      "complexType": 2811,
+      "element": 6925,
+      "enumeration": 6275,
+      "extension": 97,
+      "group": 525,
+      "list": 14,
+      "restriction": 1029,
+      "sequence": 1710,
+      "simpleContent": 16,
+      "simpleType": 1127,
+      "union": 84
+    },
+    "graphSummary": {
+      "builtin-namespace": 4347,
+      "file-present": 93,
+      "resolved": 10726,
+      "unresolved": 16
+    },
+    "effectiveCounts": {
+      "projections": 10863,
+      "elements": 6925,
+      "attributeOccurrences": 21462,
+      "unresolvedOrPartial": 1107,
+      "substitutionEdges": 0
+    },
+    "docxScope": {
+      "roots": 75,
+      "missingRoots": 2,
+      "contexts": 17531,
+      "elementDeclarations": 4252,
+      "qualifiedNames": 2900,
+      "attributeOccurrences": 33147,
+      "enumeratedValueOccurrences": 102094,
+      "contextsWithRelatedObservations": 148,
+      "unresolvedParticleLinks": 0
+    }
+  },
+  "evidenceMode": "runner-results",
+  "denominator": null,
+  "dimensions": [
+    "import",
+    "render",
+    "edit",
+    "export",
+    "preserve"
+  ],
+  "entries": [
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/drawingml/2006/chart",
+      "element": "chart",
+      "context": "graphicData",
+      "domain": "charts",
+      "missing": [
+        "import",
+        "render",
+        "edit",
+        "export"
+      ],
+      "limitations": [
+        "Static audit: no typed chart model found; preservation of complete object under mutation is unverified."
+      ],
+      "evidence": [],
+      "support": {
+        "import": "missing",
+        "render": "missing",
+        "edit": "missing",
+        "export": "missing",
+        "preserve": "unknown"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/drawingml/2006/diagram",
+      "element": "relIds",
+      "context": "graphicData",
+      "domain": "diagrams",
+      "missing": [
+        "import",
+        "render",
+        "edit",
+        "export"
+      ],
+      "limitations": [
+        "Static audit: no typed diagram model found; preservation unverified."
+      ],
+      "evidence": [],
+      "support": {
+        "import": "missing",
+        "render": "missing",
+        "edit": "missing",
+        "export": "missing",
+        "preserve": "unknown"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/officeDocument/2006/math",
+      "element": "f",
+      "context": "oMath",
+      "domain": "math",
+      "evidence": [
+        {
+          "file": "tests/vitest/__tests__/import/docxImport.omml.test.ts",
+          "case": "OMML parses and serializes common structures",
+          "dimensions": [
+            "import",
+            "export"
+          ],
+          "observed": "passed"
+        }
+      ],
+      "limitations": [
+        "Common constructs only; visual rendering and all options unverified."
+      ],
+      "missing": [],
+      "support": {
+        "import": "partial",
+        "render": "unknown",
+        "edit": "unknown",
+        "export": "partial",
+        "preserve": "unknown"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/officeDocument/2006/math",
+      "element": "oMath",
+      "context": "p",
+      "domain": "math",
+      "evidence": [
+        {
+          "file": "tests/vitest/__tests__/import/docxImport.omml.test.ts",
+          "case": "OMML imports an OMML paragraph as an inline math atom",
+          "dimensions": [
+            "import"
+          ],
+          "observed": "passed"
+        }
+      ],
+      "limitations": [
+        "Inline atom import; no visual or editing proof."
+      ],
+      "missing": [],
+      "support": {
+        "import": "partial",
+        "render": "unknown",
+        "edit": "unknown",
+        "export": "unknown",
+        "preserve": "unknown"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+      "element": "dataBinding",
+      "context": "sdtPr",
+      "domain": "forms",
+      "evidence": [
+        {
+          "file": "tests/vitest/__tests__/export/docxCustomXmlBindingEndToEnd.test.ts",
+          "case": "source-backed custom XML binding writes an edited bound SDT into the final customXml package part",
+          "dimensions": [
+            "edit",
+            "export"
+          ],
+          "observed": "passed"
+        }
+      ],
+      "limitations": [
+        "Single binding mutation; XPath and repeating-section breadth unverified."
+      ],
+      "missing": [],
+      "support": {
+        "import": "unknown",
+        "render": "unknown",
+        "edit": "partial",
+        "export": "partial",
+        "preserve": "unknown"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+      "element": "fldChar",
+      "context": "r",
+      "domain": "fields",
+      "evidence": [
+        {
+          "file": "tests/vitest/__tests__/export/docxDateFieldRoundTrip.test.ts",
+          "case": "DATE field DOCX round-trip round-trips a default DATE field without an explicit picture",
+          "dimensions": [
+            "import",
+            "export"
+          ],
+          "observed": "passed"
+        }
+      ],
+      "limitations": [
+        "DATE case only; field grammar and nested semantics unverified."
+      ],
+      "missing": [],
+      "support": {
+        "import": "partial",
+        "render": "unknown",
+        "edit": "unknown",
+        "export": "partial",
+        "preserve": "unknown"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+      "element": "p",
+      "context": "document/body",
+      "domain": "paragraphs",
+      "evidence": [
+        {
+          "file": "tests/vitest/__tests__/export/docxWholeParagraphSource.test.ts",
+          "case": "whole paragraph OOXML source reuse overlays text and formatting edits without moving unknown paragraph children",
+          "dimensions": [
+            "import",
+            "edit",
+            "export",
+            "preserve"
+          ],
+          "observed": "passed"
+        }
+      ],
+      "limitations": [
+        "Localized paragraph mutation only; other story contexts and visual fidelity are not certified."
+      ],
+      "missing": [],
+      "support": {
+        "import": "partial",
+        "render": "unknown",
+        "edit": "partial",
+        "export": "partial",
+        "preserve": "partial"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+      "element": "tab",
+      "context": "r",
+      "domain": "paragraphs",
+      "evidence": [
+        {
+          "file": "tests/vitest/__tests__/export/docxTabRoundTrip.test.ts",
+          "case": "tab stops DOCX round trip preserves real tabs, inherited positions, clear markers and the document interval through re-export",
+          "dimensions": [
+            "import",
+            "export",
+            "preserve"
+          ],
+          "observed": "passed"
+        }
+      ],
+      "limitations": [
+        "Round trip only; keyboard and visual behavior not certified."
+      ],
+      "missing": [],
+      "support": {
+        "import": "partial",
+        "render": "unknown",
+        "edit": "unknown",
+        "export": "partial",
+        "preserve": "partial"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+      "element": "tbl",
+      "context": "tc",
+      "domain": "tables",
+      "evidence": [
+        {
+          "file": "tests/vitest/__tests__/export/docxNestedTableRoundTrip.test.ts",
+          "case": "nested DOCX tables edits, exports, and reimports the inner table without flattening it",
+          "dimensions": [
+            "import",
+            "edit",
+            "export"
+          ],
+          "observed": "passed"
+        }
+      ],
+      "limitations": [
+        "Nested table structural round trip; not a pagination or full attribute test."
+      ],
+      "missing": [],
+      "support": {
+        "import": "partial",
+        "render": "unknown",
+        "edit": "partial",
+        "export": "partial",
+        "preserve": "unknown"
+      }
+    }
+  ]
+}
