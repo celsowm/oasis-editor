@@ -61,6 +61,8 @@ try {
     await run("scripts/verify-ribbon-review-layout.mjs");
     await run("scripts/verify-ribbon-review.mjs");
     await run("scripts/verify-ribbon-comments.mjs");
+  } else if (suite === "popup-dismissal") {
+    await run("scripts/verify-ribbon-popup-dismissal.mjs");
   } else if (suite === "style-gallery") {
     await run("scripts/verify-ribbon-style-gallery.mjs");
   } else {

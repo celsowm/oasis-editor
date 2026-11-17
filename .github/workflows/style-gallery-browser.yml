@@ -37,8 +37,16 @@ jobs:
         env:
           RIBBON_BROWSER: ${{ matrix.browser }}
           RIBBON_SUITE: style-gallery
+      - name: Verify outside popup dismissal on canvas
+        if: always()
+        run: npm run test:ribbon:ci
+        env:
+          RIBBON_BROWSER: ${{ matrix.browser }}
+          RIBBON_SUITE: popup-dismissal
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: style-gallery-${{ matrix.browser }}
-          path: test-results/ribbon/style-gallery
+          path: |
+            test-results/ribbon/style-gallery
+            test-results/ribbon/popup-dismissal
