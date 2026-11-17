@@ -263,3 +263,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 - OX-003 slice K: ordered native image/symbol/marker projection in mixed opaque runs, conservative field-cache collapse and shared-image mutation fixture. Slice J passed OOXML, npm and Pages. CI pending.
 
 - OX-003 slice L1: bounded detached inline chart transfer manifest and independent closure validation. Clipboard/paste remains blocked pending collision-safe destination planning and transactional export audit. Slice K OOXML and npm green. CI pending.
+
+- OX-003 slice L2: pure chart insertion plan, isolated OPC paths, relationship and drawing ID remap, closure revalidation and destination collision tests. L1 all three workflows green. ZIP application and editor commit remain pending. CI pending.

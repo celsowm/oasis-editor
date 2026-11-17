@@ -92,11 +92,17 @@ export function validateOpaqueTransferManifest(value:unknown):OpaqueTransferMani
   if(m.format!==OPAQUE_TRANSFER_FORMAT)return fail("unsupported format");
   const ownerPath=safePath(m.ownerPath),fragmentXml=string(m.fragmentXml,1024*1024),signature=string(m.signature,2*1024*1024);
   const ownerRelationships=relationships(m.relationships,ownerPath);
-  const parts=array(m.parts,MAX_PARTS).map(validatePart);
-  // Count UTF-8 bytes conservatively by UTF-16 length x3, rather than
-  // allocating a second copy of each large payload.
-  if(3*(fragmentXml.length+signature.length+parts.reduce((n,p)=>n+p.data.length,0))>LIMIT)return fail("aggregate size limit");
-  if(ownerRelationships.length+parts.reduce((n,p)=>n+p.relationships.length,0)>MAX_EDGES)return fail("aggregate relationship limit");
+  // Bound aggregate work BEFORE parsing per-part XML or validating binary
+  // strings. Count UTF-8 conservatively by UTF-16 length x3.
+  const rawParts=array(m.parts,MAX_PARTS).map(record);
+  let total=fragmentXml.length+signature.length,edgeCount=ownerRelationships.length;
+  for(const p of rawParts){
+    total+=string(p.data).length;
+    edgeCount+=array(p.relationships,MAX_EDGES).length;
+    if(total*3>LIMIT)return fail("aggregate size limit");
+    if(edgeCount>MAX_EDGES)return fail("aggregate relationship limit");
+  }
+  const parts=rawParts.map(validatePart);
   const root=parseXml(fragmentXml),run=projectOpaqueRunElement(root);
   if(root.namespaceURI!==WP||root.localName!=="drawing"||!run||run.objectKind!=="chart"||run.placement!=="inline"||run.signature!==signature)return fail("unsupported or changed chart fragment");
   const chartRels=ownerRelationships.filter(r=>r.type===R+"/chart");

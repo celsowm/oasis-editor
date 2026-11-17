@@ -35,7 +35,70 @@ function source():EditorDocxSourcePackage{
 }
 import { captureOpaqueTransferManifest, validateOpaqueTransferManifest } from "@/ooxml/word/opaqueTransferManifest.js";
 
+import { planOpaqueTransferInsertion } from "@/ooxml/word/opaqueTransferInsertion.js";
+
 describe("opaque source inventory and loss detector",()=>{
+  it("remaps chart parts and relationships into a collision-free destination plan without mutating either snapshot",()=>{
+    const s=source();
+    const chart=s.parts["word/charts/chart1.xml"]!,book=s.parts["word/embeddings/book.xlsx"]!;
+    chart.contentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml";
+    chart.data='<c:chartSpace xmlns:c="'+C+'" xmlns:rel="'+R+'"><c:externalData rel:id="rIdData"/></c:chartSpace>';
+    chart.relationships=chart.relationships!.filter(r=>r.id==="rIdData");
+    book.contentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    book.relationships=[];
+    const manifest=captureOpaqueTransferManifest(s,inspectDocxOpaqueObjects(s).objects[0]!);
+    const dest=structuredClone(s);
+    dest.parts["word/embeddings/book.xlsx"]!.data="BAUG";
+    dest.parts["word/document.xml"]!.data=root(drawing.replace('id="1"','id="1879048192"')+'<wx:t>rIdOasisTransfer2</wx:t>');
+    dest.parts["word/document.xml"]!.relationships!.push({id:"rIdOasisTransfer1",type:R+"/chart",target:"charts/chart1.xml",resolvedTarget:"word/charts/chart1.xml"});
+    // Reserve all descendants, including differently cased parts and
+    // orphaned type overrides, not only the exact candidate filename.
+    dest.parts["WORD/OASIS-TRANSFER-1/existing.xml"]=part("WORD/OASIS-TRANSFER-1/existing.xml","<existing/>");
+    dest.contentTypes.overrides["word/oasis-transfer-2/reserved.xml"]="application/xml";
+    const before=structuredClone(dest),transport=structuredClone(manifest);
+    const plan=planOpaqueTransferInsertion(manifest,dest);
+    expect(planOpaqueTransferInsertion(manifest,dest)).toEqual(plan);
+    expect(dest).toEqual(before);
+    expect(manifest).toEqual(transport);
+    expect(plan.destinationOwner).toBe("word/document.xml");
+    expect(plan.pathMapping.map(p=>p.to)).toEqual(["word/oasis-transfer-3/part-1.xml","word/oasis-transfer-3/part-2.xlsx"]);
+    expect(plan.relationshipMapping).toEqual([{from:"rIdChart",to:"rIdOasisTransfer3"}]);
+    expect(plan.drawingId).toBe(1879048193);
+    expect(plan.destinationRun.fragmentXml).toContain('rel:id="rIdOasisTransfer3"');
+    expect(plan.destinationRun.fragmentXml).toContain('id="1879048193"');
+    expect(plan.addedRelationships).toEqual([{id:"rIdOasisTransfer3",type:R+"/chart",target:"oasis-transfer-3/part-1.xml",resolvedTarget:"word/oasis-transfer-3/part-1.xml",targetMode:"Internal"}]);
+    expect(plan.addedParts[0]!.relationships).toEqual([{id:"rIdData",type:R+"/package",target:"part-2.xlsx",resolvedTarget:"word/oasis-transfer-3/part-2.xlsx",targetMode:"Internal"}]);
+    expect(plan.addedParts[0]!.data).toBe(chart.data);
+    expect(plan.addedParts[1]!.data).toBe(book.data);
+    expect(plan.contentTypeOverrides).toEqual({
+      "word/oasis-transfer-3/part-1.xml":chart.contentType,
+      "word/oasis-transfer-3/part-2.xlsx":book.contentType,
+    });
+    const simulated=structuredClone(dest);
+    for(const p of plan.addedParts)simulated.parts[p.path]={...p,originalHash:"fixture"};
+    simulated.parts[plan.destinationOwner]!.relationships!.push(...plan.addedRelationships);
+    simulated.parts[plan.destinationOwner]!.data=simulated.parts[plan.destinationOwner]!.data.replace("</wx:r></wx:p>",plan.destinationRun.fragmentXml+"</wx:r></wx:p>");
+    const found=inspectDocxOpaqueObjects(simulated);
+    expect(found.diagnostics.filter(d=>d.level==="error")).toEqual([]);
+    expect(found.objects).toHaveLength(2);
+    const copied=found.objects.find(o=>o.signature===plan.destinationRun.signature)!;
+    expect(copied.partPaths).toEqual(plan.addedParts.map(p=>p.path));
+    expect(simulated.parts["word/embeddings/book.xlsx"]!.data).toBe("BAUG");
+    expect(simulated.parts[copied.partPaths[1]!]!.data).toBe("AQID");
+    // Invoking the pure plan against a snapshot that already contains the
+    // first insertion reserves a different namespace, relationship and ID.
+    const another=planOpaqueTransferInsertion(manifest,simulated);
+    expect(another.pathMapping[0]!.to).toContain("oasis-transfer-4/");
+    expect(another.drawingId).not.toBe(plan.drawingId);
+    expect(another.addedRelationships[0]!.id).not.toBe(plan.addedRelationships[0]!.id);
+    const malformed=structuredClone(dest);
+    malformed.parts["word/document.xml"]!.relationships!.push({...malformed.parts["word/document.xml"]!.relationships![0]!});
+    expect(()=>planOpaqueTransferInsertion(manifest,malformed)).toThrow(/Opaque insertion rejected/);
+    const bad=structuredClone(dest);
+    bad.contentTypes.overrides["word/%6fasis-transfer-3/alias.xml"]="application/xml";
+    expect(()=>planOpaqueTransferInsertion(manifest,bad)).toThrow(/ambiguous destination OPC path/);
+  });
+
   it("captures a detached, bounded chart closure without unrelated document parts",()=>{
     const s=source();
     const chart=s.parts["word/charts/chart1.xml"]!,book=s.parts["word/embeddings/book.xlsx"]!;
