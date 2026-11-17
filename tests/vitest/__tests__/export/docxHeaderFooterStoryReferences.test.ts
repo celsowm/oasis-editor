@@ -7,11 +7,11 @@ const OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/rel
 describe("header/footer story reference parsing", () => {
   it("uses namespace identity instead of canonical w/r prefix spellings", () => {
     const xml = `<?xml version="1.0"?>
-<wx:document xmlns:wx="${WORD_NS}" xmlns:rel="${OFFICE_REL_NS}">
+<wx:document xmlns:wx="${WORD_NS}" xmlns:rel="${OFFICE_REL_NS}" xmlns:future="urn:oasis:test:future">
   <wx:body>
     <wx:p><wx:pPr><wx:sectPr>
-      <wx:headerReference wx:type="first" rel:id="rIdFirst"/>
-      <wx:footerReference wx:type="even" rel:id="rIdEvenFooter"/>
+      <wx:headerReference future:type="default" future:id="wrong" wx:type="first" rel:id="rIdFirst"/>
+      <wx:footerReference wx:type="even" rel:id="rIdEvenFooter"/><future:headerReference wx:type="default" rel:id="foreign"/><wx:headerReference wx:type="default" future:id="no-real-relationship"/>
     </wx:sectPr></wx:pPr></wx:p>
     <wx:sectPr>
       <wx:headerReference wx:type="default" rel:id="rIdDefault"/>

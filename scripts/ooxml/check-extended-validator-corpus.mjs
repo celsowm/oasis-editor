@@ -6,5 +6,6 @@ for(const f of report.files){
   console.log(f.file+": "+f.issues.length+" diagnostics");
   for(const issue of f.issues)console.log("  ",issue.code,issue.part,issue.path,issue.message);
 }
-console.log("Extended characterization: "+report.errors+" diagnostics; not a zero-error certification.");
-assert.ok(!report.files.some(f=>f.issues.some(i=>i.code==="PACKAGE_OPEN_ERROR")),"All extended packages must open");
+assert.equal(report.errors,report.files.reduce((n,f)=>n+f.issues.length,0),"Report totals must agree with individual diagnostics");
+assert.equal(report.errors,0,"Witnessed extended production corpus must remain free of SDK/OPC diagnostics");
+console.log("All seven extended packages passed with zero SDK/OPC diagnostics.");

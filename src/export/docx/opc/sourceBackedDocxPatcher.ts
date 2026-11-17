@@ -1,3 +1,4 @@
+import { WORD_NS } from "@/export/docx/xmlUtils.js";
 import JSZip from "jszip";
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 import type { EditorDocument } from "@/core/model.js";
@@ -24,7 +25,7 @@ const CONVENTIONAL_MAIN_DOCUMENT_PATH = "word/document.xml";
 
 function countActiveSectionProperties(xml: string): number {
   const document = new DOMParser().parseFromString(xml, "application/xml");
-  const elements = document.getElementsByTagNameNS("*", "sectPr");
+  const elements = document.getElementsByTagNameNS(WORD_NS, "sectPr");
   let count = 0;
   for (let index = 0; index < elements.length; index += 1) {
     const element = elements.item(index) as XmlElement | null;

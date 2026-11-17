@@ -88,7 +88,7 @@ jobs:
         env:
           OOXML_VALIDATION_CORPUS: test-results/ooxml-validation/corpus
       - run: dotnet restore tools/ooxml-validator/OoxmlValidator.csproj
-      - name: Characterize extended feature diagnostics
+      - name: Require zero diagnostics on extended feature corpus
         run: |
           dotnet run --project tools/ooxml-validator/OoxmlValidator.csproj --no-restore -- test-results/ooxml-validation/corpus/extended test-results/ooxml-validation/extended.json
           node scripts/ooxml/check-extended-validator-corpus.mjs test-results/ooxml-validation/extended.json
@@ -97,3 +97,20 @@ jobs:
         with:
           name: openxml-extended-validation
           path: test-results/ooxml-validation
+  source-preservation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Validate namespace identity and repeated source-backed mutations
+        run: |
+          npx vitest run tests/vitest/__tests__/export/docxHeaderFooterNamespacePrefixPreservation.todo.test.ts tests/vitest/__tests__/export/docxHeaderFooterStoryReferences.test.ts tests/vitest/__tests__/export/docxHeaderFooterSourcePathPreservation.test.ts tests/vitest/__tests__/export/docxHeaderFooterRootSourcePreservation.test.ts tests/vitest/__tests__/export/docxWholeParagraphSource.test.ts tests/vitest/__tests__/export/docxSourcePackagePreservation.test.ts --reporter=json --outputFile=test-results/ooxml-preservation/vitest.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ooxml-preservation
+          path: test-results/ooxml-preservation

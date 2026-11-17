@@ -239,3 +239,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 - OX-002 slice B: inspected real validator artifact (269 positive diagnostics, both negative controls detected); corrected generated property order, style booleans and font face export, added regression tests and required zero diagnostics for positive corpus. New CI pending.
 
 - OX-002 slice C: CI reduced 269 to 88 diagnostics, all gallery metadata. Canonical presence/off emission, explicit false fixture, updated semantic regressions; seven separate feature packages added to independent characterization job. Strict base gate remains mandatory. New CI pending.
+
+- OX-002 slice D: seven advanced feature exports passed zero SDK/OPC diagnostics in CI 44041958876; promoted to mandatory clean gate. Fixed stale style-gallery false-token assertion; base SDK run still pending. OX-003 slice A: boundary audit, expanded-name header/footer relationship handling and three-cycle production namespace sentinel, independent source-preservation CI. New CI pending.

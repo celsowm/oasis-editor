@@ -1,3 +1,5 @@
+import { WORD_NS } from "@/export/docx/xmlUtils.js";
+import { readHeaderFooterRelationshipId, readHeaderFooterReferenceType, replaceHeaderFooterRelationshipId } from "./headerFooterReferenceNamespaces.js";
 import JSZip from "jszip";
 import {
   DOMParser,
@@ -113,7 +115,7 @@ function collectElementsByLocalName(
   const result: XmlElement[] = [];
   const visit = (current: XmlNode): void => {
     for (const child of elementChildren(current)) {
-      if (child.localName === localName) {
+      if (child.namespaceURI === WORD_NS && child.localName === localName) {
         result.push(child);
       }
       visit(child);
@@ -121,38 +123,6 @@ function collectElementsByLocalName(
   };
   visit(node);
   return result;
-}
-
-function getAttributeByLocalName(
-  element: XmlElement,
-  localName: string,
-): string | undefined {
-  for (let index = 0; index < element.attributes.length; index += 1) {
-    const attribute = element.attributes.item(index);
-    if (attribute?.localName === localName) {
-      return attribute.value;
-    }
-  }
-  return undefined;
-}
-
-function replaceAttributeByLocalName(
-  element: XmlElement,
-  localName: string,
-  value: string,
-): boolean {
-  for (let index = 0; index < element.attributes.length; index += 1) {
-    const attribute = element.attributes.item(index);
-    if (attribute?.localName !== localName) {
-      continue;
-    }
-    if (attribute.value === value) {
-      return false;
-    }
-    element.setAttribute(attribute.name, value);
-    return true;
-  }
-  return false;
 }
 
 function collectHeaderFooterReferences(
@@ -172,19 +142,19 @@ function collectHeaderFooterReferences(
     const occurrenceByKindAndType = new Map<string, number>();
     for (const child of elementChildren(section)) {
       const kind: HeaderFooterKind | undefined =
-        child.localName === "headerReference"
+        child.namespaceURI === WORD_NS && child.localName === "headerReference"
           ? "header"
-          : child.localName === "footerReference"
+          : child.namespaceURI === WORD_NS && child.localName === "footerReference"
             ? "footer"
             : undefined;
       if (!kind) {
         continue;
       }
-      const relationshipId = getAttributeByLocalName(child, "id");
+      const relationshipId = readHeaderFooterRelationshipId(child);
       if (!relationshipId) {
         continue;
       }
-      const type = getAttributeByLocalName(child, "type") ?? "default";
+      const type = readHeaderFooterReferenceType(child);
       const occurrenceKey = `${kind}:${type}`;
       const occurrence = occurrenceByKindAndType.get(occurrenceKey) ?? 0;
       occurrenceByKindAndType.set(occurrenceKey, occurrence + 1);
@@ -398,13 +368,13 @@ function rewriteHeaderFooterReferenceIds(
   let changed = false;
   for (const localName of ["headerReference", "footerReference"]) {
     for (const element of collectElementsByLocalName(document, localName)) {
-      const currentId = getAttributeByLocalName(element, "id");
+      const currentId = readHeaderFooterRelationshipId(element);
       const sourceRelationship = currentId
         ? relationshipIdMap.get(currentId)
         : undefined;
       if (sourceRelationship) {
         changed =
-          replaceAttributeByLocalName(element, "id", sourceRelationship.id) ||
+          replaceHeaderFooterRelationshipId(element, sourceRelationship.id) ||
           changed;
       }
     }

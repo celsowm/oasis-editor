@@ -181,14 +181,11 @@ export function parseSectionProperties(sectPr: XmlElement): SectionProperties {
   ): Partial<Record<"default" | "first" | "even", string>> => {
     const refs: Partial<Record<"default" | "first" | "even", string>> = {};
     for (const ref of getChildrenByTagNameNS(sectPr, WORD_NS, localName)) {
-      const type = getAttributeValue(ref, "type") ?? "default";
+      const type = ref.getAttributeNS(WORD_NS, "type") || "default";
       if (type !== "default" && type !== "first" && type !== "even") {
         continue;
       }
-      const rId =
-        ref.getAttribute("r:id") ??
-        ref.getAttributeNS(OFFICE_REL_NS, "id") ??
-        null;
+      const rId = ref.getAttributeNS(OFFICE_REL_NS, "id");
       if (rId) {
         refs[type] = rId;
       }

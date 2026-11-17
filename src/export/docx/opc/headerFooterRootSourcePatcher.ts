@@ -1,3 +1,4 @@
+import { readHeaderFooterRelationshipId, readHeaderFooterReferenceType } from "./headerFooterReferenceNamespaces.js";
 import JSZip from "jszip";
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 import type {
@@ -42,19 +43,6 @@ function elementChildren(element: XmlElement): XmlElement[] {
   return result;
 }
 
-function getAttributeByLocalName(
-  element: XmlElement,
-  localName: string,
-): string | undefined {
-  for (let index = 0; index < element.attributes.length; index += 1) {
-    const attribute = element.attributes.item(index);
-    if (attribute?.localName === localName) {
-      return attribute.value;
-    }
-  }
-  return undefined;
-}
-
 function activeSectionProperties(xml: string): XmlElement[] {
   const document = new DOMParser().parseFromString(xml, "application/xml");
   return Array.from(document.getElementsByTagNameNS(WORD_NS, "sectPr")).filter(
@@ -79,11 +67,11 @@ function collectReferences(xml: string): StoryReference[] {
       if (!kind) {
         continue;
       }
-      const relationshipId = getAttributeByLocalName(child, "id");
+      const relationshipId = readHeaderFooterRelationshipId(child);
       if (!relationshipId) {
         continue;
       }
-      const type = getAttributeByLocalName(child, "type") ?? "default";
+      const type = readHeaderFooterReferenceType(child);
       const occurrenceKey = `${kind}:${type}`;
       const occurrence = occurrences.get(occurrenceKey) ?? 0;
       occurrences.set(occurrenceKey, occurrence + 1);

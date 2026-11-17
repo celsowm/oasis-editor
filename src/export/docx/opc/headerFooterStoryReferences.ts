@@ -1,3 +1,4 @@
+import { readHeaderFooterRelationshipId, readHeaderFooterReferenceType } from "./headerFooterReferenceNamespaces.js";
 import {
   DOMParser,
   type Element as XmlElement,
@@ -28,22 +29,11 @@ function localName(element: XmlElement): string {
   return element.localName ?? element.tagName;
 }
 
-function attributeByLocalName(
-  element: XmlElement,
-  name: string,
-): string | undefined {
-  for (let index = 0; index < element.attributes.length; index += 1) {
-    const attribute = element.attributes.item(index);
-    if (attribute?.localName === name) return attribute.value;
-  }
-  return undefined;
-}
-
 /**
  * Reads active section header/footer references without assuming `w` or `r`
  * prefix spellings. The semantic identity is namespace URI + local name; the
- * relationship id is intentionally read by local name so Transitional, Strict
- * and producer-chosen relationship prefixes all remain discoverable.
+ * relationship attribute is resolved in the Transitional relationship namespace.
+ * Strict import remains a separate, explicitly unverified path.
  */
 export function collectHeaderFooterStoryReferences(
   xml: string,
@@ -74,9 +64,9 @@ export function collectHeaderFooterStoryReferences(
               ? "footer"
               : undefined;
         if (!kind) continue;
-        const relationshipId = attributeByLocalName(child, "id");
+        const relationshipId = readHeaderFooterRelationshipId(child);
         if (!relationshipId) continue;
-        const type = attributeByLocalName(child, "type") ?? "default";
+        const type = readHeaderFooterReferenceType(child);
         const occurrenceKey = `${kind}:${type}`;
         const occurrence = occurrenceByKindAndType.get(occurrenceKey) ?? 0;
         occurrenceByKindAndType.set(occurrenceKey, occurrence + 1);
