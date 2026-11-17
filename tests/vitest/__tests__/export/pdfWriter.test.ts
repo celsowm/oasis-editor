@@ -259,7 +259,7 @@ describe("PDF binary resource size", () => {
     };
     const blob=await exportEditorDocumentToPdfBlob(document);
     const buffer=await blob.arrayBuffer();
-    expect(buffer.byteLength).toBeLessThan(48*1024);
+    expect(buffer.byteLength).toBeLessThan(8*1024);
     expectPdfText(decodePdf(buffer),"Olá mundo");
     console.info("PDF size: actual Olá mundo export",buffer.byteLength,"bytes");
     if(process.env.OASIS_PDF_SIZE_ARTIFACTS==="1"){
@@ -297,9 +297,18 @@ describe("PDF binary resource size", () => {
     expect([...sfnt.subarray(0,4)]).toEqual([0,1,0,0]);
     const embedded=SfntFontProgram.parse(sfnt);
     expect(embedded.glyphCount).toBeLessThanOrEqual(32);
+    const head=embedded.getRawTableData("head")!;
+    const loca=embedded.getRawTableData("loca")!;
+    expect(new DataView(head.buffer,head.byteOffset,head.byteLength).getUint16(50)).toBe(0);
+    expect(loca.length).toBe((embedded.glyphCount+1)*2);
+    expect(raw).not.toContain("/BaseFont /Helvetica");
+    expect(raw.match(/\/Subtype \/Type0\b/g)).toHaveLength(1);
     const originalResource=registry.resolveFontFace({fontFamily:family}).pdfResource;
     if(originalResource.kind!=="unicode")throw Error("Expected embedded face");
     const original=parseEmbeddedFontSync(originalResource.fontData);
+    for(const tag of ["cvt ","fpgm","prep","gasp","name","OS/2"]){
+      expect(embedded.getRawTableData(tag)).toEqual(original.getRawTableData(tag));
+    }
     const cidRef=/\/CIDToGIDMap (\d+) 0 R/.exec(raw);
     let mapping:DataView|undefined;
     if(cidRef){
@@ -315,6 +324,12 @@ describe("PDF binary resource size", () => {
       expect(gid).toBeLessThan(embedded.glyphCount);
       expect(embedded.glyphForCodePoint(cp)).toBe(gid);
       expect(embedded.advanceWidthForGlyph(gid)).toBe(original.advanceWidthForGlyph(cid));
+      const bearing=(font:SfntFontProgram,id:number)=>{
+        const hhea=font.getRawTableData("hhea")!,hmtx=font.getRawTableData("hmtx")!;
+        const count=new DataView(hhea.buffer,hhea.byteOffset,hhea.byteLength).getUint16(34);
+        return new DataView(hmtx.buffer,hmtx.byteOffset,hmtx.byteLength).getInt16(id<count?id*4+2:count*4+(id-count)*2);
+      };
+      expect(bearing(embedded,gid)).toBe(bearing(original,cid));
     }
     expect(compressed.length).toBeLessThan(sfnt.length);
     expect(raw).not.toContain("/ASCIIHexDecode");
@@ -322,7 +337,7 @@ describe("PDF binary resource size", () => {
     expectPdfText(decodePdf(buffer),"Olá mundo");
     expect(decodePdf(buffer)).toContain("<00E1>");
     // Budget is deliberately a ceiling, not a claimed measured output size.
-    expect(buffer.byteLength).toBeLessThan(48*1024);
+    expect(buffer.byteLength).toBeLessThan(8*1024);
     const xref=Number(/startxref\n(\d+)/.exec(raw)![1]);
     expect(raw.slice(xref,xref+5)).toBe("xref\n");
     for(const [index,line] of raw.slice(xref).split("\n").slice(2).entries()){
@@ -372,6 +387,14 @@ describe("PDF binary resource size", () => {
       expect(subset.encodeGlyph(component)).toBeLessThan(embedded.glyphCount);
       offset+=4+(flags&1?4:2)+(flags&8?2:flags&64?4:flags&128?8:0);
     }while(flags&32);
+  });
+
+  it("does not serialize unused fonts even in a blank document",()=>{
+    const writer=new OasisPdfWriter();
+    writer.addPage({width:595,height:842});
+    const buffer=writer.toArrayBuffer();
+    expect(decodePdf(buffer)).not.toContain("/Type /Font");
+    expect(buffer.byteLength).toBeLessThan(1024);
   });
 
   it("embeds JPEG bytes unchanged rather than doubling them as hex",()=>{
@@ -710,8 +733,8 @@ describe("OasisPdfWriter", () => {
     expect(pdf).toContain("/Contents");
     expect(pdf).toContain("/Font");
     expect(pdf).toContain("/Helvetica");
-    expect(pdf).toContain("/Helvetica-Bold");
-    expect(pdf).toContain("/Helvetica-Oblique");
+    expect(pdf).not.toContain("/BaseFont /Helvetica-Bold ");
+    expect(pdf).not.toContain("/BaseFont /Helvetica-Oblique ");
     expect(pdf).toContain("/Helvetica-BoldOblique");
     expect(pdf).toContain("/Encoding /WinAnsiEncoding");
     expectPdfText(pdf, "Hello PDF");
@@ -745,7 +768,7 @@ describe("OasisPdfWriter", () => {
 
     const pdf = decodePdf(writer.toArrayBuffer());
 
-    expect(pdf).toContain("/CustomRegular");
+    expect(pdf).not.toContain("/CustomRegular");
     expect(pdf).toContain("/CustomBold");
     expect(pdf).toContain("/CustomBold 12 Tf");
     expect(pdf).toContain("/Helvetica-Bold");

@@ -42,9 +42,13 @@ jobs:
             stem="${file%.pdf}"
             printf '%s: ' "$file"
             wc -c < "$file"
+            test "$(wc -c < "$file")" -lt 8192
             pdfinfo "$file" > "$stem.info.txt"
             grep -Eq '^Pages:[[:space:]]+1$' "$stem.info.txt"
             pdffonts "$file" > "$stem.fonts.txt"
+            # One embedded Unicode face. Unused font dictionaries
+            # and fallback faces must not creep into these single-face PDFs.
+            awk 'NR > 2 { count++; if ($(NF-4)!="yes" || $(NF-2)!="yes") exit 1 } END { if (count != 1) exit 1 }' "$stem.fonts.txt"
             pdftotext -enc UTF-8 "$file" "$stem.txt"
             grep -Fq 'Olá mundo' "$stem.txt"
             pdftoppm -f 1 -l 1 -r 96 -png "$file" "$stem"

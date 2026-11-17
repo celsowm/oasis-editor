@@ -128,24 +128,36 @@ function subsetClosure(
   return Array.from(used).sort((a, b): number => a - b);
 }
 
-function buildLoca(offsets: number[]): Uint8Array {
-  const loca = new Uint8Array(offsets.length * 4);
-  offsets.forEach((offset, index): void => writeU32(loca, index * 4, offset));
-  return loca;
+function buildLoca(offsets: number[]): { data: Uint8Array; format: 0 | 1 } {
+  // Short loca encodes even glyph offsets divided by two. Keep the long
+  // representation when the glyph stream exceeds its representable range.
+  const short = offsets.every(offset => offset % 2 === 0 && offset <= 0x1fffe);
+  const data = new Uint8Array(offsets.length * (short ? 2 : 4));
+  offsets.forEach((offset, index) => {
+    if (short) writeU16(data, index * 2, offset / 2);
+    else writeU32(data, index * 4, offset);
+  });
+  return { data, format: short ? 0 : 1 };
 }
 
 /** Build compact horizontal metrics, preserving original side bearings. */
-function buildHmtx(font: ParsedFontProgram, glyphIds: number[], hhea: Uint8Array): Uint8Array {
+function buildHmtx(font: ParsedFontProgram, glyphIds: number[], hhea: Uint8Array): {data: Uint8Array; longCount: number} {
   const source=font.getRawTableData("hmtx");
-  const longCount=u16(hhea,34);
-  if(!source||longCount<1||longCount>font.glyphCount)throw new Error("Invalid source hmtx");
-  const hmtx=new Uint8Array(glyphIds.length*4);
+  const sourceLongCount=u16(hhea,34);
+  if(!source||sourceLongCount<1||sourceLongCount>font.glyphCount)throw new Error("Invalid source hmtx");
+  const advances=glyphIds.map(gid=>font.advanceWidthForGlyph(gid));
+  // The last long metric supplies the advance for every trailing glyph;
+  // store only their signed left side bearings when advances are identical.
+  let longCount=advances.length;
+  while(longCount>1&&advances[longCount-1]===advances[longCount-2])longCount--;
+  const data=new Uint8Array(longCount*4+(glyphIds.length-longCount)*2);
   glyphIds.forEach((gid,index)=>{
-    const lsbOffset=gid<longCount?gid*4+2:longCount*4+(gid-longCount)*2;
-    writeU16(hmtx,index*4,font.advanceWidthForGlyph(gid));
-    view(hmtx).setInt16(index*4+2,i16(source,lsbOffset));
+    const lsbOffset=gid<sourceLongCount?gid*4+2:sourceLongCount*4+(gid-sourceLongCount)*2;
+    const outputOffset=index<longCount?index*4+2:longCount*4+(index-longCount)*2;
+    if(index<longCount)writeU16(data,index*4,advances[index]!);
+    view(data).setInt16(outputOffset,i16(source,lsbOffset));
   });
-  return hmtx;
+  return {data,longCount};
 }
 
 /** Map only source Unicode mappings represented by this subset. Shaped
@@ -182,6 +194,12 @@ function buildCmap(font: ParsedFontProgram, unicode: Map<number,number[]>, gidMa
       writeU16(format4,16+n*2+i*2,g.start);
       writeU16(format4,16+n*4+i*2,(g.gid-g.start)&0xffff);
     });
+  }
+  if(format4&&entries.every(([cp])=>cp<0xffff)){
+    const cmap=new Uint8Array(12+format4.length);
+    writeU16(cmap,2,1);writeU16(cmap,4,3);writeU16(cmap,6,1);writeU32(cmap,8,12);
+    cmap.set(format4,12);
+    return cmap;
   }
   const count=format4?2:1,header=4+count*8;
   const cmap=new Uint8Array(header+(format4?.length??0)+format12.length);
@@ -225,12 +243,14 @@ function buildSubsetTables(
     glyfOffset+=pad4(glyph.length);
   }
   locaOffsets.push(glyfOffset);
-  const newHead=head.slice();writeU32(newHead,8,0);writeU16(newHead,50,1);
-  const newHhea=hhea.slice();writeU16(newHhea,34,glyphIds.length);
+  const locations=buildLoca(locaOffsets);
+  const metrics=buildHmtx(font,glyphIds,hhea);
+  const newHead=head.slice();writeU32(newHead,8,0);writeU16(newHead,50,locations.format);
+  const newHhea=hhea.slice();writeU16(newHhea,34,metrics.longCount);
   const newMaxp=maxp.slice();writeU16(newMaxp,4,glyphIds.length);
   const tables:Record<string,Uint8Array>={
     cmap:buildCmap(font,unicode,gidMap),head:newHead,hhea:newHhea,maxp:newMaxp,
-    hmtx:buildHmtx(font,glyphIds,hhea),loca:buildLoca(locaOffsets),glyf:concat(glyfChunks),
+    hmtx:metrics.data,loca:locations.data,glyf:concat(glyfChunks),
   };
   // Preserve the font identity, metrics and original TrueType hint programs.
   // GSUB/GPOS were applied before subsetting and must not retain stale GIDs.
