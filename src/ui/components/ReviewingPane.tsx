@@ -1,4 +1,11 @@
-import { For, Show, createMemo, type Accessor, type JSX } from "solid-js";
+import {
+  For,
+  Show,
+  createEffect,
+  createMemo,
+  type Accessor,
+  type JSX,
+} from "solid-js";
 import type { EditorState } from "@/core/model.js";
 import { getParagraphs } from "@/core/model.js";
 import { collectNavigableRevisions } from "@/core/commands/reviewNavigation.js";
@@ -20,6 +27,10 @@ export interface ReviewingPaneProps {
   onAcceptAll: () => void;
   onRejectAll: () => void;
   onClose: () => void;
+  /** Scroll offset restored into the revision list once it can scroll. */
+  scrollTop?: number;
+  /** Reports the revision list's scroll offset so the host can persist it. */
+  onScroll?: (scrollTop: number) => void;
 }
 
 interface dateAndType {
@@ -135,6 +146,29 @@ export function ReviewingPane(props: ReviewingPaneProps): JSX.Element {
   });
   const hiddenCount = (): number => allEntries().length - entries().length;
 
+  // Persisted scroll offset: restore it once the list has enough rows to
+  // scroll. An open pane is mounted before the document finishes loading, so
+  // the first attempt can see a short list; the effect retries as rows arrive
+  // (and stops for good once a restore succeeds, so later Accept/Reject row
+  // changes never yank the user's position).
+  let listElement: HTMLUListElement | undefined;
+  let restoredScroll = false;
+  const restoreScroll = (): void => {
+    const element = listElement;
+    const restore = props.scrollTop;
+    if (!element || typeof restore !== "number" || restore <= 0) return;
+    if (element.scrollHeight <= element.clientHeight) return;
+    element.scrollTop = restore;
+    restoredScroll = true;
+    // The browser clamps to the current scroll height; persist the real value.
+    if (element.scrollTop !== restore) props.onScroll?.(element.scrollTop);
+  };
+  createEffect((): void => {
+    entries().length;
+    if (restoredScroll) return;
+    queueMicrotask(restoreScroll);
+  });
+
   const typeLabel = (type: string, section?: boolean): string => {
     if (section) return t("review.revisionSection");
     if (type === "insert" || type === "delete")
@@ -199,6 +233,13 @@ export function ReviewingPane(props: ReviewingPaneProps): JSX.Element {
         <ul
           class="oasis-review-revisions-list"
           data-testid="review-revisions-list"
+          ref={(element): void => {
+            listElement = element;
+            queueMicrotask(restoreScroll);
+          }}
+          onScroll={(event): void => {
+            props.onScroll?.(event.currentTarget.scrollTop);
+          }}
         >
           <For each={entries()}>
             {(item): JSX.Element => (

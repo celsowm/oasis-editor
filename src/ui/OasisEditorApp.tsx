@@ -566,7 +566,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           "oasis-editor-app": true,
           "oasis-editor-docs": useComposedShell(),
           "oasis-editor-read-only": isReadOnly(),
-          "oasis-editor-ribbon-two-line": ui().toolbar?.ribbonStyle === "two-line",
+          "oasis-editor-ribbon-two-line":
+            ui().toolbar?.ribbonStyle === "two-line",
           "oasis-editor-ribbon-simplified":
             ui().toolbar?.ribbonStyle === "simplified",
           "oasis-editor-format-painter-active":
@@ -576,10 +577,12 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           // Keep CSS padding and the scroll-content width in sync, including
           // when the host configures a smaller page gutter.
           "--oasis-editor-gutter-x": `${resolvePageGutter(ui().pageGutter)}px`,
-          ...(ui().pageGutter !== undefined ? {
-            "--oasis-editor-gutter-top": `${resolvePageGutter(ui().pageGutter)}px`,
-            "--oasis-editor-gutter-bottom": `${resolvePageGutter(ui().pageGutter)}px`,
-          } : {}),
+          ...(ui().pageGutter !== undefined
+            ? {
+                "--oasis-editor-gutter-top": `${resolvePageGutter(ui().pageGutter)}px`,
+                "--oasis-editor-gutter-bottom": `${resolvePageGutter(ui().pageGutter)}px`,
+              }
+            : {}),
         }}
       >
         <Show when={!useComposedShell() && showChrome() && showToolbar()}>
@@ -617,6 +620,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
           <ReviewingPane
             state={(): EditorState => state}
             onClose={revisionsPanel.close}
+            scrollTop={revisionsPanel.scrollTop()}
+            onScroll={revisionsPanel.setScrollTop}
             onNavigate={(id): void => {
               const next = focusRevisionById(state, id);
               if (next === state) return;
