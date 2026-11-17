@@ -10283,56 +10283,56 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 			...void 0 !== p ? { displacedByCustomXml: p } : {}
 		};
 	}
-	async function mn(e, t, r, n, o) {
-		const i = [];
-		let a, s, l, c = 0;
-		const u = [], d = [], p = (e) => {
-			i.push(e), c += e.length;
-		}, f = e.childNodes;
-		for (let h = 0; h < f.length; h += 1) {
-			const e = f[h];
+	async function mn(e, t, r, n, o, i) {
+		const a = [];
+		let s, l, c, u = 0;
+		const d = [], p = [], f = (e) => {
+			a.push(e), u += e.length;
+		}, h = i ?? e.childNodes;
+		for (let m = 0; m < h.length; m += 1) {
+			const e = h[m];
 			if (e?.nodeType !== e.ELEMENT_NODE) continue;
 			const i = e;
-			if ("http://schemas.openxmlformats.org/wordprocessingml/2006/main" === i.namespaceURI) if ("t" === i.localName || "delText" === i.localName) p(i.textContent ?? "");
-			else if ("tab" === i.localName) p("	");
-			else if ("noBreakHyphen" === i.localName) p("‑");
-			else if ("softHyphen" === i.localName) p("­");
+			if ("http://schemas.openxmlformats.org/wordprocessingml/2006/main" === i.namespaceURI) if ("t" === i.localName || "delText" === i.localName) f(i.textContent ?? "");
+			else if ("tab" === i.localName) f("	");
+			else if ("noBreakHyphen" === i.localName) f("‑");
+			else if ("softHyphen" === i.localName) f("­");
 			else if ("br" === i.localName) {
 				const e = Fe(i, "type");
-				p("page" === e ? "\f" : "column" === e ? "\v" : "\n");
+				f("page" === e ? "\f" : "column" === e ? "\v" : "\n");
 			} else {
 				if ("lastRenderedPageBreak" === i.localName) continue;
 				if ("bookmarkStart" === i.localName || "bookmarkEnd" === i.localName) {
 					const e = un(i);
-					e && u.push({
-						offset: c,
+					e && d.push({
+						offset: u,
 						marker: e
 					});
 					continue;
 				}
 				if ("commentRangeStart" === i.localName || "commentRangeEnd" === i.localName) {
 					const e = dn(i);
-					e && d.push({
-						offset: c,
+					e && p.push({
+						offset: u,
 						marker: e
 					});
 					continue;
 				}
 				if ("proofErr" === i.localName || "commentReference" === i.localName || "permStart" === i.localName || "permEnd" === i.localName) continue;
-				if ("cr" === i.localName) p("\n");
+				if ("cr" === i.localName) f("\n");
 				else if ("drawing" === i.localName) {
 					const e = await nn(i, t, r, n);
-					if (e.image) p(e.text), a = e.image;
+					if (e.image) f(e.text), s = e.image;
 					else {
 						const e = await sn(i, o);
-						e && (p("￼"), s = e);
+						e && (f("￼"), l = e);
 					}
 				} else if ("pict" === i.localName) {
 					const e = await an(i, t, r, n);
-					e && (p("￼"), a = e);
+					e && (f("￼"), s = e);
 				} else if ("sym" === i.localName) {
 					const e = Fe(i, "font") ?? "", t = Fe(i, "char") ?? "", r = parseInt(t, 16);
-					p(Number.isFinite(r) && r > 0 ? String.fromCodePoint(r) : "?"), l = {
+					f(Number.isFinite(r) && r > 0 ? String.fromCodePoint(r) : "?"), c = {
 						font: e,
 						char: t
 					};
@@ -10342,17 +10342,17 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 				const e = ln(i);
 				if (e) {
 					const t = await sn(e, o);
-					t && (p("￼"), s = t);
+					t && (f("￼"), l = t);
 				}
 			}
 		}
 		return {
-			text: i.join(""),
-			image: a,
-			...s ? { textBox: s } : {},
-			...u.length > 0 ? { innerBookmarks: u } : {},
-			...d.length > 0 ? { innerComments: d } : {},
-			...l ? { sym: l } : {}
+			text: a.join(""),
+			image: s,
+			...l ? { textBox: l } : {},
+			...d.length > 0 ? { innerBookmarks: d } : {},
+			...p.length > 0 ? { innerComments: p } : {},
+			...c ? { sym: c } : {}
 		};
 	}
 	async function gn(e, t, r, n, o, i, a, s) {
@@ -10387,7 +10387,7 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 					const t = /\bNUMPAGES\b/i.test(e.instruction) ? "NUMPAGES" : /\bPAGE\b/i.test(e.instruction) ? "PAGE" : /\bDATE\b/i.test(e.instruction) ? "DATE" : /\bREF\b/i.test(e.instruction) ? "REF" : /\bPAGEREF\b/i.test(e.instruction) ? "PAGEREF" : null;
 					if (!t) return;
 					const r = Cr(/\*\s*([A-Za-z]+)/.exec(e.instruction)?.[1]), n = "DATE" === t ? /@\s*"([^"]*)"/.exec(e.instruction)?.[1] : void 0, o = "REF" === t || "PAGEREF" === t ? cn(e.instruction) : void 0, i = l.slice(e.beginIndex);
-					if (i.some((e) => e.bookmark)) return;
+					if (i.some((e) => Boolean(e.bookmark || e.comment || e.opaque || e.image || e.textBox || e.math || e.sym || e.footnoteReference || e.endnoteReference || e.revision || e.sdtWrappers?.length))) return;
 					const a = i.filter((e) => !e.fieldChar && void 0 === e.fieldInstruction), s = a.map((e) => e.text).join("") || "1", c = a.find((e) => e.styles)?.styles ?? e.beginStyles;
 					l.length = e.beginIndex;
 					const u = "DATE" === t ? n ? {
@@ -10491,47 +10491,83 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 					"br",
 					"cr",
 					"lastRenderedPageBreak"
-				].includes(e.localName ?? "");
-				if (p.some((e) => e.opaque) && (1 === t.length || !c.length && p.every((e) => e.opaque || f(e.child)))) {
+				].includes(e.localName ?? ""), m = (e) => "http://schemas.openxmlformats.org/wordprocessingml/2006/main" === e.namespaceURI && [
+					"drawing",
+					"pict",
+					"sym",
+					"bookmarkStart",
+					"bookmarkEnd",
+					"commentRangeStart",
+					"commentRangeEnd"
+				].includes(e.localName ?? "") || "http://schemas.openxmlformats.org/markup-compatibility/2006" === e.namespaceURI && "AlternateContent" === e.localName;
+				if (p.some((e) => e.opaque) && (1 === t.length || !c.length && p.every((e) => e.opaque || f(e.child) || m(e.child)))) {
 					let t = "";
-					const r = a ? {
+					const i = a ? {
 						...e,
 						link: a
-					} : e, n = () => {
+					} : e, c = () => {
 						t.length && (l.push({
 							text: t,
-							...r ? { styles: { ...r } } : {}
+							...i ? { styles: { ...i } } : {}
 						}), t = "");
 					};
-					for (const { child: e, opaque: o } of p) if (o) n(), l.push({
+					for (const { child: e, opaque: a } of p) if (a) c(), l.push({
 						text: "￼",
-						opaque: o,
-						...r ? { styles: { ...r } } : {}
+						opaque: a,
+						...i ? { styles: { ...i } } : {}
 					});
-					else switch (e.localName) {
-						case "t":
-						case "delText":
-							t += e.textContent ?? "";
-							break;
-						case "tab":
-							t += "	";
-							break;
-						case "noBreakHyphen":
-							t += "‑";
-							break;
-						case "softHyphen":
-							t += "­";
-							break;
-						case "cr":
-							t += "\n";
-							break;
-						case "br": {
-							const r = Fe(e, "type");
-							t += "page" === r ? "\f" : "column" === r ? "\v" : "\n";
-							break;
+					else {
+						if (m(e)) {
+							c();
+							const t = await mn(h, r, n, o, s, [e]);
+							for (const e of t.innerBookmarks ?? []) l.push({
+								text: "",
+								bookmark: e.marker
+							});
+							for (const e of t.innerComments ?? []) l.push({
+								text: "",
+								comment: e.marker
+							});
+							if (t.text.length || t.image || t.textBox) {
+								const e = t.sym && !i?.fontFamily ? {
+									...i,
+									fontFamily: t.sym.font
+								} : i;
+								l.push({
+									text: t.text,
+									...t.image ? { image: t.image } : {},
+									...t.textBox ? { textBox: t.textBox } : {},
+									...t.sym ? { sym: t.sym } : {},
+									...e ? { styles: { ...e } } : {}
+								});
+							}
+							continue;
+						}
+						switch (e.localName) {
+							case "t":
+							case "delText":
+								t += e.textContent ?? "";
+								break;
+							case "tab":
+								t += "	";
+								break;
+							case "noBreakHyphen":
+								t += "‑";
+								break;
+							case "softHyphen":
+								t += "­";
+								break;
+							case "cr":
+								t += "\n";
+								break;
+							case "br": {
+								const r = Fe(e, "type");
+								t += "page" === r ? "\f" : "column" === r ? "\v" : "\n";
+								break;
+							}
 						}
 					}
-					n();
+					c();
 					continue;
 				}
 				if (Ae(h, "http://schemas.openxmlformats.org/wordprocessingml/2006/main", "fldChar").length > 0 || Ae(h, "http://schemas.openxmlformats.org/wordprocessingml/2006/main", "instrText").length > 0 || Ae(h, "http://schemas.openxmlformats.org/wordprocessingml/2006/main", "delInstrText").length > 0) {
@@ -10543,11 +10579,11 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 					}
 					continue;
 				}
-				const m = De(h, Ne, "footnoteReference");
-				if (m) {
-					const t = Fe(m, "id");
+				const g = De(h, Ne, "footnoteReference");
+				if (g) {
+					const t = Fe(g, "id");
 					if (!t) continue;
-					const r = Fe(m, "customMarkFollows");
+					const r = Fe(g, "customMarkFollows");
 					let n = e;
 					(n ??= {}).styleId ??= "footnoteReference", void 0 === n.superscript && (n.superscript = !0), l.push({
 						text: "?",
@@ -10559,11 +10595,11 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 					});
 					continue;
 				}
-				const g = De(h, Ne, "endnoteReference");
-				if (g) {
-					const t = Fe(g, "id");
+				const w = De(h, Ne, "endnoteReference");
+				if (w) {
+					const t = Fe(w, "id");
 					if (!t) continue;
-					const r = Fe(g, "customMarkFollows");
+					const r = Fe(w, "customMarkFollows");
 					let n = e;
 					(n ??= {}).styleId ??= "endnoteReference", void 0 === n.superscript && (n.superscript = !0), l.push({
 						text: "?",
@@ -10575,47 +10611,47 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 					});
 					continue;
 				}
-				const { text: w, image: b, textBox: v, innerBookmarks: y, innerComments: x, sym: E } = await mn(h, r, n, o, s);
-				let S = e;
-				E && !S?.fontFamily && ((S ??= {}).fontFamily = E.font), a && ((S ??= {}).link = a);
-				const N = [...(y ?? []).map((e) => ({
+				const { text: b, image: v, textBox: y, innerBookmarks: x, innerComments: E, sym: S } = await mn(h, r, n, o, s);
+				let N = e;
+				S && !N?.fontFamily && ((N ??= {}).fontFamily = S.font), a && ((N ??= {}).link = a);
+				const k = [...(x ?? []).map((e) => ({
 					offset: e.offset,
 					run: {
 						text: "",
 						bookmark: e.marker
 					}
-				})), ...(x ?? []).map((e) => ({
+				})), ...(E ?? []).map((e) => ({
 					offset: e.offset,
 					run: {
 						text: "",
 						comment: e.marker
 					}
 				}))];
-				if (N.length > 0 && !b && !v) {
-					N.sort((e, t) => e.offset - t.offset);
+				if (k.length > 0 && !v && !y) {
+					k.sort((e, t) => e.offset - t.offset);
 					let e = 0;
-					for (const r of N) {
-						const t = w.slice(e, r.offset);
+					for (const r of k) {
+						const t = b.slice(e, r.offset);
 						t.length > 0 && l.push({
 							text: t,
-							...S ? { styles: S } : {}
+							...N ? { styles: N } : {}
 						}), l.push(r.run), e = r.offset;
 					}
-					const t = w.slice(e);
+					const t = b.slice(e);
 					t.length > 0 && l.push({
 						text: t,
-						...S ? { styles: S } : {}
+						...N ? { styles: N } : {}
 					});
 					continue;
 				}
-				if (0 === w.length && !b && !v) continue;
+				if (0 === b.length && !v && !y) continue;
 				if (l.push({
-					text: w,
-					...b ? { image: b } : {},
-					...v ? { textBox: v } : {},
-					...E ? { sym: E } : {},
-					...S ? { styles: S } : {}
-				}), y) for (const r of y) l.push({
+					text: b,
+					...v ? { image: v } : {},
+					...y ? { textBox: y } : {},
+					...S ? { sym: S } : {},
+					...N ? { styles: N } : {}
+				}), x) for (const r of x) l.push({
 					text: "",
 					bookmark: r.marker
 				});
