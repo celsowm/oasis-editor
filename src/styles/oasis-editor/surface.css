@@ -145,7 +145,7 @@
   flex-direction: column;
   gap: 2px;
   font-size: 12px;
-  color: var(--oasis-text);
+  color: var(--oasis-paper-ink);
   white-space: nowrap;
 }
 
@@ -154,7 +154,7 @@
 }
 
 .oasis-editor-revision-overlay-date {
-  color: var(--oasis-text-muted);
+  color: var(--oasis-paper-ink-muted);
   font-size: 11px;
 }
 
@@ -501,7 +501,7 @@
   box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
   font-size: 9px;
   line-height: 1.25;
-  color: var(--oasis-text, #202124);
+  color: var(--oasis-paper-ink, #202124);
 }
 .oasis-editor-revision-balloon-delete {
   border-left-color: #dc2626;
@@ -564,7 +564,7 @@
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 12px;
-  color: var(--oasis-text);
+  color: var(--oasis-paper-ink);
   filter: drop-shadow(0 4px 6px -1px rgb(0 0 0 / 0.1));
 }
 
@@ -580,7 +580,7 @@
 }
 
 .oasis-editor-comment-popup-date {
-  color: var(--oasis-text-muted);
+  color: var(--oasis-paper-ink-muted);
   font-size: 11px;
 }
 

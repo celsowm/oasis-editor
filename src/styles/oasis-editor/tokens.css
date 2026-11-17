@@ -2,6 +2,11 @@
 .oasis-editor {
   --oasis-bg: #f6f8fb;
   --oasis-paper: #ffffff;
+  /* The paper stays white in every theme, so anything painted on it needs a
+     fixed dark ink. The theme-aware --oasis-text turns light in dark mode and
+     would render white-on-white. */
+  --oasis-paper-ink: #202124;
+  --oasis-paper-ink-muted: #5f6368;
   --oasis-paper-shadow:
     0 1px 3px rgba(60, 64, 67, 0.15), 0 4px 8px rgba(60, 64, 67, 0.07);
 
