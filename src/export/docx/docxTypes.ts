@@ -34,8 +34,8 @@ export interface NumberingDefinition {
 }
 
 export interface DocContext {
-  /** Internal source-backed rebuild only; raw objects require original relationship closure. */
-  allowOpaqueSourceFragments?: boolean;
+  /** Internal source-backed rebuild only; exact raw fragments from fresh source inspection. */
+  authorizedOpaqueFragments?: ReadonlyMap<string, { signature: string; kind: string; relationshipIds: readonly string[] }>;
   numberingInfo: Map<string, { numId: number; level: number }>;
   definitions: NumberingDefinition[];
   images: Array<{
@@ -100,7 +100,7 @@ export interface NumberingContext {
 }
 
 export interface ExportBuildState {
-  allowOpaqueSourceFragments?: boolean;
+  authorizedOpaqueFragments?: ReadonlyMap<string, { signature: string; kind: string; relationshipIds: readonly string[] }>;
   nextImageId: number;
   /**
    * Next `wp:docPr/@id` for a text-box drawing. Starts in a high range so it

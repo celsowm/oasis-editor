@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import type { EditorBlockNode, EditorDocument } from "@/core/model.js";
+import type { EditorBlockNode, EditorDocument, EditorDocxSourcePackage } from "@/core/model.js";
 import { getDocumentSections, resolveImageSrc } from "@/core/model.js";
 import { EMU_PER_PX } from "@/core/units.js";
 import { imageExtensionFromMime } from "@/utils/imageFormats.js";
@@ -42,6 +42,8 @@ import { visitBlocks } from "./docxBlockVisitor.js";
 import { buildDocumentXml, buildHeaderFooterXml } from "./docxDocumentXml.js";
 import { renumberImageCaptionsInDocument } from "@/core/document/imageCaptions.js";
 import { buildThemeXml } from "./themeXml.js";
+import { inspectDocxOpaqueObjects, OpaqueObjectPreservationError } from "@/ooxml/word/opaqueObjects.js";
+import { planOpaqueStoryRelocation } from "@/ooxml/word/opaqueStoryRelocation.js";
 
 function buildPartContext(
   blocks: EditorBlockNode[],
@@ -132,7 +134,7 @@ function buildPartContext(
   });
 
   return {
-    allowOpaqueSourceFragments: state.allowOpaqueSourceFragments,
+    authorizedOpaqueFragments: state.authorizedOpaqueFragments,
     numberingInfo: numberingContext.numberingInfo,
     definitions: numberingContext.definitions,
     images,
@@ -188,16 +190,50 @@ function writeNotePart(
   }
 }
 
+/** Canonical export never emits an unbound opaque XML fragment. */
 export async function exportEditorDocumentToDocx(
   document: EditorDocument,
-  /** Internal incomplete rebuild; only baseline fingerprinting or OPC overlay may enable this. */
-  options: { allowOpaqueSourceFragments?: boolean } = {},
+): Promise<ArrayBuffer> {
+  return buildDocx(document);
+}
+
+/** Internal incomplete package: usable ONLY for original-source overlay or
+ * baseline hashing. The authority comes from re-inspection of the OPC source,
+ * never a caller-controlled boolean or the serialized inventory cache.
+ * The final source-backed export must still audit owner, multiplicity and
+ * dependency bytes. No new editable XML is accepted here. */
+export async function rebuildDocxForSourceOverlay(
+  document: EditorDocument,
+  source: EditorDocxSourcePackage,
+): Promise<ArrayBuffer> {
+  const inspected = inspectDocxOpaqueObjects(source);
+  const errors = inspected.diagnostics.filter(d => d.level === "error");
+  if (errors.length) throw new OpaqueObjectPreservationError(errors);
+  const authorized: NonNullable<DocContext["authorizedOpaqueFragments"]> = new Map(
+    inspected.objects.map(object => [object.fragmentXml, {
+      signature: object.signature, kind: object.kind, relationshipIds: object.relationshipIds,
+    }]),
+  );
+  const intent = document.opaqueRelocationIntent;
+  if (!intent) return buildDocx(document, authorized);
+  const plan = planOpaqueStoryRelocation(source, intent, intent.destinationOwner);
+  const moved = plan.destinationRun;
+  return buildDocx(document, new Map([
+    ...authorized, [moved.fragmentXml, {
+      signature: moved.signature, kind: moved.objectKind, relationshipIds: moved.relationshipIds,
+    }],
+  ]));
+}
+
+async function buildDocx(
+  document: EditorDocument,
+  authorizedOpaqueFragments?: DocContext["authorizedOpaqueFragments"],
 ): Promise<ArrayBuffer> {
   document = renumberImageCaptionsInDocument(document);
   const zip = new JSZip();
   const numberingContext = buildNumberingContext(document);
   const buildState: ExportBuildState = {
-    allowOpaqueSourceFragments: options.allowOpaqueSourceFragments,
+    authorizedOpaqueFragments,
     nextImageId: 1,
     // High base so text-box docPr ids never collide with image docPr ids.
     nextTextBoxDocPrId: 1000001,

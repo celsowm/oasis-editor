@@ -53,8 +53,12 @@ export function serializeRun(
   }
 
   if (run.kind === "opaque") {
-    if (!context.allowOpaqueSourceFragments) {
-      throw new Error("Opaque DOCX objects require source-backed export with their original package.");
+    const trusted = context.authorizedOpaqueFragments?.get(run.opaque.fragmentXml);
+    if (!trusted || run.text !== "\uFFFC" ||
+        trusted.signature !== run.opaque.signature ||
+        trusted.kind !== run.opaque.objectKind ||
+        JSON.stringify(trusted.relationshipIds) !== JSON.stringify(run.opaque.relationshipIds)) {
+      throw new Error("Opaque DOCX objects require source-backed export with an unchanged, authorized source fragment.");
     }
     return `<w:r>${serializeRunProperties(run.styles)}${run.opaque.fragmentXml}</w:r>`;
   }

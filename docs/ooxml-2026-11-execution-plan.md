@@ -255,3 +255,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 - OX-003 slice G: v0.0.361 green. Explicit single-section default-story inline relocation command and export integration with recomputed relationship mapping, post-overlay append and expected-object audit; real DOCX header round-trip/history test. UI wiring and broader topology remain pending. CI pending.
 
 - OX-003 slice H: repair incorrect source-zone setup in the failed cross-story integration fixture, wire guarded controller dispatch by hit zone, block unsafe opaque clipboard writes/cuts. npm/Pages release gates retained. CI pending.
+
+- OX-003 slice I: fresh source inspection replaces cached-inventory trust, exact authorized raw fragment serialization, internal source-bound rebuild and explicit baseline source. Added regressions for stale snapshots and injected markup. Clipboard closure transfer remains pending. CI pending.

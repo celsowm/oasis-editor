@@ -239,6 +239,36 @@ describe("opaque source inventory and loss detector",()=>{
     const measured=buildMeasuredChars(p,buildParagraphFragments(p),doc.styles);
     expect(measured.find(c=>c.char==="\uFFFC")).toMatchObject({width:200,objectHeight:100});
     await expect(exportEditorDocumentToDocx(doc)).rejects.toThrow(/source-backed/);
+    // An old public escape hatch must not serialize raw source fragments.
+    await expect(Reflect.apply(exportEditorDocumentToDocx, undefined, [doc,{allowOpaqueSourceFragments:true}])).rejects.toThrow(/source-backed/);
+    // Cached inventory is advisory only, including documents saved by an older editor.
+    for(const cache of [undefined, []]){
+      const legacy=structuredClone(doc);
+      legacy.sourcePackage!.opaqueObjects=cache;
+      const saved=await exportEditorDocumentToDocxPreservingSource(legacy);
+      expect(auditOpaqueObjectPreservation(doc.sourcePackage!,await captureDocxSourcePackage(saved))).toEqual([]);
+      expect(legacy.sourcePackage!.opaqueObjects).toEqual(cache);
+      const paragraph=legacy.sections![0]!.blocks[0]!;
+      if(paragraph.type!=="paragraph")throw Error("Expected body paragraph");
+      paragraph.runs=paragraph.runs.filter(r=>r.kind!=="opaque");
+      await expect(exportEditorDocumentToDocxPreservingSource(legacy)).rejects.toBeInstanceOf(OpaqueObjectPreservationError);
+    }
+    // A retained object signature must not authorize additional arbitrary XML.
+    // Reject before any package overlay can resurrect or hide the injection.
+    const injected=structuredClone(doc);
+    const injectedParagraph=injected.sections![0]!.blocks[0]!;
+    if(injectedParagraph.type!=="paragraph")throw Error("Expected paragraph");
+    const injectedRun=injectedParagraph.runs.find(r=>r.kind==="opaque");
+    if(injectedRun?.kind!=="opaque")throw Error("Expected opaque object");
+    injectedRun.opaque.fragmentXml+='</w:r><w:r><w:t>Injected</w:t>';
+    await expect(exportEditorDocumentToDocxPreservingSource(injected)).rejects.toThrow(/authorized source fragment/);
+    const forged=structuredClone(doc);
+    const forgedParagraph=forged.sections![0]!.blocks[0]!;
+    if(forgedParagraph.type!=="paragraph")throw Error("Expected paragraph");
+    const forgedRun=forgedParagraph.runs.find(r=>r.kind==="opaque");
+    if(forgedRun?.kind!=="opaque")throw Error("Expected opaque object");
+    forgedRun.opaque.signature="forged-signature";
+    await expect(exportEditorDocumentToDocxPreservingSource(forged)).rejects.toThrow(/authorized source fragment/);
     const strict=await exportEditorDocumentToDocxPreservingSource(doc,{requireOpaquePreservation:true});
     expect(auditOpaqueObjectPreservation(doc.sourcePackage!,await captureDocxSourcePackage(strict))).toEqual([]);
     const roundtrip=await importDocxInWorker(strict);

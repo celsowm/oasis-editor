@@ -1,7 +1,7 @@
 import JSZip from "jszip";
-import type { EditorDocument } from "@/core/model.js";
+import type { EditorDocument, EditorDocxSourcePackage } from "@/core/model.js";
 import { normalizeOpcPartPath } from "@/ooxml/opc/packageXml.js";
-import { exportEditorDocumentToDocx } from "../exportEditorDocumentToDocx.js";
+import { rebuildDocxForSourceOverlay } from "../exportEditorDocumentToDocx.js";
 
 export function hashDocxPartBytes(bytes: Uint8Array): string {
   let hash = 0x811c9dc5;
@@ -31,6 +31,7 @@ export async function hashRebuiltDocxParts(
 
 export async function captureRebuiltDocxPartHashes(
   document: EditorDocument,
+  source: EditorDocxSourcePackage,
 ): Promise<Record<string, string>> {
-  return hashRebuiltDocxParts(await exportEditorDocumentToDocx(document, { allowOpaqueSourceFragments: true }));
+  return hashRebuiltDocxParts(await rebuildDocxForSourceOverlay(document, source));
 }

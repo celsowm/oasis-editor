@@ -172,7 +172,7 @@ export async function attachDocxRebuiltPartBaseline(
 ): Promise<void> {
   try {
     sourcePackage.rebuiltPartHashes =
-      await captureRebuiltDocxPartHashes(document);
+      await captureRebuiltDocxPartHashes(document, sourcePackage);
   } catch (error) {
     (sourcePackage.diagnostics ??= []).push({
       level: "warning",
