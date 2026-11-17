@@ -159,16 +159,14 @@ function serializeNamedStyle(style: EditorNamedStyle): string {
       `<w:uiPriority w:val="${Math.max(0, Math.floor(style.uiPriority))}"/>`,
     );
   }
-  if (style.qFormat !== undefined) {
-    parts.push(`<w:qFormat w:val="${style.qFormat ? "true" : "false"}"/>`);
-  }
-  if (style.semiHidden !== undefined) {
-    parts.push(`<w:semiHidden w:val="${style.semiHidden ? "true" : "false"}"/>`);
-  }
-  if (style.unhideWhenUsed !== undefined) {
-    parts.push(
-      `<w:unhideWhenUsed w:val="${style.unhideWhenUsed ? "1" : "0"}"/>`,
-    );
+  // ST_OnOff supports several equivalent lexemes. Use presence for true
+  // and the explicit transitional "off" token for false; the SDK rejects
+  // numeric/boolean true lexemes on these gallery metadata elements.
+  for (const name of ["qFormat", "semiHidden", "unhideWhenUsed"] as const) {
+    const value = style[name];
+    if (value !== undefined) {
+      parts.push(value ? `<w:${name}/>` : `<w:${name} w:val="off"/>`);
+    }
   }
 
   if (style.type === "paragraph" || style.type === "table") {

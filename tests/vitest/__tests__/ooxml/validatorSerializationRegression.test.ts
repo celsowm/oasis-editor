@@ -22,7 +22,7 @@ describe("OOXML validator regression fixes",()=>{
     const styles=await zip.file("word/styles.xml")!.async("string");
     const root=new DOMParser().parseFromString(styles,"application/xml");
     const W="http://schemas.openxmlformats.org/wordprocessingml/2006/main";
-    for(const tag of ["qFormat","semiHidden"])for(const n of Array.from(root.getElementsByTagNameNS(W,tag)))expect(["true","false",""]).toContain(n.getAttributeNS(W,"val")??"");
+    for(const tag of ["qFormat","semiHidden","unhideWhenUsed"])for(const n of Array.from(root.getElementsByTagNameNS(W,tag)))expect(["off",""]).toContain(n.getAttributeNS(W,"val")??"");
     for(const n of Array.from(root.getElementsByTagNameNS(W,"tcPr"))){
       const names=Array.from(n.childNodes).filter(x=>x.nodeType===1).map(x=>x.nodeName);
       if(names.includes("w:tcBorders")&&names.includes("w:tcMar"))expect(names.indexOf("w:tcBorders")).toBeLessThan(names.indexOf("w:tcMar"));

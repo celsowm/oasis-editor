@@ -53,6 +53,8 @@ jobs:
         with:
           dotnet-version: 8.0.x
       - run: npm ci
+      - name: Run focused serializer regression tests
+        run: npx vitest run tests/vitest/__tests__/ooxml/validatorSerializationRegression.test.ts tests/vitest/__tests__/import/styleGalleryMetadata.test.ts tests/vitest/__tests__/import/docxImport.propertyRevisions.test.ts
       - name: Generate production corpus
         run: npx vitest run tests/vitest/__tests__/ooxml/validationCorpus.test.ts
         env:
@@ -68,4 +70,30 @@ jobs:
         if: always()
         with:
           name: openxml-validation
+          path: test-results/ooxml-validation
+  extended-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: npm ci
+      - name: Generate extended feature corpus
+        run: npx vitest run tests/vitest/__tests__/ooxml/extendedValidationCorpus.test.ts
+        env:
+          OOXML_VALIDATION_CORPUS: test-results/ooxml-validation/corpus
+      - run: dotnet restore tools/ooxml-validator/OoxmlValidator.csproj
+      - name: Characterize extended feature diagnostics
+        run: |
+          dotnet run --project tools/ooxml-validator/OoxmlValidator.csproj --no-restore -- test-results/ooxml-validation/corpus/extended test-results/ooxml-validation/extended.json
+          node scripts/ooxml/check-extended-validator-corpus.mjs test-results/ooxml-validation/extended.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: openxml-extended-validation
           path: test-results/ooxml-validation

@@ -16,7 +16,7 @@ async function importPropertyRevisionDocument() {
         <w:pPr>
           <w:jc w:val="center"/>
           <w:pPrChange w:id="21" w:author="Paragraph Author" w:date="2026-02-03T04:05:06Z">
-            <w:pPr><w:jc w:val="right"/><w:keepNext/></w:pPr>
+            <w:pPr><w:keepNext/><w:jc w:val="right"/></w:pPr>
           </w:pPrChange>
         </w:pPr>
         <w:r>
@@ -81,7 +81,7 @@ describe("DOCX run and paragraph property revisions", () => {
       /<w:rPrChange\b[^>]*w:id="20"[^>]*w:author="Run Author"[^>]*>[\s\S]*?<w:rPr>[\s\S]*?<w:b\/>[\s\S]*?<w:color w:val="FF0000"\/>[\s\S]*?<\/w:rPr>[\s\S]*?<\/w:rPrChange>/,
     );
     expect(xml).toMatch(
-      /<w:pPrChange\b[^>]*w:id="21"[^>]*w:author="Paragraph Author"[^>]*>[\s\S]*?<w:pPr>[\s\S]*?<w:jc w:val="right"\/>[\s\S]*?<w:keepNext\/>[\s\S]*?<\/w:pPr>[\s\S]*?<\/w:pPrChange>/,
+      /<w:pPrChange\b[^>]*w:id="21"[^>]*w:author="Paragraph Author"[^>]*>[\s\S]*?<w:pPr>[\s\S]*?<w:keepNext\/>[\s\S]*?<w:jc w:val="right"\/>[\s\S]*?<\/w:pPr>[\s\S]*?<\/w:pPrChange>/,
     );
     expect(xml.match(/<w:rPrChange\b/g)).toHaveLength(1);
     expect(xml.match(/<w:pPrChange\b/g)).toHaveLength(1);

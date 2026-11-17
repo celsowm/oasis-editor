@@ -237,3 +237,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 - OX-001 scope correction: previous green CI had only root contexts and zero attributes; corrected default namespace QName and added real schema smoke gate. OX-002 slice A: independent .NET/Open XML SDK validator, fixture generation and negative controls in CI. Positive diagnostics are characterized, not yet baseline-gated. New CI pending.
 
 - OX-002 slice B: inspected real validator artifact (269 positive diagnostics, both negative controls detected); corrected generated property order, style booleans and font face export, added regression tests and required zero diagnostics for positive corpus. New CI pending.
+
+- OX-002 slice C: CI reduced 269 to 88 diagnostics, all gallery metadata. Canonical presence/off emission, explicit false fixture, updated semantic regressions; seven separate feature packages added to independent characterization job. Strict base gate remains mandatory. New CI pending.

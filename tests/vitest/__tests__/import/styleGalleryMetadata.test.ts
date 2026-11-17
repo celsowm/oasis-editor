@@ -48,8 +48,9 @@ describe("DOCX quick-style metadata", () => {
 
     const exported = buildStylesXml(styles ?? {});
     expect(exported).toContain('<w:uiPriority w:val="20"/>');
-    expect(exported).toContain('<w:qFormat w:val="1"/>');
+    expect(exported).toContain('<w:qFormat/>');
     expect(exported).toContain('<w:semiHidden w:val="0"/>');
-    expect(exported).toContain('<w:unhideWhenUsed w:val="1"/>');
+    expect(exported).toContain('<w:unhideWhenUsed/>');
+    expect(parseImportedStyles(exported, { fonts: {}, colors: {} })?.Emphasis).toMatchObject({ qFormat: true, semiHidden: false, unhideWhenUsed: true });
   });
 });

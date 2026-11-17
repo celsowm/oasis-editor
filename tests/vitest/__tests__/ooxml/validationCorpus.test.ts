@@ -17,6 +17,9 @@ describe.skipIf(!out)("OOXML validation corpus",()=>{
     const save=(folder:string,name:string,bytes:ArrayBuffer)=>writeFile(join(dir,folder,name),new Uint8Array(bytes));
     const fresh=await exportEditorDocumentToDocxPreservingSource(createEditorDocument([createEditorParagraph("Conformance baseline")]));
     await save("positive","fresh-paragraph.docx",fresh);
+    const flags=createEditorDocument([createEditorParagraph("Style flags")]);
+    flags.styles={...flags.styles,ValidationFlags:{id:"ValidationFlags",name:"Validation flags",type:"paragraph",qFormat:false,semiHidden:true,unhideWhenUsed:false}};
+    await save("positive","style-flags.docx",await exportEditorDocumentToDocxPreservingSource(flags));
     const table=createEditorTable([createEditorTableRow([createEditorTableCell([createEditorParagraph("Cell A")]),createEditorTableCell([createEditorParagraph("Cell B")])])],[100,100]);
     const complex=await exportEditorDocumentToDocxPreservingSource(createEditorDocument([createEditorParagraph("Table"),table]));
     await save("positive","fresh-table.docx",complex);
