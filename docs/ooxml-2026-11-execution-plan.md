@@ -261,3 +261,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 - OX-003 slice J: mixed run projection for understood text and opaque objects, shared relationship fixture and repeated source-backed mutation; prevent unsafe positional run XML attachment. Complex mixed fields/unknown children remain open. CI pending.
 
 - OX-003 slice K: ordered native image/symbol/marker projection in mixed opaque runs, conservative field-cache collapse and shared-image mutation fixture. Slice J passed OOXML, npm and Pages. CI pending.
+
+- OX-003 slice L1: bounded detached inline chart transfer manifest and independent closure validation. Clipboard/paste remains blocked pending collision-safe destination planning and transactional export audit. Slice K OOXML and npm green. CI pending.

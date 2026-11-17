@@ -33,7 +33,50 @@ function source():EditorDocxSourcePackage{
     [c]:part(c,"AQID",{kind:"binary",encoding:"base64",relationships:[{id:"rIdCycle",type:"urn:cycle",target:"../charts/chart1.xml",resolvedTarget:b}]})
   }};
 }
+import { captureOpaqueTransferManifest, validateOpaqueTransferManifest } from "@/ooxml/word/opaqueTransferManifest.js";
+
 describe("opaque source inventory and loss detector",()=>{
+  it("captures a detached, bounded chart closure without unrelated document parts",()=>{
+    const s=source();
+    const chart=s.parts["word/charts/chart1.xml"]!,book=s.parts["word/embeddings/book.xlsx"]!;
+    chart.contentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml";
+    chart.relationships=chart.relationships!.filter(r=>r.id==="rIdData");
+    book.contentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    book.relationships=[];
+    s.parts["word/unrelated.xml"]=part("word/unrelated.xml","<private>not copied</private>");
+    const original=inspectDocxOpaqueObjects(s).objects[0]!;
+    const before=structuredClone(s);
+    const manifest=captureOpaqueTransferManifest(s,original);
+    expect(manifest.parts.map(p=>p.path)).toEqual(["word/charts/chart1.xml","word/embeddings/book.xlsx"]);
+    expect(manifest.parts[1]!.data).toBe("AQID");
+    expect(JSON.stringify(manifest)).not.toContain("not copied");
+    expect(validateOpaqueTransferManifest(JSON.parse(JSON.stringify(manifest)))).toEqual(manifest);
+    expect(s).toEqual(before);
+    manifest.parts[1]!.data="BAUG";
+    expect(book.data).toBe("AQID");
+    const clean=captureOpaqueTransferManifest(s,original);
+    const invalid=(change:(m:typeof clean)=>void)=>{
+      const m=structuredClone(clean);change(m);
+      expect(()=>validateOpaqueTransferManifest(m)).toThrow(/Opaque transfer rejected/);
+    };
+    invalid(m=>{m.parts.pop();});
+    invalid(m=>{m.parts.push({...m.parts[1]!,path:"word/embeddings/extra.xlsx"});});
+    invalid(m=>{m.parts.push({...m.parts[1]!});});
+    invalid(m=>{m.parts[1]!.path="../outside.xlsx";});
+    invalid(m=>{m.parts[1]!.contentType="application/vnd.ms-excel.sheet.macroEnabled.12";});
+    invalid(m=>{m.parts[0]!.data='<!DOCTYPE c:chartSpace [<!ENTITY x "bad">]>'+m.parts[0]!.data;});
+    invalid(m=>{m.parts[0]!.relationships[0]!.targetMode="External";});
+    invalid(m=>{m.parts[0]!.relationships[0]!.target="../embeddings/another.xlsx";});
+    invalid(m=>{m.parts[1]!.data="not base64!";});
+    invalid(m=>{m.fragmentXml+="<w:r/>";});
+    invalid(m=>{m.signature="forged";});
+    invalid(m=>{m.relationships.push({...m.relationships[0]!});});
+    invalid(m=>{m.parts[1]!.relationships=[{...m.relationships[0]!,target:"../charts/chart1.xml"}];});
+    expect(()=>captureOpaqueTransferManifest(s,{...original,ordinal:99})).toThrow(/ambiguous/);
+    const external=source();
+    expect(()=>captureOpaqueTransferManifest(external,inspectDocxOpaqueObjects(external).objects[0]!)).toThrow(/Opaque transfer rejected/);
+  });
+
   it("records chart geometry, namespace-neutral IDs and transitive closure without following external targets or cycles",()=>{
     const s=source(),report=inspectDocxOpaqueObjects(s),o=report.objects[0]!;
     expect(report.objects).toHaveLength(1);
