@@ -14,3 +14,13 @@ Manifest shape: version 1 and files array. Each file has path (relative to the m
 Deployment generates the report into dist-app/ooxml after Vite build, alongside the static explorer copied from public/ooxml. Access the explorer at /oasis-editor/ooxml/ on project Pages. The CI checks evidence separately from the full suite; it does not treat a missing result as passing. The build does not add any editor runtime dependencies or modify editor semantics.
 
 Future hardening: tie test results to immutable CI artifacts/commit (local evidence can be stale), effective schema expansion, attribute/enum coverage, previous-release regression baseline, and broader fixture metadata. Never infer complete coverage from the seed.
+
+## Pinned official sources and direct schema links (slice B)
+
+Run npm run ooxml:schemas to acquire the official ECMA Part 1 (Strict), Part 2 (OPC), and Part 4 (Transitional) archives, with checksums pinned in scripts/ooxml/ecma-sources.json against the independently published mirror checksum list. The downloader fails closed on a hash mismatch; acquisition and byte identity must be confirmed by CI. It extracts only XSD into test-results, not the editor distribution. For offline use, supply --archives /path/to/verified-zips. Do not redistribute source XSDs without the full applicable copyright notice. Part 3 defines MC primarily in prose and remains an explicitly separate scope.
+
+Then run npm run ooxml:inventory -- --manifest test-results/ooxml/ecma/manifest.json. The report contains declaration counts by kind, contextual attributes, enums, default/fixed/form, direct namespace-resolved type/base/group/attribute/element references, and unresolved/ambiguous links. This is not effective schema expansion and still has a null denominator. Standalone spreadsheet/presentation schemas may be present in the archives; final DOCX scope must be computed separately.
+
+For an explicitly reviewed earlier runner report, use npm run ooxml:report -- --evidence test-results/ooxml/vitest.json --require-evidence --baseline path/to/previous-capabilities.json. This detects removal or downgrade of witnessed dimensions. The historical baseline is not yet pinned in CI; do not infer certification from a fabricated or stale local result.
+
+A separate OOXML Compatibility workflow now records test evidence and schema inventory independently from Ribbon/deploy failures. The official download job and evidence job have independent outcomes. Previous Pages deployment failed before OOXML checks because the Ribbon icon inventory was stale; this change does not bypass or modify that independent gate.

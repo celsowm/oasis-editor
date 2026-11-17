@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 
 export const dimensions = Object.freeze(["import","render","edit","export","preserve"]);
-const profiles = new Set(["transitional","strict","extension"]);
+const profiles = new Set(["transitional","strict","extension","opc"]);
 const compare = (a,b) => a < b ? -1 : a > b ? 1 : 0;
 export const keyOf = e => JSON.stringify([e.profile,e.namespace,e.element,e.context]);
 export const stringify = value => JSON.stringify(value,null,2) + "\n";

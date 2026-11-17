@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "source": "https://ecma-international.org/publications-and-standards/standards/ecma-376/",
+  "license": "https://ecma-international.org/policies/by-ipr/ecma-text-copyright-policy/",
+  "hashProvenance": "https://github.com/UseJunior/safe-docx/blob/c60af0a83145db4c9c01e996722c7c5f6f2c88c3/spec-compliance/ecma-376/source-artifacts/SHA256SUMS",
+  "archives": [
+    {
+      "part": 1,
+      "profile": "strict",
+      "edition": "5th edition December 2016",
+      "archive": "ECMA-376-1_5th_edition_december_2016.zip",
+      "nested": "OfficeOpenXML-XMLSchema-Strict.zip",
+      "sha256": "9d0bcad9cf06054785b03762fcfadbf6bab7e54a5f9d69434e34b7fd464d4129",
+      "url": "https://ecma-international.org/wp-content/uploads/ECMA-376-1_5th_edition_december_2016.zip"
+    },
+    {
+      "part": 2,
+      "profile": "opc",
+      "edition": "5th edition December 2021",
+      "archive": "ECMA-376-2_5th_edition_december_2021.zip",
+      "nested": "OpenPackagingConventions-XMLSchema.zip",
+      "sha256": "1d489dc491168ea1f9e9a59063acc8dd5f02b4ad1d21aa7ec19ba9a58d020c70",
+      "url": "https://ecma-international.org/wp-content/uploads/ECMA-376-2_5th_edition_december_2021.zip"
+    },
+    {
+      "part": 4,
+      "profile": "transitional",
+      "edition": "5th edition December 2016",
+      "archive": "ECMA-376-4_5th_edition_december_2016.zip",
+      "nested": "OfficeOpenXML-XMLSchema-Transitional.zip",
+      "sha256": "bd25da1109f73762356596918bf5ff8b74a1331642dba5f1c1d1dfc6bed34ecd",
+      "url": "https://ecma-international.org/wp-content/uploads/ECMA-376-4_5th_edition_december_2016.zip"
+    }
+  ]
+}

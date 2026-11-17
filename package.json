@@ -89,7 +89,8 @@
     "ooxml:audit": "node --test scripts/ooxml/registry.test.mjs",
     "ooxml:evidence": "node scripts/ooxml/run-evidence.mjs",
     "ooxml:report": "node scripts/ooxml/report.mjs",
-    "ooxml:inventory": "node scripts/ooxml/report.mjs"
+    "ooxml:inventory": "node scripts/ooxml/report.mjs",
+    "ooxml:schemas": "python3 scripts/ooxml/fetch-ecma-schemas.py"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

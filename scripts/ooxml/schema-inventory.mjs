@@ -6,6 +6,13 @@ import { digest } from "./registry.mjs";
 const XS="http://www.w3.org/2001/XMLSchema";
 const children=n=>Array.from(n.childNodes??[]).filter(x=>x.nodeType===1 && x.namespaceURI===XS);
 const attr=(n,k)=>n.getAttribute(k)||null;
+function qname(node,value) {
+  if(!value) return null;
+  const parts=value.split(":");
+  const prefix=parts.length===2?parts[0]:null;
+  return {namespace:node.lookupNamespaceURI(prefix)??"",name:parts.at(-1)};
+}
+const symbolKey=(profile,namespace,kind,name)=>JSON.stringify([profile,namespace,kind,name]);
 const sort=(a,b)=>a<b?-1:a>b?1:0;
 
 export function inspectSchema(xml, profile, file) {
@@ -22,10 +29,14 @@ export function inspectSchema(xml, profile, file) {
       const position=children(node).indexOf(child);
       const path=context+"/"+segment+"["+position+"]";
       if(["element","attribute","complexType","simpleType","group","attributeGroup","enumeration","any","anyAttribute"].includes(kind)) {
-        declarations.push({profile,namespace,file,context,kind,name,ref,type:attr(child,"type"),value:attr(child,"value"),use:attr(child,"use"),minOccurs:attr(child,"minOccurs"),maxOccurs:attr(child,"maxOccurs")});
+        declarations.push({profile,namespace,file,context,path,kind,name,global:context==="schema",ref,type:attr(child,"type"),value:attr(child,"value"),use:attr(child,"use"),minOccurs:attr(child,"minOccurs"),maxOccurs:attr(child,"maxOccurs"),form:attr(child,"form"),default:attr(child,"default"),fixed:attr(child,"fixed")});
       }
       if(["include","import","redefine","override"].includes(kind) || ref || attr(child,"base") || attr(child,"type") || ["any","anyAttribute"].includes(kind)) {
-        references.push({file,path,kind,location:attr(child,"schemaLocation"),namespace:attr(child,"namespace"),ref,base:attr(child,"base"),type:attr(child,"type")});
+        references.push({profile,file,path,kind,location:attr(child,"schemaLocation"),namespace:attr(child,"namespace"),ref,base:attr(child,"base"),type:attr(child,"type"),targets:[
+          ...(ref?[{role:"ref",qname:qname(child,ref),kinds:[kind]}]:[]),
+          ...(attr(child,"base")?[{role:"base",qname:qname(child,attr(child,"base")),kinds:["complexType","simpleType"]}]:[]),
+          ...(attr(child,"type")?[{role:"type",qname:qname(child,attr(child,"type")),kinds:["complexType","simpleType"]}]:[])
+        ]});
       }
       visit(child,path);
     }
@@ -40,7 +51,7 @@ export function inventoryFromManifest(manifestPath) {
   const root=realpathSync(dirname(resolve(manifestPath)));
   const seen=new Set(), declarations=[], references=[], sources=[];
   for(const item of manifest.files) {
-    if(!["transitional","strict","extension"].includes(item.profile) || ![item.edition,item.source,item.license,item.path].every(x=>typeof x==="string" && x.trim()) || !/^[a-f0-9]{64}$/.test(item.sha256)) throw Error("Missing schema provenance");
+    if(!["transitional","strict","extension","opc"].includes(item.profile) || ![item.edition,item.source,item.license,item.path].every(x=>typeof x==="string" && x.trim()) || !/^[a-f0-9]{64}$/.test(item.sha256)) throw Error("Missing schema provenance");
     if(isAbsolute(item.path)) throw Error("Absolute schema path");
     const path=realpathSync(resolve(root,item.path)), rel=relative(root,path);
     if(rel===".."||rel.startsWith("../")||rel.startsWith("..\\")||isAbsolute(rel)) throw Error("Schema outside manifest directory");
@@ -48,8 +59,34 @@ export function inventoryFromManifest(manifestPath) {
     const bytes=readFileSync(path); if(digest(bytes)!==item.sha256) throw Error("Schema hash mismatch: "+item.path);
     const data=inspectSchema(bytes.toString("utf8"),item.profile,item.path);
     declarations.push(...data.declarations); references.push(...data.references);
-    sources.push({profile:item.profile,edition:item.edition,source:item.source,license:item.license,path:item.path,sha256:item.sha256});
+    sources.push({profile:item.profile,edition:item.edition,source:item.source,license:item.license,path:item.path,sha256:item.sha256,archiveSha256:item.archiveSha256??null});
   }
   const order=arr=>arr.sort((a,b)=>sort(JSON.stringify(a),JSON.stringify(b)));
-  return {status:"incomplete",reason:"Lexical declaration prototype only; QName/type graph, imports, inheritance, groups, substitution and effective cardinality are not resolved. Not a coverage denominator.",sources:order(sources),declarations:order(declarations),references:order(references)};
+  const graph=resolveReferences(declarations,references,sources);
+  const counts=Object.fromEntries([...new Set(declarations.map(d=>d.kind))].sort().map(k=>[k,declarations.filter(d=>d.kind===k).length]));
+  return {status:"incomplete",reason:"Pinned schema declarations and direct QName links; effective type expansion, substitution, cardinality, cross-profile scope and prose-only rules are not yet resolved. Not a coverage denominator.",sources:order(sources),declarations:order(declarations),references:order(references),graph,counts};
+}
+
+export function resolveReferences(declarations,references,sources=[]) {
+  const index=new Map(), files=new Set(sources.map(s=>JSON.stringify([s.profile,s.path])));
+  for(const d of declarations) if(d.global&&d.name) {
+    const key=symbolKey(d.profile,d.namespace,d.kind,d.name);
+    const list=index.get(key)??[];list.push({file:d.file,path:d.path});index.set(key,list);
+  }
+  const edges=[];
+  for(const r of references) {
+    for(const t of r.targets??[]) {
+      const matches=t.kinds.flatMap(k=>index.get(symbolKey(r.profile,t.qname.namespace,k,t.qname.name))??[]);
+      const status=t.qname.namespace===XS?"builtin-namespace":matches.length===1?"resolved":matches.length>1?"ambiguous":"unresolved";
+      edges.push({profile:r.profile,file:r.file,path:r.path,role:t.role,qname:t.qname,status,matches});
+    }
+    if(r.location&&["include","import","redefine","override"].includes(r.kind)){
+      const location=r.location;
+      const candidate=/^[a-z]+:|^\//i.test(location)?null:relative(".",resolve(dirname(r.file),location)).split("\\").join("/");
+      edges.push({profile:r.profile,file:r.file,path:r.path,role:r.kind,location,status:candidate&&files.has(JSON.stringify([r.profile,candidate]))?"file-present":"unresolved"});
+    }
+  }
+  edges.sort((a,b)=>sort(JSON.stringify(a),JSON.stringify(b)));
+  const summary=Object.fromEntries([...new Set(edges.map(e=>e.status))].sort().map(k=>[k,edges.filter(e=>e.status===k).length]));
+  return {summary,edges};
 }

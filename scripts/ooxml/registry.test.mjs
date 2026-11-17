@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { buildReport,validateSeed,assertEvidence,stringify,dimensions } from "./registry.mjs";
-import { inspectSchema } from "./schema-inventory.mjs";
+import { compareReports } from "./regression.mjs";
+import { inspectSchema, resolveReferences } from "./schema-inventory.mjs";
 const root=process.cwd();
 const seed=JSON.parse(readFileSync("src/ooxml/capabilities/seed.json","utf8"));
 test("seed is unique and references real tests",()=>validateSeed(seed,root));
@@ -34,4 +35,25 @@ test("lexical XSD prototype keeps repeated element contexts and unresolved refer
   assert.equal(new Set(p.map(d=>d.context)).size,5);
   assert.ok(result.references.some(r=>r.location==="other.xsd"));
   assert.throws(()=>inspectSchema('<!DOCTYPE x>'+xml,"strict","bad"),/DTD/);
+});
+
+test("direct QName graph resolves types, groups, references and builtins",()=>{
+ const x='<x:schema xmlns:x="http://www.w3.org/2001/XMLSchema" xmlns:t="urn:types" targetNamespace="urn:types"><x:complexType name="Base"><x:attribute name="count" type="x:int"/></x:complexType><x:complexType name="Child"><x:complexContent><x:extension base="t:Base"><x:sequence><x:group ref="t:G"/></x:sequence></x:extension></x:complexContent></x:complexType><x:group name="G"><x:sequence><x:element name="item" type="t:Missing"/></x:sequence></x:group></x:schema>';
+ const data=inspectSchema(x,"strict","test.xsd");
+ const g=resolveReferences(data.declarations,data.references);
+ assert.equal(g.summary.resolved,2);
+ assert.equal(g.summary["builtin-namespace"],1);
+ assert.equal(g.summary.unresolved,1);
+ assert.ok(data.declarations.some(d=>d.kind==="attribute"&&d.name==="count"));
+});
+test("regression gate rejects loss or downgrade of demonstrated capability",()=>{
+ const prior={version:1,evidenceMode:"runner-results",entries:[{...seed.entries[0],support:{import:"partial",export:"supported"}}]};
+ const same=structuredClone(prior);
+ assert.deepEqual(compareReports(prior,same),[]);
+ same.entries[0].support.import="unknown";
+ same.entries[0].support.export="partial";
+ assert.equal(compareReports(prior,same).length,2);
+ same.entries=[];
+ assert.equal(compareReports(prior,same).length,2);
+ assert.throws(()=>compareReports(prior,{...same,evidenceMode:"static-audit-only"}),/runner evidence/);
 });
