@@ -72,7 +72,7 @@ function glyphRange(offsets: number[], glyphId: number): GlyphRange | null {
 
 function collectCompositeGlyphs(
   glyph: Uint8Array,
-  addGlyph: (glyphId: number) => void,
+  addGlyph: (glyphId: number, offset: number) => void,
 ): void {
   if (glyph.byteLength < 10 || i16(glyph, 0) >= 0) {
     return;
@@ -81,9 +81,9 @@ function collectCompositeGlyphs(
   let offset = 10;
   let flags = 0;
   do {
-    if (offset + 4 > glyph.byteLength) return;
+    if (offset + 4 > glyph.byteLength) throw new Error("Truncated composite glyph");
     flags = u16(glyph, offset);
-    addGlyph(u16(glyph, offset + 2));
+    addGlyph(u16(glyph, offset + 2), offset + 2);
     offset += 4;
     offset += flags & 0x0001 ? 4 : 2;
     if (flags & 0x0008) offset += 2;
@@ -112,9 +112,10 @@ function subsetClosure(
   while (stack.length > 0) {
     const glyphId = stack.pop()!;
     const range = glyphRange(offsets, glyphId);
-    if (!range || range.end <= range.start || range.end > glyf.byteLength) {
-      continue;
+    if (!range || glyphId >= font.glyphCount || range.end < range.start || range.end > glyf.byteLength) {
+      throw new Error("Invalid subset glyph range");
     }
+    if (range.end === range.start) continue;
     const glyph = glyf.slice(range.start, range.end);
     collectCompositeGlyphs(glyph, (componentId): void => {
       if (!used.has(componentId)) {
@@ -133,68 +134,116 @@ function buildLoca(offsets: number[]): Uint8Array {
   return loca;
 }
 
-function buildHmtx(font: ParsedFontProgram, maxGlyphId: number): Uint8Array {
-  const hmtx = new Uint8Array((maxGlyphId + 1) * 4);
-  for (let glyphId = 0; glyphId <= maxGlyphId; glyphId += 1) {
-    writeU16(hmtx, glyphId * 4, font.advanceWidthForGlyph(glyphId));
-    writeU16(hmtx, glyphId * 4 + 2, 0);
-  }
+/** Build compact horizontal metrics, preserving original side bearings. */
+function buildHmtx(font: ParsedFontProgram, glyphIds: number[], hhea: Uint8Array): Uint8Array {
+  const source=font.getRawTableData("hmtx");
+  const longCount=u16(hhea,34);
+  if(!source||longCount<1||longCount>font.glyphCount)throw new Error("Invalid source hmtx");
+  const hmtx=new Uint8Array(glyphIds.length*4);
+  glyphIds.forEach((gid,index)=>{
+    const lsbOffset=gid<longCount?gid*4+2:longCount*4+(gid-longCount)*2;
+    writeU16(hmtx,index*4,font.advanceWidthForGlyph(gid));
+    view(hmtx).setInt16(index*4+2,i16(source,lsbOffset));
+  });
   return hmtx;
+}
+
+/** Map only source Unicode mappings represented by this subset. Shaped
+ * alternates/ligatures are addressed through PDF CIDToGIDMap and ToUnicode,
+ * never by inventing a misleading Unicode cmap mapping. */
+function buildCmap(font: ParsedFontProgram, unicode: Map<number,number[]>, gidMap: Map<number,number>): Uint8Array {
+  const values=new Map<number,number>();
+  for(const points of unicode.values())for(const cp of points){
+    if(!Number.isInteger(cp)||cp<=0||cp>0x10ffff||(cp>=0xd800&&cp<=0xdfff))continue;
+    const dense=gidMap.get(font.glyphForCodePoint(cp));
+    if(dense)values.set(cp,dense);
+  }
+  const entries=[...values].sort(([a],[b])=>a-b);
+  const groups:{start:number;end:number;gid:number}[]=[];
+  for(const [cp,gid] of entries){
+    const last=groups[groups.length-1];
+    if(last&&cp===last.end+1&&gid===last.gid+cp-last.start)last.end=cp;
+    else groups.push({start:cp,end:cp,gid});
+  }
+  const format12=new Uint8Array(16+groups.length*12);
+  writeU16(format12,0,12);writeU32(format12,4,format12.length);writeU32(format12,12,groups.length);
+  groups.forEach((g,i)=>{const at=16+i*12;writeU32(format12,at,g.start);writeU32(format12,at+4,g.end);writeU32(format12,at+8,g.gid);});
+  // Provide a Windows BMP subtable as well where its uint16 length permits.
+  const bmp=groups.filter(g=>g.start<0xffff).map(g=>({...g,end:Math.min(g.end,0xfffe)}));
+  bmp.push({start:0xffff,end:0xffff,gid:0});
+  const n=bmp.length,length=16+8*n;
+  const format4=length<=0xffff?new Uint8Array(length):null;
+  if(format4){
+    const power=2**Math.floor(Math.log2(n));
+    writeU16(format4,0,4);writeU16(format4,2,length);writeU16(format4,6,n*2);
+    writeU16(format4,8,power*2);writeU16(format4,10,Math.log2(power));writeU16(format4,12,n*2-power*2);
+    bmp.forEach((g,i)=>{
+      writeU16(format4,14+i*2,g.end);
+      writeU16(format4,16+n*2+i*2,g.start);
+      writeU16(format4,16+n*4+i*2,(g.gid-g.start)&0xffff);
+    });
+  }
+  const count=format4?2:1,header=4+count*8;
+  const cmap=new Uint8Array(header+(format4?.length??0)+format12.length);
+  writeU16(cmap,2,count);
+  if(format4){
+    writeU16(cmap,4,3);writeU16(cmap,6,1);writeU32(cmap,8,header);
+    cmap.set(format4,header);
+  }
+  const record=format4?12:4,offset=header+(format4?.length??0);
+  writeU16(cmap,record,3);writeU16(cmap,record+2,10);writeU32(cmap,record+4,offset);
+  cmap.set(format12,offset);
+  return cmap;
 }
 
 function buildSubsetTables(
   font: ParsedFontProgram,
   glyphIds: number[],
+  gidMap: Map<number,number>,
+  unicode: Map<number,number[]>,
 ): Record<string, Uint8Array> {
-  const glyf = font.getRawTableData("glyf");
-  const loca = font.getRawTableData("loca");
-  const head = font.getRawTableData("head");
-  const hhea = font.getRawTableData("hhea");
-  const maxp = font.getRawTableData("maxp");
-  const cmap = font.getRawTableData("cmap");
-  if (!glyf || !loca || !head || !hhea || !maxp || !cmap) {
-    throw new Error("Missing required TrueType tables for subsetting");
-  }
-
-  const maxGlyphId = Math.max(0, ...glyphIds);
-  const used = new Set(glyphIds);
-  const sourceOffsets = readLoca(loca, u16(head, 50));
-  const locaOffsets: number[] = [];
-  const glyfChunks: Uint8Array[] = [];
-  let glyfOffset = 0;
-
-  for (let glyphId = 0; glyphId <= maxGlyphId; glyphId += 1) {
+  const glyf=font.getRawTableData("glyf"),loca=font.getRawTableData("loca");
+  const head=font.getRawTableData("head"),hhea=font.getRawTableData("hhea"),maxp=font.getRawTableData("maxp");
+  if(!glyf||!loca||!head||!hhea||!maxp)throw new Error("Missing required TrueType tables for subsetting");
+  const sourceOffsets=readLoca(loca,u16(head,50));
+  const locaOffsets:number[]=[],glyfChunks:Uint8Array[]=[];
+  let glyfOffset=0;
+  for(const gid of glyphIds){
     locaOffsets.push(glyfOffset);
-    const range = glyphRange(sourceOffsets, glyphId);
-    if (used.has(glyphId) && range && range.end > range.start) {
-      const glyph = glyf.slice(range.start, range.end);
-      glyfChunks.push(glyph);
-      glyfOffset += pad4(glyph.byteLength);
-    }
+    const range=glyphRange(sourceOffsets,gid);
+    if(!range||range.end<range.start||range.end>glyf.length)throw new Error("Invalid glyph range");
+    if(range.end===range.start)continue;
+    const glyph=glyf.slice(range.start,range.end);
+    // Rewrite each composite component, including nested composites already
+    // discovered by subsetClosure. Preserve flags, transforms and outlines.
+    collectCompositeGlyphs(glyph,(component,offset)=>{
+      const dense=gidMap.get(component);
+      if(dense===undefined)throw new Error("Missing composite dependency");
+      writeU16(glyph,offset,dense);
+    });
+    glyfChunks.push(glyph);
+    glyfOffset+=pad4(glyph.length);
   }
   locaOffsets.push(glyfOffset);
-
-  const newHead = head.slice();
-  writeU32(newHead, 8, 0);
-  writeU16(newHead, 50, 1);
-  const newHhea = hhea.slice();
-  writeU16(newHhea, 34, maxGlyphId + 1);
-  const newMaxp = maxp.slice();
-  writeU16(newMaxp, 4, maxGlyphId + 1);
-
-  const tables: Record<string, Uint8Array> = {
-    cmap,
-    head: newHead,
-    hhea: newHhea,
-    hmtx: buildHmtx(font, maxGlyphId),
-    loca: buildLoca(locaOffsets),
-    maxp: newMaxp,
-    glyf: concat(glyfChunks),
+  const newHead=head.slice();writeU32(newHead,8,0);writeU16(newHead,50,1);
+  const newHhea=hhea.slice();writeU16(newHhea,34,glyphIds.length);
+  const newMaxp=maxp.slice();writeU16(newMaxp,4,glyphIds.length);
+  const tables:Record<string,Uint8Array>={
+    cmap:buildCmap(font,unicode,gidMap),head:newHead,hhea:newHhea,maxp:newMaxp,
+    hmtx:buildHmtx(font,glyphIds,hhea),loca:buildLoca(locaOffsets),glyf:concat(glyfChunks),
   };
-
-  for (const tag of ["OS/2", "name", "post"]) {
-    const table = font.getRawTableData(tag);
-    if (table) tables[tag] = table;
+  // Preserve the font identity, metrics and original TrueType hint programs.
+  // GSUB/GPOS were applied before subsetting and must not retain stale GIDs.
+  for(const tag of ["OS/2","name","cvt ","fpgm","prep","gasp"]){
+    const table=font.getRawTableData(tag);
+    if(table)tables[tag]=table;
+  }
+  const post=font.getRawTableData("post");
+  if(post&&post.length>=32){
+    // Format 3 preserves metadata without the original glyph-name array,
+    // which would be both redundant and incorrect after renumbering.
+    tables.post=post.slice(0,32);
+    writeU32(tables.post,0,0x00030000);
   }
   return tables;
 }
@@ -214,7 +263,8 @@ export class TrueTypePdfFontSubsetter implements FontSubsetter {
     }
 
     const glyphIds = subsetClosure(font, initialGlyphs);
-    const tables = buildSubsetTables(font, glyphIds);
+    const gidMap = new Map(glyphIds.map((gid, index) => [gid, index]));
+    const tables = buildSubsetTables(font, glyphIds, gidMap, unicodeByGlyph);
     const fontFile = buildSfnt(
       0x00010000,
       new Map(
@@ -229,10 +279,9 @@ export class TrueTypePdfFontSubsetter implements FontSubsetter {
         ),
       ),
     ).ttf;
-    const maxGlyphId = Math.max(0, ...glyphIds);
     const widths: number[] = [];
     const unicode: number[][] = [];
-    for (let glyphId = 0; glyphId <= maxGlyphId; glyphId += 1) {
+    for (const glyphId of glyphIds) {
       widths[glyphId] =
         (font.advanceWidthForGlyph(glyphId) / font.unitsPerEm) * 1000;
       unicode[glyphId] = unicodeByGlyph.get(glyphId) ?? [0];
@@ -242,7 +291,7 @@ export class TrueTypePdfFontSubsetter implements FontSubsetter {
       fontFile,
       widths,
       unicode,
-      encodeGlyph: (glyphId): number => glyphId,
+      encodeGlyph: (glyphId): number => gidMap.get(glyphId) ?? 0,
     };
   }
 }

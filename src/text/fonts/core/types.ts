@@ -73,6 +73,7 @@ export interface FontSubset {
   readonly fontFile: Uint8Array;
   readonly widths: number[];
   readonly unicode: number[][];
+  /** Map original source glyph ID (PDF CID) to embedded sfnt GID. */
   encodeGlyph(glyphId: number): number;
 }
 

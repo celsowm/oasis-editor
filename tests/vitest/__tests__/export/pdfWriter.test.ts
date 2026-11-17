@@ -22,6 +22,8 @@ import {
   createEditorStateFromDocument,
   createFootnoteReferenceRun,
 } from "@/core/editorState.js";
+import { SfntFontProgram } from "@/text/fonts/sfnt/SfntFontProgram.js";
+import { createPdfEmbeddableFont, parseEmbeddedFontSync } from "@/text/fonts/FontProgramFactory.js";
 import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
 import { resolveMetricCompatibleFamily } from "@/export/pdf/fonts/officeFontAssets.js";
 import { layoutPdfParagraph } from "@/export/pdf/layout/layoutParagraph.js";
@@ -293,6 +295,27 @@ describe("PDF binary resource size", () => {
     const sfnt=unzlibSync(compressed);
     expect(sfnt.byteLength).toBe(Number(match![2]));
     expect([...sfnt.subarray(0,4)]).toEqual([0,1,0,0]);
+    const embedded=SfntFontProgram.parse(sfnt);
+    expect(embedded.glyphCount).toBeLessThanOrEqual(32);
+    const originalResource=registry.resolveFontFace({fontFamily:family}).pdfResource;
+    if(originalResource.kind!=="unicode")throw Error("Expected embedded face");
+    const original=parseEmbeddedFontSync(originalResource.fontData);
+    const cidRef=/\/CIDToGIDMap (\d+) 0 R/.exec(raw);
+    let mapping:DataView|undefined;
+    if(cidRef){
+      const mapHeader=new RegExp("\\n"+cidRef[1]+" 0 obj\\n<< /Length (\\d+) /Filter /FlateDecode >>\\nstream\\n").exec(raw)!;
+      const start=mapHeader.index+mapHeader[0].length;
+      const mapBytes=unzlibSync(bytes.subarray(start,start+Number(mapHeader[1])));
+      mapping=new DataView(mapBytes.buffer,mapBytes.byteOffset,mapBytes.byteLength);
+    }
+    for(const char of new Set("Olá mundo")){
+      const cp=char.codePointAt(0)!,cid=original.glyphForCodePoint(cp);
+      const gid=mapping?mapping.getUint16(cid*2):cid;
+      expect(gid).toBeGreaterThan(0);
+      expect(gid).toBeLessThan(embedded.glyphCount);
+      expect(embedded.glyphForCodePoint(cp)).toBe(gid);
+      expect(embedded.advanceWidthForGlyph(gid)).toBe(original.advanceWidthForGlyph(cid));
+    }
     expect(compressed.length).toBeLessThan(sfnt.length);
     expect(raw).not.toContain("/ASCIIHexDecode");
     expect(raw.match(/\/FontFile2 /g)).toHaveLength(1);
@@ -313,6 +336,42 @@ describe("PDF binary resource size", () => {
       await mkdir("test-results/pdf-size",{recursive:true});
       await writeFile("test-results/pdf-size/"+family.replaceAll(" ","-")+".pdf",bytes);
     }
+  });
+
+  it("retains composite glyph closure and remaps the actual component references",async()=>{
+    const registry=new PdfFontRegistry();
+    await registry.loadBundledUnicodeFaces({families:["Arial"]});
+    const face=registry.resolveFontFace({fontFamily:"Arial"}).pdfResource;
+    if(face.kind!=="unicode")throw Error("Missing embedded face");
+    const original=parseEmbeddedFontSync(face.fontData);
+    const {layouter,subsetter}=createPdfEmbeddableFont(original);
+    const glyphs=layouter.layout("á").glyphs;
+    const subset=subsetter.createSubset(original,glyphs);
+    const embedded=SfntFontProgram.parse(subset.fontFile);
+    const cid=glyphs[0]!.id,gid=subset.encodeGlyph(cid);
+    expect(gid).toBeGreaterThan(0);
+    expect(embedded.glyphCount).toBeLessThan(16);
+    const glyphBytes=(font:SfntFontProgram,id:number)=>{
+      const head=new DataView(font.getRawTableData("head")!.buffer);
+      const loca=new DataView(font.getRawTableData("loca")!.buffer);
+      const long=head.getUint16(50)===1;
+      const offset=(i:number)=>long?loca.getUint32(i*4):loca.getUint16(i*2)*2;
+      return font.getRawTableData("glyf")!.slice(offset(id),offset(id+1));
+    };
+    const before=glyphBytes(original,cid),after=glyphBytes(embedded,gid);
+    const src=new DataView(before.buffer),dst=new DataView(after.buffer);
+    expect(src.getInt16(0)).toBeLessThan(0);
+    expect(dst.getInt16(0)).toBe(src.getInt16(0));
+    let offset=10,flags:number;
+    do{
+      flags=src.getUint16(offset);
+      const component=src.getUint16(offset+2);
+      expect(dst.getUint16(offset)).toBe(flags);
+      expect(dst.getUint16(offset+2)).toBe(subset.encodeGlyph(component));
+      expect(subset.encodeGlyph(component)).toBeGreaterThan(0);
+      expect(subset.encodeGlyph(component)).toBeLessThan(embedded.glyphCount);
+      offset+=4+(flags&1?4:2)+(flags&8?2:flags&64?4:flags&128?8:0);
+    }while(flags&32);
   });
 
   it("embeds JPEG bytes unchanged rather than doubling them as hex",()=>{
