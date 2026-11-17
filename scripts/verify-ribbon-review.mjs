@@ -1985,6 +1985,29 @@ try {
     assert.match(balloonLabels[2].text, /Carol/);
     assert.match(balloonLabels[2].text, /Formatted by Carol/);
 
+    // The card is painted on white paper in every theme, so its ink must stay
+    // dark: using the theme-aware text token rendered white-on-white in dark
+    // mode (a real defect caught here).
+    const balloonContrast = await balloons()
+      .first()
+      .evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { color: style.color, background: style.backgroundColor };
+      });
+    const rgbChannels = (value) =>
+      (value.match(/\d+/g) ?? []).slice(0, 3).map(Number);
+    const relativeLuminance = (value) => {
+      const [r, g, b] = rgbChannels(value);
+      return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    };
+    assert.ok(
+      Math.abs(
+        relativeLuminance(balloonContrast.color) -
+          relativeLuminance(balloonContrast.background),
+      ) > 0.4,
+      `balloon ink must contrast with its card (${theme} theme)`,
+    );
+
     const balloonGeometry = await balloons().evaluateAll((elements) => {
       const pageSlot = document.querySelector(".oasis-editor-canvas-page-slot");
       const pageRect = pageSlot ? pageSlot.getBoundingClientRect() : null;
@@ -2205,6 +2228,7 @@ try {
         "section-revisions-follow-formatting-checkbox",
         "section-revisions-pane-row-accept-resolves",
         "reviewer-balloons-paint-author-type-and-snippet",
+        "reviewer-balloons-text-contrasts-with-card",
         "reviewer-balloons-stack-inside-the-right-margin",
         "reviewer-balloons-follow-show-markup-categories",
         "reviewer-balloons-follow-reviewer-filters",
