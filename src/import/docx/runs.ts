@@ -1,3 +1,4 @@
+import { projectOpaqueRunElement } from "@/ooxml/word/opaqueObjects.js";
 import JSZip from "jszip";
 import { XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
 import { pageNumberFormatFromSwitch } from "@/core/format/pageNumberFormat.js";
@@ -561,6 +562,16 @@ export async function parseRunsContainer(
         getFirstChildByTagNameNS(element, WORD_NS, "rPr"),
         theme,
       );
+
+      const contentChildren=Array.from(element.childNodes).filter((node): node is XmlElement =>
+        node.nodeType===1 && !(node.namespaceURI===WORD_NS && node.localName==="rPr"));
+      if(contentChildren.length===1){
+        const opaque=projectOpaqueRunElement(contentChildren[0]!);
+        if(opaque){
+          runs.push({text:"\uFFFC",opaque,...(runStyles?{styles:runStyles}:{})});
+          continue;
+        }
+      }
 
       const hasFieldControl =
         getChildrenByTagNameNS(element, WORD_NS, "fldChar").length > 0 ||

@@ -64,6 +64,7 @@ export function cloneRun(run: EditorTextRun): EditorTextRun {
   };
   const cloned = visitRun<EditorTextRun>(run, {
     text: () => ({ ...base, kind: "text" }),
+    opaque: (r) => ({ ...base, kind: "opaque", opaque: { ...r.opaque, relationshipIds: [...r.opaque.relationshipIds] } }),
     image: (r) => ({ ...base, kind: "image", image: { ...r.image } }),
     textBox: (r) => ({
       ...base,

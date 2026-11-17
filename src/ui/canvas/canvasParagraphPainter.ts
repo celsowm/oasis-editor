@@ -362,7 +362,25 @@ export function drawParagraph(
         );
       }
 
-      if (fragment.math) {
+      if (fragment.opaque) {
+        const slot=slotByOffset.get(fragment.startOffset);
+        if(slot){
+          const object=fragment.opaque;
+          const rect=resolveInlineObjectRect({
+            originLeft:originX,originTop:originY,lineTop:line.top,lineHeight:line.height,
+            slotLeft:slot.left,objectWidth:object.width,objectHeight:object.height,
+          });
+          ctx.save();
+          ctx.fillStyle="#f1f5f9";ctx.fillRect(rect.left,rect.top,rect.width,rect.height);
+          ctx.strokeStyle="#64748b";ctx.lineWidth=1;ctx.strokeRect(rect.left,rect.top,rect.width,rect.height);
+          if(rect.width>36&&rect.height>20){
+            ctx.beginPath();ctx.rect(rect.left,rect.top,rect.width,rect.height);ctx.clip();
+            ctx.fillStyle="#334155";ctx.font="12px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+            ctx.fillText("Preserved "+object.objectKind,rect.left+rect.width/2,rect.top+rect.height/2,Math.max(1,rect.width-8));
+          }
+          ctx.restore();
+        }
+      } else if (fragment.math) {
         const slot = slotByOffset.get(fragment.startOffset);
         if (slot) {
           drawMathExpression(

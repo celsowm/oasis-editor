@@ -106,9 +106,10 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm run typecheck
       - name: Validate namespace identity and repeated source-backed mutations
         run: |
-          npx vitest run tests/vitest/__tests__/export/docxHeaderFooterNamespacePrefixPreservation.todo.test.ts tests/vitest/__tests__/export/docxHeaderFooterStoryReferences.test.ts tests/vitest/__tests__/export/docxHeaderFooterSourcePathPreservation.test.ts tests/vitest/__tests__/export/docxHeaderFooterRootSourcePreservation.test.ts tests/vitest/__tests__/export/docxWholeParagraphSource.test.ts tests/vitest/__tests__/export/docxSourcePackagePreservation.test.ts tests/vitest/__tests__/ooxml/opaqueObjects.test.ts --reporter=json --outputFile=test-results/ooxml-preservation/vitest.json
+          npx vitest run tests/vitest/__tests__/export/docxHeaderFooterNamespacePrefixPreservation.todo.test.ts tests/vitest/__tests__/export/docxHeaderFooterStoryReferences.test.ts tests/vitest/__tests__/export/docxHeaderFooterSourcePathPreservation.test.ts tests/vitest/__tests__/export/docxHeaderFooterRootSourcePreservation.test.ts tests/vitest/__tests__/export/docxWholeParagraphSource.test.ts tests/vitest/__tests__/export/docxSourcePackagePreservation.test.ts tests/vitest/__tests__/ooxml/opaqueObjects.test.ts tests/vitest/__tests__/core/runKind.test.ts --reporter=json --outputFile=test-results/ooxml-preservation/vitest.json
       - uses: actions/upload-artifact@v7
         if: always()
         with:

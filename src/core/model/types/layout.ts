@@ -3,7 +3,7 @@
  * by the renderer. Strictly downstream of the document model — nothing in
  * `types/document.ts` should ever import from here.
  */
-import type { EditorBlockNode, EditorTextBoxData } from "./nodes.js";
+import type { EditorBlockNode, EditorTextBoxData, EditorOpaqueRunData } from "./nodes.js";
 import type { EditorMathExpression } from "./math.js";
 import type { EditorPageSettings } from "./document.js";
 import type { EditorRevision, EditorImageRunData, EditorTabStop } from "./primitives.js";
@@ -33,6 +33,7 @@ export interface EditorLayoutFragment {
   image?: EditorImageRunData;
   textBox?: EditorTextBoxData;
   math?: EditorMathExpression;
+  opaque?: EditorOpaqueRunData;
   revision?: EditorRevision;
   chars: EditorLayoutFragmentChar[];
 }

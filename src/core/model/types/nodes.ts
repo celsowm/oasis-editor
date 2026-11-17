@@ -1,3 +1,4 @@
+import type { EditorDocxOpaqueObject } from "./docxSourcePackage.js";
 /**
  * Document node graph: runs, paragraphs, tables, rows, cells and the union of
  * block-level nodes used everywhere the editor walks the document tree.
@@ -109,7 +110,19 @@ export interface EditorRunBase {
  * missing branch is a compile error) and invalid combinations (e.g. `image` +
  * `textBox`) are unrepresentable (O1). The `kind` values mirror {@link RunKind}.
  */
+/** Original XML plus conservative flow-placeholder dimensions. */
+export interface EditorOpaqueRunData {
+  objectKind: EditorDocxOpaqueObject["kind"];
+  fragmentXml: string;
+  signature: string;
+  relationshipIds: string[];
+  width: number;
+  height: number;
+  placement?: "inline" | "anchor";
+}
+
 export type EditorTextRun =
+  | (EditorRunBase & { kind: "opaque"; opaque: EditorOpaqueRunData })
   | (EditorRunBase & { kind: "text" })
   | (EditorRunBase & { kind: "image"; image: EditorImageRunData })
   | (EditorRunBase & { kind: "textBox"; textBox: EditorTextBoxData })

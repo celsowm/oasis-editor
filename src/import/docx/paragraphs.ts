@@ -165,6 +165,8 @@ function importedRunToEditorRun(run: ImportedRun): EditorTextRun {
     };
   } else if (run.field) {
     editorRun = { ...base, kind: "field", field: { ...run.field } };
+  } else if (run.opaque) {
+    editorRun = { ...base, text: "\uFFFC", kind: "opaque", opaque: run.opaque };
   } else if (run.textBox) {
     editorRun = { ...base, kind: "textBox", textBox: run.textBox };
   } else if (run.image) {

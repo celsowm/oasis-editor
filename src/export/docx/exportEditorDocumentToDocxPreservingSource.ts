@@ -48,7 +48,7 @@ function cloneSourcePackage(
 }
 
 export interface DocxSourcePreservationOptions {
-  /** Block export if an inventoried opaque source object or dependency changes. */
+  /** Request an audit even without a recorded opaque inventory. Inventoried objects are always audited. */
   requireOpaquePreservation?: boolean;
 }
 
@@ -66,9 +66,10 @@ export async function exportEditorDocumentToDocxPreservingSource(
   };
   synchronizeBoundContentControls(exportDocument);
 
-  const rebuilt = await exportEditorDocumentToDocx(exportDocument);
+  const hasOpaqueObjects = Boolean(document.sourcePackage.opaqueObjects?.length);
+  const rebuilt = await exportEditorDocumentToDocx(exportDocument, { allowOpaqueSourceFragments: hasOpaqueObjects });
   const output = await patchRebuiltDocxPreservingSource(exportDocument, rebuilt);
-  if (options.requireOpaquePreservation) {
+  if (hasOpaqueObjects || options.requireOpaquePreservation) {
     const { captureDocxSourcePackage } = await import("@/import/docx/opc/sourcePackage.js");
     const outputPackage = await captureDocxSourcePackage(output);
     const diagnostics = auditOpaqueObjectPreservation(document.sourcePackage, outputPackage);

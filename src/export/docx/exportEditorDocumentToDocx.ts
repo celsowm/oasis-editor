@@ -132,6 +132,7 @@ function buildPartContext(
   });
 
   return {
+    allowOpaqueSourceFragments: state.allowOpaqueSourceFragments,
     numberingInfo: numberingContext.numberingInfo,
     definitions: numberingContext.definitions,
     images,
@@ -189,11 +190,14 @@ function writeNotePart(
 
 export async function exportEditorDocumentToDocx(
   document: EditorDocument,
+  /** Internal incomplete rebuild; only baseline fingerprinting or OPC overlay may enable this. */
+  options: { allowOpaqueSourceFragments?: boolean } = {},
 ): Promise<ArrayBuffer> {
   document = renumberImageCaptionsInDocument(document);
   const zip = new JSZip();
   const numberingContext = buildNumberingContext(document);
   const buildState: ExportBuildState = {
+    allowOpaqueSourceFragments: options.allowOpaqueSourceFragments,
     nextImageId: 1,
     // High base so text-box docPr ids never collide with image docPr ids.
     nextTextBoxDocPrId: 1000001,

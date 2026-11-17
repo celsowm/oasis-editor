@@ -1,3 +1,4 @@
+import type { EditorOpaqueRunData } from "@/core/model/types/nodes.js";
 import { DOMParser, XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
 import type { EditorDocxDiagnostic, EditorDocxOpaqueObject, EditorDocxSourcePackage } from "@/core/model/types/docxSourcePackage.js";
 
@@ -126,6 +127,22 @@ function storyPart(source:EditorDocxSourcePackage,path:string):boolean{
   return /wordprocessingml\.(?:header|footer|footnotes|endnotes|comments|document\.glossary)\+xml$/.test(type);
 }
 
+function classifyOpaqueElement(el: XmlElement): EditorDocxOpaqueObject["kind"] | undefined {
+  if (is(el,MC,"AlternateContent")) {
+    return ["drawing","pict","object"].flatMap(name=>descendants(el,W,name)).map(kindOf).find(k=>k!==undefined);
+  }
+  return kindOf(el);
+}
+
+/** One object replacement character. Keep all original MC branches. */
+export function projectOpaqueRunElement(el: XmlElement): EditorOpaqueRunData | undefined {
+  const kind=classifyOpaqueElement(el);
+  if(!kind)return undefined;
+  const g=geometry(el);
+  const px=(emu:number|undefined,fallback:number)=>emu===undefined?fallback:Math.max(1,Math.min(4096,emu/9525));
+  return {objectKind:kind,fragmentXml:standalone(el),signature:JSON.stringify(signature(el)),relationshipIds:relationshipIds(el),width:px(g?.widthEmu,180),height:px(g?.heightEmu,90),placement:g?.placement};
+}
+
 export function inspectDocxOpaqueObjects(source:EditorDocxSourcePackage):{objects:EditorDocxOpaqueObject[];diagnostics:EditorDocxDiagnostic[]}{
   const objects:EditorDocxOpaqueObject[]=[],diagnostics:EditorDocxDiagnostic[]=[];
   for(const path of Object.keys(source.parts).sort(compare)){
@@ -141,13 +158,7 @@ export function inspectDocxOpaqueObjects(source:EditorDocxSourcePackage):{object
       const stack:XmlElement[]=[root];let ordinal=0;
       while(stack.length){
         const el=stack.pop()!;
-        let kind=kindOf(el);
-        if(is(el,MC,"AlternateContent")){
-          // Keep all branches when any descendant object is opaque; never
-          // treat a fallback preview as the real editable chart or OLE object.
-          const candidates=["drawing","pict","object"].flatMap(name=>descendants(el,W,name));
-          kind=candidates.map(kindOf).find(k=>k!==undefined);
-        }
+        const kind=classifyOpaqueElement(el);
         if(!kind){stack.push(...children(el).reverse());continue;}
         const ids=relationshipIds(el),closure=resolveOpaqueClosure(source,path,ids);
         const object:EditorDocxOpaqueObject={kind,ownerPath:path,ordinal:ordinal++,fragmentXml:standalone(el),signature:JSON.stringify(signature(el)),geometry:geometry(el),relationshipIds:ids,...closure};
@@ -187,6 +198,9 @@ export function auditOpaqueObjectPreservation(source:EditorDocxSourcePackage,out
       }
     }
   }
+  after.objects.forEach((object,index)=>{
+    if(!used.has(index))issues.push({level:"error",code:"opaque-object-introduced",partPath:object.ownerPath,message:"An opaque object was introduced, copied or relocated without a proven source relationship mapping."});
+  });
   return issues;
 }
 

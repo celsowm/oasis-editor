@@ -8,6 +8,7 @@ import {
   getRunImage,
   getRunTextBox,
   getRunMath,
+  getRunOpaque,
   resolveEffectiveTextStyleForParagraph,
 } from "@/core/model.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
@@ -43,6 +44,7 @@ export function buildParagraphFragments(
       image: runImage ? { ...runImage } : undefined,
       textBox: runTextBox ? { ...runTextBox } : undefined,
       math: getRunMath(run),
+      opaque: getRunOpaque(run),
       revision: run.revision ? { ...run.revision } : undefined,
       chars,
     };
@@ -86,7 +88,10 @@ export function buildMeasuredChars(
       let width: number;
       let objectHeight: number | undefined;
 
-      if (char.char === "\uFFFC" && fragment.image) {
+      if (char.char === "\uFFFC" && fragment.opaque) {
+        width = fragment.opaque.width;
+        objectHeight = fragment.opaque.height;
+      } else if (char.char === "\uFFFC" && fragment.image) {
         width = fragment.image.floating ? 0 : fragment.image.width;
         objectHeight = fragment.image.floating
           ? undefined

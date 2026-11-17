@@ -277,6 +277,16 @@ export async function drawFragmentText(
   fontRegistry: PdfFontRegistry,
   drawers: BlockDrawers,
 ): Promise<void> {
+  if (fragment.opaque) {
+    const slot=line.slots.find(c=>c.offset===fragment.startOffset);
+    if(!slot)return;
+    const x=originX+slot.left,y=originY+line.top+line.height-fragment.opaque.height;
+    const w=fragment.opaque.width,h=fragment.opaque.height;
+    for(const [x1,y1,x2,y2] of [[x,y,x+w,y],[x+w,y,x+w,y+h],[x+w,y+h,x,y+h],[x,y+h,x,y],[x,y,x+w,y+h]]){
+      writer.drawLine(pageIndex,{x1:pxToPt(x1!),y1:pxToPt(y1!),x2:pxToPt(x2!),y2:pxToPt(y2!),stroke:"#64748b",lineWidth:0.75});
+    }
+    return;
+  }
   if (fragment.image) {
     if (fragment.image.floating) return;
     const slot =

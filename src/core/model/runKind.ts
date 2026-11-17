@@ -1,4 +1,4 @@
-import type { EditorTextBoxData, EditorTextRun } from "./types/nodes.js";
+import type { EditorTextBoxData, EditorTextRun, EditorOpaqueRunData } from "./types/nodes.js";
 import type { EditorMathExpression } from "./types/math.js";
 import type {
   EditorFieldChar,
@@ -26,7 +26,7 @@ export function getRunKind(run: EditorTextRun): RunKind {
 
 /** True for runs that carry an inline object replacement (image or text box). */
 export function isInlineObjectRun(run: EditorTextRun): boolean {
-  return run.kind === "image" || run.kind === "textBox" || run.kind === "math";
+  return run.kind === "image" || run.kind === "textBox" || run.kind === "math" || run.kind === "opaque";
 }
 
 // Narrowing accessors: read a kind-specific field as `T | undefined`, replacing
@@ -83,7 +83,12 @@ export function getRunMath(
   return run.kind === "math" ? run.math : undefined;
 }
 
+export function getRunOpaque(run: EditorTextRun): EditorOpaqueRunData | undefined {
+  return run.kind === "opaque" ? run.opaque : undefined;
+}
+
 export interface RunVisitor<R> {
+  opaque(run: RunOfKind<"opaque">): R;
   text(run: RunOfKind<"text">): R;
   image(run: RunOfKind<"image">): R;
   textBox(run: RunOfKind<"textBox">): R;
@@ -103,6 +108,7 @@ export interface RunVisitor<R> {
  */
 export function visitRun<R>(run: EditorTextRun, visitor: RunVisitor<R>): R {
   switch (run.kind) {
+    case "opaque": return visitor.opaque(run);
     case "footnoteReference":
       return visitor.footnoteReference(run);
     case "endnoteReference":

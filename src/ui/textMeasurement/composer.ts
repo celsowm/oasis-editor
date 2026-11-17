@@ -64,7 +64,7 @@ export function measureParagraphMinContentWidthPx(
     const imageWidth = image && !image.floating ? image.width : 0;
     const textBoxWidth = textBox && !textBox.floating ? textBox.width : 0;
 
-    return Math.max(largest, imageWidth, textBoxWidth);
+    return Math.max(largest, imageWidth, textBoxWidth, run.kind === "opaque" ? run.opaque.width : 0);
   }, 0);
 
   return Math.max(1, inset + largestUnbreakableToken, largestInlineObject);

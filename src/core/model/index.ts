@@ -68,6 +68,7 @@ export type {
 
 export type {
   EditorRunBase,
+  EditorOpaqueRunData,
   EditorTextRun,
   EditorTextBoxShape,
   EditorTextBoxBody,
@@ -121,6 +122,7 @@ export {
   getRunEndnoteReference,
   getRunSym,
   getRunMath,
+  getRunOpaque,
 } from "./runKind.js";
 
 export type { EditorFootnote } from "./types/documentFootnotes.js";
@@ -147,6 +149,7 @@ export type {
   EditorOpcPart,
   EditorDocxDiagnostic,
   EditorDocxSourcePackage,
+  EditorDocxOpaqueObject,
 } from "./types/docxSourcePackage.js";
 
 export type {

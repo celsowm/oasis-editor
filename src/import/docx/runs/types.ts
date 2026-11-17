@@ -1,6 +1,7 @@
 import { type Element as XmlElement } from "@xmldom/xmldom";
 import type {
   EditorBlockNode,
+  EditorOpaqueRunData,
   EditorTextStyle,
   EditorImageRunData,
   EditorTextBoxData,
@@ -39,6 +40,7 @@ export interface ImportedCommentMarker {
 }
 
 export interface ImportedRun {
+  opaque?: EditorOpaqueRunData;
   text: string;
   image?: EditorImageRunData;
   textBox?: EditorTextBoxData;

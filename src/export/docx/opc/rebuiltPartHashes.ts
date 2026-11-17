@@ -32,5 +32,5 @@ export async function hashRebuiltDocxParts(
 export async function captureRebuiltDocxPartHashes(
   document: EditorDocument,
 ): Promise<Record<string, string>> {
-  return hashRebuiltDocxParts(await exportEditorDocumentToDocx(document));
+  return hashRebuiltDocxParts(await exportEditorDocumentToDocx(document, { allowOpaqueSourceFragments: true }));
 }

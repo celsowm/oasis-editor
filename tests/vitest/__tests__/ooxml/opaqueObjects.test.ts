@@ -1,3 +1,6 @@
+import { cloneRun } from "@/core/document/clone.js";
+import { buildParagraphFragments, buildMeasuredChars } from "@/ui/textMeasurement/tokenizer.js";
+import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import type { EditorDocxSourcePackage, EditorOpcPart } from "@/core/model/types/docxSourcePackage.js";
@@ -56,7 +59,7 @@ describe("opaque source inventory and loss detector",()=>{
     expect(report.objects[0]!.fragmentXml).toContain("mc:Fallback");
     expect(report.objects[0]!.fragmentXml).toContain('xmlns:future="urn:future"');
   });
-  it("captures an actual package and either preserves or explicitly blocks a source-backed neighboring edit",async()=>{
+  it("captures an actual package and retains a standalone chart through a source-backed neighboring edit",async()=>{
     const zip=new JSZip();
     zip.file("[Content_Types].xml",`<Types xmlns="${CT}"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/></Types>`);
     zip.file("_rels/.rels",`<Relationships xmlns="${P}"><Relationship Id="rIdOffice" Type="${R}/officeDocument" Target="word/document.xml"/></Relationships>`);
@@ -69,14 +72,24 @@ describe("opaque source inventory and loss detector",()=>{
     const p=doc.sections?.[0]?.blocks[0];
     if(p?.type!=="paragraph")throw Error("Expected source paragraph");
     p.runs[0]!.text="Changed neighbor";
-    const ordinary=await exportEditorDocumentToDocxPreservingSource(doc);
-    const output=await captureDocxSourcePackage(ordinary);
-    const expected=auditOpaqueObjectPreservation(doc.sourcePackage!,output);
-    if(expected.length){
-      await expect(exportEditorDocumentToDocxPreservingSource(doc,{requireOpaquePreservation:true})).rejects.toBeInstanceOf(OpaqueObjectPreservationError);
-    }else{
-      const strict=await exportEditorDocumentToDocxPreservingSource(doc,{requireOpaquePreservation:true});
-      expect(auditOpaqueObjectPreservation(doc.sourcePackage!,await captureDocxSourcePackage(strict))).toEqual([]);
-    }
+    const opaque=p.runs.find(r=>r.kind==="opaque")!;
+    expect(opaque).toMatchObject({kind:"opaque",text:"\uFFFC",opaque:{objectKind:"chart",width:200,height:100}});
+    const cloned=cloneRun(opaque);
+    expect(cloned).toEqual(opaque);
+    expect(cloned).not.toBe(opaque);
+    const fragment=buildParagraphFragments(p).find(f=>f.runId===opaque.id)!;
+    expect(fragment.opaque?.width).toBe(200);
+    const measured=buildMeasuredChars(p,buildParagraphFragments(p),doc.styles);
+    expect(measured.find(c=>c.char==="\uFFFC")).toMatchObject({width:200,objectHeight:100});
+    await expect(exportEditorDocumentToDocx(doc)).rejects.toThrow(/source-backed/);
+    const strict=await exportEditorDocumentToDocxPreservingSource(doc,{requireOpaquePreservation:true});
+    expect(auditOpaqueObjectPreservation(doc.sourcePackage!,await captureDocxSourcePackage(strict))).toEqual([]);
+    const roundtrip=await importDocxInWorker(strict);
+    const paragraph=roundtrip.sections?.[0]?.blocks[0];
+    if(paragraph?.type!=="paragraph")throw Error("Expected round-trip paragraph");
+    expect(paragraph.runs.some(r=>r.kind==="opaque")).toBe(true);
+    expect(paragraph.runs.map(r=>r.text).join("")).toContain("Changed neighbor");
+    p.runs=p.runs.filter(r=>r.kind!=="opaque");
+    await expect(exportEditorDocumentToDocxPreservingSource(doc)).rejects.toBeInstanceOf(OpaqueObjectPreservationError);
   },30000);
 });

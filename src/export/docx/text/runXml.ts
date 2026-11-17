@@ -52,6 +52,13 @@ export function serializeRun(
     return serializeEndnoteRefMarker();
   }
 
+  if (run.kind === "opaque") {
+    if (!context.allowOpaqueSourceFragments) {
+      throw new Error("Opaque DOCX objects require source-backed export with their original package.");
+    }
+    return `<w:r>${serializeRunProperties(run.styles)}${run.opaque.fragmentXml}</w:r>`;
+  }
+
   const preservedSourceXml = serializeRunFromOoxmlSource(run);
   if (preservedSourceXml) {
     return preservedSourceXml;
@@ -109,6 +116,7 @@ export function serializeRun(
     sym: (r): string =>
       `<w:r>${runProps()}<w:sym w:font="${escapeXml(r.sym!.font)}" w:char="${r.sym!.char}"/></w:r>`,
     math: (r): string => serializeMathExpression(r.math!),
+    opaque: (): string => { throw new Error("Unexpected opaque serializer dispatch"); },
     text: (): string => asText(),
   });
 

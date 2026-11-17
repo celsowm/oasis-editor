@@ -80,6 +80,7 @@ describe("visitRun", () => {
   it("dispatches to the visitor method for the run kind", () => {
     const visitor: RunVisitor<string> = {
       text: () => "text",
+      opaque: () => "opaque",
       image: () => "image",
       textBox: () => "textBox",
       field: () => "field",
@@ -100,6 +101,7 @@ describe("visitRun", () => {
     const r = run({ image: { width: 5, height: 6 } as never });
     const width = visitRun<number>(r, {
       text: () => 0,
+      opaque: () => 0,
       image: (img) => img.image.width,
       textBox: (tb) => tb.textBox.width,
       field: () => 0,
@@ -125,8 +127,10 @@ describe("EditorTextRun discriminated union", () => {
       "footnoteReference",
       "endnoteReference",
       "sym",
+      "math",
+      "opaque",
     ];
-    expect(new Set(kinds).size).toBe(9);
+    expect(new Set(kinds).size).toBe(11);
   });
 
   it("rejects invalid field combinations at compile time", () => {
