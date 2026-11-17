@@ -72,7 +72,7 @@ export async function exportEditorDocumentToDocxPreservingSource(
   if (hasOpaqueObjects || options.requireOpaquePreservation) {
     const { captureDocxSourcePackage } = await import("@/import/docx/opc/sourcePackage.js");
     const outputPackage = await captureDocxSourcePackage(output);
-    const diagnostics = auditOpaqueObjectPreservation(document.sourcePackage, outputPackage);
+    const diagnostics = auditOpaqueObjectPreservation(document.sourcePackage, outputPackage, document.opaqueDeletionIntents);
     if (diagnostics.length) throw new OpaqueObjectPreservationError(diagnostics);
   }
   return output;

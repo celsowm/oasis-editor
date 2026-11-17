@@ -1,3 +1,4 @@
+import { tryDeleteOpaqueObject } from "./opaqueDeletion.js";
 import type {
   EditorState,
   EditorTextRun,
@@ -66,6 +67,8 @@ export function deleteCharsBackwardRaw(
 }
 
 export function deleteBackward(state: EditorState): EditorState {
+  const opaqueDeletion = tryDeleteOpaqueObject(state, "backward");
+  if (opaqueDeletion !== undefined) return opaqueDeletion;
   if (!isSelectionCollapsed(state.selection)) {
     return deleteSelectionRange(state);
   }
@@ -190,6 +193,8 @@ export function deleteBackward(state: EditorState): EditorState {
 }
 
 export function deleteForward(state: EditorState): EditorState {
+  const opaqueDeletion = tryDeleteOpaqueObject(state, "forward");
+  if (opaqueDeletion !== undefined) return opaqueDeletion;
   if (!isSelectionCollapsed(state.selection)) {
     return deleteSelectionRange(state);
   }

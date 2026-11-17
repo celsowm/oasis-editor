@@ -1,5 +1,6 @@
 import type { EditorOpaqueRunData } from "@/core/model/types/nodes.js";
 import { DOMParser, XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
+import type { EditorDocument } from "@/core/model/types/document.js";
 import type { EditorDocxDiagnostic, EditorDocxOpaqueObject, EditorDocxSourcePackage } from "@/core/model/types/docxSourcePackage.js";
 
 const W="http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -204,14 +205,27 @@ export function inspectDocxOpaqueObjects(source:EditorDocxSourcePackage):{object
 }
 
 /** Conservative loss detector. Exact XML structure and the complete internal
- * closure must survive in the same owning story. No relocation or intentional
- * opaque deletion is supported by this first opt-in strict mode.
+ * closure must survive in the same owning story. Only narrowly authorized main-story deletion is allowed;
+ * relocation and copies still fail closed.
  */
-export function auditOpaqueObjectPreservation(source:EditorDocxSourcePackage,output:EditorDocxSourcePackage):EditorDocxDiagnostic[]{
+export function auditOpaqueObjectPreservation(source:EditorDocxSourcePackage,output:EditorDocxSourcePackage,intents:NonNullable<EditorDocument["opaqueDeletionIntents"]>=[]):EditorDocxDiagnostic[]{
   const before=inspectDocxOpaqueObjects(source),after=inspectDocxOpaqueObjects(output);
   const issues=[...before.diagnostics,...after.diagnostics].filter(d=>d.level==="error");
+  const deleted=new Set<EditorDocxOpaqueObject>();
+  for(const intent of intents){
+    const matches=before.objects.filter(o=>o.signature===intent.signature);
+    const object=matches.length===1?matches[0]:undefined;
+    if(!object||object.ownerPath!==source.mainDocumentPart||object.ownerPath!==intent.ownerPath||object.ordinal!==intent.ordinal||object.issues.length||deleted.has(object)){
+      issues.push({level:"error",code:"opaque-deletion-intent-invalid",partPath:intent.ownerPath,message:"Deletion intent does not identify exactly one undeleted original main-story opaque object."});
+      continue;
+    }
+    deleted.add(object);
+  }
   const used=new Set<number>();
   for(const object of before.objects){
+    // Authorized removals must actually disappear. The unmatched-output
+    // check below rejects resurrection as well as duplicates and relocation.
+    if(deleted.has(object))continue;
     const index=after.objects.findIndex((other,i)=>!used.has(i)&&other.ownerPath===object.ownerPath&&other.kind===object.kind&&other.signature===object.signature);
     if(index<0){
       issues.push({level:"error",code:"opaque-object-changed-or-missing",partPath:object.ownerPath,message:"Original "+object.kind+" object #"+object.ordinal+" was changed or removed."});continue;

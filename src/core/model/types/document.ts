@@ -250,6 +250,16 @@ export interface EditorDocument {
    */
   sourcePackage?: EditorDocxSourcePackage;
   /**
+   * Explicit deletion intents for uniquely identified opaque main-story
+   * objects. Immutable state metadata travels with undo/redo snapshots;
+   * never mutate the shared original OPC package to record an edit.
+   */
+  opaqueDeletionIntents?: ReadonlyArray<{
+    ownerPath: string;
+    ordinal: number;
+    signature: string;
+  }>;
+  /**
    * Out-of-band asset registry. Image runs reference entries here using
    * `src = "asset:<id>"`. The map itself is treated as append-only and is
    * deliberately excluded from per-keystroke equality checks/signatures.

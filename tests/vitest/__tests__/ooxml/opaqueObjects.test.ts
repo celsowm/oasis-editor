@@ -1,3 +1,7 @@
+import { createEditorStateFromDocument } from "@/core/editorState.js";
+import { paragraphOffsetToPosition } from "@/core/model.js";
+import { deleteBackward, deleteForward } from "@/core/commands/text.js";
+import { createEmptyEditorHistoryState, applyEditorHistoryTransaction, takeEditorUndoStep, takeEditorRedoStep } from "@/ui/editorHistory.js";
 import { cloneRun } from "@/core/document/clone.js";
 import { buildParagraphFragments, buildMeasuredChars } from "@/ui/textMeasurement/tokenizer.js";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
@@ -49,6 +53,27 @@ describe("opaque source inventory and loss detector",()=>{
     expect(auditOpaqueObjectPreservation(s,copy).map(d=>d.code)).toContain("opaque-object-changed-or-missing");
     const two=source();two.parts["word/document.xml"]!.data=root(drawing+drawing);
     expect(auditOpaqueObjectPreservation(two,s).map(d=>d.code)).toContain("opaque-object-changed-or-missing");
+  });
+  it("authorizes only explicit unique originals; preserves shared target closure and refuses stale or duplicate identities",()=>{
+    const s=source();
+    // Distinct object identity, shared chart and workbook relationships.
+    const second=drawing.replace('id="1" name="Chart"','id="2" name="Chart 2"');
+    s.parts["word/document.xml"]!.data=root(drawing+second);
+    const objects=inspectDocxOpaqueObjects(s).objects;
+    expect(objects).toHaveLength(2);
+    const first=objects[0]!;
+    const intent={ownerPath:first.ownerPath,ordinal:first.ordinal,signature:first.signature};
+    const out=structuredClone(s);
+    out.parts["word/document.xml"]!.data=root(second);
+    expect(auditOpaqueObjectPreservation(s,out,[intent])).toEqual([]);
+    expect(auditOpaqueObjectPreservation(s,out)).not.toEqual([]);
+    expect(auditOpaqueObjectPreservation(s,s,[intent]).map(d=>d.code)).toContain("opaque-object-introduced");
+    out.parts["word/embeddings/book.xlsx"]!.data="BAUG";
+    expect(auditOpaqueObjectPreservation(s,out,[intent]).map(d=>d.code)).toContain("opaque-target-content-changed");
+    expect(auditOpaqueObjectPreservation(s,out,[{...intent,ordinal:99}]).map(d=>d.code)).toContain("opaque-deletion-intent-invalid");
+    const duplicate=source();
+    duplicate.parts["word/document.xml"]!.data=root(drawing+drawing);
+    expect(auditOpaqueObjectPreservation(duplicate,source(),[intent]).map(d=>d.code)).toContain("opaque-deletion-intent-invalid");
   });
   it("keeps a complete alternate-content wrapper and ignores foreign same-name elements",()=>{
     const s=source();
@@ -106,6 +131,36 @@ describe("opaque source inventory and loss detector",()=>{
     if(paragraph?.type!=="paragraph")throw Error("Expected round-trip paragraph");
     expect(paragraph.runs.some(r=>r.kind==="opaque")).toBe(true);
     expect(paragraph.runs.map(r=>r.text).join("")).toContain("Changed neighbor");
+    // Actual keyboard command paths plus real history snapshots.
+    const clean=await importDocxInWorker(strict);
+    const body=clean.sections?.[0]?.blocks[0];
+    if(body?.type!=="paragraph")throw Error("Expected editable paragraph");
+    const offset=body.runs.slice(0,body.runs.findIndex(r=>r.kind==="opaque")).reduce((n,r)=>n+r.text.length,0);
+    const at=createEditorStateFromDocument(clean,{offset});
+    const selected={...at,selection:{anchor:paragraphOffsetToPosition(body,offset),focus:paragraphOffsetToPosition(body,offset+1)}};
+    const removed=deleteForward(selected);
+    expect(removed.document.opaqueDeletionIntents).toHaveLength(1);
+    expect(clean.opaqueDeletionIntents).toBeUndefined();
+    const output=await exportEditorDocumentToDocxPreservingSource(removed.document);
+    const deletedPackage=await captureDocxSourcePackage(output);
+    expect(deletedPackage.opaqueObjects??[]).toHaveLength(0);
+    expect(deletedPackage.parts["word/charts/chart1.xml"]?.data).toBe(clean.sourcePackage!.parts["word/charts/chart1.xml"]!.data);
+    const reopened=await importDocxInWorker(output);
+    const reopenedBody=reopened.sections?.[0]?.blocks[0];
+    expect(reopenedBody?.type==="paragraph"&&reopenedBody.runs.map(r=>r.text).join("")).toBe("Changed neighbor");
+    const history=applyEditorHistoryTransaction(createEmptyEditorHistoryState(),selected,removed);
+    const undone=takeEditorUndoStep(history,removed)!;
+    expect(undone.nextState.document.opaqueDeletionIntents).toBeUndefined();
+    const undoPackage=await captureDocxSourcePackage(await exportEditorDocumentToDocxPreservingSource(undone.nextState.document));
+    expect(undoPackage.opaqueObjects).toHaveLength(1);
+    const redone=takeEditorRedoStep(undone.history,undone.nextState)!;
+    expect(redone.nextState.document.opaqueDeletionIntents).toHaveLength(1);
+    expect((await captureDocxSourcePackage(await exportEditorDocumentToDocxPreservingSource(redone.nextState.document))).opaqueObjects??[]).toHaveLength(0);
+    const backward=deleteBackward(createEditorStateFromDocument(clean,{offset:offset+1}));
+    expect(backward.document.opaqueDeletionIntents).toHaveLength(1);
+    expect(deleteForward({...selected,trackChangesEnabled:true}).document).toBe(selected.document);
+    // A deletion intent without actually removing markup must not pass.
+    await expect(exportEditorDocumentToDocxPreservingSource({...clean,opaqueDeletionIntents:removed.document.opaqueDeletionIntents})).rejects.toBeInstanceOf(OpaqueObjectPreservationError);
     p.runs=p.runs.filter(r=>r.kind!=="opaque");
     await expect(exportEditorDocumentToDocxPreservingSource(doc)).rejects.toBeInstanceOf(OpaqueObjectPreservationError);
   },30000);
