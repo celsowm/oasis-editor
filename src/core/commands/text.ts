@@ -30,3 +30,5 @@ export {
   transformSelectedText,
   changeSelectedTextCase,
 } from "./textCase.js";
+
+export { relocateSelectedOpaqueObject, type OpaqueRelocationDestination } from "./opaqueRelocation.js";

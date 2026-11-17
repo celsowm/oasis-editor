@@ -1,4 +1,6 @@
 import { auditOpaqueObjectPreservation, OpaqueObjectPreservationError } from "@/ooxml/word/opaqueObjects.js";
+import { planOpaqueStoryRelocation } from "@/ooxml/word/opaqueStoryRelocation.js";
+import { applyOpaqueStoryRelocation, expectedOpaqueRelocation } from "./opc/applyOpaqueStoryRelocation.js";
 import { planOpaqueDependencyPruning, applyOpaqueDependencyPruning } from "./opc/opaqueDependencyPruning.js";
 import type { EditorDocument, EditorDocxSourcePackage } from "@/core/model.js";
 import {
@@ -71,11 +73,17 @@ export async function exportEditorDocumentToDocxPreservingSource(
 
   const hasOpaqueObjects = Boolean(document.sourcePackage.opaqueObjects?.length);
   const rebuilt = await exportEditorDocumentToDocx(exportDocument, { allowOpaqueSourceFragments: hasOpaqueObjects });
-  const output = await patchRebuiltDocxPreservingSource(exportDocument, rebuilt);
-  if (hasOpaqueObjects || options.requireOpaquePreservation) {
+  let output = await patchRebuiltDocxPreservingSource(exportDocument, rebuilt);
+  const relocation = document.opaqueRelocationIntent;
+  const plan = relocation ? planOpaqueStoryRelocation(document.sourcePackage, relocation, relocation.destinationOwner) : undefined;
+  if (plan) {
+    if (document.opaqueDeletionIntents?.length) throw new Error("Cannot combine opaque deletion and relocation");
+    output = await applyOpaqueStoryRelocation(output, plan);
+  }
+  if (hasOpaqueObjects || options.requireOpaquePreservation || plan) {
     const { captureDocxSourcePackage } = await import("@/import/docx/opc/sourcePackage.js");
     const outputPackage = await captureDocxSourcePackage(output);
-    const diagnostics = auditOpaqueObjectPreservation(document.sourcePackage, outputPackage, document.opaqueDeletionIntents);
+    const diagnostics = auditOpaqueObjectPreservation(document.sourcePackage, outputPackage, document.opaqueDeletionIntents, plan ? expectedOpaqueRelocation(document.sourcePackage, plan) : undefined);
     if (diagnostics.length) throw new OpaqueObjectPreservationError(diagnostics);
     const intents = document.opaqueDeletionIntents ?? [];
     if (intents.length && options.pruneDeletedOpaqueDependencies !== false) {

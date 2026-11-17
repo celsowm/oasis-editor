@@ -254,6 +254,14 @@ export interface EditorDocument {
    * objects. Immutable state metadata travels with undo/redo snapshots;
    * never mutate the shared original OPC package to record an edit.
    */
+  /** At most one pending cross-story move per source snapshot. Derived
+   * relationship IDs are deliberately not stored as authority. */
+  opaqueRelocationIntent?: Readonly<{
+    ownerPath: string;
+    ordinal: number;
+    signature: string;
+    destinationOwner: string;
+  }>;
   opaqueDeletionIntents?: ReadonlyArray<{
     ownerPath: string;
     ordinal: number;

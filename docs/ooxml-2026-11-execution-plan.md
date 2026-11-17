@@ -251,3 +251,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 - OX-003 slice E: v0.0.359 published, deletion/history CI green. Added default conservative deletion-local OPC graph pruning with pre/post audits and explicit opt-out; actual removal/undo and shared/cyclic closure tests. Ambiguous graphs retain data. CI pending.
 
 - OX-003 slice F: v0.0.360 release green. Same-story single-object movement target correction; production round-trip tests; cross-story relationship relocation planner with collision/closure tests. Cross-story edit/export integration remains pending. CI pending.
+
+- OX-003 slice G: v0.0.361 green. Explicit single-section default-story inline relocation command and export integration with recomputed relationship mapping, post-overlay append and expected-object audit; real DOCX header round-trip/history test. UI wiring and broader topology remain pending. CI pending.

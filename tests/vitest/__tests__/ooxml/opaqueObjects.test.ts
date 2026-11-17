@@ -4,7 +4,7 @@ import { deleteBackward, deleteForward } from "@/core/commands/text.js";
 import { createEmptyEditorHistoryState, applyEditorHistoryTransaction, takeEditorUndoStep, takeEditorRedoStep } from "@/ui/editorHistory.js";
 import { planOpaqueDependencyPruning } from "@/export/docx/opc/opaqueDependencyPruning.js";
 import { planOpaqueStoryRelocation } from "@/export/docx/opc/opaqueStoryRelocation.js";
-import { moveOrCopySelectionToPosition } from "@/core/commands/text.js";
+import { moveOrCopySelectionToPosition, relocateSelectedOpaqueObject } from "@/core/commands/text.js";
 import { cloneRun } from "@/core/document/clone.js";
 import { buildParagraphFragments, buildMeasuredChars } from "@/ui/textMeasurement/tokenizer.js";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
@@ -155,6 +155,58 @@ describe("opaque source inventory and loss detector",()=>{
     s.parts["word/document.xml"]!.data=root(wrap(choice+fallback.replace("</wx:pict>",'<o:OLEObject xmlns:o="urn:schemas-microsoft-com:office:office" rel:id="rIdChart"/></wx:pict>')));
     expect(inspectDocxOpaqueObjects(s).objects.map(o=>o.kind)).toContain("embedded");
   });
+  it("moves an inline chart from body to an existing header, remaps its relationship, and preserves history",async()=>{
+    const zip=new JSZip();
+    const headerPath="word/stories/header42.xml",chartPath="word/charts/chart1.xml";
+    const rel=(id:string,type:string,target:string)=>'<Relationship Id="'+id+'" Type="'+R+'/'+type+'" Target="'+target+'"/>';
+    const relationships=(items:string)=>'<Relationships xmlns="'+P+'">'+items+'</Relationships>';
+    const types='<Types xmlns="'+CT+'"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/'+headerPath+'" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/'+chartPath+'" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/></Types>';
+    zip.file("[Content_Types].xml",types);
+    zip.file("_rels/.rels",relationships(rel("rIdOffice","officeDocument","word/document.xml")));
+    zip.file("word/document.xml",root(drawing).replace("<wx:sectPr/>",'<wx:sectPr><wx:headerReference wx:type="default" rel:id="rIdHeader"/></wx:sectPr>'));
+    zip.file("word/_rels/document.xml.rels",relationships(rel("rIdChart","chart","charts/chart1.xml")+rel("rIdHeader","header","stories/header42.xml")));
+    zip.file(headerPath,'<wx:hdr xmlns:wx="'+W+'" xmlns:rel="'+R+'"><wx:p><wx:r><wx:t>Header text</wx:t></wx:r></wx:p></wx:hdr>');
+    zip.file("word/stories/_rels/header42.xml.rels",relationships(rel("rIdChart","image","../media/original.png")));
+    zip.file("word/media/original.png",new Uint8Array([1,2,3]));
+    zip.file(chartPath,'<c:chartSpace xmlns:c="'+C+'"/>');
+    const doc=await importDocxInWorker(await zip.generateAsync({type:"arraybuffer"}));
+    const body=doc.sections?.[0]?.blocks[0],header=doc.sections?.[0]?.header?.[0];
+    if(body?.type!=="paragraph"||header?.type!=="paragraph")throw Error("Expected existing body and header");
+    const offset=body.runs.slice(0,body.runs.findIndex(r=>r.kind==="opaque")).reduce((n,r)=>n+r.text.length,0);
+    const initial=createEditorStateFromDocument(doc,{offset});
+    const selected={...initial,selection:{anchor:paragraphOffsetToPosition(body,offset),focus:paragraphOffsetToPosition(body,offset+1)}};
+    const moved=relocateSelectedOpaqueObject(selected,{zone:"header",paragraphId:header.id,offset:0});
+    expect(moved.activeZone).toBe("header");
+    expect(moved.document.opaqueRelocationIntent?.destinationOwner).toBe(headerPath);
+    expect(doc.opaqueRelocationIntent).toBeUndefined();
+    expect(moved.document.sourcePackage).toBe(doc.sourcePackage);
+    const result=await exportEditorDocumentToDocxPreservingSource(moved.document);
+    const pkg=await captureDocxSourcePackage(result);
+    expect(pkg.opaqueObjects).toHaveLength(1);
+    const relocated=pkg.opaqueObjects![0]!;
+    expect(relocated.ownerPath).toBe(headerPath);
+    expect(relocated.relationshipIds).toEqual(["rIdOasisOpaque1"]);
+    expect(pkg.parts[headerPath]!.relationships).toEqual(expect.arrayContaining([
+      expect.objectContaining({id:"rIdChart",resolvedTarget:"word/media/original.png"}),
+      expect.objectContaining({id:"rIdOasisOpaque1",resolvedTarget:chartPath,type:R+"/chart"})
+    ]));
+    expect(pkg.parts[chartPath]!.data).toBe(doc.sourcePackage!.parts[chartPath]!.data);
+    expect(pkg.parts["word/media/original.png"]!.data).toBe(doc.sourcePackage!.parts["word/media/original.png"]!.data);
+    const reopened=await importDocxInWorker(result);
+    const reopenedBody=reopened.sections?.[0]?.blocks[0],reopenedHeader=reopened.sections?.[0]?.header?.[0];
+    expect(reopenedBody?.type==="paragraph"&&reopenedBody.runs.map(r=>r.text).join("")).toBe("Neighbor");
+    expect(reopenedHeader?.type==="paragraph"&&reopenedHeader.runs.map(r=>r.text).join("")).toBe("\uFFFCHeader text");
+    // A claimed move without the changed model, or changed model without
+    // its authorization, must never become a successful export.
+    await expect(exportEditorDocumentToDocxPreservingSource({...doc,opaqueRelocationIntent:moved.document.opaqueRelocationIntent})).rejects.toThrow();
+    await expect(exportEditorDocumentToDocxPreservingSource({...moved.document,opaqueRelocationIntent:undefined})).rejects.toThrow();
+    const history=applyEditorHistoryTransaction(createEmptyEditorHistoryState(),selected,moved);
+    const undone=takeEditorUndoStep(history,moved)!;
+    const restored=await captureDocxSourcePackage(await exportEditorDocumentToDocxPreservingSource(undone.nextState.document));
+    expect(restored.opaqueObjects?.[0]?.ownerPath).toBe("word/document.xml");
+    const redone=takeEditorRedoStep(undone.history,undone.nextState)!;
+    expect((await captureDocxSourcePackage(await exportEditorDocumentToDocxPreservingSource(redone.nextState.document))).opaqueObjects?.[0]?.ownerPath).toBe(headerPath);
+  },30000);
   it("captures an actual package and retains a standalone chart through a source-backed neighboring edit",async()=>{
     const zip=new JSZip();
     zip.file("[Content_Types].xml",`<Types xmlns="${CT}"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/></Types>`);

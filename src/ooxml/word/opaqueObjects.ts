@@ -208,7 +208,7 @@ export function inspectDocxOpaqueObjects(source:EditorDocxSourcePackage):{object
  * closure must survive in the same owning story. Only narrowly authorized main-story deletion is allowed;
  * relocation and copies still fail closed.
  */
-export function auditOpaqueObjectPreservation(source:EditorDocxSourcePackage,output:EditorDocxSourcePackage,intents:NonNullable<EditorDocument["opaqueDeletionIntents"]>=[]):EditorDocxDiagnostic[]{
+export function auditOpaqueObjectPreservation(source:EditorDocxSourcePackage,output:EditorDocxSourcePackage,intents:NonNullable<EditorDocument["opaqueDeletionIntents"]>=[],relocation?:{original:Pick<EditorDocxOpaqueObject,"ownerPath"|"ordinal"|"signature">;expected:EditorDocxOpaqueObject}):EditorDocxDiagnostic[]{
   const before=inspectDocxOpaqueObjects(source),after=inspectDocxOpaqueObjects(output);
   const issues=[...before.diagnostics,...after.diagnostics].filter(d=>d.level==="error");
   const deleted=new Set<EditorDocxOpaqueObject>();
@@ -221,11 +221,16 @@ export function auditOpaqueObjectPreservation(source:EditorDocxSourcePackage,out
     }
     deleted.add(object);
   }
+  const original=relocation&&before.objects.find(o=>o.ownerPath===relocation.original.ownerPath&&o.ordinal===relocation.original.ordinal&&o.signature===relocation.original.signature);
+  if(relocation&&(!original||intents.length)){
+    issues.push({level:"error",code:"opaque-relocation-intent-invalid",message:"Relocation must identify one original object and cannot be combined with deletion."});
+  }
   const used=new Set<number>();
-  for(const object of before.objects){
+  for(const prior of before.objects){
+    const object=relocation&&prior===original?relocation.expected:prior;
     // Authorized removals must actually disappear. The unmatched-output
     // check below rejects resurrection as well as duplicates and relocation.
-    if(deleted.has(object))continue;
+    if(deleted.has(prior))continue;
     const index=after.objects.findIndex((other,i)=>!used.has(i)&&other.ownerPath===object.ownerPath&&other.kind===object.kind&&other.signature===object.signature);
     if(index<0){
       issues.push({level:"error",code:"opaque-object-changed-or-missing",partPath:object.ownerPath,message:"Original "+object.kind+" object #"+object.ordinal+" was changed or removed."});continue;
