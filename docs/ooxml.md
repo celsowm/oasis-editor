@@ -1,5 +1,7 @@
 # OOXML / DOCX Compatibility Status
 
+> **Historical snapshot (August 2026).** See the [November 2026 execution roadmap](./ooxml-2026-11-execution-plan.md) for the current implementation sequence and audit baseline. The status claims below are not current certification.
+
 Current source audit: 2026-08-30
 Audited baseline: `main`
 

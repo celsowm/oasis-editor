@@ -1,6 +1,8 @@
 # Near-Full Microsoft Word OOXML Compatibility Execution Plan
 
-Status: active roadmap  
+> **Historical snapshot (August 2026).** See the [November 2026 execution roadmap](./ooxml-2026-11-execution-plan.md) for the current implementation sequence and audit baseline. The status claims below are not current certification.
+
+Status: historical roadmap  
 Audit baseline: `main` at `268d300aa6271679016f755687a083d4db85ceda`  
 Audit date: 2026-08-07  
 Scope: DOCX / OPC / WordprocessingML import, editing, rendering, preservation, and export
