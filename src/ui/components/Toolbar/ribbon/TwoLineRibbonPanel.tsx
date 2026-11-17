@@ -160,7 +160,7 @@ export function TwoLineRibbonPanel(props: RibbonPanelProps): JSX.Element {
         <Show when={overflow().length > 0}>
           <div class="oasis-editor-ribbon-more">
             <Menu
-              icon="more-horizontal"
+              icon="ellipsis"
               tooltip={props.api.t("ribbon.moreOptions")}
               hideChevron
               fitViewport

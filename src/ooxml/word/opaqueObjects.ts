@@ -127,9 +127,40 @@ function storyPart(source:EditorDocxSourcePackage,path:string):boolean{
   return /wordprocessingml\.(?:header|footer|footnotes|endnotes|comments|document\.glossary)\+xml$/.test(type);
 }
 
+/**
+ * Word writes a supported WPS text box as a Choice and its legacy VML text
+ * box as a Fallback. The latter is an alternate rendering, not a second
+ * unsupported object. Suppress only this known pairing; charts, OLE, other
+ * fallback branches and unfamiliar Choices remain subject to the opaque
+ * preservation audit.
+ */
+function opaqueTraversalChildren(el: XmlElement): XmlElement[] {
+  const direct=children(el);
+  if(!is(el,MC,"AlternateContent"))return direct;
+  const choices=direct.filter(e=>is(e,MC,"Choice"));
+  const supportedTextBox=choices.some(choice=>descendants(choice,A,"graphicData").some(g=>
+    g.getAttribute("uri")===WPS && descendants(g,WPS,"wsp").length>0 &&
+    descendants(g,W,"txbxContent").length>0));
+  if(!supportedTextBox)return direct;
+  return direct.filter(branch=>{
+    if(!is(branch,MC,"Fallback"))return true;
+    const content=children(branch);
+    // Only a single VML text-box fallback is redundant. Do not discard
+    // embedded objects, distinct drawings or additional fallback content.
+    if(content.length!==1 || !is(content[0]!,W,"pict"))return true;
+    const pict=content[0]!;
+    return !(
+      descendants(pict,VML,"textbox").length>0 &&
+      descendants(pict,W,"txbxContent").length>0 &&
+      descendants(pict,OFFICE,"OLEObject").length===0 &&
+      descendants(pict,W,"object").length===0 &&
+      descendants(pict,W,"drawing").length===0
+    );
+  });
+}
 function classifyOpaqueElement(el: XmlElement): EditorDocxOpaqueObject["kind"] | undefined {
   if (is(el,MC,"AlternateContent")) {
-    return ["drawing","pict","object"].flatMap(name=>descendants(el,W,name)).map(kindOf).find(k=>k!==undefined);
+    return opaqueTraversalChildren(el).flatMap(branch=>["drawing","pict","object"].flatMap(name=>descendants(branch,W,name))).map(kindOf).find(k=>k!==undefined);
   }
   return kindOf(el);
 }
@@ -159,7 +190,7 @@ export function inspectDocxOpaqueObjects(source:EditorDocxSourcePackage):{object
       while(stack.length){
         const el=stack.pop()!;
         const kind=classifyOpaqueElement(el);
-        if(!kind){stack.push(...children(el).reverse());continue;}
+        if(!kind){stack.push(...opaqueTraversalChildren(el).reverse());continue;}
         const ids=relationshipIds(el),closure=resolveOpaqueClosure(source,path,ids);
         const object:EditorDocxOpaqueObject={kind,ownerPath:path,ordinal:ordinal++,fragmentXml:standalone(el),signature:JSON.stringify(signature(el)),geometry:geometry(el),relationshipIds:ids,...closure};
         objects.push(object);

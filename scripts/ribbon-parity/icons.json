@@ -1328,6 +1328,13 @@
       "origin": "lucide"
     },
     {
+      "file": "src/ui/components/Toolbar/ribbon/TwoLineRibbonPanel.tsx",
+      "line": 163,
+      "role": "icon",
+      "name": "ellipsis",
+      "origin": "lucide"
+    },
+    {
       "file": "src/ui/components/Toolbar/ShowMarkupButton.tsx",
       "line": 105,
       "role": "icon",

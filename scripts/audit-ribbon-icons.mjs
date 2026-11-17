@@ -106,10 +106,20 @@ const catalog = {
 const output = JSON.stringify(catalog, null, 2) + "\n";
 const target = resolve(root, "scripts/ribbon-parity/icons.json");
 if (process.argv.includes("--write")) writeFileSync(target, output);
-else if (readFileSync(target, "utf8") !== output)
+else if (readFileSync(target, "utf8") !== output) {
+  const committed = JSON.parse(readFileSync(target, "utf8"));
+  const current = new Set(catalog.uses.map((entry) => JSON.stringify(entry)));
+  const previous = new Set(committed.uses.map((entry) => JSON.stringify(entry)));
+  console.error("Added/changed literal uses:", [...current].filter((entry) => !previous.has(entry)));
+  console.error("Removed/changed literal uses:", [...previous].filter((entry) => !current.has(entry)));
+  if (JSON.stringify(committed.dynamic) !== JSON.stringify(catalog.dynamic))
+    console.error("Current dynamic uses:", JSON.stringify(catalog.dynamic, null, 2));
+  if (JSON.stringify(committed.customRegistry) !== JSON.stringify(catalog.customRegistry))
+    console.error("Current custom registry:", JSON.stringify(catalog.customRegistry, null, 2));
   throw new Error(
     "Stale icon inventory. Run node scripts/audit-ribbon-icons.mjs --write",
   );
+}
 const unresolved = uses.filter((use) => use.origin === "unresolved");
 if (unresolved.length) throw new Error(JSON.stringify(unresolved, null, 2));
 console.log(

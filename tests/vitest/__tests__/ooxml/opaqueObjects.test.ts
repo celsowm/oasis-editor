@@ -59,6 +59,23 @@ describe("opaque source inventory and loss detector",()=>{
     expect(report.objects[0]!.fragmentXml).toContain("mc:Fallback");
     expect(report.objects[0]!.fragmentXml).toContain('xmlns:future="urn:future"');
   });
+  it("does not promote a supported WPS text box with its equivalent legacy VML fallback to opaque",()=>{
+    const s=source();
+    const mc="http://schemas.openxmlformats.org/markup-compatibility/2006";
+    const wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape";
+    const box='<wx:txbxContent><wx:p><wx:r><wx:t>Native box</wx:t></wx:r></wx:p></wx:txbxContent>';
+    const choice=`<mc:Choice Requires="shape"><wx:drawing><wp:inline><a:graphic><a:graphicData uri="${wps}"><shape:wsp><shape:txbx>${box}</shape:txbx></shape:wsp></a:graphicData></a:graphic></wp:inline></wx:drawing></mc:Choice>`;
+    const fallback=`<mc:Fallback><wx:pict><v:shape xmlns:v="urn:schemas-microsoft-com:vml"><v:textbox>${box}</v:textbox></v:shape></wx:pict></mc:Fallback>`;
+    const wrap=(content:string)=>`<mc:AlternateContent xmlns:mc="${mc}" xmlns:shape="${wps}">${content}</mc:AlternateContent>`;
+    s.parts["word/document.xml"]!.data=root(wrap(choice+fallback));
+    expect(inspectDocxOpaqueObjects(s).objects).toEqual([]);
+    // A genuinely unsupported Choice must still trigger the audit.
+    s.parts["word/document.xml"]!.data=root(wrap(choice+'<mc:Choice Requires="shape">'+drawing+'</mc:Choice>'+fallback));
+    expect(inspectDocxOpaqueObjects(s).objects.map(o=>o.kind)).toContain("chart");
+    // An OLE object in a fallback is not interchangeable with the text box.
+    s.parts["word/document.xml"]!.data=root(wrap(choice+fallback.replace("</wx:pict>",'<o:OLEObject xmlns:o="urn:schemas-microsoft-com:office:office" rel:id="rIdChart"/></wx:pict>')));
+    expect(inspectDocxOpaqueObjects(s).objects.map(o=>o.kind)).toContain("embedded");
+  });
   it("captures an actual package and retains a standalone chart through a source-backed neighboring edit",async()=>{
     const zip=new JSZip();
     zip.file("[Content_Types].xml",`<Types xmlns="${CT}"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/></Types>`);
