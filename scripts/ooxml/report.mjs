@@ -17,8 +17,18 @@ if(baseline){
   if(regressions.length) throw Error("OOXML capability regressions: "+JSON.stringify(regressions,null,2));
 }
 const out=take("--out")??"test-results/ooxml/report";
+let scope=null;
+if(inventory){
+  const {buildDocxScope}=await import("./docx-scope.mjs");
+  scope=buildDocxScope(inventory,report.entries);
+  scope.sourceRef=sourceRef;
+  scope.evidenceMode=report.evidenceMode;
+}
+const publicReport=args.includes("--compact")&&inventory?{...report,inventory:{status:inventory.status,reason:inventory.reason,counts:inventory.counts,graphSummary:inventory.graph.summary,effectiveCounts:inventory.effective.counts,docxScope:scope.counts}}:report;
+
 mkdirSync(out,{recursive:true});
-for(const [file,content] of [["capabilities.json",stringify(report)],["capabilities.md",markdown(report)]]) {
+if(scope){writeFileSync(resolve(out,"docx-scope.json"),stringify(scope));console.log("DOCX context inventory: "+JSON.stringify(scope.counts));}
+for(const [file,content] of [["capabilities.json",stringify(publicReport)],["capabilities.md",markdown(publicReport)]]) {
   const target=resolve(out,file);mkdirSync(dirname(target),{recursive:true});writeFileSync(target,content);
 }
 console.log("OOXML report written to "+out+"; inventory "+report.inventory.status);

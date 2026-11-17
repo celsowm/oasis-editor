@@ -44,8 +44,11 @@ jobs:
       - name: Build App
         run: npm run build:app
 
+      - name: Acquire pinned OOXML schemas
+        run: npm run ooxml:schemas
+
       - name: Generate OOXML compatibility report
-        run: npm run ooxml:report -- --evidence test-results/ooxml/vitest.json --require-evidence --out dist-app/ooxml
+        run: npm run ooxml:report -- --manifest test-results/ooxml/ecma/manifest.json --evidence test-results/ooxml/vitest.json --require-evidence --baseline src/ooxml/capabilities/baseline.json --compact --out dist-app/ooxml
 
       - name: Install Chromium
         run: |

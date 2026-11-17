@@ -4,7 +4,7 @@
   "auditDate": "2026-11-16",
   "inventory": {
     "status": "incomplete",
-    "reason": "Official XSD editions, license and hashes are not yet pinned. Seed is a hand-picked audit sample, not the schema universe."
+    "reason": "This seed is a hand-picked audit sample, not the schema universe. Supply a verified manifest to include the pinned ECMA schema inventory."
   },
   "entries": [
     {

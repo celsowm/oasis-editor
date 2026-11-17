@@ -34,3 +34,13 @@ The effective projection expands direct type inheritance, attribute groups, attr
 The initial historical regression baseline is pinned in src/ooxml/capabilities/baseline.json from the seed at the successful evidence job, not from unrun claims. Its provenance links the exact run/job; the separate OOXML workflow now rejects a removal or downgrade of a witnessed dimension. New evidence may expand this baseline after review of a passing immutable CI run.
 
 npm-install audit in that run reported 20 advisories (2 low, 12 moderate, 4 high, 2 critical); dependency remediation is separate from this schema slice. Ribbon inventory still blocks Pages deploy; do not bypass that gate.
+
+## DOCX context scope (slice D)
+
+The previous CI run 43999538901 passed both jobs (51 verified XSDs, effective schema projection, exact evidence, historical regression gate). Pages remains blocked by the unrelated stale Ribbon icon inventory.
+
+The new docx-scope.mjs traverses actual effective element-particle links from an explicit list of document part and drawing payload roots, separately per profile. The traversal tracks declaration-parent edges rather than expanding infinitely recursive paths. SpreadsheetML and PresentationML document roots are not added. Missing or ambiguous root selectors and unresolved particle links are reported. Shared and relationship-linked structures may still require explicit root extensions, including modern Microsoft namespaces and custom XML payloads; this is a partial candidate scope, not a complete OPC conformance inventory.
+
+The generated docx-scope.json includes contextual elements, attributes, enum values, origin declarations, root/domain memberships and counts by profile. All schema row/attribute/value statuses start unknown. Matching namespace/profile/name registry observations are listed separately (parent-name match is only a hint), and never promoted to schema-wide evidence. This avoids conflating a test of one paragraph with all paragraph contexts. The new searchable scope.html paginates rows and supports attribute and enum search. The deployment generates the compact capability report plus scope JSON from verified schemas and passing evidence, without bundling the raw XSDs or entire internal graph.
+
+The schema CI job now combines the actual Vitest evidence with the official inventory. Future work: exact schema-context evidence bindings, broader root and substitution/wildcard resolution, finer enum evidence, formal validator (OX-002). No coverage percentage is claimed.

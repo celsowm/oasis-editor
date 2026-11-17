@@ -82,3 +82,23 @@ test("effective schema projection expands attributes/base/groups and retains cho
  assert.equal(doc.particles[1].children[0].occurs.max,"unbounded");
  assert.equal(report.status,"partial");
 });
+
+test("DOCX scope follows actual element edges, bounds recursion and separates evidence from schema support",async()=>{
+ const {buildEffectiveInventory}=await import("./effective-schema.mjs");
+ const {buildDocxScope}=await import("./docx-scope.mjs");
+ const xml='<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:t="urn:doc" targetNamespace="urn:doc" elementFormDefault="qualified"><xs:complexType name="Recursive"><xs:sequence><xs:element name="p" type="t:Recursive" minOccurs="0"/></xs:sequence><xs:attribute name="mode"><xs:simpleType><xs:restriction base="xs:string"><xs:enumeration value="a"/><xs:enumeration value="b"/></xs:restriction></xs:simpleType></xs:attribute></xs:complexType><xs:element name="document" type="t:Recursive"/><xs:element name="workbook" type="xs:string"/></xs:schema>';
+ const x=inspectSchema(xml,"transitional","transitional/wml.xsd");
+ const effective=buildEffectiveInventory(x.declarations,resolveReferences(x.declarations,x.references));
+ const roots=[{file:"wml.xsd",domain:"word",names:["document","missing"]}];
+ const result=buildDocxScope({effective},[{profile:"transitional",namespace:"urn:doc",element:"p",context:"document",domain:"word",support:{import:"partial"},evidence:[],limitations:[]}],roots);
+ assert.equal(result.counts.roots,1);
+ assert.equal(result.counts.missingRoots,1);
+ assert.equal(result.counts.contexts,3); // document root, document/p, recursive p/p
+ assert.ok(!result.rows.some(r=>r.element==="workbook"));
+ assert.equal(result.counts.attributeOccurrences,3);
+ assert.equal(result.counts.enumeratedValueOccurrences,6);
+ assert.ok(result.rows.every(r=>r.support.import==="unknown"));
+ assert.equal(result.rows.find(r=>r.context?.element==="document").observations[0].contextHint,"parent-name-match");
+ assert.equal(result.rows.find(r=>r.context?.element==="p").observations[0].contextHint,"different-context");
+ assert.equal(stringify(result),stringify(buildDocxScope({effective},[{profile:"transitional",namespace:"urn:doc",element:"p",context:"document",domain:"word",support:{import:"partial"},evidence:[],limitations:[]}],roots)));
+});
