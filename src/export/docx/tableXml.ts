@@ -1,3 +1,5 @@
+import { TC_PR_CHILD_ORDER, TBL_PR_CHILD_ORDER } from "@/ooxml/schemaOrder.js";
+import { orderedPropertyFragments } from "./propertyFragmentOrder.js";
 import type {
   EditorBlockNode,
   EditorBorderStyle,
@@ -299,7 +301,7 @@ function serializeTableCellProperties(
     );
   }
 
-  return parts.length > 0 ? `<w:tcPr>${parts.join("")}</w:tcPr>` : "";
+  return parts.length > 0 ? `<w:tcPr>${orderedPropertyFragments(parts, TC_PR_CHILD_ORDER)}</w:tcPr>` : "";
 }
 
 export function serializeTableCellStyleXml(
@@ -553,7 +555,7 @@ function serializeTableProperties(table: EditorTableNode): string {
       `<w:tblPrChange ${serializeRevisionAttrs(revision)}>${previous}</w:tblPrChange>`,
     );
   }
-  return `<w:tblPr>${parts.join("")}</w:tblPr>`;
+  return `<w:tblPr>${orderedPropertyFragments(parts, TBL_PR_CHILD_ORDER)}</w:tblPr>`;
 }
 
 /**

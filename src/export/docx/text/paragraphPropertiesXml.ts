@@ -1,3 +1,5 @@
+import { P_PR_CHILD_ORDER } from "@/ooxml/schemaOrder.js";
+import { orderedPropertyFragments } from "../propertyFragmentOrder.js";
 import type {
   EditorParagraphNode,
   EditorParagraphStyle,
@@ -66,8 +68,7 @@ function serializeConditionalStyle(
  * properties. Default-on flags emit only an explicit `w:val="0"` (off); the
  * `w:pBdr` `between`/`bar` edges are emitted by `serializeParagraphBorders`.
  *
- * Element order is kept close to the OOXML schema, though (like the rest of
- * this serializer) not strictly enforced — Word tolerates the relaxed order.
+ * Generated property fragments are ordered by the WML schema before emission.
  */
 function serializeParagraphDecorations(style: EditorParagraphStyle): string[] {
   const parts: string[] = [];
@@ -242,7 +243,7 @@ export function serializeParagraphStyleXml(
     parts.push(serializeParagraphPropertyRevision(style.propertyRevision));
   }
 
-  return parts.length > 0 ? `<w:pPr>${parts.join("")}</w:pPr>` : "";
+  return parts.length > 0 ? `<w:pPr>${orderedPropertyFragments(parts, P_PR_CHILD_ORDER)}</w:pPr>` : "";
 }
 
 export function serializeParagraphProperties(
@@ -362,5 +363,5 @@ export function serializeParagraphProperties(
     );
   }
 
-  return parts.length > 0 ? `<w:pPr>${parts.join("")}</w:pPr>` : "";
+  return parts.length > 0 ? `<w:pPr>${orderedPropertyFragments(parts, P_PR_CHILD_ORDER)}</w:pPr>` : "";
 }

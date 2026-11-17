@@ -235,3 +235,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 - OX-001 slice D: prior CI green on 51 official XSDs and all evidence; DOCX root-based contextual scope with attribute and enum rows, separate related observations, paginated scope explorer and combined CI report. New CI pending. Exact schema-context evidence and remaining scope semantics are not certified.
 
 - OX-001 scope correction: previous green CI had only root contexts and zero attributes; corrected default namespace QName and added real schema smoke gate. OX-002 slice A: independent .NET/Open XML SDK validator, fixture generation and negative controls in CI. Positive diagnostics are characterized, not yet baseline-gated. New CI pending.
+
+- OX-002 slice B: inspected real validator artifact (269 positive diagnostics, both negative controls detected); corrected generated property order, style booleans and font face export, added regression tests and required zero diagnostics for positive corpus. New CI pending.

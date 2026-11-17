@@ -15,12 +15,12 @@ export const P_PR_CHILD_ORDER: readonly string[] = [
   "wordWrap",
   "overflowPunct",
   "topLinePunct",
-  "activeRecord",
-  "toC",
-  "isLgl",
-  "rPr",
-  "sectPr",
-  "pBdr",
+  "autoSpaceDE",
+  "autoSpaceDN",
+  "bidi",
+  "adjustRightInd",
+  "snapToGrid",
+  "spacing",
   "ind",
   "contextualSpacing",
   "mirrorIndents",
@@ -33,6 +33,8 @@ export const P_PR_CHILD_ORDER: readonly string[] = [
   "divId",
   "cnfStyle",
   "rPr",
+  "sectPr",
+  "pPrChange",
 ];
 
 export const R_PR_CHILD_ORDER: readonly string[] = [
@@ -81,12 +83,14 @@ export const R_PR_CHILD_ORDER: readonly string[] = [
 export const TBL_PR_CHILD_ORDER: readonly string[] = [
   "tblStyle",
   "tblpPr",
-  "tblCellMar",
+  "tblOverlap",
+  "bidiVisual",
   "tblStyleRowBandSize",
   "tblStyleColBandSize",
   "tblW",
   "jc",
-  "tblCellMar",
+  "tblCellSpacing",
+  "tblInd",
   "tblBorders",
   "shd",
   "tblLayout",
@@ -94,6 +98,7 @@ export const TBL_PR_CHILD_ORDER: readonly string[] = [
   "tblLook",
   "tblCaption",
   "tblDescription",
+  "tblPrChange",
 ];
 
 export const SECT_PR_CHILD_ORDER: readonly string[] = [
@@ -171,3 +176,24 @@ export function sortXmlNodesBySchemaOrder<T>(
     return 0;
   });
 }
+
+export const TC_PR_CHILD_ORDER: readonly string[] = [
+  "cnfStyle",
+  "tcW",
+  "gridSpan",
+  "hMerge",
+  "vMerge",
+  "tcBorders",
+  "shd",
+  "noWrap",
+  "tcMar",
+  "textDirection",
+  "tcFitText",
+  "vAlign",
+  "hideMark",
+  "headers",
+  "cellIns",
+  "cellDel",
+  "cellMerge",
+  "tcPrChange",
+];

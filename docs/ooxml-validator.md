@@ -32,3 +32,7 @@ gate: the two Word profiles must reach body/p/r/t, enumerate numbering
 formats and reach substantial attribute counts. The previous green CI
 produced only 75 root rows and zero attributes because QName resolution
 failed on official default namespaces. The new test covers this case.
+
+## Slice B — first real diagnostic remediation
+
+CI 44001277782: 269 diagnostics over four positive fixtures (65 fresh paragraph, 71 fresh table, 65 source no-op, 68 source edited). Negative controls were detected. The actual JSON artifact shows repeated styles.xml cell-border ordering, qFormat/semiHidden lexical booleans, paragraph/run property ordering, and nested CSS font fallback strings exceeding Word font name limits. Fixes are applied in the generating serializers, not by deleting unknown imported XML. The positive gate now requires zero SDK/OPC diagnostics; if further findings emerge, fix them rather than adding a broad allowlist. No claim of a clean corpus until new CI passes. Official scope previously reached 17,531 contexts, 4,252 element declarations, 33,147 attribute occurrences and 102,094 enum value occurrences (still partial normative scope).

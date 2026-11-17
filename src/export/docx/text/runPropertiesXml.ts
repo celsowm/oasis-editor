@@ -1,3 +1,6 @@
+import { docxTypeface } from "../typeface.js";
+import { R_PR_CHILD_ORDER } from "@/ooxml/schemaOrder.js";
+import { orderedPropertyFragments } from "../propertyFragmentOrder.js";
 import type {
   EditorGlow,
   EditorReflection,
@@ -385,7 +388,7 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
   }
   if (styles.fontFamily) {
     parts.push(
-      `<w:rFonts w:ascii="${escapeXml(styles.fontFamily)}" w:hAnsi="${escapeXml(styles.fontFamily)}" w:cs="${escapeXml(styles.fontFamily)}"/>`,
+      `<w:rFonts w:ascii="${escapeXml(docxTypeface(styles.fontFamily))}" w:hAnsi="${escapeXml(docxTypeface(styles.fontFamily))}" w:cs="${escapeXml(docxTypeface(styles.fontFamily))}"/>`,
     );
   }
   if (styles.fontSize !== undefined && styles.fontSize !== null) {
@@ -464,5 +467,5 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
     parts.push(serializeRunPropertyRevision(styles.propertyRevision));
   }
 
-  return parts.length > 0 ? `<w:rPr>${parts.join("")}</w:rPr>` : "";
+  return parts.length > 0 ? `<w:rPr>${orderedPropertyFragments(parts, R_PR_CHILD_ORDER)}</w:rPr>` : "";
 }

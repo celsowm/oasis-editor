@@ -59,7 +59,7 @@ jobs:
           OOXML_VALIDATION_CORPUS: test-results/ooxml-validation/corpus
       - name: Restore validator
         run: dotnet restore tools/ooxml-validator/OoxmlValidator.csproj
-      - name: Characterize production outputs and negative controls
+      - name: Require conformant production outputs and negative controls
         run: |
           dotnet run --project tools/ooxml-validator/OoxmlValidator.csproj --no-restore -- test-results/ooxml-validation/corpus/positive test-results/ooxml-validation/positive.json
           dotnet run --project tools/ooxml-validator/OoxmlValidator.csproj --no-restore -- test-results/ooxml-validation/corpus/negative test-results/ooxml-validation/negative.json

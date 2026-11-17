@@ -1,3 +1,5 @@
+import { STYLE_CHILD_ORDER, TBL_PR_CHILD_ORDER } from "@/ooxml/schemaOrder.js";
+import { orderedPropertyFragments } from "./propertyFragmentOrder.js";
 import type {
   EditorNamedStyle,
   EditorTableCellStyle,
@@ -119,7 +121,7 @@ function serializeTableStyleProperties(
       .join("");
     if (xml) parts.push(`<w:tblBorders>${xml}</w:tblBorders>`);
   }
-  return parts.length > 0 ? `<w:tblPr>${parts.join("")}</w:tblPr>` : "";
+  return parts.length > 0 ? `<w:tblPr>${orderedPropertyFragments(parts, TBL_PR_CHILD_ORDER)}</w:tblPr>` : "";
 }
 
 function serializeConditionalBlock(
@@ -158,10 +160,10 @@ function serializeNamedStyle(style: EditorNamedStyle): string {
     );
   }
   if (style.qFormat !== undefined) {
-    parts.push(`<w:qFormat w:val="${style.qFormat ? "1" : "0"}"/>`);
+    parts.push(`<w:qFormat w:val="${style.qFormat ? "true" : "false"}"/>`);
   }
   if (style.semiHidden !== undefined) {
-    parts.push(`<w:semiHidden w:val="${style.semiHidden ? "1" : "0"}"/>`);
+    parts.push(`<w:semiHidden w:val="${style.semiHidden ? "true" : "false"}"/>`);
   }
   if (style.unhideWhenUsed !== undefined) {
     parts.push(
@@ -210,7 +212,7 @@ function serializeNamedStyle(style: EditorNamedStyle): string {
       : style.type === "table"
         ? "table"
         : "paragraph";
-  return `<w:style w:type="${typeAttr}" w:styleId="${escapeXml(style.id)}"${style.isDefault ? ' w:default="1"' : ""}${style.customStyle !== undefined ? ` w:customStyle="${style.customStyle ? "1" : "0"}"` : ""}>${parts.join("")}</w:style>`;
+  return `<w:style w:type="${typeAttr}" w:styleId="${escapeXml(style.id)}"${style.isDefault ? ' w:default="1"' : ""}${style.customStyle !== undefined ? ` w:customStyle="${style.customStyle ? "1" : "0"}"` : ""}>${orderedPropertyFragments(parts, STYLE_CHILD_ORDER)}</w:style>`;
 }
 
 export function buildStylesXml(
