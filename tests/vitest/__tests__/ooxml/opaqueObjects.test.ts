@@ -55,6 +55,10 @@ describe("opaque source inventory and loss detector",()=>{
     // orphaned type overrides, not only the exact candidate filename.
     dest.parts["WORD/OASIS-TRANSFER-1/existing.xml"]=part("WORD/OASIS-TRANSFER-1/existing.xml","<existing/>");
     dest.contentTypes.overrides["word/oasis-transfer-2/reserved.xml"]="application/xml";
+    // Real captured DOCX snapshots include package control and relationship parts.
+    dest.parts["[Content_Types].xml"]=part("[Content_Types].xml",`<Types xmlns="${CT}"/>`);
+    dest.parts["_rels/.rels"]=part("_rels/.rels",`<Relationships xmlns="${P}"/>`);
+    dest.parts["word/_rels/document.xml.rels"]=part("word/_rels/document.xml.rels",`<Relationships xmlns="${P}"/>`);
     const before=structuredClone(dest),transport=structuredClone(manifest);
     const plan=planOpaqueTransferInsertion(manifest,dest);
     expect(planOpaqueTransferInsertion(manifest,dest)).toEqual(plan);

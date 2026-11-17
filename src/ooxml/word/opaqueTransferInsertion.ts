@@ -77,7 +77,11 @@ export function planOpaqueTransferInsertion(value:unknown,destination:EditorDocx
   // and even dangling relationship targets. Never revive an unrelated edge.
   for(const [path,part] of Object.entries(destination.parts)){
     if(part.path!==path)return fail("inconsistent destination part path");
-    reserve(path);reserve(relsPath(path));
+    reserve(path);
+    // The package control part has no relationship sidecar. Existing .rels
+    // parts are already reserved as actual parts, and all planned sidecars
+    // live inside the exclusively allocated directory.
+    if(path!=="[Content_Types].xml"&&!path.endsWith(".rels"))reserve(relsPath(path));
     for(const edge of part.relationships??[]){
       if(edge.targetMode==="External")continue;
       if(!edge.resolvedTarget||resolveOpcRelationshipTarget(path,edge.target)!==edge.resolvedTarget)return fail("unresolved destination relationship");
