@@ -2,9 +2,16 @@ import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import { createPointerGesture } from "./pointerGesture.js";
 import { createSignal } from "solid-js";
 import { setSelection } from "@/core/commands/selection.js";
-import { moveOrCopySelectionToPosition, relocateSelectedOpaqueObject } from "@/core/commands/text.js";
+import {
+  moveOrCopySelectionToPosition,
+  relocateSelectedOpaqueObject,
+} from "@/core/commands/text.js";
 import type { EditorPosition, EditorState } from "@/core/model.js";
-import { getActiveZone, getParagraphs, positionToParagraphOffset } from "@/core/model.js";
+import {
+  getActiveZone,
+  getParagraphs,
+  positionToParagraphOffset,
+} from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import type { SurfaceHit } from "@/ui/canvas/CanvasHitTestService.js";
 
@@ -23,6 +30,8 @@ export interface EditorTextDragDeps {
     producer: (current: EditorState) => EditorState,
     options?: { mergeKey?: MergeKey },
   ) => void;
+  /** Commits a state without recording undo history (view-only changes). */
+  applyState: (state: EditorState) => void;
   applyTableAwareParagraphEdit: (
     state: EditorState,
     edit: (state: EditorState) => EditorState,
@@ -75,21 +84,53 @@ function isPositionInsideSelection(
   return true;
 }
 
+/**
+ * A press that lands inside the current selection and never becomes a drag
+ * collapses the caret at the pressed offset (Word parity). This is a caret
+ * move, not a document edit, so it must not enter the undo stack: `Word` does
+ * not record an undo step for clicking, and a recorded no-op entry would make
+ * the first Ctrl+Z after a click do nothing visible.
+ *
+ * Returns `state` unchanged when the position is outside the selection, which
+ * is the signal that the press is a fresh caret placement (handled by the
+ * surface) rather than a collapse.
+ */
+export function collapseSelectionAtPosition(
+  state: EditorState,
+  position: EditorPosition,
+): EditorState {
+  if (!isPositionInsideSelection(state, position)) {
+    return state;
+  }
+  return setSelection(state, { anchor: position, focus: position });
+}
+
 /** Cross-story drops are explicit transactions, not edits of the active
  * zone's flattened paragraph stream. Unsupported transfers are no-ops. */
 export function applyTextDragDrop(
   state: EditorState,
   destination: EditorPosition,
-  hit: Pick<SurfaceHit, "zone" | "paragraphId" | "paragraphOffset" | "tableCellAnchorPosition">,
+  hit: Pick<
+    SurfaceHit,
+    "zone" | "paragraphId" | "paragraphOffset" | "tableCellAnchorPosition"
+  >,
   copy: boolean,
   edit: EditorTextDragDeps["applyTableAwareParagraphEdit"],
   onRejected?: (error: unknown) => void,
 ): EditorState {
   if (hit.zone === getActiveZone(state)) {
-    return edit(state, temp => moveOrCopySelectionToPosition(temp, destination, { copy }));
+    return edit(state, (temp) =>
+      moveOrCopySelectionToPosition(temp, destination, { copy }),
+    );
   }
-  if (copy || hit.tableCellAnchorPosition || !["main", "header", "footer"].includes(hit.zone)) return state;
-  if (hit.zone !== "main" && hit.zone !== "header" && hit.zone !== "footer") return state;
+  if (
+    copy ||
+    hit.tableCellAnchorPosition ||
+    !["main", "header", "footer"].includes(hit.zone)
+  )
+    return state;
+  if (hit.zone !== "main" && hit.zone !== "header" && hit.zone !== "footer")
+    return state;
   try {
     return relocateSelectedOpaqueObject(state, {
       zone: hit.zone,
@@ -195,7 +236,9 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
     setPointerPos({ x: event.clientX, y: event.clientY });
     // Keep drop-caret preview aligned with the pointer using the
     // canvas hit result.
-    const hit = deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY, { forDrag: true });
+    const hit = deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY, {
+      forDrag: true,
+    });
     dropHit = hit?.resolvedFromParagraph ? hit : null;
     if (!hit?.resolvedFromParagraph) {
       deps.logger?.debug("text-drag:hit-miss", {
@@ -251,8 +294,15 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
       deps.resetTransactionGrouping();
       deps.applyTransactionalState(
         (current): EditorState =>
-          applyTextDragDrop(current, destination, hit, copy, deps.applyTableAwareParagraphEdit,
-            error => deps.logger?.warn?.("text-drag:relocation-rejected", error)),
+          applyTextDragDrop(
+            current,
+            destination,
+            hit,
+            copy,
+            deps.applyTableAwareParagraphEdit,
+            (error) =>
+              deps.logger?.warn?.("text-drag:relocation-rejected", error),
+          ),
         {
           mergeKey: copy
             ? MERGE_KEYS.copyTextByDrag
@@ -265,18 +315,11 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
       });
     } else if (pendingStart) {
       const startPosition = pendingStart.position;
-      deps.applyTransactionalState(
-        (current): EditorState => {
-          if (!isPositionInsideSelection(current, startPosition)) {
-            return current;
-          }
-          return setSelection(current, {
-            anchor: startPosition,
-            focus: startPosition,
-          });
-        },
-        { mergeKey: MERGE_KEYS.collapseSelectionByClick },
-      );
+      const current = deps.state();
+      const collapsed = collapseSelectionAtPosition(current, startPosition);
+      if (collapsed !== current) {
+        deps.applyState(collapsed);
+      }
       deps.logger?.info("text-drag:collapse", {
         at: `${startPosition.paragraphId}:${startPosition.runId}[${startPosition.offset}]`,
       });

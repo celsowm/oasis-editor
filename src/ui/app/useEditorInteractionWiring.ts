@@ -121,6 +121,7 @@ export function useEditorInteractionWiring(
     isReadOnly: ctx.isReadOnly,
     resolveSurfaceHitAtPoint: ctx.resolveSurfaceHitAtPoint,
     applyTransactionalState: ctx.applyTransactionalState,
+    applyState: ctx.applyState,
     applyTableAwareParagraphEdit: ctx.tableOps.applyTableAwareParagraphEdit,
     clearPreferredColumn: ctx.clearPreferredColumn,
     resetTransactionGrouping: ctx.resetTransactionGrouping,

@@ -36,7 +36,6 @@ export const MERGE_KEYS = {
   fontDialog: "font-dialog",
   copyTextByDrag: "copyTextByDrag",
   moveTextByDrag: "moveTextByDrag",
-  collapseSelectionByClick: "collapseSelectionByClick",
   mergeTable: "mergeTable",
   splitTable: "splitTable",
   insertTableColumn: "insertTableColumn",
