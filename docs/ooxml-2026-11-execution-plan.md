@@ -225,3 +225,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 ## 11. Progress log
 
 - 2026-11-16: static repository audit at ff6d7f681b275c3a1609fde8e3458f02c42f667a; roadmap rewritten around verified source paths and existing tests. No implementation or test execution performed in this documentation change. All ticket acceptance gates are pending until independently demonstrated. Start with OX-001.
+
+- OX-001 slice A: initial context-aware registry, exact runner evidence, deterministic JSON/Markdown, lexical XSD manifest prototype, static Pages explorer and CI checks. Official schema graph/denominator and historical regression gate remain open. See [tooling documentation](./ooxml-capability-tooling.md). CI results pending.

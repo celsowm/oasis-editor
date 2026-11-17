@@ -85,7 +85,11 @@
     "test:ribbon:painter": "node scripts/verify-ribbon-painter.mjs",
     "test:ribbon:inherited": "node scripts/verify-ribbon-inherited-formatting.mjs",
     "test:ribbon:font-values": "node scripts/verify-ribbon-font-values.mjs",
-    "test:ribbon:colors-styles": "node scripts/verify-ribbon-colors-styles.mjs"
+    "test:ribbon:colors-styles": "node scripts/verify-ribbon-colors-styles.mjs",
+    "ooxml:audit": "node --test scripts/ooxml/registry.test.mjs",
+    "ooxml:evidence": "node scripts/ooxml/run-evidence.mjs",
+    "ooxml:report": "node scripts/ooxml/report.mjs",
+    "ooxml:inventory": "node scripts/ooxml/report.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

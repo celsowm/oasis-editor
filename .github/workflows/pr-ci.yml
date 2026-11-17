@@ -23,6 +23,12 @@ jobs:
 
       - run: npm run audit:ribbon:icons
 
+      - run: npm run ooxml:audit
+
+      - run: npm run ooxml:evidence
+
+      - run: npm run ooxml:report -- --evidence test-results/ooxml/vitest.json --require-evidence
+
       - run: npm test
 
       - run: npm run build:app

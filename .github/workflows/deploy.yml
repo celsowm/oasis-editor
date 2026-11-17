@@ -32,11 +32,20 @@ jobs:
       - name: Verify Ribbon icon inventory
         run: npm run audit:ribbon:icons
 
+      - name: Audit OOXML capability tooling
+        run: npm run ooxml:audit
+
+      - name: Run OOXML evidence cases
+        run: npm run ooxml:evidence
+
       - name: Run Tests
         run: npm test
 
       - name: Build App
         run: npm run build:app
+
+      - name: Generate OOXML compatibility report
+        run: npm run ooxml:report -- --evidence test-results/ooxml/vitest.json --require-evidence --out dist-app/ooxml
 
       - name: Install Chromium
         run: |

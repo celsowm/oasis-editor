@@ -1,0 +1,11 @@
+import { spawnSync } from "node:child_process";
+import { mkdirSync,readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { validateSeed } from "./registry.mjs";
+const root=process.cwd();
+const seed=validateSeed(JSON.parse(readFileSync("src/ooxml/capabilities/seed.json","utf8")),root);
+const files=[...new Set(seed.entries.flatMap(e=>e.evidence.map(ev=>ev.file)))].sort();
+mkdirSync("test-results/ooxml",{recursive:true});
+const result=spawnSync(process.execPath,[resolve("node_modules/vitest/vitest.mjs"),"run",...files,"--reporter=json","--outputFile=test-results/ooxml/vitest.json"],{stdio:"inherit"});
+if(result.error) throw result.error;
+process.exitCode=result.status??1;
