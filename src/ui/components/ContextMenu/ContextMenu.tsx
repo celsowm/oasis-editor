@@ -2,6 +2,7 @@ import { For, Show, createEffect, onCleanup, onMount } from "solid-js";
 import "./ContextMenu.css";
 import { CheckIcon } from "@/ui/utils/customIcons.js";
 import { JSX } from "solid-js";
+import { useDismiss } from "../Toolbar/primitives/useDismiss.js";
 
 export interface ContextMenuItem {
   id: string;
@@ -25,25 +26,11 @@ export interface ContextMenuProps {
 export function ContextMenu(props: ContextMenuProps): JSX.Element {
   let menuRef: HTMLDivElement | undefined;
 
-  const handleKeyDown = (event: KeyboardEvent): void => {
-    if (!props.isOpen) return;
-    if (event.key === "Escape") {
-      event.preventDefault();
-      props.onClose();
-    }
-  };
-
-  const handleWindowMouseDown = (event: MouseEvent): void => {
-    if (!props.isOpen) return;
-    if (
-      menuRef &&
-      event.target instanceof Node &&
-      menuRef.contains(event.target)
-    ) {
-      return;
-    }
-    props.onClose();
-  };
+  useDismiss({
+    refs: () => [menuRef],
+    open: () => props.isOpen,
+    onDismiss: () => props.onClose(),
+  });
 
   const handleWindowContextMenu = (event: MouseEvent): void => {
     if (!props.isOpen) return;
@@ -62,16 +49,12 @@ export function ContextMenu(props: ContextMenuProps): JSX.Element {
   };
 
   onMount((): void => {
-    window.addEventListener("keydown", handleKeyDown, true);
-    window.addEventListener("mousedown", handleWindowMouseDown, true);
     window.addEventListener("contextmenu", handleWindowContextMenu, true);
     window.addEventListener("scroll", handleScroll, true);
     window.addEventListener("resize", handleScroll, true);
   });
 
   onCleanup((): void => {
-    window.removeEventListener("keydown", handleKeyDown, true);
-    window.removeEventListener("mousedown", handleWindowMouseDown, true);
     window.removeEventListener("contextmenu", handleWindowContextMenu, true);
     window.removeEventListener("scroll", handleScroll, true);
     window.removeEventListener("resize", handleScroll, true);

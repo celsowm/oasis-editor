@@ -140,7 +140,7 @@ export function Popover(props: PopoverProps): JSX.Element {
         queueMicrotask(() => {
           const button = anchorRef?.matches("button")
             ? anchorRef
-            : anchorRef?.querySelector<HTMLElement>("button");
+            : anchorRef?.querySelector<HTMLElement>('button[aria-expanded], button[aria-haspopup]') ?? anchorRef?.querySelector<HTMLElement>("button");
           button?.focus({ preventScroll: true });
         });
     },

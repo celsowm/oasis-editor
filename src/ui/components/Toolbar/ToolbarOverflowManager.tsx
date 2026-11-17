@@ -9,6 +9,7 @@ import {
   mapArray,
 } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
+import { useDismiss } from "./primitives/useDismiss.js";
 
 /**
  * Manages toolbar overflow by imperatively moving DOM nodes between
@@ -212,29 +213,27 @@ export function ToolbarOverflowManager(props: {
     });
     observer.observe(containerRef!);
 
-    const handleOutsideClick = (e: MouseEvent): void => {
-      if (
-        menuOpen() &&
-        moreButtonRef &&
-        !moreButtonRef.contains(e.target as Node) &&
-        overflowMenuRef &&
-        !overflowMenuRef.contains(e.target as Node)
-      ) {
-        setMenuOpen(false);
-      }
-    };
-
     const handleWindowResize = (): void => {
       if (menuOpen()) requestAnimationFrame(remeasurePanel);
     };
 
-    window.addEventListener("mousedown", handleOutsideClick);
     window.addEventListener("resize", handleWindowResize);
     onCleanup((): void => {
       observer.disconnect();
-      window.removeEventListener("mousedown", handleOutsideClick);
       window.removeEventListener("resize", handleWindowResize);
     });
+  });
+
+  useDismiss({
+    refs: () => [moreButtonRef, overflowMenuRef],
+    open: menuOpen,
+    onDismiss: reason => {
+      setMenuOpen(false);
+      if (reason === "escape") moreButtonRef?.focus({ preventScroll: true });
+    },
+  });
+  createEffect(() => {
+    if (overflowCount() === 0) setMenuOpen(false);
   });
 
   // Re-measure whenever the menu opens or the overflow set changes
@@ -326,6 +325,8 @@ export function ToolbarOverflowManager(props: {
           onClick={(): boolean => setMenuOpen((o): boolean => !o)}
           title={t("toolbar.moreTools")}
           aria-label={t("toolbar.moreTools")}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen()}
           data-testid="editor-toolbar-overflow-dropdown"
         >
           <i data-lucide="ellipsis" />
@@ -357,12 +358,10 @@ export function ToolbarOverflowManager(props: {
         }}
         onClick={(e): void => {
           // Close when a tool button is clicked (but not nested dropdowns)
-          if (
-            (e.target as HTMLElement).closest("button") &&
-            !(e.target as HTMLElement).closest(
-              ".oasis-editor-tool-button-dropdown",
-            )
-          ) {
+          const button = (e.target as Element).closest("button");
+          if (button && !button.hasAttribute("aria-haspopup") &&
+              !button.matches(".oasis-editor-tool-button-dropdown") &&
+              !button.closest(".oasis-editor-toolbar-list-options")) {
             setMenuOpen(false);
           }
         }}

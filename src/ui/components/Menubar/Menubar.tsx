@@ -1,4 +1,4 @@
-import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import { type TranslationKey } from "@/i18n/index.js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import {
@@ -10,6 +10,7 @@ import { SurfaceButton } from "@/ui/public/SurfaceButton.js";
 import { Text } from "@/ui/public/Text.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
 import { JSX } from "solid-js";
+import { useDismiss } from "../Toolbar/primitives/useDismiss.js";
 
 export interface MenubarProps {
   host: () => MenubarHost;
@@ -78,33 +79,21 @@ export function Menubar(props: MenubarProps): JSX.Element {
       return [{ ...node, children }];
     });
 
-  const handleDocumentClick = (e: MouseEvent): void => {
-    // Basic click outside
-    if (activeMenu() && !(e.target as Element).closest(".oasis-menubar")) {
+  let rootRef: HTMLDivElement | undefined;
+  useDismiss({
+    refs: () => [rootRef],
+    open: () => activeMenu() !== null,
+    onDismiss: reason => {
+      const trigger = rootRef?.querySelector<HTMLElement>('[aria-expanded="true"]');
       setActiveMenu(null);
-    }
-  };
-
-  const handleKeyDown = (e: KeyboardEvent): void => {
-    if (e.key === "Escape") {
-      setActiveMenu(null);
-    }
-  };
-
-  onMount((): void => {
-    document.addEventListener("click", handleDocumentClick);
-    document.addEventListener("keydown", handleKeyDown);
-  });
-
-  onCleanup((): void => {
-    document.removeEventListener("click", handleDocumentClick);
-    document.removeEventListener("keydown", handleKeyDown);
+      if (reason === "escape") trigger?.focus({ preventScroll: true });
+    },
   });
 
   const topLevelItems = (): MenuTreeItem[] => pruneTree(menuTree());
 
   return (
-    <div class="oasis-menubar" role="menubar">
+    <div ref={rootRef} class="oasis-menubar" role="menubar">
       <For each={topLevelItems()}>
         {(topLevel): JSX.Element => (
           <div

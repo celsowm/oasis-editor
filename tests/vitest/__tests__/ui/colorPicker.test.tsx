@@ -59,7 +59,15 @@ describe("ColorPicker availability", () => {
     )!;
     expect(swatch.getAttribute("role")).toBe("menuitemradio");
     expect(swatch.getAttribute("aria-checked")).toBe("true");
-    swatch.focus();
+    // The Canvas cancels pointerdown; no compatibility mousedown follows.
+    const canvas=document.createElement("canvas");
+    host.appendChild(canvas);
+    canvas.addEventListener("pointerdown",event=>event.preventDefault());
+    canvas.dispatchEvent(new Event("pointerdown",{bubbles:true,cancelable:true,composed:true}));
+    expect(menu.getAttribute("aria-expanded")).toBe("false");
+    expect(apply).not.toHaveBeenCalled();
+    menu.click();
+    document.querySelector<HTMLButtonElement>('[data-testid="color-theme-swatch-ff0000"]')!.focus();
     setDisabled(true);
     await Promise.resolve();
     expect(
