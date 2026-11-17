@@ -1723,6 +1723,20 @@ Date: 2026-11-17. Delivery 136 persisted the pane's open flag, but its revision 
 
 **Limits.** The Show Markup filter selection itself is still not persisted (only visibility and scroll offset are), and there is no persisted pane width or per-category scroll. Reviewer colours/options (`review.trackChangesOptions`), formatting balloons as a distinct Word concept, pending merge state, endnotes' editable zone, `quickAccess.undoTo`, P04 external save, P06 interoperability, all M4 families and M5 accessibility remain open. VoiceOver, touch and trusted-Safari input remain unverified.
 
+## Delivery 144 — editing: a caret-collapsing click is not an undo step
+
+Date: 2026-11-17. This closes the pre-existing `Style Gallery Browser Regression` failure (first seen upstream on `69fb5ab7`, before Delivery 143) and a user-visible undo defect behind it.
+
+**The defect.** A press that lands inside the current selection but never moves past the drag threshold is Word's click-to-collapse: the caret moves to the pressed offset. `useEditorTextDrag` applied that caret move as a transaction with the `collapseSelectionByClick` merge key, so every such click pushed an undo entry even though the document was untouched. The first Ctrl+Z after the click then consumed a no-op entry: nothing changed on screen, and the user had to press it twice to undo the real edit. The browser suite caught it because `scripts/verify-ribbon-popup-dismissal.mjs` asserts that dismissing a palette on the canvas leaves `document`, `undo`, `redo` and `dirty` untouched; the third dismissal (`text-shading`) clicked inside the still-selected range and flipped `canUndo()` from `false` to `true`.
+
+**The fix.** Caret placement is a view change, and the codebase already draws that line: view-only commands (`toggleTrackChanges`, Display for Review, find next/previous) commit through `applyState` and record no history. The collapse now does the same. The state transform moved into an exported `collapseSelectionAtPosition(state, position)` that returns the same state object when the press is outside the selection (the surface then places a fresh caret), and the mouse-up handler commits it with `applyState`. The `collapseSelectionByClick` merge key is gone because nothing else grouped on it. The real drag path (`moveTextByDrag` / `copyTextByDrag`) still records one undoable transaction.
+
+**Evidence.** Four new jsdom tests in `tests/vitest/__tests__/ui/textDragCaretCollapse.test.ts`: the pure transform collapses inside the selection and preserves document identity, returns the same state outside the selection and for an already-collapsed caret, a press-and-release inside the selection calls `applyState` once and `applyTransactionalState` zero times, and a press that crosses the drag threshold still records exactly one transaction and actually moves the text. `scripts/verify-ribbon-popup-dismissal.mjs` passes on Chromium, Firefox and WebKit (20 records each: 3 palettes × 2 widths × 2 input modes, plus style-gallery dismissal and panel switching), and `verify-ribbon-style-gallery.mjs` passes 28 records on each engine. The end-to-end caret-collapse parity test in `tests/e2e/canvas-pointer.spec.ts` still covers the behavior itself.
+
+**Full gates.** `npm run typecheck` 0; `npx eslint` clean on changed files; Vitest **2,236 passed / 3 skipped** (364 files); `npm run audit:ribbon` 551/521/328/150; icon audit 142/179/11; native-UI guardrail 0; import graph 856 modules / 0 cycles; `npm run build:app` 0; `npm run test:ribbon:ci` EXIT 0 (10 suites); `npm run test:smoke` 3 passed; prettier clean.
+
+**Limits.** The fix covers the text-drag collapse path, which is the only producer that recorded a document-identical transaction; a broader guard inside `applyTransactionalState` was deliberately not added, so a future view-only producer that reaches for a transaction would still record a no-op entry. VoiceOver, touch and trusted-Safari input remain unverified.
+
 ## Remaining execution queue
 
 All requirements in the execution plan remain in scope. The next sequence is:
