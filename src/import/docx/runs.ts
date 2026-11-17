@@ -183,6 +183,9 @@ export async function parseRunElement(
   relsMap: Map<string, string>,
   assets: AssetRegistry,
   parseNestedBlocks?: ParseNestedBlocks,
+  // Ordered mixed-run import parses selected children without detaching them
+  // from the source DOM or losing their inherited namespace context.
+  selectedChildren?: readonly XmlElement[],
 ): Promise<{
   text: string;
   image?: EditorImageRunData;
@@ -209,7 +212,7 @@ export async function parseRunElement(
     textLength += value.length;
   };
 
-  const children = runElement.childNodes;
+  const children = selectedChildren ?? runElement.childNodes;
   for (let index = 0; index < children.length; index += 1) {
     const node = children[index];
     if (node?.nodeType !== node.ELEMENT_NODE) {
@@ -369,7 +372,11 @@ export async function parseRunsContainer(
         ? extractBookmarkName(entry.instruction)
         : undefined;
     const span = runs.slice(entry.beginIndex);
-    if (span.some((run): ImportedBookmarkMarker | undefined => run.bookmark)) {
+    // A scalar field cache cannot represent embedded content or range
+    // boundaries. Do not collapse a structured result into text.
+    if (span.some(run => Boolean(run.bookmark || run.comment || run.opaque ||
+      run.image || run.textBox || run.math || run.sym || run.footnoteReference ||
+      run.endnoteReference || run.revision || run.sdtWrappers?.length))) {
       return;
     }
     const resultRuns = span.filter(
@@ -565,17 +572,21 @@ export async function parseRunsContainer(
 
       const contentChildren=Array.from(element.childNodes).filter((node): node is XmlElement =>
         node.nodeType===1 && !(node.namespaceURI===WORD_NS && node.localName==="rPr"));
-      // Project the direct children in document order. Only split mixed
-      // runs whose non-object children are understood text content. Never
-      // clone the opaque element into a detached DOM: the complete original
-      // namespace scope (including MC Requires prefixes) is its authority.
+      // Project direct children in document order when an opaque object is
+      // mixed with understood text, native inline content or range markers.
+      // Never detach an opaque element from its source namespace scope.
       const projected = contentChildren.map(child => ({ child, opaque: projectOpaqueRunElement(child) }));
       const textChild = (child: XmlElement): boolean =>
         child.namespaceURI === WORD_NS &&
         ["t","delText","tab","noBreakHyphen","softHyphen","br","cr","lastRenderedPageBreak"].includes(child.localName ?? "");
+      const structuredChild = (child: XmlElement): boolean =>
+        (child.namespaceURI === WORD_NS &&
+          ["drawing","pict","sym","bookmarkStart","bookmarkEnd","commentRangeStart","commentRangeEnd"].includes(child.localName ?? "")) ||
+        (child.namespaceURI === "http://schemas.openxmlformats.org/markup-compatibility/2006" &&
+          child.localName === "AlternateContent");
       const containsOpaque = projected.some(entry => entry.opaque);
       if (containsOpaque && (contentChildren.length === 1 ||
-          (!fieldStack.length && projected.every(entry => entry.opaque || textChild(entry.child))))) {
+          (!fieldStack.length && projected.every(entry => entry.opaque || textChild(entry.child) || structuredChild(entry.child))))) {
         let text = "";
         const styles = inheritedLink ? { ...runStyles, link: inheritedLink } : runStyles;
         const flush = (): void => {
@@ -587,6 +598,31 @@ export async function parseRunsContainer(
           if (opaque) {
             flush();
             runs.push({text:"\uFFFC", opaque, ...(styles ? {styles:{...styles}} : {})});
+            continue;
+          }
+          if (structuredChild(child)) {
+            flush();
+            const native = await parseRunElement(element, zip, relsMap, assets, parseNestedBlocks, [child]);
+            // The reused native parser returns at most one object or marker
+            // for this single source child. Preserve its position, not the
+            // last image encountered in the entire run.
+            for (const marker of native.innerBookmarks ?? []) {
+              runs.push({ text: "", bookmark: marker.marker });
+            }
+            for (const marker of native.innerComments ?? []) {
+              runs.push({ text: "", comment: marker.marker });
+            }
+            if (native.text.length || native.image || native.textBox) {
+              const nativeStyles = native.sym && !styles?.fontFamily
+                ? { ...styles, fontFamily: native.sym.font } : styles;
+              runs.push({
+                text: native.text,
+                ...(native.image ? { image: native.image } : {}),
+                ...(native.textBox ? { textBox: native.textBox } : {}),
+                ...(native.sym ? { sym: native.sym } : {}),
+                ...(nativeStyles ? { styles: { ...nativeStyles } } : {}),
+              });
+            }
             continue;
           }
           switch(child.localName) {

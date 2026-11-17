@@ -254,6 +254,59 @@ describe("opaque source inventory and loss detector",()=>{
     }
   },30000);
 
+  it("preserves ordered native pictures, symbol and bookmark beside an opaque chart",async()=>{
+    const zip=new JSZip();
+    const chartPath="word/charts/chart1.xml";
+    const png="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=";
+    const pictureNS="http://schemas.openxmlformats.org/drawingml/2006/picture";
+    const picture=(id:number,name:string)=>'<wx:drawing><wp:inline><wp:extent cx="95250" cy="190500"/><wp:docPr id="'+id+'" name="'+name+'" descr="'+name+'"/><a:graphic><a:graphicData uri="'+pictureNS+'"><pic:pic xmlns:pic="'+pictureNS+'"><pic:blipFill><a:blip rel:embed="rIdPicture"/></pic:blipFill><pic:spPr/></pic:pic></a:graphicData></a:graphic></wp:inline></wx:drawing>';
+    zip.file("[Content_Types].xml",'<Types xmlns="'+CT+'"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/'+chartPath+'" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/></Types>');
+    zip.file("_rels/.rels",'<Relationships xmlns="'+P+'"><Relationship Id="rIdOffice" Type="'+R+'/officeDocument" Target="word/document.xml"/></Relationships>');
+    zip.file("word/_rels/document.xml.rels",'<Relationships xmlns="'+P+'"><Relationship Id="rIdChart" Type="'+R+'/chart" Target="charts/chart1.xml"/><Relationship Id="rIdPicture" Type="'+R+'/image" Target="media/source.png"/></Relationships>');
+    zip.file(chartPath,'<c:chartSpace xmlns:c="'+C+'"/>');
+    zip.file("word/media/source.png",png,{base64:true});
+    const mixed='<wx:rPr><wx:b/></wx:rPr><wx:t>A</wx:t>'+
+      '<wx:bookmarkStart wx:id="42" wx:name="MixedObjects"/>'+picture(12,"First picture")+
+      '<wx:t>B</wx:t>'+drawing.replace('id="1" name="Chart"','id="99" name="Chart"')+
+      '<wx:sym wx:font="Symbol" wx:char="F0B7"/>'+picture(13,"Second picture")+
+      '<wx:bookmarkEnd wx:id="42"/><wx:t>C</wx:t>';
+    zip.file("word/document.xml",root(mixed));
+    let doc=await importDocxInWorker(await zip.generateAsync({type:"arraybuffer"}));
+    const original=doc.sourcePackage!;
+    const getBody=()=>{
+      const p=doc.sections?.[0]?.blocks[0];
+      if(p?.type!=="paragraph")throw Error("Expected mixed paragraph");
+      return p;
+    };
+    const verify=()=>{
+      const body=getBody(),objects=body.runs.filter(r=>r.kind==="image"||r.kind==="opaque"||r.kind==="sym");
+      expect(objects.map(r=>r.kind)).toEqual(["image","opaque","sym","image"]);
+      const images=objects.filter(r=>r.kind==="image");
+      expect(images.map(r=>r.image.alt)).toEqual(["First picture","Second picture"]);
+      expect(images.every(r=>r.image.width===10&&r.image.height===20)).toBe(true);
+      expect(objects.every(r=>r.styles?.bold===true)).toBe(true);
+      expect(body.runs.map(r=>r.text).join("")).toBe("NeighborA\uFFFCB\uFFFC\uF0B7\uFFFCC");
+      expect(Object.values(doc.bookmarks?.items??{}).map(b=>b.name)).toContain("MixedObjects");
+    };
+    verify();
+    // Force a genuine source-backed mutation, not just the no-op byte path.
+    getBody().runs.find(r=>r.text==="B")!.styles={bold:true,italic:true};
+    const output=await exportEditorDocumentToDocxPreservingSource(doc);
+    const captured=await captureDocxSourcePackage(output);
+    expect(auditOpaqueObjectPreservation(original,captured)).toEqual([]);
+    const reopenedZip=await JSZip.loadAsync(output);
+    const main=await reopenedZip.file(captured.mainDocumentPart)!.async("string");
+    expect(main).toContain("MixedObjects");
+    for(const rel of captured.parts[captured.mainDocumentPart]?.relationships??[]){
+      if(rel.type===R+"/image"&&rel.targetMode!=="External"){
+        expect(captured.parts[rel.resolvedTarget!]?.data).toBe(png);
+      }
+    }
+    doc=await importDocxInWorker(output);
+    verify();
+    expect(getBody().runs.find(r=>r.text==="B")?.styles?.italic).toBe(true);
+  },30000);
+
   it("captures an actual package and retains a standalone chart through a source-backed neighboring edit",async()=>{
     const zip=new JSZip();
     zip.file("[Content_Types].xml",`<Types xmlns="${CT}"><Default Extension="xml" ContentType="application/xml"/><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/></Types>`);
