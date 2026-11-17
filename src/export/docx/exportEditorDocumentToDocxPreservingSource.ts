@@ -1,3 +1,4 @@
+import { auditOpaqueObjectPreservation, OpaqueObjectPreservationError } from "@/ooxml/word/opaqueObjects.js";
 import type { EditorDocument, EditorDocxSourcePackage } from "@/core/model.js";
 import {
   exportEditorDocumentToDocx,
@@ -46,8 +47,14 @@ function cloneSourcePackage(
   };
 }
 
+export interface DocxSourcePreservationOptions {
+  /** Block export if an inventoried opaque source object or dependency changes. */
+  requireOpaquePreservation?: boolean;
+}
+
 export async function exportEditorDocumentToDocxPreservingSource(
   document: EditorDocument,
+  options: DocxSourcePreservationOptions = {},
 ): Promise<ArrayBuffer> {
   if (!document.sourcePackage) {
     return exportEditorDocumentToDocx(document);
@@ -60,16 +67,24 @@ export async function exportEditorDocumentToDocxPreservingSource(
   synchronizeBoundContentControls(exportDocument);
 
   const rebuilt = await exportEditorDocumentToDocx(exportDocument);
-  return patchRebuiltDocxPreservingSource(exportDocument, rebuilt);
+  const output = await patchRebuiltDocxPreservingSource(exportDocument, rebuilt);
+  if (options.requireOpaquePreservation) {
+    const { captureDocxSourcePackage } = await import("@/import/docx/opc/sourcePackage.js");
+    const outputPackage = await captureDocxSourcePackage(output);
+    const diagnostics = auditOpaqueObjectPreservation(document.sourcePackage, outputPackage);
+    if (diagnostics.length) throw new OpaqueObjectPreservationError(diagnostics);
+  }
+  return output;
 }
 
 export async function exportEditorDocumentToDocxBlobPreservingSource(
   document: EditorDocument,
+  options: DocxSourcePreservationOptions = {},
 ): Promise<Blob> {
   if (!document.sourcePackage) {
     return exportEditorDocumentToDocxBlob(document);
   }
-  const buffer = await exportEditorDocumentToDocxPreservingSource(document);
+  const buffer = await exportEditorDocumentToDocxPreservingSource(document, options);
   return new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   });

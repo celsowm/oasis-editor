@@ -42,6 +42,34 @@ export interface EditorDocxDiagnostic {
   relationshipId?: string;
 }
 
+/** Preservation-only description. No executable or editable object semantics. */
+export interface EditorDocxOpaqueObject {
+  kind: "chart" | "diagram" | "embedded" | "ink" | "drawing" | "vml";
+  ownerPath: string;
+  ordinal: number;
+  fragmentXml: string;
+  /** Expanded-name structure; not a digest or a proof of visual equivalence. */
+  signature: string;
+  geometry?: {
+    placement: "inline" | "anchor";
+    widthEmu?: number;
+    heightEmu?: number;
+    wrap?: string;
+    relativeHeight?: string;
+  };
+  relationshipIds: string[];
+  edges: Array<{
+    ownerPath: string;
+    relationshipId: string;
+    type: string;
+    target: string;
+    targetMode: "Internal" | "External";
+    resolvedTarget?: string;
+  }>;
+  partPaths: string[];
+  issues: EditorDocxDiagnostic[];
+}
+
 export interface EditorDocxSourcePackage {
   format: "docx";
   mainDocumentPart: string;
@@ -49,6 +77,8 @@ export interface EditorDocxSourcePackage {
   rootRelationships: EditorOpcRelationship[];
   parts: Record<string, EditorOpcPart>;
   diagnostics?: EditorDocxDiagnostic[];
+  /** Inventory of unsupported story objects; not part of the editable run model yet. */
+  opaqueObjects?: EditorDocxOpaqueObject[];
   /**
    * Hashes of the canonical Oasis rebuild immediately after import, keyed by
    * conventional rebuilt part path. During source-backed export an equal hash

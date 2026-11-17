@@ -1,3 +1,4 @@
+import { inspectDocxOpaqueObjects } from "@/ooxml/word/opaqueObjects.js";
 import JSZip from "jszip";
 import type {
   EditorDocument,
@@ -151,7 +152,7 @@ export async function captureDocxSourcePackage(
     }
   }
 
-  return {
+  const sourcePackage: EditorDocxSourcePackage = {
     format: "docx",
     mainDocumentPart,
     contentTypes,
@@ -159,6 +160,10 @@ export async function captureDocxSourcePackage(
     parts,
     ...(diagnostics.length > 0 ? { diagnostics } : {}),
   };
+  const opaque = inspectDocxOpaqueObjects(sourcePackage);
+  if (opaque.objects.length) sourcePackage.opaqueObjects = opaque.objects;
+  if (opaque.diagnostics.length) sourcePackage.diagnostics = [...diagnostics, ...opaque.diagnostics];
+  return sourcePackage;
 }
 
 export async function attachDocxRebuiltPartBaseline(
