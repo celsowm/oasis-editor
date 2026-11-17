@@ -1,10 +1,10 @@
 /**
  * Owns the writer's image XObjects: registration/deduplication by resource name
- * and serialization to ASCIIHex+DCTDecode image objects. The content stream
+ * and serialization to binary DCTDecode image objects. The content stream
  * looks images up by name; the serializer emits their objects.
  */
 import type { AddPdfObject, OasisPdfImageResource } from "./pdfTypes.js";
-import { asciiHexImageStreamObjectBody } from "./pdfPrimitives.js";
+import { binaryStreamObjectBody } from "./pdfPrimitives.js";
 
 export class PdfImageTable {
   private readonly imageResources = new Map<string, OasisPdfImageResource>();
@@ -49,7 +49,8 @@ export class PdfImageTable {
     addObject: AddPdfObject,
   ): number {
     return addObject(
-      asciiHexImageStreamObjectBody(resource.data, [
+      binaryStreamObjectBody(resource.data, [
+        "/Filter /DCTDecode",
         "/Type /XObject",
         "/Subtype /Image",
         `/Width ${resource.width}`,

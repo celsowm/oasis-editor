@@ -9,6 +9,7 @@ import {
   getRunSym,
 } from "@/core/model.js";
 import { unzlibSync } from "fflate";
+import { buildSparseFontWidths, buildToUnicodeCMap } from "@/export/pdf/writer/pdfPrimitives.js";
 import { describe, expect, it } from "vitest";
 import type {
   EditorDocument,
@@ -37,36 +38,19 @@ import { projectDocumentLayout } from "@/layoutProjection/index.js";
 // %%EOF, dict objects) is preserved.
 function decodePdf(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
-  let raw = "";
-  for (let i = 0; i < bytes.length; i += 1) {
-    raw += String.fromCharCode(bytes[i]!);
+  const raw = Array.from(bytes, byte=>String.fromCharCode(byte)).join("");
+  let out = "", copiedTo = 0;
+  // Use binary lengths, not delimiter search inside a compressed stream.
+  const streams = /<< \/Length (\d+)([^>]*?)>>\nstream\n/g;
+  for (let match=streams.exec(raw);match;match=streams.exec(raw)) {
+    const start=streams.lastIndex,end=start+Number(match[1]);
+    streams.lastIndex=end;
+    if (!match[2]!.includes("/Filter /FlateDecode") || match[2]!.includes("/Length1 ")) continue;
+    const inflated=new TextDecoder().decode(unzlibSync(bytes.subarray(start,end)));
+    out+=raw.slice(copiedTo,start)+inflated;
+    copiedTo=end;
   }
-  let out = "";
-  let copiedTo = 0;
-  let cursor = 0;
-  for (;;) {
-    const at = raw.indexOf("/FlateDecode", cursor);
-    if (at === -1) break;
-    const streamStart = raw.indexOf("stream\n", at);
-    if (streamStart === -1) break;
-    const dataStart = streamStart + "stream\n".length;
-    const dataEnd = raw.indexOf("\nendstream", dataStart);
-    if (dataEnd === -1) break;
-    const compressed = new Uint8Array(dataEnd - dataStart);
-    for (let i = 0; i < compressed.length; i += 1) {
-      compressed[i] = raw.charCodeAt(dataStart + i) & 0xff;
-    }
-    try {
-      const inflated = new TextDecoder().decode(unzlibSync(compressed));
-      out += raw.slice(copiedTo, dataStart) + inflated;
-      copiedTo = dataEnd;
-    } catch {
-      // Not a real inflate match; leave the bytes untouched.
-    }
-    cursor = dataEnd + 1;
-  }
-  out += raw.slice(copiedTo);
-  return out;
+  return out+raw.slice(copiedTo);
 }
 
 const PX_TO_PT = 72 / 96;
@@ -256,6 +240,65 @@ function createInlineImageDocument(options?: {
     ],
   };
 }
+
+describe("PDF binary resource size", () => {
+  it("emits only real CID widths and Unicode mappings even for high glyph IDs", () => {
+    const widths=Array.from({length:60001},()=>500);
+    expect(buildSparseFontWidths(widths,[0,12,13,60000])).toBe("0 [500] 12 [500 500] 60000 [500]");
+    const cmap=buildToUnicodeCMap(new Map([[12,[0x4f]],[60000,[0xe1]]]));
+    expect(cmap).toContain("<000C> <004F>");
+    expect(cmap).toContain("<EA60> <00E1>");
+    expect(cmap).not.toContain("<0000>");
+    expect(cmap.length).toBeLessThan(1024);
+    const large=buildToUnicodeCMap(new Map(Array.from({length:201},(_,i)=>[i+1,[65]])));
+    expect(large.match(/\d+ beginbfchar/g)).toEqual(["100 beginbfchar","100 beginbfchar","1 beginbfchar"]);
+  });
+
+  it.each(["Calibri","Arial","Times New Roman","Open Sans","Roboto"])("keeps Olá mundo compact and embeds a valid compressed TrueType stream in %s",async(family)=>{
+    const registry=new PdfFontRegistry();
+    await registry.loadBundledUnicodeFaces({families:[family]});
+    const writer=new OasisPdfWriter(registry.getPdfFontResources());
+    const page=writer.addPage({width:595,height:842});
+    writer.drawText(page,{x:72,y:72,text:"Olá mundo",fontSize:12,fontResourceName:registry.resolveFontFace({fontFamily:family}).writerResourceName});
+    const buffer=writer.toArrayBuffer(),bytes=new Uint8Array(buffer);
+    const raw=Array.from(bytes,b=>String.fromCharCode(b)).join("");
+    const match=/<< \/Length (\d+) \/Filter \/FlateDecode \/Length1 (\d+) >>\nstream\n/.exec(raw);
+    expect(match).not.toBeNull();
+    const start=match!.index+match![0].length;
+    const compressed=bytes.subarray(start,start+Number(match![1]));
+    const sfnt=unzlibSync(compressed);
+    expect(sfnt.byteLength).toBe(Number(match![2]));
+    expect([...sfnt.subarray(0,4)]).toEqual([0,1,0,0]);
+    expect(compressed.length).toBeLessThan(sfnt.length);
+    expect(raw).not.toContain("/ASCIIHexDecode");
+    expect(raw.match(/\/FontFile2 /g)).toHaveLength(1);
+    expectPdfText(decodePdf(buffer),"Olá mundo");
+    expect(decodePdf(buffer)).toContain("<00E1>");
+    // Budget is deliberately a ceiling, not a claimed measured output size.
+    expect(buffer.byteLength).toBeLessThan(48*1024);
+    const xref=Number(/startxref\n(\d+)/.exec(raw)![1]);
+    expect(raw.slice(xref,xref+5)).toBe("xref\n");
+    for(const [index,line] of raw.slice(xref).split("\n").slice(2).entries()){
+      if(!/^\d{10} \d{5} n /.test(line))continue;
+      const offset=Number(line.slice(0,10));
+      expect(raw.slice(offset,offset+String(index).length+7)).toBe(index+" 0 obj\n");
+    }
+    console.info("PDF size:",family,buffer.byteLength,"bytes; font",sfnt.byteLength,"->",compressed.byteLength);
+  });
+
+  it("embeds JPEG bytes unchanged rather than doubling them as hex",()=>{
+    const writer=new OasisPdfWriter(),page=writer.addPage({width:300,height:300});
+    const data=new Uint8Array([255,216,255,224,0,4,0,255,255,217]);
+    const name=writer.registerImageResource({width:1,height:1,data,filter:"DCTDecode"});
+    writer.drawImage(page,{resourceName:name,x:10,y:10,width:10,height:10});
+    const bytes=new Uint8Array(writer.toArrayBuffer());
+    const raw=Array.from(bytes,b=>String.fromCharCode(b)).join("");
+    const match=/<< \/Length (\d+) \/Filter \/DCTDecode[^>]*>>\nstream\n/.exec(raw)!;
+    expect(Number(match[1])).toBe(data.length);
+    const start=match.index+match[0].length;
+    expect(bytes.slice(start,start+data.length)).toEqual(data);
+  });
+});
 
 describe("PdfFontRegistry", () => {
   it("resolves Open Sans to its bundled family", () => {
@@ -2509,7 +2552,8 @@ describe("OasisPdfWriter", () => {
     expect(blob.type).toBe("application/pdf");
     expect(pdf).toContain("/Subtype /Image");
     expect(pdf).toContain("/XObject << /Im1");
-    expect(pdf).toContain("/Filter [/ASCIIHexDecode /DCTDecode]");
+    expect(pdf).toContain("/Filter /DCTDecode");
+    expect(pdf).not.toContain("/ASCIIHexDecode");
     expect(pdf).toContain("/Im1 Do");
     expect(drawnImage.a).toBeCloseTo(pxToPt(imageWidth), 3);
     expect(drawnImage.b).toBeCloseTo(0, 3);

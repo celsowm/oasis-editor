@@ -4,6 +4,7 @@
  * ToUnicode CMap builder. None of these touch writer state, so they are shared
  * freely by the content stream, font table, image table and serializer.
  */
+import { zlibSync } from "fflate";
 import type { OasisPdfFontResource, OasisPdfTextOptions } from "./pdfTypes.js";
 import {
   normalizeOpaqueRgbColor,
@@ -169,40 +170,31 @@ export function encodePdfUtf16Hex(codePoints: number[]): string {
   return values.map(toHex16).join("");
 }
 
-export function buildToUnicodeCMap(unicode: number[][]): string {
-  const entries = unicode
-    .map((codePoints): string => `<${encodePdfUtf16Hex(codePoints)}>`)
-    .filter((entry): boolean => entry !== "<>");
-  if (entries.length === 0) {
-    entries.push("<0000>");
+/** Sparse CID mapping. Glyph IDs remain the original TrueType IDs, so
+ * composites, shaping, and already-emitted text operators are unchanged.
+ * Only codes actually drawn get mappings; no synthetic U+0000 entries. */
+export function buildToUnicodeCMap(unicode: ReadonlyMap<number, readonly number[]>): string {
+  const entries = [...unicode]
+    .filter(([id, codePoints]) => id >= 0 && id <= 0xffff && codePoints.length > 0)
+    .sort(([a], [b]) => a - b)
+    .map(([id, codePoints]) => "<" + toHex16(id) + "> <" + encodePdfUtf16Hex([...codePoints]) + ">");
+  // PDF CMap operators permit at most 100 entries per block.
+  const blocks: string[] = [];
+  for (let start = 0; start < entries.length; start += 100) {
+    const chunk = entries.slice(start, start + 100);
+    blocks.push(chunk.length + " beginbfchar", ...chunk, "endbfchar");
   }
-
-  const ranges: string[] = [];
-  const chunkSize = 256;
-  for (let start = 0; start < entries.length; start += chunkSize) {
-    const end = Math.min(start + chunkSize, entries.length);
-    ranges.push(
-      `<${toHex16(start)}> <${toHex16(end - 1)}> [${entries.slice(start, end).join(" ")}]`,
-    );
-  }
-
   return [
     "/CIDInit /ProcSet findresource begin",
     "12 dict begin",
     "begincmap",
-    "/CIDSystemInfo <<",
-    "  /Registry (Adobe)",
-    "  /Ordering (UCS)",
-    "  /Supplement 0",
-    ">> def",
+    "/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def",
     "/CMapName /Adobe-Identity-UCS def",
     "/CMapType 2 def",
     "1 begincodespacerange",
     "<0000><ffff>",
     "endcodespacerange",
-    `${ranges.length} beginbfrange`,
-    ranges.join("\n"),
-    "endbfrange",
+    ...blocks,
     "endcmap",
     "CMapName currentdict /CMap defineresource pop",
     "end",
@@ -211,38 +203,60 @@ export function buildToUnicodeCMap(unicode: number[][]): string {
   ].join("\n");
 }
 
-export function streamObjectBody(stream: string, extraDictionary = ""): string {
-  const dictionary = extraDictionary
-    ? ` /${extraDictionary.trim().replace(/^\/+/, "")}`
-    : "";
-  return `<< /Length ${byteLength(stream)}${dictionary} >>\nstream\n${stream}endstream`;
+/** PDF streams are byte sequences, not UTF-8 text or ASCII-hex. Length is the
+ * encoded payload length, excluding the terminating newline. */
+export function binaryStreamObjectBody(
+  bytes: Uint8Array,
+  dictionaryEntries: readonly string[] = [],
+): Uint8Array {
+  const encoder = new TextEncoder();
+  const prefix = encoder.encode(
+    ["<< /Length " + bytes.byteLength, ...dictionaryEntries, ">>"].join(" ") +
+      "\nstream\n",
+  );
+  const suffix = encoder.encode("\nendstream");
+  const result = new Uint8Array(prefix.length + bytes.length + suffix.length);
+  result.set(prefix);
+  result.set(bytes, prefix.length);
+  result.set(suffix, prefix.length + bytes.length);
+  return result;
 }
 
-export function asciiHexStreamObjectBody(
+export function flateStreamObjectBody(
   bytes: Uint8Array,
-  extraDictionary = "",
-): string {
-  const stream = `${bytesToHex(bytes)}>`;
-  const dictionary = extraDictionary
-    ? ` /${extraDictionary.trim().replace(/^\/+/, "")}`
-    : "";
-  return `<< /Length ${byteLength(stream)} /Filter /ASCIIHexDecode${dictionary} >>\nstream\n${stream}\nendstream`;
+  dictionaryEntries: readonly string[] = [],
+): Uint8Array {
+  return binaryStreamObjectBody(zlibSync(bytes, { level: 9 }), [
+    "/Filter /FlateDecode",
+    ...dictionaryEntries,
+  ]);
 }
 
-export function asciiHexImageStreamObjectBody(
-  bytes: Uint8Array,
-  dictionaryEntries: string[],
+/** Group contiguous used CIDs into PDF /W ranges; omit all unused widths.
+ * Preserve fractional advances and original glyph IDs. */
+export function buildSparseFontWidths(
+  widths: readonly number[],
+  usedGlyphIds: Iterable<number>,
 ): string {
-  const stream = `${bytesToHex(bytes)}>`;
-  return [
-    `<< /Length ${byteLength(stream)}`,
-    " /Filter [/ASCIIHexDecode /DCTDecode]",
-    ` ${dictionaryEntries.join(" ")}`,
-    " >>",
-    "stream",
-    stream,
-    "endstream",
-  ].join("\n");
+  const ids = [...new Set(usedGlyphIds)].sort((a, b) => a - b);
+  const groups: string[] = [];
+  let start = -1;
+  let previous = -2;
+  let values: string[] = [];
+  const flush = (): void => {
+    if (values.length) groups.push(start + " [" + values.join(" ") + "]");
+  };
+  for (const id of ids) {
+    if (id !== previous + 1 || start < 0) {
+      flush();
+      start = id;
+      values = [];
+    }
+    values.push(formatNumber(widths[id] ?? 0));
+    previous = id;
+  }
+  flush();
+  return groups.join(" ");
 }
 
 export function encodeGlyphHex(glyphId: number): string {

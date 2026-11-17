@@ -15,8 +15,8 @@ import type {
 import type { PdfFontTable } from "./PdfFontTable.js";
 import type { PdfImageTable } from "./PdfImageTable.js";
 import type { PdfShadingTable } from "./PdfShadingTable.js";
-import { zlibSync } from "fflate";
 import {
+  flateStreamObjectBody,
   PDF_HEADER,
   byteLength,
   encodePdfUtf16Hex,
@@ -51,12 +51,7 @@ function concatChunks(chunks: Array<string | Uint8Array>): Uint8Array {
  * bytes (dict + deflated stream) so the deflated data bypasses UTF-8 encoding.
  */
 function buildContentStreamObject(streamText: string): Uint8Array {
-  const compressed = zlibSync(utf8.encode(streamText));
-  return concatChunks([
-    `<< /Length ${compressed.length} /Filter /FlateDecode >>\nstream\n`,
-    compressed,
-    "\nendstream",
-  ]);
+  return flateStreamObjectBody(utf8.encode(streamText));
 }
 
 /** Escapes a string for a PDF literal `(...)` string (used for `/URI`). */
