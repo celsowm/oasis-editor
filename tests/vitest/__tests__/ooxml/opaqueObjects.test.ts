@@ -4,6 +4,7 @@ import { deleteBackward, deleteForward } from "@/core/commands/text.js";
 import { createEmptyEditorHistoryState, applyEditorHistoryTransaction, takeEditorUndoStep, takeEditorRedoStep } from "@/ui/editorHistory.js";
 import { planOpaqueDependencyPruning } from "@/export/docx/opc/opaqueDependencyPruning.js";
 import { planOpaqueStoryRelocation } from "@/export/docx/opc/opaqueStoryRelocation.js";
+import { applyTextDragDrop } from "@/app/controllers/useEditorTextDrag.js";
 import { moveOrCopySelectionToPosition, relocateSelectedOpaqueObject } from "@/core/commands/text.js";
 import { cloneRun } from "@/core/document/clone.js";
 import { buildParagraphFragments, buildMeasuredChars } from "@/ui/textMeasurement/tokenizer.js";
@@ -173,9 +174,17 @@ describe("opaque source inventory and loss detector",()=>{
     const body=doc.sections?.[0]?.blocks[0],header=doc.sections?.[0]?.header?.[0];
     if(body?.type!=="paragraph"||header?.type!=="paragraph")throw Error("Expected existing body and header");
     const offset=body.runs.slice(0,body.runs.findIndex(r=>r.kind==="opaque")).reduce((n,r)=>n+r.text.length,0);
-    const initial=createEditorStateFromDocument(doc,{offset});
+    const initial=createEditorStateFromDocument(doc);
+    expect(initial.activeZone).toBe("main");
     const selected={...initial,selection:{anchor:paragraphOffsetToPosition(body,offset),focus:paragraphOffsetToPosition(body,offset+1)}};
-    const moved=relocateSelectedOpaqueObject(selected,{zone:"header",paragraphId:header.id,offset:0});
+    const target=paragraphOffsetToPosition(header,0);
+    const hit={zone:"header" as const,paragraphId:header.id,paragraphOffset:0};
+    // Controller dispatch must not flatten the destination into the source
+    // editing zone. Copy remains unsupported until asset transfer exists.
+    expect(applyTextDragDrop(selected,target,hit,true,(s,change)=>change(s))).toBe(selected);
+    const moved=applyTextDragDrop(selected,target,hit,false,(s,change)=>change(s));
+    const direct=relocateSelectedOpaqueObject(selected,{zone:"header",paragraphId:header.id,offset:0});
+    expect(moved.document.opaqueRelocationIntent).toEqual(direct.document.opaqueRelocationIntent);
     expect(moved.activeZone).toBe("header");
     expect(moved.document.opaqueRelocationIntent?.destinationOwner).toBe(headerPath);
     expect(doc.opaqueRelocationIntent).toBeUndefined();

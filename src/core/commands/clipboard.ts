@@ -43,6 +43,28 @@ export interface EditorClipboardParagraphSpec {
   list?: EditorParagraphListStyle;
 }
 
+/** A plain-text/HTML clipboard cannot represent source-owned OPC objects.
+ * Refuse the entire selection, including mixed text/object ranges, rather
+ * than copying a replacement character and subsequently deleting real data. */
+export function selectionContainsOpaqueObject(state: EditorState): boolean {
+  const paragraphs=getParagraphs(state);
+  const selection=normalizeSelection(state,paragraphs);
+  if(selection.isCollapsed)return false;
+  for(let index=selection.startIndex;index<=selection.endIndex;index++){
+    const p=paragraphs[index];
+    if(!p)continue;
+    const start=index===selection.startIndex?selection.startParagraphOffset:0;
+    const end=index===selection.endIndex?selection.endParagraphOffset:getParagraphLength(p);
+    let offset=0;
+    for(const run of p.runs){
+      const next=offset+run.text.length;
+      if(run.kind==="opaque"&&offset<end&&next>start)return true;
+      offset=next;
+    }
+  }
+  return false;
+}
+
 export function serializeEditorSelectionToHtml(state: EditorState): string {
   const normalized = normalizeSelection(state);
   if (normalized.isCollapsed) {

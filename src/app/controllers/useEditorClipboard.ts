@@ -3,6 +3,7 @@ import { mergeClipboardFormatting } from "@/core/commands/clipboardMergeFormatti
 import {
   insertClipboardParagraphsAtSelection,
   serializeEditorSelectionToHtml,
+  selectionContainsOpaqueObject,
 } from "@/core/commands/clipboard.js";
 import { getSelectedText } from "@/core/commands/selection.js";
 import {
@@ -53,6 +54,10 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
   const handleCopy = (
     event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
   ): void => {
+    if (selectionContainsOpaqueObject(deps.state())) {
+      event.preventDefault();
+      return;
+    }
     const text = getSelectedText(deps.state());
     if (text.length === 0) {
       return;
@@ -76,6 +81,10 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
     event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
   ): void => {
     if (deps.isReadOnly()) {
+      event.preventDefault();
+      return;
+    }
+    if (selectionContainsOpaqueObject(deps.state())) {
       event.preventDefault();
       return;
     }

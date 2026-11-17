@@ -2,9 +2,9 @@ import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import { createPointerGesture } from "./pointerGesture.js";
 import { createSignal } from "solid-js";
 import { setSelection } from "@/core/commands/selection.js";
-import { moveOrCopySelectionToPosition } from "@/core/commands/text.js";
+import { moveOrCopySelectionToPosition, relocateSelectedOpaqueObject } from "@/core/commands/text.js";
 import type { EditorPosition, EditorState } from "@/core/model.js";
-import { getParagraphs, positionToParagraphOffset } from "@/core/model.js";
+import { getActiveZone, getParagraphs, positionToParagraphOffset } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import type { SurfaceHit } from "@/ui/canvas/CanvasHitTestService.js";
 
@@ -75,6 +75,33 @@ function isPositionInsideSelection(
   return true;
 }
 
+/** Cross-story drops are explicit transactions, not edits of the active
+ * zone's flattened paragraph stream. Unsupported transfers are no-ops. */
+export function applyTextDragDrop(
+  state: EditorState,
+  destination: EditorPosition,
+  hit: Pick<SurfaceHit, "zone" | "paragraphId" | "paragraphOffset" | "tableCellAnchorPosition">,
+  copy: boolean,
+  edit: EditorTextDragDeps["applyTableAwareParagraphEdit"],
+  onRejected?: (error: unknown) => void,
+): EditorState {
+  if (hit.zone === getActiveZone(state)) {
+    return edit(state, temp => moveOrCopySelectionToPosition(temp, destination, { copy }));
+  }
+  if (copy || hit.tableCellAnchorPosition || !["main", "header", "footer"].includes(hit.zone)) return state;
+  if (hit.zone !== "main" && hit.zone !== "header" && hit.zone !== "footer") return state;
+  try {
+    return relocateSelectedOpaqueObject(state, {
+      zone: hit.zone,
+      paragraphId: hit.paragraphId,
+      offset: hit.paragraphOffset,
+    });
+  } catch (error) {
+    onRejected?.(error);
+    return state;
+  }
+}
+
 export function createEditorTextDrag(
   deps: EditorTextDragDeps,
 ): ReturnType<typeof createEditorTextDragImpl> {
@@ -101,6 +128,7 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
     null;
   let cursorStyleEl: HTMLStyleElement | null = null;
   let lastDropTargetKey: string | null = null;
+  let dropHit: SurfaceHit | null = null;
 
   const hideCursor = (): void => {
     if (cursorStyleEl) {
@@ -129,6 +157,7 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
     });
     pendingStart = null;
     lastDropTargetKey = null;
+    dropHit = null;
     setDragging(false);
     setDropTargetPos(null);
     setCopyMode(false);
@@ -166,7 +195,8 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
     setPointerPos({ x: event.clientX, y: event.clientY });
     // Keep drop-caret preview aligned with the pointer using the
     // canvas hit result.
-    const hit = deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY);
+    const hit = deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY, { forDrag: true });
+    dropHit = hit?.resolvedFromParagraph ? hit : null;
     if (!hit?.resolvedFromParagraph) {
       deps.logger?.debug("text-drag:hit-miss", {
         x: event.clientX,
@@ -209,16 +239,20 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
         ? `${dropTargetPos()!.paragraphId}:${dropTargetPos()!.runId}[${dropTargetPos()!.offset}]`
         : null,
     });
-    if (dragging() && dropTargetPos()) {
+    if (event.type === "pointercancel") {
+      stopDrag();
+      return;
+    }
+    if (dragging() && dropTargetPos() && dropHit) {
       const destination = dropTargetPos()!;
-      const copy = copyMode();
+      const copy = event.ctrlKey || event.metaKey;
+      const hit = dropHit;
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
       deps.applyTransactionalState(
         (current): EditorState =>
-          deps.applyTableAwareParagraphEdit(current, (temp): EditorState =>
-            moveOrCopySelectionToPosition(temp, destination, { copy }),
-          ),
+          applyTextDragDrop(current, destination, hit, copy, deps.applyTableAwareParagraphEdit,
+            error => deps.logger?.warn?.("text-drag:relocation-rejected", error)),
         {
           mergeKey: copy
             ? MERGE_KEYS.copyTextByDrag
@@ -293,6 +327,7 @@ function createEditorTextDragImpl(deps: EditorTextDragDeps) {
     setPointerPos({ x: event.clientX, y: event.clientY });
     setCopyMode(event.ctrlKey || event.metaKey);
     setDropTargetPos(null);
+    dropHit = null;
     setCaretViewport(hit.caretViewport ?? null);
     setDragging(false);
     gesture.claim(event);

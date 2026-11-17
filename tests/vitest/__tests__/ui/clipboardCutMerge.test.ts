@@ -8,6 +8,7 @@ import {
   getDocumentParagraphs, getParagraphText, paragraphOffsetToPosition,
   type EditorState,
 } from "@/core/model.js";
+import { selectionContainsOpaqueObject } from "@/core/commands/clipboard.js";
 import { mergeClipboardFormatting } from "@/core/commands/clipboardMergeFormatting.js";
 import { cutEditorSelection, writeEditorSelectionToClipboard } from "@/ui/app/clipboardWrite.js";
 import { pasteFromSystemClipboard, type ClipboardPasteDeps } from "@/ui/app/clipboardPaste.js";
@@ -87,6 +88,23 @@ describe("clipboard Cut uses confirmed writes", () => {
     expect(await cutEditorSelection(app.deps)).toBe(false);
     expect(app.state.document).toBe(before);
     expect(app.text).toBe("hello world");
+    expect(app.clear).not.toHaveBeenCalled();
+  });
+
+  it("does not write or cut a mixed opaque object selection", async () => {
+    const app=harness(1,5);
+    const p=getDocumentParagraphs(app.state.document)[0]!;
+    p.runs=[{id:p.runs[0]!.id,kind:"text",text:"he"},{id:"run:opaque",kind:"opaque",text:"\uFFFC",opaque:{objectKind:"chart",fragmentXml:"<drawing/>",signature:"fixture",relationshipIds:[],width:120,height:60}},{id:"run:tail",kind:"text",text:"lo world"}];
+    const selection={anchor:paragraphOffsetToPosition(p,1),focus:paragraphOffsetToPosition(p,5)};
+    const snapshot={...app.state,selection};
+    const issue=vi.fn(),writeText=vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator",{clipboard:{writeText}});
+    expect(selectionContainsOpaqueObject(snapshot)).toBe(true);
+    expect(await writeEditorSelectionToClipboard(snapshot,issue)).toBe(false);
+    expect(await cutEditorSelection({...app.deps,state:()=>snapshot,onIssue:issue})).toBe(false);
+    expect(issue).toHaveBeenCalledWith("unsupported");
+    expect(writeText).not.toHaveBeenCalled();
+    expect(p.runs.some(r=>r.kind==="opaque")).toBe(true);
     expect(app.clear).not.toHaveBeenCalled();
   });
 

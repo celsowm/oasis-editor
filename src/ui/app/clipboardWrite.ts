@@ -1,4 +1,4 @@
-import { serializeEditorSelectionToHtml } from "@/core/commands/clipboard.js";
+import { serializeEditorSelectionToHtml, selectionContainsOpaqueObject } from "@/core/commands/clipboard.js";
 import { getSelectedText } from "@/core/commands/selection.js";
 import { deleteBackward } from "@/core/commands/text.js";
 import type { EditorState } from "@/core/model.js";
@@ -65,6 +65,10 @@ export async function writeEditorSelectionToClipboard(
   snapshot: EditorState,
   onIssue?: (issue: ClipboardIssue) => void,
 ): Promise<boolean> {
+  if (selectionContainsOpaqueObject(snapshot)) {
+    onIssue?.("unsupported");
+    return false;
+  }
   const copied = await writeSelection(snapshot);
   if (!copied && getSelectedText(snapshot)) onIssue?.("access-denied");
   return copied;
