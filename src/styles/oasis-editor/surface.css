@@ -486,6 +486,7 @@
    connector is a thin rule back toward the anchor text. */
 .oasis-editor-revision-balloon {
   position: absolute;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -501,7 +502,6 @@
   font-size: 9px;
   line-height: 1.25;
   color: var(--oasis-text, #202124);
-  white-space: nowrap;
 }
 .oasis-editor-revision-balloon-delete {
   border-left-color: #dc2626;
@@ -514,30 +514,29 @@
 }
 .oasis-editor-revision-balloon-head {
   display: flex;
-  justify-content: space-between;
-  gap: 6px;
+  flex-direction: column;
+  gap: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 .oasis-editor-revision-balloon-head strong {
+  min-width: 0;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .oasis-editor-revision-balloon-head > span {
-  flex: 0 0 auto;
-  opacity: 0.75;
-}
-.oasis-editor-revision-balloon-snippet {
   overflow: hidden;
   text-overflow: ellipsis;
-  opacity: 0.8;
+  white-space: nowrap;
+  opacity: 0.7;
 }
-.oasis-editor-revision-balloon-connector {
-  position: absolute;
-  height: 1px;
-  background: #94a3b8;
-  opacity: 0.6;
+.oasis-editor-revision-balloon-snippet {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  opacity: 0.8;
 }
 
 .oasis-editor-change-bar-root {

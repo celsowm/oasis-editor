@@ -77,10 +77,6 @@ export interface RevisionMarkupBox {
   author?: string;
   date?: number;
   snippet?: string;
-  /** Connector line from the card back toward the anchor text. */
-  connectorLeft?: number;
-  connectorTop?: number;
-  connectorWidth?: number;
 }
 
 /** One highlight rectangle over a commented text range, tagged with its id. */

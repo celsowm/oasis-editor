@@ -14,8 +14,8 @@ export interface RevisionMarkupOverlayProps {
  * revisions (`variant === "cell"`) instead draw a full coloured cell outline,
  * section-level revisions (`variant === "section"`) a dashed per-page outline,
  * and `variant === "balloon"` a right-margin reviewer card (author, type and
- * snippet) with a connector back to the anchor text. Presentational only —
- * hit-testing and editing stay on the canvas underneath.
+ * snippet). Presentational only — hit-testing and editing stay on the canvas
+ * underneath.
  */
 export function RevisionMarkupOverlay(
   props: RevisionMarkupOverlayProps,
@@ -64,43 +64,38 @@ export function RevisionMarkupOverlay(
               />
             }
           >
-            <>
-              <span
-                class="oasis-editor-revision-balloon-connector"
-                style={{
-                  left: `${box.connectorLeft ?? box.left}px`,
-                  top: `${box.connectorTop ?? box.top}px`,
-                  width: `${box.connectorWidth ?? 0}px`,
-                }}
-              />
-              <span
-                class="oasis-editor-revision-balloon"
-                classList={{
-                  "oasis-editor-revision-balloon-insert": box.type === "insert",
-                  "oasis-editor-revision-balloon-delete": box.type === "delete",
-                  "oasis-editor-revision-balloon-property":
-                    box.type === "property",
-                  "oasis-editor-revision-balloon-grid": box.type === "grid",
-                }}
-                data-testid="editor-revision-balloon"
-                data-revision-type={box.type}
-                data-revision-id={box.revisionId}
-                style={{
-                  left: `${box.left}px`,
-                  top: `${box.top}px`,
-                  width: `${box.width}px`,
-                  height: `${box.height}px`,
-                }}
-              >
-                <span class="oasis-editor-revision-balloon-head">
-                  <strong>{box.author ?? "—"}</strong>
-                  <span>{typeLabel(box.type)}</span>
-                </span>
-                <span class="oasis-editor-revision-balloon-snippet">
-                  {box.snippet || "—"}
-                </span>
+            <span
+              class="oasis-editor-revision-balloon"
+              classList={{
+                "oasis-editor-revision-balloon-insert": box.type === "insert",
+                "oasis-editor-revision-balloon-delete": box.type === "delete",
+                "oasis-editor-revision-balloon-property":
+                  box.type === "property",
+                "oasis-editor-revision-balloon-grid": box.type === "grid",
+              }}
+              data-testid="editor-revision-balloon"
+              data-revision-type={box.type}
+              data-revision-id={box.revisionId}
+              title={
+                box.date
+                  ? `${box.author ?? ""} · ${new Date(box.date).toLocaleString()}`
+                  : (box.author ?? "")
+              }
+              style={{
+                left: `${box.left}px`,
+                top: `${box.top}px`,
+                width: `${box.width}px`,
+                height: `${box.height}px`,
+              }}
+            >
+              <span class="oasis-editor-revision-balloon-head">
+                <strong>{box.author ?? "—"}</strong>
+                <span>{typeLabel(box.type)}</span>
               </span>
-            </>
+              <span class="oasis-editor-revision-balloon-snippet">
+                {box.snippet || "—"}
+              </span>
+            </span>
           </Show>
         )}
       </For>

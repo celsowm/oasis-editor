@@ -176,9 +176,10 @@ describe("computeRevisionBalloons", () => {
     // page.left(100) + width(816) - inset(12) - card(168) = 736
     for (const box of boxes) {
       expect(box.variant).toBe("balloon");
-      expect(box.left).toBe(736);
+      // page right (916) - inset (8) - card (168) = 740.
+      expect(box.left).toBe(740);
       expect(box.width).toBe(168);
-      expect(box.height).toBe(42);
+      expect(box.height).toBe(58);
     }
   });
 
@@ -197,13 +198,19 @@ describe("computeRevisionBalloons", () => {
     });
   });
 
-  it("anchors the connector to the first painted line", () => {
-    const boxes = computeRevisionBalloons(snapshot(allSegments), state());
-    expect(boxes[0]).toMatchObject({
-      connectorLeft: 580,
-      connectorTop: 208,
-      connectorWidth: 156,
-    });
+  it("shrinks the card to a narrow right margin so it never covers text", () => {
+    // Text spans the full content width: content right = 100 + 720 = 820, so
+    // the right margin is only 96px and the card must fit inside it.
+    const full = [
+      { paragraphId: "p1", left: 100, width: 720 },
+      { paragraphId: "p2", left: 100, width: 720 },
+    ];
+    const boxes = computeRevisionBalloons(snapshot(full), state());
+    for (const box of boxes) {
+      expect(box.width).toBe(84);
+      expect(box.left + box.width).toBeLessThanOrEqual(916);
+      expect(box.left).toBeGreaterThanOrEqual(820);
+    }
   });
 
   it("hides property balloons when the Formatting category is off", () => {
@@ -225,7 +232,7 @@ describe("computeRevisionBalloons", () => {
     const boxes = computeRevisionBalloons(snapshot(same), state());
     const tops = boxes.map((b) => b.top).sort((a, b) => a - b);
     for (let i = 1; i < tops.length; i += 1) {
-      expect(tops[i]! - tops[i - 1]!).toBeGreaterThanOrEqual(42);
+      expect(tops[i]! - tops[i - 1]!).toBeGreaterThanOrEqual(58);
     }
   });
 
@@ -237,9 +244,9 @@ describe("computeRevisionBalloons", () => {
     const boxes = computeRevisionBalloons(snapshot(spread, 2), state());
     // p1 carries ins-1; p2 carries del-1 and prop-1 → three cards.
     expect(boxes).toHaveLength(3);
-    // page 1 has the same left/width, so the same x; tops stay on their pages.
-    expect(boxes.every((b) => b.left === 736)).toBe(true);
-    expect(boxes.some((b) => b.top >= 1000)).toBe(true);
+    // Both pages share left/width, so the same x; tops stay on their pages.
+    expect(boxes.every((b) => b.left === 740)).toBe(true);
+    expect(boxes.filter((b) => b.top >= 1000)).toHaveLength(2);
   });
 
   it("skips revisions whose paragraphs have no painted geometry", () => {
