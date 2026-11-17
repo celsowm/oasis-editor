@@ -36,8 +36,36 @@ jobs:
       - run: npm ci
       - run: npm run ooxml:schemas
       - run: npm run ooxml:evidence
-      - run: npm run ooxml:inventory -- --manifest test-results/ooxml/ecma/manifest.json --evidence test-results/ooxml/vitest.json --require-evidence --baseline src/ooxml/capabilities/baseline.json
+      - run: npm run ooxml:inventory -- --manifest test-results/ooxml/ecma/manifest.json --require-docx-scope --evidence test-results/ooxml/vitest.json --require-evidence --baseline src/ooxml/capabilities/baseline.json
       - uses: actions/upload-artifact@v7
         with:
           name: ooxml-schema-inventory
           path: test-results/ooxml/report
+  openxml-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: npm ci
+      - name: Generate production corpus
+        run: npx vitest run tests/vitest/__tests__/ooxml/validationCorpus.test.ts
+        env:
+          OOXML_VALIDATION_CORPUS: test-results/ooxml-validation/corpus
+      - name: Restore validator
+        run: dotnet restore tools/ooxml-validator/OoxmlValidator.csproj
+      - name: Characterize production outputs and negative controls
+        run: |
+          dotnet run --project tools/ooxml-validator/OoxmlValidator.csproj --no-restore -- test-results/ooxml-validation/corpus/positive test-results/ooxml-validation/positive.json
+          dotnet run --project tools/ooxml-validator/OoxmlValidator.csproj --no-restore -- test-results/ooxml-validation/corpus/negative test-results/ooxml-validation/negative.json
+          node scripts/ooxml/check-validator-corpus.mjs test-results/ooxml-validation/positive.json test-results/ooxml-validation/negative.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: openxml-validation
+          path: test-results/ooxml-validation

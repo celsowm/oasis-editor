@@ -44,3 +44,7 @@ The new docx-scope.mjs traverses actual effective element-particle links from an
 The generated docx-scope.json includes contextual elements, attributes, enum values, origin declarations, root/domain memberships and counts by profile. All schema row/attribute/value statuses start unknown. Matching namespace/profile/name registry observations are listed separately (parent-name match is only a hint), and never promoted to schema-wide evidence. This avoids conflating a test of one paragraph with all paragraph contexts. The new searchable scope.html paginates rows and supports attribute and enum search. The deployment generates the compact capability report plus scope JSON from verified schemas and passing evidence, without bundling the raw XSDs or entire internal graph.
 
 The schema CI job now combines the actual Vitest evidence with the official inventory. Future work: exact schema-context evidence bindings, broader root and substitution/wildcard resolution, finer enum evidence, formal validator (OX-002). No coverage percentage is claimed.
+
+## Official scope smoke gate
+
+CI 44000175852 passed but reported 75 roots, 75 contexts and zero attributes. Fixed lexical default namespace lookup for unprefixed QNames and added mandatory official-profile traversal/enum smoke gate; new CI pending. See [validator documentation](./ooxml-validator.md).

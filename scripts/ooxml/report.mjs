@@ -21,9 +21,11 @@ let scope=null;
 if(inventory){
   const {buildDocxScope}=await import("./docx-scope.mjs");
   scope=buildDocxScope(inventory,report.entries);
+  if(args.includes("--require-docx-scope")) (await import("./scope-gate.mjs")).assertOfficialDocxScope(scope);
   scope.sourceRef=sourceRef;
   scope.evidenceMode=report.evidenceMode;
 }
+if(args.includes("--require-docx-scope")&&!scope)throw Error("Official schema manifest required for DOCX scope gate");
 const publicReport=args.includes("--compact")&&inventory?{...report,inventory:{status:inventory.status,reason:inventory.reason,counts:inventory.counts,graphSummary:inventory.graph.summary,effectiveCounts:inventory.effective.counts,docxScope:scope.counts}}:report;
 
 mkdirSync(out,{recursive:true});

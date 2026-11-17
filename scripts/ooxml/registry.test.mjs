@@ -102,3 +102,19 @@ test("DOCX scope follows actual element edges, bounds recursion and separates ev
  assert.equal(result.rows.find(r=>r.context?.element==="p").observations[0].contextHint,"different-context");
  assert.equal(stringify(result),stringify(buildDocxScope({effective},[{profile:"transitional",namespace:"urn:doc",element:"p",context:"document",domain:"word",support:{import:"partial"},evidence:[],limitations:[]}],roots)));
 });
+
+test("official style unprefixed QNames resolve via explicit default namespace",async()=>{
+ const {buildEffectiveInventory}=await import("./effective-schema.mjs");
+ const {buildDocxScope}=await import("./docx-scope.mjs");
+ const xml='<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="urn:word" targetNamespace="urn:word" elementFormDefault="qualified" attributeFormDefault="qualified"><xsd:complexType name="CT_Doc"><xsd:sequence><xsd:element name="body" type="CT_Body"/></xsd:sequence></xsd:complexType><xsd:complexType name="CT_Body"><xsd:sequence><xsd:element name="p" type="xsd:string"/></xsd:sequence><xsd:attribute name="val" type="xsd:string"/></xsd:complexType><xsd:element name="document" type="CT_Doc"/></xsd:schema>';
+ const data=inspectSchema(xml,"transitional","transitional/wml.xsd");
+ const graph=resolveReferences(data.declarations,data.references);
+ assert.equal(graph.summary.resolved,2);
+ const effective=buildEffectiveInventory(data.declarations,graph);
+ const scope=buildDocxScope({effective},[],[{file:"wml.xsd",domain:"word",names:["document"]}]);
+ assert.equal(scope.counts.contexts,3);
+ assert.equal(scope.counts.attributeOccurrences,1);
+ assert.ok(scope.rows.some(r=>r.element==="p"&&r.context?.element==="body"));
+ const {assertOfficialDocxScope}=await import("./scope-gate.mjs");
+ assert.throws(()=>assertOfficialDocxScope(scope),/Incomplete Word document traversal/);
+});

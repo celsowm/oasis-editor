@@ -11,7 +11,16 @@ function qname(node,value) {
   if(!value) return null;
   const parts=value.split(":");
   const prefix=parts.length===2?parts[0]:null;
-  return {namespace:node.lookupNamespaceURI(prefix)??"",name:parts.at(-1)};
+  // Resolve xmlns declarations at the lexical point of use. xmldom's
+  // lookupNamespaceURI(null) may return the element's own namespace rather
+  // than the in-scope default namespace used by unprefixed QName values.
+  if(prefix==="xml")return {namespace:"http://www.w3.org/XML/1998/namespace",name:parts.at(-1)};
+  let ns=null;
+  const declaration=prefix?"xmlns:"+prefix:"xmlns";
+  for(let cursor=node;cursor&&cursor.nodeType===1;cursor=cursor.parentNode){
+    if(cursor.hasAttribute(declaration)){ns=cursor.getAttribute(declaration);break;}
+  }
+  return {namespace:ns??"",name:parts.at(-1)};
 }
 const symbolKey=(profile,namespace,kind,name)=>JSON.stringify([profile,namespace,kind,name]);
 const sort=(a,b)=>a<b?-1:a>b?1:0;
