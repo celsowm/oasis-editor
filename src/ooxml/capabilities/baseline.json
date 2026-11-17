@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "sourceRef": "ef58cc78a43c222afb8216282230ff74e8fcf8fb",
+  "evidenceMode": "runner-results",
+  "provenance": {
+    "workflow": "https://github.com/celsowm/oasis-editor/actions/runs/43997135742/job/133751847602",
+    "method": "Pinned from the seed at the successful CI commit; --require-evidence passed for every declared case. Only dimensions supported by those cases are recorded."
+  },
+  "entries": [
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+      "element": "p",
+      "context": "document/body",
+      "support": {
+        "import": "partial",
+        "render": "unknown",
+        "edit": "partial",
+        "export": "partial",
+        "preserve": "partial"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+      "element": "tbl",
+      "context": "tc",
+      "support": {
+        "import": "partial",
+        "render": "unknown",
+        "edit": "partial",
+        "export": "partial",
+        "preserve": "unknown"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+      "element": "tab",
+      "context": "r",
+      "support": {
+        "import": "partial",
+        "render": "unknown",
+        "edit": "unknown",
+        "export": "partial",
+        "preserve": "partial"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+      "element": "fldChar",
+      "context": "r",
+      "support": {
+        "import": "partial",
+        "render": "unknown",
+        "edit": "unknown",
+        "export": "partial",
+        "preserve": "unknown"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+      "element": "dataBinding",
+      "context": "sdtPr",
+      "support": {
+        "import": "unknown",
+        "render": "unknown",
+        "edit": "partial",
+        "export": "partial",
+        "preserve": "unknown"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/officeDocument/2006/math",
+      "element": "oMath",
+      "context": "p",
+      "support": {
+        "import": "partial",
+        "render": "unknown",
+        "edit": "unknown",
+        "export": "unknown",
+        "preserve": "unknown"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/officeDocument/2006/math",
+      "element": "f",
+      "context": "oMath",
+      "support": {
+        "import": "partial",
+        "render": "unknown",
+        "edit": "unknown",
+        "export": "partial",
+        "preserve": "unknown"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/drawingml/2006/chart",
+      "element": "chart",
+      "context": "graphicData",
+      "support": {
+        "import": "missing",
+        "render": "missing",
+        "edit": "missing",
+        "export": "missing",
+        "preserve": "unknown"
+      }
+    },
+    {
+      "profile": "transitional",
+      "namespace": "http://schemas.openxmlformats.org/drawingml/2006/diagram",
+      "element": "relIds",
+      "context": "graphicData",
+      "support": {
+        "import": "missing",
+        "render": "missing",
+        "edit": "missing",
+        "export": "missing",
+        "preserve": "unknown"
+      }
+    }
+  ]
+}

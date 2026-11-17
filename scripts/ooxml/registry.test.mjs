@@ -57,3 +57,28 @@ test("regression gate rejects loss or downgrade of demonstrated capability",()=>
  assert.equal(compareReports(prior,same).length,2);
  assert.throws(()=>compareReports(prior,{...same,evidenceMode:"static-audit-only"}),/runner evidence/);
 });
+
+test("UTF-8 BOM is accepted without changing source identity",()=>{
+ const xml='<?xml version="1.0"?><xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"><xs:element name="p" type="xs:string"/></xs:schema>';
+ assert.deepEqual(inspectSchema("\uFEFF"+xml,"strict","bom.xsd"),inspectSchema(xml,"strict","bom.xsd"));
+});
+test("effective schema projection expands attributes/base/groups and retains choice cardinality",async()=>{
+ const {buildEffectiveInventory}=await import("./effective-schema.mjs");
+ const x='<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:t="urn:t" targetNamespace="urn:t" elementFormDefault="qualified" attributeFormDefault="qualified">'+
+ '<xs:simpleType name="Mode"><xs:restriction base="xs:string"><xs:enumeration value="a"/><xs:enumeration value="b"/></xs:restriction></xs:simpleType>'+
+ '<xs:attributeGroup name="A"><xs:attribute name="mode" type="t:Mode"/></xs:attributeGroup>'+
+ '<xs:complexType name="Base"><xs:sequence><xs:element name="p" type="xs:string"/></xs:sequence><xs:attribute name="id" type="xs:int" use="required"/></xs:complexType>'+
+ '<xs:group name="G"><xs:choice minOccurs="0" maxOccurs="unbounded"><xs:element name="x" type="xs:string"/><xs:element name="y" type="xs:string"/></xs:choice></xs:group>'+
+ '<xs:complexType name="Child"><xs:complexContent><xs:extension base="t:Base"><xs:group ref="t:G"/><xs:attributeGroup ref="t:A"/></xs:extension></xs:complexContent></xs:complexType>'+
+ '<xs:element name="doc" type="t:Child"/></xs:schema>';
+ const data=inspectSchema(x,"strict","test.xsd");
+ const report=buildEffectiveInventory(data.declarations,resolveReferences(data.declarations,data.references));
+ const doc=report.projections.find(p=>p.kind==="element"&&p.name==="doc");
+ assert.deepEqual(doc.attributes.map(a=>a.name).sort(),["id","mode"]);
+ assert.equal(doc.attributes.find(a=>a.name==="id").use,"required");
+ assert.deepEqual(doc.attributes.find(a=>a.name==="mode").enumeration,["a","b"]);
+ assert.equal(doc.particles[0].children[0].name,"p");
+ assert.equal(doc.particles[1].children[0].kind,"choice");
+ assert.equal(doc.particles[1].children[0].occurs.max,"unbounded");
+ assert.equal(report.status,"partial");
+});

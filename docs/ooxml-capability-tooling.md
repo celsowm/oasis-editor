@@ -24,3 +24,13 @@ Then run npm run ooxml:inventory -- --manifest test-results/ooxml/ecma/manifest.
 For an explicitly reviewed earlier runner report, use npm run ooxml:report -- --evidence test-results/ooxml/vitest.json --require-evidence --baseline path/to/previous-capabilities.json. This detects removal or downgrade of witnessed dimensions. The historical baseline is not yet pinned in CI; do not infer certification from a fabricated or stale local result.
 
 A separate OOXML Compatibility workflow now records test evidence and schema inventory independently from Ribbon/deploy failures. The official download job and evidence job have independent outcomes. Previous Pages deployment failed before OOXML checks because the Ribbon icon inventory was stale; this change does not bypass or modify that independent gate.
+
+## Effective type projection and verified baseline (slice C)
+
+CI run 43997135742 verified 51 official XSDs and passed every declared evidence case. Its schema inventory failure was a UTF-8 BOM rejected by xmldom. The parser now strips a leading BOM only from the decoded XML, after verifying original bytes; errors identify the file. Added a BOM regression test.
+
+The effective projection expands direct type inheritance, attribute groups, attribute references and simple enum restrictions. It retains sequence/choice/all/group structure, local occurrence bounds, namespace qualification and source paths; recursive element types remain references, and unsupported restriction/wildcard behavior produces diagnostics. Substitution/list/union links are inventoried but their full semantics are not expanded. Scope reachability and unknown attribute coverage are not yet complete. Never use counts as a denominator.
+
+The initial historical regression baseline is pinned in src/ooxml/capabilities/baseline.json from the seed at the successful evidence job, not from unrun claims. Its provenance links the exact run/job; the separate OOXML workflow now rejects a removal or downgrade of a witnessed dimension. New evidence may expand this baseline after review of a passing immutable CI run.
+
+npm-install audit in that run reported 20 advisories (2 low, 12 moderate, 4 high, 2 critical); dependency remediation is separate from this schema slice. Ribbon inventory still blocks Pages deploy; do not bypass that gate.

@@ -19,7 +19,7 @@ jobs:
       - run: npm ci
       - run: npm run ooxml:audit
       - run: npm run ooxml:evidence
-      - run: npm run ooxml:report -- --evidence test-results/ooxml/vitest.json --require-evidence
+      - run: npm run ooxml:report -- --evidence test-results/ooxml/vitest.json --require-evidence --baseline src/ooxml/capabilities/baseline.json
       - uses: actions/upload-artifact@v7
         if: always()
         with:

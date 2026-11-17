@@ -229,3 +229,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 - OX-001 slice A: initial context-aware registry, exact runner evidence, deterministic JSON/Markdown, lexical XSD manifest prototype, static Pages explorer and CI checks. Official schema graph/denominator and historical regression gate remain open. See [tooling documentation](./ooxml-capability-tooling.md). CI results pending.
 
 - OX-001 slice B: pinned official archive acquisition, direct schema QName links and declaration counts, explicit prior-report regression comparison, independent OOXML CI. Actual archive download/evidence checks pending CI; full type expansion and historical CI baseline remain open.
+
+- OX-001 slice C: CI verified 51 XSDs and all seed evidence; BOM parser fix with regression test, effective type/attribute/particle projection and CI baseline pinned to witnessed dimensions. New CI pending; reachability, full constraints and comprehensive attribute evidence remain open.

@@ -2,6 +2,7 @@ import { DOMParser } from "@xmldom/xmldom";
 import { readFileSync, realpathSync } from "node:fs";
 import { resolve, dirname, relative, isAbsolute } from "node:path";
 import { digest } from "./registry.mjs";
+import { buildEffectiveInventory } from "./effective-schema.mjs";
 
 const XS="http://www.w3.org/2001/XMLSchema";
 const children=n=>Array.from(n.childNodes??[]).filter(x=>x.nodeType===1 && x.namespaceURI===XS);
@@ -16,26 +17,31 @@ const symbolKey=(profile,namespace,kind,name)=>JSON.stringify([profile,namespace
 const sort=(a,b)=>a<b?-1:a>b?1:0;
 
 export function inspectSchema(xml, profile, file) {
+  xml=xml.replace(/^\uFEFF/,"");
   if(/<!\s*(?:DOCTYPE|ENTITY)\b/i.test(xml)) throw Error("DTD/entity declarations forbidden");
   const doc=new DOMParser({onError:(level,message)=>{if(level!=="warning") throw Error(message);}}).parseFromString(xml,"application/xml");
   const root=doc.documentElement;
   if(root?.namespaceURI!==XS || root.localName!=="schema") throw Error("Not an XML Schema: "+file);
   const namespace=attr(root,"targetNamespace")??"";
   const declarations=[], references=[];
+  const defaults={elementForm:attr(root,"elementFormDefault")??"unqualified",attributeForm:attr(root,"attributeFormDefault")??"unqualified"};
   function visit(node,context) {
     for(const child of children(node)) {
       const kind=child.localName, name=attr(child,"name"), ref=attr(child,"ref");
       const segment=kind+(name?":"+name:ref?":"+ref:"");
       const position=children(node).indexOf(child);
       const path=context+"/"+segment+"["+position+"]";
-      if(["element","attribute","complexType","simpleType","group","attributeGroup","enumeration","any","anyAttribute"].includes(kind)) {
-        declarations.push({profile,namespace,file,context,path,kind,name,global:context==="schema",ref,type:attr(child,"type"),value:attr(child,"value"),use:attr(child,"use"),minOccurs:attr(child,"minOccurs"),maxOccurs:attr(child,"maxOccurs"),form:attr(child,"form"),default:attr(child,"default"),fixed:attr(child,"fixed")});
+      if(["element","attribute","complexType","simpleType","group","attributeGroup","enumeration","any","anyAttribute","sequence","choice","all","complexContent","simpleContent","extension","restriction","list","union"].includes(kind)) {
+        declarations.push({profile,namespace,file,context,path,kind,name,global:context==="schema",ref,nameNamespace:context==="schema"?namespace:(attr(child,"form")??(kind==="attribute"?defaults.attributeForm:defaults.elementForm))==="qualified"?namespace:"",type:attr(child,"type"),value:attr(child,"value"),use:attr(child,"use"),minOccurs:attr(child,"minOccurs"),maxOccurs:attr(child,"maxOccurs"),form:attr(child,"form"),default:attr(child,"default"),fixed:attr(child,"fixed")});
       }
-      if(["include","import","redefine","override"].includes(kind) || ref || attr(child,"base") || attr(child,"type") || ["any","anyAttribute"].includes(kind)) {
+      if(["include","import","redefine","override"].includes(kind) || ref || attr(child,"base") || attr(child,"type") || attr(child,"substitutionGroup") || attr(child,"itemType") || attr(child,"memberTypes") || ["any","anyAttribute"].includes(kind)) {
         references.push({profile,file,path,kind,location:attr(child,"schemaLocation"),namespace:attr(child,"namespace"),ref,base:attr(child,"base"),type:attr(child,"type"),targets:[
           ...(ref?[{role:"ref",qname:qname(child,ref),kinds:[kind]}]:[]),
           ...(attr(child,"base")?[{role:"base",qname:qname(child,attr(child,"base")),kinds:["complexType","simpleType"]}]:[]),
-          ...(attr(child,"type")?[{role:"type",qname:qname(child,attr(child,"type")),kinds:["complexType","simpleType"]}]:[])
+          ...(attr(child,"type")?[{role:"type",qname:qname(child,attr(child,"type")),kinds:["complexType","simpleType"]}]:[]),
+          ...(attr(child,"substitutionGroup")?[{role:"substitutionGroup",qname:qname(child,attr(child,"substitutionGroup")),kinds:["element"]}]:[]),
+          ...(attr(child,"itemType")?[{role:"itemType",qname:qname(child,attr(child,"itemType")),kinds:["simpleType"]}]:[]),
+          ...(attr(child,"memberTypes")??"").split(/\s+/).filter(Boolean).map(v=>({role:"memberType",qname:qname(child,v),kinds:["simpleType"]}))
         ]});
       }
       visit(child,path);
@@ -57,14 +63,17 @@ export function inventoryFromManifest(manifestPath) {
     if(rel===".."||rel.startsWith("../")||rel.startsWith("..\\")||isAbsolute(rel)) throw Error("Schema outside manifest directory");
     const key=JSON.stringify([item.profile,rel]); if(seen.has(key)) throw Error("Duplicate schema file"); seen.add(key);
     const bytes=readFileSync(path); if(digest(bytes)!==item.sha256) throw Error("Schema hash mismatch: "+item.path);
-    const data=inspectSchema(bytes.toString("utf8"),item.profile,item.path);
+    let data;
+    try { data=inspectSchema(bytes.toString("utf8"),item.profile,item.path); }
+    catch(error){throw new Error("Cannot parse verified schema "+item.path+": "+error.message,{cause:error});}
     declarations.push(...data.declarations); references.push(...data.references);
     sources.push({profile:item.profile,edition:item.edition,source:item.source,license:item.license,path:item.path,sha256:item.sha256,archiveSha256:item.archiveSha256??null});
   }
   const order=arr=>arr.sort((a,b)=>sort(JSON.stringify(a),JSON.stringify(b)));
   const graph=resolveReferences(declarations,references,sources);
+  const effective=buildEffectiveInventory(declarations,graph);
   const counts=Object.fromEntries([...new Set(declarations.map(d=>d.kind))].sort().map(k=>[k,declarations.filter(d=>d.kind===k).length]));
-  return {status:"incomplete",reason:"Pinned schema declarations and direct QName links; effective type expansion, substitution, cardinality, cross-profile scope and prose-only rules are not yet resolved. Not a coverage denominator.",sources:order(sources),declarations:order(declarations),references:order(references),graph,counts};
+  return {status:"incomplete",reason:"Pinned declarations, direct QName links and effective attribute/particle projections. Restrictions, substitutions, external XSDs and complete DOCX reachability remain limited; not a coverage denominator.",sources:order(sources),declarations:order(declarations),references:order(references),graph,counts,effective};
 }
 
 export function resolveReferences(declarations,references,sources=[]) {

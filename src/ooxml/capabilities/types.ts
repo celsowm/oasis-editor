@@ -1,5 +1,5 @@
 /** Infrastructure-only capability declarations; not a runtime editor feature. */
-export type OoxmlProfile = "transitional" | "strict" | "extension";
+export type OoxmlProfile = "transitional" | "strict" | "extension" | "opc";
 export type OoxmlDimension = "import" | "render" | "edit" | "export" | "preserve";
 export type OoxmlLevel = "unknown" | "missing" | "partial" | "supported" | "notApplicable";
 
