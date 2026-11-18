@@ -29,10 +29,11 @@ export function captureSelectedOpaqueChart(state:EditorState):OpaqueTransferMani
   const selected=getSelectedObjectRun(state,r=>r.kind==="opaque");
   if(!selected||selected.run.kind!=="opaque"||selected.run.revision||selected.run.sdtWrappers?.length||
     !directBody(state.document).some(p=>p.id===selected.paragraph.id))return fail("select one unwrapped chart in the main story");
-  const source=state.document.sourcePackage!;
-  const matches=inspectDocxOpaqueObjects(source).objects.filter(o=>o.ownerPath===source.mainDocumentPart&&o.signature===selected.run.opaque.signature);
+  const source=state.document.sourcePackage!,opaque=selected.run.opaque;
+  const matches=inspectDocxOpaqueObjects(source).objects.filter(o=>o.ownerPath===source.mainDocumentPart&&o.signature===opaque.signature);
   const object=matches.length===1?matches[0]:undefined;
-  if(!object||object.fragmentXml!==selected.run.opaque.fragmentXml)return fail("selection is not an unchanged original");
+  if(!object||object.fragmentXml!==opaque.fragmentXml||
+    JSON.stringify(object.relationshipIds)!==JSON.stringify(opaque.relationshipIds))return fail("selection is not an unchanged original");
   return captureOpaqueTransferManifest(source,object);
 }
 // Compare ordered body content without depending on importer-generated IDs
