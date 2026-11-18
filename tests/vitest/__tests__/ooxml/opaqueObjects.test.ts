@@ -162,7 +162,9 @@ describe("opaque source inventory and loss detector",()=>{
     });
     const copy=controller(()=>selected),paste=controller(()=>live);
     const event={clipboardData:transfer,currentTarget:{value:""},preventDefault:()=>{}} as never;
+    live=selected;
     copy.handleCopy(event);
+    live=state;
     expect(transfer.types).toEqual([OPAQUE_CHART_CLIPBOARD_TYPE]);
     const token=transfer.getData(OPAQUE_CHART_CLIPBOARD_TYPE);
     expect(token).toMatch(/^[0-9a-f-]{36}$/i);
