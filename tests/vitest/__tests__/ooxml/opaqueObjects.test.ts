@@ -1,3 +1,4 @@
+import { captureSelectedOpaqueChart, prepareOpaqueChartPaste } from "@/app/controllers/opaqueTransferTransaction.js";
 import { createEditorStateFromDocument } from "@/core/editorState.js";
 import { paragraphOffsetToPosition } from "@/core/model.js";
 import { deleteBackward, deleteForward } from "@/core/commands/text.js";
@@ -79,6 +80,47 @@ describe("opaque source inventory and loss detector",()=>{
     expect(actual.parts["custom/unrelated.bin"]!.data).toBe(destination.parts["custom/unrelated.bin"]!.data);
     expect(actual.parts[chartPath]!.data).toBe(destination.parts[chartPath]!.data);
     expect(actual.opaqueObjects!.map(o=>o.signature)).toEqual(expect.arrayContaining([destination.opaqueObjects![0]!.signature,first.plan.destinationRun.signature]));
+    // Prepare a real model transaction from a caret in the middle of text.
+    // A previous ordinary edit must survive; undo must restore the exact old
+    // state and OPC snapshot rather than leave imported dependencies behind.
+    const target=await importDocxInWorker(destinationBytes);
+    const p=target.sections?.[0]?.blocks[0];
+    if(p?.type!=="paragraph")throw Error("Expected target paragraph");
+    p.runs.find(r=>r.text==="Destination")!.text="Changed destination";
+    const initial=createEditorStateFromDocument(target);
+    const caret=paragraphOffsetToPosition(p,7);
+    const state={...initial,selection:{anchor:caret,focus:caret}};
+    const snapshot=structuredClone(state.document.sourcePackage);
+    const prepared=await prepareOpaqueChartPaste(state,manifest);
+    expect(state.document.sourcePackage).toEqual(snapshot);
+    expect(prepared.document.sourcePackage).not.toBe(state.document.sourcePackage);
+    const edited=prepared.document.sections?.[0]?.blocks[0];
+    if(edited?.type!=="paragraph")throw Error("Expected edited paragraph");
+    expect(edited.id).toBe(p.id);
+    expect(edited.runs.map(r=>r.text).join("")).toBe("Changed\uFFFC destination\uFFFC");
+    const saved=await exportEditorDocumentToDocxPreservingSource(prepared.document);
+    const reimported=await importDocxInWorker(saved);
+    const rp=reimported.sections?.[0]?.blocks[0];
+    expect(rp?.type==="paragraph"&&rp.runs.map(r=>r.text).join("")).toBe("Changed\uFFFC destination\uFFFC");
+    const pastedPackage=await captureDocxSourcePackage(saved);
+    expect(pastedPackage.opaqueObjects).toHaveLength(2);
+    expect(pastedPackage.parts[bookPath]!.data).toBe(destination.parts[bookPath]!.data);
+    const copied=pastedPackage.opaqueObjects!.find(o=>o.signature!==destination.opaqueObjects![0]!.signature)!;
+    expect(pastedPackage.parts[copied.partPaths.find(path=>path.endsWith(".xlsx"))!]!.data).toBe(source.parts[bookPath]!.data);
+    const transaction=applyEditorHistoryTransaction(createEmptyEditorHistoryState(),state,prepared);
+    const undo=takeEditorUndoStep(transaction,prepared)!;
+    expect(undo.nextState).toBe(state);
+    const undonePackage=await captureDocxSourcePackage(await exportEditorDocumentToDocxPreservingSource(undo.nextState.document));
+    expect(undonePackage.opaqueObjects).toHaveLength(1);
+    expect(Object.keys(undonePackage.parts).some(path=>path.startsWith("word/oasis-transfer-"))).toBe(false);
+    const redo=takeEditorRedoStep(undo.history,undo.nextState)!;
+    expect(redo.nextState).toBe(prepared);
+    expect((await captureDocxSourcePackage(await exportEditorDocumentToDocxPreservingSource(redo.nextState.document))).opaqueObjects).toHaveLength(2);
+    // Capture uses a fresh source inventory and rejects mixed selections.
+    const selected={...state,selection:{anchor:paragraphOffsetToPosition(p,19),focus:paragraphOffsetToPosition(p,20)}};
+    expect(captureSelectedOpaqueChart(selected).parts.find(part=>part.path===bookPath)?.data).toBe(destination.parts[bookPath]!.data);
+    await expect(prepareOpaqueChartPaste(selected,manifest)).rejects.toThrow(/collapsed caret/);
+    expect(()=>captureSelectedOpaqueChart(state)).toThrow(/select one/);
     const second=await applyOpaqueTransferToDocx(first.buffer,manifest,0);
     expect(second.plan.drawingId).not.toBe(first.plan.drawingId);
     expect(second.plan.addedParts[0]!.path).not.toBe(first.plan.addedParts[0]!.path);
