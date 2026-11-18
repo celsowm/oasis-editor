@@ -1,4 +1,4 @@
-import type { EditorState, EditorTextRun, EditorParagraphNode, EditorDocument } from "@/core/model.js";
+import type { EditorState, EditorTextRun, EditorParagraphNode, EditorDocument, EditorDocxSourcePackage } from "@/core/model.js";
 import { getActiveZone, getParagraphLength, getParagraphs, paragraphOffsetToPosition } from "@/core/model.js";
 import { createEditorNodeId } from "@/core/editorState.js";
 import { normalizeSelection } from "@/core/selection.js";
@@ -53,6 +53,45 @@ function insert(state:EditorState,paragraph:EditorParagraphNode,offset:number,ru
   const position=paragraphOffsetToPosition(inserted,offset+1);
   return cloneStateWithParagraphs(state,getParagraphs(state).map(p=>p.id===paragraph.id?inserted:p),{anchor:position,focus:position});
 }
+/** Rebind existing model runs after a successful preservation export.
+ * Serialization can change the inherited namespace declarations of a drawing
+ * without changing its expanded-name signature. The old raw XML is no
+ * longer the exact fragment of the new source snapshot. Do not weaken
+ * serializer authorization: replace only verified original main-story runs
+ * with freshly inspected fragments of the same unique identity and closure.
+ */
+function rebindMainStory(state:EditorState,source:EditorDocxSourcePackage):EditorState{
+  const original=state.document.sourcePackage!;
+  const oldObjects=inspectDocxOpaqueObjects(original).objects;
+  const newObjects=inspectDocxOpaqueObjects(source).objects;
+  const used=new Set<string>();
+  const paragraphs=getParagraphs(state).map(paragraph=>{
+    let changed=false;
+    const runs=paragraph.runs.map(run=>{
+      if(run.kind!=="opaque")return run;
+      const opaque=run.opaque;
+      const before=oldObjects.filter(o=>o.signature===opaque.signature);
+      const after=newObjects.filter(o=>o.signature===opaque.signature);
+      const a=before[0],b=after[0];
+      if(before.length!==1||after.length!==1||!a||!b||
+        a.ownerPath!==original.mainDocumentPart||b.ownerPath!==source.mainDocumentPart||
+        a.kind!==opaque.objectKind||a.fragmentXml!==opaque.fragmentXml||
+        JSON.stringify(a.relationshipIds)!==JSON.stringify(opaque.relationshipIds)||
+        JSON.stringify(a.edges)!==JSON.stringify(b.edges)||
+        JSON.stringify(a.partPaths)!==JSON.stringify(b.partPaths)||
+        a.partPaths.some(path=>{
+          const x=original.parts[path],y=source.parts[path];
+          return !x||!y||x.kind!==y.kind||x.contentType!==y.contentType||x.encoding!==y.encoding||x.data!==y.data;
+        })||used.has(a.signature))return fail("cannot rebind original chart provenance");
+      used.add(a.signature);
+      if(b.fragmentXml===opaque.fragmentXml)return run;
+      changed=true;
+      return {...run,opaque:{...opaque,fragmentXml:b.fragmentXml,relationshipIds:[...b.relationshipIds]}};
+    });
+    return changed?{...paragraph,runs}:paragraph;
+  });
+  return cloneStateWithParagraphs(state,paragraphs,state.selection);
+}
 /** Prepare an asynchronous, immutable editor transaction, not an immediate
  * mutation. The caller MUST compare the current state to the captured input
  * before committing the returned state as a single undoable transaction.
@@ -84,12 +123,15 @@ export async function prepareOpaqueChartPaste(state:EditorState,manifest:unknown
   // Compute the baseline against the actual append staging location, NOT
   // the requested caret. Otherwise source preservation could resurrect the
   // append location when the intended insertion is in the middle of text.
-  const appended=insert(state,paragraph,getParagraphLength(paragraph),run);
+  const rebound=rebindMainStory(state,source);
+  const target=getParagraphs(rebound).find(p=>p.id===paragraph.id);
+  if(!target)return fail("target paragraph lost during rebind");
+  const appended=insert(rebound,target,getParagraphLength(target),run);
   const baselineDocument={...appended.document,sourcePackage:source};
   const stagedImported=await importDocxInWorker(staged.buffer);
   if(bodyFingerprint(stagedImported)!==bodyFingerprint(baselineDocument))return fail("staged body projection mismatch");
   source.rebuiltPartHashes=await captureRebuiltDocxPartHashes(baselineDocument,source);
-  const next=insert(state,paragraph,offset,run);
+  const next=insert(rebound,target,offset,run);
   const candidate={...next,document:{...next.document,sourcePackage:source}};
   // Prove the actual source-aware export placed the object at the requested
   // offset; existing opaque audit alone cannot distinguish in-story positions.

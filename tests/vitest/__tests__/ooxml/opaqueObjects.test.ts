@@ -94,6 +94,21 @@ describe("opaque source inventory and loss detector",()=>{
     const prepared=await prepareOpaqueChartPaste(state,manifest);
     expect(state.document.sourcePackage).toEqual(snapshot);
     expect(prepared.document.sourcePackage).not.toBe(state.document.sourcePackage);
+    // Every original run must be bound to an exact fresh source fragment
+    // after the namespace scope changed during the preflight export.
+    const originalRun=p.runs.find(r=>r.kind==="opaque")!;
+    expect(originalRun.kind).toBe("opaque");
+    const preparedParagraph=prepared.document.sections?.[0]?.blocks[0];
+    if(preparedParagraph?.type!=="paragraph")throw Error("Expected prepared paragraph");
+    const freshObjects=inspectDocxOpaqueObjects(prepared.document.sourcePackage!).objects;
+    for(const r of preparedParagraph.runs){
+      if(r.kind!=="opaque")continue;
+      const matched=freshObjects.filter(o=>o.signature===r.opaque.signature);
+      expect(matched).toHaveLength(1);
+      expect(r.opaque.fragmentXml).toBe(matched[0]!.fragmentXml);
+      expect(r.opaque.relationshipIds).toEqual(matched[0]!.relationshipIds);
+    }
+    expect(p.runs.find(r=>r.kind==="opaque")).toBe(originalRun);
     const edited=prepared.document.sections?.[0]?.blocks[0];
     if(edited?.type!=="paragraph")throw Error("Expected edited paragraph");
     expect(edited.id).toBe(p.id);
