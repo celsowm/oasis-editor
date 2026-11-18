@@ -24,6 +24,7 @@ type CommandsController = ReturnType<typeof createEditorCommandsController>;
 export interface EditorInteractionRuntimeDeps {
   clipboardActions?: EditorClipboardActions;
   state: EditorState;
+  getStateSnapshot: () => EditorState;
   logger: EditorLogger;
   isReadOnly: () => boolean;
   applyState: (next: EditorState) => void;
@@ -195,6 +196,7 @@ function createEditorInteractionRuntimeImpl(
 
   const wiring = useEditorInteractionWiring({
     state,
+    getStateSnapshot: deps.getStateSnapshot,
     applyState,
     applyTransactionalState,
     isReadOnly,

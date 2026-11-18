@@ -1,3 +1,6 @@
+import { createEditorClipboardController } from "@/app/controllers/useEditorClipboard.js";
+import { OPAQUE_CHART_CLIPBOARD_TYPE } from "@/app/clipboard/opaqueChartClipboard.js";
+import { getParagraphs } from "@/core/model.js";
 import { captureSelectedOpaqueChart, prepareOpaqueChartPaste } from "@/app/controllers/opaqueTransferTransaction.js";
 import { createEditorStateFromDocument } from "@/core/editorState.js";
 import { paragraphOffsetToPosition } from "@/core/model.js";
@@ -136,6 +139,63 @@ describe("opaque source inventory and loss detector",()=>{
     expect(captureSelectedOpaqueChart(selected).parts.find(part=>part.path===bookPath)?.data).toBe(destination.parts[bookPath]!.data);
     await expect(prepareOpaqueChartPaste(selected,manifest)).rejects.toThrow(/collapsed caret/);
     expect(()=>captureSelectedOpaqueChart(state)).toThrow(/select one/);
+    // Native clipboard handles transport only the token. Actual dependencies
+    // remain in realm memory. Different editor instances can share it.
+    const clipboard=new Map<string,string>();
+    const transfer={
+      get types(){return [...clipboard.keys()];},
+      getData:(type:string)=>clipboard.get(type)??"",
+      setData:(type:string,value:string)=>{clipboard.set(type,value);},
+    };
+    let live=state,readOnly=false,commits=0,issue="";
+    const liveProxy=new Proxy({} as typeof state,{
+      get:(_,key)=>Reflect.get(live,key),
+    });
+    const controller=(read:()=>typeof state)=>createEditorClipboardController({
+      state:()=>liveProxy,stateSnapshot:read,isReadOnly:()=>readOnly,
+      forcePlainTextPaste:()=>false,setForcePlainTextPaste:()=>{},
+      clearPreferredColumn:()=>{},resetTransactionGrouping:()=>{},
+      focusInput:()=>{},applyTableAwareParagraphEdit:(s,f)=>f(s),
+      applyTransactionalState:f=>{const n=f(live);if(n!==live){live=n;commits++;}},
+      insertImageFromFile:async()=>{},resolvePositionAtSurfacePoint:()=>null,
+      onNativeClipboardIssue:(_,value)=>{issue=value;},
+    });
+    const copy=controller(()=>selected),paste=controller(()=>live);
+    const event={clipboardData:transfer,currentTarget:{value:""},preventDefault:()=>{}} as never;
+    copy.handleCopy(event);
+    expect(transfer.types).toEqual([OPAQUE_CHART_CLIPBOARD_TYPE]);
+    const token=transfer.getData(OPAQUE_CHART_CLIPBOARD_TYPE);
+    expect(token).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(token).not.toContain("chartSpace");
+    await paste.handlePaste(event);
+    expect(commits).toBe(1);
+    expect(getParagraphs(live)[0]!.runs.map(r=>r.text).join("")).toBe("Changed\uFFFC destination\uFFFC");
+    live=state;
+    const pending=paste.handlePaste(event);
+    // The facade stays identical, but its committed snapshot changes.
+    live={...state,selection:{anchor:paragraphOffsetToPosition(p,1),focus:paragraphOffsetToPosition(p,1)}};
+    const intervening=live;
+    await pending;
+    expect(live).toBe(intervening);
+    expect(commits).toBe(1);
+    expect(issue).toBe("document-changed");
+    live=state;
+    const denied=paste.handlePaste(event);
+    readOnly=true;
+    await denied;
+    expect(live).toBe(state);
+    expect(commits).toBe(1);
+    readOnly=false;
+    transfer.setData(OPAQUE_CHART_CLIPBOARD_TYPE,JSON.stringify(manifest));
+    await paste.handlePaste(event);
+    expect(issue).toBe("unsupported");
+    expect(commits).toBe(1);
+    live=selected;
+    copy.handleCut(event);
+    expect(issue).toBe("unsupported");
+    expect(live).toBe(selected);
+    expect(commits).toBe(1);
+
     const second=await applyOpaqueTransferToDocx(first.buffer,manifest,0);
     expect(second.plan.drawingId).not.toBe(first.plan.drawingId);
     expect(second.plan.addedParts[0]!.path).not.toBe(first.plan.addedParts[0]!.path);

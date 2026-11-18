@@ -30,6 +30,7 @@ type ClipboardParams = Parameters<typeof createEditorClipboardController>[0];
 export interface EditorInteractionWiringContext {
   clipboardActions?: EditorClipboardActions;
   state: EditorState;
+  getStateSnapshot: () => EditorState;
   applyState: NavigationParams["applyState"];
   applyTransactionalState: TextDragParams["applyTransactionalState"];
   isReadOnly: TextDragParams["isReadOnly"];
@@ -181,6 +182,8 @@ export function useEditorInteractionWiring(
   const { handleCopy, handleCut, handlePaste, handleDrop } =
     createEditorClipboardController({
       state,
+      stateSnapshot: ctx.getStateSnapshot,
+      onNativeClipboardIssue: ctx.clipboardActions?.reportNativeIssue,
       isReadOnly: ctx.isReadOnly,
       forcePlainTextPaste: ctx.getForcePlainTextPaste,
       consumePasteMode: ctx.clipboardActions?.consumePasteMode,

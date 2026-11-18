@@ -243,6 +243,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
   const interaction = createEditorInteractionRuntime({
     clipboardActions,
     state: state as EditorState,
+    getStateSnapshot,
     logger,
     isReadOnly,
     applyState,

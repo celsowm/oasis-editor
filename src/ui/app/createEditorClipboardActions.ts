@@ -83,9 +83,16 @@ function createClipboardActions(deps: ClipboardPasteDeps) {
       ? pending.mode
       : undefined;
   };
+  const reportNativeIssue = (action:ClipboardNotice["action"],issue:ClipboardIssue):void=>{
+    request++;
+    clear();
+    setNotice({action,issue,...(action==="paste"?{mode:"rich" as const}:{})});
+    deps.onIssue?.(issue);
+  };
   return {
     notice,
     dismiss,
+    reportNativeIssue,
     consumePasteMode,
     copy: (): Promise<boolean> => run("copy"),
     cut: (): Promise<boolean> => run("cut"),

@@ -1,4 +1,7 @@
-import type { ClipboardPasteMode } from "@/ui/app/clipboardPaste.js";
+import { getOwner, onCleanup } from "solid-js";
+import { OPAQUE_CHART_CLIPBOARD_TYPE, readOpaqueChartToken, writeOpaqueChartToken } from "@/app/clipboard/opaqueChartClipboard.js";
+import { prepareOpaqueChartPaste } from "./opaqueTransferTransaction.js";
+import type { ClipboardIssue, ClipboardPasteMode } from "@/ui/app/clipboardPaste.js";
 import { mergeClipboardFormatting } from "@/core/commands/clipboardMergeFormatting.js";
 import {
   insertClipboardParagraphsAtSelection,
@@ -17,6 +20,9 @@ import type { EditorTransactionOptions } from "@/ui/editorHistory.js";
 
 export interface EditorClipboardDeps {
   state: () => EditorState;
+  /** Actual committed state, never the reactive facade. Required for async opaque paste. */
+  stateSnapshot?: () => EditorState;
+  onNativeClipboardIssue?: (action:"copy"|"cut"|"paste",issue:ClipboardIssue) => void;
   isReadOnly: () => boolean;
   forcePlainTextPaste: () => boolean;
   consumePasteMode?: () => ClipboardPasteMode | undefined;
@@ -51,11 +57,17 @@ export function createEditorClipboardController(
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
+  let request=0;
+  if(getOwner())onCleanup(()=>{request++;});
   const handleCopy = (
     event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
   ): void => {
+    request++;
     if (selectionContainsOpaqueObject(deps.state())) {
       event.preventDefault();
+      if(event.clipboardData&&writeOpaqueChartToken(deps.stateSnapshot?.()??deps.state(),event.clipboardData)){
+        deps.onNativeClipboardSuccess?.();
+      }else deps.onNativeClipboardIssue?.("copy","unsupported");
       return;
     }
     const text = getSelectedText(deps.state());
@@ -80,12 +92,14 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
   const handleCut = (
     event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
   ): void => {
+    request++;
     if (deps.isReadOnly()) {
       event.preventDefault();
       return;
     }
     if (selectionContainsOpaqueObject(deps.state())) {
       event.preventDefault();
+      deps.onNativeClipboardIssue?.("cut","unsupported");
       return;
     }
     const text = getSelectedText(deps.state());
@@ -117,12 +131,55 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
 
   const handlePaste = (
     event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
-  ): void => {
+  ): void | Promise<void> => {
+    const id=++request;
     if (deps.isReadOnly()) {
       event.preventDefault();
       return;
     }
     const fallbackMode = deps.consumePasteMode?.();
+    // A recognized custom format is exclusive; malformed, expired or foreign
+    // tokens never fall through into a lossy plain/HTML/image paste.
+    if(event.clipboardData&&Array.from(event.clipboardData.types).includes(OPAQUE_CHART_CLIPBOARD_TYPE)){
+      event.preventDefault();
+      const plain=deps.forcePlainTextPaste();
+      deps.setForcePlainTextPaste(false);
+      const manifest=readOpaqueChartToken(event.clipboardData.getData(OPAQUE_CHART_CLIPBOARD_TYPE));
+      const snapshot=deps.stateSnapshot?.();
+      if(plain||(fallbackMode&&fallbackMode!=="rich")||!manifest||!snapshot){
+        deps.onNativeClipboardIssue?.("paste","unsupported");
+        return;
+      }
+      event.currentTarget.value="";
+      // Keep a real committed snapshot across awaits. The public state facade
+      // can be a live Proxy whose reference never changes as the user edits.
+      return (async()=>{
+        let next:EditorState;
+        try{
+          next=await prepareOpaqueChartPaste(snapshot,manifest);
+        }catch{
+          if(id===request&&!deps.isReadOnly())deps.onNativeClipboardIssue?.("paste","unsupported");
+          return;
+        }
+        if(id!==request||deps.isReadOnly())return;
+        if(deps.stateSnapshot?.()!==snapshot){
+          deps.onNativeClipboardIssue?.("paste","document-changed");
+          return;
+        }
+        let committed=false;
+        deps.clearPreferredColumn();
+        deps.resetTransactionGrouping();
+        deps.applyTransactionalState(current=>{
+          if(id!==request||deps.isReadOnly()||current!==snapshot)return current;
+          committed=true;
+          return next;
+        });
+        if(committed){
+          deps.onNativeClipboardSuccess?.();
+          deps.focusInput();
+        }else deps.onNativeClipboardIssue?.("paste","document-changed");
+      })();
+    }
     if (deps.forcePlainTextPaste() || fallbackMode === "text") {
       deps.setForcePlainTextPaste(false);
       const text = event.clipboardData?.getData("text/plain") ?? "";
@@ -196,6 +253,7 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
   };
 
   const handleDrop = (event: DragEvent): void => {
+    request++;
     if (deps.isReadOnly()) {
       event.preventDefault();
       return;
