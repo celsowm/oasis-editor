@@ -129,3 +129,7 @@ L6A browser qualification 44526736899 timed out at the first synthetic native pa
 ### Slice L6C — context-menu browser hit testing
 
 L6B Chromium and WebKit completed worker-ownership, synthetic chart clipboard and Ribbon adapter history/export checks, then failed locating an exposed point on the first paper. Use the actual scrolling editor viewport that owns the contextmenu handler, with a real right-click at a hit-tested exposed point and exact selection preservation assertion. Keep the context-menu export/history gate intact; no synthetic contextmenu shortcut. Chromium's real Clipboard API probe now polls for a confirmed current token rather than relying on a fixed delay or merely finding the MIME type. Firefox still running at inspection. Requalification pending.
+
+### L6 qualification disposition (2026-11-19)
+
+All three browser jobs in run 44529633406 passed. See the [retained qualification record](./ooxml-chart-clipboard-qualification-2026-11-19.md) for the 18 passed and 3 unqualified scenarios, independently inspected workbook digests for 12 exported DOCX files, elapsed times and residual requirements. Accept the bounded chart clipboard milestone, not the full OX-003 ticket. Firefox trusted format delivery and Firefox/WebKit real system permission paths remain unqualified. Generic MC, other opaque object types, broader story/geometry and Word oracle work remain open.
