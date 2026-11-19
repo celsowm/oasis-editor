@@ -9,18 +9,18 @@ import { buildFieldStoryGraph } from "@/core/document/fieldStoryGraph.js";
 import { compileFieldInstruction, evaluateField, type EvaluatableField } from "@/core/document/fieldEvaluation.js";
 import { projectParagraphLayout, type LayoutProjectionContext } from "./paragraphPagination.js";
 
-interface Candidate { runIndex: number; field: EvaluatableField }
+export interface FieldProjectionCandidate { runIndex: number; field: EvaluatableField }
 
 /** Only complete, flat stories are qualified. Never mistake nested or
  * cross-paragraph cached results for independent editable scalar fields. */
-function indexStory(blocks: readonly EditorBlockNode[], out: Map<string, Candidate[]>): void {
+export function indexFieldStory(blocks: readonly EditorBlockNode[], out: Map<string, FieldProjectionCandidate[]>): void {
   if (blocks.some(b => b.type !== "paragraph")) return;
   const ps = blocks as readonly EditorParagraphNode[];
   if (!ps.some(p => p.runs.some(r => r.kind === "field" || r.kind === "fieldChar" || r.kind === "fieldInstruction"))) return;
   const graph = buildFieldStoryGraph(ps);
   if (graph.diagnostics.length) return;
   const covered = new Set<number>();
-  const add = (p: EditorParagraphNode, candidate: Candidate): void => {
+  const add = (p: EditorParagraphNode, candidate: FieldProjectionCandidate): void => {
     const group = out.get(p.id) ?? [];
     // A shared header/footer story can appear in multiple section entries.
     if (!group.some(c => c.runIndex === candidate.runIndex)) group.push(candidate);
@@ -53,7 +53,7 @@ function indexStory(blocks: readonly EditorBlockNode[], out: Map<string, Candida
   }
 }
 
-const isPlainRun = (run: EditorTextRun): boolean =>
+export const isPlainFieldRun = (run: EditorTextRun): boolean =>
   (run.kind === "text" || run.kind === "field" || run.kind === "fieldChar" || run.kind === "fieldInstruction") &&
   !run.revision && !run.revisionRangeMarker && !run.sdtWrappers?.length &&
   !run.styles?.hidden && !run.styles?.rtl;
@@ -74,11 +74,11 @@ export function refreshProjectedFields(
   measurer: ITextMeasurer, projectionContext: LayoutProjectionContext,
 ): EditorLayoutDocument {
   const sections = getDocumentSections(document);
-  const candidates = new Map<string, Candidate[]>();
-  indexStory(sections.flatMap(s => s.blocks), candidates);
+  const candidates = new Map<string, FieldProjectionCandidate[]>();
+  indexFieldStory(sections.flatMap(s => s.blocks), candidates);
   for (const s of sections) {
     for (const story of [s.header,s.firstPageHeader,s.evenPageHeader,s.footer,s.firstPageFooter,s.evenPageFooter]) {
-      if (story) indexStory(story, candidates);
+      if (story) indexFieldStory(story, candidates);
     }
   }
   if (!candidates.size) return layout;
@@ -96,7 +96,7 @@ export function refreshProjectedFields(
         if (p.type !== "paragraph" || !old || !candidates.has(p.id) ||
             p.list || p.dropCap || p.sdtWrappers?.length || p.numberingRevision ||
             p.style?.bidi || p.style?.textDirection && p.style.textDirection !== "lrTb" ||
-            !p.runs.every(isPlainRun)) return block;
+            !p.runs.every(isPlainFieldRun)) return block;
         const length = getParagraphLength(p);
         // A complete paragraph must be present on this actual page; even a
         // split body field may not be evaluated using a provisional page.

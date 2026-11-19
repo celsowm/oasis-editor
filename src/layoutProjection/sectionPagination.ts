@@ -43,6 +43,7 @@ export interface SectionPaginationContext {
   measurer: ITextMeasurer;
   defaultTabStop?: number;
   needsTotalPages: boolean;
+  bodyProjectionContext?: LayoutProjectionContext;
   projectBlocks: BlocksLayoutProjector;
   projectHeaderFooterBlocks: HeaderFooterBlockProjector;
   projectionContext?: LayoutProjectionContext;
@@ -237,7 +238,7 @@ function calculateTotalPages(
       existingPages: isContinuous ? [activePages[activePages.length - 1]] : [],
       measurer: context.measurer,
       defaultTabStop: context.defaultTabStop,
-      projectionContext: context.projectionContext,
+      projectionContext: context.bodyProjectionContext ?? context.projectionContext,
     });
 
     if (isContinuous) {
@@ -300,7 +301,7 @@ function projectAllPages(
       measurer: context.measurer,
       reservedHeightByPageIndex,
       defaultTabStop: context.defaultTabStop,
-      projectionContext: context.projectionContext,
+      projectionContext: context.bodyProjectionContext ?? context.projectionContext,
     });
 
     if (isContinuous) {

@@ -39,6 +39,8 @@ import { evaluateField } from "@/core/document/fieldEvaluation.js";
 export interface LayoutProjectionContext {
   hyphenation?: HyphenationLayoutOptions;
   hyphenationSignature: string;
+  /** Body cache-refresh pass only; default render retains legacy projection. */
+  cachedPageFields?: boolean;
 }
 
 export const EMPTY_PROJECTION_CONTEXT: LayoutProjectionContext = {
@@ -247,7 +249,7 @@ export function projectParagraphLayout(
     getParagraphFieldDependence(paragraph);
   const cacheKey = `${dependsOnPageIndex ? (pageIndex ?? "") : ""}:${
     dependsOnTotalPages ? (totalPages ?? "") : ""
-  }:${contentWidth ?? ""}:${defaultTabStop ?? ""}:${context.hyphenationSignature}`;
+  }:${contentWidth ?? ""}:${defaultTabStop ?? ""}:${context.hyphenationSignature}:${context.cachedPageFields ? "cached-fields" : ""}`;
   let cacheForParagraph = paragraphLayoutCache.get(paragraph);
   if (cacheForParagraph) {
     const cached = cacheForParagraph.get(cacheKey);
@@ -264,7 +266,7 @@ export function projectParagraphLayout(
         (run): EditorLayoutFragment => {
           let resolvedText = run.text;
           const field = getRunField(run);
-          if (field?.type === "PAGE" || field?.type === "NUMPAGES") {
+          if (!context.cachedPageFields && (field?.type === "PAGE" || field?.type === "NUMPAGES")) {
             // Keep existing decimal measurement semantics; rendered numeric
             // format and section-aware page labels are qualified separately.
             resolvedText = evaluateField({ type: field.type }, {
