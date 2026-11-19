@@ -231,6 +231,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}): JSX.Element {
 
   const clipboardActions = createEditorClipboardActions({
     state: (): EditorState => state,
+    stateSnapshot: getStateSnapshot,
     isReadOnly,
     applyTransactionalState,
     applyTableAwareParagraphEdit: (current, edit): EditorState =>

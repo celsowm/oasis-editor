@@ -188,6 +188,8 @@ export function useEditorInteractionWiring(
       forcePlainTextPaste: ctx.getForcePlainTextPaste,
       consumePasteMode: ctx.clipboardActions?.consumePasteMode,
       onNativeClipboardSuccess: ctx.clipboardActions?.dismiss,
+      onNativeClipboardStart: ctx.clipboardActions?.dismiss,
+      clipboardRequestGeneration: ctx.clipboardActions?.requestGeneration,
       setForcePlainTextPaste: ctx.setForcePlainTextPaste,
       clearPreferredColumn: ctx.clearPreferredColumn,
       resetTransactionGrouping: ctx.resetTransactionGrouping,

@@ -1,3 +1,5 @@
+import { isOpaqueChartClipboardType, readOpaqueChartToken } from "@/app/clipboard/opaqueChartClipboard.js";
+import { prepareOpaqueChartPaste } from "@/app/controllers/opaqueTransferTransaction.js";
 import { insertClipboardParagraphsAtSelection } from "@/core/commands/clipboard.js";
 import { insertPlainTextAtSelection } from "@/core/commands/text.js";
 import { mergeClipboardFormatting } from "@/core/commands/clipboardMergeFormatting.js";
@@ -11,6 +13,8 @@ export type ClipboardPasteMode = "rich" | "text" | "merge";
 
 export interface ClipboardPasteDeps {
   state: () => EditorState;
+  /** Immutable committed state, not the live reactive facade. */
+  stateSnapshot?: () => EditorState;
   isReadOnly: () => boolean;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
@@ -39,6 +43,7 @@ async function readClipboard(
   mode: ClipboardPasteMode,
 ): Promise<
   | { kind: "content"; text: string; html: string }
+  | { kind: "chart"; token: string }
   | { kind: "empty" | "unsupported" }
 > {
   const clipboard = navigator.clipboard;
@@ -57,6 +62,18 @@ async function readClipboard(
   if (clipboard?.read) {
     try {
       const items = await clipboard.read();
+      const charts=items.flatMap(item=>item.types.filter(isOpaqueChartClipboardType).map(type=>({item,type})));
+      if(charts.length){
+        // Once recognized, never fall through to ordinary content even if
+        // the token is invalid or reading its Blob fails.
+        if(charts.length!==1||mode!=="rich")return {kind:"unsupported"};
+        try{
+          const blob=await charts[0]!.item.getType(charts[0]!.type);
+          if(blob.size>128)return {kind:"unsupported"};
+          const token=await blob.text();
+          return token.length<=128?{kind:"chart",token}:{kind:"unsupported"};
+        }catch{return {kind:"unsupported"};}
+      }
       let html = "";
       let text = "";
       for (const item of items) {
@@ -101,7 +118,7 @@ export async function pasteFromSystemClipboard(
     deps.onIssue?.("access-denied");
     return false;
   }
-  const snapshot = deps.state();
+  const snapshot = deps.stateSnapshot?.()??deps.state();
   const selection = {
     anchor: { ...snapshot.selection.anchor },
     focus: { ...snapshot.selection.focus },
@@ -118,6 +135,31 @@ export async function pasteFromSystemClipboard(
   if (deps.state().document !== snapshot.document) {
     deps.onIssue?.("document-changed");
     return false;
+  }
+  if(content.kind==="chart"){
+    if(mode!=="rich"||!deps.stateSnapshot){deps.onIssue?.("unsupported");return false;}
+    const manifest=readOpaqueChartToken(content.token);
+    if(!manifest){deps.onIssue?.("unsupported");return false;}
+    if(deps.stateSnapshot()!==snapshot){deps.onIssue?.("document-changed");return false;}
+    let next:EditorState;
+    try{next=await prepareOpaqueChartPaste(snapshot,manifest);}
+    catch(error){
+      if(!deps.isReadOnly()){deps.onError?.(error);deps.onIssue?.("unsupported");}
+      return false;
+    }
+    if(deps.isReadOnly())return false;
+    if(deps.stateSnapshot()!==snapshot){deps.onIssue?.("document-changed");return false;}
+    let committed=false;
+    deps.clearPreferredColumn();
+    deps.resetTransactionGrouping();
+    deps.applyTransactionalState(current=>{
+      if(deps.isReadOnly()||current!==snapshot)return current;
+      committed=true;
+      return next;
+    });
+    if(committed)deps.focusInput();
+    else if(!deps.isReadOnly())deps.onIssue?.("document-changed");
+    return committed;
   }
   if (content.kind !== "content") {
     deps.onIssue?.(content.kind);

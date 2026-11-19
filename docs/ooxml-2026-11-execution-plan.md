@@ -273,3 +273,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 - OX-003 L4 correction: rebind original main-story opaque runs to fresh staged XML after successful source export, preserving unique identity and dependency closure. CI 44297013294 failed one preservation job; npm/Pages blocked. Revalidation pending; do not enable clipboard yet.
 
 - OX-003 slice L5A: native clipboard token transport in one runtime realm, exact committed-state guard, fail-closed paste and native feedback. L4 correction green. Ribbon/async Clipboard API and cross-browser tests remain pending. CI pending.
+
+- OX-003 slice L5B: Ribbon/context-menu system clipboard custom token write/read, confirmed publication, exact committed snapshot guard, cross-route cancellation and command-level fixture. L5A all workflows green. Real browser qualification pending. CI pending.

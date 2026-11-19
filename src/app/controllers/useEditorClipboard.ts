@@ -1,5 +1,5 @@
 import { getOwner, onCleanup } from "solid-js";
-import { OPAQUE_CHART_CLIPBOARD_TYPE, readOpaqueChartToken, writeOpaqueChartToken } from "@/app/clipboard/opaqueChartClipboard.js";
+import { isOpaqueChartClipboardType, readOpaqueChartToken, writeOpaqueChartToken } from "@/app/clipboard/opaqueChartClipboard.js";
 import { prepareOpaqueChartPaste } from "./opaqueTransferTransaction.js";
 import type { ClipboardIssue, ClipboardPasteMode } from "@/ui/app/clipboardPaste.js";
 import { mergeClipboardFormatting } from "@/core/commands/clipboardMergeFormatting.js";
@@ -27,6 +27,8 @@ export interface EditorClipboardDeps {
   forcePlainTextPaste: () => boolean;
   consumePasteMode?: () => ClipboardPasteMode | undefined;
   onNativeClipboardSuccess?: () => void;
+  onNativeClipboardStart?: () => void;
+  clipboardRequestGeneration?: () => number;
   setForcePlainTextPaste: (value: boolean) => void;
   clearPreferredColumn: () => void;
   resetTransactionGrouping: () => void;
@@ -63,6 +65,7 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
     event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
   ): void => {
     request++;
+    deps.onNativeClipboardStart?.();
     if (selectionContainsOpaqueObject(deps.state())) {
       event.preventDefault();
       if(event.clipboardData&&writeOpaqueChartToken(deps.stateSnapshot?.()??deps.state(),event.clipboardData)){
@@ -93,6 +96,7 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
     event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
   ): void => {
     request++;
+    deps.onNativeClipboardStart?.();
     if (deps.isReadOnly()) {
       event.preventDefault();
       return;
@@ -138,13 +142,16 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
       return;
     }
     const fallbackMode = deps.consumePasteMode?.();
+    const generation=deps.clipboardRequestGeneration?.();
+    const superseded=():boolean=>id!==request||deps.clipboardRequestGeneration?.()!==generation;
     // A recognized custom format is exclusive; malformed, expired or foreign
     // tokens never fall through into a lossy plain/HTML/image paste.
-    if(event.clipboardData&&Array.from(event.clipboardData.types).includes(OPAQUE_CHART_CLIPBOARD_TYPE)){
+    const chartTypes=Array.from(event.clipboardData?.types??[]).filter(isOpaqueChartClipboardType);
+    if(event.clipboardData&&chartTypes.length){
       event.preventDefault();
       const plain=deps.forcePlainTextPaste();
       deps.setForcePlainTextPaste(false);
-      const manifest=readOpaqueChartToken(event.clipboardData.getData(OPAQUE_CHART_CLIPBOARD_TYPE));
+      const manifest=chartTypes.length===1?readOpaqueChartToken(event.clipboardData.getData(chartTypes[0]!)):undefined;
       const snapshot=deps.stateSnapshot?.();
       if(plain||(fallbackMode&&fallbackMode!=="rich")||!manifest||!snapshot){
         deps.onNativeClipboardIssue?.("paste","unsupported");
@@ -158,10 +165,10 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
         try{
           next=await prepareOpaqueChartPaste(snapshot,manifest);
         }catch{
-          if(id===request&&!deps.isReadOnly())deps.onNativeClipboardIssue?.("paste","unsupported");
+          if(!superseded()&&!deps.isReadOnly())deps.onNativeClipboardIssue?.("paste","unsupported");
           return;
         }
-        if(id!==request||deps.isReadOnly())return;
+        if(superseded()||deps.isReadOnly())return;
         if(deps.stateSnapshot?.()!==snapshot){
           deps.onNativeClipboardIssue?.("paste","document-changed");
           return;
@@ -170,7 +177,7 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
         deps.clearPreferredColumn();
         deps.resetTransactionGrouping();
         deps.applyTransactionalState(current=>{
-          if(id!==request||deps.isReadOnly()||current!==snapshot)return current;
+          if(superseded()||deps.isReadOnly()||current!==snapshot)return current;
           committed=true;
           return next;
         });
@@ -254,6 +261,7 @@ function createEditorClipboardControllerImpl(deps: EditorClipboardDeps) {
 
   const handleDrop = (event: DragEvent): void => {
     request++;
+    deps.onNativeClipboardStart?.();
     if (deps.isReadOnly()) {
       event.preventDefault();
       return;

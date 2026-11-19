@@ -1,5 +1,6 @@
+import { createEditorClipboardActions } from "@/ui/app/createEditorClipboardActions.js";
 import { createEditorClipboardController } from "@/app/controllers/useEditorClipboard.js";
-import { OPAQUE_CHART_CLIPBOARD_TYPE } from "@/app/clipboard/opaqueChartClipboard.js";
+import { OPAQUE_CHART_CLIPBOARD_TYPE, OPAQUE_CHART_WEB_TYPE, readOpaqueChartToken, stageOpaqueChartToken } from "@/app/clipboard/opaqueChartClipboard.js";
 import { getParagraphs } from "@/core/model.js";
 import { captureSelectedOpaqueChart, prepareOpaqueChartPaste } from "@/app/controllers/opaqueTransferTransaction.js";
 import { createEditorStateFromDocument } from "@/core/editorState.js";
@@ -197,6 +198,68 @@ describe("opaque source inventory and loss detector",()=>{
     expect(issue).toBe("unsupported");
     expect(live).toBe(selected);
     expect(commits).toBe(1);
+
+    // Exercise the exact command path used by Ribbon/context menu without
+    // depending on OS clipboard permissions in the node test environment.
+    const originalNavigator=Object.getOwnPropertyDescriptor(globalThis,"navigator");
+    const originalItem=Object.getOwnPropertyDescriptor(globalThis,"ClipboardItem");
+    let items:Array<{types:string[];getType:(type:string)=>Promise<Blob>}>=[];
+    let rejectWrite=false;
+    try{
+      Object.defineProperty(globalThis,"ClipboardItem",{configurable:true,value:class {
+        types:string[];
+        constructor(private readonly data:Record<string,Blob>){this.types=Object.keys(data);}
+        async getType(type:string){return this.data[type]!;}
+      }});
+      const api={
+        write:async(value:typeof items)=>{if(rejectWrite)throw Error("denied");items=value;},
+        read:async()=>items,
+      };
+      Object.defineProperty(globalThis,"navigator",{configurable:true,value:{clipboard:api}});
+      live=selected;
+      const actions=createEditorClipboardActions({
+        state:()=>liveProxy,stateSnapshot:()=>live,isReadOnly:()=>readOnly,
+        applyTransactionalState:f=>{const n=f(live);if(n!==live){live=n;commits++;}},
+        applyTableAwareParagraphEdit:(s,f)=>f(s),
+        clearPreferredColumn:()=>{},resetTransactionGrouping:()=>{},focusInput:()=>{},
+      });
+      expect(await actions.copy()).toBe(true);
+      expect(items[0]!.types).toEqual([OPAQUE_CHART_WEB_TYPE]);
+      const handle=await (await items[0]!.getType(OPAQUE_CHART_WEB_TYPE)).text();
+      expect(readOpaqueChartToken(handle)?.format).toBe(manifest.format);
+      expect(await actions.cut()).toBe(false);
+      expect(live).toBe(selected);
+      live=state;
+      expect(await actions.paste()).toBe(true);
+      expect(getParagraphs(live)[0]!.runs.map(r=>r.text).join("")).toBe("Changed\uFFFC destination\uFFFC");
+      expect(commits).toBe(2);
+      live=state;
+      const pendingMenu=actions.paste();
+      live={...state};
+      const changed=live;
+      expect(await pendingMenu).toBe(false);
+      expect(live).toBe(changed);
+      expect(commits).toBe(2);
+      expect(actions.notice()?.issue).toBe("document-changed");
+      live=state;
+      expect(await actions.paste("merge")).toBe(false);
+      expect(live).toBe(state);
+      // Async copy failure cannot publish a new handle or masquerade as text.
+      live=selected;rejectWrite=true;
+      expect(await actions.copy()).toBe(false);
+      expect(actions.notice()?.issue).toBe("access-denied");
+      expect(readOpaqueChartToken(handle)).toBeUndefined();
+      // A superseded staged write cannot revive an earlier capability.
+      const older=stageOpaqueChartToken(selected),newer=stageOpaqueChartToken(selected);
+      expect(newer.confirm()).toBe(true);
+      expect(older.confirm()).toBe(false);
+      expect(readOpaqueChartToken(older.token)).toBeUndefined();
+    }finally{
+      if(originalNavigator)Object.defineProperty(globalThis,"navigator",originalNavigator);
+      else Reflect.deleteProperty(globalThis,"navigator");
+      if(originalItem)Object.defineProperty(globalThis,"ClipboardItem",originalItem);
+      else Reflect.deleteProperty(globalThis,"ClipboardItem");
+    }
 
     const second=await applyOpaqueTransferToDocx(first.buffer,manifest,0);
     expect(second.plan.drawingId).not.toBe(first.plan.drawingId);

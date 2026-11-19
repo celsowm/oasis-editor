@@ -55,7 +55,7 @@ function createClipboardActions(deps: ClipboardPasteDeps) {
   ): Promise<boolean> => {
     const id = ++request;
     clear();
-    const snapshot = deps.state();
+    const snapshot = deps.stateSnapshot?.()??deps.state();
     const onIssue = (issue: ClipboardIssue): void => {
       if (id !== request) return;
       setNotice({ action, issue, ...(action === "paste" ? { mode } : {}) });
@@ -93,6 +93,7 @@ function createClipboardActions(deps: ClipboardPasteDeps) {
     notice,
     dismiss,
     reportNativeIssue,
+    requestGeneration: ():number=>request,
     consumePasteMode,
     copy: (): Promise<boolean> => run("copy"),
     cut: (): Promise<boolean> => run("cut"),

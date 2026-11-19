@@ -1,3 +1,4 @@
+import { OPAQUE_CHART_WEB_TYPE, stageOpaqueChartToken } from "@/app/clipboard/opaqueChartClipboard.js";
 import { serializeEditorSelectionToHtml, selectionContainsOpaqueObject } from "@/core/commands/clipboard.js";
 import { getSelectedText } from "@/core/commands/selection.js";
 import { deleteBackward } from "@/core/commands/text.js";
@@ -66,8 +67,23 @@ export async function writeEditorSelectionToClipboard(
   onIssue?: (issue: ClipboardIssue) => void,
 ): Promise<boolean> {
   if (selectionContainsOpaqueObject(snapshot)) {
-    onIssue?.("unsupported");
-    return false;
+    let staged:ReturnType<typeof stageOpaqueChartToken>;
+    try{staged=stageOpaqueChartToken(snapshot);}
+    catch{onIssue?.("unsupported");return false;}
+    const api=typeof navigator!=="undefined"?navigator.clipboard:undefined;
+    if(!api?.write||typeof ClipboardItem==="undefined"){
+      onIssue?.("unsupported");return false;
+    }
+    try{
+      // No text/HTML fallback: the handle is meaningful only in our realm.
+      const item=new ClipboardItem({
+        [OPAQUE_CHART_WEB_TYPE]:new Blob([staged.token],{type:OPAQUE_CHART_WEB_TYPE.slice(4)}),
+      });
+      await api.write([item]);
+      return staged.confirm();
+    }catch{
+      onIssue?.("access-denied");return false;
+    }
   }
   const copied = await writeSelection(snapshot);
   if (!copied && getSelectedText(snapshot)) onIssue?.("access-denied");
@@ -102,7 +118,9 @@ export async function cutEditorSelection(
   deps: ClipboardPasteDeps,
 ): Promise<boolean> {
   if (deps.isReadOnly()) return false;
-  const snapshot = deps.state();
+  const snapshot = deps.stateSnapshot?.()??deps.state();
+  // Copy now supports charts; Cut must still explicitly refuse them.
+  if(selectionContainsOpaqueObject(snapshot)){deps.onIssue?.("unsupported");return false;}
   if (!getSelectedText(snapshot)) return false;
   const copied = await writeEditorSelectionToClipboard(snapshot, deps.onIssue);
   if (!copied || deps.isReadOnly()) return false;
