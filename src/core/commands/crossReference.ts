@@ -23,13 +23,11 @@ import type {
   EditorTextRun,
 } from "@/core/model.js";
 import {
-  getDocumentSections,
-  getParagraphById,
   getParagraphLength,
   getParagraphs,
-  getParagraphText,
   paragraphOffsetToPosition,
 } from "@/core/model.js";
+import { createDocumentFieldContext } from "@/core/document/fieldDocumentContext.js";
 import { listBookmarks } from "./bookmark.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
 import {
@@ -62,49 +60,18 @@ export function findBookmarkByName(
   return listBookmarks(state).find((bookmark) => bookmark.name === name);
 }
 
-/** Collect the block paragraphs of a section zone (body blocks) in order. */
-function zoneParagraphs(state: EditorState): EditorParagraphNode[] {
-  return (getDocumentSections(state.document) ?? []).flatMap((section) =>
-    section.blocks.flatMap((block) => ("runs" in block ? [block] : [])),
-  );
-}
-
-/**
- * Resolve the text a REF field should display for a bookmark: the flattened
- * text of the bookmarked range (from the start paragraph offset to the end
- * paragraph offset, or the whole start paragraph when the bookmark is
- * zero-width). Falls back to "Error" style placeholder when the target
- * bookmark cannot be located — mirroring a broken cross-reference.
- */
+/** Resolve only the requested bookmark range. The shared field context
+ * refuses unsupported story/field dependencies instead of concatenating
+ * unrelated paragraphs or pretending missing geometry is known. */
 export function resolveBookmarkReferenceText(
   state: EditorState,
   bookmark: EditorBookmark,
 ): string {
-  const start = bookmark.start;
-  if (!start) return "Error! Bookmark not defined.";
-  const startParagraph = getParagraphById(state.document, start.paragraphId);
-  if (!startParagraph) return "Error! Bookmark not defined.";
-  const startText = getParagraphText(startParagraph);
-  if (!bookmark.end || bookmark.end.paragraphId === start.paragraphId) {
-    const end = bookmark.end?.offset ?? start.offset;
-    return startText.slice(startText.length > 0 ? start.offset : 0, end);
-  }
-  // Spanning multiple paragraphs: start slice + middle paragraphs + end slice.
-  const endParagraph = getParagraphById(
-    state.document,
-    bookmark.end.paragraphId,
-  );
-  if (!endParagraph) return startText;
-  return (
-    startText.slice(start.offset) +
-    zoneParagraphs(state)
-      .filter(
-        (paragraph) =>
-          paragraph !== startParagraph && paragraph !== endParagraph,
-      )
-      .map(getParagraphText)
-      .join("\n")
-  );
+  const context = createDocumentFieldContext({
+    ...state.document,
+    bookmarks: {items:{[bookmark.id]:bookmark},order:[bookmark.id]},
+  });
+  return context.bookmarkText(bookmark.name) ?? "Error! Bookmark not defined.";
 }
 
 /**
@@ -119,7 +86,8 @@ export function insertCrossReference(
   options: InsertCrossReferenceOptions,
 ): EditorState {
   const type = options.type ?? "REF";
-  if (!findBookmarkByName(state, options.bookmark)) {
+  const bookmark = findBookmarkByName(state, options.bookmark);
+  if (!bookmark) {
     return state;
   }
   const collapsedState = isSelectionCollapsed(state.selection)
@@ -129,9 +97,12 @@ export function insertCrossReference(
   const caretStyle = getStyleAtOffset(paragraph, offset);
 
   const field: EditorFieldData = { type, bookmark: options.bookmark };
+  const referenceText = type === "REF" ? createDocumentFieldContext(state.document).bookmarkText(bookmark.name) : undefined;
   const fieldRun: EditorTextRun = {
     id: `run:${type.toLowerCase()}:${Math.random().toString(36).slice(2, 9)}`,
-    text: "1", // Placeholder resolved during projection.
+    // Keep a nonempty placeholder for empty/unresolved references until
+    // transactional field updates qualify zero-length scalar runs.
+    text: referenceText && !/[\r\n]/.test(referenceText) ? referenceText : "1",
     kind: "field",
     field,
     styles: caretStyle,
