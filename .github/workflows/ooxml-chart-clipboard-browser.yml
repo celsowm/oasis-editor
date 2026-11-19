@@ -1,0 +1,52 @@
+name: OOXML Chart Clipboard Browser Qualification
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/app/**'
+      - 'src/core/**'
+      - 'src/ui/**'
+      - 'src/import/docx/**'
+      - 'src/export/docx/**'
+      - 'src/ooxml/**'
+      - 'scripts/verify-ribbon*.mjs'
+      - 'scripts/lib/ribbon-suite.mjs'
+      - 'tests/browser/ribbon/**'
+      - '.github/workflows/ooxml-chart-clipboard-browser.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  clipboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install browser and system dependencies
+        id: browser-install
+        run: |
+          for attempt in 1 2 3; do
+            if npx playwright install --with-deps ${{ matrix.browser }}; then exit 0; fi
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt * 15)); fi
+          done
+          exit 1
+      - run: npm run test:ribbon:ci
+        env:
+          RIBBON_BROWSER: ${{ matrix.browser }}
+          RIBBON_SUITE: opaque-chart-clipboard
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: opaque-chart-clipboard-${{ matrix.browser }}
+          path: test-results/ribbon/opaque-chart-clipboard

@@ -32,7 +32,14 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Install browser and system dependencies
+        id: browser-install
+        run: |
+          for attempt in 1 2 3; do
+            if npx playwright install --with-deps ${{ matrix.browser }}; then exit 0; fi
+            if [ "$attempt" -lt 3 ]; then sleep $((attempt * 15)); fi
+          done
+          exit 1
       - run: npm run test:ribbon:ci
         env:
           RIBBON_BROWSER: ${{ matrix.browser }}

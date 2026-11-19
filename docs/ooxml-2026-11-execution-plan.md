@@ -275,3 +275,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 - OX-003 slice L5A: native clipboard token transport in one runtime realm, exact committed-state guard, fail-closed paste and native feedback. L4 correction green. Ribbon/async Clipboard API and cross-browser tests remain pending. CI pending.
 
 - OX-003 slice L5B: Ribbon/context-menu system clipboard custom token write/read, confirmed publication, exact committed snapshot guard, cross-route cancellation and command-level fixture. L5A all workflows green. Real browser qualification pending. CI pending.
+
+- OX-003 L6A: browser matrix for chart clipboard with actual DOCX output, deterministic required tests, separate trusted keyboard and system API capability probes, evidence artifacts; bounded browser installation retries. L5B OOXML/npm/Pages green; two legacy browser workflows hit Ubuntu dependency download failures. CI pending.
