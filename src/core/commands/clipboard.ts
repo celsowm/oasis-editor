@@ -1,3 +1,5 @@
+import { fieldSelectionProtected } from "@/core/document/fieldMutation.js";
+import { splitForFieldAdjacentInsertion } from "@/core/document/paragraphRunEdit.js";
 import type {
   EditorParagraphListStyle,
   EditorParagraphStyle,
@@ -125,7 +127,7 @@ export function insertClipboardParagraphsAtSelection(
   state: EditorState,
   paragraphsSpec: EditorClipboardParagraphSpec[],
 ): EditorState {
-  if (paragraphsSpec.length === 0) {
+  if (paragraphsSpec.length === 0 || fieldSelectionProtected(state)) {
     return state;
   }
 
@@ -135,8 +137,8 @@ export function insertClipboardParagraphsAtSelection(
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
   const paragraphs = getParagraphs(collapsedState);
   const emptyDestination = getParagraphLength(paragraph) === 0;
-  const beforeRuns = sliceRuns(paragraph, 0, offset);
-  const afterRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
+  if(fieldSelectionProtected(collapsedState))return state;
+  const {beforeRuns,afterRuns}=splitForFieldAdjacentInsertion(paragraph,offset);
   const pastedParagraphs = paragraphsSpec.map((spec): EditorParagraphNode => {
     const nextParagraph = createEditorParagraphFromRuns(
       spec.runs.map((run) => ({

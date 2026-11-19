@@ -1,3 +1,5 @@
+import { fieldSelectionProtected } from "@/core/document/fieldMutation.js";
+import { splitForFieldAdjacentInsertion } from "@/core/document/paragraphRunEdit.js";
 import type {
   EditorBlockNode,
   EditorParagraphStyle,
@@ -6,7 +8,6 @@ import type {
   EditorSection,
   EditorTabStop,
   EditorParagraphNode,
-  EditorTextStyle,
   EditorPageSettings,
   EditorSectionBreakType,
 } from "@/core/model.js";
@@ -25,7 +26,6 @@ import type { ValueParagraphStyleKey } from "@/core/textStyle/textStyleKeys.js";
 import { setParagraphStyleValue } from "@/core/textStyle/textStyleMutations.js";
 import {
   buildParagraphFromRuns,
-  sliceRuns,
   getStyleAtOffset,
   createParagraphFromRunsLike,
 } from "@/core/document/paragraphRuns.js";
@@ -144,31 +144,21 @@ export function moveBlockToPosition(
 }
 
 export function splitBlockAtSelection(state: EditorState): EditorState {
+  if(fieldSelectionProtected(state))return state;
   const collapsedState = isSelectionCollapsed(state.selection)
     ? state
     : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  if(fieldSelectionProtected(collapsedState))return state;
+  const {beforeRuns,afterRuns:secondRuns}=splitForFieldAdjacentInsertion(paragraph,offset);
   const firstParagraph = buildParagraphFromRuns(
     paragraph,
-    sliceRuns(paragraph, 0, offset),
+    beforeRuns,
     getStyleAtOffset(paragraph, offset),
-  );
-  const secondRuns = sliceRuns(
-    paragraph,
-    offset,
-    getParagraphLength(paragraph),
   );
   const nextParagraph =
     secondRuns.length > 0
-      ? createParagraphFromRunsLike(
-          paragraph,
-          secondRuns.map(
-            (run): { text: string; styles: EditorTextStyle | undefined } => ({
-              text: run.text,
-              styles: run.styles,
-            }),
-          ),
-        )
+      ? buildParagraphFromRuns(createParagraphFromRunsLike(paragraph,[]),secondRuns)
       : ((): EditorParagraphNode => {
           const emptyParagraph = createEditorParagraph("");
           emptyParagraph.style = paragraph.style
@@ -195,31 +185,21 @@ export function splitBlockAtSelection(state: EditorState): EditorState {
 }
 
 export function insertPageBreakAtSelection(state: EditorState): EditorState {
+  if(fieldSelectionProtected(state))return state;
   const collapsedState = isSelectionCollapsed(state.selection)
     ? state
     : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  if(fieldSelectionProtected(collapsedState))return state;
+  const {beforeRuns,afterRuns:secondRuns}=splitForFieldAdjacentInsertion(paragraph,offset);
   const firstParagraph = buildParagraphFromRuns(
     paragraph,
-    sliceRuns(paragraph, 0, offset),
+    beforeRuns,
     getStyleAtOffset(paragraph, offset),
-  );
-  const secondRuns = sliceRuns(
-    paragraph,
-    offset,
-    getParagraphLength(paragraph),
   );
   const nextParagraph =
     secondRuns.length > 0
-      ? createParagraphFromRunsLike(
-          paragraph,
-          secondRuns.map(
-            (run): { text: string; styles: EditorTextStyle | undefined } => ({
-              text: run.text,
-              styles: run.styles,
-            }),
-          ),
-        )
+      ? buildParagraphFromRuns(createParagraphFromRunsLike(paragraph,[]),secondRuns)
       : ((): EditorParagraphNode => {
           const emptyParagraph = createEditorParagraph("");
           emptyParagraph.style = paragraph.style
@@ -255,10 +235,12 @@ export function insertSectionBreakAtSelection(
   state: EditorState,
   breakType: EditorSectionBreakType,
 ): EditorState {
+  if(fieldSelectionProtected(state))return state;
   const collapsedState = isSelectionCollapsed(state.selection)
     ? state
     : deleteSelectionRange(state);
   const { paragraph, offset } = getFocusParagraph(collapsedState);
+  if(fieldSelectionProtected(collapsedState))return state;
   const sections = getDocumentSections(collapsedState.document);
   const activeSectionIndex = getActiveSectionIndex(collapsedState);
   const zone = getActiveZone(collapsedState);
@@ -288,27 +270,15 @@ export function insertSectionBreakAtSelection(
   const afterBlocks = section.blocks.slice(blockIndex + 1);
 
   // Split the paragraph itself
+  const {beforeRuns,afterRuns:secondRuns}=splitForFieldAdjacentInsertion(paragraph,offset);
   const firstParagraph = buildParagraphFromRuns(
     paragraph,
-    sliceRuns(paragraph, 0, offset),
+    beforeRuns,
     getStyleAtOffset(paragraph, offset),
-  );
-  const secondRuns = sliceRuns(
-    paragraph,
-    offset,
-    getParagraphLength(paragraph),
   );
   const secondParagraph =
     secondRuns.length > 0
-      ? createParagraphFromRunsLike(
-          paragraph,
-          secondRuns.map(
-            (run): { text: string; styles: EditorTextStyle | undefined } => ({
-              text: run.text,
-              styles: run.styles,
-            }),
-          ),
-        )
+      ? buildParagraphFromRuns(createParagraphFromRunsLike(paragraph,[]),secondRuns)
       : ((): EditorParagraphNode => {
           const emptyParagraph = createEditorParagraph("");
           emptyParagraph.style = paragraph.style

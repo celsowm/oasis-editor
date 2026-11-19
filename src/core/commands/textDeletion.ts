@@ -1,3 +1,4 @@
+import { hasFieldMarkers, hasUnresolvedFieldStory, fieldRangeProtected, mapFieldAdjacentRuns } from "@/core/document/fieldMutation.js";
 import { tryDeleteOpaqueObject } from "./opaqueDeletion.js";
 import type {
   EditorState,
@@ -46,9 +47,10 @@ export function deleteCharsBackwardRaw(
 
   const paragraphs = getParagraphs(state);
   const start = offset - count;
+  if(hasUnresolvedFieldStory(state)||fieldRangeProtected(paragraph,start,offset))return state;
   const nextParagraph = buildParagraphFromRuns(
     paragraph,
-    [
+    hasFieldMarkers(paragraph)?mapFieldAdjacentRuns(paragraph,start,offset,()=>null):[
       ...sliceRuns(paragraph, 0, start),
       ...sliceRuns(paragraph, offset, getParagraphLength(paragraph)),
     ],
@@ -77,6 +79,13 @@ export function deleteBackward(state: EditorState): EditorState {
   const paragraphs = getParagraphs(state);
 
   if (offset > 0) {
+    if(hasUnresolvedFieldStory(state)||fieldRangeProtected(paragraph,offset - 1,offset))return state;
+    if(hasFieldMarkers(paragraph)){
+      // Reuse selection deletion so tracked and ordinary adjacent edits
+      // have exactly the same zero-width preservation policy.
+      const selected={...state,selection:{anchor:paragraphOffsetToPosition(paragraph,offset - 1),focus:paragraphOffsetToPosition(paragraph,offset)}};
+      return deleteSelectionRange(selected);
+    }
     if (state.trackChangesEnabled) {
       const runs = paragraph.runs;
       let consumed = 0;
@@ -170,6 +179,7 @@ export function deleteBackward(state: EditorState): EditorState {
   }
 
   const previousParagraph = paragraphs[index - 1];
+  if(hasUnresolvedFieldStory(state)||hasFieldMarkers(previousParagraph)||hasFieldMarkers(paragraph))return state;
   const mergedParagraph = buildParagraphFromRuns(previousParagraph, [
     ...previousParagraph.runs.map(cloneRun),
     ...paragraph.runs.map(cloneRun),
@@ -203,6 +213,13 @@ export function deleteForward(state: EditorState): EditorState {
   const paragraphs = getParagraphs(state);
 
   if (offset < getParagraphLength(paragraph)) {
+    if(hasUnresolvedFieldStory(state)||fieldRangeProtected(paragraph,offset,offset + 1))return state;
+    if(hasFieldMarkers(paragraph)){
+      // Reuse selection deletion so tracked and ordinary adjacent edits
+      // have exactly the same zero-width preservation policy.
+      const selected={...state,selection:{anchor:paragraphOffsetToPosition(paragraph,offset),focus:paragraphOffsetToPosition(paragraph,offset + 1)}};
+      return deleteSelectionRange(selected);
+    }
     if (state.trackChangesEnabled) {
       const runs = paragraph.runs;
       let consumed = 0;
@@ -296,6 +313,7 @@ export function deleteForward(state: EditorState): EditorState {
   }
 
   const nextParagraph = paragraphs[index + 1];
+  if(hasUnresolvedFieldStory(state)||hasFieldMarkers(nextParagraph)||hasFieldMarkers(paragraph))return state;
   const mergedParagraph = buildParagraphFromRuns(paragraph, [
     ...paragraph.runs.map(cloneRun),
     ...nextParagraph.runs.map(cloneRun),

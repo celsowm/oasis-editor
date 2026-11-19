@@ -1,3 +1,8 @@
+import { deleteBackward, deleteForward } from "@/core/commands/textDeletion.js";
+import { toggleTextStyle } from "@/core/commands/textFormatting.js";
+import { splitBlockAtSelection } from "@/core/commands/block.js";
+import { insertPlainTextAtSelection } from "@/core/commands/textEditing.js";
+import { deleteSelectionRange } from "@/core/selection/rangeEditing.js";
 import { createEditorStateFromDocument } from "@/core/editorState.js";
 import { paragraphOffsetToPosition } from "@/core/model.js";
 import { insertTextAtSelection } from "@/core/commands/textEditing.js";
@@ -298,5 +303,33 @@ describe("field preservation after adjacent model edits",()=>{
     const {imported}=await roundTrip('<w:p><w:r><w:fldChar w:fldCharType="begin" w:fldLock="1"/><w:instrText> PAGE </w:instrText><w:fldChar w:fldCharType="separate"/><w:t>42</w:t><w:fldChar w:fldCharType="end"/><w:t> tail</w:t></w:r></w:p>');
     expect(allRuns(imported).map(r=>r.text).join("")).toBe("42 tail");
     expect(fieldCharKinds(imported)).toEqual(["begin","separate","end"]);
+  });
+});
+
+describe("field-aware adjacent editing",()=>{
+  it("keeps controls through deletion, formatting, paragraph splits and multiline paste",async()=>{
+    const doc=await importDocxToEditorDocument(await buildDocx('<w:p><w:r><w:t>Before </w:t></w:r><w:fldSimple w:instr=" PAGE " w:fldLock="1"><w:r><w:t>42</w:t></w:r></w:fldSimple><w:r><w:t> after</w:t></w:r></w:p>'));
+    const state=createEditorStateFromDocument(doc),p=getDocumentParagraphs(doc)[0]!;
+    const select=(a:number,b=a)=>({...state,selection:{anchor:paragraphOffsetToPosition(p,a),focus:paragraphOffsetToPosition(p,b)}});
+    const scenarios=[
+      deleteBackward(select(3)),deleteForward(select(3)),deleteSelectionRange(select(1,3)),
+      toggleTextStyle(select(0,3),"bold"),splitBlockAtSelection(select(3)),
+      insertPlainTextAtSelection(select(3),"X\nY"),
+    ];
+    for(const edited of scenarios){
+      expect(edited.document).not.toBe(state.document);
+      expect(fieldCharKinds(edited.document)).toEqual(["begin","separate","end"]);
+      expect(instructions(edited.document)).toEqual([" PAGE "]);
+      const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(edited.document));
+      expect(fieldCharKinds(reopened)).toEqual(["begin","separate","end"]);
+      expect(instructions(reopened)).toEqual([" PAGE "]);
+      expect(getRunFieldChar(allRuns(reopened).find(r=>getRunFieldChar(r)?.kind==="begin")!)?.fieldLock).toBe(true);
+      expect(allRuns(reopened).some(r=>r.text==="42")).toBe(true);
+    }
+    expect(allRuns(scenarios[0]!.document).map(r=>r.text).join("")).toBe("Beore 42 after"); // backward at 3 removes 'f'
+    const inside=select(8),crossing=select(6,10);
+    for(const next of [deleteBackward(inside),deleteForward(inside),insertTextAtSelection(inside,"x"),splitBlockAtSelection(inside),deleteSelectionRange(crossing),insertPlainTextAtSelection(crossing,"x\ny")]){
+      expect(next.document).toBe(state.document);
+    }
   });
 });

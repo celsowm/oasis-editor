@@ -1,3 +1,4 @@
+import { fieldSelectionProtected, hasFieldMarkers, fieldRangeProtected, mapFieldAdjacentRuns } from "@/core/document/fieldMutation.js";
 import type {
   EditorParagraphNode,
   EditorPosition,
@@ -54,7 +55,7 @@ export function getFocusParagraph(state: EditorState): {
 export function deleteSelectionRange(state: EditorState): EditorState {
   const paragraphs = getParagraphs(state);
   const normalized = normalizeSelection(state, paragraphs);
-  if (normalized.isCollapsed) {
+  if (normalized.isCollapsed || fieldSelectionProtected(state)) {
     return state;
   }
 
@@ -107,10 +108,11 @@ export function deleteSelectionRange(state: EditorState): EditorState {
     normalized.start,
   );
   const endOffset = positionToParagraphOffset(endParagraph, normalized.end);
-  const mergedParagraph = buildParagraphFromRuns(startParagraph, [
-    ...sliceRuns(startParagraph, 0, startOffset),
-    ...sliceRuns(endParagraph, endOffset, getParagraphLength(endParagraph)),
-  ]);
+  const mergedParagraph = buildParagraphFromRuns(startParagraph,
+    normalized.startIndex === normalized.endIndex && hasFieldMarkers(startParagraph)
+      ? mapFieldAdjacentRuns(startParagraph,startOffset,endOffset,()=>null)
+      : [...sliceRuns(startParagraph, 0, startOffset),
+         ...sliceRuns(endParagraph, endOffset, getParagraphLength(endParagraph))]);
 
   const nextParagraphs = [
     ...cloneParagraphs(paragraphs.slice(0, normalized.startIndex)),
@@ -131,6 +133,10 @@ export function mapRunsInRange(
   endOffset: number,
   mapper: (run: EditorTextRun) => EditorTextRun,
 ): EditorParagraphNode {
+  if(hasFieldMarkers(paragraph)) {
+    if(fieldRangeProtected(paragraph,startOffset,endOffset)) return paragraph;
+    return buildParagraphFromRuns(paragraph,mapFieldAdjacentRuns(paragraph,startOffset,endOffset,mapper));
+  }
   return buildParagraphFromRuns(paragraph, [
     ...sliceRuns(paragraph, 0, startOffset),
     ...sliceRuns(paragraph, startOffset, endOffset).map(mapper),

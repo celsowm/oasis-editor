@@ -35,7 +35,7 @@ export function insertRunsAtOffset(
  * encountered markers (before subsequent visible text). General selection
  * deletion, multi-paragraph splits and field-range semantics require a
  * story-aware field span model; this is not that model. */
-function splitForFieldAdjacentInsertion(paragraph:EditorParagraphNode,offset:number):{
+export function splitForFieldAdjacentInsertion(paragraph:EditorParagraphNode,offset:number):{
   beforeRuns:EditorTextRun[];afterRuns:EditorTextRun[];
 }{
   const beforeRuns:EditorTextRun[]=[],afterRuns:EditorTextRun[]=[];

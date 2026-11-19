@@ -289,3 +289,5 @@ L1–L6 chart clipboard milestone qualified within the bounded scope; [evidence 
 - OX-010 A: bounded lossless field instruction lexer and shared exact scalar projection for simple and complex fields. No evaluator or external execution. Round-trip and resource limit tests added; CI pending.
 
 - OX-010 B1: conservative flagged/structured result preservation and single-paragraph adjacent insertion retaining zero-width field controls. A all workflows green. Full field-range mutation and story span graph remain open. CI pending.
+
+- OX-010 B2A: marker-aware adjacent range rebuilding, protected complex spans and bounded split/paste; B1 all seven workflows green. Further field-aware command coverage and story graph pending. CI pending.

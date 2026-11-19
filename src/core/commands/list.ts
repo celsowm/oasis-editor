@@ -1,8 +1,9 @@
+import { fieldSelectionProtected } from "@/core/document/fieldMutation.js";
+import { splitForFieldAdjacentInsertion } from "@/core/document/paragraphRunEdit.js";
 import type {
   EditorParagraphListStyle,
   EditorState,
   EditorParagraphNode,
-  EditorTextStyle,
 } from "@/core/model.js";
 import {
   getParagraphLength,
@@ -14,7 +15,6 @@ import { isSelectionCollapsed, normalizeSelection } from "@/core/selection.js";
 import type { ParagraphListKind } from "@/core/textStyle/textStyleKeys.js";
 import {
   buildParagraphFromRuns,
-  sliceRuns,
   getStyleAtOffset,
   createParagraphFromRunsLike,
   clearParagraphList,
@@ -34,31 +34,21 @@ import {
 } from "@/core/selection/rangeEditing.js";
 
 export function splitListItemAtSelection(state: EditorState): EditorState {
+  if(fieldSelectionProtected(state))return state;
   const collapsedState = isSelectionCollapsed(state.selection)
     ? state
     : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  if(fieldSelectionProtected(collapsedState))return state;
+  const {beforeRuns,afterRuns:secondRuns}=splitForFieldAdjacentInsertion(paragraph,offset);
   const firstParagraph = buildParagraphFromRuns(
     paragraph,
-    sliceRuns(paragraph, 0, offset),
+    beforeRuns,
     getStyleAtOffset(paragraph, offset),
-  );
-  const secondRuns = sliceRuns(
-    paragraph,
-    offset,
-    getParagraphLength(paragraph),
   );
   const nextParagraph =
     secondRuns.length > 0
-      ? createParagraphFromRunsLike(
-          paragraph,
-          secondRuns.map(
-            (run): { text: string; styles: EditorTextStyle | undefined } => ({
-              text: run.text,
-              styles: run.styles,
-            }),
-          ),
-        )
+      ? buildParagraphFromRuns(createParagraphFromRunsLike(paragraph,[]),secondRuns)
       : ((): EditorParagraphNode => {
           const emptyParagraph = createEditorParagraph("");
           emptyParagraph.style = paragraph.style

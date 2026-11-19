@@ -1,3 +1,5 @@
+import { fieldSelectionProtected, hasFieldMarkers, fieldRangeProtected } from "@/core/document/fieldMutation.js";
+import { splitForFieldAdjacentInsertion } from "@/core/document/paragraphRunEdit.js";
 import type {
   EditorParagraphNode,
   EditorPosition,
@@ -245,6 +247,9 @@ export function moveOrCopySelectionToPosition(
   if (isTargetInsideSelection(state, targetPosition)) {
     return state;
   }
+  if(fieldSelectionProtected(state))return state;
+  const targetParagraph=getParagraphs(state).find(p=>p.id===targetPosition.paragraphId);
+  if(targetParagraph&&(hasFieldMarkers(targetParagraph)||fieldRangeProtected(targetParagraph,positionToParagraphOffset(targetParagraph,targetPosition),positionToParagraphOffset(targetParagraph,targetPosition))))return state;
   const fragments = collectSelectionFragments(state);
   if (fragments.length === 0) {
     return state;
@@ -290,6 +295,7 @@ export function insertTextAtSelection(
     return state;
   }
 
+  if(fieldSelectionProtected(state))return state;
   const collapsedState = isSelectionCollapsed(state.selection)
     ? state
     : deleteSelectionRange(state);
@@ -338,6 +344,7 @@ export function insertMathAtSelection(
   state: EditorState,
   expression: EditorMathExpression,
 ): EditorState {
+  if(fieldSelectionProtected(state))return state;
   const collapsedState = isSelectionCollapsed(state.selection)
     ? state
     : deleteSelectionRange(state);
@@ -404,6 +411,7 @@ export function insertPlainTextAtSelection(
     return insertTextAtSelection(state, normalizedText, styleOverride);
   }
 
+  if(fieldSelectionProtected(state))return state;
   const collapsedState = isSelectionCollapsed(state.selection)
     ? state
     : deleteSelectionRange(state);
@@ -412,27 +420,21 @@ export function insertPlainTextAtSelection(
   const insertionStyles = styleOverride
     ? { ...styleOverride }
     : getStyleAtOffset(paragraph, offset);
-  const beforeRuns = sliceRuns(paragraph, 0, offset);
+  const {beforeRuns,afterRuns:tailRuns}=splitForFieldAdjacentInsertion(paragraph,offset);
   const firstParagraph = buildParagraphFromRuns(
     paragraph,
     [...beforeRuns, createEditorStyledRun(lines[0], insertionStyles)],
     insertionStyles,
   );
-  const tailRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
   const middleParagraphs = lines
     .slice(1, -1)
     .map((line): EditorParagraphNode =>
       createParagraphFromRuns([{ text: line, styles: insertionStyles }]),
     );
-  const lastParagraph = createParagraphFromRuns([
-    { text: lines[lines.length - 1], styles: insertionStyles },
-    ...tailRuns.map(
-      (run): { text: string; styles: EditorTextStyle | undefined } => ({
-        text: run.text,
-        styles: run.styles,
-      }),
-    ),
-  ]);
+  const lastParagraph = buildParagraphFromRuns(createParagraphFromRuns([]),[
+    createEditorStyledRun(lines[lines.length - 1],insertionStyles),
+    ...tailRuns,
+  ],insertionStyles);
   const paragraphs = getParagraphs(collapsedState);
   const nextParagraphs = [
     ...paragraphs.slice(0, index),
