@@ -1,4 +1,4 @@
-import { fieldSelectionProtected } from "@/core/document/fieldMutation.js";
+import { fieldInlineSelectionProtected } from "@/core/document/fieldMutation.js";
 import type {
   EditorBorderStyle,
   EditorState,
@@ -25,7 +25,7 @@ import {
 import { sliceRuns } from "@/core/document/paragraphRuns.js";
 import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
 import {
-  mapRunsInRange,
+  mapRunsInStoryRange,
   preserveSelectionByParagraphOffsets,
 } from "@/core/selection/rangeEditing.js";
 
@@ -56,7 +56,7 @@ export function toggleTextStyle(
   key: ToggleableTextStyleKey,
 ): EditorState {
   const normalized = normalizeSelection(state);
-  if (normalized.isCollapsed || fieldSelectionProtected(state)) {
+  if (normalized.isCollapsed || fieldInlineSelectionProtected(state)) {
     return state;
   }
 
@@ -113,7 +113,7 @@ export function toggleTextStyle(
           ? normalized.endParagraphOffset
           : getParagraphLength(paragraph);
 
-      return mapRunsInRange(paragraph, startOffset, endOffset, (run) => ({
+      return mapRunsInStoryRange(state, paragraph, startOffset, endOffset, (run) => ({
         ...run,
         styles: setResolvedBooleanStyle(
           state,
@@ -139,7 +139,7 @@ export function toggleTextStyle(
  */
 export function clearSelectedTextFormatting(state: EditorState): EditorState {
   const normalized = normalizeSelection(state);
-  if (normalized.isCollapsed || fieldSelectionProtected(state)) {
+  if (normalized.isCollapsed || fieldInlineSelectionProtected(state)) {
     return state;
   }
 
@@ -162,7 +162,7 @@ export function clearSelectedTextFormatting(state: EditorState): EditorState {
           ? normalized.endParagraphOffset
           : getParagraphLength(paragraph);
 
-      return mapRunsInRange(paragraph, startOffset, endOffset, (run) => {
+      return mapRunsInStoryRange(state, paragraph, startOffset, endOffset, (run) => {
         const link = run.styles?.link;
         const styles: EditorTextStyle =
           link != null && link !== "" ? { link } : {};
@@ -184,7 +184,7 @@ export function applyUnderlineStyle(
   style: EditorUnderlineStyle | null,
 ): EditorState {
   const normalized = normalizeSelection(state);
-  if (normalized.isCollapsed || fieldSelectionProtected(state)) return state;
+  if (normalized.isCollapsed || fieldInlineSelectionProtected(state)) return state;
   const paragraphs = getParagraphs(state);
   const nextParagraphs = paragraphs.map((paragraph, index) => {
     if (index < normalized.startIndex || index > normalized.endIndex)
@@ -195,7 +195,7 @@ export function applyUnderlineStyle(
       index === normalized.endIndex
         ? normalized.endParagraphOffset
         : getParagraphLength(paragraph);
-    return mapRunsInRange(paragraph, start, end, (run) => {
+    return mapRunsInStoryRange(state, paragraph, start, end, (run) => {
       let styles = setValueStyle(
         setResolvedBooleanStyle(
           state,
@@ -233,7 +233,7 @@ export function setTextStyleValue<K extends ValueTextStyleKey>(
   value: EditorTextStyle[K] | null,
 ): EditorState {
   const normalized = normalizeSelection(state);
-  if (normalized.isCollapsed || fieldSelectionProtected(state)) {
+  if (normalized.isCollapsed || fieldInlineSelectionProtected(state)) {
     return state;
   }
 
@@ -256,7 +256,7 @@ export function setTextStyleValue<K extends ValueTextStyleKey>(
           ? normalized.endParagraphOffset
           : getParagraphLength(paragraph);
 
-      return mapRunsInRange(paragraph, startOffset, endOffset, (run) => ({
+      return mapRunsInStoryRange(state, paragraph, startOffset, endOffset, (run) => ({
         ...run,
         styles: setValueStyle(run.styles, key, value),
       }));
@@ -282,7 +282,7 @@ export function nudgeFontSize(
   deltaPt: number,
 ): EditorState {
   const normalized = normalizeSelection(state);
-  if (normalized.isCollapsed || fieldSelectionProtected(state)) {
+  if (normalized.isCollapsed || fieldInlineSelectionProtected(state)) {
     return state;
   }
 
@@ -306,7 +306,7 @@ export function nudgeFontSize(
           ? normalized.endParagraphOffset
           : getParagraphLength(paragraph);
 
-      return mapRunsInRange(paragraph, startOffset, endOffset, (run) => {
+      return mapRunsInStoryRange(state, paragraph, startOffset, endOffset, (run) => {
         const currentPt =
           (resolveEffectiveTextStyleForParagraph(
             run.styles,
@@ -337,7 +337,7 @@ export function nudgeFontSize(
  */
 export function toggleCharacterBorder(state: EditorState): EditorState {
   const normalized = normalizeSelection(state);
-  if (normalized.isCollapsed || fieldSelectionProtected(state)) {
+  if (normalized.isCollapsed || fieldInlineSelectionProtected(state)) {
     return state;
   }
 
@@ -387,7 +387,7 @@ export function toggleCharacterBorder(state: EditorState): EditorState {
           ? normalized.endParagraphOffset
           : getParagraphLength(paragraph);
 
-      return mapRunsInRange(paragraph, startOffset, endOffset, (run) => ({
+      return mapRunsInStoryRange(state, paragraph, startOffset, endOffset, (run) => ({
         ...run,
         styles: toggleTextBorderStyle(run.styles, shouldEnable),
       }));

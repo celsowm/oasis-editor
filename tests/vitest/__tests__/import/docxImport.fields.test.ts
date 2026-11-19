@@ -1,5 +1,5 @@
 import { deleteBackward, deleteForward } from "@/core/commands/textDeletion.js";
-import { toggleTextStyle } from "@/core/commands/textFormatting.js";
+import { applyUnderlineStyle, clearSelectedTextFormatting, nudgeFontSize, setTextStyleValue, toggleCharacterBorder, toggleTextStyle } from "@/core/commands/textFormatting.js";
 import { splitBlockAtSelection } from "@/core/commands/block.js";
 import { insertPlainTextAtSelection } from "@/core/commands/textEditing.js";
 import { deleteSelectionRange } from "@/core/selection/rangeEditing.js";
@@ -376,5 +376,57 @@ describe("multiparagraph field adjacent inline editing",()=>{
       deleteSelectionRange(selection(1,5,7)),toggleTextStyle(selection(2,0,3),"bold"),
       splitBlockAtSelection(selection(0,2)),insertPlainTextAtSelection(selection(0,2),"x\ny"),
     ])expect(next.document).toBe(initial.document);
+  });
+});
+
+describe("story-aware character formatting",()=>{
+  it("formats adjacent ranges including exact edges without touching the field cache",async()=>{
+    const doc=await importDocxToEditorDocument(await buildDocx(`
+      <w:p><w:r><w:rPr><w:i/></w:rPr><w:t>Before</w:t></w:r>
+        <w:r><w:fldChar w:fldCharType="begin" w:fldLock="1" w:dirty="1"/></w:r>
+        <w:r><w:instrText xml:space="preserve"> TOC </w:instrText></w:r>
+        <w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>First</w:t></w:r></w:p>
+      <w:p><w:r><w:rPr><w:i/></w:rPr><w:t>Middle</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Last</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>
+        <w:r><w:t>After</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Outside</w:t></w:r></w:p>`));
+    const initial=createEditorStateFromDocument(doc);
+    const ps=getDocumentParagraphs(doc);
+    const select=(i:number,a:number,b:number,j=i)=>{
+      return {...initial,selection:{anchor:paragraphOffsetToPosition(ps[i]!,a),focus:paragraphOffsetToPosition(ps[j]!,b)}};
+    };
+    const commands=[
+      (s:typeof initial)=>toggleTextStyle(s,"bold"),
+      (s:typeof initial)=>applyUnderlineStyle(s,"single"),
+      (s:typeof initial)=>setTextStyleValue(s,"fontSize",24),
+      (s:typeof initial)=>nudgeFontSize(s,2),
+      (s:typeof initial)=>toggleCharacterBorder(s),
+      (s:typeof initial)=>clearSelectedTextFormatting(s),
+    ];
+    for(const cmd of commands){
+      // In particular, the prefix is selected right up to the begin marker.
+      const edited=cmd(select(0,0,6));
+      expect(edited.document).not.toBe(initial.document);
+      const prefix=allRuns(edited.document).find(r=>r.text==="Before")!;
+      expect(prefix.styles).not.toEqual(allRuns(doc).find(r=>r.text==="Before")!.styles);
+      const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(edited.document));
+      expect(fieldCharKinds(reopened)).toEqual(["begin","separate","end"]);
+      expect(instructions(reopened)).toEqual([" TOC "]);
+      expect(getRunFieldChar(allRuns(reopened).find(r=>getRunFieldChar(r)?.kind==="begin")!)).toMatchObject({fieldLock:true,dirty:true});
+      for(const label of ["First","Middle","Last"]){
+        expect(allRuns(reopened).find(r=>r.text===label)?.styles).toEqual(allRuns(doc).find(r=>r.text===label)?.styles);
+      }
+      for(const blocked of [select(0,5,7),select(1,0,6),select(2,0,5),select(0,0,9,2)]){
+        expect(cmd(blocked).document).toBe(initial.document);
+      }
+    }
+    for(const [selection,label] of [[select(2,4,9),"After"],[select(3,0,7),"Outside"]] as const){
+      const edited=toggleTextStyle(selection,"bold");
+      const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(edited.document));
+      expect(allRuns(reopened).find(r=>r.text===label)?.styles?.bold).toBe(true);
+      expect(fieldCharKinds(reopened)).toEqual(["begin","separate","end"]);
+    }
+    const tracked={...select(0,2,2),trackChangesEnabled:true};
+    expect(insertTextAtSelection(tracked,"X").document).toBe(initial.document);
   });
 });

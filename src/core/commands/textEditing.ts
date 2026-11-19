@@ -297,7 +297,7 @@ export function insertTextAtSelection(
 
   // Only a collapsed ordinary insertion is newly authorized. Replacement
   // can collapse onto an ambiguous field boundary; retain its previous gate.
-  if(isSelectionCollapsed(state.selection)
+  if(isSelectionCollapsed(state.selection) && !state.trackChangesEnabled
     ? fieldInlineSelectionProtected(state)
     : fieldSelectionProtected(state))return state;
   const collapsedState = isSelectionCollapsed(state.selection)

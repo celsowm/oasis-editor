@@ -1,4 +1,4 @@
-import { fieldSelectionProtected, fieldInlineSelectionProtected, hasFieldMarkers, fieldRangeProtected, mapFieldAdjacentRuns } from "@/core/document/fieldMutation.js";
+import { fieldSelectionProtected, fieldInlineSelectionProtected, fieldInlineRangeProtected, hasFieldMarkers, fieldRangeProtected, mapFieldAdjacentRuns } from "@/core/document/fieldMutation.js";
 import type {
   EditorParagraphNode,
   EditorPosition,
@@ -142,6 +142,22 @@ export function mapRunsInRange(
     ...sliceRuns(paragraph, startOffset, endOffset).map(mapper),
     ...sliceRuns(paragraph, endOffset, getParagraphLength(paragraph)),
   ]);
+}
+
+/** Formatting callers with a story-aware selection gate may map an adjacent
+ * range in an otherwise unbalanced paragraph. Never rely on local markers:
+ * interior cached paragraphs of a multiparagraph field may have none. */
+export function mapRunsInStoryRange(
+  state: EditorState,
+  paragraph: EditorParagraphNode,
+  startOffset: number,
+  endOffset: number,
+  mapper: (run: EditorTextRun) => EditorTextRun,
+): EditorParagraphNode {
+  if (fieldInlineRangeProtected(state, paragraph, startOffset, endOffset)) return paragraph;
+  return hasFieldMarkers(paragraph)
+    ? buildParagraphFromRuns(paragraph, mapFieldAdjacentRuns(paragraph, startOffset, endOffset, mapper))
+    : mapRunsInRange(paragraph, startOffset, endOffset, mapper);
 }
 
 export function preserveSelectionByParagraphOffsets(
