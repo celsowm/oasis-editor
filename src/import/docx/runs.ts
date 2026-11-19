@@ -1,7 +1,7 @@
 import { projectOpaqueRunElement } from "@/ooxml/word/opaqueObjects.js";
 import JSZip from "jszip";
 import { XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
-import { pageNumberFormatFromSwitch } from "@/core/format/pageNumberFormat.js";
+import { projectScalarFieldInstruction } from "./runs/fieldProjection.js";
 import type {
   EditorTextStyle,
   EditorImageRunData,
@@ -41,21 +41,6 @@ import type {
 export type { ImportedRun } from "./runs/types.js";
 export type { ParseNestedBlocks } from "./runs/types.js";
 export { getRunInstructionText } from "./runs/fields.js";
-
-/**
- * Extract the bookmark target name from a REF / PAGEREF field instruction such
- * as ` REF _Ref123 \h ` or ` PAGEREF MyBookmark \h `. Handles an optional
- * comma-separated tag suffix (e.g. `\p`, `\n`) which Word appends; those and
- * the `\h` hyperlink switch are dropped so only the plain name is kept.
- */
-function extractBookmarkName(instruction: string): string | undefined {
-  const match = /\b(?:REF|PAGEREF)\s+([^\\]+?)(?:\s+\\|\s*$)/i.exec(
-    instruction,
-  );
-  if (!match) return undefined;
-  const raw = match[1].replace(/^"|"$/g, "").trim();
-  return raw.length > 0 ? raw : undefined;
-}
 
 /**
  * Parse a `w:bookmarkStart` / `w:bookmarkEnd` element into a transient marker.
@@ -345,32 +330,8 @@ export async function parseRunsContainer(
     instruction: string;
     beginStyles?: EditorTextStyle;
   }): void => {
-    const fieldType = /\bNUMPAGES\b/i.test(entry.instruction)
-      ? "NUMPAGES"
-      : /\bPAGE\b/i.test(entry.instruction)
-        ? "PAGE"
-        : /\bDATE\b/i.test(entry.instruction)
-          ? "DATE"
-          : /\bREF\b/i.test(entry.instruction)
-            ? "REF"
-            : /\bPAGEREF\b/i.test(entry.instruction)
-              ? "PAGEREF"
-              : null;
-    if (!fieldType) {
-      return;
-    }
-    const format = pageNumberFormatFromSwitch(
-      /\*\s*([A-Za-z]+)/.exec(entry.instruction)?.[1],
-    );
-    const dateFormat =
-      fieldType === "DATE"
-        ? /@\s*"([^"]*)"/.exec(entry.instruction)?.[1]
-        : undefined;
-    // Bookmark target for cross-references: `REF name` / `PAGEREF name`.
-    const bookmark =
-      fieldType === "REF" || fieldType === "PAGEREF"
-        ? extractBookmarkName(entry.instruction)
-        : undefined;
+    const field = projectScalarFieldInstruction(entry.instruction);
+    if (!field) return;
     const span = runs.slice(entry.beginIndex);
     // A scalar field cache cannot represent embedded content or range
     // boundaries. Do not collapse a structured result into text.
@@ -388,16 +349,6 @@ export async function parseRunsContainer(
       resultRuns.find((run): EditorTextStyle | undefined => run.styles)
         ?.styles ?? entry.beginStyles;
     runs.length = entry.beginIndex;
-    const field =
-      fieldType === "DATE"
-        ? dateFormat
-          ? { type: "DATE" as const, dateFormat }
-          : { type: "DATE" as const }
-        : fieldType === "REF" || fieldType === "PAGEREF"
-          ? { type: fieldType as "REF" | "PAGEREF", bookmark }
-          : format
-            ? { type: fieldType as "PAGE" | "NUMPAGES", format }
-            : { type: fieldType as "PAGE" | "NUMPAGES" };
     runs.push({
       text: displayText,
       ...(styles ? { styles } : {}),
@@ -788,25 +739,7 @@ export async function parseRunsContainer(
         element.getAttributeNS(WORD_NS, "instr") ??
         element.getAttribute("instr") ??
         "";
-      const fieldType = /\bNUMPAGES\b/i.test(instr)
-        ? "NUMPAGES"
-        : /\bPAGE\b/i.test(instr)
-          ? "PAGE"
-          : /\bDATE\b/i.test(instr)
-            ? "DATE"
-            : /\bREF\b/i.test(instr)
-              ? "REF"
-              : /\bPAGEREF\b/i.test(instr)
-                ? "PAGEREF"
-                : null;
-      const simpleFormat = /\*\s*([A-Za-z]+)/.exec(instr)?.[1];
-      const fieldFormat = pageNumberFormatFromSwitch(simpleFormat);
-      const simpleDate =
-        fieldType === "DATE" ? /@\s*"([^"]*)"/.exec(instr)?.[1] : undefined;
-      const simpleBookmark =
-        fieldType === "REF" || fieldType === "PAGEREF"
-          ? extractBookmarkName(instr)
-          : undefined;
+      const field = projectScalarFieldInstruction(instr);
       const fieldRuns = await parseRunsContainer(
         element,
         numberingMaps,
@@ -817,28 +750,12 @@ export async function parseRunsContainer(
         inheritedLink,
         parseNestedBlocks,
       );
-      if (fieldType) {
+      if (field) {
         const displayText =
           fieldRuns.map((run): string => run.text).join("") || "1";
         const styles = fieldRuns.find(
           (run): EditorTextStyle | undefined => run.styles,
         )?.styles;
-        const field =
-          fieldType === "DATE"
-            ? simpleDate
-              ? { type: "DATE" as const, dateFormat: simpleDate }
-              : { type: "DATE" as const }
-            : fieldType === "REF" || fieldType === "PAGEREF"
-              ? {
-                  type: fieldType as "REF" | "PAGEREF",
-                  bookmark: simpleBookmark,
-                }
-              : fieldFormat
-                ? {
-                    type: fieldType as "PAGE" | "NUMPAGES",
-                    format: fieldFormat,
-                  }
-                : { type: fieldType as "PAGE" | "NUMPAGES" };
         runs.push({
           text: displayText,
           styles,

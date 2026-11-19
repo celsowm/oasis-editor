@@ -62,6 +62,32 @@ async function roundTrip(bodyXml: string): Promise<{
   return { imported, xml, reimported };
 }
 
+describe("DOCX import: exact field instruction heads",()=>{
+  it("does not promote quoted or positional recognized names to standalone fields",async()=>{
+    const samples=[' IF "NUMPAGES" = "PAGE" "DATE" "REF" ',' AUTHOR "PAGE" ',' MERGEFIELD DATE ',' PAGE \\* Unsupported ',' REF Target \\n ',' DATE \\@ "unterminated '];
+    for(const instr of samples){
+      const escaped=instr.replace(/&/g,"&amp;").replace(/"/g,"&quot;");
+      for(const body of [
+        '<w:fldSimple w:instr="'+escaped+'"><w:r><w:t>Cached</w:t></w:r></w:fldSimple>',
+        '<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve">'+escaped+'</w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>Cached</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>',
+      ]){
+        const {imported,reimported}=await roundTrip('<w:p>'+body+'</w:p>');
+        for(const doc of [imported,reimported]){
+          expect(allRuns(doc).some(r=>getRunField(r))).toBe(false);
+          expect(instructions(doc)).toEqual([instr]);
+          expect(allRuns(doc).some(r=>r.text==="Cached")).toBe(true);
+        }
+      }
+    }
+  });
+  it("recognizes split instructions and REF targets named like other fields",async()=>{
+    const {imported}=await roundTrip('<w:p><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> RE</w:instrText></w:r><w:r><w:instrText>F NUMPAGES \\h </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>Target</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>');
+    expect(allRuns(imported).map(getRunField).filter(Boolean)).toEqual([{type:"REF",bookmark:"NUMPAGES"}]);
+    const simple=await roundTrip('<w:p><w:fldSimple w:instr=" PAGEREF &quot;PAGE target&quot; \\h "><w:r><w:t>3</w:t></w:r></w:fldSimple></w:p>');
+    expect(allRuns(simple.reimported).map(getRunField).filter(Boolean)).toEqual([{type:"PAGEREF",bookmark:"PAGE target"}]);
+  });
+});
+
 describe("DOCX import: complex fields (REF / PAGEREF / TOC)", () => {
   it("preserves a SEQ Figure caption field", async () => {
     const { imported, xml } = await roundTrip(

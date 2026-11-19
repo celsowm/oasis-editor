@@ -27,3 +27,7 @@ Related roadmap: [OX-010](./ooxml-2026-11-execution-plan.md#ox-010-field-engine)
 First narrow gate: stop substring promotion without regressing supported basic fields. Lexer must retain raw instruction offsets and distinguish command, positional arguments, quoted arguments and switch tokens. No evaluator or automatic rewriting until preservation is demonstrably lossless. Unknown, malformed, nested or semantically unsupported inputs must remain preserved, not be coerced into PAGE/NUMPAGES. Do not execute DDE, INCLUDETEXT or other external fields.
 
 The OX-003 chart milestone is qualified within its bounded scope; remaining preservation work remains tracked as open tickets, not as a claim of complete OOXML support.
+
+## Slice A implementation
+
+Shared bounded lossless lexical parser with raw instruction, token offsets, quoted operands, escaped quote/backslash, switch tokens and exact command head. Both fldSimple and complex single-paragraph routes use one scalar projection. Unknown commands, malformed syntax and unsupported extra switches remain instruction/result runs rather than being mislabeled as PAGE/NUMPAGES/REF/DATE. Existing case-sensitive numeric formats retained; quoted bookmark spaces serialized on regeneration. Tests include IF/unknown commands with recognized literal operands, unsupported switches, split instructions, quote and resource bounds. This is not a full field AST or evaluator; lock/dirty, nested and styled result preservation and all story boundaries are next slices. CI pending.

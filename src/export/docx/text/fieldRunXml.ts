@@ -13,7 +13,9 @@ export function serializeFieldRun(
     instr = ` DATE \\@ "${picture}" `;
   } else if (field.type === "REF" || field.type === "PAGEREF") {
     // `\h` marks the result as a hyperlink to the bookmarked target.
-    instr = ` ${field.type} ${field.bookmark ?? ""} \\h `;
+    const bookmark = field.bookmark ?? "";
+    const target = /\s/.test(bookmark) ? `"${bookmark}"` : bookmark;
+    instr = ` ${field.type} ${target} \\h `;
   } else {
     const base = field.type === "PAGE" ? " PAGE " : " NUMPAGES ";
     const switchText = pageNumberFormatToSwitch(field.format);
