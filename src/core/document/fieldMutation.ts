@@ -3,31 +3,21 @@ import { getParagraphLength, getParagraphs } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import { cloneRun } from "./clone.js";
 import { sliceRuns } from "./paragraphRunQuery.js";
+import { buildFieldStoryGraph } from "./fieldStoryGraph.js";
 
 export const hasFieldMarkers=(p:EditorParagraphNode):boolean=>
   p.runs.some(r=>r.kind==="fieldChar"||r.kind==="fieldInstruction");
 
-/** A temporary conservative guard, NOT a semantic story graph.
- * Open or malformed streams protect the entire active zone until the
- * story-aware field engine can distinguish independent stories/ranges.
- * Balanced paragraph-local spans allow ordinary neighboring text edits.
- */
+/** The paragraph-local mutation gate deliberately remains conservative.
+ * The story graph knows cross-paragraph topology, but mutation commands have
+ * not yet been qualified to operate across those spans. */
 export function protectedFieldRanges(p:EditorParagraphNode):Array<{start:number;end:number}>|undefined{
-  const ranges:Array<{start:number;end:number}>=[];
-  let depth=0,start=0,offset=0;
-  for(const r of p.runs){
-    if(r.kind==="fieldChar"){
-      if(r.fieldChar.kind==="begin"){
-        if(depth===0)start=offset;
-        depth++;
-      }else if(r.fieldChar.kind==="end"){
-        if(!depth)return undefined;
-        if(--depth===0)ranges.push({start,end:offset});
-      }else if(!depth)return undefined;
-    }else if(r.kind==="fieldInstruction"&&!depth)return undefined;
-    offset+=r.text.length;
-  }
-  return depth?undefined:ranges;
+  if(!hasFieldMarkers(p))return [];
+  const graph=buildFieldStoryGraph([p]);
+  if(graph.diagnostics.length)return undefined;
+  return graph.spans.filter(s=>s.parentIndex===null).map(s=>({
+    start:s.begin.offset,end:s.end!.offset,
+  }));
 }
 export function fieldRangeProtected(p:EditorParagraphNode,start:number,end:number):boolean{
   const ranges=protectedFieldRanges(p);
