@@ -153,10 +153,10 @@ function buildPageNumberRuns(
   const suffix = Math.random().toString(36).slice(2, 9);
   if (kind === "xOfY") {
     return [
-      { id: `run:page-of:${suffix}`, text: "Page ", kind: "text" },
+      { id: `run:page-of-prefix:${suffix}`, text: "Page ", kind: "text" },
       fieldRun("PAGE", undefined, `run:page-field:${suffix}`, format),
-      { id: `run:page-of:${suffix}`, text: " of ", kind: "text" },
-      fieldRun("NUMPAGES", undefined, `run:page-field:${suffix}`, format),
+      { id: `run:page-of-separator:${suffix}`, text: " of ", kind: "text" },
+      fieldRun("NUMPAGES", undefined, `run:numpages-field:${suffix}`, format),
     ];
   }
   return [fieldRun("PAGE", undefined, `run:page-field:${suffix}`, format)];

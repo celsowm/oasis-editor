@@ -1,7 +1,7 @@
 import type {
   EditorDocument, EditorLayoutDocument, EditorParagraphNode, EditorPosition, EditorState,
 } from "@/core/model.js";
-import { getActiveZone, getDocumentSections } from "@/core/model.js";
+import { getActiveZone, getDocumentSections, getParagraphLength } from "@/core/model.js";
 import { createDocumentFieldContext } from "@/core/document/fieldDocumentContext.js";
 import { evaluateField } from "@/core/document/fieldEvaluation.js";
 import { indexFieldStory, isPlainFieldRun, type FieldProjectionCandidate } from "./fieldResultProjection.js";
@@ -105,10 +105,20 @@ export function refreshBodyFieldCaches(
     const currentSections=getDocumentSections(state.document);
     const anchors=collectAnchors(state);
     const pageByParagraph=new Map<string,number|null>();
+    const coverage=new Map<string,number>();
     for(const page of layout.pages){
       for(const block of page.blocks){
         if(block.sourceBlock.type!=="paragraph"||!block.layout)continue;
         const id=block.sourceBlock.id;
+        const start=block.layout.startOffset??0;
+        const end=block.layout.endOffset??(start+block.layout.text.length);
+        const prior=coverage.get(id)??0;
+        if(start!==prior||end<start||end-start!==block.layout.text.length||
+          end>getParagraphLength(block.sourceBlock)){
+          pageByParagraph.set(id,null);
+          continue;
+        }
+        coverage.set(id,end);
         if(!pageByParagraph.has(id))pageByParagraph.set(id,page.index);
         else if(pageByParagraph.get(id)!==page.index)pageByParagraph.set(id,null);
       }
@@ -120,7 +130,7 @@ export function refreshBodyFieldCaches(
       for(const p of section.blocks){
         if(p.type!=="paragraph"||!safeParagraph(p))continue;
         const group=candidates.get(p.id),pageIndex=pageByParagraph.get(p.id);
-        if(!group||pageIndex===null||pageIndex===undefined)continue;
+        if(!group||pageIndex===null||pageIndex===undefined||coverage.get(p.id)!==getParagraphLength(p))continue;
         const fieldContext=context.forPage(pageIndex);
         const offsets:number[]=[];
         let offset=0;

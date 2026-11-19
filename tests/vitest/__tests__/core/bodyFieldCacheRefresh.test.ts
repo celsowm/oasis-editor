@@ -45,6 +45,12 @@ describe("bounded body field cache refresh",()=>{
     expect(result.layout.pages[0]!.blocks.find(b=>b.sourceBlock.id==="p")?.layout?.text).toBe("10 Reference end");
     expect(JSON.stringify(initial)).toBe(snapshot);
     expect(refreshBodyFieldCaches(result.state).status).toBe("unchanged");
+    // The ordinary Canvas/PDF layout must agree with the converged cache,
+    // including the full source-coordinate range after both replacements.
+    const normal=projectDocumentLayout(result.state.document);
+    const block=normal.pages[0]!.blocks.find(b=>b.sourceBlock.id==="p")!;
+    expect(block.layout?.text).toBe("10 Reference end");
+    expect(block.layout?.endOffset).toBe(16);
     const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(result.state.document));
     const p=getDocumentSections(reopened)[0]!.blocks[1] as EditorParagraphNode;
     expect(p.runs.filter(r=>r.kind==="field").map(r=>r.text)).toEqual(["10","Reference"]);
@@ -70,5 +76,19 @@ describe("bounded body field cache refresh",()=>{
     const result=refreshBodyFieldCaches(updated);
     expect(paragraph(result.state).runs.find(r=>r.id==="ref")?.text).toBe("xx");
     expect(refreshBodyFieldCaches({...initial,trackChangesEnabled:true}).state.document).toBe(initial.document);
+  });
+});
+
+describe("explicit numeric cache DOCX preservation",()=>{
+  it("serializes PAGE, NUMPAGES and PAGEREF cached text rather than a placeholder",async()=>{
+    const p:EditorParagraphNode={id:"numeric",type:"paragraph",runs:[
+      {id:"page",kind:"field",field:{type:"PAGE"},text:"10"},
+      {id:"count",kind:"field",field:{type:"NUMPAGES"},text:"12"},
+      {id:"ref",kind:"field",field:{type:"PAGEREF",bookmark:"Target"},text:"7"},
+    ]};
+    const document=createEditorDocument([p]);
+    const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(document));
+    const result=getDocumentSections(reopened)[0]!.blocks[0] as EditorParagraphNode;
+    expect(result.runs.filter(r=>r.kind==="field").map(r=>r.text)).toEqual(["10","12","7"]);
   });
 });

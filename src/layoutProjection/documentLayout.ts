@@ -54,7 +54,7 @@ export function projectDocumentLayout(
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>,
   options: {
     measurer?: ITextMeasurer;
-    /** Explicit cache-refresh pagination; body numeric runs measure their own cache. */
+    /** Body numeric fields measure source caches by default; false retains legacy projection. */
     cachedBodyPageFields?: boolean;
   } = {},
 ): EditorLayoutDocument {
@@ -88,7 +88,7 @@ export function projectDocumentLayout(
     projectBlocks: projectBlocksLayout,
     projectHeaderFooterBlocks,
     projectionContext,
-    bodyProjectionContext: options.cachedBodyPageFields ? { ...projectionContext, cachedPageFields: true } : projectionContext,
+    bodyProjectionContext: options.cachedBodyPageFields !== false ? { ...projectionContext, cachedPageFields: true } : projectionContext,
   };
 
   const projectedSections = projectDocumentSections(sectionContext);

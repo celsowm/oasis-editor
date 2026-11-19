@@ -229,6 +229,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "insertBookmark",
   "removeBookmark",
   "insertDateField",
+  "updateBodyFields",
   "insertDateTime",
   "insertCrossReference",
   "setNoteOptions",

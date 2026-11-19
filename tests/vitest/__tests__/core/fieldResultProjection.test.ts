@@ -47,7 +47,7 @@ describe("shared dynamic field projection",()=>{
   it("keeps existing projection for length changes and does not leak a stale REF across snapshots",()=>{
     const doc=fixture(12);
     const first=projectDocumentLayout(doc);
-    expect(first.pages[1]!.blocks.find(b=>b.sourceBlock.id==="page")?.layout?.text).toBe("2");
+    expect(first.pages[1]!.blocks.find(b=>b.sourceBlock.id==="page")?.layout?.text).toBe("1");
     const target=doc.sections![0]!.blocks[0] as EditorParagraphNode;
     const edited={...doc,sections:doc.sections!.map((s,i)=>i===0?{...s,blocks:[{...target,runs:target.runs.map(r=>({...r,text:"ABC"}))}]}:s)};
     const second=projectDocumentLayout(edited);

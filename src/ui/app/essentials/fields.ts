@@ -2,6 +2,8 @@ import {
   insertDateField,
   insertDateTimeText,
 } from "@/core/commands/fieldDate.js";
+import { refreshBodyFieldCaches } from "@/layoutProjection/bodyFieldCacheRefresh.js";
+import { getActiveZone } from "@/core/model.js";
 import { insertCrossReference } from "@/core/commands/crossReference.js";
 import type { EssentialsFieldsCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
@@ -16,6 +18,14 @@ export function buildEssentialsFields(
   options: CreateEditorEssentialsPluginOptions,
 ): EssentialsFieldsCapability {
   return {
+    updateBodyFields: (): void => {
+      if (options.isReadOnly() || getActiveZone(options.state()) !== "main" ||
+          options.state().trackChangesEnabled) return;
+      options.resetTransactionGrouping();
+      options.applyTransactionalState(state => refreshBodyFieldCaches(state).state);
+      options.clearPreferredColumn();
+      options.focusInput();
+    },
     insertDate: (): void => {
       options.applyTransactionalState((state) => insertDateField(state));
       options.focusInput();

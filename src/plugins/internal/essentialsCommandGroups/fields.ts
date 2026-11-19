@@ -12,6 +12,9 @@ export function buildFieldsCommands({
   actionCommand,
 }: FieldsGroupDeps): NonNullable<OasisPlugin["commands"]> {
   return {
+    updateBodyFields: actionCommand("updateBodyFields", (): void => {
+      fields.updateBodyFields?.();
+    }, () => ({ isEnabled: !!fields.updateBodyFields })),
     insertDateField: actionCommand("insertDateField", (): void => {
       fields.insertDate();
     }),
