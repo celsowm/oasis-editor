@@ -18,6 +18,7 @@ import { createProjectionContext } from "./paragraphPagination.js";
 import { projectHeaderFooterBlocks } from "./headerFooterFootnotes.js";
 import { projectDocumentSections } from "./sectionPagination.js";
 import { injectEndnotesIntoDocument } from "./endnotePagination.js";
+import { refreshProjectedFields } from "./fieldResultProjection.js";
 
 function blockContainsNumPagesField(block: EditorBlockNode): boolean {
   if (block.type === "paragraph") {
@@ -94,7 +95,7 @@ export function projectDocumentLayout(
     !document.footnotes ||
     Object.keys(document.footnotes.items).length === 0
   ) {
-    return { pages };
+    return refreshProjectedFields(document, { pages }, measurer, projectionContext);
   }
 
   const footnoteContext = {
@@ -121,7 +122,7 @@ export function projectDocumentLayout(
     reservations = buildFootnoteReservations(pages, footnoteContext);
   }
 
-  return {
+  return refreshProjectedFields(document, {
     pages: applyFootnotesToPages(pages, footnoteContext),
-  };
+  }, measurer, projectionContext);
 }
