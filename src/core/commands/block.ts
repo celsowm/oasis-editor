@@ -1,4 +1,4 @@
-import { fieldSelectionProtected } from "@/core/document/fieldMutation.js";
+import { fieldSelectionProtected, fieldParagraphSplitProtected } from "@/core/document/fieldMutation.js";
 import { splitForFieldAdjacentInsertion } from "@/core/document/paragraphRunEdit.js";
 import type {
   EditorBlockNode,
@@ -144,12 +144,12 @@ export function moveBlockToPosition(
 }
 
 export function splitBlockAtSelection(state: EditorState): EditorState {
-  if(fieldSelectionProtected(state))return state;
+  if(fieldParagraphSplitProtected(state))return state;
   const collapsedState = isSelectionCollapsed(state.selection)
     ? state
     : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
-  if(fieldSelectionProtected(collapsedState))return state;
+  if(fieldParagraphSplitProtected(collapsedState))return state;
   const {beforeRuns,afterRuns:secondRuns}=splitForFieldAdjacentInsertion(paragraph,offset);
   const firstParagraph = buildParagraphFromRuns(
     paragraph,
@@ -185,12 +185,12 @@ export function splitBlockAtSelection(state: EditorState): EditorState {
 }
 
 export function insertPageBreakAtSelection(state: EditorState): EditorState {
-  if(fieldSelectionProtected(state))return state;
+  if(fieldParagraphSplitProtected(state))return state;
   const collapsedState = isSelectionCollapsed(state.selection)
     ? state
     : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
-  if(fieldSelectionProtected(collapsedState))return state;
+  if(fieldParagraphSplitProtected(collapsedState))return state;
   const {beforeRuns,afterRuns:secondRuns}=splitForFieldAdjacentInsertion(paragraph,offset);
   const firstParagraph = buildParagraphFromRuns(
     paragraph,

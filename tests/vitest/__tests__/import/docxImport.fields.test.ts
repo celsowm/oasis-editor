@@ -1,6 +1,6 @@
 import { deleteBackward, deleteForward } from "@/core/commands/textDeletion.js";
 import { applyUnderlineStyle, clearSelectedTextFormatting, nudgeFontSize, setTextStyleValue, toggleCharacterBorder, toggleTextStyle } from "@/core/commands/textFormatting.js";
-import { splitBlockAtSelection } from "@/core/commands/block.js";
+import { insertPageBreakAtSelection, splitBlockAtSelection } from "@/core/commands/block.js";
 import { insertPlainTextAtSelection } from "@/core/commands/textEditing.js";
 import { deleteSelectionRange } from "@/core/selection/rangeEditing.js";
 import { createEditorStateFromDocument } from "@/core/editorState.js";
@@ -375,7 +375,7 @@ describe("multiparagraph field adjacent inline editing",()=>{
       insertTextAtSelection(selection(2,2),"X"),insertTextAtSelection(selection(3,4),"X"),
       deleteForward(selection(2,2)),deleteBackward(selection(2,2)),deleteSelectionRange(selection(2,1,3)),
       deleteSelectionRange(selection(1,5,7)),toggleTextStyle(selection(2,0,3),"bold"),
-      splitBlockAtSelection(selection(0,2)),insertPlainTextAtSelection(selection(0,2),"x\ny"),
+      splitBlockAtSelection(selection(2,2)),insertPlainTextAtSelection(selection(2,2),"x\ny"),
     ])expect(next.document).toBe(initial.document);
   });
 });
@@ -530,5 +530,49 @@ describe("field boundary keyboard navigation",()=>{
       expect(runs.slice(0,begin).map(r=>r.text).join("")).toBe(candidate===before?"LeftX":"Left");
       expect(runs.map(r=>r.text).join("")).toBe("LeftXRight");
     }
+  });
+});
+
+describe("safe paragraph topology outside a multiparagraph field",()=>{
+  it("splits, pastes and joins independent body paragraphs without touching cached results",async()=>{
+    const doc=await importDocxToEditorDocument(await buildDocx(`
+      <w:p><w:r><w:t>Plain</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Text</w:t></w:r></w:p>
+      <w:p><w:r><w:fldChar w:fldCharType="begin" w:fldLock="1"/></w:r>
+      <w:r><w:instrText xml:space="preserve"> TOC </w:instrText></w:r>
+      <w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>First</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Middle</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Another</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Last</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>
+      <w:p><w:r><w:t>After</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Tail</w:t></w:r></w:p>`));
+    const initial=createEditorStateFromDocument(doc),ps=getDocumentParagraphs(doc);
+    const at=(i:number,offset:number)=>{
+      const pos=paragraphOffsetToPosition(ps[i]!,offset);
+      return {...initial,selection:{anchor:pos,focus:pos}};
+    };
+    const texts=(d:EditorDocument)=>getDocumentParagraphs(d).map(p=>p.runs.map(r=>r.text).join(""));
+    const scenarios=[
+      [splitBlockAtSelection(at(0,2)),["Pl","ain","Text","First","Middle","Another","Last","After","Tail"]],
+      [insertPageBreakAtSelection(at(0,2)),["Pl","ain","Text","First","Middle","Another","Last","After","Tail"]],
+      [insertPlainTextAtSelection(at(6,2),"X\nY"),["Plain","Text","First","Middle","Another","Last","AfX","Yter","Tail"]],
+      [deleteBackward(at(1,0)),["PlainText","First","Middle","Another","Last","After","Tail"]],
+      [deleteForward(at(6,5)),["Plain","Text","First","Middle","Another","Last","AfterTail"]],
+    ] as const;
+    for(const [edited,expected] of scenarios){
+      expect(edited.document).not.toBe(initial.document);
+      expect(texts(edited.document)).toEqual(expected);
+      const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(edited.document));
+      expect(texts(reopened)).toEqual(expected);
+      expect(fieldCharKinds(reopened)).toEqual(["begin","separate","end"]);
+      expect(instructions(reopened)).toEqual([" TOC "]);
+      expect(getRunFieldChar(allRuns(reopened).find(r=>getRunFieldChar(r)?.kind==="begin")!)?.fieldLock).toBe(true);
+    }
+    for(const blocked of [
+      splitBlockAtSelection(at(3,2)),insertPageBreakAtSelection(at(3,2)),
+      insertPlainTextAtSelection(at(3,2),"X\nY"),deleteForward(at(3,6)),
+      deleteBackward(at(4,0)),deleteForward(at(1,4)),
+      splitBlockAtSelection({...at(0,2),trackChangesEnabled:true}),
+    ])expect(blocked.document).toBe(initial.document);
   });
 });

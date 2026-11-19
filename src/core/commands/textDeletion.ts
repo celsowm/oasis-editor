@@ -1,4 +1,4 @@
-import { hasFieldMarkers, hasUnresolvedFieldStory, fieldInlineRangeProtected, mapFieldAdjacentRuns } from "@/core/document/fieldMutation.js";
+import { hasFieldMarkers, hasUnresolvedFieldStory, fieldParagraphJoinProtected, fieldInlineRangeProtected, mapFieldAdjacentRuns } from "@/core/document/fieldMutation.js";
 import { tryDeleteOpaqueObject } from "./opaqueDeletion.js";
 import type {
   EditorState,
@@ -179,7 +179,7 @@ export function deleteBackward(state: EditorState): EditorState {
   }
 
   const previousParagraph = paragraphs[index - 1];
-  if(hasUnresolvedFieldStory(state)||hasFieldMarkers(previousParagraph)||hasFieldMarkers(paragraph))return state;
+  if(fieldParagraphJoinProtected(state,previousParagraph,paragraph))return state;
   const mergedParagraph = buildParagraphFromRuns(previousParagraph, [
     ...previousParagraph.runs.map(cloneRun),
     ...paragraph.runs.map(cloneRun),
@@ -313,7 +313,7 @@ export function deleteForward(state: EditorState): EditorState {
   }
 
   const nextParagraph = paragraphs[index + 1];
-  if(hasUnresolvedFieldStory(state)||hasFieldMarkers(nextParagraph)||hasFieldMarkers(paragraph))return state;
+  if(fieldParagraphJoinProtected(state,paragraph,nextParagraph))return state;
   const mergedParagraph = buildParagraphFromRuns(paragraph, [
     ...paragraph.runs.map(cloneRun),
     ...nextParagraph.runs.map(cloneRun),

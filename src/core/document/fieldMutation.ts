@@ -78,6 +78,9 @@ export function fieldInlineSelectionProtected(state:EditorState):boolean{
 /** Affinity is deliberately opt-in, and only for an exact, valid raw
  * collapsed position. Never infer it from normalized visible offsets. */
 export function fieldInsertionProtected(state:EditorState):boolean{
+  // Keep legacy selection clamping for ordinary documents. Strict raw run
+  // identity is needed only when a field story could be damaged.
+  if(!editableStory(state).paragraphs.some(hasFieldMarkers))return false;
   const {anchor,focus}=state.selection;
   if(anchor.paragraphId!==focus.paragraphId||anchor.runId!==focus.runId||
      anchor.offset!==focus.offset||anchor.fieldBoundaryAffinity!==focus.fieldBoundaryAffinity)return true;
@@ -86,6 +89,36 @@ export function fieldInsertionProtected(state:EditorState):boolean{
   if(!p||!run||!Number.isInteger(focus.offset)||focus.offset<0||focus.offset>run.text.length)return true;
   const offset=positionToParagraphOffset(p,focus);
   return fieldInlineRangeProtected(state,p,offset,offset,focus.fieldBoundaryAffinity);
+}
+/** Allow a paragraph-count change only in flat, untracked, markerless body
+ * paragraphs. The existing structural gate remains authoritative elsewhere.
+ * A markerless paragraph can still be inside a multi-paragraph cached result. */
+export function fieldParagraphSplitProtected(state:EditorState):boolean{
+  const story=editableStory(state);
+  if(!story.paragraphs.some(hasFieldMarkers))return false;
+  if(state.trackChangesEnabled||getActiveZone(state)!=="main"||story.hasTables||
+     !hasUnresolvedFieldStory(state))return fieldSelectionProtected(state);
+  const {anchor,focus}=state.selection;
+  if(anchor.paragraphId!==focus.paragraphId||anchor.runId!==focus.runId||
+     anchor.offset!==focus.offset||anchor.fieldBoundaryAffinity!==focus.fieldBoundaryAffinity)return true;
+  const p=getParagraphs(state).find(p=>p.id===focus.paragraphId);
+  if(!p||hasFieldMarkers(p))return true;
+  return fieldInsertionProtected(state);
+}
+
+/** Join only when both sides of a flat-body paragraph break are outside a
+ * field and neither paragraph carries markers. No field controls are moved. */
+export function fieldParagraphJoinProtected(state:EditorState,left:EditorParagraphNode,right:EditorParagraphNode):boolean{
+  if(hasFieldMarkers(left)||hasFieldMarkers(right))return true;
+  const story=editableStory(state);
+  if(!story.paragraphs.some(hasFieldMarkers))return false;
+  if(!hasUnresolvedFieldStory(state))return false;
+  if(state.trackChangesEnabled||getActiveZone(state)!=="main"||story.hasTables)return true;
+  const index=story.paragraphs.indexOf(left);
+  if(index<0||story.paragraphs[index+1]!==right)return true;
+  const end=getParagraphLength(left);
+  return fieldInlineRangeProtected(state,left,end,end)||
+    fieldInlineRangeProtected(state,right,0,0);
 }
 export function hasUnresolvedFieldStory(state:EditorState):boolean{
   // Keep the structural guard conservative, including fields spanning sections.

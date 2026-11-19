@@ -1,4 +1,4 @@
-import { fieldSelectionProtected, fieldInsertionProtected, hasFieldMarkers, fieldRangeProtected } from "@/core/document/fieldMutation.js";
+import { fieldSelectionProtected, fieldParagraphSplitProtected, fieldInsertionProtected, hasFieldMarkers, fieldRangeProtected } from "@/core/document/fieldMutation.js";
 import { splitForFieldAdjacentInsertion } from "@/core/document/paragraphRunEdit.js";
 import type {
   EditorParagraphNode,
@@ -418,7 +418,7 @@ export function insertPlainTextAtSelection(
     return insertTextAtSelection(state, normalizedText, styleOverride);
   }
 
-  if(fieldSelectionProtected(state))return state;
+  if(fieldParagraphSplitProtected(state))return state;
   const collapsedState = isSelectionCollapsed(state.selection)
     ? state
     : deleteSelectionRange(state);
