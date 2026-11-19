@@ -50,10 +50,24 @@ async function seed(page){
   assert.equal(await paragraphsText(page),original);
 }
 async function waitText(page,text){
-  await page.waitForFunction(expected=>{
-    const c=window.ribbonReference.client;
-    return c.document.get().sections[0].blocks[0].runs.map(r=>r.text).join("")===expected;
-  },text,{timeout:30000});
+  try{
+    await page.waitForFunction(expected=>{
+      const c=window.ribbonReference.client;
+      return c.document.get().sections[0].blocks[0].runs.map(r=>r.text).join("")===expected;
+    },text,{timeout:30000});
+  }catch(error){
+    const evidence=await page.evaluate(()=>{
+      const c=window.ribbonReference.client;
+      return {text:c.document.get().sections[0].blocks[0].runs.map(r=>r.text).join(""),
+        selection:c.selection.get(),version:c.document.version(),undo:c.history.canUndo(),
+        feedback:document.querySelector('[data-testid="editor-clipboard-feedback"]')?.textContent,
+        events:window.chartClipboardEvents};
+    });
+    records.push({sha,engine,scenario:"text-postcondition",status:"failed",expected:text,...evidence});
+    console.error("Clipboard postcondition:",JSON.stringify(evidence));
+    await page.screenshot({path:resolve(output,"failed-postcondition.png")});
+    throw error;
+  }
 }
 async function proveExport(page,count){
   const data=await page.evaluate(async()=>{
@@ -96,6 +110,25 @@ async function caret(page){
 }
 async function button(page,id){
   return (await openGroup(page,"clipboard","editor-toolbar-"+id)).click();
+}
+async function contextButton(page,id){
+  // The surface's right-click handler is designed to preserve the current
+  // model selection. Hit an exposed page point with a genuine mouse event.
+  const point=await page.evaluate(()=>{
+    const paper=document.querySelector('[data-testid="editor-page"][data-renderer="canvas"]');
+    if(!paper)throw Error("Missing canvas page");
+    const r=paper.getBoundingClientRect();
+    for(let y=Math.max(2,r.top+20);y<Math.min(innerHeight-20,r.bottom-20);y+=24){
+      for(let x=Math.max(2,r.left+20);x<Math.min(innerWidth-20,r.right-20);x+=24){
+        if(paper.contains(document.elementFromPoint(x,y)))return {x,y};
+      }
+    }
+    throw Error("Missing exposed context-menu point");
+  });
+  await page.mouse.click(point.x,point.y,{button:"right"});
+  const item=page.getByTestId("editor-context-menu-"+id);
+  await item.waitFor({state:"visible"});
+  await item.click();
 }
 async function synthetic(page,kind,token){
   return input(page).evaluate((el,{kind,token,mime})=>{
@@ -150,6 +183,18 @@ try{
     await seed(page);await selectChart(page);
     const copied=await synthetic(page,"copy","");
     assert.equal(copied.handled,true);assert.match(copied.token,/^[a-f0-9-]{36}$/i);
+    // Directly reproduce actual browser worker buffer ownership, independently
+    // of clipboard dispatch. The browser path must really consume its input.
+    const transferred=await page.evaluate(async data=>{
+      const {importDocxInWorker}=await import("/src/import/docx/importDocxInWorker.ts");
+      const buffer=new Uint8Array(data).buffer;
+      const retained=buffer.slice(0);
+      await importDocxInWorker(buffer);
+      return {detached:buffer.byteLength===0,retained:retained.byteLength};
+    },bytes);
+    assert.equal(transferred.detached,true);
+    assert.equal(transferred.retained,bytes.length);
+    records.push({sha,engine,scenario:"worker-transfer-ownership",status:"passed"});
     await caret(page);
     let start=performance.now();
     assert.equal((await synthetic(page,"paste",copied.token)).handled,true);
@@ -160,6 +205,13 @@ try{
     assert.deepEqual(await page.evaluate(()=>window.chartClipboardItems[0].types),[WEB]);
     await caret(page);start=performance.now();await button(page,"paste");
     await verifyHistory(page,"adapter-ribbon",start);
+    await seed(page);await selectChart(page);
+    await page.evaluate(()=>{window.chartClipboardItems=[];});
+    await contextButton(page,"copy");
+    await page.waitForFunction(()=>window.chartClipboardItems.length===1);
+    assert.deepEqual(await page.evaluate(()=>window.chartClipboardItems[0].types),[WEB]);
+    await caret(page);start=performance.now();await contextButton(page,"paste");
+    await verifyHistory(page,"adapter-context-menu",start);
     await seed(page);await selectChart(page);
     const before=await page.evaluate(()=>window.ribbonReference.client.document.version());
     await button(page,"cut");

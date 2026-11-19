@@ -112,7 +112,11 @@ export async function prepareOpaqueChartPaste(state:EditorState,manifest:unknown
   // Validate the editable document's current preservation export before
   // allocating anything. Changes already made by the user are not discarded.
   const currentBytes=await exportEditorDocumentToDocxPreservingSource(state.document);
-  const currentImported=await importDocxInWorker(currentBytes);
+  // importDocxInWorker transfers ownership of its input ArrayBuffer in
+  // browsers, detaching it on this thread. The direct Node fallback does
+  // not detach, which hid this failure in the package-level unit tests.
+  // Keep the original ZIP for L3 and give the worker an independent copy.
+  const currentImported=await importDocxInWorker(currentBytes.slice(0));
   if(bodyFingerprint(currentImported)!==bodyFingerprint(state.document))return fail("destination body projection mismatch");
   const staged=await applyOpaqueTransferToDocx(currentBytes,manifest,index);
   const source=await captureDocxSourcePackage(staged.buffer);
