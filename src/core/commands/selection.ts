@@ -3,7 +3,8 @@ import {
   getParagraphLength,
   getParagraphs,
   getParagraphText,
-  paragraphOffsetToPosition,
+  paragraphOffsetToFieldPosition,
+  hasFieldBoundaryAtOffset,
 } from "@/core/model.js";
 import {
   clampPosition,
@@ -78,11 +79,15 @@ export function moveSelectionLeft(state: EditorState): EditorState {
 
   const { paragraph, index, offset } = getFocusParagraph(state);
   const paragraphs = getParagraphs(state);
+  if (hasFieldBoundaryAtOffset(paragraph, offset) &&
+      state.selection.focus.fieldBoundaryAffinity !== "before-markers") {
+    return { ...state, selection: withSelection(paragraphOffsetToFieldPosition(paragraph, offset, "before-markers")) };
+  }
   if (offset > 0) {
     return {
-      document: state.document,
+      ...state,
       selection: withSelection(
-        paragraphOffsetToPosition(paragraph, offset - 1),
+        paragraphOffsetToFieldPosition(paragraph, offset - 1, "after-markers"),
       ),
     };
   }
@@ -93,11 +98,12 @@ export function moveSelectionLeft(state: EditorState): EditorState {
 
   const previousParagraph = paragraphs[index - 1];
   return {
-    document: state.document,
+    ...state,
     selection: withSelection(
-      paragraphOffsetToPosition(
+      paragraphOffsetToFieldPosition(
         previousParagraph,
         getParagraphLength(previousParagraph),
+        "after-markers",
       ),
     ),
   };
@@ -111,11 +117,15 @@ export function moveSelectionRight(state: EditorState): EditorState {
   const { paragraph, index, offset } = getFocusParagraph(state);
   const paragraphs = getParagraphs(state);
   const paragraphLength = getParagraphLength(paragraph);
+  if (hasFieldBoundaryAtOffset(paragraph, offset) &&
+      state.selection.focus.fieldBoundaryAffinity !== "after-markers") {
+    return { ...state, selection: withSelection(paragraphOffsetToFieldPosition(paragraph, offset, "after-markers")) };
+  }
   if (offset < paragraphLength) {
     return {
-      document: state.document,
+      ...state,
       selection: withSelection(
-        paragraphOffsetToPosition(paragraph, offset + 1),
+        paragraphOffsetToFieldPosition(paragraph, offset + 1, "before-markers"),
       ),
     };
   }
@@ -126,8 +136,8 @@ export function moveSelectionRight(state: EditorState): EditorState {
 
   const nextParagraph = paragraphs[index + 1];
   return {
-    document: state.document,
-    selection: withSelection(paragraphOffsetToPosition(nextParagraph, 0)),
+    ...state,
+    selection: withSelection(paragraphOffsetToFieldPosition(nextParagraph, 0, "before-markers")),
   };
 }
 

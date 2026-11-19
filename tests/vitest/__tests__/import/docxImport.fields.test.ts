@@ -4,7 +4,8 @@ import { splitBlockAtSelection } from "@/core/commands/block.js";
 import { insertPlainTextAtSelection } from "@/core/commands/textEditing.js";
 import { deleteSelectionRange } from "@/core/selection/rangeEditing.js";
 import { createEditorStateFromDocument } from "@/core/editorState.js";
-import { paragraphOffsetToPosition, resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
+import { moveSelectionLeft, moveSelectionRight, setSelection } from "@/core/commands/selection.js";
+import { paragraphOffsetToPosition, resolveEffectiveTextStyleForParagraph, positionToParagraphOffset } from "@/core/model.js";
 import { insertTextAtSelection } from "@/core/commands/textEditing.js";
 import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
@@ -426,7 +427,11 @@ describe("story-aware character formatting",()=>{
         const {fontSize:oldSize,...oldStyle}=old;
         const {fontSize:nextSize,...nextStyle}=next;
         expect(nextStyle).toEqual(oldStyle);
-        expect(nextSize).toBeCloseTo(oldSize,3);
+        if (oldSize === null || nextSize === null) {
+          expect(nextSize).toBe(oldSize);
+        } else {
+          expect(nextSize).toBeCloseTo(oldSize,3);
+        }
       }
       for(const blocked of [select(0,5,7),select(1,0,6),select(2,0,5),select(0,0,9,2)]){
         expect(cmd(blocked).document).toBe(initial.document);
@@ -492,6 +497,38 @@ describe("explicit invisible field boundary affinity",()=>{
       const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(edited.document));
       expect(fieldCharKinds(reopened)).toEqual(["begin","separate","end"]);
       expect(instructions(reopened)).toEqual([" TOC "]);
+    }
+  });
+});
+
+describe("field boundary keyboard navigation",()=>{
+  it("visits both invisible sides and preserves affinity through selection clamping",async()=>{
+    const doc=await importDocxToEditorDocument(await buildDocx(`
+      <w:p><w:r><w:t>Left</w:t></w:r><w:r><w:fldChar w:fldCharType="begin" w:fldLock="1"/></w:r>
+      <w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r>
+      <w:r><w:t>Right</w:t></w:r></w:p>`));
+    const initial=createEditorStateFromDocument(doc),p=getDocumentParagraphs(doc)[0]!;
+    const pos=paragraphOffsetToPosition(p,3);
+    const start={...initial,selection:{anchor:pos,focus:pos}};
+    const before=moveSelectionRight(start);
+    expect(before.selection.focus.fieldBoundaryAffinity).toBe("before-markers");
+    const after=moveSelectionRight(before);
+    expect(after.selection.focus.fieldBoundaryAffinity).toBe("after-markers");
+    expect(positionToParagraphOffset(p,after.selection.focus)).toBe(4);
+    const next=moveSelectionRight(after);
+    expect(positionToParagraphOffset(p,next.selection.focus)).toBe(5);
+    expect(next.selection.focus.fieldBoundaryAffinity).toBeUndefined();
+    expect(moveSelectionLeft(next).selection.focus.fieldBoundaryAffinity).toBe("after-markers");
+    expect(moveSelectionLeft(after).selection.focus.fieldBoundaryAffinity).toBe("before-markers");
+    expect(moveSelectionLeft(before).selection.focus.fieldBoundaryAffinity).toBeUndefined();
+    for (const candidate of [before,after]){
+      const clamped=setSelection(candidate,candidate.selection);
+      expect(clamped.selection).toEqual(candidate.selection);
+      const edited=insertTextAtSelection(clamped,"X");
+      const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(edited.document));
+      const runs=allRuns(reopened),begin=runs.findIndex(r=>getRunFieldChar(r)?.kind==="begin");
+      expect(runs.slice(0,begin).map(r=>r.text).join("")).toBe(candidate===before?"LeftX":"Left");
+      expect(runs.map(r=>r.text).join("")).toBe("LeftXRight");
     }
   });
 });

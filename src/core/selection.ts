@@ -7,7 +7,7 @@ import type {
 import {
   getParagraphLength,
   getParagraphs,
-  paragraphOffsetToPosition,
+  paragraphOffsetToFieldPosition,
   positionToParagraphOffset,
 } from "./model.js";
 
@@ -59,9 +59,13 @@ function clampPositionInParagraph(
   paragraph: EditorParagraphNode,
 ): EditorPosition {
   const paragraphOffset = positionToParagraphOffset(paragraph, position);
-  return paragraphOffsetToPosition(
+  const run = paragraph.runs.find(r => r.id === position.runId);
+  const valid = position.paragraphId === paragraph.id && !!run &&
+    Number.isInteger(position.offset) && position.offset >= 0 && position.offset <= run.text.length;
+  return paragraphOffsetToFieldPosition(
     paragraph,
     clampOffset(paragraphOffset, paragraph),
+    valid ? position.fieldBoundaryAffinity : undefined,
   );
 }
 

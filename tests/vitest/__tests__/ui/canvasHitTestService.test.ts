@@ -499,3 +499,31 @@ describe("canvas hit-test service behindDoc + pierce", () => {
     expect(hit?.textBox).toBeDefined();
   });
 });
+
+describe("canvas field control affinity",()=>{
+  it("distinguishes the two sides of an interior shared slot",()=>{
+    const {snapshot}=createSnapshotWithInlineImage();
+    const paragraph:EditorParagraphNode={
+      id:"field-paragraph",type:"paragraph",runs:[
+        {id:"left",kind:"text",text:"A"},
+        {id:"begin",kind:"fieldChar",text:"",fieldChar:{kind:"begin",fieldLock:true}},
+        {id:"code",kind:"fieldInstruction",text:"",fieldInstruction:" PAGE "},
+        {id:"end",kind:"fieldChar",text:"",fieldChar:{kind:"end"}},
+        {id:"right",kind:"text",text:"B"},
+      ],
+    };
+    const entry={...snapshot.paragraphs[0]!,paragraph,paragraphId:paragraph.id,
+      lines:[{startOffset:0,endOffset:2,top:200,height:20,slots:[
+        {offset:0,left:120,top:200,height:20},
+        {offset:1,left:130,top:200,height:20},
+        {offset:2,left:140,top:200,height:20},
+      ]}]};
+    const state=createEditorStateFromDocument(createEditorDocument([paragraph]));
+    const testSnapshot={...snapshot,paragraphs:[entry],paragraphsById:new Map([[paragraph.id,[entry]]]),inlineImages:[]};
+    const at=(clientX:number)=>resolveCanvasSurfaceHitAtPoint({snapshot:testSnapshot,state,clientX,clientY:210});
+    expect(at(129)?.position.fieldBoundaryAffinity).toBe("before-markers");
+    expect(at(131)?.position.fieldBoundaryAffinity).toBe("after-markers");
+    expect(at(130)?.position.fieldBoundaryAffinity).toBeUndefined();
+    expect(at(120)?.position.fieldBoundaryAffinity).toBeUndefined();
+  });
+});

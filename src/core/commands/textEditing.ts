@@ -14,6 +14,7 @@ import {
   getParagraphLength,
   getParagraphs,
   paragraphOffsetToPosition,
+  paragraphOffsetToFieldPosition,
   positionToParagraphOffset,
 } from "@/core/model.js";
 import { createEditorStyledRun } from "@/core/editorState.js";
@@ -337,8 +338,7 @@ export function insertTextAtSelection(
     collapsedState,
     nextParagraphs,
     withSelection(
-      { ...paragraphOffsetToPosition(nextParagraph, offset + text.length),
-        ...(affinity ? {fieldBoundaryAffinity:affinity} : {}) },
+      paragraphOffsetToFieldPosition(nextParagraph, offset + text.length, affinity),
     ),
   );
 }

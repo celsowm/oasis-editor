@@ -1,5 +1,6 @@
 import {
   paragraphOffsetToPosition,
+  paragraphOffsetToFieldPosition,
   type EditorEditingZone,
   type EditorPosition,
   type EditorState,
@@ -544,7 +545,27 @@ export function resolveCanvasSurfaceHitAtPoint(
     0,
     Math.min(paragraphHit.offset, paragraph.textLength),
   );
-  const position = paragraphOffsetToPosition(paragraph.paragraph, offset);
+  // The shared slot represents both logical sides. Only infer a side from
+  // a real, locally ordered line with visible neighbors on both sides;
+  // wrapped/RTL/edge/fallback geometry stays ambiguous.
+  const slot = paragraphHit.caretViewport;
+  let affinity: EditorPosition["fieldBoundaryAffinity"];
+  if (slot && clientX !== slot.left) {
+    const lines = paragraph.lines.filter(line =>
+      clientY >= line.top && clientY <= line.top + line.height &&
+      line.slots.some(s => s.offset === offset && s.left === slot.left && s.top === slot.top));
+    if (lines.length === 1) {
+      const slots = lines[0]!.slots;
+      const matching = slots.filter(s => s.offset === offset);
+      const left = slots.find(s => s.offset === offset - 1);
+      const right = slots.find(s => s.offset === offset + 1);
+      if (matching.length === 1 && left && right &&
+          left.left < slot.left && slot.left < right.left) {
+        affinity = clientX < slot.left ? "before-markers" : "after-markers";
+      }
+    }
+  }
+  const position = paragraphOffsetToFieldPosition(paragraph.paragraph, offset, affinity);
   return {
     zone,
     footnoteId: paragraph.footnoteId,

@@ -84,3 +84,28 @@ export function positionToParagraphOffset(
     offset + Math.max(0, Math.min(position.offset, activeRun?.text.length ?? 0))
   );
 }
+
+/** The visible offset of a group of zero-width OOXML field controls. */
+export function hasFieldBoundaryAtOffset(paragraph: EditorParagraphNode, offset: number): boolean {
+  let consumed = 0;
+  for (const run of paragraph.runs) {
+    if (consumed > offset) return false;
+    if (consumed === offset && run.text.length === 0 &&
+        (run.kind === "fieldChar" || run.kind === "fieldInstruction")) return true;
+    consumed += run.text.length;
+  }
+  return false;
+}
+
+/** Affinity is meaningful only at an existing invisible control group. */
+export function paragraphOffsetToFieldPosition(
+  paragraph: EditorParagraphNode,
+  offset: number,
+  affinity?: EditorPosition["fieldBoundaryAffinity"],
+): EditorPosition {
+  const position = paragraphOffsetToPosition(paragraph, offset);
+  if (affinity && hasFieldBoundaryAtOffset(paragraph, offset)) {
+    position.fieldBoundaryAffinity = affinity;
+  }
+  return position;
+}

@@ -211,6 +211,8 @@ export {
   getRunIndex,
   getRunStartOffset,
   paragraphOffsetToPosition,
+  paragraphOffsetToFieldPosition,
+  hasFieldBoundaryAtOffset,
   positionToParagraphOffset,
 } from "./queries.js";
 
