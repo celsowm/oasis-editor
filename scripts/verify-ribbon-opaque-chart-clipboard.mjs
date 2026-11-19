@@ -112,22 +112,33 @@ async function button(page,id){
   return (await openGroup(page,"clipboard","editor-toolbar-"+id)).click();
 }
 async function contextButton(page,id){
-  // The surface's right-click handler is designed to preserve the current
-  // model selection. Hit an exposed page point with a genuine mouse event.
-  const point=await page.evaluate(()=>{
-    const paper=document.querySelector('[data-testid="editor-page"][data-renderer="canvas"]');
-    if(!paper)throw Error("Missing canvas page");
-    const r=paper.getBoundingClientRect();
-    for(let y=Math.max(2,r.top+20);y<Math.min(innerHeight-20,r.bottom-20);y+=24){
-      for(let x=Math.max(2,r.left+20);x<Math.min(innerWidth-20,r.right-20);x+=24){
-        if(paper.contains(document.elementFromPoint(x,y)))return {x,y};
+  // The actual contextmenu handler lives on the scrolling editor viewport,
+  // not the first paper. Focus/scroll and selection overlays can leave that
+  // paper clipped or virtualized. Hit-test the exposed viewport instead.
+  const selection=await page.evaluate(()=>window.ribbonReference.client.selection.get());
+  const viewport=page.getByTestId("editor-editor");
+  await viewport.waitFor({state:"visible"});
+  const hit=await page.waitForFunction(()=>{
+    const editor=document.querySelector('[data-testid="editor-editor"]');
+    if(!editor)return false;
+    const r=editor.getBoundingClientRect();
+    const l=Math.max(2,r.left+8),t=Math.max(2,r.top+8);
+    const right=Math.min(innerWidth-2,r.right-20),bottom=Math.min(innerHeight-2,r.bottom-20);
+    for(let y=t;y<bottom;y+=16)for(let x=l;x<right;x+=16){
+      const el=document.elementFromPoint(x,y);
+      if(el&&editor.contains(el)&&!el.closest('[role="dialog"],[role="menu"],button,input,textarea,[contenteditable="true"]')){
+        return {x,y};
       }
     }
-    throw Error("Missing exposed context-menu point");
-  });
+    return false;
+  },null,{timeout:10000});
+  const point=await hit.jsonValue();
+  await hit.dispose();
   await page.mouse.click(point.x,point.y,{button:"right"});
   const item=page.getByTestId("editor-context-menu-"+id);
   await item.waitFor({state:"visible"});
+  assert.deepEqual(await page.evaluate(()=>window.ribbonReference.client.selection.get()),selection,
+    "Opening the context menu changed the clipboard target");
   await item.click();
 }
 async function synthetic(page,kind,token){
@@ -249,13 +260,21 @@ try{
     if(engine==="chromium"){
       await seed(page);await selectChart(page);
       await button(page,"copy");
-      await page.waitForTimeout(250);
       const probe=await page.evaluate(async web=>{
-        try{
-          const items=await navigator.clipboard.read();
-          const item=items.find(i=>i.types.includes(web));
-          return {available:!!item,types:items.flatMap(i=>i.types)};
-        }catch(e){return {available:false,reason:String(e)};}
+        const {readOpaqueChartToken}=await import("/src/app/clipboard/opaqueChartClipboard.ts");
+        const deadline=performance.now()+3000;
+        let result={available:false,reason:"no confirmed current chart token"};
+        do{
+          try{
+            const items=await navigator.clipboard.read();
+            const item=items.find(i=>i.types.includes(web));
+            const token=item?await (await item.getType(web)).text():"";
+            if(token&&readOpaqueChartToken(token))return {available:true,types:items.flatMap(i=>i.types)};
+            result={available:false,reason:"no confirmed current chart token",types:items.flatMap(i=>i.types)};
+          }catch(e){return {available:false,reason:String(e)};}
+          await new Promise(resolve=>setTimeout(resolve,100));
+        }while(performance.now()<deadline);
+        return result;
       },WEB);
       await caret(page);
       if(probe.available){
