@@ -287,3 +287,5 @@ Near-full interoperability release gate: zero new validator or repair errors on 
 L1–L6 chart clipboard milestone qualified within the bounded scope; [evidence and outstanding OX-003 items](./ooxml-chart-clipboard-qualification-2026-11-19.md). Do not close OX-003 globally. Start OX-010 with the [field engine first-slice execution plan](./ooxml-field-engine-execution.md), beginning with lossless command-head parsing and the existing substring-classification risk. Keep remaining OX-003 work explicitly open.
 
 - OX-010 A: bounded lossless field instruction lexer and shared exact scalar projection for simple and complex fields. No evaluator or external execution. Round-trip and resource limit tests added; CI pending.
+
+- OX-010 B1: conservative flagged/structured result preservation and single-paragraph adjacent insertion retaining zero-width field controls. A all workflows green. Full field-range mutation and story span graph remain open. CI pending.

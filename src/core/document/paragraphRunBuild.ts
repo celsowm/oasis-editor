@@ -20,7 +20,7 @@ export function normalizeRuns(
   const merged: EditorTextRun[] = [];
 
   for (const run of runs) {
-    if (run.text.length === 0) {
+    if (run.text.length === 0 && run.kind !== "fieldChar" && run.kind !== "fieldInstruction") {
       continue;
     }
 

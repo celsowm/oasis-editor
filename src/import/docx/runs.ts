@@ -1,3 +1,4 @@
+import { canProjectFieldResult, inspectScalarFieldSpan } from "./runs/fieldPreservation.js";
 import { projectOpaqueRunElement } from "@/ooxml/word/opaqueObjects.js";
 import JSZip from "jszip";
 import { XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
@@ -323,26 +324,21 @@ export async function parseRunsContainer(
     beginIndex: number;
     instruction: string;
     beginStyles?: EditorTextStyle;
+    nested: boolean;
   }> = [];
 
   const collapseFieldIfSimple = (entry: {
     beginIndex: number;
     instruction: string;
     beginStyles?: EditorTextStyle;
+    nested: boolean;
   }): void => {
+    if (entry.nested) return;
     const field = projectScalarFieldInstruction(entry.instruction);
     if (!field) return;
     const span = runs.slice(entry.beginIndex);
-    // A scalar field cache cannot represent embedded content or range
-    // boundaries. Do not collapse a structured result into text.
-    if (span.some(run => Boolean(run.bookmark || run.comment || run.opaque ||
-      run.image || run.textBox || run.math || run.sym || run.footnoteReference ||
-      run.endnoteReference || run.revision || run.sdtWrappers?.length))) {
-      return;
-    }
-    const resultRuns = span.filter(
-      (run): boolean => !run.fieldChar && run.fieldInstruction === undefined,
-    );
+    const resultRuns = inspectScalarFieldSpan(span);
+    if (!resultRuns) return;
     const displayText =
       resultRuns.map((run): string => run.text).join("") || "1";
     const styles =
@@ -360,9 +356,11 @@ export async function parseRunsContainer(
     const fldCharType = getAttributeValue(el, "fldCharType");
     const lock = getAttributeValue(el, "fldLock");
     const dirty = getAttributeValue(el, "dirty");
-    const fieldLock = lock === "true" || lock === "1";
-    const isDirty = dirty === "true" || dirty === "1";
+    const fieldLock = lock === "true" || lock === "1" || lock === "on";
+    const isDirty = dirty === "true" || dirty === "1" || dirty === "on";
     if (fldCharType === "begin") {
+      const nested = fieldStack.length > 0;
+      for (const parent of fieldStack) parent.nested = true;
       runs.push({
         text: "",
         fieldChar: {
@@ -375,18 +373,19 @@ export async function parseRunsContainer(
       fieldStack.push({
         beginIndex: runs.length - 1,
         instruction: "",
+        nested,
         ...(runStyles ? { beginStyles: runStyles } : {}),
       });
     } else if (fldCharType === "separate") {
       runs.push({
         text: "",
-        fieldChar: { kind: "separate" },
+        fieldChar: { kind: "separate", ...(fieldLock ? { fieldLock: true } : {}), ...(isDirty ? { dirty: true } : {}) },
         ...(runStyles ? { styles: runStyles } : {}),
       });
     } else if (fldCharType === "end") {
       runs.push({
         text: "",
-        fieldChar: { kind: "end" },
+        fieldChar: { kind: "end", ...(fieldLock ? { fieldLock: true } : {}), ...(isDirty ? { dirty: true } : {}) },
         ...(runStyles ? { styles: runStyles } : {}),
       });
       const entry = fieldStack.pop();
@@ -614,6 +613,9 @@ export async function parseRunsContainer(
             childElement.localName === "delInstrText"
           ) {
             onInstrText(childElement, runStyles);
+          } else if (textChild(childElement)) {
+            const native = await parseRunElement(element, zip, relsMap, assets, parseNestedBlocks, [childElement]);
+            if (native.text.length) runs.push({ text: native.text, ...(runStyles ? { styles: { ...runStyles } } : {}) });
           }
         }
         continue;
@@ -750,7 +752,11 @@ export async function parseRunsContainer(
         inheritedLink,
         parseNestedBlocks,
       );
-      if (field) {
+      const lock = getAttributeValue(element, "fldLock");
+      const dirty = getAttributeValue(element, "dirty");
+      const fieldLock = lock === "true" || lock === "1" || lock === "on";
+      const isDirty = dirty === "true" || dirty === "1" || dirty === "on";
+      if (field && !fieldLock && !isDirty && !fieldStack.length && canProjectFieldResult(fieldRuns)) {
         const displayText =
           fieldRuns.map((run): string => run.text).join("") || "1";
         const styles = fieldRuns.find(
@@ -762,7 +768,8 @@ export async function parseRunsContainer(
           field,
         });
       } else {
-        runs.push({ text: "", fieldChar: { kind: "begin" } });
+        for (const parent of fieldStack) parent.nested = true;
+        runs.push({ text: "", fieldChar: { kind: "begin", ...(fieldLock ? { fieldLock: true } : {}), ...(isDirty ? { dirty: true } : {}) } });
         runs.push({ text: "", fieldInstruction: instr });
         runs.push({ text: "", fieldChar: { kind: "separate" } });
         runs.push(...fieldRuns);

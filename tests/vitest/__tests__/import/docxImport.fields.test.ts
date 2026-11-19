@@ -1,3 +1,6 @@
+import { createEditorStateFromDocument } from "@/core/editorState.js";
+import { paragraphOffsetToPosition } from "@/core/model.js";
+import { insertTextAtSelection } from "@/core/commands/textEditing.js";
 import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
@@ -252,5 +255,48 @@ describe("DOCX import: complex fields (REF / PAGEREF / TOC)", () => {
     const refRun = allRuns(reimported).find((r) => getRunField(r)?.type === "REF");
     expect(getRunField(refRun!)?.bookmark).toBe("Target");
     expect(xml).toContain('<w:bookmarkStart w:id="0" w:name="Target"/>');
+  });
+});
+
+describe("field preservation after adjacent model edits",()=>{
+  for(const simple of [false,true]){
+    it("retains locked/dirty and independently styled results ("+(simple?"simple":"complex")+")",async()=>{
+      const result='<w:r><w:rPr><w:b/></w:rPr><w:t>Bold</w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t>Italic</w:t></w:r>';
+      const field=simple
+        ? '<w:fldSimple w:instr=" PAGE " w:fldLock="1" w:dirty="true">'+result+'</w:fldSimple>'
+        : '<w:r><w:fldChar w:fldCharType="begin" w:fldLock="1" w:dirty="true"/></w:r><w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>'+result+'<w:r><w:fldChar w:fldCharType="end"/></w:r>';
+      const imported=await importDocxToEditorDocument(await buildDocx('<w:p><w:r><w:t>Before </w:t></w:r>'+field+'<w:r><w:t> after</w:t></w:r></w:p>'));
+      expect(fieldCharKinds(imported)).toEqual(["begin","separate","end"]);
+      expect(allRuns(imported).some(r=>getRunField(r))).toBe(false);
+      const paragraph=getDocumentParagraphs(imported)[0]!;
+      const initial=createEditorStateFromDocument(imported);
+      const caret=paragraphOffsetToPosition(paragraph,3);
+      const edited=insertTextAtSelection({...initial,selection:{anchor:caret,focus:caret}},"X");
+      expect(fieldCharKinds(edited.document)).toEqual(["begin","separate","end"]);
+      expect(instructions(edited.document)).toEqual([" PAGE "]);
+      // Regeneration cannot replay the original unedited paragraph.
+      const xml=await exportXml(edited.document);
+      expect(xml).toContain("w:fldLock=");
+      expect(xml).toContain("w:dirty=");
+      const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(edited.document));
+      expect(fieldCharKinds(reopened)).toEqual(["begin","separate","end"]);
+      expect(instructions(reopened)).toEqual([" PAGE "]);
+      expect(getRunFieldChar(allRuns(reopened).find(r=>getRunFieldChar(r)?.kind==="begin")!)).toMatchObject({fieldLock:true,dirty:true});
+      expect(allRuns(reopened).find(r=>r.text==="Bold")?.styles?.bold).toBe(true);
+      expect(allRuns(reopened).find(r=>r.text==="Italic")?.styles?.italic).toBe(true);
+      expect(allRuns(reopened).map(r=>r.text).join("")).toBe("BefXore BoldItalic after");
+    });
+  }
+  it("does not collapse a heterogeneous unlocked result or nested field",async()=>{
+    const {imported}=await roundTrip('<w:p><w:fldSimple w:instr="PAGE"><w:r><w:rPr><w:b/></w:rPr><w:t>1</w:t></w:r><w:r><w:t>2</w:t></w:r></w:fldSimple></w:p>');
+    expect(fieldCharKinds(imported)).toEqual(["begin","separate","end"]);
+    const nested=await roundTrip('<w:p><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> IF </w:instrText></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>2</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r><w:r><w:instrText> = 2 "Yes" "No" </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>Yes</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>');
+    expect(fieldCharKinds(nested.imported)).toEqual(["begin","begin","separate","end","separate","end"]);
+    expect(allRuns(nested.reimported).some(r=>getRunField(r))).toBe(false);
+  });
+  it("preserves text in a source run containing field controls",async()=>{
+    const {imported}=await roundTrip('<w:p><w:r><w:fldChar w:fldCharType="begin" w:fldLock="1"/><w:instrText> PAGE </w:instrText><w:fldChar w:fldCharType="separate"/><w:t>42</w:t><w:fldChar w:fldCharType="end"/><w:t> tail</w:t></w:r></w:p>');
+    expect(allRuns(imported).map(r=>r.text).join("")).toBe("42 tail");
+    expect(fieldCharKinds(imported)).toEqual(["begin","separate","end"]);
   });
 });
