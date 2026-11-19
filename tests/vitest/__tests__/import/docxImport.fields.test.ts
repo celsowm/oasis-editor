@@ -333,3 +333,48 @@ describe("field-aware adjacent editing",()=>{
     }
   });
 });
+
+describe("multiparagraph field adjacent inline editing",()=>{
+  it("permits typing and deletion outside a TOC but protects every cached paragraph",async()=>{
+    const doc=await importDocxToEditorDocument(await buildDocx(`
+      <w:p><w:r><w:t>Outside</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Before</w:t></w:r><w:r><w:fldChar w:fldCharType="begin" w:fldLock="1"/></w:r>
+        <w:r><w:instrText xml:space="preserve"> TOC </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>
+        <w:r><w:t>First</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Middle</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Last</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r><w:r><w:t>After</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Outside</w:t></w:r></w:p>`));
+    const initial=createEditorStateFromDocument(doc);
+    const paragraphs=getDocumentParagraphs(doc);
+    const selection=(i:number,a:number,b=a)=>{
+      const p=paragraphs[i]!;
+      return {...initial,selection:{anchor:paragraphOffsetToPosition(p,a),focus:paragraphOffsetToPosition(p,b)}};
+    };
+    const edits=[
+      [insertTextAtSelection(selection(0,2),"X"),0,"OuXtside"],
+      [insertTextAtSelection(selection(1,2),"X"),1,"BeXforeFirst"],
+      [insertTextAtSelection(selection(3,6),"X"),3,"LastAfXter"],
+      [insertTextAtSelection(selection(4,2),"X"),4,"OuXtside"],
+      [deleteBackward(selection(1,3)),1,"BeoreFirst"],
+      [deleteForward(selection(3,5)),3,"LastAter"],
+      [deleteSelectionRange(selection(1,1,3)),1,"BoreFirst"],
+    ] as const;
+    for(const [edited,index,expected] of edits){
+      expect(edited.document).not.toBe(initial.document);
+      const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(edited.document));
+      expect(getDocumentParagraphs(reopened)[index]!.runs.map(r=>r.text).join("")).toBe(expected);
+      expect(fieldCharKinds(reopened)).toEqual(["begin","separate","end"]);
+      expect(instructions(reopened)).toEqual([" TOC "]);
+      expect(allRuns(reopened).find(r=>getRunFieldChar(r)?.kind==="begin")?.kind).toBe("fieldChar");
+      expect(getRunFieldChar(allRuns(reopened).find(r=>getRunFieldChar(r)?.kind==="begin")!)?.fieldLock).toBe(true);
+      expect(getDocumentParagraphs(reopened)[2]!.runs.map(r=>r.text).join("")).toBe("Middle");
+    }
+    for(const next of [
+      insertTextAtSelection(selection(1,6),"X"),insertTextAtSelection(selection(1,8),"X"),
+      insertTextAtSelection(selection(2,2),"X"),insertTextAtSelection(selection(3,4),"X"),
+      deleteForward(selection(2,2)),deleteBackward(selection(2,2)),deleteSelectionRange(selection(2,1,3)),
+      deleteSelectionRange(selection(1,5,7)),toggleTextStyle(selection(2,0,3),"bold"),
+      splitBlockAtSelection(selection(0,2)),insertPlainTextAtSelection(selection(0,2),"x\ny"),
+    ])expect(next.document).toBe(initial.document);
+  });
+});

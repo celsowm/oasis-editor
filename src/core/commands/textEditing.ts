@@ -1,4 +1,4 @@
-import { fieldSelectionProtected, hasFieldMarkers, fieldRangeProtected } from "@/core/document/fieldMutation.js";
+import { fieldSelectionProtected, fieldInlineSelectionProtected, hasFieldMarkers, fieldRangeProtected } from "@/core/document/fieldMutation.js";
 import { splitForFieldAdjacentInsertion } from "@/core/document/paragraphRunEdit.js";
 import type {
   EditorParagraphNode,
@@ -295,7 +295,11 @@ export function insertTextAtSelection(
     return state;
   }
 
-  if(fieldSelectionProtected(state))return state;
+  // Only a collapsed ordinary insertion is newly authorized. Replacement
+  // can collapse onto an ambiguous field boundary; retain its previous gate.
+  if(isSelectionCollapsed(state.selection)
+    ? fieldInlineSelectionProtected(state)
+    : fieldSelectionProtected(state))return state;
   const collapsedState = isSelectionCollapsed(state.selection)
     ? state
     : deleteSelectionRange(state);

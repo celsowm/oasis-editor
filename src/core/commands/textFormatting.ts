@@ -1,3 +1,4 @@
+import { fieldSelectionProtected } from "@/core/document/fieldMutation.js";
 import type {
   EditorBorderStyle,
   EditorState,
@@ -55,7 +56,7 @@ export function toggleTextStyle(
   key: ToggleableTextStyleKey,
 ): EditorState {
   const normalized = normalizeSelection(state);
-  if (normalized.isCollapsed) {
+  if (normalized.isCollapsed || fieldSelectionProtected(state)) {
     return state;
   }
 
@@ -138,7 +139,7 @@ export function toggleTextStyle(
  */
 export function clearSelectedTextFormatting(state: EditorState): EditorState {
   const normalized = normalizeSelection(state);
-  if (normalized.isCollapsed) {
+  if (normalized.isCollapsed || fieldSelectionProtected(state)) {
     return state;
   }
 
@@ -183,7 +184,7 @@ export function applyUnderlineStyle(
   style: EditorUnderlineStyle | null,
 ): EditorState {
   const normalized = normalizeSelection(state);
-  if (normalized.isCollapsed) return state;
+  if (normalized.isCollapsed || fieldSelectionProtected(state)) return state;
   const paragraphs = getParagraphs(state);
   const nextParagraphs = paragraphs.map((paragraph, index) => {
     if (index < normalized.startIndex || index > normalized.endIndex)
@@ -232,7 +233,7 @@ export function setTextStyleValue<K extends ValueTextStyleKey>(
   value: EditorTextStyle[K] | null,
 ): EditorState {
   const normalized = normalizeSelection(state);
-  if (normalized.isCollapsed) {
+  if (normalized.isCollapsed || fieldSelectionProtected(state)) {
     return state;
   }
 
@@ -281,7 +282,7 @@ export function nudgeFontSize(
   deltaPt: number,
 ): EditorState {
   const normalized = normalizeSelection(state);
-  if (normalized.isCollapsed) {
+  if (normalized.isCollapsed || fieldSelectionProtected(state)) {
     return state;
   }
 
@@ -336,7 +337,7 @@ export function nudgeFontSize(
  */
 export function toggleCharacterBorder(state: EditorState): EditorState {
   const normalized = normalizeSelection(state);
-  if (normalized.isCollapsed) {
+  if (normalized.isCollapsed || fieldSelectionProtected(state)) {
     return state;
   }
 

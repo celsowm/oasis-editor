@@ -1,4 +1,4 @@
-import { fieldSelectionProtected, hasFieldMarkers, fieldRangeProtected, mapFieldAdjacentRuns } from "@/core/document/fieldMutation.js";
+import { fieldSelectionProtected, fieldInlineSelectionProtected, hasFieldMarkers, fieldRangeProtected, mapFieldAdjacentRuns } from "@/core/document/fieldMutation.js";
 import type {
   EditorParagraphNode,
   EditorPosition,
@@ -55,7 +55,7 @@ export function getFocusParagraph(state: EditorState): {
 export function deleteSelectionRange(state: EditorState): EditorState {
   const paragraphs = getParagraphs(state);
   const normalized = normalizeSelection(state, paragraphs);
-  if (normalized.isCollapsed || fieldSelectionProtected(state)) {
+  if (normalized.isCollapsed || (state.trackChangesEnabled ? fieldSelectionProtected(state) : fieldInlineSelectionProtected(state))) {
     return state;
   }
 

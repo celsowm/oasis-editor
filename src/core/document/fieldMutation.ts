@@ -1,5 +1,5 @@
 import type { EditorParagraphNode, EditorState, EditorTextRun } from "@/core/model.js";
-import { getParagraphLength, getParagraphs } from "@/core/model.js";
+import { getParagraphLength, getParagraphs, getActiveZone, getDocumentSections, getBlockParagraphs, getEditableBlocksForZone } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import { cloneRun } from "./clone.js";
 import { sliceRuns } from "./paragraphRunQuery.js";
@@ -26,12 +26,54 @@ export function fieldRangeProtected(p:EditorParagraphNode,start:number,end:numbe
     ? start>=r.start&&start<=r.end
     : r.start===r.end?start<r.start&&end>r.end:start<r.end&&end>r.start);
 }
+/** Main XML is a single story even when the editor scopes selection to one
+ * section. Related stories are resolved independently by the editing zone.
+ * Text boxes are inline objects; their internal blocks are not flattened. */
+function editableStory(state:EditorState){
+  const zone=getActiveZone(state);
+  const blocks=zone==="main"
+    ? getDocumentSections(state.document).flatMap(s=>s.blocks)
+    : getEditableBlocksForZone(state,zone);
+  const paragraphs=blocks.flatMap(getBlockParagraphs);
+  return {paragraphs,hasTables:blocks.some(b=>b.type==="table")};
+}
+
+/** Single-paragraph text edits, not structural edits. Closed caret boundaries
+ * deliberately remain ambiguous; a nonempty range may abut a field but may
+ * never remove a character within it or straddle an invisible field. */
+export function fieldInlineRangeProtected(state:EditorState,p:EditorParagraphNode,start:number,end:number):boolean{
+  const story=editableStory(state);
+  if(!story.paragraphs.some(hasFieldMarkers))return false;
+  const index=story.paragraphs.indexOf(p);
+  if(index<0)return true;
+  const graph=buildFieldStoryGraph(story.paragraphs);
+  if(graph.diagnostics.length)return true;
+  const spans=graph.spans.filter(s=>s.parentIndex===null);
+  // Table/cell topology is not qualified for cross-paragraph mutation.
+  if(story.hasTables&&spans.some(s=>s.begin.paragraphIndex!==s.end!.paragraphIndex))return true;
+  return spans.some(s=>{
+    const last=s.end!;
+    if(index<s.begin.paragraphIndex||index>last.paragraphIndex)return false;
+    const left=index===s.begin.paragraphIndex?s.begin.offset:0;
+    const right=index===last.paragraphIndex?last.offset:getParagraphLength(p);
+    if(index>s.begin.paragraphIndex&&index<last.paragraphIndex)return true;
+    return start===end?start>=left&&start<=right
+      : left===right?start<left&&end>right:start<right&&end>left;
+  });
+}
+export function fieldInlineSelectionProtected(state:EditorState):boolean{
+  const paragraphs=getParagraphs(state);
+  const s=normalizeSelection(state,paragraphs);
+  if(s.startIndex!==s.endIndex)return fieldSelectionProtected(state);
+  return fieldInlineRangeProtected(state,paragraphs[s.startIndex]!,s.startParagraphOffset,s.endParagraphOffset);
+}
 export function hasUnresolvedFieldStory(state:EditorState):boolean{
-  return getParagraphs(state).some(p=>protectedFieldRanges(p)===undefined);
+  // Keep the structural guard conservative, including fields spanning sections.
+  return editableStory(state).paragraphs.some(p=>protectedFieldRanges(p)===undefined);
 }
 export function fieldSelectionProtected(state:EditorState):boolean{
   const paragraphs=getParagraphs(state);
-  if(paragraphs.some(p=>protectedFieldRanges(p)===undefined))return true;
+  if(hasUnresolvedFieldStory(state))return true;
   const s=normalizeSelection(state,paragraphs);
   for(let i=s.startIndex;i<=s.endIndex;i++){
     const p=paragraphs[i]!;

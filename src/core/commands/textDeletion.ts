@@ -1,4 +1,4 @@
-import { hasFieldMarkers, hasUnresolvedFieldStory, fieldRangeProtected, mapFieldAdjacentRuns } from "@/core/document/fieldMutation.js";
+import { hasFieldMarkers, hasUnresolvedFieldStory, fieldInlineRangeProtected, mapFieldAdjacentRuns } from "@/core/document/fieldMutation.js";
 import { tryDeleteOpaqueObject } from "./opaqueDeletion.js";
 import type {
   EditorState,
@@ -47,7 +47,7 @@ export function deleteCharsBackwardRaw(
 
   const paragraphs = getParagraphs(state);
   const start = offset - count;
-  if(hasUnresolvedFieldStory(state)||fieldRangeProtected(paragraph,start,offset))return state;
+  if(fieldInlineRangeProtected(state,paragraph,start,offset))return state;
   const nextParagraph = buildParagraphFromRuns(
     paragraph,
     hasFieldMarkers(paragraph)?mapFieldAdjacentRuns(paragraph,start,offset,()=>null):[
@@ -79,7 +79,7 @@ export function deleteBackward(state: EditorState): EditorState {
   const paragraphs = getParagraphs(state);
 
   if (offset > 0) {
-    if(hasUnresolvedFieldStory(state)||fieldRangeProtected(paragraph,offset - 1,offset))return state;
+    if((state.trackChangesEnabled&&hasUnresolvedFieldStory(state))||fieldInlineRangeProtected(state,paragraph,offset - 1,offset))return state;
     if(hasFieldMarkers(paragraph)){
       // Reuse selection deletion so tracked and ordinary adjacent edits
       // have exactly the same zero-width preservation policy.
@@ -213,7 +213,7 @@ export function deleteForward(state: EditorState): EditorState {
   const paragraphs = getParagraphs(state);
 
   if (offset < getParagraphLength(paragraph)) {
-    if(hasUnresolvedFieldStory(state)||fieldRangeProtected(paragraph,offset,offset + 1))return state;
+    if((state.trackChangesEnabled&&hasUnresolvedFieldStory(state))||fieldInlineRangeProtected(state,paragraph,offset,offset + 1))return state;
     if(hasFieldMarkers(paragraph)){
       // Reuse selection deletion so tracked and ordinary adjacent edits
       // have exactly the same zero-width preservation policy.
