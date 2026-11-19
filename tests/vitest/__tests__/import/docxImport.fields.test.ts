@@ -4,7 +4,7 @@ import { splitBlockAtSelection } from "@/core/commands/block.js";
 import { insertPlainTextAtSelection } from "@/core/commands/textEditing.js";
 import { deleteSelectionRange } from "@/core/selection/rangeEditing.js";
 import { createEditorStateFromDocument } from "@/core/editorState.js";
-import { paragraphOffsetToPosition } from "@/core/model.js";
+import { paragraphOffsetToPosition, resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
 import { insertTextAtSelection } from "@/core/commands/textEditing.js";
 import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
@@ -414,7 +414,19 @@ describe("story-aware character formatting",()=>{
       expect(instructions(reopened)).toEqual([" TOC "]);
       expect(getRunFieldChar(allRuns(reopened).find(r=>getRunFieldChar(r)?.kind==="begin")!)).toMatchObject({fieldLock:true,dirty:true});
       for(const label of ["First","Middle","Last"]){
-        expect(allRuns(reopened).find(r=>r.text===label)?.styles).toEqual(allRuns(doc).find(r=>r.text===label)?.styles);
+        const original=allRuns(doc).find(r=>r.text===label)!;
+        expect(allRuns(edited.document).find(r=>r.text===label)?.styles).toEqual(original.styles);
+        const effective=(d:EditorDocument)=>{
+          const p=getDocumentParagraphs(d).find(p=>p.runs.some(r=>r.text===label))!;
+          const run=p.runs.find(r=>r.text===label)!;
+          return resolveEffectiveTextStyleForParagraph(run.styles,p.style?.styleId,d.styles);
+        };
+        const old=effective(doc),next=effective(reopened);
+        // Serialization can materialize inherited defaults and round size.
+        const {fontSize:oldSize,...oldStyle}=old;
+        const {fontSize:nextSize,...nextStyle}=next;
+        expect(nextStyle).toEqual(oldStyle);
+        expect(nextSize).toBeCloseTo(oldSize,3);
       }
       for(const blocked of [select(0,5,7),select(1,0,6),select(2,0,5),select(0,0,9,2)]){
         expect(cmd(blocked).document).toBe(initial.document);
@@ -428,5 +440,58 @@ describe("story-aware character formatting",()=>{
     }
     const tracked={...select(0,2,2),trackChangesEnabled:true};
     expect(insertTextAtSelection(tracked,"X").document).toBe(initial.document);
+  });
+});
+
+describe("explicit invisible field boundary affinity",()=>{
+  it("inserts outside coincident controls, preserves order, and never edits an interior edge",async()=>{
+    const doc=await importDocxToEditorDocument(await buildDocx(`
+      <w:p><w:r><w:t>Left</w:t></w:r>
+        <w:r><w:fldChar w:fldCharType="begin" w:fldLock="1"/></w:r>
+        <w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>
+        <w:r><w:fldChar w:fldCharType="end"/></w:r>
+        <w:r><w:t>Right</w:t></w:r></w:p>`));
+    const initial=createEditorStateFromDocument(doc);
+    const p=getDocumentParagraphs(doc)[0]!;
+    const at=(fieldBoundaryAffinity?:"before-markers"|"after-markers")=>{
+      const pos={...paragraphOffsetToPosition(p,4),fieldBoundaryAffinity};
+      return {...initial,selection:{anchor:pos,focus:pos}};
+    };
+    expect(insertTextAtSelection(at(),"X").document).toBe(initial.document);
+    for(const affinity of ["before-markers","after-markers"] as const){
+      const edited=insertTextAtSelection(at(affinity),"X");
+      expect(edited.document).not.toBe(initial.document);
+      const twice=insertTextAtSelection(edited,"Y");
+      const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(twice.document));
+      const runs=allRuns(reopened);
+      expect(runs.map(r=>r.text).join("")).toBe("LeftXYRight");
+      expect(fieldCharKinds(reopened)).toEqual(["begin","end"]);
+      expect(instructions(reopened)).toEqual([" PAGE "]);
+      const begin=runs.findIndex(r=>getRunFieldChar(r)?.kind==="begin");
+      const end=runs.findIndex(r=>getRunFieldChar(r)?.kind==="end");
+      expect(runs.slice(0,begin).map(r=>r.text).join("")).toBe(affinity==="before-markers"?"LeftXY":"Left");
+      expect(runs.slice(end+1).map(r=>r.text).join("")).toBe(affinity==="after-markers"?"XYRight":"Right");
+    }
+  });
+  it("does not confuse a clipped cross-paragraph span with an actual field edge",async()=>{
+    const doc=await importDocxToEditorDocument(await buildDocx(`
+      <w:p><w:r><w:t>Left</w:t></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r>
+      <w:r><w:instrText xml:space="preserve"> TOC </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>First</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Last</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r><w:r><w:t>Right</w:t></w:r></w:p>`));
+    const initial=createEditorStateFromDocument(doc),ps=getDocumentParagraphs(doc);
+    const at=(i:number,offset:number,fieldBoundaryAffinity:"before-markers"|"after-markers")=>{
+      const pos={...paragraphOffsetToPosition(ps[i]!,offset),fieldBoundaryAffinity};
+      return {...initial,selection:{anchor:pos,focus:pos}};
+    };
+    for(const blocked of [at(0,4,"after-markers"),at(0,9,"after-markers"),at(1,0,"before-markers"),at(1,4,"before-markers")]){
+      expect(insertTextAtSelection(blocked,"X").document).toBe(initial.document);
+    }
+    for(const allowed of [at(0,4,"before-markers"),at(1,4,"after-markers")]){
+      const edited=insertTextAtSelection(allowed,"X");
+      expect(edited.document).not.toBe(initial.document);
+      const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(edited.document));
+      expect(fieldCharKinds(reopened)).toEqual(["begin","separate","end"]);
+      expect(instructions(reopened)).toEqual([" TOC "]);
+    }
   });
 });

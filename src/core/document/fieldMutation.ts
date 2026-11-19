@@ -1,5 +1,5 @@
-import type { EditorParagraphNode, EditorState, EditorTextRun } from "@/core/model.js";
-import { getParagraphLength, getParagraphs, getActiveZone, getDocumentSections, getBlockParagraphs, getEditableBlocksForZone } from "@/core/model.js";
+import type { EditorParagraphNode, EditorPosition, EditorState, EditorTextRun } from "@/core/model.js";
+import { getParagraphLength, positionToParagraphOffset, getParagraphs, getActiveZone, getDocumentSections, getBlockParagraphs, getEditableBlocksForZone } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import { cloneRun } from "./clone.js";
 import { sliceRuns } from "./paragraphRunQuery.js";
@@ -41,7 +41,7 @@ function editableStory(state:EditorState){
 /** Single-paragraph text edits, not structural edits. Closed caret boundaries
  * deliberately remain ambiguous; a nonempty range may abut a field but may
  * never remove a character within it or straddle an invisible field. */
-export function fieldInlineRangeProtected(state:EditorState,p:EditorParagraphNode,start:number,end:number):boolean{
+export function fieldInlineRangeProtected(state:EditorState,p:EditorParagraphNode,start:number,end:number,affinity?:EditorPosition["fieldBoundaryAffinity"]):boolean{
   const story=editableStory(state);
   if(!story.paragraphs.some(hasFieldMarkers))return false;
   const index=story.paragraphs.indexOf(p);
@@ -57,8 +57,16 @@ export function fieldInlineRangeProtected(state:EditorState,p:EditorParagraphNod
     const left=index===s.begin.paragraphIndex?s.begin.offset:0;
     const right=index===last.paragraphIndex?last.offset:getParagraphLength(p);
     if(index>s.begin.paragraphIndex&&index<last.paragraphIndex)return true;
-    return start===end?start>=left&&start<=right
-      : left===right?start<left&&end>right:start<right&&end>left;
+    if(start===end){
+      if(start<left||start>right)return false;
+      // Only actual outer edges can be escaped, never a clipped edge of
+      // a span continuing from/to another paragraph. A zero-width span
+      // may be escaped on either explicit side.
+      if(start===left&&index===s.begin.paragraphIndex&&affinity==="before-markers")return false;
+      if(start===right&&index===last.paragraphIndex&&affinity==="after-markers")return false;
+      return true;
+    }
+    return left===right?start<left&&end>right:start<right&&end>left;
   });
 }
 export function fieldInlineSelectionProtected(state:EditorState):boolean{
@@ -66,6 +74,18 @@ export function fieldInlineSelectionProtected(state:EditorState):boolean{
   const s=normalizeSelection(state,paragraphs);
   if(s.startIndex!==s.endIndex)return fieldSelectionProtected(state);
   return fieldInlineRangeProtected(state,paragraphs[s.startIndex]!,s.startParagraphOffset,s.endParagraphOffset);
+}
+/** Affinity is deliberately opt-in, and only for an exact, valid raw
+ * collapsed position. Never infer it from normalized visible offsets. */
+export function fieldInsertionProtected(state:EditorState):boolean{
+  const {anchor,focus}=state.selection;
+  if(anchor.paragraphId!==focus.paragraphId||anchor.runId!==focus.runId||
+     anchor.offset!==focus.offset||anchor.fieldBoundaryAffinity!==focus.fieldBoundaryAffinity)return true;
+  const p=getParagraphs(state).find(p=>p.id===focus.paragraphId);
+  const run=p?.runs.find(r=>r.id===focus.runId);
+  if(!p||!run||!Number.isInteger(focus.offset)||focus.offset<0||focus.offset>run.text.length)return true;
+  const offset=positionToParagraphOffset(p,focus);
+  return fieldInlineRangeProtected(state,p,offset,offset,focus.fieldBoundaryAffinity);
 }
 export function hasUnresolvedFieldStory(state:EditorState):boolean{
   // Keep the structural guard conservative, including fields spanning sections.

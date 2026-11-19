@@ -1,4 +1,4 @@
-import { fieldSelectionProtected, fieldInlineSelectionProtected, hasFieldMarkers, fieldRangeProtected } from "@/core/document/fieldMutation.js";
+import { fieldSelectionProtected, fieldInsertionProtected, hasFieldMarkers, fieldRangeProtected } from "@/core/document/fieldMutation.js";
 import { splitForFieldAdjacentInsertion } from "@/core/document/paragraphRunEdit.js";
 import type {
   EditorParagraphNode,
@@ -298,7 +298,7 @@ export function insertTextAtSelection(
   // Only a collapsed ordinary insertion is newly authorized. Replacement
   // can collapse onto an ambiguous field boundary; retain its previous gate.
   if(isSelectionCollapsed(state.selection) && !state.trackChangesEnabled
-    ? fieldInlineSelectionProtected(state)
+    ? fieldInsertionProtected(state)
     : fieldSelectionProtected(state))return state;
   const collapsedState = isSelectionCollapsed(state.selection)
     ? state
@@ -324,7 +324,9 @@ export function insertTextAtSelection(
     };
   }
 
-  const nextParagraph = insertRunsAtOffset(paragraph, offset, [insertedRun]);
+  const affinity = !state.trackChangesEnabled && isSelectionCollapsed(state.selection)
+    ? state.selection.focus.fieldBoundaryAffinity : undefined;
+  const nextParagraph = insertRunsAtOffset(paragraph, offset, [insertedRun], affinity);
   const paragraphs = getParagraphs(collapsedState);
   const nextParagraphs = paragraphs.map(
     (candidate, candidateIndex): EditorParagraphNode =>
@@ -335,7 +337,8 @@ export function insertTextAtSelection(
     collapsedState,
     nextParagraphs,
     withSelection(
-      paragraphOffsetToPosition(nextParagraph, offset + text.length),
+      { ...paragraphOffsetToPosition(nextParagraph, offset + text.length),
+        ...(affinity ? {fieldBoundaryAffinity:affinity} : {}) },
     ),
   );
 }
