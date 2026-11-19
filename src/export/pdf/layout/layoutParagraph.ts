@@ -1,5 +1,5 @@
 import type { EditorParagraphNode, EditorTextRun } from "@/core/model.js";
-import { formatPageNumber } from "@/core/format/pageNumberFormat.js";
+import { evaluateField } from "@/core/document/fieldEvaluation.js";
 import type { PdfTextMeasurer } from "./PdfTextMeasurer.js";
 import { COLUMN_BREAK_MARKER } from "@/core/units.js";
 
@@ -63,9 +63,9 @@ export function resolvePdfRunText(
     ) {
       return run.text;
     }
-    const value =
-      run.field.type === "NUMPAGES" ? context.totalPages : context.pageNumber;
-    return formatPageNumber(value, run.field.format);
+    return evaluateField({
+      type: run.field.type, format: run.field.format,
+    }, context, run.text).text;
   }
   if (run.kind === "image") {
     return "";

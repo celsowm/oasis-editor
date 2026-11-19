@@ -34,6 +34,7 @@ import {
 import { resolveDropCapExclusion } from "./dropCapExclusion.js";
 import { DEFAULT_FONT_SIZE_PX as DEFAULT_FONT_SIZE } from "@/core/units.js";
 import { VERTICAL_HIT_WEIGHT } from "@/core/layoutConstants.js";
+import { evaluateField } from "@/core/document/fieldEvaluation.js";
 
 export interface LayoutProjectionContext {
   hyphenation?: HyphenationLayoutOptions;
@@ -263,14 +264,13 @@ export function projectParagraphLayout(
         (run): EditorLayoutFragment => {
           let resolvedText = run.text;
           const field = getRunField(run);
-          if (field) {
-            if (field.type === "PAGE") {
-              resolvedText =
-                typeof pageIndex === "number" ? String(pageIndex + 1) : "1";
-            } else if (field.type === "NUMPAGES") {
-              resolvedText =
-                typeof totalPages === "number" ? String(totalPages) : "1";
-            }
+          if (field?.type === "PAGE" || field?.type === "NUMPAGES") {
+            // Keep existing decimal measurement semantics; rendered numeric
+            // format and section-aware page labels are qualified separately.
+            resolvedText = evaluateField({ type: field.type }, {
+              pageNumber: pageIndex === undefined ? undefined : pageIndex + 1,
+              totalPages,
+            }, "1").text;
           }
 
           const chars: EditorLayoutFragmentChar[] = Array.from(
