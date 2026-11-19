@@ -571,8 +571,79 @@ describe("safe paragraph topology outside a multiparagraph field",()=>{
     for(const blocked of [
       splitBlockAtSelection(at(3,2)),insertPageBreakAtSelection(at(3,2)),
       insertPlainTextAtSelection(at(3,2),"X\nY"),deleteForward(at(3,6)),
-      deleteBackward(at(4,0)),deleteForward(at(1,4)),
+      deleteBackward(at(4,0)),deleteForward(at(2,5)),
       splitBlockAtSelection({...at(0,2),trackChangesEnabled:true}),
     ])expect(blocked.document).toBe(initial.document);
+  });
+});
+
+describe("structural edits adjacent to complete field marker groups",()=>{
+  it("splits and pastes at a real outer edge while preserving both field endpoints",async()=>{
+    const doc=await importDocxToEditorDocument(await buildDocx(`
+      <w:p><w:r><w:t>Before</w:t></w:r><w:r><w:fldChar w:fldCharType="begin" w:fldLock="1" w:dirty="1"/></w:r>
+      <w:r><w:instrText xml:space="preserve"> TOC </w:instrText></w:r>
+      <w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>First</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Middle</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Last</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r><w:r><w:t>After</w:t></w:r></w:p>`));
+    const initial=createEditorStateFromDocument(doc),ps=getDocumentParagraphs(doc);
+    const at=(i:number,offset:number,fieldBoundaryAffinity?:"before-markers"|"after-markers")=>{
+      const pos={...paragraphOffsetToPosition(ps[i]!,offset),fieldBoundaryAffinity};
+      return {...initial,selection:{anchor:pos,focus:pos}};
+    };
+    const texts=(d:EditorDocument)=>getDocumentParagraphs(d).map(p=>p.runs.map(r=>r.text).join(""));
+    const edits=[
+      [splitBlockAtSelection(at(0,3)),["Bef","oreFirst","Middle","LastAfter"]],
+      [splitBlockAtSelection(at(0,6,"before-markers")),["Before","First","Middle","LastAfter"]],
+      [insertPageBreakAtSelection(at(0,6,"before-markers")),["Before","First","Middle","LastAfter"]],
+      [splitBlockAtSelection(at(2,4,"after-markers")),["BeforeFirst","Middle","Last","After"]],
+      [insertPlainTextAtSelection(at(0,6,"before-markers"),"X\nY"),["BeforeX","YFirst","Middle","LastAfter"]],
+      [insertPlainTextAtSelection(at(2,4,"after-markers"),"X\nY"),["BeforeFirst","Middle","LastX","YAfter"]],
+    ] as const;
+    for(const [edited,expected] of edits){
+      expect(edited.document).not.toBe(initial.document);
+      const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(edited.document));
+      expect(texts(reopened)).toEqual(expected);
+      expect(fieldCharKinds(reopened)).toEqual(["begin","separate","end"]);
+      expect(instructions(reopened)).toEqual([" TOC "]);
+      expect(getRunFieldChar(allRuns(reopened).find(r=>getRunFieldChar(r)?.kind==="begin")!)).toMatchObject({fieldLock:true,dirty:true});
+    }
+    for(const cmd of [splitBlockAtSelection,insertPageBreakAtSelection,(s:typeof initial)=>insertPlainTextAtSelection(s,"X\nY")]){
+      for(const blocked of [at(0,6),at(0,6,"after-markers"),at(1,2),at(2,4,"before-markers")])
+        expect(cmd(blocked).document).toBe(initial.document);
+    }
+    // Split at the exact begin boundary and type immediately in the new paragraph.
+    const split=edits[1][0];
+    expect(split.selection.focus.fieldBoundaryAffinity).toBe("before-markers");
+    const typed=insertTextAtSelection(split,"X");
+    expect(texts(typed.document)).toEqual(["Before","XFirst","Middle","LastAfter"]);
+  });
+  it("joins only exterior breaks and supplies the correct side of the surviving markers",async()=>{
+    const doc=await importDocxToEditorDocument(await buildDocx(`
+      <w:p><w:r><w:t>Prefix</w:t></w:r></w:p>
+      <w:p><w:r><w:fldChar w:fldCharType="begin" w:fldLock="1"/></w:r>
+      <w:r><w:instrText xml:space="preserve"> TOC </w:instrText></w:r>
+      <w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>First</w:t></w:r></w:p>
+      <w:p><w:r><w:t>Last</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>
+      <w:p><w:r><w:t>Suffix</w:t></w:r></w:p>`));
+    const initial=createEditorStateFromDocument(doc),ps=getDocumentParagraphs(doc);
+    const at=(i:number,offset:number)=>{
+      const pos=paragraphOffsetToPosition(ps[i]!,offset);
+      return {...initial,selection:{anchor:pos,focus:pos}};
+    };
+    for(const [edited,affinity,expected] of [
+      [deleteForward(at(0,6)),"before-markers","PrefixXFirstLastSuffix"],
+      [deleteBackward(at(3,0)),"after-markers","PrefixFirstLastXSuffix"],
+    ] as const){
+      expect(edited.document).not.toBe(initial.document);
+      expect(edited.selection.focus.fieldBoundaryAffinity).toBe(affinity);
+      const typed=insertTextAtSelection(edited,"X");
+      const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(typed.document));
+      expect(allRuns(reopened).map(r=>r.text).join("")).toBe(expected);
+      expect(fieldCharKinds(reopened)).toEqual(["begin","separate","end"]);
+      expect(instructions(reopened)).toEqual([" TOC "]);
+      expect(getDocumentParagraphs(reopened)).toHaveLength(3);
+    }
+    expect(deleteForward(at(1,5)).document).toBe(initial.document);
+    expect(deleteBackward(at(2,0)).document).toBe(initial.document);
   });
 });

@@ -1,4 +1,4 @@
-import { hasFieldMarkers, hasUnresolvedFieldStory, fieldParagraphJoinProtected, fieldInlineRangeProtected, mapFieldAdjacentRuns } from "@/core/document/fieldMutation.js";
+import { hasFieldMarkers, hasUnresolvedFieldStory, fieldParagraphJoinProtected, fieldParagraphJoinAffinity, fieldInlineRangeProtected, mapFieldAdjacentRuns } from "@/core/document/fieldMutation.js";
 import { tryDeleteOpaqueObject } from "./opaqueDeletion.js";
 import type {
   EditorState,
@@ -9,6 +9,7 @@ import {
   getParagraphLength,
   getParagraphs,
   paragraphOffsetToPosition,
+  paragraphOffsetToFieldPosition,
 } from "@/core/model.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
 import {
@@ -194,9 +195,10 @@ export function deleteBackward(state: EditorState): EditorState {
     state,
     nextParagraphs,
     withSelection(
-      paragraphOffsetToPosition(
+      paragraphOffsetToFieldPosition(
         mergedParagraph,
         getParagraphLength(previousParagraph),
+        fieldParagraphJoinAffinity(previousParagraph,paragraph),
       ),
     ),
   );
@@ -327,6 +329,6 @@ export function deleteForward(state: EditorState): EditorState {
   return cloneStateWithParagraphs(
     state,
     nextParagraphs,
-    withSelection(paragraphOffsetToPosition(mergedParagraph, offset)),
+    withSelection(paragraphOffsetToFieldPosition(mergedParagraph, offset, fieldParagraphJoinAffinity(paragraph,nextParagraph))),
   );
 }

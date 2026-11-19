@@ -17,6 +17,7 @@ import {
   getParagraphLength,
   getParagraphs,
   paragraphOffsetToPosition,
+  paragraphOffsetToFieldPosition,
   getActiveSectionIndex,
   getActiveZone,
 } from "@/core/model.js";
@@ -150,7 +151,7 @@ export function splitBlockAtSelection(state: EditorState): EditorState {
     : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
   if(fieldParagraphSplitProtected(collapsedState))return state;
-  const {beforeRuns,afterRuns:secondRuns}=splitForFieldAdjacentInsertion(paragraph,offset);
+  const {beforeRuns,afterRuns:secondRuns}=splitForFieldAdjacentInsertion(paragraph,offset,collapsedState.selection.focus.fieldBoundaryAffinity);
   const firstParagraph = buildParagraphFromRuns(
     paragraph,
     beforeRuns,
@@ -180,7 +181,7 @@ export function splitBlockAtSelection(state: EditorState): EditorState {
   return cloneStateWithParagraphs(
     collapsedState,
     nextParagraphs,
-    withSelection(paragraphOffsetToPosition(nextParagraph, 0)),
+    withSelection(paragraphOffsetToFieldPosition(nextParagraph, 0, "before-markers")),
   );
 }
 
@@ -191,7 +192,7 @@ export function insertPageBreakAtSelection(state: EditorState): EditorState {
     : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
   if(fieldParagraphSplitProtected(collapsedState))return state;
-  const {beforeRuns,afterRuns:secondRuns}=splitForFieldAdjacentInsertion(paragraph,offset);
+  const {beforeRuns,afterRuns:secondRuns}=splitForFieldAdjacentInsertion(paragraph,offset,collapsedState.selection.focus.fieldBoundaryAffinity);
   const firstParagraph = buildParagraphFromRuns(
     paragraph,
     beforeRuns,
@@ -227,7 +228,7 @@ export function insertPageBreakAtSelection(state: EditorState): EditorState {
   return cloneStateWithParagraphs(
     collapsedState,
     nextParagraphs,
-    withSelection(paragraphOffsetToPosition(nextParagraph, 0)),
+    withSelection(paragraphOffsetToFieldPosition(nextParagraph, 0, "before-markers")),
   );
 }
 

@@ -25,6 +25,7 @@ import {
   sliceRuns,
   buildParagraphFromRuns,
   createParagraphFromRuns,
+  createParagraphFromRunsLike,
 } from "@/core/document/paragraphRuns.js";
 import { cloneRun, cloneParagraph } from "@/core/document/clone.js";
 import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
@@ -423,11 +424,12 @@ export function insertPlainTextAtSelection(
     ? state
     : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  if(fieldParagraphSplitProtected(collapsedState))return state;
   const lines = normalizedText.split("\n");
   const insertionStyles = styleOverride
     ? { ...styleOverride }
     : getStyleAtOffset(paragraph, offset);
-  const {beforeRuns,afterRuns:tailRuns}=splitForFieldAdjacentInsertion(paragraph,offset);
+  const {beforeRuns,afterRuns:tailRuns}=splitForFieldAdjacentInsertion(paragraph,offset,collapsedState.selection.focus.fieldBoundaryAffinity);
   const firstParagraph = buildParagraphFromRuns(
     paragraph,
     [...beforeRuns, createEditorStyledRun(lines[0], insertionStyles)],
@@ -438,7 +440,7 @@ export function insertPlainTextAtSelection(
     .map((line): EditorParagraphNode =>
       createParagraphFromRuns([{ text: line, styles: insertionStyles }]),
     );
-  const lastParagraph = buildParagraphFromRuns(createParagraphFromRuns([]),[
+  const lastParagraph = buildParagraphFromRuns(hasFieldMarkers(paragraph)?createParagraphFromRunsLike(paragraph,[]):createParagraphFromRuns([]),[
     createEditorStyledRun(lines[lines.length - 1],insertionStyles),
     ...tailRuns,
   ],insertionStyles);
@@ -455,7 +457,7 @@ export function insertPlainTextAtSelection(
     collapsedState,
     nextParagraphs,
     withSelection(
-      paragraphOffsetToPosition(lastParagraph, lines[lines.length - 1].length),
+      paragraphOffsetToFieldPosition(lastParagraph, lines[lines.length - 1].length, "before-markers"),
     ),
   );
 }

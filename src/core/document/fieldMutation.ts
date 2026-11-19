@@ -1,5 +1,5 @@
 import type { EditorParagraphNode, EditorPosition, EditorState, EditorTextRun } from "@/core/model.js";
-import { getParagraphLength, positionToParagraphOffset, getParagraphs, getActiveZone, getDocumentSections, getBlockParagraphs, getEditableBlocksForZone } from "@/core/model.js";
+import { getParagraphLength, hasFieldBoundaryAtOffset, positionToParagraphOffset, getParagraphs, getActiveZone, getDocumentSections, getBlockParagraphs, getEditableBlocksForZone } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import { cloneRun } from "./clone.js";
 import { sliceRuns } from "./paragraphRunQuery.js";
@@ -90,35 +90,60 @@ export function fieldInsertionProtected(state:EditorState):boolean{
   const offset=positionToParagraphOffset(p,focus);
   return fieldInlineRangeProtected(state,p,offset,offset,focus.fieldBoundaryAffinity);
 }
-/** Allow a paragraph-count change only in flat, untracked, markerless body
- * paragraphs. The existing structural gate remains authoritative elsewhere.
- * A markerless paragraph can still be inside a multi-paragraph cached result. */
+/** Newly enabled structural edits do not move unrelated rich objects,
+ * content-control wrappers, or tracked paragraph/run metadata. */
+function plainFieldParagraph(p:EditorParagraphNode):boolean{
+  return !p.list&&!p.dropCap&&!p.numberingRevision&&!p.sdtWrappers?.length&&
+    p.runs.every(r=>(r.kind==="text"||r.kind==="fieldChar"||r.kind==="fieldInstruction")&&
+      !r.revision&&!r.revisionRangeMarker&&!r.sdtWrappers?.length);
+}
+
+/** Split only at an exterior position. A field's complete marker group
+ * travels to one side of the new paragraph break, never both. */
 export function fieldParagraphSplitProtected(state:EditorState):boolean{
   const story=editableStory(state);
   if(!story.paragraphs.some(hasFieldMarkers))return false;
-  if(state.trackChangesEnabled||getActiveZone(state)!=="main"||story.hasTables||
-     !hasUnresolvedFieldStory(state))return fieldSelectionProtected(state);
+  if(state.trackChangesEnabled||getActiveZone(state)!=="main"||story.hasTables)
+    return fieldSelectionProtected(state);
   const {anchor,focus}=state.selection;
   if(anchor.paragraphId!==focus.paragraphId||anchor.runId!==focus.runId||
-     anchor.offset!==focus.offset||anchor.fieldBoundaryAffinity!==focus.fieldBoundaryAffinity)return true;
+     anchor.offset!==focus.offset||anchor.fieldBoundaryAffinity!==focus.fieldBoundaryAffinity)
+    return fieldSelectionProtected(state);
   const p=getParagraphs(state).find(p=>p.id===focus.paragraphId);
-  if(!p||hasFieldMarkers(p))return true;
+  if(!p)return true;
+  // Preserve the old path for already qualified positions.
+  if(!fieldSelectionProtected(state))return false;
+  if(!plainFieldParagraph(p))return true;
   return fieldInsertionProtected(state);
 }
 
-/** Join only when both sides of a flat-body paragraph break are outside a
- * field and neither paragraph carries markers. No field controls are moved. */
+/** Remove an exterior paragraph break without reordering any run. The
+ * structural break itself has an unambiguous side relative to each group:
+ * after all controls in the left paragraph, before all in the right. */
 export function fieldParagraphJoinProtected(state:EditorState,left:EditorParagraphNode,right:EditorParagraphNode):boolean{
-  if(hasFieldMarkers(left)||hasFieldMarkers(right))return true;
   const story=editableStory(state);
   if(!story.paragraphs.some(hasFieldMarkers))return false;
-  if(!hasUnresolvedFieldStory(state))return false;
+  const marked=hasFieldMarkers(left)||hasFieldMarkers(right);
+  if(!marked&&!hasUnresolvedFieldStory(state))return false;
   if(state.trackChangesEnabled||getActiveZone(state)!=="main"||story.hasTables)return true;
   const index=story.paragraphs.indexOf(left);
   if(index<0||story.paragraphs[index+1]!==right)return true;
+  // Joining a marked paragraph under another paragraph's properties can
+  // change the cached result's inherited formatting. Only identical plain
+  // paragraph properties are qualified by this slice.
+  if(marked&&(!plainFieldParagraph(left)||!plainFieldParagraph(right)||
+    JSON.stringify(left.style??{})!==JSON.stringify(right.style??{})))return true;
   const end=getParagraphLength(left);
-  return fieldInlineRangeProtected(state,left,end,end)||
-    fieldInlineRangeProtected(state,right,0,0);
+  // A shared seam with controls on BOTH sides needs a third affinity slot;
+  // our before/after representation cannot faithfully place that caret.
+  if(hasFieldBoundaryAtOffset(left,end)&&hasFieldBoundaryAtOffset(right,0))return true;
+  return fieldInlineRangeProtected(state,left,end,end,"after-markers")||
+    fieldInlineRangeProtected(state,right,0,0,"before-markers");
+}
+export function fieldParagraphJoinAffinity(left:EditorParagraphNode,right:EditorParagraphNode):EditorPosition["fieldBoundaryAffinity"]{
+  if(hasFieldBoundaryAtOffset(left,getParagraphLength(left)))return "after-markers";
+  if(hasFieldBoundaryAtOffset(right,0))return "before-markers";
+  return undefined;
 }
 export function hasUnresolvedFieldStory(state:EditorState):boolean{
   // Keep the structural guard conservative, including fields spanning sections.
