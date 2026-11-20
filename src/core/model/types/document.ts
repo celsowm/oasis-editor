@@ -296,6 +296,8 @@ export interface EditorDocument {
    * substitution metadata. Preserved on import and re-emitted on export.
    */
   fontTable?: EditorFontInfo[];
+  /** Actual document lifecycle timestamps, epoch milliseconds. Missing means unknown. */
+  coreTimestamps?: { created?: number; saved?: number; printed?: number };
   metadata?: {
     title?: string;
     [key: string]: unknown;

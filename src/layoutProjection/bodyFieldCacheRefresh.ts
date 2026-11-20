@@ -126,7 +126,7 @@ function selectedCandidates(state:EditorState, paragraphs:EditorParagraphNode[],
 export function refreshBodyFieldCaches(
   original:EditorState, paginate:Paginate=defaultPaginate, scope:BodyFieldRefreshScope="all", temporal?:Readonly<TemporalFieldContext>,
 ):BodyFieldRefreshResult{
-  const temporalSnapshot=temporal?{...temporal}:undefined;
+  const temporalSnapshot=temporal||original.document.coreTimestamps?{...original.document.coreTimestamps,...temporal}:undefined;
   const originalLayout=paginate(original.document);
   const fallback=(status:BodyFieldRefreshResult["status"],passes:number):BodyFieldRefreshResult=>
     ({state:original,layout:originalLayout,status,passes,updatedFields:0});

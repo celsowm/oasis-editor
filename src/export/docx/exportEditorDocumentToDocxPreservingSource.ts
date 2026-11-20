@@ -2,6 +2,7 @@ import { auditOpaqueObjectPreservation, inspectDocxOpaqueObjects, OpaqueObjectPr
 import { planOpaqueStoryRelocation } from "@/ooxml/word/opaqueStoryRelocation.js";
 import { applyOpaqueStoryRelocation, expectedOpaqueRelocation } from "./opc/applyOpaqueStoryRelocation.js";
 import { planOpaqueDependencyPruning, applyOpaqueDependencyPruning } from "./opc/opaqueDependencyPruning.js";
+import { applyPackageCoreTimestamps } from "@/ooxml/opc/coreProperties.js";
 import type { EditorDocument, EditorDocxSourcePackage } from "@/core/model.js";
 import {
   exportEditorDocumentToDocx,
@@ -98,11 +99,11 @@ export async function exportEditorDocumentToDocxPreservingSource(
         const afterPruning = await captureDocxSourcePackage(pruned);
         const finalDiagnostics = auditOpaqueObjectPreservation(source, afterPruning, intents);
         if (finalDiagnostics.length) throw new OpaqueObjectPreservationError(finalDiagnostics);
-        return pruned;
+        return applyPackageCoreTimestamps(pruned,document);
       }
     }
   }
-  return output;
+  return applyPackageCoreTimestamps(output,document);
 }
 
 export async function exportEditorDocumentToDocxBlobPreservingSource(
