@@ -3,7 +3,7 @@ import type {
 } from "@/core/model.js";
 import { getActiveZone, getDocumentSections, getParagraphLength } from "@/core/model.js";
 import { createDocumentFieldContext } from "@/core/document/fieldDocumentContext.js";
-import { evaluateField } from "@/core/document/fieldEvaluation.js";
+import { evaluateField, type TemporalFieldContext } from "@/core/document/fieldEvaluation.js";
 import { indexFieldStory, isPlainFieldRun, type FieldProjectionCandidate } from "./fieldResultProjection.js";
 import { projectDocumentLayout } from "./documentLayout.js";
 
@@ -124,8 +124,9 @@ function selectedCandidates(state:EditorState, paragraphs:EditorParagraphNode[],
  * Repeated header/footer fields cannot have one universal PAGE result and
  * are excluded from this transaction. */
 export function refreshBodyFieldCaches(
-  original:EditorState, paginate:Paginate=defaultPaginate, scope:BodyFieldRefreshScope="all",
+  original:EditorState, paginate:Paginate=defaultPaginate, scope:BodyFieldRefreshScope="all", temporal?:Readonly<TemporalFieldContext>,
 ):BodyFieldRefreshResult{
+  const temporalSnapshot=temporal?{...temporal}:undefined;
   const originalLayout=paginate(original.document);
   const fallback=(status:BodyFieldRefreshResult["status"],passes:number):BodyFieldRefreshResult=>
     ({state:original,layout:originalLayout,status,passes,updatedFields:0});
@@ -185,7 +186,9 @@ export function refreshBodyFieldCaches(
           signature.push(JSON.stringify([key,run.text,pageIndex]));
           if(field.type==="PAGE"&&!field.format&&section.pageNumbering?.format&&section.pageNumbering.format!=="decimal")continue;
           if(field.type==="PAGEREF"&&currentSections.some(s=>s.pageNumbering?.format&&s.pageNumbering.format!=="decimal"))continue;
-          const result=evaluateField(field,fieldContext,run.text);
+          const language=run.styles?.language?.value?.toLowerCase();
+          const locale=language==="pt-br"?"pt-BR":language?.startsWith("en")?"en-US":temporalSnapshot?.locale;
+          const result=evaluateField(field,{...fieldContext,temporal:temporalSnapshot?{...temporalSnapshot,locale}:undefined},run.text);
           const start=offsets[runIndex]!,end=start+run.text.length;
           if(result.status!=="resolved"||!result.text.length||result.text.length>MAX_RESULT_LENGTH||
               !run.text.length||/[\r\n\t]/.test(result.text)||Array.from(result.text).length!==result.text.length)continue;

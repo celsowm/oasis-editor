@@ -22,7 +22,9 @@ export function buildEssentialsFields(
   const update = (scope: "all" | "selection"): void => {
     if (!canUpdateBodyFields()) return;
     options.resetTransactionGrouping();
-    options.applyTransactionalState(state => refreshBodyFieldCaches(state, undefined, scope).state);
+    // Capture a single instant for the entire convergent transaction.
+    const temporal={now:Date.now(),timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone};
+    options.applyTransactionalState(state => refreshBodyFieldCaches(state, undefined, scope, temporal).state);
     options.clearPreferredColumn();
     options.focusInput();
   };

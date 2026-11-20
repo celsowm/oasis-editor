@@ -1,23 +1,28 @@
 import type { PageNumberFormat } from "@/core/model.js";
 import { formatPageNumber, pageNumberFormatFromSwitch } from "@/core/format/pageNumberFormat.js";
 import { parseFieldInstruction } from "@/ooxml/word/fieldInstruction.js";
+import { formatTemporalPicture, supportsTemporalPicture, type TemporalFormattingOptions } from "@/core/format/temporalFieldFormat.js";
 import type { FieldStorySpan } from "./fieldStoryGraph.js";
 
 export type NumericFieldCommand = "PAGE" | "NUMPAGES" | "SECTION" | "SECTIONPAGES";
 export type ReferenceFieldCommand = "REF" | "PAGEREF";
+export type TemporalFieldCommand = "DATE" | "TIME" | "CREATEDATE" | "SAVEDATE" | "PRINTDATE";
 export type EvaluatableField =
+  | { type: TemporalFieldCommand; temporal: true; picture?: string }
   | { type: NumericFieldCommand; format?: PageNumberFormat }
   | { type: ReferenceFieldCommand; bookmark: string; hyperlink?: boolean };
 
 export type FieldDependency =
   | { kind: "page" | "document-pages" | "section" | "section-pages" }
-  | { kind: "bookmark-text" | "bookmark-page"; name: string };
+  | { kind: "bookmark-text" | "bookmark-page"; name: string }
+  | { kind: "clock" | "created" | "saved" | "printed" };
 
 /** All numbers are the caller's one-based display values, not array indexes.
  * No DOM, clock, mutable editor state or layout service is consulted here.
  * An absent value is unresolved; a bookmark resolver may return null only
  * when it has positively established that the target does not exist. */
 export interface FieldEvaluationContext {
+  temporal?: TemporalFieldContext;
   pageNumber?: number;
   totalPages?: number;
   sectionNumber?: number;
@@ -26,6 +31,18 @@ export interface FieldEvaluationContext {
   bookmarkPage?: (name: string) => number | null | undefined;
 }
 
+export interface TemporalFieldContext extends TemporalFormattingOptions {
+  now?: number;
+  created?: number;
+  saved?: number;
+  printed?: number;
+}
+const temporalCommands = new Set<string>(["DATE","TIME","CREATEDATE","SAVEDATE","PRINTDATE"]);
+const temporalRegistry = {
+  DATE:{key:"now",dependency:"clock"}, TIME:{key:"now",dependency:"clock"},
+  CREATEDATE:{key:"created",dependency:"created"}, SAVEDATE:{key:"saved",dependency:"saved"},
+  PRINTDATE:{key:"printed",dependency:"printed"},
+} as const;
 export type FieldEvaluation =
   | { status: "resolved"; text: string; dependencies: readonly FieldDependency[] }
   | { status: "preserved"; text: string; reason: "locked" | "unsupported" | "malformed" | "unresolved" | "structured"; dependencies: readonly FieldDependency[] }
@@ -49,6 +66,13 @@ export function compileFieldInstruction(raw: string): EvaluatableField | undefin
   const parsed = parseFieldInstruction(raw);
   if (parsed.error || !parsed.command) return undefined;
   const args = parsed.tokens.slice(1);
+  if (temporalCommands.has(parsed.command)) {
+    const type=parsed.command as TemporalFieldCommand;
+    if(!args.length)return {type,temporal:true};
+    if(args.length!==2||args[0]?.kind!=="switch"||args[0].value!=="@"||
+       args[1]?.kind!=="quoted"||!supportsTemporalPicture(args[1].value))return undefined;
+    return {type,temporal:true,picture:args[1].value};
+  }
   if (numericCommands.has(parsed.command)) {
     const type = parsed.command as NumericFieldCommand;
     if (args.length === 0) return { type };
@@ -85,6 +109,16 @@ export function evaluateField(
   locked = false,
 ): FieldEvaluation {
   if (locked) return preserved(cachedText, "locked");
+  if ("temporal" in field) {
+    const entry=temporalRegistry[field.type];
+    const dependencies:FieldDependency[]=[{kind:entry.dependency}];
+    const value=context.temporal?.[entry.key];
+    if(value===undefined)return preserved(cachedText,"unresolved",dependencies);
+    const picture=field.picture??(field.type==="TIME"?"HH:mm":context.temporal?.locale==="pt-BR"?"dd/MM/yyyy":"M/d/yyyy");
+    if(!supportsTemporalPicture(picture))return preserved(cachedText,"unsupported",dependencies);
+    const text=formatTemporalPicture(value,picture,context.temporal);
+    return text===undefined?preserved(cachedText,"unresolved",dependencies):{status:"resolved",text,dependencies};
+  }
   if ("bookmark" in field) {
     const dependencies: FieldDependency[] = [{ kind: field.type === "REF" ? "bookmark-text" : "bookmark-page", name: field.bookmark }];
     const value = field.type === "REF" ? context.bookmarkText?.(field.bookmark) : context.bookmarkPage?.(field.bookmark);

@@ -46,6 +46,8 @@ export function indexFieldStory(blocks: readonly EditorBlockNode[], out: Map<str
       const { field } = run;
       if (field.type === "PAGE" || field.type === "NUMPAGES") {
         add(p, { runIndex, field: { type: field.type, format: field.format } });
+      } else if (field.type === "DATE") {
+        add(p, { runIndex, field: { type:"DATE", temporal:true, picture:field.dateFormat } });
       } else if ((field.type === "REF" || field.type === "PAGEREF") && field.bookmark) {
         add(p, { runIndex, field: { type: field.type, bookmark: field.bookmark } });
       }
