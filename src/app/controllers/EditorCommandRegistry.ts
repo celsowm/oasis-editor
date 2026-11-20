@@ -231,6 +231,17 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     },
   },
   {
+    id: "updateSelectedFields",
+    command: "updateSelectedFields",
+    key: "F9",
+    execute: (deps): boolean => {
+      if (!deps.executeCommand) return false;
+      if (deps.canExecuteCommand?.("updateSelectedFields") !== false)
+        deps.executeCommand("updateSelectedFields");
+      return true;
+    },
+  },
+  {
     id: "repeatLastAction",
     command: "repeatLastAction",
     key: "F4",

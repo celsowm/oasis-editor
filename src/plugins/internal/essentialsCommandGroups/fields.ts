@@ -14,7 +14,10 @@ export function buildFieldsCommands({
   return {
     updateBodyFields: actionCommand("updateBodyFields", (): void => {
       fields.updateBodyFields?.();
-    }, () => ({ isEnabled: !!fields.updateBodyFields })),
+    }, () => ({ isEnabled: !!fields.updateBodyFields && (fields.canUpdateBodyFields?.() ?? true) })),
+    updateSelectedFields: actionCommand("updateSelectedFields", (): void => {
+      fields.updateSelectedFields?.();
+    }, () => ({ isEnabled: !!fields.updateSelectedFields && (fields.canUpdateBodyFields?.() ?? true) })),
     insertDateField: actionCommand("insertDateField", (): void => {
       fields.insertDate();
     }),

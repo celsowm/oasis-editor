@@ -78,6 +78,7 @@ const GROUP_LABEL_KEYS: Record<string, TranslationKey> = {
   editing: "ribbon.group.editing",
   pages: "ribbon.group.pages",
   tableOfContents: "ribbon.group.tableOfContents",
+  fields: "ribbon.group.fields",
   tracking: "ribbon.group.tracking",
   comments: "ribbon.group.comments",
   changes: "ribbon.group.changes",
@@ -208,6 +209,7 @@ const RIBBON_GROUP_ORDER: Partial<Record<RibbonTabId, Record<string, number>>> =
     references: {
       tableOfContents: 5,
       footnotes: 10,
+      fields: 15,
     },
     review: {
       tracking: 10,

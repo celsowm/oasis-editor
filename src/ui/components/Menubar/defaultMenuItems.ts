@@ -561,6 +561,8 @@ export const defaultMenuItems: MenuItem[] = [
   },
 
   // Tools
+  { id: "tools_update_selected_fields", path: "Tools/Update Selected Fields", labelKey: "menu.tools.updateSelectedFields", command: "updateSelectedFields", icon: "refresh-cw", shortcut: "F9" },
+  { id: "tools_update_body_fields", path: "Tools/Update All Body Fields", labelKey: "menu.tools.updateBodyFields", command: "updateBodyFields", icon: "refresh-cw" },
   {
     id: "tools_wordcount",
     path: "Tools/Word count",

@@ -888,6 +888,17 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     ribbonSize: "large",
   });
 
+  items.push({
+    type: "button",
+    id: "editor-toolbar-update-body-fields",
+    testId: "editor-toolbar-update-body-fields",
+    iconName: "refresh-cw",
+    labelKey: "ribbon.updateBodyFields",
+    tooltipKey: "menu.tools.updateBodyFields",
+    command: "updateBodyFields",
+    ribbonSize: "large",
+  });
+
   // --- Review: reuse existing tracked-revision commands ---
   items.push({
     type: "toggle",

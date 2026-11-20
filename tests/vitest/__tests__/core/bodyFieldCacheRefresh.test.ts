@@ -92,3 +92,39 @@ describe("explicit numeric cache DOCX preservation",()=>{
     expect(result.runs.filter(r=>r.kind==="field").map(r=>r.text)).toEqual(["10","12","7"]);
   });
 });
+
+describe("selection-scoped field refresh",()=>{
+  it("updates the caret's field without modifying an unrelated PAGE cache",()=>{
+    const initial=fixture();
+    const result=refreshBodyFieldCaches(initial,undefined,"selection");
+    expect(result.status).toBe("updated");
+    expect(result.updatedFields).toBe(1);
+    expect(paragraph(result.state).runs.map(r=>r.text)).toEqual(["9"," ","Reference"," end"]);
+    expect(result.state.selection.focus.offset).toBe(9);
+    expect(result.state.document.bookmarks?.items.tail?.start?.offset).toBe(11);
+  });
+  it("updates both fields in a reversed range and ignores a plain-text or stale caret",()=>{
+    const initial=fixture();
+    const selection={anchor:{paragraphId:"p",runId:"tail",offset:0},focus:{paragraphId:"p",runId:"page",offset:0}};
+    const result=refreshBodyFieldCaches({...initial,selection},undefined,"selection");
+    expect(result.updatedFields).toBe(2);
+    for(const runId of ["tail","missing"]){
+      const pos={paragraphId:"p",runId,offset:1};
+      const state={...initial,selection:{anchor:pos,focus:pos}};
+      expect(refreshBodyFieldCaches(state,undefined,"selection").state).toBe(state);
+    }
+  });
+  it("allows an interior selected-field caret while preserving its local offset",()=>{
+    const initial=fixture();
+    const state={...initial,document:{...initial.document,sections:initial.document.sections!.map(s=>({...s,blocks:s.blocks.map(b=>b.id==="p"?{...paragraph(initial),runs:paragraph(initial).runs.map(r=>r.id==="ref"?{...r,text:"xx"}:r)}:b)}))}};
+    // Move tail anchors by one because the synthetic fixture changed the cache.
+    const doc=state.document;
+    const tail=doc.bookmarks!.items.tail!;
+    const comment=doc.comments!.items.c!;
+    const valid={...state,document:{...doc,bookmarks:{...doc.bookmarks!,items:{...doc.bookmarks!.items,tail:{...tail,start:{...tail.start!,offset:4},end:{...tail.end!,offset:8}}}},comments:{...doc.comments!,items:{c:{...comment,start:{...comment.start!,offset:4},end:{...comment.end!,offset:8}}}}}};
+    const result=refreshBodyFieldCaches(valid,undefined,"selection");
+    expect(result.status).toBe("updated");
+    expect(result.state.selection.focus.offset).toBe(1);
+    expect(paragraph(result.state).runs[2]!.text).toBe("Reference");
+  });
+});

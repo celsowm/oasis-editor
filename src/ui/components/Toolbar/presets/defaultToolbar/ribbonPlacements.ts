@@ -58,6 +58,7 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
     group: "tableOfContents",
     row: 1,
   },
+  "editor-toolbar-update-body-fields": { tab: "references", group: "fields", row: 1 },
   "editor-toolbar-update-toc": {
     tab: "references",
     group: "tableOfContents",

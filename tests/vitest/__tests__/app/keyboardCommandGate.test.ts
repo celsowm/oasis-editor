@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { EditorCommandRegistry } from "@/app/controllers/EditorCommandRegistry.js";
+import { EditorCommandRegistry, defaultEditorKeyBindings } from "@/app/controllers/EditorCommandRegistry.js";
 import type { EditorKeyboardDeps } from "@/app/controllers/EditorKeyboardDeps.js";
 
 function keyEvent(): KeyboardEvent {
@@ -79,4 +79,15 @@ describe("keyboard command dispatch", () => {
 
     expect(registry.execute(keyEvent(), deps)).toBe(false);
   });
+});
+
+it("dispatches F9 to selected fields and honors the command gate",()=>{
+  const registry=new EditorCommandRegistry();
+  defaultEditorKeyBindings.forEach(binding=>registry.register(binding));
+  const executeCommand=vi.fn();
+  const event={...keyEvent(),key:"F9",ctrlKey:false} as KeyboardEvent;
+  expect(registry.execute(event,deps,{executeCommand,canExecuteCommand:()=>true})).toBe(true);
+  expect(executeCommand).toHaveBeenCalledExactlyOnceWith("updateSelectedFields");
+  expect(registry.execute(event,deps,{executeCommand,canExecuteCommand:()=>false})).toBe(true);
+  expect(executeCommand).toHaveBeenCalledTimes(1);
 });

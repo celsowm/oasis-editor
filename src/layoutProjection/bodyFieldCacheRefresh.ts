@@ -7,6 +7,7 @@ import { evaluateField } from "@/core/document/fieldEvaluation.js";
 import { indexFieldStory, isPlainFieldRun, type FieldProjectionCandidate } from "./fieldResultProjection.js";
 import { projectDocumentLayout } from "./documentLayout.js";
 
+export type BodyFieldRefreshScope = "all" | "selection";
 const MAX_PASSES = 6;
 const MAX_RESULT_LENGTH = 65536;
 type Paginate = (document: EditorDocument) => EditorLayoutDocument;
@@ -47,13 +48,15 @@ function mapRegistry<R extends RangeRegistry>(registry:R|undefined,edits:Map<str
   }
   return changed?{...registry,items}:registry;
 }
-function mapPosition(position:EditorPosition,edits:Map<string,ParagraphEdit>):EditorPosition{
+function mapPosition(position:EditorPosition,edits:Map<string,ParagraphEdit>,scope:BodyFieldRefreshScope):EditorPosition{
   const change=edits.get(position.paragraphId);
   const edit=change?.edits.find(e=>e.runId===position.runId);
   if(!edit)return position;
   // Positions at the run's end follow the new end; interior positions were
   // rejected. Adjacent positions keep stable run ids and local offsets.
-  return position.offset===edit.end-edit.start ? {...position,offset:edit.text.length}:position;
+  const offset=position.offset===edit.end-edit.start?edit.text.length:
+    scope==="selection"?Math.min(position.offset,edit.text.length):position.offset;
+  return offset===position.offset?position:{...position,offset};
 }
 function safeParagraph(p:EditorParagraphNode):boolean{
   return !p.list&&!p.dropCap&&!p.sdtWrappers?.length&&!p.numberingRevision&&!p.style?.bidi&&
@@ -74,6 +77,46 @@ function collectAnchors(state:EditorState):Map<string,number[]>{
   return result;
 }
 
+/** Freeze the scope to stable run identities before the first pagination.
+ * Validate raw positions: a stale selection must not be clamped to unrelated
+ * fields. Noncollapsed ranges use half-open intersection; a collapsed caret
+ * selects the result run only, not an adjacent field at an ambiguous seam. */
+function selectedCandidates(state:EditorState, paragraphs:EditorParagraphNode[], candidates:Map<string,FieldProjectionCandidate[]>):Map<string,FieldProjectionCandidate[]>{
+  const point=(pos:EditorPosition)=>{
+    const index=paragraphs.findIndex(p=>p.id===pos.paragraphId);
+    if(index<0)return undefined;
+    const p=paragraphs[index]!;
+    const runIndex=p.runs.findIndex(r=>r.id===pos.runId);
+    if(runIndex<0||!Number.isInteger(pos.offset)||pos.offset<0||pos.offset>p.runs[runIndex]!.text.length)return undefined;
+    return {index,runIndex,offset:p.runs.slice(0,runIndex).reduce((n,r)=>n+r.text.length,0)+pos.offset,affinity:pos.fieldBoundaryAffinity};
+  };
+  const a=point(state.selection.anchor),b=point(state.selection.focus);
+  const selected=new Map<string,FieldProjectionCandidate[]>();
+  if(!a||!b)return selected;
+  const [lo,hi]=a.index<b.index||a.index===b.index&&a.offset<=b.offset?[a,b]:[b,a];
+  const collapsed=lo.index===hi.index&&lo.offset===hi.offset;
+  if(collapsed&&(a.runIndex!==b.runIndex||a.affinity!==b.affinity))return selected;
+  for(let i=lo.index;i<=hi.index;i++){
+    const p=paragraphs[i]!;
+    const group=candidates.get(p.id);
+    if(!group)continue;
+    let cursor=0;
+    const offsets=p.runs.map(r=>{const start=cursor;cursor+=r.text.length;return start;});
+    const matched=group.filter(c=>{
+      const start=offsets[c.runIndex]!,end=start+p.runs[c.runIndex]!.text.length;
+      if(start===end)return false;
+      if(collapsed){
+        if(lo.affinity==="before-markers"&&lo.offset===start||lo.affinity==="after-markers"&&lo.offset===end)return false;
+        return lo.offset>start&&lo.offset<end ||
+          lo.runIndex===c.runIndex&&lo.offset>=start&&lo.offset<=end;
+      }
+      return start<(i===hi.index?hi.offset:cursor)&&end>(i===lo.index?lo.offset:0);
+    });
+    if(matched.length)selected.set(p.id,matched);
+  }
+  return selected;
+}
+
 /** A dry, all-or-nothing cache refresh. Each pass measures the changed model,
  * then reevaluates against its new physical pages; only a fixed point is
  * returned. The original state is returned on cycles, exhausted passes or
@@ -81,7 +124,7 @@ function collectAnchors(state:EditorState):Map<string,number[]>{
  * Repeated header/footer fields cannot have one universal PAGE result and
  * are excluded from this transaction. */
 export function refreshBodyFieldCaches(
-  original:EditorState, paginate:Paginate=defaultPaginate,
+  original:EditorState, paginate:Paginate=defaultPaginate, scope:BodyFieldRefreshScope="all",
 ):BodyFieldRefreshResult{
   const originalLayout=paginate(original.document);
   const fallback=(status:BodyFieldRefreshResult["status"],passes:number):BodyFieldRefreshResult=>
@@ -94,8 +137,9 @@ export function refreshBodyFieldCaches(
       sections.some((s,i)=>i>0&&s.breakType&&s.breakType!=="nextPage")||
       blocks.some(b=>b.type!=="paragraph")||
       new Set(blocks.map(b=>b.id)).size!==blocks.length)return fallback("unsupported",0);
-  const candidates=new Map<string,FieldProjectionCandidate[]>();
+  let candidates=new Map<string,FieldProjectionCandidate[]>();
   indexFieldStory(blocks,candidates);
+  if(scope==="selection")candidates=selectedCandidates(original,blocks as EditorParagraphNode[],candidates);
   if(!candidates.size)return fallback("unchanged",0);
   let state=original,layout=originalLayout;
   const touched=new Set<string>();
@@ -147,7 +191,7 @@ export function refreshBodyFieldCaches(
               !run.text.length||/[\r\n\t]/.test(result.text)||Array.from(result.text).length!==result.text.length)continue;
           if(result.text!==run.text&&(
             (anchors.get(p.id)??[]).some(o=>!Number.isInteger(o)||o<0||o>offset||(o>start&&o<end))||
-            [state.selection.anchor,state.selection.focus].some(pos=>pos.paragraphId===p.id&&pos.runId===run.id&&
+            scope==="all"&&[state.selection.anchor,state.selection.focus].some(pos=>pos.paragraphId===p.id&&pos.runId===run.id&&
               pos.offset!==0&&pos.offset!==run.text.length)))continue;
           qualified.add(key);
           if(result.text===run.text)continue;
@@ -175,8 +219,8 @@ export function refreshBodyFieldCaches(
       comments:mapRegistry(state.document.comments,edits),
     };
     state={...state,document,selection:{
-      anchor:mapPosition(state.selection.anchor,edits),
-      focus:mapPosition(state.selection.focus,edits),
+      anchor:mapPosition(state.selection.anchor,edits,scope),
+      focus:mapPosition(state.selection.focus,edits,scope),
     }};
     layout=paginate(document);
   }

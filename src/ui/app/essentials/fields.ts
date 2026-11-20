@@ -17,15 +17,19 @@ import type { CreateEditorEssentialsPluginOptions } from "./types.js";
 export function buildEssentialsFields(
   options: CreateEditorEssentialsPluginOptions,
 ): EssentialsFieldsCapability {
+  const canUpdateBodyFields = (): boolean => !options.isReadOnly() &&
+    getActiveZone(options.state()) === "main" && !options.state().trackChangesEnabled;
+  const update = (scope: "all" | "selection"): void => {
+    if (!canUpdateBodyFields()) return;
+    options.resetTransactionGrouping();
+    options.applyTransactionalState(state => refreshBodyFieldCaches(state, undefined, scope).state);
+    options.clearPreferredColumn();
+    options.focusInput();
+  };
   return {
-    updateBodyFields: (): void => {
-      if (options.isReadOnly() || getActiveZone(options.state()) !== "main" ||
-          options.state().trackChangesEnabled) return;
-      options.resetTransactionGrouping();
-      options.applyTransactionalState(state => refreshBodyFieldCaches(state).state);
-      options.clearPreferredColumn();
-      options.focusInput();
-    },
+    canUpdateBodyFields,
+    updateBodyFields: () => update("all"),
+    updateSelectedFields: () => update("selection"),
     insertDate: (): void => {
       options.applyTransactionalState((state) => insertDateField(state));
       options.focusInput();

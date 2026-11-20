@@ -600,6 +600,8 @@ export interface EssentialsBookmarkCapability {
 export interface EssentialsFieldsCapability {
   /** Explicit bounded refresh of eligible main-body fields. */
   updateBodyFields?: () => void;
+  updateSelectedFields?: () => void;
+  canUpdateBodyFields?: () => boolean;
   /** Insert a DATE field at the active caret with the current date. */
   insertDate: () => void;
   /** Insert the current date as plain text (WordCraft `insert.dateTime`, update:false). */
