@@ -15,6 +15,8 @@ import {
   getRunFieldChar,
   getRunFieldInstruction,
 } from "@/core/model.js";
+import { buildFieldStoryGraph } from "./fieldStoryGraph.js";
+import { parseFieldInstruction } from "@/ooxml/word/fieldInstruction.js";
 import { assertNever } from "@/core/assertNever.js";
 import { cloneBlocks, cloneParagraph, cloneParagraphs } from "./clone.js";
 
@@ -120,11 +122,32 @@ export function updateImageCaptionParagraph(
   return next;
 }
 
+function canonicalFigureCaption(p:EditorParagraphNode):boolean{
+  if(!isImageCaptionParagraph(p))return false;
+  const graph=buildFieldStoryGraph([p]);
+  if(graph.diagnostics.length||graph.spans.length!==1)return false;
+  const s=graph.spans[0]!;
+  return !!s.end&&!!s.separator&&!s.beginMarker.fieldLock&&
+    s.code.length===1&&s.code[0]?.kind==="instruction"&&
+    /^\s*SEQ\s+Figure\s+\\\*\s+ARABIC\s*$/i.test(s.code[0].raw)&&
+    s.result.length===1&&s.result[0]?.kind==="run"&&
+    p.runs[s.result[0].point.runIndex]?.kind==="text"&&
+    !p.runs.some(r=>r.revision||r.revisionRangeMarker||r.sdtWrappers?.length);
+}
+function hasNoncanonicalFigure(paragraphs:EditorParagraphNode[]):boolean{
+  const graph=buildFieldStoryGraph(paragraphs);
+  if(graph.diagnostics.length)return true;
+  return graph.spans.some(s=>{
+    const parsed=parseFieldInstruction(s.code.map(p=>p.kind==="instruction"?p.raw:"").join(""));
+    return parsed.command==="SEQ"&&parsed.tokens[1]?.value.toLowerCase()==="figure"&&
+      !canonicalFigureCaption(paragraphs[s.begin.paragraphIndex]!);
+  });
+}
 function renumberCaptionParagraph(
   paragraph: EditorParagraphNode,
   sequenceNumber: number,
 ): EditorParagraphNode {
-  if (!isImageCaptionParagraph(paragraph)) {
+  if (!canonicalFigureCaption(paragraph)) {
     return cloneParagraph(paragraph);
   }
 
@@ -162,6 +185,7 @@ function renumberCaptionParagraph(
 export function renumberImageCaptionParagraphs(
   paragraphs: EditorParagraphNode[],
 ): EditorParagraphNode[] {
+  if(hasNoncanonicalFigure(paragraphs))return cloneParagraphs(paragraphs);
   let nextSequence = 1;
   return paragraphs.map((paragraph): EditorParagraphNode => {
     if (!isImageCaptionParagraph(paragraph)) {
@@ -201,6 +225,13 @@ function renumberBlocks(
 export function renumberImageCaptionsInDocument(
   document: EditorDocument,
 ): EditorDocument {
+  const body:EditorParagraphNode[]=[];
+  const visit=(blocks:EditorBlockNode[]):void=>{
+    for(const b of blocks)if(b.type==="paragraph")body.push(b);
+    else for(const row of b.rows)for(const cell of row.cells)visit(cell.blocks);
+  };
+  for(const section of getDocumentSections(document))visit(section.blocks);
+  if(hasNoncanonicalFigure(body))return document;
   const sequence = { next: 1 };
   const sections = getDocumentSections(document).map(
     (section): EditorSection => ({

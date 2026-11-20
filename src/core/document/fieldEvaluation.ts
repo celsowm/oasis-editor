@@ -7,7 +7,16 @@ import type { FieldStorySpan } from "./fieldStoryGraph.js";
 export type NumericFieldCommand = "PAGE" | "NUMPAGES" | "SECTION" | "SECTIONPAGES";
 export type ReferenceFieldCommand = "REF" | "PAGEREF";
 export type TemporalFieldCommand = "DATE" | "TIME" | "CREATEDATE" | "SAVEDATE" | "PRINTDATE";
+export interface SequenceField {
+  type:"SEQ";
+  identifier:string;
+  operation:"next"|"repeat"|"reset";
+  reset?:number;
+  headingLevel?:number;
+  format?:PageNumberFormat;
+}
 export type EvaluatableField =
+  | SequenceField
   | { type: TemporalFieldCommand; temporal: true; picture?: string }
   | { type: NumericFieldCommand; format?: PageNumberFormat }
   | { type: ReferenceFieldCommand; bookmark: string; hyperlink?: boolean };
@@ -15,7 +24,8 @@ export type EvaluatableField =
 export type FieldDependency =
   | { kind: "page" | "document-pages" | "section" | "section-pages" }
   | { kind: "bookmark-text" | "bookmark-page"; name: string }
-  | { kind: "clock" | "created" | "saved" | "printed" };
+  | { kind: "clock" | "created" | "saved" | "printed" }
+  | { kind:"sequence"; name:string };
 
 /** All numbers are the caller's one-based display values, not array indexes.
  * No DOM, clock, mutable editor state or layout service is consulted here.
@@ -23,6 +33,8 @@ export type FieldDependency =
  * when it has positively established that the target does not exist. */
 export interface FieldEvaluationContext {
   temporal?: TemporalFieldContext;
+  /** Precomputed value for this exact SEQ occurrence, never a mutable counter. */
+  sequenceValue?: number;
   pageNumber?: number;
   totalPages?: number;
   sectionNumber?: number;
@@ -66,6 +78,41 @@ export function compileFieldInstruction(raw: string): EvaluatableField | undefin
   const parsed = parseFieldInstruction(raw);
   if (parsed.error || !parsed.command) return undefined;
   const args = parsed.tokens.slice(1);
+  if(parsed.command==="SEQ"){
+    const identifier=args[0];
+    if(!identifier||identifier.kind!=="word"||!/^\p{L}[\p{L}\p{N}_]{0,39}$/u.test(identifier.value))return undefined;
+    const field:SequenceField={type:"SEQ",identifier:identifier.value.toLowerCase(),operation:"next"};
+    const seen=new Set<string>();
+    for(let i=1;i<args.length;i++){
+      const token=args[i]!;
+      if(token.kind!=="switch")return undefined;
+      const name=token.value.toLowerCase();
+      if(seen.has(name))return undefined;
+      seen.add(name);
+      if(name==="n"||name==="c"||name==="r"){
+        if(["n","c","r"].filter(s=>seen.has(s)).length>1)return undefined;
+        field.operation=name==="c"?"repeat":name==="r"?"reset":"next";
+        if(name==="r"){
+          const value=args[++i];
+          if(value?.kind!=="word"||!/^\d{1,7}$/.test(value.value)||!validNumber(Number(value.value)))return undefined;
+          field.reset=Number(value.value);
+        }
+      }else if(name==="s"){
+        const value=args[++i];
+        if(value?.kind!=="word"||! /^[1-9]$/.test(value.value))return undefined;
+        field.headingLevel=Number(value.value);
+      }else if(name==="*"){
+        const value=args[++i];
+        if(value?.kind!=="word")return undefined;
+        const format=value.value.toUpperCase()==="ARABIC"?"decimal":pageNumberFormatFromSwitch(value.value);
+        if(!format)return undefined;
+        field.format=format;
+      }else return undefined;
+    }
+    // Combined reset/repeat and chapter reset semantics are not qualified.
+    if(field.headingLevel!==undefined&&field.operation!=="next")return undefined;
+    return field;
+  }
   if (temporalCommands.has(parsed.command)) {
     const type=parsed.command as TemporalFieldCommand;
     if(!args.length)return {type,temporal:true};
@@ -109,6 +156,11 @@ export function evaluateField(
   locked = false,
 ): FieldEvaluation {
   if (locked) return preserved(cachedText, "locked");
+  if(field.type==="SEQ"){
+    const dependencies:FieldDependency[]=[{kind:"sequence",name:field.identifier}];
+    if(!validNumber(context.sequenceValue))return preserved(cachedText,"unresolved",dependencies);
+    return {status:"resolved",text:formatPageNumber(context.sequenceValue,field.format),dependencies};
+  }
   if ("temporal" in field) {
     const entry=temporalRegistry[field.type];
     const dependencies:FieldDependency[]=[{kind:entry.dependency}];

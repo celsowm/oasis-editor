@@ -3,6 +3,7 @@ import type {
 } from "@/core/model.js";
 import { getActiveZone, getDocumentSections, getParagraphLength } from "@/core/model.js";
 import { createDocumentFieldContext } from "@/core/document/fieldDocumentContext.js";
+import { resolveBodySequences, sequenceOccurrenceKey } from "@/core/document/sequenceFields.js";
 import { evaluateField, type TemporalFieldContext } from "@/core/document/fieldEvaluation.js";
 import { indexFieldStory, isPlainFieldRun, type FieldProjectionCandidate } from "./fieldResultProjection.js";
 import { projectDocumentLayout } from "./documentLayout.js";
@@ -142,6 +143,7 @@ export function refreshBodyFieldCaches(
   indexFieldStory(blocks,candidates);
   if(scope==="selection")candidates=selectedCandidates(original,blocks as EditorParagraphNode[],candidates);
   if(!candidates.size)return fallback("unchanged",0);
+  const sequenceValues=resolveBodySequences(original.document);
   let state=original,layout=originalLayout;
   const touched=new Set<string>();
   const signatures=new Set<string>();
@@ -188,7 +190,7 @@ export function refreshBodyFieldCaches(
           if(field.type==="PAGEREF"&&currentSections.some(s=>s.pageNumbering?.format&&s.pageNumbering.format!=="decimal"))continue;
           const language=run.styles?.language?.value?.toLowerCase();
           const locale=language==="pt-br"?"pt-BR":language?.startsWith("en")?"en-US":temporalSnapshot?.locale;
-          const result=evaluateField(field,{...fieldContext,temporal:temporalSnapshot?{...temporalSnapshot,locale}:undefined},run.text);
+          const result=evaluateField(field,{...fieldContext,sequenceValue:sequenceValues.get(sequenceOccurrenceKey(p.id,runIndex)),temporal:temporalSnapshot?{...temporalSnapshot,locale}:undefined},run.text);
           const start=offsets[runIndex]!,end=start+run.text.length;
           if(result.status!=="resolved"||!result.text.length||result.text.length>MAX_RESULT_LENGTH||
               !run.text.length||/[\r\n\t]/.test(result.text)||Array.from(result.text).length!==result.text.length)continue;
