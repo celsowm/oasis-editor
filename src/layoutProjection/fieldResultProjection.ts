@@ -5,6 +5,7 @@ import type {
 import { getDocumentSections, getParagraphLength } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
 import { createDocumentFieldContext } from "@/core/document/fieldDocumentContext.js";
+import { createStyleRefIndex } from "@/core/document/styleReference.js";
 import { buildFieldStoryGraph } from "@/core/document/fieldStoryGraph.js";
 import { compileFieldInstruction, evaluateField, type EvaluatableField } from "@/core/document/fieldEvaluation.js";
 import { projectParagraphLayout, type LayoutProjectionContext } from "./paragraphPagination.js";
@@ -85,6 +86,7 @@ export function refreshProjectedFields(
   }
   if (!candidates.size) return layout;
   const index = createDocumentFieldContext(document, layout);
+  const styleRefs = createStyleRefIndex(document,layout);
   let changed = false;
   const pages = layout.pages.map(page => {
     const fieldContext = index.forPage(page.index);
@@ -126,7 +128,9 @@ export function refreshProjectedFields(
           // PAGEREF formatted labels and chapter numbering remain separate.
           if (field.type === "PAGEREF" && sections.some(s => s.pageNumbering?.format && s.pageNumbering.format !== "decimal")) continue;
           const previous = texts[runIndex]!;
-          const evaluated = evaluateField(field, fieldContext, previous);
+          const evaluated = evaluateField(field,{...fieldContext,styleRefText:body
+            ? (name,last)=>styleRefs.forBody(p.id,name,last)
+            : (name,last)=>styleRefs.forPage(page.index,name,last)}, previous);
           if (evaluated.status !== "resolved" || evaluated.text === previous ||
               evaluated.text.length !== p.runs[runIndex]!.text.length ||
               /[\r\n\t]/.test(evaluated.text) ||

@@ -19,13 +19,15 @@ export type EvaluatableField =
   | SequenceField
   | { type: TemporalFieldCommand; temporal: true; picture?: string }
   | { type: NumericFieldCommand; format?: PageNumberFormat }
-  | { type: ReferenceFieldCommand; bookmark: string; hyperlink?: boolean };
+  | { type: ReferenceFieldCommand; bookmark: string; hyperlink?: boolean }
+  | { type:"STYLEREF"; style:string; lastOnPage:boolean };
 
 export type FieldDependency =
   | { kind: "page" | "document-pages" | "section" | "section-pages" }
   | { kind: "bookmark-text" | "bookmark-page"; name: string }
   | { kind: "clock" | "created" | "saved" | "printed" }
-  | { kind:"sequence"; name:string };
+  | { kind:"sequence"; name:string }
+  | { kind:"style-text"; name:string; lastOnPage:boolean };
 
 /** All numbers are the caller's one-based display values, not array indexes.
  * No DOM, clock, mutable editor state or layout service is consulted here.
@@ -41,6 +43,8 @@ export interface FieldEvaluationContext {
   sectionPages?: number;
   bookmarkText?: (name: string) => string | null | undefined;
   bookmarkPage?: (name: string) => number | null | undefined;
+  /** Exact resolved style text for a body occurrence or repeated page story. */
+  styleRefText?: (name:string,lastOnPage:boolean)=>string|undefined;
 }
 
 export interface TemporalFieldContext extends TemporalFormattingOptions {
@@ -78,6 +82,16 @@ export function compileFieldInstruction(raw: string): EvaluatableField | undefin
   const parsed = parseFieldInstruction(raw);
   if (parsed.error || !parsed.command) return undefined;
   const args = parsed.tokens.slice(1);
+  if(parsed.command==="STYLEREF"){
+    const name=args[0];
+    if(!name||(name.kind!=="quoted"&&name.kind!=="word")||
+       !name.value.trim()||name.value.length>128||
+       /[\r\n\t\\]/.test(name.value))return undefined;
+    if(args.length===1)return {type:"STYLEREF",style:name.value,lastOnPage:false};
+    if(args.length!==2||args[1]?.kind!=="switch"||args[1].value.toLowerCase()!=="l")
+      return undefined;
+    return {type:"STYLEREF",style:name.value,lastOnPage:true};
+  }
   if(parsed.command==="SEQ"){
     const identifier=args[0];
     if(!identifier||identifier.kind!=="word"||!/^\p{L}[\p{L}\p{N}_]{0,39}$/u.test(identifier.value))return undefined;
@@ -156,6 +170,13 @@ export function evaluateField(
   locked = false,
 ): FieldEvaluation {
   if (locked) return preserved(cachedText, "locked");
+  if(field.type==="STYLEREF"){
+    const dependencies:FieldDependency[]=[{kind:"style-text",name:field.style,lastOnPage:field.lastOnPage}];
+    const result=context.styleRefText?.(field.style,field.lastOnPage);
+    return typeof result==="string"&&result.length>0
+      ? {status:"resolved",text:result,dependencies}
+      : preserved(cachedText,"unresolved",dependencies);
+  }
   if(field.type==="SEQ"){
     const dependencies:FieldDependency[]=[{kind:"sequence",name:field.identifier}];
     if(!validNumber(context.sequenceValue))return preserved(cachedText,"unresolved",dependencies);
