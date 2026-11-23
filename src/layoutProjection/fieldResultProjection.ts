@@ -135,7 +135,7 @@ export function refreshProjectedFields(
                 locale:p.runs[runIndex]?.styles?.language?.value?.toLowerCase()==="pt-br"?"pt-BR":"en-US",
               })
             : (name,last,output)=>styleRefs.forPage(page.index,name,last,{
-                output,zone:story,
+                output,zone:story==="footer"?"footer":"header",
                 locale:p.runs[runIndex]?.styles?.language?.value?.toLowerCase()==="pt-br"?"pt-BR":"en-US",
               })}, previous);
           if (evaluated.status !== "resolved" || evaluated.text === previous ||
