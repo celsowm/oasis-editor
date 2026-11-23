@@ -15068,16 +15068,28 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 		if ("STYLEREF" === t.command) {
 			const e = r[0];
 			if (!e || "quoted" !== e.kind && "word" !== e.kind || !e.value.trim() || e.value.length > 128 || /[\r\n\t\\]/.test(e.value)) return;
-			if (1 === r.length) return {
+			let t, n = !1;
+			for (const o of r.slice(1)) {
+				if ("switch" !== o.kind) return;
+				const e = o.value.toLowerCase();
+				if ("l" === e) {
+					if (n) return;
+					n = !0;
+				} else {
+					if ("n" !== e && "p" !== e) return;
+					if (t) return;
+					t = "n" === e ? "number" : "position";
+				}
+			}
+			return t ? {
 				type: "STYLEREF",
 				style: e.value,
-				lastOnPage: !1
-			};
-			if (2 !== r.length || "switch" !== r[1]?.kind || "l" !== r[1].value.toLowerCase()) return;
-			return {
+				lastOnPage: n,
+				output: t
+			} : {
 				type: "STYLEREF",
 				style: e.value,
-				lastOnPage: !0
+				lastOnPage: n
 			};
 		}
 		if ("SEQ" === t.command) {
@@ -15179,7 +15191,7 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 				kind: "style-text",
 				name: e.style,
 				lastOnPage: e.lastOnPage
-			}], o = t.styleRefText?.(e.style, e.lastOnPage);
+			}], o = t.styleRefText?.(e.style, e.lastOnPage, e.output ?? "text");
 			return "string" == typeof o && o.length > 0 ? {
 				status: "resolved",
 				text: o,

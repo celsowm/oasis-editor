@@ -1,1 +1,0 @@
-import{n as s,t as o}from"./OasisEditorApp-CZihHu3r.js";export{s as captureDocxSourcePackage};
