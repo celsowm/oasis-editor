@@ -84,7 +84,7 @@ describe("STYLEREF E3B — source-ordered character styles and numbering",()=>{
     expect(page.headerBlocks?.[0]?.layout?.text).toBe("below");
     expect(page.footerBlocks?.[0]?.layout?.text).toBe("above");
   });
-  it("preserves ambiguous custom styles and refuses variable-length shared header updates",()=>{
+  it("preserves ambiguous custom styles and projects certified single-line shared header updates",()=>{
     const p:EditorParagraphNode={id:"p",type:"paragraph",runs:[
       {id:"t",kind:"text",text:"Long Title",styles:{styleId:"a"}},
     ]};
@@ -95,6 +95,6 @@ describe("STYLEREF E3B — source-ordered character styles and numbering",()=>{
     const distinct={...doc,styles:{...doc.styles,b:{id:"b",name:"Different",type:"character" as const}}};
     const section=getDocumentSections(distinct)[0]!;
     const prepared={...distinct,sections:[{...section,header:[ref("header",'STYLEREF "Word"',"old")]}]};
-    expect(projectDocumentLayout(prepared).pages[0]!.headerBlocks?.[0]?.layout?.text).toBe("old");
+    expect(projectDocumentLayout(prepared).pages[0]!.headerBlocks?.[0]?.layout?.text).toBe("Long Title");
   });
 });
