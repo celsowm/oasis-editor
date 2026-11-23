@@ -787,15 +787,12 @@ export function setSelectedImageCaption(
 
   const paragraphs = getParagraphs(state);
   const captionIndex = selectedImage.paragraphIndex + 1;
-  const nextParagraph =
-    captionIndex < paragraphs.length &&
-    isImageCaptionParagraph(paragraphs[captionIndex])
-      ? updateImageCaptionParagraph(
-          paragraphs[captionIndex]!,
-          captionText,
-          label,
-        )
-      : createImageCaptionParagraph(captionText, label, 1);
+  const hasCaption = captionIndex < paragraphs.length &&
+    isImageCaptionParagraph(paragraphs[captionIndex]);
+  const nextParagraph=hasCaption
+    ? updateImageCaptionParagraph(paragraphs[captionIndex]!,captionText,label)
+    : createImageCaptionParagraph(captionText,label,1);
+  if(hasCaption&&nextParagraph===paragraphs[captionIndex])return state;
 
   const nextParagraphs =
     captionIndex < paragraphs.length &&
@@ -810,7 +807,7 @@ export function setSelectedImageCaption(
           nextParagraph,
           ...cloneParagraphs(paragraphs.slice(captionIndex)),
         ];
-  const renumberedParagraphs = renumberImageCaptionParagraphs(nextParagraphs);
+  const renumberedParagraphs = renumberImageCaptionParagraphs(nextParagraphs,state.document.styles);
   const insertedCaption = renumberedParagraphs[captionIndex] ?? nextParagraph;
 
   return cloneStateWithParagraphs(

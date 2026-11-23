@@ -1,4 +1,4 @@
-import type {EditorDocument,EditorParagraphNode} from "@/core/model.js";
+import type {EditorBlockNode,EditorDocument,EditorParagraphNode} from "@/core/model.js";
 import {getDocumentSections} from "@/core/model.js";
 import {parseFieldInstruction} from "@/ooxml/word/fieldInstruction.js";
 import {compileFieldInstruction,evaluateField} from "./fieldEvaluation.js";
@@ -13,14 +13,26 @@ interface Counter {value?:number; headingLevel?:number; headingGeneration?:numbe
  * pagination and cached display text. A malformed/ambiguous story is not
  * evaluated. Unsupported sequence operations poison their own identifier
  * until a definite reset; unrelated sequences are unaffected. */
-export function resolveBodySequences(document:EditorDocument):Map<string,number>{
+/** One ordered SEQ authority for field refresh, caption authoring and export. */
+export function resolveOrderedSequences(
+  paragraphs:readonly EditorParagraphNode[],
+  styles?:EditorDocument["styles"],
+  scopes?:readonly string[],
+):Map<string,number>{
   const result=new Map<string,number>();
-  const blocks=getDocumentSections(document).flatMap(s=>s.blocks);
-  if(blocks.some(b=>b.type!=="paragraph")||new Set(blocks.map(b=>b.id)).size!==blocks.length)return result;
-  const paragraphs=blocks as EditorParagraphNode[];
+  if(new Set(paragraphs.map(p=>p.id)).size!==paragraphs.length)return result;
   if(paragraphs.some(p=>p.runs.some(r=>r.kind==="opaque"||r.kind==="textBox")))return result;
   const graph=buildFieldStoryGraph(paragraphs);
   if(graph.diagnostics.length)return result;
+  // Flattening table cells must never connect field markers from different
+  // document stories. Reject uncertain cross-cell/section field spans.
+  if(scopes&&graph.spans.some(span=>{
+    if(!span.end)return true;
+    const owner=scopes[span.begin.paragraphIndex];
+    for(let i=span.begin.paragraphIndex;i<=span.end.paragraphIndex;i++)
+      if(scopes[i]!==owner)return true;
+    return false;
+  }))return result;
   const counters=new Map<string,Counter>();
   const byParagraph=new Map<number,FieldStorySpan[]>();
   // Nested sequence operands are not executed. Their effects on subsequent
@@ -41,7 +53,7 @@ export function resolveBodySequences(document:EditorDocument):Map<string,number>
     while(id){
       if(visited.has(id))return undefined;
       visited.add(id);
-      const style=document.styles?.[id];
+      const style=styles?.[id];
       if(!style){
         const match=/^heading\s*([1-9])$/i.exec(id);
         if(match)return Number(match[1])-1;
@@ -99,4 +111,20 @@ export function resolveBodySequences(document:EditorDocument):Map<string,number>
     }
   }
   return result;
+}
+
+/** Row-major body order includes table cells; each cell is its own story.
+ * Headers, notes and text boxes do not consume main-body numbering. */
+export function resolveBodySequences(document:EditorDocument):Map<string,number>{
+  const paragraphs:EditorParagraphNode[]=[];
+  const scopes:string[]=[];
+  const visit=(blocks:readonly EditorBlockNode[],scope:string):void=>{
+    for(const block of blocks){
+      if(block.type==="paragraph"){paragraphs.push(block);scopes.push(scope);}
+      else for(const row of block.rows)for(const cell of row.cells)
+        visit(cell.blocks,"cell:"+cell.id);
+    }
+  };
+  getDocumentSections(document).forEach((section,i)=>visit(section.blocks,"body:"+i));
+  return resolveOrderedSequences(paragraphs,document.styles,scopes);
 }

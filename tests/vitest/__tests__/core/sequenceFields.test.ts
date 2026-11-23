@@ -56,3 +56,14 @@ describe("SEQ field evaluation",()=>{
     expect((getDocumentSections(reopened)[0]!.blocks as EditorParagraphNode[]).map(text)).toEqual(["12","13"]);
   });
 });
+
+it("enumerates table-cell SEQ fields in body order and rejects cross-cell markers",()=>{
+  const first=seq("a","SEQ Figure","1");
+  const second=seq("b","SEQ Figure","2");
+  const table={id:"tbl",type:"table" as const,rows:[{id:"row",cells:[
+    {id:"c1",blocks:[first]},{id:"c2",blocks:[second]},
+  ]}]};
+  const doc=createEditorDocument([table,seq("after","SEQ Figure")]);
+  const values=resolveBodySequences(doc);
+  expect(["a","b","after"].map(id=>values.get(sequenceOccurrenceKey(id,3)))).toEqual([1,2,3]);
+});
