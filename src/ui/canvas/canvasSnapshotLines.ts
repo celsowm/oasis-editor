@@ -1,4 +1,6 @@
 import type { CanvasSnapshotLine } from "./canvasSnapshotTypes.js";
+import type { EditorLayoutDisplayOffsetSpan } from "@/core/model.js";
+import { displayOffsetToSource } from "@/layoutProjection/fieldDisplayOffsetMap.js";
 
 interface SourceSlot {
   offset: number;
@@ -24,14 +26,16 @@ export function toSnapshotLines(
   lines: SourceLine[],
   leftOffset: number,
   topOffset: number,
+  displayOffsetMap?:readonly EditorLayoutDisplayOffsetSpan[],
 ): CanvasSnapshotLine[] {
+  const offset=(n:number)=>displayOffsetToSource(n,displayOffsetMap);
   return lines.map((line): CanvasSnapshotLine => ({
-    startOffset: line.startOffset,
-    endOffset: line.endOffset,
+    startOffset: offset(line.startOffset),
+    endOffset: offset(line.endOffset),
     top: topOffset + line.top,
     height: line.height,
     slots: line.slots.map((slot) => ({
-      offset: slot.offset,
+      offset: offset(slot.offset),
       left: leftOffset + slot.left,
       top: topOffset + slot.top,
       height: slot.height,

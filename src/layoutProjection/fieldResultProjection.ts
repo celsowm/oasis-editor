@@ -9,6 +9,7 @@ import { createStyleRefIndex } from "@/core/document/styleReference.js";
 import { buildFieldStoryGraph } from "@/core/document/fieldStoryGraph.js";
 import { compileFieldInstruction, evaluateField, type EvaluatableField } from "@/core/document/fieldEvaluation.js";
 import { projectParagraphLayout, type LayoutProjectionContext } from "./paragraphPagination.js";
+import { buildDisplayOffsetMap } from "./fieldDisplayOffsetMap.js";
 
 export interface FieldProjectionCandidate { runIndex: number; field: EvaluatableField }
 
@@ -68,10 +69,10 @@ function pageHasExclusions(blocks: readonly EditorLayoutBlock[]): boolean {
 }
 
 /** Last, geometry-certified projection pass shared by Canvas and PDF.
- * Only accept replacements with unchanged source UTF-16 lengths, line
- * boundaries and vertical metrics. Model runs and cached DOCX results are
- * untouched. Length-changing updates require explicit offset transforms
- * and a convergent repagination pass, not a paint-only substitution. */
+ * Body fields retain source lengths. Shared header/footer STYLEREF fields may
+ * vary in display length only when both layouts occupy a single unchanged
+ * line, with a separate visual-to-source offset mapping for caret geometry.
+ * Model runs and cached DOCX results remain untouched. */
 export function refreshProjectedFields(
   document: EditorDocument, layout: EditorLayoutDocument,
   measurer: ITextMeasurer, projectionContext: LayoutProjectionContext,
@@ -123,6 +124,7 @@ export function refreshProjectedFields(
         }
         const texts = p.runs.map((r,i) => old.text.slice(offsets[i]!,offsets[i]!+r.text.length));
         let differs = false;
+        let lengthChanging = false;
         for (const candidate of candidates.get(p.id)!) {
           const {runIndex,field} = candidate;
           if (field.type === "PAGE" && !field.format && numberingFormat && numberingFormat !== "decimal") continue;
@@ -139,11 +141,15 @@ export function refreshProjectedFields(
                 locale:p.runs[runIndex]?.styles?.language?.value?.toLowerCase()==="pt-br"?"pt-BR":"en-US",
               })}, previous);
           if (evaluated.status !== "resolved" || evaluated.text === previous ||
-              evaluated.text.length !== p.runs[runIndex]!.text.length ||
+              !evaluated.text.length ||
               /[\r\n\t]/.test(evaluated.text) ||
               Array.from(evaluated.text).length !== evaluated.text.length) continue;
+          const changesLength=evaluated.text.length!==p.runs[runIndex]!.text.length;
+          if(changesLength&&(body||field.type!=="STYLEREF"||
+            !p.runs[runIndex]!.text.length||old.lines.length!==1))continue;
           texts[runIndex] = evaluated.text;
           differs = true;
+          lengthChanging ||= changesLength;
         }
         if (!differs) return block;
         // Ephemeral text-only measurement input, not a document mutation.
@@ -155,13 +161,20 @@ export function refreshProjectedFields(
         };
         const projected = projectParagraphLayout(derived, undefined, undefined, document.styles,
           old.contentWidth, measurer, document.settings?.defaultTabStop, projectionContext);
-        if (projected.text !== texts.join("") || projected.endOffset !== length ||
+        if (projected.text !== texts.join("") ||
+            (!lengthChanging&&projected.endOffset!==length) ||
             projected.lines.length !== old.lines.length ||
+            (lengthChanging&&projected.lines.length!==1) ||
             projected.lines.some((line,i) => {
               const prior = old.lines[i]!;
-              return line.startOffset !== prior.startOffset || line.endOffset !== prior.endOffset ||
+              return (!lengthChanging&&(line.startOffset!==prior.startOffset||line.endOffset!==prior.endOffset)) ||
                 Math.abs(line.height-prior.height)>0.01 || Math.abs(line.top-prior.top)>0.01;
             })) return block;
+        if(lengthChanging){
+          const map=buildDisplayOffsetMap(p.runs.map(r=>r.text.length),texts.map(t=>t.length));
+          if(!map.length)return block;
+          projected.displayOffsetMap=map;
+        }
         blockChanged = true;
         return {...block,layout:projected};
       });

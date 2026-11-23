@@ -70,7 +70,19 @@ export interface EditorLayoutLine {
   trailingHyphenWidth?: number;
 }
 
+/** One display-only field replacement. Visual offsets belong to the page
+ * layout; source offsets belong to the editable DOCX model. Never save this
+ * mapping in the document or use it to rewrite field caches. */
+export interface EditorLayoutDisplayOffsetSpan {
+  displayStart: number;
+  displayEnd: number;
+  sourceStart: number;
+  sourceEnd: number;
+}
 export interface EditorLayoutParagraph {
+  /** Maps per-page visual header/footer positions onto immutable source
+   * coordinates; absent means the layout uses source coordinates directly. */
+  displayOffsetMap?: EditorLayoutDisplayOffsetSpan[];
   paragraphId: string;
   text: string;
   fragments: EditorLayoutFragment[];

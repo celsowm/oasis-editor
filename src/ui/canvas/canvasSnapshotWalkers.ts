@@ -232,13 +232,16 @@ export function collectSnapshotParagraph(
     footnoteId: blockFootnoteId,
     pageIndex: page.index,
     startOffset: block.layout.startOffset ?? 0,
-    endOffset: block.layout.endOffset ?? getParagraphText(paragraphNode).length,
+    endOffset: block.layout.displayOffsetMap
+      ? getParagraphText(paragraphNode).length
+      : block.layout.endOffset ?? getParagraphText(paragraphNode).length,
     textLength: getParagraphText(paragraphNode).length,
     left: blockContentLeft,
     top: cursorY,
     width: blockContentWidth,
     height: Math.max(0, block.estimatedHeight),
-    lines: toSnapshotLines(block.layout.lines, blockContentLeft, lineTopOffset),
+    lines: toSnapshotLines(block.layout.lines, blockContentLeft, lineTopOffset,
+      block.layout.displayOffsetMap),
   });
   inlineImages.push(
     ...collectInlineImagesFromLines({
