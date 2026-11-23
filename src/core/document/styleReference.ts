@@ -1,8 +1,22 @@
-import type {EditorDocument,EditorLayoutDocument,EditorParagraphNode,EditorNamedStyle} from "@/core/model.js";
-import {getDocumentSections,getParagraphLength} from "@/core/model.js";
-import {BUILTIN_STYLES,semanticBuiltinStyle} from "@/core/model/builtinStyles.js";
+import type {EditorDocument,EditorLayoutDocument,EditorParagraphNode} from "@/core/model.js";
+import {buildListLabels,getDocumentSections,getParagraphLength} from "@/core/model.js";
+import {semanticBuiltinStyle} from "@/core/model/builtinStyles.js";
 
-type Entry={paragraphId:string;ordinal:number;pageIndex:number;style:string;text:string};
+export type StyleRefOutput="text"|"number"|"position";
+export interface StyleRefOptions {
+  output?:StyleRefOutput;
+  offset?:number;
+  zone?:"header"|"footer";
+  locale?:"en-US"|"pt-BR";
+}
+type Entry={paragraphId:string;ordinal:number;start:number;pageIndex:number;style:string;text:string;number?:string};
+const numbered=(raw:string|undefined):string|undefined=>{
+  if(!raw)return undefined;
+  const label=raw.replace(/[.)]+$/,"");
+  return /^[0-9A-Za-z]+(?:[.\-][0-9A-Za-z]+)*$/.test(label)?label:undefined;
+};
+const relative=(direction:"above"|"below",locale?:StyleRefOptions["locale"]):string=>
+  locale==="pt-BR"?(direction==="above"?"acima":"abaixo"):direction;
 const normalize=(value:string)=>value.trim().normalize("NFD").replace(/\p{Diacritic}/gu,"").toLowerCase().replace(/[\s_-]+/g,"");
 const cleanText=(p:EditorParagraphNode):string|undefined=>{
   if(p.sdtWrappers?.length||p.numberingRevision||p.dropCap||
@@ -43,7 +57,7 @@ export function createStyleRefIndex(document:EditorDocument,layout?:EditorLayout
     return heading?"builtin:"+heading:"id:"+id;
   };
   for(const style of Object.values(styles)){
-    if(style.type!=="paragraph")continue;
+    if(style.type==="table")continue;
     const id=identity(style.id);
     add(style.id,id);add(style.name,id);
     if(semanticBuiltinStyle(style)==="heading1")add("Heading 1",id);
@@ -80,40 +94,87 @@ export function createStyleRefIndex(document:EditorDocument,layout?:EditorLayout
       else located.set(paragraph.id,page.index);
     }
   }
+  const labels=buildListLabels(document);
   const entries:Entry[]=[];
   const unqualified=new Set<string>();
   for(const [ordinal,p] of paragraphs.entries()){
-    const styleId=p.style?.styleId;
-    if(!styleId)continue;
-    const key=identity(styleId);
-    const value=cleanText(p);
     const pageIndex=located.get(p.id);
-    if(unsupported||!value||pageIndex===undefined||pageIndex<0){
-      unqualified.add(key);continue;
+    const sound=!unsupported&&pageIndex!==undefined&&pageIndex>=0;
+    const number=p.list?.kind==="ordered"?numbered(labels.get(p.id)):undefined;
+    const emit=(style:string,start:number,text:string|undefined):void=>{
+      if(!sound||!text||text.length>65536||/[\r\n\t]/.test(text)){
+        unqualified.add(style);return;
+      }
+      entries.push({paragraphId:p.id,ordinal,start,pageIndex:pageIndex!,style,text,number});
+    };
+    const styleId=p.style?.styleId;
+    if(styleId){
+      const style=styles[styleId]??Object.values(styles).find(s=>s.id===styleId);
+      if(!style||style.type==="paragraph")emit(identity(styleId),0,cleanText(p));
     }
-    entries.push({paragraphId:p.id,ordinal,pageIndex,style:key,text:value});
+    // Consecutive text runs with one character style form one source phrase.
+    // A field result elsewhere in the paragraph cannot become part of it.
+    let offset=0;
+    for(let i=0;i<p.runs.length;){
+      const run=p.runs[i]!;
+      const styleId=run.styles?.styleId;
+      const definition=styleId?(styles[styleId]??Object.values(styles).find(s=>s.id===styleId)):undefined;
+      if(definition?.type!=="character"){offset+=run.text.length;i++;continue;}
+      const key=identity(definition.id),start=offset;
+      let phrase="",valid=true;
+      while(i<p.runs.length){
+        const next=p.runs[i]!,other=next.styles?.styleId;
+        const named=other?(styles[other]??Object.values(styles).find(s=>s.id===other)):undefined;
+        if(named?.type!=="character"||identity(named.id)!==key)break;
+        phrase+=next.text;
+        if(next.kind!=="text"||next.revision||next.revisionRangeMarker||next.sdtWrappers?.length||
+          next.styles?.hidden||next.styles?.rtl)valid=false;
+        offset+=next.text.length;i++;
+      }
+      emit(key,start,valid?phrase.trim():undefined);
+    }
   }
+  entries.sort((a,b)=>a.ordinal-b.ordinal||a.start-b.start);
   const target=(name:string):string|undefined=>{
     const result=aliases.get(normalize(name));
     return result===null?undefined:result;
   };
-  const forBody=(paragraphId:string,name:string,_lastOnPage=false):string|undefined=>{
-    if(unsupported)return undefined;
-    const requested=target(name),ordinal=indexed.get(paragraphId);
-    if(!requested||unqualified.has(requested)||ordinal===undefined||!located.has(paragraphId))return undefined;
-    return entries.filter(e=>e.style===requested&&e.ordinal<ordinal)
-      .at(-1)?.text;
+  const render=(entry:Entry|undefined,opts:StyleRefOptions,side:"above"|"below"):string|undefined=>{
+    if(!entry)return undefined;
+    if(opts.output==="number")return entry.number;
+    if(opts.output==="position")return relative(side,opts.locale);
+    return entry.text;
   };
-  const forPage=(pageIndex:number,name:string,lastOnPage=false):string|undefined=>{
+  const forBody=(paragraphId:string,name:string,lastOnPage=false,opts:StyleRefOptions={}):string|undefined=>{
+    if(unsupported)return undefined;
+    const requested=target(name),ordinal=indexed.get(paragraphId),pageIndex=located.get(paragraphId);
+    if(!requested||unqualified.has(requested)||ordinal===undefined||
+      pageIndex===undefined||pageIndex<0)return undefined;
+    const offset=opts.offset??0;
+    if(!Number.isInteger(offset)||offset<0)return undefined;
+    const matching=entries.filter(e=>e.style===requested);
+    if(lastOnPage){
+      const onPage=matching.filter(e=>e.pageIndex===pageIndex);
+      if(onPage.length){
+        const entry=onPage.at(-1)!;
+        const earlier=entry.ordinal<ordinal||(entry.ordinal===ordinal&&entry.start<offset);
+        return render(entry,opts,earlier?"above":"below");
+      }
+    }
+    const earlier=matching.filter(e=>e.ordinal<ordinal||(e.ordinal===ordinal&&e.start<offset)).at(-1);
+    if(earlier)return render(earlier,opts,"above");
+    const later=matching.find(e=>e.ordinal>ordinal||(e.ordinal===ordinal&&e.start>=offset));
+    return render(later,opts,"below");
+  };
+  const forPage=(pageIndex:number,name:string,lastOnPage=false,opts:StyleRefOptions={}):string|undefined=>{
     if(unsupported||!Number.isInteger(pageIndex)||pageIndex<0||pageIndex>=pages.length)return undefined;
     const requested=target(name);
     if(!requested||unqualified.has(requested))return undefined;
     const matching=entries.filter(e=>e.style===requested);
-    const current=matching.filter(e=>e.pageIndex===pageIndex);
-    if(current.length)return (lastOnPage?current.at(-1):current[0])!.text;
-    // The most recent earlier heading is the conservative running header.
-    // Do not manufacture a result from a later page or another story.
-    return matching.filter(e=>e.pageIndex<pageIndex).at(-1)?.text;
+    const onPage=matching.filter(e=>e.pageIndex===pageIndex);
+    const entry=onPage.length?(lastOnPage?onPage.at(-1):onPage[0]):
+      matching.filter(e=>e.pageIndex<pageIndex).at(-1);
+    return render(entry,opts,opts.zone==="footer"?"above":"below");
   };
   return {forBody,forPage};
 }

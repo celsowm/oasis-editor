@@ -192,7 +192,9 @@ export function refreshBodyFieldCaches(
           if(field.type==="PAGEREF"&&currentSections.some(s=>s.pageNumbering?.format&&s.pageNumbering.format!=="decimal"))continue;
           const language=run.styles?.language?.value?.toLowerCase();
           const locale=language==="pt-br"?"pt-BR":language?.startsWith("en")?"en-US":temporalSnapshot?.locale;
-          const result=evaluateField(field,{...fieldContext,styleRefText:(name,last)=>styleRefs.forBody(p.id,name,last),sequenceValue:sequenceValues.get(sequenceOccurrenceKey(p.id,runIndex)),temporal:temporalSnapshot?{...temporalSnapshot,locale}:undefined},run.text);
+          const result=evaluateField(field,{...fieldContext,styleRefText:(name,last,output)=>styleRefs.forBody(p.id,name,last,{
+            output,offset:offsets[runIndex],locale:locale==="pt-BR"?"pt-BR":"en-US",
+          }),sequenceValue:sequenceValues.get(sequenceOccurrenceKey(p.id,runIndex)),temporal:temporalSnapshot?{...temporalSnapshot,locale}:undefined},run.text);
           const start=offsets[runIndex]!,end=start+run.text.length;
           if(result.status!=="resolved"||!result.text.length||result.text.length>MAX_RESULT_LENGTH||
               !run.text.length||/[\r\n\t]/.test(result.text)||Array.from(result.text).length!==result.text.length)continue;

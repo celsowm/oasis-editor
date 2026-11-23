@@ -24,8 +24,10 @@ describe("STYLEREF qualified evaluation",()=>{
   it("parses quoted custom and built-in Heading styles without ignoring unsupported switches",()=>{
     expect(compileFieldInstruction(' STYLEREF "Heading 1" ')).toEqual({type:"STYLEREF",style:"Heading 1",lastOnPage:false});
     expect(compileFieldInstruction("STYLEREF 1 \\l")).toEqual({type:"STYLEREF",style:"1",lastOnPage:true});
-    for(const raw of ["STYLEREF","STYLEREF \\l",'STYLEREF "Heading 1" \\n',
-      'STYLEREF "Heading 1" \\p','STYLEREF "Heading 1" \\l \\l']){
+    expect(compileFieldInstruction('STYLEREF "Heading 1" \n')).toEqual({type:"STYLEREF",style:"Heading 1",lastOnPage:false,output:"number"});
+    expect(compileFieldInstruction('STYLEREF "Heading 1" \p')).toEqual({type:"STYLEREF",style:"Heading 1",lastOnPage:false,output:"position"});
+    for(const raw of ["STYLEREF","STYLEREF \\l",'STYLEREF "Heading 1" \\t',
+      'STYLEREF "Heading 1" \\n \\p','STYLEREF "Heading 1" \\l \\l']){
       expect(compileFieldInstruction(raw)).toBeUndefined();
     }
     expect(evaluateFieldInstruction('STYLEREF "Heading 1"',{},"cache")).toMatchObject({status:"preserved",text:"cache"});

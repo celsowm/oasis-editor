@@ -20,7 +20,7 @@ export type EvaluatableField =
   | { type: TemporalFieldCommand; temporal: true; picture?: string }
   | { type: NumericFieldCommand; format?: PageNumberFormat }
   | { type: ReferenceFieldCommand; bookmark: string; hyperlink?: boolean }
-  | { type:"STYLEREF"; style:string; lastOnPage:boolean };
+  | { type:"STYLEREF"; style:string; lastOnPage:boolean; output?:"number"|"position" };
 
 export type FieldDependency =
   | { kind: "page" | "document-pages" | "section" | "section-pages" }
@@ -44,7 +44,7 @@ export interface FieldEvaluationContext {
   bookmarkText?: (name: string) => string | null | undefined;
   bookmarkPage?: (name: string) => number | null | undefined;
   /** Exact resolved style text for a body occurrence or repeated page story. */
-  styleRefText?: (name:string,lastOnPage:boolean)=>string|undefined;
+  styleRefText?: (name:string,lastOnPage:boolean,output:"text"|"number"|"position")=>string|undefined;
 }
 
 export interface TemporalFieldContext extends TemporalFormattingOptions {
@@ -87,10 +87,21 @@ export function compileFieldInstruction(raw: string): EvaluatableField | undefin
     if(!name||(name.kind!=="quoted"&&name.kind!=="word")||
        !name.value.trim()||name.value.length>128||
        /[\r\n\t\\]/.test(name.value))return undefined;
-    if(args.length===1)return {type:"STYLEREF",style:name.value,lastOnPage:false};
-    if(args.length!==2||args[1]?.kind!=="switch"||args[1].value.toLowerCase()!=="l")
-      return undefined;
-    return {type:"STYLEREF",style:name.value,lastOnPage:true};
+    let lastOnPage=false;
+    let output:"number"|"position"|undefined;
+    for(const token of args.slice(1)){
+      if(token.kind!=="switch")return undefined;
+      const name=token.value.toLowerCase();
+      if(name==="l"){
+        if(lastOnPage)return undefined;
+        lastOnPage=true;
+      }else if(name==="n"||name==="p"){
+        if(output)return undefined;
+        output=name==="n"?"number":"position";
+      }else return undefined;
+    }
+    return output?{type:"STYLEREF",style:name.value,lastOnPage,output}
+      :{type:"STYLEREF",style:name.value,lastOnPage};
   }
   if(parsed.command==="SEQ"){
     const identifier=args[0];
@@ -172,7 +183,7 @@ export function evaluateField(
   if (locked) return preserved(cachedText, "locked");
   if(field.type==="STYLEREF"){
     const dependencies:FieldDependency[]=[{kind:"style-text",name:field.style,lastOnPage:field.lastOnPage}];
-    const result=context.styleRefText?.(field.style,field.lastOnPage);
+    const result=context.styleRefText?.(field.style,field.lastOnPage,field.output??"text");
     return typeof result==="string"&&result.length>0
       ? {status:"resolved",text:result,dependencies}
       : preserved(cachedText,"unresolved",dependencies);

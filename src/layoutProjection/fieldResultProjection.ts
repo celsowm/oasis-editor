@@ -92,7 +92,8 @@ export function refreshProjectedFields(
     const fieldContext = index.forPage(page.index);
     const section = sections[page.sectionIndex ?? 0];
     const numberingFormat = section?.pageNumbering?.format;
-    const refresh = (blocks: EditorLayoutBlock[] | undefined, body: boolean): EditorLayoutBlock[] | undefined => {
+    const refresh = (blocks: EditorLayoutBlock[] | undefined, story:"body"|"header"|"footer"): EditorLayoutBlock[] | undefined => {
+      const body=story==="body";
       if (!blocks || pageHasExclusions(blocks)) return blocks;
       let blockChanged = false;
       const next = blocks.map(block => {
@@ -129,8 +130,14 @@ export function refreshProjectedFields(
           if (field.type === "PAGEREF" && sections.some(s => s.pageNumbering?.format && s.pageNumbering.format !== "decimal")) continue;
           const previous = texts[runIndex]!;
           const evaluated = evaluateField(field,{...fieldContext,styleRefText:body
-            ? (name,last)=>styleRefs.forBody(p.id,name,last)
-            : (name,last)=>styleRefs.forPage(page.index,name,last)}, previous);
+            ? (name,last,output)=>styleRefs.forBody(p.id,name,last,{
+                output,offset:offsets[runIndex],
+                locale:p.runs[runIndex]?.styles?.language?.value?.toLowerCase()==="pt-br"?"pt-BR":"en-US",
+              })
+            : (name,last,output)=>styleRefs.forPage(page.index,name,last,{
+                output,zone:story,
+                locale:p.runs[runIndex]?.styles?.language?.value?.toLowerCase()==="pt-br"?"pt-BR":"en-US",
+              })}, previous);
           if (evaluated.status !== "resolved" || evaluated.text === previous ||
               evaluated.text.length !== p.runs[runIndex]!.text.length ||
               /[\r\n\t]/.test(evaluated.text) ||
@@ -161,9 +168,9 @@ export function refreshProjectedFields(
       if (blockChanged) { changed = true; return next; }
       return blocks;
     };
-    const blocks = refresh(page.blocks,true)!;
-    const headerBlocks = refresh(page.headerBlocks,false);
-    const footerBlocks = refresh(page.footerBlocks,false);
+    const blocks = refresh(page.blocks,"body")!;
+    const headerBlocks = refresh(page.headerBlocks,"header");
+    const footerBlocks = refresh(page.footerBlocks,"footer");
     return blocks === page.blocks && headerBlocks === page.headerBlocks && footerBlocks === page.footerBlocks
       ? page : {...page,blocks,headerBlocks,footerBlocks};
   });
