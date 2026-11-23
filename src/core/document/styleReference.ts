@@ -79,6 +79,10 @@ export function createStyleRefIndex(document:EditorDocument,layout?:EditorLayout
   const pages=layout?.pages??[];
   if(!layout||!pages.every((p,i)=>p.index===i))unsupported=true;
   const located=new Map<string,number>();
+  // A same-length dynamic field can change the painted text while its
+  // source-aligned caret position remains certified. Keep these separate:
+  // only exact source text may become a STYLEREF target.
+  const positioned=new Map<string,number>();
   for(const page of pages){
     for(const block of page.blocks){
       const paragraph=block.sourceBlock;
@@ -86,11 +90,14 @@ export function createStyleRefIndex(document:EditorDocument,layout?:EditorLayout
       const text=paragraph.runs.map(r=>r.text).join("");
       const start=block.layout.startOffset??0;
       const end=block.layout.endOffset??(start+block.layout.text.length);
-      if(start!==0||end!==getParagraphLength(paragraph)||block.layout.text!==text){
+      if(start!==0||end!==getParagraphLength(paragraph)||block.layout.text.length!==text.length){
         located.set(paragraph.id,-1);
+        positioned.set(paragraph.id,-1);
         continue;
       }
-      if(located.has(paragraph.id))located.set(paragraph.id,-1);
+      if(positioned.has(paragraph.id))positioned.set(paragraph.id,-1);
+      else positioned.set(paragraph.id,page.index);
+      if(block.layout.text!==text||located.has(paragraph.id))located.set(paragraph.id,-1);
       else located.set(paragraph.id,page.index);
     }
   }
@@ -147,7 +154,7 @@ export function createStyleRefIndex(document:EditorDocument,layout?:EditorLayout
   };
   const forBody=(paragraphId:string,name:string,lastOnPage=false,opts:StyleRefOptions={}):string|undefined=>{
     if(unsupported)return undefined;
-    const requested=target(name),ordinal=indexed.get(paragraphId),pageIndex=located.get(paragraphId);
+    const requested=target(name),ordinal=indexed.get(paragraphId),pageIndex=positioned.get(paragraphId);
     if(!requested||unqualified.has(requested)||ordinal===undefined||
       pageIndex===undefined||pageIndex<0)return undefined;
     const offset=opts.offset??0;
