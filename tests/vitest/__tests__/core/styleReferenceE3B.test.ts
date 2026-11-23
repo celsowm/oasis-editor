@@ -92,7 +92,7 @@ describe("STYLEREF E3B — source-ordered character styles and numbering",()=>{
     doc.styles={...doc.styles,a:{id:"a",name:"Word",type:"character"},
       b:{id:"b",name:"Word",type:"character"}};
     expect(createStyleRefIndex(doc,projectDocumentLayout(doc)).forPage(0,"Word")).toBeUndefined();
-    const distinct={...doc,styles:{...doc.styles,b:{id:"b",name:"Different",type:"character"}}};
+    const distinct={...doc,styles:{...doc.styles,b:{id:"b",name:"Different",type:"character" as const}}};
     const section=getDocumentSections(distinct)[0]!;
     const prepared={...distinct,sections:[{...section,header:[ref("header",'STYLEREF "Word"',"old")]}]};
     expect(projectDocumentLayout(prepared).pages[0]!.headerBlocks?.[0]?.layout?.text).toBe("old");
