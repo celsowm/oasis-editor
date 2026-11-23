@@ -185,6 +185,7 @@ export type {
   EditorLayoutFragment,
   EditorLayoutLine,
   EditorResolvedTab,
+  EditorLayoutDisplayOffsetSpan,
   EditorLayoutParagraph,
   EditorLayoutBlock,
   TableCellBlockPosition,
