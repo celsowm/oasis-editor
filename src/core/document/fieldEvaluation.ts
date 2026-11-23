@@ -20,14 +20,16 @@ export type EvaluatableField =
   | { type: TemporalFieldCommand; temporal: true; picture?: string }
   | { type: NumericFieldCommand; format?: PageNumberFormat }
   | { type: ReferenceFieldCommand; bookmark: string; hyperlink?: boolean }
-  | { type:"STYLEREF"; style:string; lastOnPage:boolean; output?:"number"|"position" };
+  | { type:"STYLEREF"; style:string; lastOnPage:boolean; output?:"number"|"position" }
+  | { type:"IF"; left:string; right:string; operator:"="|"<>"|"<"|">"|"<="|">="; whenTrue:string; whenFalse:string; numeric:boolean };
 
 export type FieldDependency =
   | { kind: "page" | "document-pages" | "section" | "section-pages" }
   | { kind: "bookmark-text" | "bookmark-page"; name: string }
   | { kind: "clock" | "created" | "saved" | "printed" }
   | { kind:"sequence"; name:string }
-  | { kind:"style-text"; name:string; lastOnPage:boolean };
+  | { kind:"style-text"; name:string; lastOnPage:boolean }
+  | { kind:"literal-condition" };
 
 /** All numbers are the caller's one-based display values, not array indexes.
  * No DOM, clock, mutable editor state or layout service is consulted here.
@@ -82,6 +84,28 @@ export function compileFieldInstruction(raw: string): EvaluatableField | undefin
   const parsed = parseFieldInstruction(raw);
   if (parsed.error || !parsed.command) return undefined;
   const args = parsed.tokens.slice(1);
+  if(parsed.command==="IF"){
+    // No nested evaluation, dereferencing or expansion of field code.
+    // Both branch results must be quoted, bounded, plain text literals.
+    if(args.length!==5)return undefined;
+    const [left,op,right,yes,no]=args;
+    if(!left||!op||!right||!yes||!no||
+       (left.kind!=="word"&&left.kind!=="quoted")||
+       op.kind!=="word"||!["=","<>","<",">","<=",">="].includes(op.value)||
+       (right.kind!=="word"&&right.kind!=="quoted")||
+       yes.kind!=="quoted"||no.kind!=="quoted"||
+       [left,right,yes,no].some(t=>t.value.length>4096||/[\\r\\n\\t]/.test(t.value)))return undefined;
+    // A bare word could be a field expression / bookmark reference.
+    // Only numeric bare tokens are considered literal operands.
+    const operand=(t:typeof left):boolean=>t.kind==="quoted"||/^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$/.test(t.value);
+    if(!operand(left)||!operand(right))return undefined;
+    const numberPattern=/^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$/;
+    const numeric=numberPattern.test(left.value)&&numberPattern.test(right.value);
+    if(numeric&&(!Number.isFinite(Number(left.value))||!Number.isFinite(Number(right.value))))return undefined;
+    if(!numeric&&op.value!=="="&&op.value!=="<>")return undefined;
+    return {type:"IF",left:left.value,right:right.value,operator:op.value as "="|"<>"|"<"|">"|"<="|">=",
+      whenTrue:yes.value,whenFalse:no.value,numeric};
+  }
   if(parsed.command==="STYLEREF"){
     const name=args[0];
     if(!name||(name.kind!=="quoted"&&name.kind!=="word")||
@@ -181,6 +205,21 @@ export function evaluateField(
   locked = false,
 ): FieldEvaluation {
   if (locked) return preserved(cachedText, "locked");
+  if(field.type==="IF"){
+    const dependency:FieldDependency[]=[{kind:"literal-condition"}];
+    const a=field.numeric?Number(field.left):field.left;
+    const b=field.numeric?Number(field.right):field.right;
+    let match:boolean;
+    switch(field.operator){
+      case "=": match=a===b;break;
+      case "<>": match=a!==b;break;
+      case "<": match=typeof a==="number"&&typeof b==="number"&&a<b;break;
+      case ">": match=typeof a==="number"&&typeof b==="number"&&a>b;break;
+      case "<=": match=typeof a==="number"&&typeof b==="number"&&a<=b;break;
+      case ">=": match=typeof a==="number"&&typeof b==="number"&&a>=b;break;
+    }
+    return {status:"resolved",text:match?field.whenTrue:field.whenFalse,dependencies:dependency};
+  }
   if(field.type==="STYLEREF"){
     const dependencies:FieldDependency[]=[{kind:"style-text",name:field.style,lastOnPage:field.lastOnPage}];
     const result=context.styleRefText?.(field.style,field.lastOnPage,field.output??"text");

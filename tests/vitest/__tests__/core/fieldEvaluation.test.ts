@@ -28,7 +28,7 @@ describe("bounded OOXML field evaluation", () => {
     expect(evaluateFieldInstruction("REF Target",{},"cache")).toMatchObject({status:"preserved",reason:"unresolved",text:"cache"});
   });
   it("does not execute unsupported or malformed fields, locked fields or invalid numbers", () => {
-    for(const raw of ['IF "PAGE" = 1 "yes" "no"', 'DDE application', 'INCLUDETEXT "file"', 'PAGE \\* MERGEFORMAT', 'REF Target \\p', 'PAGEREF Target extra']){
+    for(const raw of ['IF PAGE = 1 "yes" "no"', 'DDE application', 'INCLUDETEXT "file"', 'PAGE \\* MERGEFORMAT', 'REF Target \\p', 'PAGEREF Target extra']){
       expect(compileFieldInstruction(raw)).toBeUndefined();
       expect(evaluateFieldInstruction(raw,context,"cache")).toMatchObject({status:"preserved",reason:"unsupported",text:"cache"});
     }
