@@ -251,17 +251,19 @@ export function updateTableOfContents(
     return !p||p.sdtWrappers?.length||p.numberingRevision||p.dropCap||
       p.runs.some(r=>r.kind!=="text"||r.revision||r.revisionRangeMarker||
         r.sdtWrappers?.length||r.styles?.hidden||r.styles?.rtl)||
-      h.text.length>4096||/[\\r\\n\\t]/.test(h.text);
+      h.text.length>4096||/[\r\n\t]/.test(h.text);
   }))return state;
-  const entries = headings.map((heading): EditorParagraphNode =>
-    buildEntryParagraph(
-      heading,
-      resolvePage(heading.id),
-      rightTabPositionForSection(section),
-    ),
+  const prior=section.blocks.slice(region.startBlockIndex+1,region.endBlockIndex);
+  const pageValues=headings.map(h=>resolvePage(h.id));
+  if(pageValues.some(n=>n!==undefined&&(!Number.isSafeInteger(n)||n<1||n>1_000_000)))return state;
+  // Do not erase printed labels from a source TOC when no certified
+  // pagination value was supplied for a heading.
+  if(pageValues.some(n=>n===undefined)&&prior.some(p=>
+    p.type==="paragraph"&&/\\t\\S/.test(getParagraphText(p))))return state;
+  const entries = headings.map((heading,i): EditorParagraphNode =>
+    buildEntryParagraph(heading,pageValues[i],rightTabPositionForSection(section)),
   );
 
-  const prior=section.blocks.slice(region.startBlockIndex+1,region.endBlockIndex);
   if(prior.length===entries.length&&prior.every((p,i)=>
     p.type==="paragraph"&&getParagraphText(p)===getParagraphText(entries[i]!)))return state;
   const nextBlocks = [
