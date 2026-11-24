@@ -46,10 +46,6 @@ export function refreshTableOfContentsConvergently(
   const beginId=section.blocks[region.startBlockIndex]!.id;
   const endId=section.blocks[region.endBlockIndex]!.id;
   const oldEntryIds=new Set(section.blocks.slice(region.startBlockIndex+1,region.endBlockIndex).map(b=>b.id));
-  // Replacing an actively selected cached entry would invalidate its runId and
-  // offsets. Explicitly refuse rather than moving the editor caret silently.
-  if(oldEntryIds.has(original.selection.anchor.paragraphId)||
-     oldEntryIds.has(original.selection.focus.paragraphId))return result("unsupported",0);
   const headers=collectTocHeadings(original,Math.min(maxLevel,region.endLevel))
     .filter(h=>h.level>=region.startLevel);
   if(headers.length>2048)return result("unsupported",0);
@@ -79,6 +75,11 @@ export function refreshTableOfContentsConvergently(
         layout,status:current===original?"unchanged":"updated",passes:pass,
         updatedEntries:current===original?0:headings.length};
     }
+    // A no-op is always safe. Reject a real edit if an active selection would
+    // lose its original cached-result run identity during replacement.
+    if(oldEntryIds.has(original.selection.anchor.paragraphId)||
+       oldEntryIds.has(original.selection.focus.paragraphId))
+      return result("unsupported",pass,initialLayout);
     const signature=JSON.stringify([headings.map((h,i)=>[h.id,h.text,pages[i]]),
       layout.pages.map(p=>[p.index,p.sectionIndex])]);
     if(seen.has(signature))return result("nonconvergent",pass,initialLayout);
