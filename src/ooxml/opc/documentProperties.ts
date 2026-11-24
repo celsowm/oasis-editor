@@ -162,6 +162,7 @@ function writeCore(zip:JSZip,rels:EditorOpcRelationship[],core:Record<string,str
   if(path||rels.some(x=>x.type===CORE_REL)||zip.file("docProps/core.xml"))return false;
   const doc=new DOMParser().parseFromString('<cp:coreProperties xmlns:cp="'+CORE+'" xmlns:dc="'+DC+'"/>',"application/xml");
   const root=doc.documentElement;
+  if(!root)return false;
   for(const item of coreNames){
     const value=Object.entries(core).find(([name])=>name.toLowerCase()===item.key.toLowerCase())?.[1];
     if(value===undefined)continue;
@@ -178,6 +179,7 @@ function writeCustom(zip:JSZip,rels:EditorOpcRelationship[],custom:Record<string
   if(getPart(rels,CUSTOM_REL)||rels.some(x=>x.type===CUSTOM_REL)||zip.file("docProps/custom.xml"))return false;
   const doc=new DOMParser().parseFromString('<Properties xmlns="'+CUSTOM+'" xmlns:vt="'+VT+'"/>',"application/xml");
   const root=doc.documentElement;
+  if(!root)return false;
   let pid=2;
   for(const [name,value] of Object.entries(custom)){
     const entry=doc.createElementNS(CUSTOM,"property");
