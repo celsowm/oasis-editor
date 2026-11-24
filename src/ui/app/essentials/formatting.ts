@@ -42,13 +42,8 @@ import {
   navigateComment,
   getSelectedReviewComment,
 } from "@/core/commands/reviewNavigation.js";
-import {
-  insertTableOfContents,
-  updateTableOfContents,
-  hasTableOfContents,
-  type TocPageNumberResolver,
-} from "@/core/commands/tableOfContents.js";
-import { projectDocumentLayout } from "@/layoutProjection/index.js";
+import { insertTableOfContents,hasTableOfContents } from "@/core/commands/tableOfContents.js";
+import { refreshTableOfContentsConvergently } from "@/core/document/tocConvergence.js";
 import {
   fontSizePtToPx,
   fontSizePxToPt,
@@ -84,22 +79,6 @@ export function buildEssentialsFormatting(
     return true;
   };
 
-  // Resolve each heading paragraph's printed page number by paginating the
-  // current document, mirroring how PAGE fields resolve (page index + 1).
-  const buildTocPageResolver = (state: EditorState): TocPageNumberResolver => {
-    const layout = projectDocumentLayout(state.document);
-    const pageByParagraph = new Map<string, number>();
-    for (const page of layout.pages) {
-      for (const block of page.blocks) {
-        const paragraphId = block.paragraphId;
-        if (paragraphId && !pageByParagraph.has(paragraphId)) {
-          pageByParagraph.set(paragraphId, page.index + 1);
-        }
-      }
-    }
-    return (headingId: string): number | undefined =>
-      pageByParagraph.get(headingId);
-  };
 
   return {
     formatPainterOnce: options.formatPainter.armOnce,
@@ -291,15 +270,22 @@ export function buildEssentialsFormatting(
     deleteSelectedComment: options.commentComposer.deleteSelected,
     canDeleteSelectedComment: options.commentComposer.canDeleteSelected,
     insertTableOfContents: (): boolean => {
-      options.applyTransactionalState((current): EditorState =>
-        insertTableOfContents(current, buildTocPageResolver(current)),
-      );
+      options.applyTransactionalState((current): EditorState => {
+        const inserted=insertTableOfContents(current);
+        if(inserted===current)return current;
+        // Insertion is an explicit user action. If reliable pagination is
+        // unavailable, keep the new TOC with blank page labels rather than
+        // guessing or discarding the requested insertion.
+        const refresh=refreshTableOfContentsConvergently(inserted);
+        return refresh.status==="updated"||refresh.status==="unchanged"
+          ?refresh.state:inserted;
+      });
       options.focusInput();
       return true;
     },
     updateTableOfContents: (): boolean => {
       options.applyTransactionalState((current): EditorState =>
-        updateTableOfContents(current, buildTocPageResolver(current)),
+        refreshTableOfContentsConvergently(current).state,
       );
       options.focusInput();
       return true;
