@@ -76,7 +76,7 @@ export function refreshTableOfContentsConvergently(
     const candidate=updateTableOfContents(current,resolver,maxLevel);
     if(candidate===current){
       return {state:current===original?original:{...current,selection:original.selection},
-        layout,status:current===original?"unchanged":"updated",passes,
+        layout,status:current===original?"unchanged":"updated",passes:pass,
         updatedEntries:current===original?0:headings.length};
     }
     const signature=JSON.stringify([headings.map((h,i)=>[h.id,h.text,pages[i]]),
