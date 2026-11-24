@@ -94,12 +94,12 @@ export function compileFieldInstruction(raw: string): EvaluatableField | undefin
        op.kind!=="word"||!["=","<>","<",">","<=",">="].includes(op.value)||
        (right.kind!=="word"&&right.kind!=="quoted")||
        yes.kind!=="quoted"||no.kind!=="quoted"||
-       [left,right,yes,no].some(t=>t.value.length>4096||/[\\r\\n\\t]/.test(t.value)))return undefined;
+       [left,right,yes,no].some(t=>t.value.length>4096||/[\r\n\t]/.test(t.value)))return undefined;
     // A bare word could be a field expression / bookmark reference.
     // Only numeric bare tokens are considered literal operands.
-    const operand=(t:typeof left):boolean=>t.kind==="quoted"||/^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$/.test(t.value);
+    const operand=(t:typeof left):boolean=>t.kind==="quoted"||/^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(t.value);
     if(!operand(left)||!operand(right))return undefined;
-    const numberPattern=/^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$/;
+    const numberPattern=/^-?(?:0|[1-9]\d*)(?:\.\d+)?$/;
     const numeric=numberPattern.test(left.value)&&numberPattern.test(right.value);
     if(numeric&&(!Number.isFinite(Number(left.value))||!Number.isFinite(Number(right.value))))return undefined;
     if(!numeric&&op.value!=="="&&op.value!=="<>")return undefined;
