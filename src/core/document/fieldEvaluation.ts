@@ -17,8 +17,20 @@ export interface SequenceField {
   headingLevel?:number;
   format?:PageNumberFormat;
 }
+export type ConditionalOperand =
+  | {kind:"literal";value:string}
+  | {kind:"document-variable"|"document-property";name:string};
+export interface NestedConditionalField {
+  type:"IF_NESTED";
+  left:ConditionalOperand;
+  right:ConditionalOperand;
+  operator:"="|"<>"|"<"|">"|"<="|">=";
+  whenTrue:string;
+  whenFalse:string;
+}
 export type EvaluatableField =
   | SequenceField
+  | NestedConditionalField
   | { type: TemporalFieldCommand; temporal: true; picture?: string }
   | { type: NumericFieldCommand; format?: PageNumberFormat }
   | { type: ReferenceFieldCommand; bookmark: string; hyperlink?: boolean }
@@ -228,6 +240,40 @@ export function evaluateField(
   locked = false,
 ): FieldEvaluation {
   if (locked) return preserved(cachedText, "locked");
+  if(field.type==="IF_NESTED"){
+    const dependencies:FieldDependency[]=[{kind:"literal-condition"}];
+    const resolve=(operand:ConditionalOperand):string|undefined=>{
+      if(operand.kind==="literal")return operand.value;
+      const key=operand.name.toLowerCase();
+      dependencies.push(operand.kind==="document-variable"
+        ? {kind:"document-variable",name:key}
+        : {kind:"document-property",name:key});
+      return operand.kind==="document-variable"
+        ? resolveDocumentVariable(context.documentVariables,operand.name)
+        : resolveDocumentProperty(context.documentProperties,operand.name);
+    };
+    const left=resolve(field.left),right=resolve(field.right);
+    if(left===undefined||right===undefined||left.length>4096||right.length>4096||
+       /[\r\n\t\u0000-\u001f]/.test(left)||/[\r\n\t\u0000-\u001f]/.test(right))
+      return preserved(cachedText,"unresolved",dependencies);
+    const numberPattern=/^-?(?:0|[1-9]\d*)(?:\.\d+)?$/;
+    const numeric=numberPattern.test(left)&&numberPattern.test(right)&&
+      Number.isFinite(Number(left))&&Number.isFinite(Number(right));
+    if(!numeric&&field.operator!=="="&&field.operator!=="<>")
+      return preserved(cachedText,"unresolved",dependencies);
+    const a=numeric?Number(left):left;
+    const b=numeric?Number(right):right;
+    let match=false;
+    switch(field.operator){
+      case "=":match=a===b;break;
+      case "<>":match=a!==b;break;
+      case "<":match=typeof a==="number"&&typeof b==="number"&&a<b;break;
+      case ">":match=typeof a==="number"&&typeof b==="number"&&a>b;break;
+      case "<=":match=typeof a==="number"&&typeof b==="number"&&a<=b;break;
+      case ">=":match=typeof a==="number"&&typeof b==="number"&&a>=b;break;
+    }
+    return {status:"resolved",text:match?field.whenTrue:field.whenFalse,dependencies};
+  }
   if(field.type==="DOCPROPERTY"){
     const dependencies:FieldDependency[]=[{kind:"document-property",name:field.name.toLowerCase()}];
     const value=resolveDocumentProperty(context.documentProperties,field.name);

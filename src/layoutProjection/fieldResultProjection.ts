@@ -7,6 +7,7 @@ import type { ITextMeasurer } from "@/core/engine.js";
 import { createDocumentFieldContext } from "@/core/document/fieldDocumentContext.js";
 import { createStyleRefIndex } from "@/core/document/styleReference.js";
 import { buildFieldStoryGraph } from "@/core/document/fieldStoryGraph.js";
+import { compileNestedConditionalField } from "@/core/document/nestedConditionalFields.js";
 import { compileFieldInstruction, evaluateField, type EvaluatableField } from "@/core/document/fieldEvaluation.js";
 import { projectParagraphLayout, type LayoutProjectionContext } from "./paragraphPagination.js";
 import { buildDisplayOffsetMap } from "./fieldDisplayOffsetMap.js";
@@ -33,12 +34,14 @@ export function indexFieldStory(blocks: readonly EditorBlockNode[], out: Map<str
     for (let i = span.begin.paragraphIndex; i <= span.end.paragraphIndex; i++) covered.add(i);
     if (span.beginMarker.fieldLock || !span.separator ||
         span.begin.paragraphIndex !== span.end.paragraphIndex ||
-        span.code.some(p => p.kind !== "instruction") || span.result.length !== 1) continue;
+        span.code.some(p => p.kind === "run") || span.result.length !== 1) continue;
     const result = span.result[0]!;
     if (result.kind !== "run") continue;
     const paragraph = ps[span.begin.paragraphIndex]!;
     if (paragraph.runs[result.point.runIndex]?.kind !== "text") continue;
-    const field = compileFieldInstruction(span.code.map(p => p.kind === "instruction" ? p.raw : "").join(""));
+    const field = span.code.some(part => part.kind === "nested")
+      ? compileNestedConditionalField(span,graph,paragraph)
+      : compileFieldInstruction(span.code.map(p => p.kind === "instruction" ? p.raw : "").join(""));
     if (field) add(paragraph, { runIndex: result.point.runIndex, field });
   }
   for (const [index, p] of ps.entries()) {
