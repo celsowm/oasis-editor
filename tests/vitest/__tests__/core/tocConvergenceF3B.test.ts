@@ -106,7 +106,9 @@ describe("F3B transactional convergent TOC refresh",()=>{
       focus:{paragraphId:entry.id,runId:entry.runs[0]!.id,offset:0},
     }};
     expect(refreshTableOfContentsConvergently(selected)).toMatchObject({
-      status:"unsupported",passes:0,state:selected,
+      // The first certified layout must be measured before knowing whether
+      // any existing TOC entry would be replaced.
+      status:"unsupported",passes:1,state:selected,
     });
     const begin=section.blocks[region.startBlockIndex] as EditorParagraphNode;
     const locked={...state,document:{...state.document,sections:[{
