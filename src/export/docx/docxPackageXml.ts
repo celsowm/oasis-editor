@@ -1,3 +1,4 @@
+import {serializeDocumentVariables} from "@/ooxml/word/documentVariables.js";
 import type { EditorFontInfo, EditorFootnoteSettings } from "@/core/model.js";
 import { imageContentTypeDefaults } from "@/utils/imageFormats.js";
 import type { DocContext, PartDefinition } from "./docxTypes.js";
@@ -210,6 +211,7 @@ export function buildSettingsXml(
   endnoteSettings?: EditorFootnoteSettings,
   allowSpaceOfSameStyleInTable?: boolean,
   hyphenation?: HyphenationSettingsXml,
+  documentVariables?: Readonly<Record<string,string>>,
 ): string {
   const parts: string[] = [];
   const defaultTabStopTwips = pointsToTwips(defaultTabStop);
@@ -248,6 +250,7 @@ export function buildSettingsXml(
   if (allowSpaceOfSameStyleInTable) {
     parts.push(`<w:compat><w:allowSpaceOfSameStyleInTable/></w:compat>`);
   }
+  parts.push(serializeDocumentVariables(documentVariables));
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="${WORD_NS}">${parts.join("")}</w:settings>`;
 }
 

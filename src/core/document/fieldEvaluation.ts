@@ -3,6 +3,7 @@ import { formatPageNumber, pageNumberFormatFromSwitch } from "@/core/format/page
 import { parseFieldInstruction } from "@/ooxml/word/fieldInstruction.js";
 import { formatTemporalPicture, supportsTemporalPicture, type TemporalFormattingOptions } from "@/core/format/temporalFieldFormat.js";
 import type { FieldStorySpan } from "./fieldStoryGraph.js";
+import {resolveDocumentVariable} from "@/ooxml/word/documentVariables.js";
 
 export type NumericFieldCommand = "PAGE" | "NUMPAGES" | "SECTION" | "SECTIONPAGES";
 export type ReferenceFieldCommand = "REF" | "PAGEREF";
@@ -20,6 +21,7 @@ export type EvaluatableField =
   | { type: TemporalFieldCommand; temporal: true; picture?: string }
   | { type: NumericFieldCommand; format?: PageNumberFormat }
   | { type: ReferenceFieldCommand; bookmark: string; hyperlink?: boolean }
+  | { type:"DOCVARIABLE"; name:string }
   | { type:"STYLEREF"; style:string; lastOnPage:boolean; output?:"number"|"position" }
   | { type:"IF"; left:string; right:string; operator:"="|"<>"|"<"|">"|"<="|">="; whenTrue:string; whenFalse:string; numeric:boolean };
 
@@ -29,7 +31,8 @@ export type FieldDependency =
   | { kind: "clock" | "created" | "saved" | "printed" }
   | { kind:"sequence"; name:string }
   | { kind:"style-text"; name:string; lastOnPage:boolean }
-  | { kind:"literal-condition" };
+  | { kind:"literal-condition" }
+  | { kind:"document-variable"; name:string };
 
 /** All numbers are the caller's one-based display values, not array indexes.
  * No DOM, clock, mutable editor state or layout service is consulted here.
@@ -37,6 +40,7 @@ export type FieldDependency =
  * when it has positively established that the target does not exist. */
 export interface FieldEvaluationContext {
   temporal?: TemporalFieldContext;
+  documentVariables?: Readonly<Record<string,string>>;
   /** Precomputed value for this exact SEQ occurrence, never a mutable counter. */
   sequenceValue?: number;
   pageNumber?: number;
@@ -84,6 +88,12 @@ export function compileFieldInstruction(raw: string): EvaluatableField | undefin
   const parsed = parseFieldInstruction(raw);
   if (parsed.error || !parsed.command) return undefined;
   const args = parsed.tokens.slice(1);
+  if(parsed.command==="DOCVARIABLE"){
+    if(args.length!==1||(args[0]?.kind!=="word"&&args[0]?.kind!=="quoted"))return undefined;
+    const name=args[0].value;
+    if(name.length<1||name.length>128||!/^[\p{L}][\p{L}\p{N}_ .-]*$/u.test(name))return undefined;
+    return {type:"DOCVARIABLE",name};
+  }
   if(parsed.command==="IF"){
     // No nested evaluation, dereferencing or expansion of field code.
     // Both branch results must be quoted, bounded, plain text literals.
@@ -205,6 +215,12 @@ export function evaluateField(
   locked = false,
 ): FieldEvaluation {
   if (locked) return preserved(cachedText, "locked");
+  if(field.type==="DOCVARIABLE"){
+    const dependencies:FieldDependency[]=[{kind:"document-variable",name:field.name.toLowerCase()}];
+    const value=resolveDocumentVariable(context.documentVariables,field.name);
+    return value===undefined?preserved(cachedText,"unresolved",dependencies):
+      {status:"resolved",text:value,dependencies};
+  }
   if(field.type==="IF"){
     const dependency:FieldDependency[]=[{kind:"literal-condition"}];
     const a=field.numeric?Number(field.left):field.left;

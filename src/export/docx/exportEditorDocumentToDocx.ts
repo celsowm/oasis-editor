@@ -354,7 +354,8 @@ async function buildDocx(
     document.settings?.hyphenationZone !== undefined ||
     document.settings?.doNotHyphenateCaps !== undefined ||
     document.footnotes?.settings !== undefined ||
-    document.endnotes?.settings !== undefined;
+    document.endnotes?.settings !== undefined ||
+    (document.documentVariables!==undefined&&Object.keys(document.documentVariables).length>0);
   const allImages = [
     ...bodyContext.images,
     ...parts.flatMap((part) => part.context.images),
@@ -489,6 +490,7 @@ async function buildDocx(
           hyphenationZone: document.settings?.hyphenationZone,
           doNotHyphenateCaps: document.settings?.doNotHyphenateCaps,
         },
+        document.documentVariables,
       ),
     );
   }

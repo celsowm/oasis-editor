@@ -26,6 +26,7 @@ import {
 } from "./relationships.js";
 import { parseDocxTheme } from "./theme.js";
 import { parseSettings } from "./settings.js";
+import {readDocumentVariables} from "@/ooxml/word/documentVariables.js";
 import { parseNumbering } from "./numbering.js";
 import { parseImportedStyles } from "./stylesXml.js";
 import { parseFontTable } from "./fontTable.js";
@@ -79,6 +80,7 @@ export async function importDocxToEditorDocument(
   const settingsXml =
     (await zip.file("word/settings.xml")?.async("string")) ?? null;
   const docSettings = parseSettings(settingsXml);
+  const documentVariables=readDocumentVariables(settingsXml);
   const stylesXml =
     (await zip.file("word/styles.xml")?.async("string")) ?? null;
   const fontTable = parseFontTable(
@@ -110,7 +112,7 @@ export async function importDocxToEditorDocument(
   if (!body) {
     return { ...createEditorDocument([
       createEditorParagraphFromRuns([{ text: "" }]),
-    ]), ...(coreTimestamps ? {coreTimestamps} : {}) };
+    ]), ...(coreTimestamps ? {coreTimestamps} : {}),...(documentVariables?{documentVariables}:{}) };
   }
 
   // Single registry shared across body, headers and footers so identical
@@ -598,6 +600,7 @@ export async function importDocxToEditorDocument(
       doc.fontTable = fontTable;
     }
     if(coreTimestamps)doc.coreTimestamps=coreTimestamps;
+    if(documentVariables)doc.documentVariables=documentVariables;
     let result = doc;
     if (editorFootnotes) {
       result.footnotes = editorFootnotes;
