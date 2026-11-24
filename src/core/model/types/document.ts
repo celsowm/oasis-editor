@@ -296,6 +296,8 @@ export interface EditorDocument {
    * substitution metadata. Preserved on import and re-emitted on export.
    */
   fontTable?: EditorFontInfo[];
+  /** Qualified plain-text document properties read from OPC core and custom parts. */
+  documentProperties?: {core?:Record<string,string>;custom?:Record<string,string>};
   /** Imported w:docVars plain-text values. */
   documentVariables?: Record<string,string>;
   /** Actual document lifecycle timestamps, epoch milliseconds. Missing means unknown. */

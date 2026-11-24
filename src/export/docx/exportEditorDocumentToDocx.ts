@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 import { applyPackageCoreTimestamps } from "@/ooxml/opc/coreProperties.js";
+import {applyCanonicalDocumentProperties} from "@/ooxml/opc/documentProperties.js";
 import type { EditorBlockNode, EditorDocument, EditorDocxSourcePackage } from "@/core/model.js";
 import { getDocumentSections, resolveImageSrc } from "@/core/model.js";
 import { EMU_PER_PX } from "@/core/units.js";
@@ -195,7 +196,7 @@ function writeNotePart(
 export async function exportEditorDocumentToDocx(
   document: EditorDocument,
 ): Promise<ArrayBuffer> {
-  return applyPackageCoreTimestamps(await buildDocx(document),document);
+  return applyPackageCoreTimestamps(await applyCanonicalDocumentProperties(await buildDocx(document),document),document);
 }
 
 /** Internal incomplete package: usable ONLY for original-source overlay or

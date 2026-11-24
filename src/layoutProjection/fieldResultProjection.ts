@@ -131,7 +131,7 @@ export function refreshProjectedFields(
           // PAGEREF formatted labels and chapter numbering remain separate.
           if (field.type === "PAGEREF" && sections.some(s => s.pageNumbering?.format && s.pageNumbering.format !== "decimal")) continue;
           const previous = texts[runIndex]!;
-          const evaluated = evaluateField(field,{...fieldContext,documentVariables:document.documentVariables,styleRefText:body
+          const evaluated = evaluateField(field,{...fieldContext,documentVariables:document.documentVariables,documentProperties:document.documentProperties,styleRefText:body
             ? (name,last,output)=>styleRefs.forBody(p.id,name,last,{
                 output,offset:offsets[runIndex],
                 locale:p.runs[runIndex]?.styles?.language?.value?.toLowerCase()==="pt-br"?"pt-BR":"en-US",

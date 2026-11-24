@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 import { readPackageCoreTimestamps } from "@/ooxml/opc/coreProperties.js";
+import {readPackageDocumentProperties} from "@/ooxml/opc/documentProperties.js";
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 import type {
   EditorBlockNode,
@@ -64,6 +65,7 @@ export async function importDocxToEditorDocument(
   options.onProgress?.("opening-docx");
   const zip = await JSZip.loadAsync(buffer);
   const coreTimestamps = await readPackageCoreTimestamps(zip);
+  const documentProperties=await readPackageDocumentProperties(zip);
   const documentXml = await zip.file("word/document.xml")?.async("string");
   if (!documentXml) {
     throw new Error("Missing word/document.xml");
@@ -112,7 +114,7 @@ export async function importDocxToEditorDocument(
   if (!body) {
     return { ...createEditorDocument([
       createEditorParagraphFromRuns([{ text: "" }]),
-    ]), ...(coreTimestamps ? {coreTimestamps} : {}),...(documentVariables?{documentVariables}:{}) };
+    ]), ...(coreTimestamps ? {coreTimestamps} : {}),...(documentVariables?{documentVariables}:{}),...(documentProperties?{documentProperties}:{}) };
   }
 
   // Single registry shared across body, headers and footers so identical
@@ -600,6 +602,7 @@ export async function importDocxToEditorDocument(
       doc.fontTable = fontTable;
     }
     if(coreTimestamps)doc.coreTimestamps=coreTimestamps;
+    if(documentProperties)doc.documentProperties=documentProperties;
     if(documentVariables)doc.documentVariables=documentVariables;
     let result = doc;
     if (editorFootnotes) {

@@ -127,3 +127,7 @@ Implement a pure, deterministic compiler/evaluator for five-token IF fields cont
 ## Slice F2A — bounded DOCVARIABLE fields
 
 Read plain-text Word w:docVars from word/settings.xml with unique case-insensitive names and strict bounds, then resolve scalar DOCVARIABLE via explicit snapshot dependencies. Serialize valid values on canonical DOCX output. Source-backed export retains original settings parts when unchanged; editing docVars in a source-backed document is not yet supported. Duplicate, malicious and unrecognized variables preserve existing cached field results. No external execution, custom DOCPROPERTY, nested IF, TOC or dynamic variable UI in this slice. CI pending.
+
+## Slice F2B — bounded DOCPROPERTY core and custom OPC snapshots
+
+Import plain-text qualified core and custom properties from uniquely referenced internal OPC package parts. Built-ins include Title, Subject, Author, Keywords, Comments, Category, LastSavedBy, RevisionNumber and ContentStatus. Custom properties support strings, bounded numeric and boolean scalar values; unsupported types and duplicate names remain unresolved. Resolve DOCPROPERTY with exact document snapshot dependencies and optional MERGEFORMAT, retain unknown cached field results, and use existing body refresh and projected display. Canonical exporter writes valid property snapshots without altering unsupported existing parts; source-backed export preserves original related property parts without attempting to edit them. No dates, complex/nested property expressions or dynamic IF operands yet. CI pending.
