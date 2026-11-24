@@ -14,8 +14,6 @@ import {
   getDocumentParagraphs,
   getDocumentSections,
   getParagraphText,
-  getRunFieldChar,
-  getRunFieldInstruction,
   paragraphOffsetToPosition,
 } from "@/core/model.js";
 import {
@@ -25,6 +23,8 @@ import {
 } from "@/core/units.js";
 import { roundTo } from "@/utils/round.js";
 import { getHeadingLevel } from "@/core/headings.js";
+import {findQualifiedTocRegion,createTocPageNumberResolver} from "@/core/document/tocFields.js";
+import type {EditorLayoutDocument} from "@/core/model.js";
 import { createEditorParagraph, createEditorRun } from "@/core/editorState.js";
 import { clampPosition } from "@/core/selection.js";
 import { withSelection } from "@/core/selection/rangeEditing.js";
@@ -221,56 +221,8 @@ export function insertTableOfContents(
   return replaceSectionBlocks(state, sectionIndex, nextBlocks, tocBlocks[0]!);
 }
 
-interface TocRegion {
-  /** Index of the block holding the `separate` marker (start boundary). */
-  startBlockIndex: number;
-  /** Index of the block holding the `end` marker (end boundary). */
-  endBlockIndex: number;
-}
-
-/** Locate the first TOC complex field in a section's top-level blocks. */
-function findTocRegion(blocks: EditorBlockNode[]): TocRegion | null {
-  let depth = 0;
-  let instruction = "";
-  let separateBlockIndex = -1;
-  let beginBlockIndex = -1;
-  let isToc = false;
-
-  for (let i = 0; i < blocks.length; i += 1) {
-    const block = blocks[i]!;
-    if (block.type !== "paragraph") continue;
-    for (const run of block.runs) {
-      const fieldChar = getRunFieldChar(run);
-      const fieldInstruction = getRunFieldInstruction(run);
-      if (fieldChar?.kind === "begin") {
-        depth += 1;
-        if (depth === 1) {
-          beginBlockIndex = i;
-          instruction = "";
-          isToc = false;
-          separateBlockIndex = -1;
-        }
-      } else if (depth === 1 && fieldInstruction !== undefined) {
-        instruction += fieldInstruction;
-        if (/\bTOC\b/i.test(instruction)) isToc = true;
-      } else if (fieldChar?.kind === "separate") {
-        if (depth === 1) separateBlockIndex = i;
-      } else if (fieldChar?.kind === "end") {
-        if (depth === 1) {
-          if (isToc) {
-            return {
-              startBlockIndex:
-                separateBlockIndex >= 0 ? separateBlockIndex : beginBlockIndex,
-              endBlockIndex: i,
-            };
-          }
-        }
-        depth = Math.max(0, depth - 1);
-      }
-    }
-  }
-  return null;
-}
+/** Only complete, recognized TOC fields may be regenerated. */
+const findTocRegion=findQualifiedTocRegion;
 
 /**
  * Regenerate the entries of an existing TOC field from the current headings,
@@ -282,6 +234,7 @@ export function updateTableOfContents(
   resolvePage: TocPageNumberResolver = (): undefined => undefined,
   maxLevel = DEFAULT_TOC_MAX_LEVEL,
 ): EditorState {
+  if(getActiveZone(state)!=="main")return state;
   const sectionIndex = getActiveSectionIndex(state);
   const sections = getDocumentSections(state.document);
   const section = sections[sectionIndex];
@@ -290,7 +243,16 @@ export function updateTableOfContents(
   const region = findTocRegion(section.blocks);
   if (!region) return state;
 
-  const headings = collectTocHeadings(state, maxLevel);
+  const headings = collectTocHeadings(state, Math.min(maxLevel,region.endLevel))
+    .filter(heading=>heading.level>=region.startLevel);
+  const byId=new Map(getDocumentParagraphs(state.document).map(p=>[p.id,p]));
+  if(headings.some(h=>{
+    const p=byId.get(h.id);
+    return !p||p.sdtWrappers?.length||p.numberingRevision||p.dropCap||
+      p.runs.some(r=>r.kind!=="text"||r.revision||r.revisionRangeMarker||
+        r.sdtWrappers?.length||r.styles?.hidden||r.styles?.rtl)||
+      h.text.length>4096||/[\\r\\n\\t]/.test(h.text);
+  }))return state;
   const entries = headings.map((heading): EditorParagraphNode =>
     buildEntryParagraph(
       heading,
@@ -299,6 +261,9 @@ export function updateTableOfContents(
     ),
   );
 
+  const prior=section.blocks.slice(region.startBlockIndex+1,region.endBlockIndex);
+  if(prior.length===entries.length&&prior.every((p,i)=>
+    p.type==="paragraph"&&getParagraphText(p)===getParagraphText(entries[i]!)))return state;
   const nextBlocks = [
     ...section.blocks.slice(0, region.startBlockIndex + 1),
     ...entries,
@@ -315,8 +280,18 @@ export function updateTableOfContents(
   );
 }
 
+/** Update a qualified TOC from a known completed layout snapshot. This is
+ * intentionally not automatic convergence; callers must remeasure if pages
+ * shift after regeneration. Missing page facts are kept blank. */
+export function updateTableOfContentsFromLayout(
+  state:EditorState, layout:EditorLayoutDocument,maxLevel=DEFAULT_TOC_MAX_LEVEL,
+):EditorState{
+  return updateTableOfContents(state,createTocPageNumberResolver(state.document,layout),maxLevel);
+}
+
 /** Whether a TOC field exists in the active section (for menu enablement). */
 export function hasTableOfContents(state: EditorState): boolean {
+  if(getActiveZone(state)!=="main")return false;
   const section = getDocumentSections(state.document)[
     getActiveSectionIndex(state)
   ];
