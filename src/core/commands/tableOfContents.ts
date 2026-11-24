@@ -297,5 +297,5 @@ export function hasTableOfContents(state: EditorState): boolean {
   const section = getDocumentSections(state.document)[
     getActiveSectionIndex(state)
   ];
-  return section ? findTocRegion(section.blocks) !== null : false;
+  return section ? findTocRegion(section.blocks) !== undefined : false;
 }
