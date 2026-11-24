@@ -259,7 +259,7 @@ export function updateTableOfContents(
   // Do not erase printed labels from a source TOC when no certified
   // pagination value was supplied for a heading.
   if(pageValues.some(n=>n===undefined)&&prior.some(p=>
-    p.type==="paragraph"&&/\\t\\S/.test(getParagraphText(p))))return state;
+    p.type==="paragraph"&&/\t\S/.test(getParagraphText(p))))return state;
   const entries = headings.map((heading,i): EditorParagraphNode =>
     buildEntryParagraph(heading,pageValues[i],rightTabPositionForSection(section)),
   );
