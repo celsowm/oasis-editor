@@ -4,7 +4,11 @@ import {createEditorBookmarkId} from "@/core/editorState.js";
 import {collectQualifiedTocHeadings} from "@/core/commands/tableOfContents.js";
 import {createTocPageNumberResolver,findQualifiedTocRegion} from "./tocFields.js";
 import {projectDocumentLayout} from "@/layoutProjection/documentLayout.js";
-import type {TocPaginate} from "./tocConvergence.js";
+import {refreshTableOfContentsConvergently,type TocPaginate,type TocConvergenceResult} from "./tocConvergence.js";
+
+// Accept the earlier staging prefix for compatibility, but author names
+// under Word’s 40-character limit (9-character prefix + 30 hex digits).
+const isOwnedTocName=(name:string)=>/^_TocOasis(?:[0-9a-f]{30}|[0-9a-f]{32})$/.test(name);
 
 export interface TocLinkResult {
   state:EditorState;
@@ -71,12 +75,12 @@ export function linkQualifiedTableOfContents(
         names.get(link.slice(1).toLowerCase())?.name!==link.slice(1))return fail("unsupported",before);
       continue;
     }
-    let bookmark=Object.values(items).find(bm=>/^_TocOasis[0-9a-f]{32}$/.test(bm.name)&&
+    let bookmark=Object.values(items).find(bm=>isOwnedTocName(bm.name)&&
       names.get(bm.name.toLowerCase())===bm&&matches(bm,target));
     if(!bookmark){
       const id=createEditorBookmarkId();
-      const name="_TocOasis"+id.replace(/^bookmark:/,"").replace(/-/g,"");
-      if(!/^_TocOasis[0-9a-f]{32}$/.test(name)||Object.hasOwn(items,id)||names.has(name.toLowerCase()))
+      const name="_TocOasis"+id.replace(/^bookmark:/,"").replace(/-/g,"").slice(0,30);
+      if(!isOwnedTocName(name)||Object.hasOwn(items,id)||names.has(name.toLowerCase()))
         return fail("unsupported",before);
       bookmark={id,name,hidden:true,start:{paragraphId:target.id,offset:0},
         end:{paragraphId:target.id,offset:getParagraphLength(target)}};
@@ -93,4 +97,60 @@ export function linkQualifiedTableOfContents(
   const verify=createTocPageNumberResolver(document,after);
   if(headings.some((h,i)=>verify(h.id)!==pages[i]))return fail("unresolved",before);
   return {state:{...original,document},status:"updated",layout:after};
+}
+
+
+/** Regenerate owned flat linked TOCs transactionally.
+ * First accept a certified current cache; otherwise remove only owned links
+ * on a provisional snapshot, converge plain labels, then reattach targets
+ * and remeasure. No intermediate state enters history. Foreign/ambiguous
+ * links and ranges anchored in replaced entries are not rewritten.
+ */
+export function refreshLinkedTableOfContents(
+  original:EditorState,paginate:TocPaginate=projectDocumentLayout,
+):TocConvergenceResult{
+  let passes=0;
+  const measure:TocPaginate=doc=>{passes++;return paginate(doc);};
+  const fail=(status:TocConvergenceResult["status"]):TocConvergenceResult=>
+    ({state:original,status,passes,updatedEntries:0});
+  if(getActiveZone(original)!=="main"||original.trackChangesEnabled)return fail("unsupported");
+  const index=getActiveSectionIndex(original),sections=getDocumentSections(original.document);
+  const section=sections[index],region=section&&findQualifiedTocRegion(section.blocks);
+  if(!section||!region?.hyperlinks)return fail("unsupported");
+  const entries=section.blocks.slice(region.startBlockIndex+1,region.endBlockIndex);
+  const existing=linkQualifiedTableOfContents(original,measure);
+  if(existing.status==="unchanged")return {...existing,passes,updatedEntries:0};
+  if(existing.status==="updated")return {...existing,passes,updatedEntries:entries.length};
+  if(existing.status==="unresolved")return fail("unresolved");
+
+  // A stale entry's owned bookmark may have been removed by a legitimate
+  // heading deletion. Missing owned targets are repairable; ambiguous names,
+  // foreign links or malformed surviving targets are not.
+  const bookmarks=Object.values(original.document.bookmarks?.items??{});
+  const replacements=new Map<string,EditorParagraphNode>();
+  for(const entry of entries){
+    if(entry.type!=="paragraph")return fail("unsupported");
+    const run=entry.runs[0]!,link=run.styles?.link;
+    if(!link)continue;
+    if(!link.startsWith("#")||!isOwnedTocName(link.slice(1)))return fail("unsupported");
+    const matching=bookmarks.filter(b=>b.name.toLowerCase()===link.slice(1).toLowerCase());
+    if(matching.length>1||matching.some(b=>b.name!==link.slice(1)||!b.hidden||
+      b.colFirst!==undefined||b.colLast!==undefined))return fail("unsupported");
+    const {link:_link,...styles}=run.styles!;
+    replacements.set(entry.id,{...entry,runs:[{...run,styles}]});
+  }
+  const entryIds=new Set(entries.map(b=>b.id));
+  // Bookmarks into cache entries must not be orphaned by replacing blocks.
+  if(bookmarks.some(b=>[b.start,b.end].some(a=>a&&entryIds.has(a.paragraphId))))
+    return fail("unsupported");
+  const staged:EditorState=replacements.size?{...original,document:{...original.document,
+    sections:sections.map((s,i)=>i===index?{...s,blocks:s.blocks.map(b=>replacements.get(b.id)??b)}:s),
+  }}:original;
+  const plain=refreshTableOfContentsConvergently(staged,measure);
+  if(plain.status!=="updated"&&plain.status!=="unchanged")return fail(plain.status);
+  const linked=linkQualifiedTableOfContents(plain.state,measure);
+  if(linked.status!=="updated"&&linked.status!=="unchanged")return fail(linked.status);
+  const headings=collectQualifiedTocHeadings(linked.state,region);
+  if(!headings)return fail("unsupported");
+  return {state:linked.state,layout:linked.layout,status:"updated",passes,updatedEntries:headings.length};
 }
