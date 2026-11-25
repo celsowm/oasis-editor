@@ -14,6 +14,7 @@ import type { createEditorTableOperations } from "@/app/controllers/useEditorTab
 import type { createEditorImageOperations } from "@/app/controllers/useEditorImageOperations.js";
 import type { createEditorStyleController } from "@/app/controllers/useEditorStyle.js";
 import type { EditorFormatPainter } from "./createEditorFormatPainter.js";
+import {createOutlineNavigator} from "@/ui/shells/outlineNavigator.js";
 
 type TableDragParams = Parameters<typeof createEditorTableDrag>[0];
 type TextDragParams = Parameters<typeof createEditorTextDrag>[0];
@@ -143,6 +144,10 @@ export function useEditorInteractionWiring(
     resetTransactionGrouping: ctx.resetTransactionGrouping,
     focusInputAfterPointerSelection: ctx.focusInputAfterPointerSelection,
     focusInputSync: ctx.focusInputSync,
+    scrollToLinkedParagraph:createOutlineNavigator({
+      state,documentLayout:ctx.documentLayout,surfaceRef:ctx.surfaceRef,
+      viewportRef:ctx.viewportRef,zoomFactor:ctx.zoomFactor,snapshotProvider:ctx.canvasSnapshotProvider,
+    }),
     resolveSurfaceHitAtPoint: ctx.resolveSurfaceHitAtPoint,
     getParagraphById,
     textDrag: {

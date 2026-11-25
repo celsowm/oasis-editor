@@ -18,6 +18,7 @@ import { resolveWordSelection } from "@/core/wordBoundaries.js";
 import { setSelection } from "@/core/commands/selection.js";
 import { createSectionBoundaryParagraph } from "@/core/editorState.js";
 import type { SurfaceHit } from "@/ui/canvas/CanvasHitTestService.js";
+import {resolveTocLinkNavigation} from "@/core/document/tocLinkNavigation.js";
 
 /**
  * A triple-click reuses the cached mouse-down hit test only when the click is
@@ -96,6 +97,7 @@ export interface UseEditorSurfaceEventsProps {
   /** Called after the final pointer selection has been committed to EditorState. */
   onSelectionFinalized?: () => void;
   clearPreferredColumn: () => void;
+  scrollToLinkedParagraph?: (paragraphId:string)=>void;
   resetTransactionGrouping: () => void;
   focusInputAfterPointerSelection: () => void;
   /** Synchronous focus, required for touch to raise the on-screen keyboard. */
@@ -682,6 +684,20 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
       deps.focusInputAfterPointerSelection();
       return;
     }
+    // Modifier-click follows only a qualified internal TOC target. No
+    // document mutation or history transaction, and no external URL opening.
+    if(!isTouch(event)&&(event.ctrlKey||event.metaKey)&&!event.altKey&&!event.shiftKey&&
+      hit.zone==="main"&&hit.resolvedFromParagraph&&hit.insideTextLine&&!hit.image&&!hit.textBox){
+      const next=resolveTocLinkNavigation(state,hit.paragraphId,hit.paragraphOffset);
+      if(next){
+        stopDragging();
+        clickStreak=0;
+        deps.applyState(next);
+        deps.focusInputAfterPointerSelection();
+        deps.scrollToLinkedParagraph?.(next.selection.focus.paragraphId);
+        return;
+      }
+    }
     // Dragging selected text to move it is a mouse/pen gesture: with a finger
     // the same motion is a scroll, and there is no modifier to tell them apart.
     if (!isTouch(event) && deps.textDrag?.tryStartTextDrag(event, hit)) {
@@ -865,7 +881,7 @@ function createEditorSurfaceEventsImpl(deps: UseEditorSurfaceEventsProps) {
   };
 
   const handleSurfaceClick = (event: MouseEvent): void => {
-    if (event.detail < 3) {
+    if (event.ctrlKey || event.metaKey || event.detail < 3) {
       return;
     }
     event.preventDefault();

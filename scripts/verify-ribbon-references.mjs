@@ -90,6 +90,8 @@ try {
       const state = client.getState();
       return {
         has: hasTableOfContents(state),
+        links: state.document.sections[0].blocks.flatMap(b=>b.type==="paragraph"?b.runs.flatMap(r=>r.styles?.link?.startsWith("#_TocOasis")?[r.styles.link]:[]):[]),
+        targets: Object.values(state.document.bookmarks?.items??{}).map(b=>"#"+b.name),
         texts: state.document.sections[0].blocks
           .filter((block) => block.type === "paragraph")
           .flatMap((p) => p.runs.map((run) => run.text))
@@ -99,6 +101,8 @@ try {
     assert.equal(tocState.has, true);
     assert.ok(tocState.texts.includes("Ribbon reference"));
     assert.ok(tocState.texts.includes("Heading two"));
+    assert.ok(tocState.links.length>=2,"TOC should have internal links");
+    assert.ok(tocState.links.every(link=>tocState.targets.includes(link)));
 
     // 2. Update TOC is a safe no-op when the field already exists.
     await (
@@ -143,6 +147,8 @@ try {
       "document.xml should contain the TOC entries",
     );
 
+    assert.ok(documentXml.includes('w:anchor="_TocOasis'));
+    assert.ok(documentXml.includes('w:name="_TocOasis'));
     // 4. Footnote: inserting from the ribbon moves the caret into the note body.
     await loadFixture(page, "text");
     await placeCaretInParagraph(page, 1, 7);

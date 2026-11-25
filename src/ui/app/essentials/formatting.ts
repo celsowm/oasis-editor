@@ -44,6 +44,15 @@ import {
 } from "@/core/commands/reviewNavigation.js";
 import { insertTableOfContents,hasTableOfContents } from "@/core/commands/tableOfContents.js";
 import { refreshTableOfContentsConvergently } from "@/core/document/tocConvergence.js";
+import {refreshLinkedTableOfContents} from "@/core/document/tocLinks.js";
+import {findQualifiedTocRegion} from "@/core/document/tocFields.js";
+import {getDocumentSections,getActiveSectionIndex} from "@/core/model.js";
+
+function refreshRibbonToc(state:EditorState){
+  const section=getDocumentSections(state.document)[getActiveSectionIndex(state)];
+  const region=section&&findQualifiedTocRegion(section.blocks);
+  return region?.hyperlinks?refreshLinkedTableOfContents(state):refreshTableOfContentsConvergently(state);
+}
 import {
   fontSizePtToPx,
   fontSizePxToPt,
@@ -276,7 +285,7 @@ export function buildEssentialsFormatting(
         // Insertion is an explicit user action. If reliable pagination is
         // unavailable, keep the new TOC with blank page labels rather than
         // guessing or discarding the requested insertion.
-        const refresh=refreshTableOfContentsConvergently(inserted);
+        const refresh=refreshRibbonToc(inserted);
         return refresh.status==="updated"||refresh.status==="unchanged"
           ?refresh.state:inserted;
       });
@@ -285,7 +294,7 @@ export function buildEssentialsFormatting(
     },
     updateTableOfContents: (): boolean => {
       options.applyTransactionalState((current): EditorState =>
-        refreshTableOfContentsConvergently(current).state,
+        refreshRibbonToc(current).state,
       );
       options.focusInput();
       return true;

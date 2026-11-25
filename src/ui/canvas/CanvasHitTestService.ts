@@ -45,6 +45,8 @@ export interface SurfaceHit {
   source: "canvas-layout";
   missReason?: string;
   resolvedFromParagraph: boolean;
+  /** A real text-line hit, not nearest-paragraph/caret fallback. */
+  insideTextLine?: boolean;
   tableCellAnchorPosition?: EditorPosition;
   caretViewport?: { left: number; top: number; height: number };
   image?: SurfaceHitImage;
@@ -576,5 +578,10 @@ export function resolveCanvasSurfaceHitAtPoint(
     resolvedFromParagraph: true,
     tableCellAnchorPosition: paragraph.tableCell?.anchorPosition,
     caretViewport: paragraphHit.caretViewport,
+    insideTextLine: paragraph.lines.some(line=>{
+      if(clientY<line.top||clientY>line.top+line.height||line.slots.length<2)return false;
+      const xs=line.slots.map(s=>s.left);
+      return clientX>=Math.min(...xs)&&clientX<=Math.max(...xs);
+    }),
   };
 }
