@@ -98,7 +98,9 @@ describe("F3A safe TOC graph recognition and page geometry",()=>{
     const entry=getDocumentSections(updated.document)[0]!.blocks[region.startBlockIndex+1] as EditorParagraphNode;
     expect(getParagraphText(entry)).toBe("Introduction\t8");
     const roman={...doc,sections:[{...s,pageNumbering:{start:8,format:"upperRoman"}}]};
-    expect(createTocPageNumberResolver(roman,projectDocumentLayout(roman))(title.id)).toBeUndefined();
+    expect(createTocPageNumberResolver(roman,projectDocumentLayout(roman))(title.id)).toBe("VIII");
+    const unknown={...doc,sections:[{...s,pageNumbering:{start:8,format:"none"}}]};
+    expect(createTocPageNumberResolver(unknown,projectDocumentLayout(unknown))(title.id)).toBeUndefined();
   });
   it("preserves unsupported TOC instructions on canonical DOCX round-trip",async()=>{
     const {state}=make();

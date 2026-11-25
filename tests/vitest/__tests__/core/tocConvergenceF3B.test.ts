@@ -82,17 +82,41 @@ describe("F3B transactional convergent TOC refresh",()=>{
       status:"nonconvergent",passes:2,state,
     });
   });
+  it("uses each source section's formatted label and preserves it through DOCX round-trip",async()=>{
+    const first=createEditorParagraph("Preface");
+    first.style={styleId:"heading1"};
+    const second=createEditorParagraph("Chapter");
+    second.style={styleId:"heading1"};
+    const third=createEditorParagraph("Appendix");
+    third.style={styleId:"heading1"};
+    const base=createEditorDocument([first,second,third]);
+    const section=getDocumentSections(base)[0]!;
+    const document={...base,sections:[
+      {...section,blocks:[first],pageNumbering:{start:4,format:"lowerRoman"}},
+      {...section,id:"body",blocks:[second],pageNumbering:{start:1,format:"decimal"}},
+      {...section,id:"appendix",blocks:[third],pageNumbering:{start:28,format:"upperLetter"}},
+    ]};
+    const state=insertTableOfContents(createEditorStateFromDocument(document));
+    const result=refreshTableOfContentsConvergently(state);
+    expect(result.status).toBe("updated");
+    expect(entries(result.state.document)).toEqual(["Preface\tiv","Chapter\t1","Appendix\tBB"]);
+    expect(refreshTableOfContentsConvergently(result.state).status).toBe("unchanged");
+    const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(result.state.document));
+    expect(entries(reopened)).toEqual(entries(result.state.document));
+    expect(getDocumentSections(reopened).map(s=>s.pageNumbering?.format))
+      .toEqual(["lowerRoman","decimal","upperLetter"]);
+  });
   it("does not erase results when heading pagination is unresolved",()=>{
     const {state}=fixture();
     const withLabels=updateTableOfContents(state,()=>4);
     const original=JSON.stringify(withLabels.document);
     const section=getDocumentSections(withLabels.document)[0]!;
-    const roman={...withLabels,document:{...withLabels.document,sections:[
-      {...section,pageNumbering:{start:1,format:"upperRoman"}},
+    const unsupported={...withLabels,document:{...withLabels.document,sections:[
+      {...section,pageNumbering:{start:1,format:"none"}},
     ]}};
-    const result=refreshTableOfContentsConvergently(roman);
+    const result=refreshTableOfContentsConvergently(unsupported);
     expect(result.status).toBe("unresolved");
-    expect(result.state).toBe(roman);
+    expect(result.state).toBe(unsupported);
     expect(entries(result.state.document)).toEqual(["Chapter\t4"]);
     expect(JSON.stringify(withLabels.document)).toBe(original);
   });

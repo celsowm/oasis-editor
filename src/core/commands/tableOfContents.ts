@@ -23,6 +23,7 @@ import {
 } from "@/core/units.js";
 import { roundTo } from "@/utils/round.js";
 import { getHeadingLevel } from "@/core/headings.js";
+import { isValidTocPageLabel } from "@/core/format/pageNumberFormat.js";
 import {findQualifiedTocRegion,createTocPageNumberResolver} from "@/core/document/tocFields.js";
 import type {EditorLayoutDocument} from "@/core/model.js";
 import { createEditorParagraph, createEditorRun } from "@/core/editorState.js";
@@ -46,7 +47,7 @@ export interface TocHeading {
 }
 
 /** Page number resolver: heading paragraph id → printed page number. */
-export type TocPageNumberResolver = (headingId: string) => number | undefined;
+export type TocPageNumberResolver = (headingId: string) => number | string | undefined;
 
 /**
  * Collect heading paragraphs (levels 1..maxLevel) in document order. Headings
@@ -114,7 +115,7 @@ function makeParagraph(
  */
 function buildEntryParagraph(
   heading: TocHeading,
-  pageNumber: number | undefined,
+  pageNumber: number | string | undefined,
   rightTabPositionPt: number,
 ): EditorParagraphNode {
   const pageLabel = pageNumber !== undefined ? String(pageNumber) : "";
@@ -156,7 +157,10 @@ function buildTocBlocks(
   maxLevel: number,
 ): EditorParagraphNode[] {
   const entries = headings.map((heading): EditorParagraphNode =>
-    buildEntryParagraph(heading, resolvePage(heading.id), rightTabPositionPt),
+    {
+      const value=resolvePage(heading.id);
+      return buildEntryParagraph(heading,value!==undefined&&isValidTocPageLabel(value)?value:undefined,rightTabPositionPt);
+    },
   );
   return [buildStartMarkerParagraph(maxLevel), ...entries, buildEndMarkerParagraph()];
 }
@@ -257,7 +261,7 @@ export function updateTableOfContents(
   }))return state;
   const prior=section.blocks.slice(region.startBlockIndex+1,region.endBlockIndex);
   const pageValues=headings.map(h=>resolvePage(h.id));
-  if(pageValues.some(n=>n!==undefined&&(!Number.isSafeInteger(n)||n<1||n>1_000_000)))return state;
+  if(pageValues.some(n=>n!==undefined&&!isValidTocPageLabel(n)))return state;
   // Do not erase printed labels from a source TOC when no certified
   // pagination value was supplied for a heading.
   if(pageValues.some(n=>n===undefined)&&prior.some(p=>

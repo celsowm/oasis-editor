@@ -3,6 +3,7 @@ import {getDocumentSections} from "@/core/model.js";
 import {buildFieldStoryGraph} from "@/core/document/fieldStoryGraph.js";
 import {parseFieldInstruction} from "@/ooxml/word/fieldInstruction.js";
 import {createDocumentFieldContext} from "@/core/document/fieldDocumentContext.js";
+import {formatSectionPageLabel} from "@/core/format/pageNumberFormat.js";
 
 export interface TocFieldSettings {
   startLevel:number;
@@ -104,7 +105,7 @@ export function findQualifiedTocRegion(blocks:readonly EditorBlockNode[]):Qualif
  * paragraph order. A missing or uncertain physical section/page is unresolved. */
 export function createTocPageNumberResolver(
   document:EditorDocument,layout:EditorLayoutDocument,
-):(headingId:string)=>number|undefined{
+):(headingId:string)=>number|string|undefined{
   const context=createDocumentFieldContext(document,layout);
   const sections=getDocumentSections(document);
   const owners=new Map<string,number|null>();
@@ -114,14 +115,15 @@ export function createTocPageNumberResolver(
       owners.set(block.id,owners.has(block.id)?null:s);
     }
   });
-  return (headingId:string):number|undefined=>{
+  return (headingId:string):number|string|undefined=>{
     const owner=owners.get(headingId);
     if(owner===undefined||owner===null)return undefined;
     const section=sections[owner]!;
-    if(section.pageNumbering?.format&&section.pageNumbering.format!=="decimal")return undefined;
     const page=context.pageIndexAt(headingId,0);
-    const printed=page===undefined?undefined:context.forPosition(headingId,0).pageNumber;
-    return printed!==undefined&&Number.isSafeInteger(printed)&&printed>=1&&printed<=1_000_000
-      ?printed:undefined;
+    if(page===undefined)return undefined;
+    const facts=context.forPage(page);
+    // Ensure the measured heading really belongs to its source section.
+    if(facts.sectionNumber!==owner+1||facts.pageNumber===undefined)return undefined;
+    return formatSectionPageLabel(facts.pageNumber,section.pageNumbering?.format);
   };
 }

@@ -128,3 +128,33 @@ function toOrdinal(value: number): string {
           : "th";
   return `${n}${suffix}`;
 }
+
+/** Section w:pgNumType/@w:fmt is ST_NumberFormat, not a PAGE field
+ * general-format switch. Qualify only bounded, deterministic labels.
+ * WordprocessingML letter numbering repeats the same glyph after Z
+ * (AA, BB, ...), unlike the legacy alphabetic field formatter.
+ */
+export function formatSectionPageLabel(value:number,format:string|undefined):number|string|undefined{
+  if(!Number.isSafeInteger(value)||value<1||value>1_000_000)return undefined;
+  switch(format){
+    case undefined:
+    case "decimal": return value;
+    case "decimalZero": return String(value).padStart(2,"0");
+    case "upperRoman":
+    case "lowerRoman": return value<=3999?formatPageNumber(value,format==="upperRoman"?"ROMAN":"roman"):undefined;
+    case "upperLetter":
+    case "lowerLetter": {
+      if(value>26*128)return undefined;
+      const base=format==="upperLetter"?65:97;
+      return String.fromCharCode(base+(value-1)%26).repeat(Math.ceil(value/26));
+    }
+    default:return undefined;
+  }
+}
+
+/** Validate both legacy numeric resolvers and bounded formatted labels. */
+export function isValidTocPageLabel(value:number|string):boolean{
+  return typeof value==="number"
+    ?Number.isSafeInteger(value)&&value>=1&&value<=1_000_000
+    :typeof value==="string"&&value.length<=128&&/^(?:[A-Z]+|[a-z]+|[0-9]+)$/.test(value)&&!/[\r\n]/.test(value);
+}
