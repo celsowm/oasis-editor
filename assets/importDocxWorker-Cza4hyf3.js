@@ -9422,9 +9422,9 @@ while (n === s[++o] && n === s[++o] && n === s[++o] && n === s[++o] && n === s[+
 		const T = ot(lt(it(e, Qe, "textDirection"), "val"));
 		T && (r.textDirection = T);
 		const I = lt(it(e, Qe, "outlineLvl"), "val");
-		if (void 0 !== I) {
+		if (null != I && /^[0-9]$/.test(I.trim())) {
 			const e = Number(I);
-			Number.isFinite(e) && e >= 0 && e <= 8 && (r.outlineLevel = e);
+			Number.isInteger(e) && e >= 0 && e <= 9 && (r.outlineLevel = e);
 		}
 		const _ = pt(e, "suppressLineNumbers");
 		void 0 !== _ && (r.suppressLineNumbers = _);
