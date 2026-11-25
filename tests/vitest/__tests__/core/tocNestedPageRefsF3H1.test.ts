@@ -118,3 +118,71 @@ describe("F3H2 Word gallery content-control TOC",()=>{
     expect(refreshNestedTocPageRefs(crossed)).toMatchObject({state:crossed,status:"unsupported"});
   });
 });
+
+
+describe("F3H3 fragmented nested PAGEREF results",()=>{
+  const fragmented=(parts:string[],start:number)=>{
+    const {state,entry}=fixture();
+    const section=getDocumentSections(state.document)[0]!;
+    const fragments=parts.map((part,i)=>({...text("number-"+i,part,"#_TocAlpha"),
+      styles:{link:"#_TocAlpha",bold:i===0,italic:i>0}}));
+    const paragraph={...entry,runs:entry.runs.flatMap(r=>r.id==="number"?fragments:[r])};
+    return {state:{...state,document:{...state.document,sections:[{...section,
+      pageNumbering:{start,format:"decimal" as const},blocks:[section.blocks[0]!,paragraph]}]}},paragraph,fragments};
+  };
+  for(const [parts,start,expected] of [
+    [["1","2"],34,["3","4"]],
+    [["1","2"],1234,["1","234"]],
+    [["12","34"],567,["56","7"]],
+    [["12","3","4"],567,["5","6","7"]],
+  ] as [string[],number,string[]][]){
+    it("retains run identities and styles: "+parts.join("|")+" → "+expected.join("|"),()=>{
+      const {state,paragraph,fragments}=fragmented(parts,start);
+      const before=JSON.stringify(state);
+      expect(hasNestedTocPageRefs(state)).toBe(true);
+      const result=refreshNestedTocPageRefs(state);
+      expect(result.status).toBe("updated");
+      expect(result.updatedEntries).toBe(1);
+      const block=getDocumentSections(result.state.document)[0]!.blocks[1]!;
+      const expectedRuns=paragraph.runs.map(r=>{
+        const i=fragments.findIndex(f=>f.id===r.id);
+        return i<0?r:{...r,text:expected[i]!};
+      });
+      expect(block).toEqual({...paragraph,runs:expectedRuns});
+      expect(refreshNestedTocPageRefs(result.state)).toMatchObject({status:"unchanged",state:result.state});
+      expect(JSON.stringify(state)).toBe(before);
+    });
+  }
+  it("refuses destructive shrinkage, non-label fragments and foreign links",()=>{
+    const short=fragmented(["1","2"],3).state;
+    expect(refreshNestedTocPageRefs(short)).toMatchObject({state:short,status:"unsupported"});
+    const invalid=fragmented(["1","?"],34).state;
+    expect(hasNestedTocPageRefs(invalid)).toBe(false);
+    const {state,paragraph}=fragmented(["1","2"],34);
+    const section=getDocumentSections(state.document)[0]!;
+    const foreign={...state,document:{...state.document,sections:[{...section,blocks:[
+      section.blocks[0]!,{...paragraph,runs:paragraph.runs.map(r=>r.id==="number-1"?
+        {...r,styles:{...r.styles,link:"#Other"}}:r)}]}]}};
+    expect(refreshNestedTocPageRefs(foreign)).toMatchObject({state:foreign,status:"unsupported"});
+  });
+  it("does not change fragment lengths in an anchored paragraph",()=>{
+    const {state,paragraph}=fragmented(["1","2"],123);
+    const anchored={...state,selection:{anchor:{paragraphId:paragraph.id,runId:"number-1",offset:1},
+      focus:{paragraphId:paragraph.id,runId:"number-1",offset:1}}};
+    expect(refreshNestedTocPageRefs(anchored)).toMatchObject({state:anchored,status:"unsupported"});
+  });
+  it("retains separately formatted fragments through DOCX export and import",async()=>{
+    const {state}=fragmented(["1","2"],34);
+    const result=refreshNestedTocPageRefs(state);
+    expect(result.status).toBe("updated");
+    const imported=await importDocxToEditorDocument(await exportEditorDocumentToDocx(result.state.document));
+    const block=getDocumentSections(imported)[0]!.blocks[1]!;
+    expect(block.type).toBe("paragraph");
+    if(block.type!=="paragraph")throw Error("missing TOC paragraph");
+    const a=block.runs.find(r=>r.text==="3"),b=block.runs.find(r=>r.text==="4");
+    expect(a?.styles?.bold).toBe(true);
+    expect(b?.styles?.italic).toBe(true);
+    expect(a?.styles?.link).toBe("#_TocAlpha");
+    expect(b?.styles?.link).toBe("#_TocAlpha");
+  });
+});

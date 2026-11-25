@@ -10,7 +10,7 @@ import {formatSectionPageLabel} from "@/core/format/pageNumberFormat.js";
 import {projectDocumentLayout} from "@/layoutProjection/documentLayout.js";
 import type {TocPaginate,TocConvergenceResult} from "./tocConvergence.js";
 
-type Entry={paragraphId:string;runId:string;bookmark:string};
+type Entry={paragraphId:string;runIds:string[];bookmark:string};
 type Region={entries:Entry[];paragraphIds:Set<string>};
 const raw=(code:readonly {kind:string;raw?:string}[])=>code.map(p=>p.kind==="instruction"?p.raw??"":"").join("");
 const safeRun=(r:EditorTextRun)=>["text","fieldChar","fieldInstruction"].includes(r.kind)&&
@@ -112,21 +112,27 @@ function qualify(state:EditorState):Region|undefined{
         if(!child.separator||!child.end||child.beginMarker.fieldLock||child.beginMarker.dirty||
           child.end.paragraphIndex!==j||child.separator.paragraphIndex!==j||
           child.begin.runIndex<=lo||child.end.runIndex!==hi-1||
-          child.code.some(x=>x.kind!=="instruction")||child.result.length!==1||
-          child.result[0]?.kind!=="run"){valid=false;break;}
+          child.code.some(x=>x.kind!=="instruction")||!child.result.length||child.result.length>128||
+          child.result.some(x=>x.kind!=="run")){valid=false;break;}
         const field=compileFieldInstruction(raw(child.code));
         if(field?.type!=="PAGEREF"){valid=false;break;}
         const prefix=p.runs.slice(lo,child.begin.runIndex);
         const text=prefix.map(r=>r.text).join("");
-        const result=p.runs[child.result[0].point.runIndex];
-        if(!result||result.kind!=="text"||!result.text.length||result.text.length>128||
-          /[\r\n\t]/.test(result.text)||text.length>8192||!text.endsWith("\t")||
+        const results=p.runs.slice(child.separator.runIndex+1,child.end.runIndex);
+        const cached=results.map(r=>r.text).join("");
+        if(results.length!==child.result.length||results.some((r,k)=>{
+          const part=child.result[k];
+          return r.kind!=="text"||!r.text.length||part?.kind!=="run"||
+            part.point.paragraphIndex!==j||part.point.runIndex!==child.separator!.runIndex+1+k;
+        })||!cached.length||cached.length>128||/[\r\n\t]/.test(cached)||
+          (results.length>1&&!/^(?:[0-9]+|[A-Za-z]+)$/.test(cached))||
+          text.length>8192||!text.endsWith("\t")||
           !text.slice(0,-1).trim()||/[\r\n]/.test(text)||
           !prefix.every(r=>r.kind==="text")||
-          [...prefix,result].some(r=>r.styles?.link&&r.styles.link!=="#"+field.bookmark)){
+          [...prefix,...results].some(r=>r.styles?.link&&r.styles.link!=="#"+field.bookmark)){
           valid=false;break;
         }
-        used.add(child.index);entries.push({paragraphId:p.id,runId:result.id,bookmark:field.bookmark});
+        used.add(child.index);entries.push({paragraphId:p.id,runIds:results.map(r=>r.id),bookmark:field.bookmark});
       }
       if(!valid||!entries.length||entries.length>2048||
         outer.result.some(x=>x.kind==="nested"&&!used.has(x.fieldIndex))||
@@ -167,6 +173,21 @@ function labels(document:EditorDocument,layout:EditorLayoutDocument,region:Regio
   });
 }
 
+/** Keep every original result run nonempty, preserve its style and identity,
+ * and retain existing prefix widths whenever possible. Growth is assigned
+ * to the last fragment; shrinkage trims from right to left with one character
+ * reserved per remaining run. Refuse rather than erase a styled fragment.
+ */
+function distributeLabel(text:string,lengths:readonly number[]):string[]|undefined{
+  if(text.length<lengths.length)return undefined;
+  let offset=0;
+  return lengths.map((length,i)=>{
+    const count=i===lengths.length-1?text.length-offset:
+      Math.min(length,text.length-offset-(lengths.length-i-1));
+    const part=text.slice(offset,offset+count);offset+=count;return part;
+  });
+}
+
 /** A fixed point over the original nested cache runs, not a rebuilt TOC.
  * Conservatively refuse length-changing edits in anchored paragraphs. */
 export function refreshNestedTocPageRefs(
@@ -198,17 +219,24 @@ export function refreshNestedTocPageRefs(
     const desired=labels(current.document,layout,active);
     if(desired.some(x=>x===undefined))return fail("unresolved",pass);
     const blocks=getDocumentSections(current.document).flatMap(s=>s.blocks);
-    const edits=new Map<string,{runId:string;text:string}>();
+    const edits=new Map<string,Map<string,string>>();
     const old:string[]=[];
     for(const [i,entry] of active.entries.entries()){
       const p=blocks.find(b=>b.id===entry.paragraphId);
-      const r=p?.type==="paragraph"?p.runs.find(r=>r.id===entry.runId):undefined;
-      if(!r||r.kind!=="text")return fail("unsupported",pass);
-      old.push(r.text);
+      if(!p||p.type!=="paragraph")return fail("unsupported",pass);
+      const runs=entry.runIds.map(id=>p.runs.find(r=>r.id===id));
+      if(runs.some(r=>!r||r.kind!=="text"))return fail("unsupported",pass);
+      const lengths=runs.map(r=>r!.text.length);
+      const cached=runs.map(r=>r!.text).join("");
+      old.push(cached);
       const text=desired[i]!;
-      if(r.text===text)continue;
-      if(text.length!==r.text.length&&anchored.has(entry.paragraphId))return fail("unsupported",pass);
-      edits.set(entry.paragraphId,{runId:r.id,text});touched.add(entry.paragraphId);
+      if(cached===text)continue;
+      const parts=distributeLabel(text,lengths);
+      if(!parts)return fail("unsupported",pass);
+      if(parts.some((part,j)=>part.length!==lengths[j])&&anchored.has(entry.paragraphId))
+        return fail("unsupported",pass);
+      edits.set(entry.paragraphId,new Map(entry.runIds.map((id,j)=>[id,parts[j]!])));
+      touched.add(entry.paragraphId);
     }
     if(!edits.size)return {state:current,layout,status:current===original?"unchanged":"updated",
       passes:pass,updatedEntries:touched.size};
@@ -218,7 +246,7 @@ export function refreshNestedTocPageRefs(
     current={...current,document:{...current.document,sections:getDocumentSections(current.document).map(s=>({...s,
       blocks:s.blocks.map(p=>{
         const edit=edits.get(p.id);
-        return !edit||p.type!=="paragraph"?p:{...p,runs:p.runs.map(r=>r.id===edit.runId?{...r,text:edit.text}:r)};
+        return !edit||p.type!=="paragraph"?p:{...p,runs:p.runs.map(r=>edit.has(r.id)&&edit.get(r.id)!==r.text?{...r,text:edit.get(r.id)!}:r)};
       })}))}};
   }
   return fail("nonconvergent",6);
