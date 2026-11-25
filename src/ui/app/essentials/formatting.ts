@@ -46,11 +46,13 @@ import { insertTableOfContents,hasTableOfContents } from "@/core/commands/tableO
 import { refreshTableOfContentsConvergently } from "@/core/document/tocConvergence.js";
 import {refreshLinkedTableOfContents} from "@/core/document/tocLinks.js";
 import {findQualifiedTocRegion} from "@/core/document/tocFields.js";
+import {hasNestedTocPageRefs,refreshNestedTocPageRefs} from "@/core/document/tocNestedPageRefs.js";
 import {getDocumentSections,getActiveSectionIndex} from "@/core/model.js";
 
 function refreshRibbonToc(state:EditorState){
   const section=getDocumentSections(state.document)[getActiveSectionIndex(state)];
   const region=section&&findQualifiedTocRegion(section.blocks);
+  if(!region&&hasNestedTocPageRefs(state))return refreshNestedTocPageRefs(state);
   return region?.hyperlinks?refreshLinkedTableOfContents(state):refreshTableOfContentsConvergently(state);
 }
 import {
@@ -218,7 +220,7 @@ export function buildEssentialsFormatting(
       options.focusInput();
       return true;
     },
-    hasTableOfContents: (): boolean => hasTableOfContents(options.state()),
+    hasTableOfContents: (): boolean => hasTableOfContents(options.state())||hasNestedTocPageRefs(options.state()),
     hasRevisionsInSelection: (): boolean =>
       hasRevisionsInSelection(options.state()),
     hasRevisionsInDocument: (): boolean =>
