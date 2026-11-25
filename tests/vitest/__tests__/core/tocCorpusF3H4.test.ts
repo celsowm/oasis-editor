@@ -9,7 +9,11 @@ import {createEditorStateFromDocument} from "@/core/editorState.js";
 import {getDocumentSections,paragraphOffsetToPosition,type EditorParagraphNode} from "@/core/model.js";
 import {buildFieldStoryGraph} from "@/core/document/fieldStoryGraph.js";
 import {parseFieldInstruction} from "@/ooxml/word/fieldInstruction.js";
-import {findQualifiedTocRegion} from "@/core/document/tocFields.js";
+import {findQualifiedTocRegion,createTocPageNumberResolver} from "@/core/document/tocFields.js";
+import {collectQualifiedTocHeadings} from "@/core/commands/tableOfContents.js";
+import {resolveTocLinkNavigation} from "@/core/document/tocLinkNavigation.js";
+import {projectDocumentLayout} from "@/layoutProjection/documentLayout.js";
+import {getParagraphText} from "@/core/model.js";
 import {refreshTableOfContentsConvergently} from "@/core/document/tocConvergence.js";
 import {refreshLinkedTableOfContents} from "@/core/document/tocLinks.js";
 import {hasNestedTocPageRefs,refreshNestedTocPageRefs} from "@/core/document/tocNestedPageRefs.js";
@@ -142,5 +146,34 @@ describe("F3H4A real repository TOC corpus",()=>{
     for(const link of original.links.filter(n=>original.targetNames.includes(n)))expect(roundTrip.links).toContain(link);
     const reopened=await importDocxToEditorDocument(exported);
     expect(getDocumentSections(reopened).length).toBeGreaterThan(0);
+    // The observed Mac Word fixture is an actual refresh acceptance case,
+    // not merely preservation evidence. A later refusal must fail CI.
+    if(file===files[0]){
+      expect(application).toBe("Microsoft Macintosh Word");
+      expect(classification).toBe("flat-refresh");
+      expect(result.status).toBe("updated");
+      expect(result.updatedEntries).toBe(13);
+      expect(roundTrip.bookmarks).toHaveLength(13);
+      expect(new Set(roundTrip.links).size).toBe(13);
+      const opened=createEditorStateFromDocument(reopened);
+      const blocks=getDocumentSections(reopened)[0]!.blocks;
+      const region=findQualifiedTocRegion(blocks);
+      expect(region).toBeDefined();
+      const headings=collectQualifiedTocHeadings(opened,region!);
+      expect(headings).toHaveLength(13);
+      const pages=createTocPageNumberResolver(reopened,projectDocumentLayout(reopened));
+      const entries=blocks.slice(region!.startBlockIndex+1,region!.endBlockIndex);
+      expect(entries).toHaveLength(13);
+      for(const [i,entry] of entries.entries()){
+        expect(entry.type).toBe("paragraph");
+        if(entry.type!=="paragraph")throw Error("missing cached entry");
+        const heading=headings![i]!;
+        expect(pages(heading.id)).toBeDefined();
+        expect(getParagraphText(entry)).toBe(heading.text+"\t"+pages(heading.id));
+        const nav=resolveTocLinkNavigation(opened,entry.id,1);
+        expect(nav?.selection.focus.paragraphId).toBe(heading.id);
+        expect(nav?.document).toBe(reopened);
+      }
+    }
   },60000);
 });

@@ -3,6 +3,7 @@ import {createEditorDocument,createEditorParagraph,createEditorStateFromDocument
 import {getDocumentSections,type EditorTextRun} from "@/core/model.js";
 import {hasNestedTocPageRefs,refreshNestedTocPageRefs} from "@/core/document/tocNestedPageRefs.js";
 import {projectDocumentLayout} from "@/layoutProjection/documentLayout.js";
+import {resolveTocLinkNavigation} from "@/core/document/tocLinkNavigation.js";
 import {exportEditorDocumentToDocx} from "@/export/docx/exportEditorDocumentToDocx.js";
 import {importDocxToEditorDocument} from "@/import/docx/importDocxToEditorDocument.js";
 import JSZip from "jszip";
@@ -184,5 +185,38 @@ describe("F3H3 fragmented nested PAGEREF results",()=>{
     expect(b?.styles?.italic).toBe(true);
     expect(a?.styles?.link).toBe("#_TocAlpha");
     expect(b?.styles?.link).toBe("#_TocAlpha");
+  });
+});
+
+
+describe("F3H4B navigation in nested imported TOCs",()=>{
+  it("navigates from both a title fragment and a nested page result without editing the document",async()=>{
+    const {state,entry}=fixture();
+    const target=getDocumentSections(state.document)[0]!.blocks[0]!;
+    for(const offset of [1,4,6]){
+      const next=resolveTocLinkNavigation(state,entry.id,offset);
+      expect(next?.document).toBe(state.document);
+      expect(next?.selection.focus.paragraphId).toBe(target.id);
+    }
+    const imported=await importDocxToEditorDocument(await exportEditorDocumentToDocx(state.document));
+    const reopened=createEditorStateFromDocument(imported);
+    const blocks=getDocumentSections(imported)[0]!.blocks;
+    const source=blocks[1]!;
+    expect(resolveTocLinkNavigation(reopened,source.id,1)?.selection.focus.paragraphId).toBe(blocks[0]!.id);
+  });
+  it("refuses unlinked text, mismatched targets and links back into the cache",()=>{
+    const {state,entry}=fixture();
+    const section=getDocumentSections(state.document)[0]!;
+    const alter=(p:typeof entry)=>({...state,document:{...state.document,sections:[
+      {...section,blocks:[section.blocks[0]!,p]}]}});
+    const unlinked=alter({...entry,runs:entry.runs.map(r=>r.id==="prefix-a"?{...r,styles:{bold:true}}:r)});
+    expect(resolveTocLinkNavigation(unlinked,entry.id,1)).toBeUndefined();
+    const wrong=alter({...entry,runs:entry.runs.map(r=>r.id==="prefix-a"?{...r,styles:{link:"#Other"}}:r)});
+    expect(resolveTocLinkNavigation(wrong,entry.id,1)).toBeUndefined();
+    const registry=state.document.bookmarks!;
+    const bm=registry.items.bm!;
+    const internal={...state,document:{...state.document,bookmarks:{...registry,items:{bm:{...bm,
+      start:{paragraphId:entry.id,offset:0},end:{paragraphId:entry.id,offset:1}}}}}};
+    expect(resolveTocLinkNavigation(internal,entry.id,1)).toBeUndefined();
   });
 });

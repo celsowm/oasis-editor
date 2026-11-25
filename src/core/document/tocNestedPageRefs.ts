@@ -11,7 +11,7 @@ import {projectDocumentLayout} from "@/layoutProjection/documentLayout.js";
 import type {TocPaginate,TocConvergenceResult} from "./tocConvergence.js";
 
 type Entry={paragraphId:string;runIds:string[];bookmark:string};
-type Region={entries:Entry[];paragraphIds:Set<string>};
+type Region={entries:Entry[];paragraphIds:Set<string>;hyperlinks:boolean};
 const raw=(code:readonly {kind:string;raw?:string}[])=>code.map(p=>p.kind==="instruction"?p.raw??"":"").join("");
 const safeRun=(r:EditorTextRun)=>["text","fieldChar","fieldInstruction"].includes(r.kind)&&
   !r.revision&&!r.revisionRangeMarker&&!r.sdtWrappers?.length&&!r.styles?.hidden&&!r.styles?.rtl;
@@ -73,9 +73,9 @@ function safeTocWrappers(paragraphs:readonly EditorParagraphNode[]):boolean{
 
 /** A bounded page-number-only grammar, separate from flat TOC regeneration.
  * Never treat an arbitrary nested field as an independently editable cache. */
-function qualify(state:EditorState):Region|undefined{
-  if(getActiveZone(state)!=="main"||state.trackChangesEnabled)return undefined;
-  const section=getDocumentSections(state.document)[getActiveSectionIndex(state)];
+function qualify(state:EditorState,sectionIndex=getActiveSectionIndex(state),navigation=false):Region|undefined{
+  if(!navigation&&(getActiveZone(state)!=="main"||state.trackChangesEnabled))return undefined;
+  const section=getDocumentSections(state.document)[sectionIndex];
   if(!section)return undefined;
   const found:Region[]=[];
   let tocCount=0;
@@ -137,12 +137,36 @@ function qualify(state:EditorState):Region|undefined{
       if(!valid||!entries.length||entries.length>2048||
         outer.result.some(x=>x.kind==="nested"&&!used.has(x.fieldIndex))||
         graph.spans.some(x=>x.parentIndex===outer.index&&!used.has(x.index)))continue;
-      found.push({entries,paragraphIds:new Set(region.map(p=>p.id))});
+      found.push({entries,paragraphIds:new Set(region.map(p=>p.id)),hyperlinks:settings.hyperlinks});
     }
   }
   return tocCount===1&&found.length===1?found[0]:undefined;
 }
 export function hasNestedTocPageRefs(state:EditorState):boolean{return !!qualify(state);}
+
+/** Read-only hit resolution for an explicitly linked text run in a qualified
+ * imported TOC. A PAGEREF instruction by itself is not a clickable run. */
+export function resolveNestedTocLink(
+  state:EditorState,sectionIndex:number,paragraphId:string,offset:number,
+):{name:string;excluded:Set<string>}|undefined{
+  const region=qualify(state,sectionIndex,true);
+  if(!region?.hyperlinks)return undefined;
+  const entry=region.entries.find(e=>e.paragraphId===paragraphId);
+  const p=getDocumentSections(state.document)[sectionIndex]?.blocks.find(b=>b.id===paragraphId);
+  if(!entry||!p||p.type!=="paragraph"||!Number.isInteger(offset)||offset<0||
+    offset>getParagraphLength(p))return undefined;
+  const name=entry.bookmark;
+  let cursor=0;
+  for(const r of p.runs){
+    const end=cursor+r.text.length;
+    const hit=r.text.length>0&&offset>=cursor&&(offset<end||
+      offset===end&&end===getParagraphLength(p));
+    if(hit)return r.kind==="text"&&r.styles?.link==="#"+name?
+      {name,excluded:region.paragraphIds}:undefined;
+    cursor=end;
+  }
+  return undefined;
+}
 
 function labels(document:EditorDocument,layout:EditorLayoutDocument,region:Region):(string|undefined)[]{
   const sections=getDocumentSections(document);
