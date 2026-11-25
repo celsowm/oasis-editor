@@ -66,3 +66,55 @@ describe("F3H1 nested TOC PAGEREF cache",()=>{
     expect(refreshNestedTocPageRefs(locked)).toMatchObject({state:locked,status:"unsupported"});
   });
 });
+
+
+describe("F3H2 Word gallery content-control TOC",()=>{
+  const gallery='<w:docPartObj xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docPartGallery w:val="Table of Contents"/><w:docPartUnique/></w:docPartObj>';
+  const wrapped=(override:Partial<import("@/core/model.js").EditorSdtPr>={})=>{
+    const {state,entry}=fixture();
+    const wrapper={groupId:"sdt:toc",sdtPr:{id:"42",lock:"sdtLocked",unknownXml:gallery,...override}};
+    const section=getDocumentSections(state.document)[0]!;
+    const begin={...createEditorParagraph(""),runs:entry.runs.slice(0,3),sdtWrappers:[wrapper]};
+    const middle={...entry,runs:entry.runs.slice(3,-1),sdtWrappers:[wrapper]};
+    const end={...createEditorParagraph(""),runs:entry.runs.slice(-1),sdtWrappers:[wrapper]};
+    const heading={...createEditorParagraph("Contents"),sdtWrappers:[wrapper]};
+    return {state:{...state,document:{...state.document,sections:[{...section,blocks:[section.blocks[0]!,heading,begin,middle,end]}]}},
+      middle,wrapper};
+  };
+  it("updates a multi-paragraph gallery TOC and preserves one enclosing SDT through DOCX",async()=>{
+    const {state,middle,wrapper}=wrapped();
+    const before=JSON.stringify(state);
+    const updated=refreshNestedTocPageRefs(state);
+    expect(updated.status).toBe("updated");
+    const blocks=getDocumentSections(updated.state.document)[0]!.blocks;
+    expect(blocks[3]).toEqual({...middle,runs:middle.runs.map(r=>r.id==="number"?{...r,text:"XII"}:r)});
+    expect(blocks.slice(1).every(p=>p.sdtWrappers?.[0]===wrapper)).toBe(true);
+    expect(JSON.stringify(state)).toBe(before);
+    const bytes=await exportEditorDocumentToDocx(updated.state.document);
+    const xml=await (await JSZip.loadAsync(bytes)).file("word/document.xml")!.async("string");
+    expect(xml.split("<w:sdt>").length-1).toBe(1);
+    expect(xml).toContain("Table of Contents");
+    expect(xml).toContain('w:lock w:val="sdtLocked"');
+    const imported=await importDocxToEditorDocument(bytes);
+    const children=getDocumentSections(imported)[0]!.blocks.filter(p=>p.sdtWrappers?.length);
+    expect(children).toHaveLength(4);
+    expect(new Set(children.map(p=>p.sdtWrappers![0]!.groupId)).size).toBe(1);
+    expect(children.some(p=>p.type==="paragraph"&&p.runs.some(r=>r.text==="XII"))).toBe(true);
+  });
+  it("rejects content locks, data binding, placeholder, temporary and unknown gallery metadata",()=>{
+    for(const override of [{lock:"contentLocked"},{lock:"sdtContentLocked"},{dataBinding:{xpath:"/root"}},
+      {temporary:true},{showingPlcHdr:true},{unknownXml:gallery.replace("Table of Contents","Cover Pages")},
+      {unknownXml:gallery+'<w:custom xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>'}]){
+      const {state}=wrapped(override);
+      expect(hasNestedTocPageRefs(state)).toBe(false);
+      expect(refreshNestedTocPageRefs(state)).toMatchObject({state,status:"unsupported"});
+    }
+  });
+  it("rejects a field crossing two wrapper groups",()=>{
+    const {state,middle,wrapper}=wrapped();
+    const section=getDocumentSections(state.document)[0]!;
+    const crossed={...state,document:{...state.document,sections:[{...section,blocks:section.blocks.map(p=>p.id===middle.id?
+      {...middle,sdtWrappers:[{...wrapper,groupId:"sdt:other"}]}:p)}]}};
+    expect(refreshNestedTocPageRefs(crossed)).toMatchObject({state:crossed,status:"unsupported"});
+  });
+});

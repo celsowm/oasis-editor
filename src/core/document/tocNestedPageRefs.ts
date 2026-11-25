@@ -1,4 +1,5 @@
-import type {EditorState,EditorDocument,EditorLayoutDocument,EditorParagraphNode,EditorTextRun,EditorBookmark} from "@/core/model.js";
+import {DOMParser} from "@xmldom/xmldom";
+import type {EditorState,EditorDocument,EditorLayoutDocument,EditorParagraphNode,EditorTextRun,EditorBookmark,EditorSdtBlockWrapper} from "@/core/model.js";
 import {getActiveZone,getActiveSectionIndex,getDocumentSections,getParagraphLength} from "@/core/model.js";
 import {buildFieldStoryGraph} from "./fieldStoryGraph.js";
 import {parseFieldInstruction} from "@/ooxml/word/fieldInstruction.js";
@@ -14,9 +15,61 @@ type Region={entries:Entry[];paragraphIds:Set<string>};
 const raw=(code:readonly {kind:string;raw?:string}[])=>code.map(p=>p.kind==="instruction"?p.raw??"":"").join("");
 const safeRun=(r:EditorTextRun)=>["text","fieldChar","fieldInstruction"].includes(r.kind)&&
   !r.revision&&!r.revisionRangeMarker&&!r.sdtWrappers?.length&&!r.styles?.hidden&&!r.styles?.rtl;
-const safeParagraph=(p:EditorParagraphNode)=>!p.sdtWrappers?.length&&!p.numberingRevision&&!p.dropCap&&!p.list&&
+const safeParagraph=(p:EditorParagraphNode)=>!p.numberingRevision&&!p.dropCap&&!p.list&&
   !p.style?.bidi&&(!p.style?.textDirection||p.style.textDirection==="lrTb")&&
   p.runs.every(safeRun)&&new Set(p.runs.map(r=>r.id)).size===p.runs.length;
+
+const WORD_NS="http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+/** The importer retains Word's built-in document-part metadata as raw XML.
+ * Recognize only the known TOC gallery shape; do not grant edit permission
+ * based on an alias, arbitrary tag, substring, or unknown extension. */
+function isTocGalleryXml(xml:string):boolean{
+  if(!xml||xml.length>8192||/<!|<\?/.test(xml))return false;
+  try{
+    const root=new DOMParser().parseFromString(
+      '<root xmlns:w="'+WORD_NS+'">'+xml+'</root>',"application/xml").documentElement;
+    if(!root||root.localName!=="root")return false;
+    const elements=(parent:typeof root)=>{
+      const out:typeof root[]=[];
+      for(let i=0;i<parent.childNodes.length;i++){
+        const n=parent.childNodes.item(i);
+        if(n?.nodeType===1)out.push(n as typeof root);
+        else if(n?.nodeType!==3||n.nodeValue?.trim())return undefined;
+      }
+      return out;
+    };
+    const top=elements(root);
+    if(top?.length!==1||top[0]!.namespaceURI!==WORD_NS||top[0]!.localName!=="docPartObj")return false;
+    const children=elements(top[0]!);
+    if(!children||children.length<1||children.length>3)return false;
+    const seen=new Set<string>();
+    for(const child of children){
+      const name=child.localName;
+      if(child.namespaceURI!==WORD_NS||!name||seen.has(name)||
+        !["docPartGallery","docPartCategory","docPartUnique"].includes(name)||elements(child)?.length!==0)return false;
+      seen.add(name);
+      const value=child.getAttributeNS(WORD_NS,"val");
+      if(name==="docPartGallery"&&value!=="Table of Contents")return false;
+      if(name==="docPartCategory"&&!value)return false;
+      if(name==="docPartUnique"&&value&&!["1","0","true","false","on","off"].includes(value))return false;
+    }
+    return seen.has("docPartGallery");
+  }catch{return false;}
+}
+function safeTocWrapper(wrapper:EditorSdtBlockWrapper):boolean{
+  const p=wrapper.sdtPr;
+  return !!wrapper.groupId&&(!p.lock||p.lock==="unlocked"||p.lock==="sdtLocked")&&
+    !p.dataBinding&&!p.temporary&&!p.showingPlcHdr&&!p.repeatingSectionProperties&&
+    !p.subtype&&isTocGalleryXml(p.unknownXml??"");
+}
+function safeTocWrappers(paragraphs:readonly EditorParagraphNode[]):boolean{
+  const first=paragraphs[0]?.sdtWrappers??[];
+  if(!first.length)return paragraphs.every(p=>!p.sdtWrappers?.length);
+  // One shared Word gallery control, not nested or crossing SDT boundaries.
+  if(first.length!==1||!safeTocWrapper(first[0]!))return false;
+  const identity=JSON.stringify(first);
+  return paragraphs.every(p=>JSON.stringify(p.sdtWrappers??[])===identity);
+}
 
 /** A bounded page-number-only grammar, separate from flat TOC regeneration.
  * Never treat an arbitrary nested field as an independently editable cache. */
@@ -43,7 +96,7 @@ function qualify(state:EditorState):Region|undefined{
         outer.end.runIndex!==ps[outer.end.paragraphIndex]!.runs.length-1)continue;
       const start=outer.begin.paragraphIndex,end=outer.end.paragraphIndex;
       const region=ps.slice(start,end+1);
-      if(region.length>2050||!region.every(safeParagraph)||
+      if(region.length>2050||!region.every(safeParagraph)||!safeTocWrappers(region)||
         new Set(region.map(p=>p.id)).size!==region.length)continue;
       const entries:Entry[]=[];
       const used=new Set<number>();
