@@ -33,7 +33,7 @@ import { withSelection } from "@/core/selection/rangeEditing.js";
 export const DEFAULT_TOC_MAX_LEVEL = 3;
 
 /** Field instruction emitted for a generated table of contents. */
-const TOC_INSTRUCTION = ' TOC \\o "1-3" \\h \\z \\u ';
+const tocInstruction = (maxLevel: number): string => ` TOC \\o "1-${maxLevel}" \\h \\z \\u `;
 
 const twipsToPx = (twips: number): number =>
   Math.round((twips / TWIPS_PER_INCH) * PX_PER_INCH);
@@ -135,10 +135,10 @@ function rightTabPositionForSection(section: EditorSection): number {
 }
 
 /** The field-start marker paragraph: begin + instruction + separate. */
-function buildStartMarkerParagraph(): EditorParagraphNode {
+function buildStartMarkerParagraph(maxLevel: number): EditorParagraphNode {
   return makeParagraph([
     makeRun({ text: "", fieldChar: { kind: "begin" } }),
-    makeRun({ text: "", fieldInstruction: TOC_INSTRUCTION }),
+    makeRun({ text: "", fieldInstruction: tocInstruction(maxLevel) }),
     makeRun({ text: "", fieldChar: { kind: "separate" } }),
   ]);
 }
@@ -153,11 +153,12 @@ function buildTocBlocks(
   headings: TocHeading[],
   resolvePage: TocPageNumberResolver,
   rightTabPositionPt: number,
+  maxLevel: number,
 ): EditorParagraphNode[] {
   const entries = headings.map((heading): EditorParagraphNode =>
     buildEntryParagraph(heading, resolvePage(heading.id), rightTabPositionPt),
   );
-  return [buildStartMarkerParagraph(), ...entries, buildEndMarkerParagraph()];
+  return [buildStartMarkerParagraph(maxLevel), ...entries, buildEndMarkerParagraph()];
 }
 
 function replaceSectionBlocks(
@@ -189,7 +190,7 @@ export function insertTableOfContents(
   maxLevel = DEFAULT_TOC_MAX_LEVEL,
 ): EditorState {
   const zone = getActiveZone(state);
-  if (zone !== "main") return state;
+  if (zone !== "main" || !Number.isInteger(maxLevel) || maxLevel < 1 || maxLevel > 9) return state;
 
   const sectionIndex = getActiveSectionIndex(state);
   const sections = getDocumentSections(state.document);
@@ -201,6 +202,7 @@ export function insertTableOfContents(
     headings,
     resolvePage,
     rightTabPositionForSection(section),
+    maxLevel,
   );
 
   const focus = clampPosition(state, state.selection.focus);
@@ -232,18 +234,18 @@ const findTocRegion=findQualifiedTocRegion;
 export function updateTableOfContents(
   state: EditorState,
   resolvePage: TocPageNumberResolver = (): undefined => undefined,
-  maxLevel = DEFAULT_TOC_MAX_LEVEL,
+  maxLevel = 9,
 ): EditorState {
-  if(getActiveZone(state)!=="main")return state;
+  if(getActiveZone(state)!=="main"||!Number.isInteger(maxLevel)||maxLevel<1||maxLevel>9)return state;
   const sectionIndex = getActiveSectionIndex(state);
   const sections = getDocumentSections(state.document);
   const section = sections[sectionIndex];
   if (!section) return state;
 
   const region = findTocRegion(section.blocks);
-  if (!region) return state;
+  if (!region || maxLevel < region.endLevel) return state;
 
-  const headings = collectTocHeadings(state, Math.min(maxLevel,region.endLevel))
+  const headings = collectTocHeadings(state, region.endLevel)
     .filter(heading=>heading.level>=region.startLevel);
   const byId=new Map(getDocumentParagraphs(state.document).map(p=>[p.id,p]));
   if(headings.some(h=>{
@@ -286,7 +288,7 @@ export function updateTableOfContents(
  * intentionally not automatic convergence; callers must remeasure if pages
  * shift after regeneration. Missing page facts are kept blank. */
 export function updateTableOfContentsFromLayout(
-  state:EditorState, layout:EditorLayoutDocument,maxLevel=DEFAULT_TOC_MAX_LEVEL,
+  state:EditorState, layout:EditorLayoutDocument,maxLevel=9,
 ):EditorState{
   return updateTableOfContents(state,createTocPageNumberResolver(state.document,layout),maxLevel);
 }

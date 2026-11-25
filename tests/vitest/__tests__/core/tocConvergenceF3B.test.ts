@@ -122,6 +122,41 @@ describe("F3B transactional convergent TOC refresh",()=>{
       status:"unsupported",passes:0,state:locked,
     });
   });
+  it("honors authored and imported TOC ranges beyond the default three levels",async()=>{
+    const headings=[1,4,9].map(level=>{
+      const p=createEditorParagraph("Heading "+level);
+      p.style={styleId:"Heading"+level};
+      return p;
+    });
+    const original=createEditorStateFromDocument(createEditorDocument(headings));
+    const inserted=insertTableOfContents(original,()=>1,9);
+    const blocks=getDocumentSections(inserted.document)[0]!.blocks;
+    expect(findQualifiedTocRegion(blocks)).toMatchObject({startLevel:1,endLevel:9});
+    expect(entries(inserted.document)).toEqual(["Heading 1\t1","Heading 4\t1","Heading 9\t1"]);
+    expect(refreshTableOfContentsConvergently(inserted).status).toBe("unchanged");
+    expect(refreshTableOfContentsConvergently(inserted,projectDocumentLayout,6,3))
+      .toMatchObject({status:"unsupported",state:inserted});
+    expect(updateTableOfContents(inserted,()=>2,3)).toBe(inserted);
+    expect(insertTableOfContents(original,()=>1,10)).toBe(original);
+    const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(inserted.document));
+    const imported=createEditorStateFromDocument(reopened);
+    expect(findQualifiedTocRegion(getDocumentSections(reopened)[0]!.blocks))
+      .toMatchObject({startLevel:1,endLevel:9});
+    expect(refreshTableOfContentsConvergently(imported).status).toBe("unchanged");
+    expect(entries(reopened)).toEqual(entries(inserted.document));
+  });
+  it("does not report convergence when regeneration refuses an unsafe changed heading",()=>{
+    const {heading,state}=fixture();
+    const section=getDocumentSections(state.document)[0]!;
+    const unsafe={...state,document:{...state.document,sections:[{
+      ...section,blocks:section.blocks.map(b=>b.id===heading.id&&b.type==="paragraph"
+        ? {...b,runs:b.runs.map(r=>({...r,text:"Changed",styles:{...r.styles,rtl:true}}))}
+        : b),
+    }]}}
+    const result=refreshTableOfContentsConvergently(unsafe);
+    expect(result).toMatchObject({status:"unsupported",state:unsafe});
+    expect(entries(result.state.document)).toEqual(["Chapter\t"]);
+  });
   it("rolls back a measurement exception without committing intermediate entries",()=>{
     const {state}=fixture();
     let calls=0;

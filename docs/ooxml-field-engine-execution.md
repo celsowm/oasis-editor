@@ -147,3 +147,7 @@ Add a bounded all-or-nothing TOC update that regenerates its plain-text entries 
 ## F3B ribbon integration
 
 The existing editor formatting capability now calls the convergent TOC updater for **Update Table of Contents** in a single state transaction, replacing the stale one-pass `page.index + 1` resolver. **Insert Table of Contents** creates the field first, then performs bounded page-label convergence before committing the same transaction; if the new TOC cannot be certified, its explicitly requested insertion remains, with unresolved page labels blank. Nonconvergent updates preserve existing content and caret positions. UI-specific browser qualification remains in CI; no background auto-regeneration is enabled.
+
+## Slice F3C — preserve declared TOC level range and certify no-op
+
+F3B release v0.0.400 passed OOXML Compatibility, npm and Pages on d74592f. New TOCs emit the actual requested outline range (1–9), while refresh defaults to the field’s declared range rather than truncating at level 3. A caller cap below that range refuses the operation instead of rewriting a misleading partial cache. A no-op from the conservative updater is accepted as convergence only when the cached entry vector exactly matches all resolved headings and labels; otherwise roll back. Regression tests cover nine-level creation, DOCX round-trip, explicit caps, invalid bounds and a refused unsafe heading. Rich/nested TOCs, real hyperlink authoring and nondecimal page labels remain out of scope. CI pending.

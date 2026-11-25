@@ -1,7 +1,7 @@
 import type {EditorDocument,EditorLayoutDocument,EditorState} from "@/core/model.js";
-import {getActiveSectionIndex,getActiveZone,getDocumentSections} from "@/core/model.js";
+import {getActiveSectionIndex,getActiveZone,getDocumentSections,getParagraphText} from "@/core/model.js";
 import {projectDocumentLayout} from "@/layoutProjection/documentLayout.js";
-import {collectTocHeadings,DEFAULT_TOC_MAX_LEVEL,updateTableOfContents} from "@/core/commands/tableOfContents.js";
+import {collectTocHeadings,updateTableOfContents} from "@/core/commands/tableOfContents.js";
 import {createTocPageNumberResolver,findQualifiedTocRegion} from "./tocFields.js";
 
 export type TocPaginate=(document:EditorDocument)=>EditorLayoutDocument;
@@ -29,7 +29,7 @@ export function refreshTableOfContentsConvergently(
   original:EditorState,
   paginate:TocPaginate=projectDocumentLayout,
   maxPasses=MAX_TOC_CONVERGENCE_PASSES,
-  maxLevel=DEFAULT_TOC_MAX_LEVEL,
+  maxLevel=9,
 ):TocConvergenceResult{
   const result=(status:TocConvergenceStatus,passes:number,layout?:EditorLayoutDocument):TocConvergenceResult=>
     ({state:original,layout,status,passes,updatedEntries:0});
@@ -42,7 +42,7 @@ export function refreshTableOfContentsConvergently(
   const section=sections[sectionIndex];
   if(!section)return result("unsupported",0);
   const region=findQualifiedTocRegion(section.blocks);
-  if(!region)return result("unsupported",0);
+  if(!region||maxLevel<region.endLevel)return result("unsupported",0);
   const beginId=section.blocks[region.startBlockIndex]!.id;
   const endId=section.blocks[region.endBlockIndex]!.id;
   const oldEntryIds=new Set(section.blocks.slice(region.startBlockIndex+1,region.endBlockIndex).map(b=>b.id));
@@ -71,6 +71,14 @@ export function refreshTableOfContentsConvergently(
     if(pages.some(p=>p===undefined))return result("unresolved",pass,initialLayout);
     const candidate=updateTableOfContents(current,resolver,maxLevel);
     if(candidate===current){
+      // The updater also returns the original state when it refuses unsafe
+      // input. Certify an actual fixed point instead of mistaking refusal
+      // for successful convergence.
+      const cached=blocks.slice(active.startBlockIndex+1,active.endBlockIndex);
+      if(cached.length!==headings.length||cached.some((block,i)=>
+        block.type!=="paragraph"||
+        getParagraphText(block)!==`${headings[i]!.text}\t${pages[i]}`))
+        return result("unsupported",pass,initialLayout);
       return {state:current===original?original:{...current,selection:original.selection},
         layout,status:current===original?"unchanged":"updated",passes:pass,
         updatedEntries:current===original?0:headings.length};
