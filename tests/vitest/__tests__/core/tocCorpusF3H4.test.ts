@@ -172,7 +172,7 @@ describe("F3H4A real repository TOC corpus",()=>{
         expect(getParagraphText(entry)).toBe(heading.text+"\t"+pages(heading.id));
         const nav=resolveTocLinkNavigation(opened,entry.id,1);
         expect(nav?.selection.focus.paragraphId).toBe(heading.id);
-        expect(nav?.document).toBe(reopened);
+        expect(nav?.document).toBe(opened.document);
       }
     }
   },60000);
