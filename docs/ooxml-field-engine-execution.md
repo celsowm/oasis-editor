@@ -155,3 +155,7 @@ F3B release v0.0.400 passed OOXML Compatibility, npm and Pages on d74592f. New T
 ## Slice F3D — section-formatted TOC page labels
 
 F3C published v0.0.401; OOXML, npm, chart clipboard, style gallery and ribbon geometry passed, with Pages and Review Ribbon pending at inspection. Resolve page labels from the heading’s certified physical page and source section, not the TOC section. Support decimal, decimalZero, bounded upper/lower Roman and upper/lower letter formats; use repeated-letter ST_NumberFormat semantics (AA, BB) without changing legacy PAGE field switches. Preserve unsupported formats, out-of-range labels, chapter prefixes and uncertain section geometry. Both the direct update and the convergence comparison accept validated formatted labels. Tests cover mixed restarted sections, DOCX round-trip and rollback for unsupported labels. Word visual oracle and CI pending.
+
+## Slice F3E — explicit TOC paragraph-style mappings
+
+F3D published v0.0.402 with all seven workflows passing. Parse bounded comma-separated style/level pairs in the quoted TOC `\\t` switch. Support custom-only mappings and a union with the existing `\\o` range; ambiguous, absent or nonparagraph style definitions and conflicting levels refuse refresh. Use the same resolved heading vector in direct and convergent updates, preserving original control runs. No locale-specific list separators, outline inheritance, rich TOC caches or new Ribbon mapping dialog yet. Tests cover custom-only, mixed selection, invalid mappings, duplicate names, and DOCX reimport. CI pending.

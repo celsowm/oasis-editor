@@ -1,7 +1,7 @@
 import type {EditorDocument,EditorLayoutDocument,EditorState} from "@/core/model.js";
 import {getActiveSectionIndex,getActiveZone,getDocumentSections,getParagraphText} from "@/core/model.js";
 import {projectDocumentLayout} from "@/layoutProjection/documentLayout.js";
-import {collectTocHeadings,updateTableOfContents} from "@/core/commands/tableOfContents.js";
+import {collectQualifiedTocHeadings,updateTableOfContents} from "@/core/commands/tableOfContents.js";
 import {createTocPageNumberResolver,findQualifiedTocRegion} from "./tocFields.js";
 
 export type TocPaginate=(document:EditorDocument)=>EditorLayoutDocument;
@@ -46,9 +46,8 @@ export function refreshTableOfContentsConvergently(
   const beginId=section.blocks[region.startBlockIndex]!.id;
   const endId=section.blocks[region.endBlockIndex]!.id;
   const oldEntryIds=new Set(section.blocks.slice(region.startBlockIndex+1,region.endBlockIndex).map(b=>b.id));
-  const headers=collectTocHeadings(original,Math.min(maxLevel,region.endLevel))
-    .filter(h=>h.level>=region.startLevel);
-  if(headers.length>2048)return result("unsupported",0);
+  const headers=collectQualifiedTocHeadings(original,region,maxLevel);
+  if(!headers||headers.length>2048)return result("unsupported",0);
   const initialSignature=JSON.stringify(headers.map(h=>[h.id,h.level,h.text]));
   const seen=new Set<string>();
   let current=original;
@@ -62,9 +61,8 @@ export function refreshTableOfContentsConvergently(
     const active=blocks&&findQualifiedTocRegion(blocks);
     if(!blocks||!active||blocks[active.startBlockIndex]?.id!==beginId||
        blocks[active.endBlockIndex]?.id!==endId)return result("unsupported",pass,initialLayout);
-    const headings=collectTocHeadings(current,Math.min(maxLevel,active.endLevel))
-      .filter(h=>h.level>=active.startLevel);
-    if(JSON.stringify(headings.map(h=>[h.id,h.level,h.text]))!==initialSignature)
+    const headings=collectQualifiedTocHeadings(current,active,maxLevel);
+    if(!headings||JSON.stringify(headings.map(h=>[h.id,h.level,h.text]))!==initialSignature)
       return result("unsupported",pass,initialLayout);
     const resolver=createTocPageNumberResolver(current.document,layout);
     const pages=headings.map(h=>resolver(h.id));

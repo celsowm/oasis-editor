@@ -11,6 +11,9 @@ export interface TocFieldSettings {
   hyperlinks:boolean;
   hideWebNumbers:boolean;
   useOutline:boolean;
+  /** Present only for an explicit custom paragraph-style mapping. */
+  styleMappings?:readonly {name:string;level:number}[];
+  customOnly?:true;
 }
 export interface QualifiedTocRegion extends TocFieldSettings {
   startBlockIndex:number;
@@ -25,6 +28,7 @@ export function parseTocInstruction(raw:string):TocFieldSettings|undefined{
   const args=parsed.tokens.slice(1);
   let startLevel:number|undefined,endLevel:number|undefined;
   let hyperlinks=false,hideWebNumbers=false,useOutline=false;
+  let styleMappings:TocFieldSettings["styleMappings"];
   const seen=new Set<string>();
   for(let i=0;i<args.length;i++){
     const token=args[i]!;
@@ -39,14 +43,30 @@ export function parseTocInstruction(raw:string):TocFieldSettings|undefined{
       if(!match)return undefined;
       startLevel=Number(match[1]);endLevel=Number(match[2]);
       if(startLevel>endLevel)return undefined;
+    }else if(sw==="t"){
+      const arg=args[++i];
+      if(arg?.kind!=="quoted"||arg.value.length>4096||/[\r\n\t\\]/.test(arg.value))return undefined;
+      const parts=arg.value.split(",").map(s=>s.trim());
+      if(parts.length<2||parts.length%2||parts.length>128)return undefined;
+      const names=new Set<string>();
+      const mappings:{name:string;level:number}[]=[];
+      for(let j=0;j<parts.length;j+=2){
+        const name=parts[j]!,level=parts[j+1]!;
+        const key=name.toLowerCase();
+        if(!name||name.length>256||! /^[1-9]$/.test(level)||names.has(key))return undefined;
+        names.add(key);mappings.push({name,level:Number(level)});
+      }
+      styleMappings=mappings;
     }else if(sw==="h")hyperlinks=true;
     else if(sw==="z")hideWebNumbers=true;
     else if(sw==="u")useOutline=true;
     else return undefined;
   }
-  // We only regenerate generated outline-based TOCs.
-  if(startLevel===undefined||endLevel===undefined)return undefined;
-  return {startLevel,endLevel,hyperlinks,hideWebNumbers,useOutline};
+  if(startLevel===undefined||endLevel===undefined){
+    if(!styleMappings||useOutline)return undefined;
+    return {startLevel:1,endLevel:Math.max(...styleMappings.map(m=>m.level)),hyperlinks,hideWebNumbers,useOutline,styleMappings,customOnly:true};
+  }
+  return {startLevel,endLevel,hyperlinks,hideWebNumbers,useOutline,...(styleMappings?{styleMappings}:{})};
 }
 
 function safeMarkerRun(p:EditorParagraphNode):boolean{

@@ -24,7 +24,7 @@ import {
 import { roundTo } from "@/utils/round.js";
 import { getHeadingLevel } from "@/core/headings.js";
 import { isValidTocPageLabel } from "@/core/format/pageNumberFormat.js";
-import {findQualifiedTocRegion,createTocPageNumberResolver} from "@/core/document/tocFields.js";
+import {findQualifiedTocRegion,createTocPageNumberResolver,type TocFieldSettings} from "@/core/document/tocFields.js";
 import type {EditorLayoutDocument} from "@/core/model.js";
 import { createEditorParagraph, createEditorRun } from "@/core/editorState.js";
 import { clampPosition } from "@/core/selection.js";
@@ -65,6 +65,45 @@ export function collectTocHeadings(
     const text = getParagraphText(paragraph).trim();
     if (!text) continue;
     headings.push({ id: paragraph.id, level, text });
+  }
+  return headings;
+}
+
+/** Resolve explicit TOC style names against the paragraph-style catalog.
+ * Refuse missing/ambiguous names and conflicting mappings; never silently
+ * remove an imported cache because a style could not be resolved.
+ */
+export function collectQualifiedTocHeadings(state:EditorState,options:TocFieldSettings,maxLevel=9):TocHeading[]|undefined{
+  if(maxLevel<options.endLevel||options.styleMappings?.some(m=>m.level>maxLevel))return undefined;
+  if(!options.styleMappings)return collectTocHeadings(state,options.endLevel).filter(h=>h.level>=options.startLevel);
+  const styles=Object.values(state.document.styles??{});
+  const normalize=(s:string)=>s.trim().toLowerCase();
+  const mapped=new Map<string,number>();
+  for(const {name,level} of options.styleMappings){
+    const key=normalize(name);
+    const candidates=styles.filter(s=>normalize(s.id)===key||normalize(s.name)===key);
+    if(candidates.length!==1||candidates[0]!.type!=="paragraph")return undefined;
+    const id=candidates[0]!.id;
+    if(mapped.has(id))return undefined;
+    mapped.set(id,level);
+  }
+  const cacheIds=new Set<string>();
+  for(const section of getDocumentSections(state.document)){
+    const region=findQualifiedTocRegion(section.blocks);
+    if(region)for(const b of section.blocks.slice(region.startBlockIndex,region.endBlockIndex+1))cacheIds.add(b.id);
+  }
+  const headings:TocHeading[]=[];
+  for(const p of getDocumentParagraphs(state.document)){
+    const id=p.style?.styleId;
+    const custom=id===undefined?undefined:mapped.get(id);
+    const builtin=options.customOnly?null:getHeadingLevel(id);
+    const outline=builtin!==null&&builtin>=options.startLevel&&builtin<=options.endLevel?builtin:undefined;
+    if(custom!==undefined&&outline!==undefined&&custom!==outline)return undefined;
+    const level=custom??outline;
+    if(level===undefined)continue;
+    if(cacheIds.has(p.id))return undefined;
+    const text=getParagraphText(p).trim();
+    if(text)headings.push({id:p.id,level,text});
   }
   return headings;
 }
@@ -249,8 +288,8 @@ export function updateTableOfContents(
   const region = findTocRegion(section.blocks);
   if (!region || maxLevel < region.endLevel) return state;
 
-  const headings = collectTocHeadings(state, region.endLevel)
-    .filter(heading=>heading.level>=region.startLevel);
+  const headings = collectQualifiedTocHeadings(state,region,maxLevel);
+  if(!headings)return state;
   const byId=new Map(getDocumentParagraphs(state.document).map(p=>[p.id,p]));
   if(headings.some(h=>{
     const p=byId.get(h.id);

@@ -33,7 +33,7 @@ describe("F3A safe TOC graph recognition and page geometry",()=>{
       'TOC \\o "5-3"',
       'TOC \\o "0-3"',
       'TOC \\o "1-3" \\h \\h',
-      'TOC \\t "Heading 1,1"',
+      'TOC \\t "Heading 1,10"',
       'TOC \\o "1-3" \\* MERGEFORMAT',
       'TOC \\o "1-3',
     ])expect(parseTocInstruction(raw)).toBeUndefined();
