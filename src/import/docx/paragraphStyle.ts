@@ -465,7 +465,9 @@ export function parseParagraphStyle(
     "outlineLvl",
   );
   const outlineLvlVal = getAttributeValue(outlineLvlEl, "val");
-  if (outlineLvlVal !== undefined) {
+  // getAttributeValue returns null when the element is absent. In that
+  // case the level must inherit; Number(null) would create a false Heading 1.
+  if (outlineLvlVal != null && /^[0-9]$/.test(outlineLvlVal.trim())) {
     const level = Number(outlineLvlVal);
     if (Number.isInteger(level) && level >= 0 && level <= 9) {
       style.outlineLevel = level;

@@ -1,4 +1,6 @@
 import {describe,expect,it} from "vitest";
+import {DOMParser} from "@xmldom/xmldom";
+import {parseParagraphStyle} from "@/import/docx/paragraphStyle.js";
 import {createEditorDocument,createEditorParagraph,createEditorStateFromDocument} from "@/core/editorState.js";
 import {getDocumentSections,getParagraphText,type EditorState,type EditorParagraphStyle} from "@/core/model.js";
 import {createTocOutlineResolver} from "@/core/document/tocOutline.js";
@@ -33,6 +35,17 @@ const entries=(state:EditorState)=>{
   return blocks.slice(region.startBlockIndex+1,region.endBlockIndex).map(b=>b.type==="paragraph"?getParagraphText(b):"");
 };
 describe("F3F effective TOC outline levels",()=>{
+  it("does not synthesize Heading 1 from absent, empty or malformed outline XML",()=>{
+    const parse=(xml:string)=>parseParagraphStyle(new DOMParser().parseFromString(
+      '<w:pPr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'+xml+'</w:pPr>',
+      "application/xml").documentElement);
+    for(const xml of ['<w:spacing w:after="40"/>','<w:outlineLvl/>',
+      '<w:outlineLvl w:val=""/>','<w:outlineLvl w:val="1.5"/>','<w:outlineLvl w:val="10"/>']){
+      expect(parse(xml)?.outlineLevel).toBeUndefined();
+    }
+    expect(parse('<w:outlineLvl w:val="0"/>')?.outlineLevel).toBe(0);
+    expect(parse('<w:outlineLvl w:val="9"/>')?.outlineLevel).toBe(9);
+  });
   it("resolves direct levels, inherited levels and explicit body overrides",()=>{
     const {ps,doc}=fixture();
     const resolve=createTocOutlineResolver(doc);

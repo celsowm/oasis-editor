@@ -163,3 +163,7 @@ F3D published v0.0.402 with all seven workflows passing. Parse bounded comma-sep
 ## Slice F3F — qualified effective paragraph outline levels
 
 F3E published v0.0.403 with all seven workflows green. Honor the TOC `\\u` switch during insertion and refresh: direct outline levels override inherited style levels, `null` and OOXML level 9 are body text, and qualified `basedOn` chains plus built-in heading identities supply inherited levels. Standalone `\\u` uses levels 1–9; with `\\o` the declared range bounds effective levels. Missing/ambiguous styles, invalid levels, cycles and conflicting custom mappings fail closed. Import now retains the explicit OOXML body-text level 9. No change to the SEQ engine or the non-outline TOC grammar; `\\u` plus `\\t` without an explicit `\\o` remains unsupported. Regression fixtures exercise direct and inherited levels, exclusion, source order, rollback and round-trip. CI and Word visual oracle pending.
+
+## F3F import regression repair
+
+CI 45631776487 failed two DOCX reimport TOC convergence tests (2366 passed, three skipped); npm and Pages blocked while OOXML and four browser workflows passed. The paragraph importer treated absent outlineLvl as Number(null) = 0, silently fabricating direct Heading 1 levels on ordinary paragraphs and overriding inherited style levels. Require a present valid integer lexical value 0–9; absent, empty and malformed values retain inheritance. Keep the failing round-trip tests and add direct XML negative controls. CI requalification pending; F3G not enabled before this repair.
