@@ -467,7 +467,7 @@ export function parseParagraphStyle(
   const outlineLvlVal = getAttributeValue(outlineLvlEl, "val");
   if (outlineLvlVal !== undefined) {
     const level = Number(outlineLvlVal);
-    if (Number.isFinite(level) && level >= 0 && level <= 8) {
+    if (Number.isInteger(level) && level >= 0 && level <= 9) {
       style.outlineLevel = level;
     }
   }

@@ -63,6 +63,7 @@ export function parseTocInstruction(raw:string):TocFieldSettings|undefined{
     else return undefined;
   }
   if(startLevel===undefined||endLevel===undefined){
+    if(useOutline&&!styleMappings)return {startLevel:1,endLevel:9,hyperlinks,hideWebNumbers,useOutline};
     if(!styleMappings||useOutline)return undefined;
     return {startLevel:1,endLevel:Math.max(...styleMappings.map(m=>m.level)),hyperlinks,hideWebNumbers,useOutline,styleMappings,customOnly:true};
   }
