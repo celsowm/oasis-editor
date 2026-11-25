@@ -97,6 +97,24 @@ jobs:
         with:
           name: openxml-extended-validation
           path: test-results/ooxml-validation
+  toc-interoperability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Qualify existing repository DOCX TOC and retain evidence
+        run: npx vitest run tests/vitest/__tests__/core/tocCorpusF3H4.test.ts --reporter=verbose
+        env:
+          OASIS_TOC_CORPUS_REPORT: test-results/toc-interoperability
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: toc-interoperability
+          path: test-results/toc-interoperability
   source-preservation:
     runs-on: ubuntu-latest
     steps:
