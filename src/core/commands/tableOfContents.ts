@@ -318,6 +318,9 @@ export function updateTableOfContents(
 
   if(prior.length===entries.length&&prior.every((p,i)=>
     p.type==="paragraph"&&getParagraphText(p)===getParagraphText(entries[i]!)))return state;
+  // Until linked-cache regeneration is qualified, never discard an existing
+  // hyperlink by replacing its entry with a newly generated plain run.
+  if(prior.some(p=>p.type==="paragraph"&&p.runs.some(r=>r.styles?.link)))return state;
   const nextBlocks = [
     ...section.blocks.slice(0, region.startBlockIndex + 1),
     ...entries,
