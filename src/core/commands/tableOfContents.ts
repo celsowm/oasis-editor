@@ -23,6 +23,7 @@ import {
 } from "@/core/units.js";
 import { roundTo } from "@/utils/round.js";
 import { getHeadingLevel } from "@/core/headings.js";
+import {collectTcOccurrences,type TcOccurrence} from "@/core/document/tcEntries.js";
 import {createTocOutlineResolver} from "@/core/document/tocOutline.js";
 import { isValidTocPageLabel } from "@/core/format/pageNumberFormat.js";
 import {findQualifiedTocRegion,createTocPageNumberResolver,type TocFieldSettings} from "@/core/document/tocFields.js";
@@ -45,10 +46,11 @@ export interface TocHeading {
   id: string;
   level: number;
   text: string;
+  tc?: TcOccurrence;
 }
 
 /** Page number resolver: heading paragraph id → printed page number. */
-export type TocPageNumberResolver = (headingId: string) => number | string | undefined;
+export type TocPageNumberResolver = (headingId: string, tc?: TcOccurrence) => number | string | undefined;
 
 /**
  * Collect heading paragraphs (levels 1..maxLevel) in document order. Headings
@@ -76,6 +78,20 @@ export function collectTocHeadings(
  */
 export function collectQualifiedTocHeadings(state:EditorState,options:TocFieldSettings,maxLevel=9):TocHeading[]|undefined{
   if(maxLevel<options.endLevel||options.styleMappings?.some(m=>m.level>maxLevel))return undefined;
+  if(options.tcIdentifier!==undefined){
+    // Refuse entire main stories with unqualified containers instead of silently
+    // excluding TC fields inside tables, text boxes or opaque inline objects.
+    const sections=getDocumentSections(state.document);
+    if(sections.some(s=>s.blocks.some(b=>b.type!=="paragraph"||
+      b.runs.some(r=>r.kind==="textBox"||r.kind==="opaque"))))return undefined;
+    const occurrences=collectTcOccurrences(state.document);
+    if(!occurrences)return undefined;
+    // Default/unlabelled TC classification is not yet qualified for a C table.
+    if(options.tcIdentifier==="C"&&occurrences.some(e=>e.identifier===undefined))return undefined;
+    return occurrences.filter(e=>e.identifier?.toUpperCase()===options.tcIdentifier&&
+      e.level>=options.startLevel&&e.level<=options.endLevel)
+      .map(e=>({id:e.paragraphId,level:e.level,text:e.text,tc:e}));
+  }
   if(!options.styleMappings&&!options.useOutline)return collectTocHeadings(state,options.endLevel).filter(h=>h.level>=options.startLevel);
   const resolveOutline=options.useOutline?createTocOutlineResolver(state.document):undefined;
   const styles=Object.values(state.document.styles??{});
@@ -158,15 +174,18 @@ function makeParagraph(
  * Word's regenerated TOC1/TOC2/TOC3 look — levels are distinguished only by the
  * left indent.
  */
+export function tocEntryText(heading:TocHeading,page:number|string|undefined):string{
+  return heading.tc?.omitPageNumber?heading.text:heading.text+"\t"+(page??"");
+}
+
 function buildEntryParagraph(
   heading: TocHeading,
   pageNumber: number | string | undefined,
   rightTabPositionPt: number,
 ): EditorParagraphNode {
-  const pageLabel = pageNumber !== undefined ? String(pageNumber) : "";
-  const run = makeRun({ text: `${heading.text}\t${pageLabel}` });
+  const run = makeRun({ text: tocEntryText(heading,pageNumber) });
   const style: EditorParagraphStyle = {
-    tabs: [{ position: rightTabPositionPt, type: "right", leader: "dot" }],
+    ...(heading.tc?.omitPageNumber?{}:{tabs: [{ position: rightTabPositionPt, type: "right" as const, leader: "dot" as const }]}),
     spacingAfter: twipsToPx(40),
     indentLeft: twipsToPx((heading.level - 1) * 397),
   };
@@ -300,14 +319,16 @@ export function updateTableOfContents(
   const byId=new Map(getDocumentParagraphs(state.document).map(p=>[p.id,p]));
   if(headings.some(h=>{
     const p=byId.get(h.id);
+    if(h.tc)return !p;
     return !p||p.sdtWrappers?.length||p.numberingRevision||p.dropCap||
       p.runs.some(r=>r.kind!=="text"||r.revision||r.revisionRangeMarker||
         r.sdtWrappers?.length||r.styles?.hidden||r.styles?.rtl)||
       h.text.length>4096||/[\r\n\t]/.test(h.text);
   }))return state;
   const prior=section.blocks.slice(region.startBlockIndex+1,region.endBlockIndex);
-  const pageValues=headings.map(h=>resolvePage(h.id));
-  if(pageValues.some(n=>n!==undefined&&!isValidTocPageLabel(n)))return state;
+  const pageValues=headings.map(h=>h.tc?.omitPageNumber?"":resolvePage(h.id,h.tc));
+  if(pageValues.some((n,i)=>headings[i]!.tc?.omitPageNumber?false:
+    (n!==undefined&&!isValidTocPageLabel(n))||(n===undefined&&!!headings[i]!.tc)))return state;
   // Do not erase printed labels from a source TOC when no certified
   // pagination value was supplied for a heading.
   if(pageValues.some(n=>n===undefined)&&prior.some(p=>
@@ -321,6 +342,12 @@ export function updateTableOfContents(
   // Until linked-cache regeneration is qualified, never discard an existing
   // hyperlink by replacing its entry with a newly generated plain run.
   if(prior.some(p=>p.type==="paragraph"&&p.runs.some(r=>r.styles?.link)))return state;
+  if(region.tcIdentifier!==undefined){
+    const ids=new Set(prior.map(p=>p.id));
+    if(state.trackChangesEnabled||ids.has(state.selection.anchor.paragraphId)||ids.has(state.selection.focus.paragraphId)||
+      [...Object.values(state.document.bookmarks?.items??{}),...Object.values(state.document.comments?.items??{})]
+        .some(a=>[a.start,a.end].some(p=>p&&ids.has(p.paragraphId))))return state;
+  }
   const nextBlocks = [
     ...section.blocks.slice(0, region.startBlockIndex + 1),
     ...entries,

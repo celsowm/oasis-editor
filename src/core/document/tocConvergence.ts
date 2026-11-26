@@ -1,7 +1,7 @@
 import type {EditorDocument,EditorLayoutDocument,EditorState} from "@/core/model.js";
 import {getActiveSectionIndex,getActiveZone,getDocumentSections,getParagraphText} from "@/core/model.js";
 import {projectDocumentLayout} from "@/layoutProjection/documentLayout.js";
-import {collectQualifiedTocHeadings,updateTableOfContents} from "@/core/commands/tableOfContents.js";
+import {collectQualifiedTocHeadings,updateTableOfContents,tocEntryText} from "@/core/commands/tableOfContents.js";
 import {createTocPageNumberResolver,findQualifiedTocRegion} from "./tocFields.js";
 
 export type TocPaginate=(document:EditorDocument)=>EditorLayoutDocument;
@@ -48,7 +48,7 @@ export function refreshTableOfContentsConvergently(
   const oldEntryIds=new Set(section.blocks.slice(region.startBlockIndex+1,region.endBlockIndex).map(b=>b.id));
   const headers=collectQualifiedTocHeadings(original,region,maxLevel);
   if(!headers||headers.length>2048)return result("unsupported",0);
-  const initialSignature=JSON.stringify(headers.map(h=>[h.id,h.level,h.text]));
+  const initialSignature=JSON.stringify(headers.map(h=>[h.id,h.level,h.text,h.tc]));
   const seen=new Set<string>();
   let current=original;
   let initialLayout:EditorLayoutDocument|undefined;
@@ -62,10 +62,10 @@ export function refreshTableOfContentsConvergently(
     if(!blocks||!active||blocks[active.startBlockIndex]?.id!==beginId||
        blocks[active.endBlockIndex]?.id!==endId)return result("unsupported",pass,initialLayout);
     const headings=collectQualifiedTocHeadings(current,active,maxLevel);
-    if(!headings||JSON.stringify(headings.map(h=>[h.id,h.level,h.text]))!==initialSignature)
+    if(!headings||JSON.stringify(headings.map(h=>[h.id,h.level,h.text,h.tc]))!==initialSignature)
       return result("unsupported",pass,initialLayout);
     const resolver=createTocPageNumberResolver(current.document,layout);
-    const pages=headings.map(h=>resolver(h.id));
+    const pages=headings.map(h=>resolver(h.id,h.tc));
     if(pages.some(p=>p===undefined))return result("unresolved",pass,initialLayout);
     const candidate=updateTableOfContents(current,resolver,maxLevel);
     if(candidate===current){
@@ -75,7 +75,7 @@ export function refreshTableOfContentsConvergently(
       const cached=blocks.slice(active.startBlockIndex+1,active.endBlockIndex);
       if(cached.length!==headings.length||cached.some((block,i)=>
         block.type!=="paragraph"||
-        getParagraphText(block)!==`${headings[i]!.text}\t${pages[i]}`))
+        getParagraphText(block)!==tocEntryText(headings[i]!,pages[i])))
         return result("unsupported",pass,initialLayout);
       return {state:current===original?original:{...current,selection:original.selection},
         layout,status:current===original?"unchanged":"updated",passes:pass,
@@ -86,7 +86,7 @@ export function refreshTableOfContentsConvergently(
     if(oldEntryIds.has(original.selection.anchor.paragraphId)||
        oldEntryIds.has(original.selection.focus.paragraphId))
       return result("unsupported",pass,initialLayout);
-    const signature=JSON.stringify([headings.map((h,i)=>[h.id,h.text,pages[i]]),
+    const signature=JSON.stringify([headings.map((h,i)=>[h.id,h.tc?.runId,h.text,pages[i]]),
       layout.pages.map(p=>[p.index,p.sectionIndex])]);
     if(seen.has(signature))return result("nonconvergent",pass,initialLayout);
     seen.add(signature);

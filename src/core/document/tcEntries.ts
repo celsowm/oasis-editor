@@ -97,9 +97,8 @@ export function collectTcOccurrences(document:EditorDocument):TcOccurrence[]|und
 
 /** Resolve the printed label at the TC marker's actual offset using a
  * completed layout. No page guessed from a paragraph's first line. */
-export function resolveTcPageLabel(document:EditorDocument,layout:EditorLayoutDocument,entry:TcOccurrence):string|undefined{
+export function resolveTcPageLabel(document:EditorDocument,layout:EditorLayoutDocument,entry:TcOccurrence,context=createDocumentFieldContext(document,layout)):string|undefined{
   if(entry.omitPageNumber)return "";
-  const context=createDocumentFieldContext(document,layout);
   const page=context.pageIndexAt(entry.paragraphId,entry.offset);
   if(page===undefined)return undefined;
   const facts=context.forPage(page);

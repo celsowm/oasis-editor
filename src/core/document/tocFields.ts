@@ -3,6 +3,7 @@ import {getDocumentSections} from "@/core/model.js";
 import {buildFieldStoryGraph} from "@/core/document/fieldStoryGraph.js";
 import {parseFieldInstruction} from "@/ooxml/word/fieldInstruction.js";
 import {createDocumentFieldContext} from "@/core/document/fieldDocumentContext.js";
+import {resolveTcPageLabel,type TcOccurrence} from "./tcEntries.js";
 import {formatSectionPageLabel} from "@/core/format/pageNumberFormat.js";
 
 export interface TocFieldSettings {
@@ -14,6 +15,8 @@ export interface TocFieldSettings {
   /** Present only for an explicit custom paragraph-style mapping. */
   styleMappings?:readonly {name:string;level:number}[];
   customOnly?:true;
+  /** Explicit TC-only identifier; mixed heading sources are not qualified. */
+  tcIdentifier?:string;
 }
 export interface QualifiedTocRegion extends TocFieldSettings {
   startBlockIndex:number;
@@ -29,6 +32,7 @@ export function parseTocInstruction(raw:string):TocFieldSettings|undefined{
   let startLevel:number|undefined,endLevel:number|undefined;
   let hyperlinks=false,hideWebNumbers=false,useOutline=false;
   let styleMappings:TocFieldSettings["styleMappings"];
+  let tcIdentifier:string|undefined,tcRange:[number,number]|undefined;
   const seen=new Set<string>();
   for(let i=0;i<args.length;i++){
     const token=args[i]!;
@@ -36,7 +40,17 @@ export function parseTocInstruction(raw:string):TocFieldSettings|undefined{
     const sw=token.value.toLowerCase();
     if(seen.has(sw))return undefined;
     seen.add(sw);
-    if(sw==="o"){
+    if(sw==="f"){
+      const arg=args[++i];
+      if(!arg||arg.kind==="switch"||!/^[A-Za-z]$/.test(arg.value))return undefined;
+      tcIdentifier=arg.value.toUpperCase();
+    }else if(sw==="l"){
+      const arg=args[++i];
+      if(!arg||arg.kind==="switch")return undefined;
+      const match=/^([1-9])-([1-9])$/.exec(arg.value);
+      if(!match||Number(match[1])>Number(match[2]))return undefined;
+      tcRange=[Number(match[1]),Number(match[2])];
+    }else if(sw==="o"){
       const arg=args[++i];
       if(arg?.kind!=="quoted")return undefined;
       const match=/^([1-9])-([1-9])$/.exec(arg.value);
@@ -62,6 +76,12 @@ export function parseTocInstruction(raw:string):TocFieldSettings|undefined{
     else if(sw==="u")useOutline=true;
     else return undefined;
   }
+  if(tcIdentifier!==undefined){
+    // Offset-specific TC bookmarks and mixed-source ordering require later qualification.
+    if(startLevel!==undefined||styleMappings||useOutline||hyperlinks)return undefined;
+    return {startLevel:tcRange?.[0]??1,endLevel:tcRange?.[1]??9,hyperlinks,hideWebNumbers,useOutline,tcIdentifier};
+  }
+  if(tcRange)return undefined;
   if(startLevel===undefined||endLevel===undefined){
     if(useOutline&&!styleMappings)return {startLevel:1,endLevel:9,hyperlinks,hideWebNumbers,useOutline};
     if(!styleMappings||useOutline)return undefined;
@@ -75,10 +95,10 @@ function safeMarkerRun(p:EditorParagraphNode):boolean{
     p.runs.every(r=>!r.revision&&!r.revisionRangeMarker&&!r.sdtWrappers?.length&&
       !r.styles?.hidden&&!r.styles?.rtl);
 }
-function isPlainTocEntry(p:EditorParagraphNode):boolean{
+function isPlainTocEntry(p:EditorParagraphNode,allowNoPage=false):boolean{
   if(!safeMarkerRun(p)||p.list||p.dropCap||p.runs.length!==1)return false;
   const run=p.runs[0]!;
-  return run.kind==="text"&&run.text.length<=8192&&run.text.includes("\t")&&
+  return run.kind==="text"&&run.text.length<=8192&&(run.text.includes("\t")||(allowNoPage&&run.text.length>0))&&
     !/[\r\n]/.test(run.text);
 }
 
@@ -111,7 +131,7 @@ export function findQualifiedTocRegion(blocks:readonly EditorBlockNode[]):Qualif
       const options=parseTocInstruction(span.code.map(part=>part.kind==="instruction"?part.raw:"").join(""));
       if(!options)continue;
       const start=span.begin.paragraphIndex,end=span.end.paragraphIndex;
-      if(!paragraphs.slice(start+1,end).every(isPlainTocEntry))continue;
+      if(!paragraphs.slice(start+1,end).every(p=>isPlainTocEntry(p,options.tcIdentifier!==undefined)))continue;
       // Refuse nested or otherwise structured cached content, including
       // marker-bearing entries that the regeneration would discard.
       if(span.result.length!==end-start-1||
@@ -126,7 +146,7 @@ export function findQualifiedTocRegion(blocks:readonly EditorBlockNode[]):Qualif
  * paragraph order. A missing or uncertain physical section/page is unresolved. */
 export function createTocPageNumberResolver(
   document:EditorDocument,layout:EditorLayoutDocument,
-):(headingId:string)=>number|string|undefined{
+):(headingId:string,tc?:TcOccurrence)=>number|string|undefined{
   const context=createDocumentFieldContext(document,layout);
   const sections=getDocumentSections(document);
   const owners=new Map<string,number|null>();
@@ -136,7 +156,8 @@ export function createTocPageNumberResolver(
       owners.set(block.id,owners.has(block.id)?null:s);
     }
   });
-  return (headingId:string):number|string|undefined=>{
+  return (headingId:string,tc?:TcOccurrence):number|string|undefined=>{
+    if(tc)return tc.paragraphId===headingId?resolveTcPageLabel(document,layout,tc,context):undefined;
     const owner=owners.get(headingId);
     if(owner===undefined||owner===null)return undefined;
     const section=sections[owner]!;

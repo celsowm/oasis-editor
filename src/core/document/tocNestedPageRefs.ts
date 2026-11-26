@@ -90,7 +90,7 @@ function qualify(state:EditorState,sectionIndex=getActiveSectionIndex(state),nav
       if(parseFieldInstruction(instruction).command!=="TOC")continue;
       tocCount++;
       const settings=parseTocInstruction(instruction);
-      if(!settings||outer.parentIndex!==null||!outer.separator||!outer.end||
+      if(!settings||settings.tcIdentifier!==undefined||outer.parentIndex!==null||!outer.separator||!outer.end||
         outer.beginMarker.fieldLock||outer.beginMarker.dirty||outer.code.some(p=>p.kind!=="instruction")||
         outer.begin.paragraphIndex!==outer.separator.paragraphIndex||outer.begin.runIndex!==0||
         outer.end.runIndex!==ps[outer.end.paragraphIndex]!.runs.length-1)continue;
