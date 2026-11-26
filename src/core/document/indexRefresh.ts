@@ -61,13 +61,18 @@ function simpleSource(xml:string|undefined):boolean{
     return walk(root,"root");
   }catch{return false;}
 }
+// The history clone materializes optional properties as undefined. They
+// carry no formatting; actual values (including false) still count.
+function hasOnlyDefinedKeys(style:object|undefined,allowed:readonly string[]):boolean{
+  return Object.entries(style??{}).every(([key,value])=>value===undefined||allowed.includes(key));
+}
 function simpleEntry(p:EditorParagraphNode):boolean{
-  if(!safeParagraph(p)||Object.keys(p.style??{}).some(k=>k!=="indentLeft")||
+  if(!safeParagraph(p)||!hasOnlyDefinedKeys(p.style,["indentLeft"])||
     !Number.isFinite(p.style?.indentLeft??0)||!p.runs.length||getParagraphText(p).length>32768)return false;
   const source=getEditorParagraphOoxmlSource(p);
   if(source?.attributes?.trim()||!simpleSource(source?.xml)||!simpleSource(source?.paragraphProperties?.xml))return false;
   return p.runs.every(r=>r.kind==="text"&&!/[\r\n\t]/.test(r.text)&&
-    Object.keys(r.styles??{}).every(k=>k==="bold"||k==="italic")&&
+    hasOnlyDefinedKeys(r.styles,["bold","italic"])&&
     simpleSource(getEditorRunOoxmlSource(r)?.xml));
 }
 

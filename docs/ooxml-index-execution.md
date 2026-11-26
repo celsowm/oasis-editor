@@ -59,3 +59,7 @@ Commit 1bc791a passed all 2,436 active Vitest tests (three skipped), build and s
 ### F4B4D follow-up — popover submission lifecycle
 
 Commit 50b27d7 passed six workflows; the prioritized INDEX browser suite failed because the marker form disappeared without adding XE. The shared Menu closes synchronously on any internal actionable button click, before the native submit event. Stop click propagation within the INDEX form and invoke its validated submit handler directly on the confirm click, keeping native submit for keyboard activation. Close only through the branch on confirmed mutation or explicit cancellation. Keep shared Menu behavior unchanged. Extend the browser scenario with invalid-label gating and an observable command-state check after marking. CI pending.
+
+### F4B4D follow-up — INDEX eligibility after history clone
+
+Commit 4094211 progressed through the first XE, INDEX insertion, undo/redo, and the second marker form in Chromium before the capability wait timed out. The real history clone adds optional propertyRevision: undefined on styled runs; simpleEntry incorrectly rejected any key other than bold/italic, even when absent semantically. Check only defined keys in the cache allowlist, retaining all actual unsupported-value and retained-XML guards. Add regression using cloneEditorState followed by marking and refresh, and explicit rejection of a defined unsupported style. Browser test asserts qualification after redo and verifies actual XE instructions instead of an indirect command-state wait. CI pending.

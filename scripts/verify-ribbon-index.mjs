@@ -33,7 +33,9 @@ async function mark(page,main,sub){
   if(sub)for(const input of await panel.locator('input[type="checkbox"]').all())await input.check();
   await panel.getByTestId("editor-index-confirm").click();
   await panel.waitFor({state:"hidden"});
-  await page.waitForFunction(()=>window.ribbonReference.client.commands.state("insertIndex").isEnabled || window.ribbonReference.client.commands.state("updateIndex").isEnabled);
+  const after=await snapshot(page);
+  assert.ok(after.instructions.some(i=>i.startsWith('XE "'+main+(sub?":"+sub:"")+'"')),
+    "Confirmed mark must add the expected XE: "+JSON.stringify(after.instructions));
 }
 try{
   for(const {theme,locale,width} of [{theme:"light",locale:"pt-BR",width:1440},{theme:"dark",locale:"en",width:640}]){
@@ -76,6 +78,7 @@ try{
     assert.deepEqual((await snapshot(page)).instructions,marked.instructions);
     await page.evaluate(()=>window.ribbonReference.client.history.redo());
     assert.deepEqual((await snapshot(page)).texts,inserted.texts);
+    assert.equal(await stateEnabled(page,"updateIndex"),true,"INDEX must remain qualified after redo");
     await placeCaretInParagraph(page,1,4);
     await mark(page,"Água");
     await (await openGroup(page,"index","editor-toolbar-update-index")).click();

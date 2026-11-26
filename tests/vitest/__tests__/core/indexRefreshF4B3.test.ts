@@ -1,4 +1,7 @@
 import {describe,expect,it} from "vitest";
+import {cloneEditorState} from "@/core/cloneState.js";
+import {canUpdateIndex,markIndexEntry} from "@/core/commands/indexEntries.js";
+import {paragraphOffsetToPosition} from "@/core/model.js";
 import {setEditorRunOoxmlSource} from "@/ooxml/word/sourceFragments.js";
 import {createEditorDocument,createEditorParagraph,createEditorStateFromDocument} from "@/core/editorState.js";
 import {getDocumentSections,getParagraphText,type EditorParagraphNode,type EditorState,type EditorTextRun} from "@/core/model.js";
@@ -38,6 +41,31 @@ describe("F4B3A flat INDEX transactional regeneration",()=>{
     expect(result.state.selection).toBe(state.selection);
     expect(JSON.stringify(state)).toBe(before);
     expect(refreshIndexConvergently(result.state)).toMatchObject({state:result.state,status:"unchanged"});
+  });
+  it("keeps the index qualified after real history cloning and a new XE",()=>{
+    const {state}=fixture();
+    const generated=refreshIndexConvergently(state);
+    expect(generated.status).toBe("updated");
+    const cloned=cloneEditorState(generated.state);
+    expect(canUpdateIndex(cloned)).toBe(true);
+    expect(refreshIndexConvergently(cloned).status).toBe("unchanged");
+    // Explicit undefined is absence, but an actual unsupported style is not.
+    const blocks=getDocumentSections(cloned.document)[0]!.blocks;
+    const region=findQualifiedIndexRegion(blocks)!;
+    const p=blocks[region.start+1] as EditorParagraphNode;
+    p.runs[0]!.styles={...p.runs[0]!.styles,underline:false};
+    expect(canUpdateIndex(cloned)).toBe(false);
+    delete p.runs[0]!.styles.underline;
+    expect(canUpdateIndex(cloned)).toBe(true);
+    const intro=blocks[0] as EditorParagraphNode;
+    const pos=paragraphOffsetToPosition(intro,getParagraphText(intro).length);
+    const positioned={...cloned,selection:{anchor:pos,focus:pos}};
+    const marked=markIndexEntry(positioned,{path:["Abacate"]});
+    expect(marked).not.toBe(positioned);
+    expect(canUpdateIndex(marked)).toBe(true);
+    const updated=refreshIndexConvergently(marked);
+    expect(updated.status).toBe("updated");
+    expect(entries(updated.state).map(getParagraphText)).toContain("Abacate, 1");
   });
   it("retains visible index and emphasis through DOCX reimport",async()=>{
     const {state}=fixture(),result=refreshIndexConvergently(state);
