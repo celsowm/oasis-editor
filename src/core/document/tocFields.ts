@@ -77,8 +77,8 @@ export function parseTocInstruction(raw:string):TocFieldSettings|undefined{
     else return undefined;
   }
   if(tcIdentifier!==undefined){
-    // Offset-specific TC bookmarks and mixed-source ordering require later qualification.
-    if(startLevel!==undefined||styleMappings||useOutline||hyperlinks)return undefined;
+    // Mixed-source ordering requires later qualification.
+    if(startLevel!==undefined||styleMappings||useOutline)return undefined;
     return {startLevel:tcRange?.[0]??1,endLevel:tcRange?.[1]??9,hyperlinks,hideWebNumbers,useOutline,tcIdentifier};
   }
   if(tcRange)return undefined;

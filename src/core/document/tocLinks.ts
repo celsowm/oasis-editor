@@ -1,7 +1,8 @@
 import type {EditorBookmark,EditorState,EditorLayoutDocument,EditorParagraphNode} from "@/core/model.js";
 import {getActiveSectionIndex,getActiveZone,getDocumentSections,getParagraphText,getParagraphLength} from "@/core/model.js";
 import {createEditorBookmarkId} from "@/core/editorState.js";
-import {collectQualifiedTocHeadings} from "@/core/commands/tableOfContents.js";
+import {collectQualifiedTocHeadings,tocEntryText,type TocHeading} from "@/core/commands/tableOfContents.js";
+import {createDocumentFieldContext} from "./fieldDocumentContext.js";
 import {createTocPageNumberResolver,findQualifiedTocRegion} from "./tocFields.js";
 import {projectDocumentLayout} from "@/layoutProjection/documentLayout.js";
 import {refreshTableOfContentsConvergently,type TocPaginate,type TocConvergenceResult} from "./tocConvergence.js";
@@ -53,37 +54,49 @@ export function linkQualifiedTableOfContents(
   let before:EditorLayoutDocument;
   try{before=paginate(original.document);}catch{return fail("unsupported");}
   const resolve=createTocPageNumberResolver(original.document,before);
-  const pages=headings.map(h=>resolve(h.id));
+  const pages=headings.map(h=>resolve(h.id,h.tc));
   if(pages.some(p=>p===undefined))return fail("unresolved",before);
-  const matches=(bookmark:EditorBookmark|null|undefined,p:EditorParagraphNode):boolean=>
+  const geometry=region.tcIdentifier!==undefined?createDocumentFieldContext(original.document,before):undefined;
+  const matches=(bookmark:EditorBookmark|null|undefined,p:EditorParagraphNode,h:TocHeading):boolean=>
     !!bookmark&&bookmark.hidden===true&&bookmark.colFirst===undefined&&bookmark.colLast===undefined&&
-    bookmark.start?.paragraphId===p.id&&bookmark.start.offset===0&&
-    bookmark.end?.paragraphId===p.id&&bookmark.end.offset===getParagraphLength(p);
+    bookmark.start?.paragraphId===p.id&&bookmark.start.offset===(h.tc?.offset??0)&&
+    bookmark.end?.paragraphId===p.id&&bookmark.end.offset===(h.tc?.offset??getParagraphLength(p));
   let changed=false;
   const replacements=new Map<string,EditorParagraphNode>();
   for(const [i,heading] of headings.entries()){
     const entry=entries[i],target=body.get(heading.id);
     if(!entry||entry.type!=="paragraph"||!target||target===entry||
       target.sdtWrappers?.length||target.numberingRevision||target.dropCap||
-      target.runs.some(r=>r.kind!=="text"||r.revision||r.revisionRangeMarker||r.sdtWrappers?.length||r.styles?.hidden||r.styles?.rtl)||
-      /[\r\n\t]/.test(heading.text)||getParagraphText(entry)!==heading.text+"\t"+pages[i])
+      target.runs.some(r=>r.revision||r.revisionRangeMarker||r.sdtWrappers?.length||r.styles?.rtl||
+        (r.kind==="text"?!!r.styles?.hidden:
+          !heading.tc||r.text.length!==0||(r.kind!=="fieldChar"&&r.kind!=="fieldInstruction")))||
+      /[\r\n\t]/.test(heading.text)||getParagraphText(entry)!==tocEntryText(heading,pages[i]))
       return fail("unsupported",before);
+    if(heading.tc){
+      const offset=heading.tc.offset;
+      if(!Number.isSafeInteger(offset)||offset<0||offset>getParagraphLength(target))return fail("unsupported",before);
+      const page=geometry?.pageIndexAt(target.id,offset);
+      if(page===undefined||geometry?.forPage(page).sectionNumber!==heading.tc.sectionIndex+1)
+        return fail("unresolved",before);
+    }
     const run=entry.runs[0]!;
     const link=run.styles?.link;
     if(link){
-      if(!link.startsWith("#")||!matches(names.get(link.slice(1).toLowerCase()),target)||
+      if(!link.startsWith("#")||!matches(names.get(link.slice(1).toLowerCase()),target,heading)||
         names.get(link.slice(1).toLowerCase())?.name!==link.slice(1))return fail("unsupported",before);
       continue;
     }
     let bookmark=Object.values(items).find(bm=>isOwnedTocName(bm.name)&&
-      names.get(bm.name.toLowerCase())===bm&&matches(bm,target));
+      names.get(bm.name.toLowerCase())===bm&&matches(bm,target,heading));
     if(!bookmark){
       const id=createEditorBookmarkId();
       const name="_TocOasis"+id.replace(/^bookmark:/,"").replace(/-/g,"").slice(0,30);
       if(!isOwnedTocName(name)||Object.hasOwn(items,id)||names.has(name.toLowerCase()))
         return fail("unsupported",before);
-      bookmark={id,name,hidden:true,start:{paragraphId:target.id,offset:0},
-        end:{paragraphId:target.id,offset:getParagraphLength(target)}};
+      // TC is an invisible marker: use a collapsed range at its exact
+      // visible UTF-16 offset. Co-located markers share a navigation point.
+      bookmark={id,name,hidden:true,start:{paragraphId:target.id,offset:heading.tc?.offset??0},
+        end:{paragraphId:target.id,offset:heading.tc?.offset??getParagraphLength(target)}};
       items[id]=bookmark;order.push(id);names.set(name.toLowerCase(),bookmark);
     }
     replacements.set(entry.id,{...entry,runs:[{...run,styles:{...run.styles,link:"#"+bookmark.name}}]});
@@ -95,7 +108,15 @@ export function linkQualifiedTableOfContents(
   let after:EditorLayoutDocument;
   try{after=paginate(document);}catch{return fail("unsupported",before);}
   const verify=createTocPageNumberResolver(document,after);
-  if(headings.some((h,i)=>verify(h.id)!==pages[i]))return fail("unresolved",before);
+  if(headings.some((h,i)=>verify(h.id,h.tc)!==pages[i]))return fail("unresolved",before);
+  if(region.tcIdentifier!==undefined){
+    const afterGeometry=createDocumentFieldContext(document,after);
+    if(headings.some(h=>{
+      if(!h.tc)return true;
+      const page=afterGeometry.pageIndexAt(h.id,h.tc.offset);
+      return page===undefined||afterGeometry.forPage(page).sectionNumber!==h.tc.sectionIndex+1;
+    }))return fail("unresolved",before);
+  }
   return {state:{...original,document},status:"updated",layout:after};
 }
 
