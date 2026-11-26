@@ -1,3 +1,4 @@
+import {DOMParser} from "@xmldom/xmldom";
 import type {EditorBlockNode,EditorDocument,EditorLayoutDocument,EditorParagraphNode,EditorState,EditorTextRun} from "@/core/model.js";
 import {getActiveSectionIndex,getActiveZone,getDocumentSections,getParagraphText} from "@/core/model.js";
 import {createEditorParagraphFromRuns} from "@/core/editorState.js";
@@ -22,20 +23,49 @@ const safeParagraph=(p:EditorParagraphNode)=>!p.sdtWrappers?.length&&!p.list&&!p
   !p.style?.propertyRevision&&p.runs.every(r=>!r.revision&&!r.revisionRangeMarker&&!r.sdtWrappers?.length&&
     !r.styles?.propertyRevision&&!r.styles?.hidden&&!r.styles?.rtl&&!r.styles?.link);
 
-/** No unmodeled source children may disappear when replacing a cache.
- * This deliberately does not qualify named styles or source extensions yet.
+const WORD_NS="http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const XML_NS="http://www.w3.org/XML/1998/namespace";
+const XMLNS_NS="http://www.w3.org/2000/xmlns/";
+/** Reject unmodeled elements AND attributes, not merely unfamiliar names.
+ * Namespace aliases are supported; foreign markup with a familiar prefix
+ * is not. The input is a retained serializer fragment, never a full package.
  */
 function simpleSource(xml:string|undefined):boolean{
   if(!xml)return true;
-  if(/<!--|<!\[CDATA\[|<\?/.test(xml))return false;
-  const allowed=new Set(["w:p","w:pPr","w:ind","w:r","w:rPr","w:b","w:i","w:t"]);
-  return [...xml.matchAll(/<\/?([A-Za-z_][\w.:-]*)\b/g)].every(m=>allowed.has(m[1]!));
+  if(xml.length>262144||/<!|<\?/.test(xml))return false;
+  try{
+    const root=new DOMParser().parseFromString('<root xmlns:w="'+WORD_NS+'">'+xml+'</root>',"application/xml").documentElement;
+    if(!root||root.localName!=="root")return false;
+    const children:Record<string,readonly string[]>={root:["p","pPr","r"],p:["pPr","r"],pPr:["ind"],
+      r:["rPr","t"],rPr:["b","i"],ind:[],b:[],i:[],t:[]};
+    const attrs:Record<string,readonly string[]>={p:[],pPr:[],r:[],rPr:[],ind:["left"],b:["val"],i:["val"],t:[]};
+    function walk(element:typeof root,kind:string):boolean{
+      for(let i=0;i<element.attributes.length;i++){
+        const attr=element.attributes.item(i)!;
+        if(attr.namespaceURI===XMLNS_NS)continue;
+        if(kind==="t"&&attr.namespaceURI===XML_NS&&attr.localName==="space"&&
+          (attr.value==="preserve"||attr.value==="default"))continue;
+        if(attr.namespaceURI!==WORD_NS||!attrs[kind]?.includes(attr.localName))return false;
+        if(kind==="ind"&&!/^\d+$/.test(attr.value))return false;
+        if((kind==="b"||kind==="i")&&!/^(?:0|1|true|false|on|off)$/.test(attr.value))return false;
+      }
+      for(let i=0;i<element.childNodes.length;i++){
+        const child=element.childNodes.item(i)!;
+        if(child.nodeType===1){
+          const e=child as typeof root;
+          if(e.namespaceURI!==WORD_NS||!children[kind]?.includes(e.localName)||!walk(e,e.localName))return false;
+        }else if(child.nodeType!==3||(kind!=="t"&&!!child.nodeValue?.trim()))return false;
+      }
+      return true;
+    }
+    return walk(root,"root");
+  }catch{return false;}
 }
 function simpleEntry(p:EditorParagraphNode):boolean{
   if(!safeParagraph(p)||Object.keys(p.style??{}).some(k=>k!=="indentLeft")||
     !Number.isFinite(p.style?.indentLeft??0)||!p.runs.length||getParagraphText(p).length>32768)return false;
   const source=getEditorParagraphOoxmlSource(p);
-  if(!simpleSource(source?.xml)||!simpleSource(source?.paragraphProperties?.xml))return false;
+  if(source?.attributes?.trim()||!simpleSource(source?.xml)||!simpleSource(source?.paragraphProperties?.xml))return false;
   return p.runs.every(r=>r.kind==="text"&&!/[\r\n\t]/.test(r.text)&&
     Object.keys(r.styles??{}).every(k=>k==="bold"||k==="italic")&&
     simpleSource(getEditorRunOoxmlSource(r)?.xml));
@@ -135,13 +165,13 @@ function makeLine(line:EntryLine):EditorParagraphNode{
 
 /** A range crossing the replaceable region is also unsafe even if both
  * endpoints are outside. Conservatively reject unknown anchor locations. */
-function hasCacheAnchors(state:EditorState,ids:Set<string>):boolean{
+function hasCacheAnchors(state:EditorState,ids:Set<string>,beginId:string,endId:string):boolean{
   const order=new Map<string,number>();
   for(const section of getDocumentSections(state.document))for(const b of section.blocks)order.set(b.id,order.size);
   if(ids.has(state.selection.anchor.paragraphId)||ids.has(state.selection.focus.paragraphId))return true;
-  const cache=[...ids].map(id=>order.get(id)!);
-  if(!cache.length)return false;
-  const min=Math.min(...cache),max=Math.max(...cache);
+  // A previously empty cache can still lie inside an anchored range.
+  const min=order.get(beginId),max=order.get(endId);
+  if(min===undefined||max===undefined)return true;
   for(const range of [...Object.values(state.document.bookmarks?.items??{}),...Object.values(state.document.comments?.items??{})]){
     const a=range.start?order.get(range.start.paragraphId):undefined,b=range.end?order.get(range.end.paragraphId):undefined;
     if(a===undefined||b===undefined||a>b||(a<=max&&b>=min))return true;
@@ -196,7 +226,7 @@ export function refreshIndexConvergently(original:EditorState,documentLocale?:st
       return {state:current,status:current===original?"unchanged":"updated",passes:pass,
         updatedEntries:current===original?0:lines.length,layout};
     }
-    if(hasCacheAnchors(original,oldIds))return fail("unsupported",pass);
+    if(hasCacheAnchors(original,oldIds,beginId,endId))return fail("unsupported",pass);
     const signature=JSON.stringify([lines,layout.pages.map(p=>[p.index,p.sectionIndex])]);
     if(seen.has(signature))return fail("nonconvergent",pass);
     seen.add(signature);

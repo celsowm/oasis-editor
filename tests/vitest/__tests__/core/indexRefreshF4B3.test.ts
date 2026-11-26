@@ -1,4 +1,5 @@
 import {describe,expect,it} from "vitest";
+import {setEditorRunOoxmlSource} from "@/ooxml/word/sourceFragments.js";
 import {createEditorDocument,createEditorParagraph,createEditorStateFromDocument} from "@/core/editorState.js";
 import {getDocumentSections,getParagraphText,type EditorParagraphNode,type EditorState,type EditorTextRun} from "@/core/model.js";
 import {findQualifiedIndexRegion,refreshIndexConvergently} from "@/core/document/indexRefresh.js";
@@ -62,5 +63,28 @@ describe("F4B3A flat INDEX transactional regeneration",()=>{
       return projectDocumentLayout(doc);
     });
     expect(result).toMatchObject({state,status:"unsupported",passes:2});
+  });
+});
+
+describe("F4B3B source preservation guards",()=>{
+  it("does not discard unmodeled run attributes or elements from an imported cache",()=>{
+    for(const xml of [
+      '<w:r xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:rsidR="12345678"><w:t>Antigo, 99</w:t></w:r>',
+      '<w:r xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:rPr><w:b w:val="1" w:unexpected="x"/></w:rPr><w:t>Antigo, 99</w:t></w:r>',
+      '<w:r xmlns:w="urn:foreign"><w:t>Antigo, 99</w:t></w:r>',
+    ]){
+      const {state,stale}=fixture();
+      const block=getDocumentSections(state.document)[0]!.blocks.find(b=>b.id===stale.id);
+      if(block?.type!=="paragraph")throw Error("Missing cache");
+      setEditorRunOoxmlSource(block.runs[0]!,xml);
+      expect(refreshIndexConvergently(state)).toMatchObject({state,status:"unsupported"});
+    }
+  });
+  it("refuses a bookmark spanning an empty cache before inserting new entries",()=>{
+    const {state,begin,end,stale}=fixture();
+    const section=getDocumentSections(state.document)[0]!;
+    const anchored={...state,document:{...state.document,sections:[{...section,blocks:section.blocks.filter(b=>b.id!==stale.id)}],
+      bookmarks:{order:["span"],items:{span:{id:"span",name:"Span",start:{paragraphId:begin.id,offset:0},end:{paragraphId:end.id,offset:0}}}}}};
+    expect(refreshIndexConvergently(anchored)).toMatchObject({state:anchored,status:"unsupported"});
   });
 });
