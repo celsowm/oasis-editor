@@ -34,6 +34,7 @@ export function IndexEntryPanel(props:{api:ToolbarActionApi;mode:"mark"|"insert"
     branch?.closeAll();props.api.focusEditor();
   }
   return <form class="oasis-index-entry-panel" data-testid={marking()?"editor-index-mark-panel":"editor-index-insert-panel"}
+    onClick={e=>e.stopPropagation()}
     onSubmit={e=>{e.preventDefault();e.stopPropagation();submit();}}>
     <Text as="p" size="sm">{t(marking()?"index.markHint":"index.insertHint")}</Text>
     <Show when={marking()} fallback={<SelectField label={t("index.locale")} data-testid="editor-index-locale" value={locale()}
@@ -50,7 +51,8 @@ export function IndexEntryPanel(props:{api:ToolbarActionApi;mode:"mark"|"insert"
     <Show when={error()}><StatusText as="p" tone="danger" role="alert">{t("index.refused")}</StatusText></Show>
     <div class="oasis-index-entry-actions">
       <Button onClick={()=>{branch?.closeAll();props.api.focusEditor();}}>{t("generic.cancel")}</Button>
-      <Button type="submit" variant="primary" disabled={!valid()} data-testid="editor-index-confirm">{t(marking()?"ribbon.markIndexEntry":"ribbon.insertIndex")}</Button>
+      <Button type="submit" variant="primary" disabled={!valid()} data-testid="editor-index-confirm"
+        onClick={e=>{e.preventDefault();e.stopPropagation();submit();}}>{t(marking()?"ribbon.markIndexEntry":"ribbon.insertIndex")}</Button>
     </div>
   </form>;
 }

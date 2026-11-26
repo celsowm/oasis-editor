@@ -55,3 +55,7 @@ Commit 267e612 passed the static icon audit, OOXML evidence, and six of seven wo
 ### F4B4D follow-up — responsive test synchronization
 
 Commit 1bc791a passed all 2,436 active Vitest tests (three skipped), build and six other workflows. PR CI stopped in the existing resize suite before reaching INDEX: styles group actual width 661 vs measured estimate 152. The snapshot waited only for nonzero width data and a fixed delay. Use the existing shared waitForRibbonSettled helper to require a committed measurement and stable frames before asserting exact widths. Do not relax any geometry assertion. Run the INDEX browser suite before the resize matrix to collect its result independently of a later failure. This is a synchronization hypothesis, not a confirmed runtime geometry fix; CI pending.
+
+### F4B4D follow-up — popover submission lifecycle
+
+Commit 50b27d7 passed six workflows; the prioritized INDEX browser suite failed because the marker form disappeared without adding XE. The shared Menu closes synchronously on any internal actionable button click, before the native submit event. Stop click propagation within the INDEX form and invoke its validated submit handler directly on the confirm click, keeping native submit for keyboard activation. Close only through the branch on confirmed mutation or explicit cancellation. Keep shared Menu behavior unchanged. Extend the browser scenario with invalid-label gating and an observable command-state check after marking. CI pending.

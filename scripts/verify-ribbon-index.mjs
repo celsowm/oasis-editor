@@ -26,11 +26,14 @@ async function mark(page,main,sub){
   const panel=page.getByTestId("editor-index-mark-panel");
   await panel.waitFor({state:"visible"});
   assert.equal(await panel.getByTestId("editor-index-confirm").isDisabled(),true);
+  await panel.getByTestId("editor-index-main-entry").fill("Invalid:entry");
+  assert.equal(await panel.getByTestId("editor-index-confirm").isDisabled(),true);
   await panel.getByTestId("editor-index-main-entry").fill(main);
   if(sub)await panel.getByTestId("editor-index-subentry").fill(sub);
   if(sub)for(const input of await panel.locator('input[type="checkbox"]').all())await input.check();
   await panel.getByTestId("editor-index-confirm").click();
   await panel.waitFor({state:"hidden"});
+  await page.waitForFunction(()=>window.ribbonReference.client.commands.state("insertIndex").isEnabled || window.ribbonReference.client.commands.state("updateIndex").isEnabled);
 }
 try{
   for(const {theme,locale,width} of [{theme:"light",locale:"pt-BR",width:1440},{theme:"dark",locale:"en",width:640}]){
