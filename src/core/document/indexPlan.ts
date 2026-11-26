@@ -2,6 +2,7 @@ import type {EditorDocument,EditorLayoutDocument} from "@/core/model.js";
 import {parseFieldInstruction} from "@/ooxml/word/fieldInstruction.js";
 import {createDocumentFieldContext} from "./fieldDocumentContext.js";
 import {collectXeOccurrences,resolveXePointPage,type XePage} from "./xeEntries.js";
+import {resolveXeBookmarkRange,type XeRangePage} from "./xeRanges.js";
 
 export interface IndexSettings {
   identifier?:string;
@@ -9,14 +10,21 @@ export interface IndexSettings {
   entrySeparator:string;
   pageSeparator:string;
   crossReferenceSeparator:string;
+  rangeSeparator?:string;
 }
 export interface IndexPageReference extends XePage {
+  bold:boolean;
+  italic:boolean;
+}
+export interface IndexRangeReference {
+  pages:XeRangePage[];
   bold:boolean;
   italic:boolean;
 }
 export interface IndexEntryPlan {
   path:readonly string[];
   pages:IndexPageReference[];
+  ranges?:IndexRangeReference[];
   crossReferences:string[];
 }
 export interface IndexPlan {
@@ -62,10 +70,11 @@ export function parseIndexInstruction(raw:string):IndexSettings|undefined{
       settings.locale=locale;
     }else if(sw==="c"){
       if(arg.value!=="1")return undefined;
-    }else if(sw==="e"||sw==="l"||sw==="k"){
+    }else if(sw==="e"||sw==="l"||sw==="k"||sw==="g"){
       if(arg.kind!=="quoted"||arg.value.length>15||/[\u0000-\u001f\u007f]/.test(arg.value))return undefined;
       if(sw==="e")settings.entrySeparator=arg.value;
       else if(sw==="l")settings.pageSeparator=arg.value;
+      else if(sw==="g")settings.rangeSeparator=arg.value;
       else settings.crossReferenceSeparator=arg.value;
     }else return undefined;
   }
@@ -76,6 +85,7 @@ interface MutableNode {
   path:string[];
   children:Map<string,MutableNode>;
   pages:Map<number,IndexPageReference>;
+  ranges:Map<string,IndexRangeReference>;
   crossReferences:Set<string>;
 }
 
@@ -93,7 +103,7 @@ export function buildIndexPlan(document:EditorDocument,layout:EditorLayoutDocume
   const context=createDocumentFieldContext(document,layout);
   const collator=new Intl.Collator(locale,{usage:"sort",sensitivity:"accent",numeric:false,ignorePunctuation:false});
   const roots=new Map<string,MutableNode>();
-  let nodeCount=0;
+  let nodeCount=0,rangePageCount=0;
   for(const entry of occurrences){
     if(entry.identifier!==settings.identifier){
       // Do not silently guess case semantics for explicit identifiers.
@@ -103,7 +113,6 @@ export function buildIndexPlan(document:EditorDocument,layout:EditorLayoutDocume
     }
     // Semicolon introduces custom sort text in Word; not plain display text.
     if(entry.path.some(p=>p.includes(";")||p!==p.trim()))return undefined;
-    if(entry.reference.kind==="bookmarkRange")return undefined;
     let children=roots,node:MutableNode|undefined;
     const path:string[]=[];
     for(const label of entry.path){
@@ -111,7 +120,7 @@ export function buildIndexPlan(document:EditorDocument,layout:EditorLayoutDocume
       node=children.get(label);
       if(!node){
         if(++nodeCount>8192)return undefined;
-        node={label,path:[...path],children:new Map(),pages:new Map(),crossReferences:new Set()};
+        node={label,path:[...path],children:new Map(),pages:new Map(),ranges:new Map(),crossReferences:new Set()};
         children.set(label,node);
       }
       children=node.children;
@@ -119,6 +128,21 @@ export function buildIndexPlan(document:EditorDocument,layout:EditorLayoutDocume
     if(!node)return undefined;
     if(entry.reference.kind==="crossReference"){
       node.crossReferences.add(entry.reference.text);
+      continue;
+    }
+    if(entry.reference.kind==="bookmarkRange"){
+      const pages=resolveXeBookmarkRange(document,layout,entry.reference.bookmark,context);
+      if(!pages)return undefined;
+      // Bound materialized references even with repeated large ranges.
+      const key=pages[0]!.physicalPageIndex+":"+pages.at(-1)!.physicalPageIndex;
+      const prior=node.ranges.get(key);
+      if(prior&&(prior.bold!==entry.boldPage||prior.italic!==entry.italicPage||
+        JSON.stringify(prior.pages)!==JSON.stringify(pages)))return undefined;
+      if(!prior){
+        rangePageCount+=pages.length;
+        if(rangePageCount>32768)return undefined;
+        node.ranges.set(key,{pages,bold:entry.boldPage,italic:entry.italicPage});
+      }
       continue;
     }
     const page=resolveXePointPage(document,layout,entry,context);
@@ -136,9 +160,17 @@ export function buildIndexPlan(document:EditorDocument,layout:EditorLayoutDocume
     for(const node of ordered){
       // Combining page lists and cross-reference text on one line, or several
       // distinct cross references, needs an actual Word oracle before refresh.
-      if(node.crossReferences.size>1||(node.crossReferences.size&&node.pages.size))return false;
+      if(node.crossReferences.size>1||(node.crossReferences.size&&(node.pages.size||node.ranges.size)))return false;
+      const ranges=[...node.ranges.values()].sort((a,b)=>a.pages[0]!.physicalPageIndex-b.pages[0]!.physicalPageIndex);
+      // Do not invent Word's policy for overlapping explicit ranges or
+      // point references inside them. Preserve the existing cache instead.
+      let last=-1;
+      for(const range of ranges){
+        if(range.pages[0]!.physicalPageIndex<=last||range.pages.some(p=>node.pages.has(p.physicalPageIndex)))return false;
+        last=range.pages.at(-1)!.physicalPageIndex;
+      }
       entries.push({path:node.path,pages:[...node.pages.values()].sort((a,b)=>a.physicalPageIndex-b.physicalPageIndex),
-        crossReferences:[...node.crossReferences]});
+        ...(ranges.length?{ranges}:{}),crossReferences:[...node.crossReferences]});
       if(!visit(node.children))return false;
     }
     return true;

@@ -1,7 +1,8 @@
 import {describe,expect,it} from "vitest";
 import {createEditorDocument,createEditorParagraph} from "@/core/editorState.js";
-import {getDocumentSections,type EditorTextRun} from "@/core/model.js";
+import {getDocumentSections,getParagraphLength,type EditorTextRun,type EditorDocument} from "@/core/model.js";
 import {projectDocumentLayout} from "@/layoutProjection/documentLayout.js";
+import {resolveXeBookmarkRange} from "@/core/document/xeRanges.js";
 import {parseIndexInstruction,buildIndexPlan} from "@/core/document/indexPlan.js";
 import {exportEditorDocumentToDocx} from "@/export/docx/exportEditorDocumentToDocx.js";
 import {importDocxToEditorDocument} from "@/import/docx/importDocxToEditorDocument.js";
@@ -60,5 +61,56 @@ describe("F4B2 INDEX read-only entry plan",()=>{
       ['XE "A" \\t "Ver B"','XE "A" \\t "Ver C"'],
     ])expect(plan(fixture(...fields)),fields.join(" | ")).toBeUndefined();
     expect(plan(fixture('XE "A" \\f a'),'INDEX \\f A \\z 1046')).toBeUndefined();
+  });
+});
+
+function rangeFixture(){
+  const doc=fixture('XE "Contratos" \\r Span \\b','XE "Contratos" \\r Span \\b');
+  const first=getDocumentSections(doc)[0]!;
+  const start=first.blocks[0]!;
+  if(start.type!=="paragraph")throw Error("Expected paragraph");
+  const middle=createEditorParagraph("Segunda seção");
+  const end=createEditorParagraph("Terceira seção");
+  doc.sections=[first,{...first,id:"section-range-2",blocks:[middle],breakType:"nextPage",pageNumbering:{start:12,format:"upperRoman"}},
+    {...first,id:"section-range-3",blocks:[end],breakType:"nextPage",pageNumbering:{start:1,format:"decimal"}}];
+  doc.bookmarks={order:["range"],items:{range:{id:"range",name:"Span",start:{paragraphId:start.id,offset:1},
+    end:{paragraphId:end.id,offset:0}}}};
+  return {doc,start,middle,end};
+}
+describe("F4B2B explicit bookmark ranges",()=>{
+  it("preserves physical pages with repeated printed labels and excludes the end boundary",async()=>{
+    const {doc}=rangeFixture();
+    const before=JSON.stringify(doc),result=plan(doc,raw+' \\g "–"')!;
+    expect(result.settings.rangeSeparator).toBe("–");
+    expect(result.entries[0]!.ranges).toEqual([{bold:true,italic:false,pages:[
+      {physicalPageIndex:0,sectionIndex:0,label:"XII"},
+      {physicalPageIndex:1,sectionIndex:1,label:"XII"},
+    ]}]);
+    expect(result.entries[0]!.pages).toEqual([]);
+    expect(JSON.stringify(doc)).toBe(before);
+    const reopened=await importDocxToEditorDocument(await exportEditorDocumentToDocx(doc));
+    expect(plan(reopened,raw+' \\g "–"')).toEqual(result);
+  });
+  it("includes the final section when the bookmark contains text there",()=>{
+    const {doc,end}=rangeFixture(),bm=doc.bookmarks!.items.range!;
+    bm.end={paragraphId:end.id,offset:getParagraphLength(end)};
+    expect(resolveXeBookmarkRange(doc,projectDocumentLayout(doc),"Span")?.map(p=>p.label)).toEqual(["XII","XII","1"]);
+  });
+  it("refuses missing, ambiguous, reversed and invalid bookmark anchors",()=>{
+    const {doc,start}=rangeFixture(),bm=doc.bookmarks!.items.range!;
+    const layout=projectDocumentLayout(doc);
+    expect(resolveXeBookmarkRange(doc,layout,"Missing")).toBeUndefined();
+    const ambiguous:EditorDocument={...doc,bookmarks:{order:["range","other"],items:{
+      range:bm,other:{...bm,id:"other",name:"span"}}}};
+    expect(resolveXeBookmarkRange(ambiguous,layout,"Span")).toBeUndefined();
+    bm.end={paragraphId:start.id,offset:0};
+    expect(resolveXeBookmarkRange(doc,layout,"Span")).toBeUndefined();
+    bm.end={paragraphId:start.id,offset:9999};
+    expect(resolveXeBookmarkRange(doc,layout,"Span")).toBeUndefined();
+  });
+  it("rejects overlapping point references rather than guessing deduplication",()=>{
+    const {doc,start}=rangeFixture();
+    start.runs.push(...marker("overlap",'XE "Contratos" \\b'));
+    expect(plan(doc)).toBeUndefined();
   });
 });
