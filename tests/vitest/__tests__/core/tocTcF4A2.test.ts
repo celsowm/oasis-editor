@@ -38,7 +38,7 @@ describe("F4A2A TC-only flat TOC refresh",()=>{
   it("qualifies explicit TC-only grammar, refuses mixed and unsafe options",()=>{
     expect(parseTocInstruction('TOC \\f "A" \\l "2-3"')).toMatchObject({tcIdentifier:"A",startLevel:2,endLevel:3});
     expect(parseTocInstruction('TOC \\f A \\h')).toMatchObject({tcIdentifier:"A",hyperlinks:true});
-    for(const raw of ['TOC \\f','TOC \\f AB','TOC \\f A \\o "1-3"','TOC \\l "2-3"','TOC \\f A \\l "3-2"'])
+    for(const raw of ['TOC \\f','TOC \\f AB','TOC \\f A \\o "1-3" \\h','TOC \\l "2-3"','TOC \\f A \\l "3-2"'])
       expect(parseTocInstruction(raw),raw).toBeUndefined();
   });
   it("regenerates selected marker occurrences, suppresses pages and survives DOCX",async()=>{
