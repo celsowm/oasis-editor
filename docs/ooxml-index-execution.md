@@ -15,3 +15,7 @@ Compile a bounded XE grammar: quoted colon-separated hierarchy, explicit single-
 - F4B4: independent Open XML validator corpus, Word-authored INDEX fixtures, Ribbon mark/update integration and browser qualification.
 
 Do not claim complete Word parity until the actual fixtures pass. Do not infer alphabetical ordering from a host's default locale.
+
+## F4B2A — read-only INDEX plan
+
+F4B1 passed all seven PR #101 workflows. PR #100 passed all seven and was merged independently. Follow Microsoft Word's documented deviation for default INDEX selection: omitted \f selects only untyped XE, unlike ISO/IEC 29500 (https://learn.microsoft.com/en-us/openspecs/office_standards/ms-oi29500/99860875-33d5-46d6-8d52-76e0cdcd5da3). Parse one-column indented INDEX, explicit type, supported language tags/LCIDs and bounded plain separators. Require an explicit locale from the field or caller, sort via Intl.Collator, preserve exact display paths and emit parent-first hierarchy. Deduplicate point references by physical page, retain printed labels and bold/italic flags. Keep cross references typed. Reject unresolved pages, ambiguous spelling/case or formatting, combined cross references and pages, custom sort overrides, mixed-case identifiers and bookmark range expansion (next slice). No cache mutation, UI or Word collation parity claim. Added dedicated unit and DOCX round-trip tests; CI pending.
