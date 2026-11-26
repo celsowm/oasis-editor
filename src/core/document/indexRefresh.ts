@@ -1,4 +1,4 @@
-import {DOMParser} from "@xmldom/xmldom";
+import {DOMParser,type Element as XmlElement} from "@xmldom/xmldom";
 import type {EditorBlockNode,EditorDocument,EditorLayoutDocument,EditorParagraphNode,EditorState,EditorTextRun} from "@/core/model.js";
 import {getActiveSectionIndex,getActiveZone,getDocumentSections,getParagraphText} from "@/core/model.js";
 import {createEditorParagraphFromRuns} from "@/core/editorState.js";
@@ -39,21 +39,21 @@ function simpleSource(xml:string|undefined):boolean{
     const children:Record<string,readonly string[]>={root:["p","pPr","r"],p:["pPr","r"],pPr:["ind"],
       r:["rPr","t"],rPr:["b","i"],ind:[],b:[],i:[],t:[]};
     const attrs:Record<string,readonly string[]>={p:[],pPr:[],r:[],rPr:[],ind:["left"],b:["val"],i:["val"],t:[]};
-    function walk(element:typeof root,kind:string):boolean{
+    function walk(element:XmlElement,kind:string):boolean{
       for(let i=0;i<element.attributes.length;i++){
         const attr=element.attributes.item(i)!;
         if(attr.namespaceURI===XMLNS_NS)continue;
         if(kind==="t"&&attr.namespaceURI===XML_NS&&attr.localName==="space"&&
           (attr.value==="preserve"||attr.value==="default"))continue;
-        if(attr.namespaceURI!==WORD_NS||!attrs[kind]?.includes(attr.localName))return false;
+        if(attr.namespaceURI!==WORD_NS||!attr.localName||!attrs[kind]?.includes(attr.localName))return false;
         if(kind==="ind"&&!/^\d+$/.test(attr.value))return false;
         if((kind==="b"||kind==="i")&&!/^(?:0|1|true|false|on|off)$/.test(attr.value))return false;
       }
       for(let i=0;i<element.childNodes.length;i++){
         const child=element.childNodes.item(i)!;
         if(child.nodeType===1){
-          const e=child as typeof root;
-          if(e.namespaceURI!==WORD_NS||!children[kind]?.includes(e.localName)||!walk(e,e.localName))return false;
+          const e=child as XmlElement;
+          if(e.namespaceURI!==WORD_NS||!e.localName||!children[kind]?.includes(e.localName)||!walk(e,e.localName))return false;
         }else if(child.nodeType!==3||(kind!=="t"&&!!child.nodeValue?.trim()))return false;
       }
       return true;
