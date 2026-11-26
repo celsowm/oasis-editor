@@ -5,18 +5,15 @@ import { waitForRibbonReference } from "./ribbon-reference-ready.mjs";
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { createSuite } from "./lib/ribbon-suite.mjs";
+import { createSuite, waitForRibbonSettled } from "./lib/ribbon-suite.mjs";
 
 const { base, engine, output, records, browser } =
   await createSuite("resize");
 const ranks = { full: 0, compact: 1, collapsed: 2 };
 const snapshot = async (page) => {
-  await page.waitForFunction(() =>
-    [...document.querySelectorAll("[data-ribbon-group]")].every(
-      (el) => Number(el.dataset.ribbonWidthFull) > 0,
-    ),
-  );
-  await page.waitForTimeout(100);
+  // A nonzero estimate is not a completed measurement. Use the same
+  // committed, stable frame protocol as collapsed-group interactions.
+  await waitForRibbonSettled(page);
   return page.getByTestId("editor-ribbon-panel").evaluate((panel) => ({
     width: panel.clientWidth,
     scrollWidth: panel.scrollWidth,

@@ -51,3 +51,7 @@ F4B4C passed six of seven workflows, including typecheck and OOXML. PR CI failed
 ### F4B4D follow-up — native UI guardrail
 
 Commit 267e612 passed the static icon audit, OOXML evidence, and six of seven workflows. PR CI reported 2,435 tests passed, three skipped and one failure: raw native elements in IndexEntryPanel. Replace them with the shared Text, StatusText, SelectField and Checkbox components, preserving test IDs and form behavior. Keep the native UI guardrail unchanged. Browser qualification is still pending.
+
+### F4B4D follow-up — responsive test synchronization
+
+Commit 1bc791a passed all 2,436 active Vitest tests (three skipped), build and six other workflows. PR CI stopped in the existing resize suite before reaching INDEX: styles group actual width 661 vs measured estimate 152. The snapshot waited only for nonzero width data and a fixed delay. Use the existing shared waitForRibbonSettled helper to require a committed measurement and stable frames before asserting exact widths. Do not relax any geometry assertion. Run the INDEX browser suite before the resize matrix to collect its result independently of a later failure. This is a synchronization hypothesis, not a confirmed runtime geometry fix; CI pending.
