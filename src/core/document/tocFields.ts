@@ -82,8 +82,7 @@ export function parseTocInstruction(raw:string):TocFieldSettings|undefined{
     return {startLevel:tcRange?.[0]??1,endLevel:tcRange?.[1]??9,hyperlinks,hideWebNumbers,useOutline,tcIdentifier};
   }
   // Mixed sources use independent ranges; the TC range must not truncate
-  // outline/style entries. Mixed linked caches require separate qualification.
-  if(tcIdentifier!==undefined&&hyperlinks)return undefined;
+  // outline/style entries. Linked mixed caches use the same qualified source vector.
   if(tcRange&&tcIdentifier===undefined)return undefined;
   const mixed=tcIdentifier===undefined?{}:{tcIdentifier,tcMixedRange:tcRange??[1,9] as [number,number]};
   if(startLevel===undefined||endLevel===undefined){
