@@ -43,3 +43,7 @@ F4B4A passed all seven PR workflows. Expose typed markIndexEntry/insertIndex/upd
 ## F4B4C — Ribbon authoring panels
 
 F4B4B CI failed at syntax checking because an extraction left the existing INDEX guard split between functions. Restore the complete guard in canInsertIndex. Add References > Index with mark/insert form popovers and update command, localized EN/PT-BR labels, custom editorial glyphs and responsive group registration. Validate inputs and show refusal without reporting success. Forms use the existing popup lifecycle. Browser interaction, keyboard/focus qualification and Word-style modal parity remain pending. CI pending.
+
+## F4B4D — browser qualification
+
+F4B4C passed six of seven workflows, including typecheck and OOXML. PR CI failed on stale static icon inventory, not icon resolution. Reconcile exact audit output (literal changes, dynamic expressions and custom registry). Add mandatory real Ribbon INDEX workflow in Chromium (wide light PT-BR and narrow dark EN): mark and insert forms, update after a new XE, undo/redo, read-only, DOCX round-trip, evidence screenshots. CI pending; no Word oracle or manual visual approval claimed.
