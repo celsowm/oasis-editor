@@ -1,6 +1,10 @@
 import {createSignal,Show,useContext,type JSX} from "solid-js";
 import {TextField} from "@/ui/public/TextField.js";
 import {Button} from "@/ui/public/Button.js";
+import {Checkbox} from "@/ui/public/Checkbox.js";
+import {SelectField} from "@/ui/public/SelectField.js";
+import {Text} from "@/ui/public/Text.js";
+import {StatusText} from "@/ui/public/StatusText.js";
 import {PopoverBranchContext} from "../primitives/popoverBranch.js";
 import type {ToolbarActionApi} from "../schema/items.js";
 import type {MarkIndexEntryOptions,InsertIndexOptions} from "@/core/commands/indexEntries.js";
@@ -31,25 +35,19 @@ export function IndexEntryPanel(props:{api:ToolbarActionApi;mode:"mark"|"insert"
   }
   return <form class="oasis-index-entry-panel" data-testid={marking()?"editor-index-mark-panel":"editor-index-insert-panel"}
     onSubmit={e=>{e.preventDefault();e.stopPropagation();submit();}}>
-    <p>{t(marking()?"index.markHint":"index.insertHint")}</p>
-    <Show when={marking()} fallback={<label class="oasis-editor-ui-field">
-      <span class="oasis-editor-ui-field-label">{t("index.locale")}</span>
-      <select class="oasis-editor-ui-input" data-testid="editor-index-locale" value={locale()}
-        onChange={e=>{setLocale(e.currentTarget.value);setError(false);}}>
-        <option value="pt-BR">Português (Brasil)</option>
-        <option value="en-US">English (US)</option>
-        <option value="pt-PT">Português (Portugal)</option>
-        <option value="es-ES">Español</option>
-      </select>
-    </label>}>
+    <Text as="p" size="sm">{t(marking()?"index.markHint":"index.insertHint")}</Text>
+    <Show when={marking()} fallback={<SelectField label={t("index.locale")} data-testid="editor-index-locale" value={locale()}
+      onChange={value=>{setLocale(value);setError(false);}}
+      options={[{value:"pt-BR",label:"Português (Brasil)"},{value:"en-US",label:"English (US)"},
+        {value:"pt-PT",label:"Português (Portugal)"},{value:"es-ES",label:"Español"}]}/>}>
       <TextField label={t("index.mainEntry")} value={main()} onChange={v=>{setMain(v);setError(false);}} data-testid="editor-index-main-entry"/>
       <TextField label={t("index.subentry")} value={sub()} onChange={v=>{setSub(v);setError(false);}} data-testid="editor-index-subentry"/>
-      <label><input type="checkbox" checked={bold()} onChange={e=>setBold(e.currentTarget.checked)}/>{t("index.boldPage")}</label>
-      <label><input type="checkbox" checked={italic()} onChange={e=>setItalic(e.currentTarget.checked)}/>{t("index.italicPage")}</label>
+      <Checkbox label={t("index.boldPage")} checked={bold()} onChange={setBold}/>
+      <Checkbox label={t("index.italicPage")} checked={italic()} onChange={setItalic}/>
     </Show>
     <TextField label={t("index.identifier")} value={type()} maxlength={1}
       onChange={v=>{setType(v);setError(false);}} data-testid="editor-index-identifier"/>
-    <Show when={error()}><p role="alert">{t("index.refused")}</p></Show>
+    <Show when={error()}><StatusText as="p" tone="danger" role="alert">{t("index.refused")}</StatusText></Show>
     <div class="oasis-index-entry-actions">
       <Button onClick={()=>{branch?.closeAll();props.api.focusEditor();}}>{t("generic.cancel")}</Button>
       <Button type="submit" variant="primary" disabled={!valid()} data-testid="editor-index-confirm">{t(marking()?"ribbon.markIndexEntry":"ribbon.insertIndex")}</Button>

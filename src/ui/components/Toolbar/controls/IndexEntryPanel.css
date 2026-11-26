@@ -1,4 +1,3 @@
 .oasis-index-entry-panel{display:flex;flex-direction:column;gap:10px;padding:14px;width:290px;max-width:calc(100vw - 32px);box-sizing:border-box;white-space:normal}
 .oasis-index-entry-panel p{margin:0;font-size:12px;line-height:1.45}
-.oasis-index-entry-panel label:has(input[type=checkbox]){display:flex;align-items:center;gap:8px}
 .oasis-index-entry-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}

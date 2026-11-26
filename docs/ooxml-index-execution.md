@@ -47,3 +47,7 @@ F4B4B CI failed at syntax checking because an extraction left the existing INDEX
 ## F4B4D — browser qualification
 
 F4B4C passed six of seven workflows, including typecheck and OOXML. PR CI failed on stale static icon inventory, not icon resolution. Reconcile exact audit output (literal changes, dynamic expressions and custom registry). Add mandatory real Ribbon INDEX workflow in Chromium (wide light PT-BR and narrow dark EN): mark and insert forms, update after a new XE, undo/redo, read-only, DOCX round-trip, evidence screenshots. CI pending; no Word oracle or manual visual approval claimed.
+
+### F4B4D follow-up — native UI guardrail
+
+Commit 267e612 passed the static icon audit, OOXML evidence, and six of seven workflows. PR CI reported 2,435 tests passed, three skipped and one failure: raw native elements in IndexEntryPanel. Replace them with the shared Text, StatusText, SelectField and Checkbox components, preserving test IDs and form behavior. Keep the native UI guardrail unchanged. Browser qualification is still pending.
