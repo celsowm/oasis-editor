@@ -939,6 +939,27 @@
       "origin": "oasis"
     },
     {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1312,
+      "role": "iconName",
+      "name": "deleteTable",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1324,
+      "role": "iconName",
+      "name": "repeatHeaderRow",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1338,
+      "role": "iconName",
+      "name": "tableVerticalAlign",
+      "origin": "oasis"
+    },
+    {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar/buttonSpecs.ts",
       "line": 15,
       "role": "icon",
@@ -1080,259 +1101,266 @@
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 255,
+      "line": 257,
       "role": "collapsedIcon",
       "name": "ellipsis",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 271,
+      "line": 273,
       "role": "collapsedIcon",
       "name": "palette",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 277,
+      "line": 279,
       "role": "collapsedIcon",
       "name": "pilcrow",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 286,
+      "line": 288,
       "role": "collapsedIcon",
       "name": "clipboard",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 291,
+      "line": 293,
       "role": "collapsedIcon",
       "name": "search",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 293,
+      "line": 295,
       "role": "collapsedIcon",
       "name": "undo",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 298,
+      "line": 300,
       "role": "collapsedIcon",
       "name": "type",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 304,
+      "line": 306,
       "role": "collapsedIcon",
       "name": "file-plus",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 305,
+      "line": 307,
       "role": "collapsedIcon",
       "name": "image",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 306,
-      "role": "collapsedIcon",
-      "name": "table",
-      "origin": "lucide"
-    },
-    {
-      "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 307,
-      "role": "collapsedIcon",
-      "name": "link",
-      "origin": "lucide"
-    },
-    {
-      "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
       "line": 308,
       "role": "collapsedIcon",
-      "name": "file-text",
+      "name": "table",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
       "line": 309,
       "role": "collapsedIcon",
-      "name": "footnote",
-      "origin": "oasis"
+      "name": "link",
+      "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 314,
+      "line": 310,
       "role": "collapsedIcon",
-      "name": "themes",
+      "name": "file-text",
+      "origin": "lucide"
+    },
+    {
+      "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
+      "line": 311,
+      "role": "collapsedIcon",
+      "name": "footnote",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
       "line": 316,
       "role": "collapsedIcon",
+      "name": "themes",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
+      "line": 318,
+      "role": "collapsedIcon",
       "name": "pageColor",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 322,
+      "line": 324,
       "role": "collapsedIcon",
       "name": "paragraphSpacing",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 326,
+      "line": 328,
       "role": "collapsedIcon",
       "name": "table",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 330,
+      "line": 332,
       "role": "collapsedIcon",
       "name": "pageOrientation",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 334,
+      "line": 336,
       "role": "collapsedIcon",
       "name": "file",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 337,
+      "line": 339,
       "role": "collapsedIcon",
       "name": "tableOfContents",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 338,
+      "line": 340,
+      "role": "collapsedIcon",
+      "name": "insertIndexGlyph",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
+      "line": 341,
       "role": "collapsedIcon",
       "name": "footnote",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 344,
+      "line": 347,
       "role": "collapsedIcon",
       "name": "reviewTrackChanges",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 349,
+      "line": 352,
       "role": "collapsedIcon",
       "name": "reviewAcceptAll",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 354,
+      "line": 357,
       "role": "collapsedIcon",
       "name": "commentsPane",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 358,
+      "line": 361,
       "role": "collapsedIcon",
       "name": "eye",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 364,
+      "line": 367,
       "role": "collapsedIcon",
       "name": "list-checks",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 369,
+      "line": 372,
       "role": "collapsedIcon",
       "name": "table",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 374,
+      "line": 377,
       "role": "collapsedIcon",
       "name": "tableBorders",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 383,
+      "line": 386,
       "role": "collapsedIcon",
       "name": "tableProperties",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 388,
+      "line": 391,
       "role": "collapsedIcon",
       "name": "rows",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 393,
+      "line": 396,
       "role": "collapsedIcon",
       "name": "tableMerge",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 398,
+      "line": 401,
       "role": "collapsedIcon",
       "name": "sortAscending",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 403,
+      "line": 406,
       "role": "collapsedIcon",
       "name": "tableWidth",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 410,
+      "line": 413,
       "role": "collapsedIcon",
       "name": "tableAlignCenter",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 414,
+      "line": 417,
       "role": "collapsedIcon",
       "name": "square",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 415,
+      "line": 418,
       "role": "collapsedIcon",
       "name": "crop",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/ribbon/ribbonModel.ts",
-      "line": 418,
+      "line": 421,
       "role": "collapsedIcon",
       "name": "plug",
       "origin": "lucide"
