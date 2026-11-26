@@ -35,3 +35,7 @@ F4B3A passed all seven PR #101 workflows. Tighten the source cache allowlist usi
 ## F4B4A — core authoring commands
 
 F4B3B independent extended SDK/OPC validation passed all nine documents with zero diagnostics (run 45865401389, extended-validation). PR CI and source-preservation typecheck failed on nullable xmldom Element/localName types. Fix with explicit Element type and null guards. Add core mark/insert/update commands: explicit paragraph-end caret, hidden XE with validated path and flags, provisional INDEX insertion only when convergence succeeds. Refuse edits in existing fields, anchored targets, unsupported selection/story and imported marker target markup; insert only one INDEX per document and preserve selection. Tests cover authoring, no-op and rollback. Command registry, dialogs, Ribbon, selection-based marking and full Word styles remain pending. CI pending.
+
+## F4B4B — public command registration
+
+F4B4A passed all seven PR workflows. Expose typed markIndexEntry/insertIndex/updateIndex through the public payload/results interfaces, built-in registry and Essentials fields capability. Preserve actual mutation results, reject malformed runtime payloads, honor read-only/main-story/track-change and structural gates, and use one transaction per action. Cheap capability checks do not paginate. Tests cover real core-backed capability, runtime invalid input and read-only. Ribbon dialogs are not enabled yet. CI pending.

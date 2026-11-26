@@ -7,7 +7,7 @@ import {buildFieldStoryGraph} from "@/core/document/fieldStoryGraph.js";
 import {parseFieldInstruction} from "@/ooxml/word/fieldInstruction.js";
 import {parseXeInstruction,collectXeOccurrences} from "@/core/document/xeEntries.js";
 import {parseIndexInstruction} from "@/core/document/indexPlan.js";
-import {refreshIndexConvergently} from "@/core/document/indexRefresh.js";
+import {findQualifiedIndexRegion,refreshIndexConvergently} from "@/core/document/indexRefresh.js";
 import {projectDocumentLayout} from "@/layoutProjection/documentLayout.js";
 
 export interface MarkIndexEntryOptions {
@@ -52,11 +52,7 @@ export function markIndexEntry(state:EditorState,options:MarkIndexEntryOptions):
   const c=safeContext(state);
   if(!c||!validId(options.identifier)||!Array.isArray(options.path)||!options.path.length||
     options.path.some(p=>typeof p!=="string"||p.trim()!==p||!p||/[:;\\\u0000-\u001f\u007f]/.test(p)))return state;
-  if(getEditorParagraphOoxmlSource(c.p)||c.p.runs.some(r=>r.kind!=="text"||r.styles?.hidden||r.styles?.rtl)||
-    c.graph.spans.some(f=>f.begin.paragraphIndex<=c.at&&(f.end?.paragraphIndex??Infinity)>=c.at))return state;
-  // No boundary token ordering changes on a paragraph with anchored ranges.
-  if([...Object.values(state.document.bookmarks?.items??{}),...Object.values(state.document.comments?.items??{})]
-    .some(b=>b.start?.paragraphId===c.p.id||b.end?.paragraphId===c.p.id))return state;
+  if(!canMarkIndexEntry(state))return state;
   const label=options.path.join(":").replace(/"/g,'\\"');
   const raw=' XE "'+label+'"'+(options.identifier?' \\f '+options.identifier:"")+
     (options.boldPage?' \\b':"")+(options.italicPage?' \\i':"")+" ";
@@ -77,12 +73,8 @@ export function insertIndex(state:EditorState,options:InsertIndexOptions,
   if(!c||!validId(options.identifier)||typeof options.locale!=="string"||
     !/^[A-Za-z]{2,3}(?:-[A-Za-z]{2})?$/.test(options.locale)||
     Object.keys(state.document.bookmarks?.items??{}).length||Object.keys(state.document.comments?.items??{}).length)return state;
-  if(c.graph.spans.some(f=>f.begin.paragraphIndex<=c.at&&(f.end?.paragraphIndex??Infinity)>c.at))return state;
-  for(const section of c.sections){
-    if(section.blocks.some(b=>b.type!=="paragraph"))return state;
-    const graph=buildFieldStoryGraph(section.blocks as EditorParagraphNode[]);
-    if(graph.diagnostics.length||graph.spans.some(f=>{
-      const raw=f.code.map(p=>p.kind==="instruction"?p.raw:"").join("");
+  if(!canInsertIndex(state))return state;
+  const raw=f.code.map(p=>p.kind==="instruction"?p.raw:"").join("");
       return parseFieldInstruction(raw).command==="INDEX"||/^\s*INDEX(?=\s|\\|"|$)/i.test(raw);
     }))return state;
   }
@@ -98,4 +90,33 @@ export function insertIndex(state:EditorState,options:InsertIndexOptions,
 export function updateIndex(state:EditorState,locale?:string):EditorState{
   const result=refreshIndexConvergently(state,locale);
   return result.status==="updated"?result.state:state;
+}
+
+/** Cheap capability checks; do not paginate or generate new IDs during Ribbon refresh. */
+export function canMarkIndexEntry(state:EditorState):boolean{
+  const c=safeContext(state);
+  if(!c)return false;
+  if(getEditorParagraphOoxmlSource(c.p)||c.p.runs.some(r=>r.kind!=="text"||r.styles?.hidden||r.styles?.rtl)||
+    c.graph.spans.some(f=>f.begin.paragraphIndex<=c.at&&(f.end?.paragraphIndex??Infinity)>=c.at))return false;
+  // No boundary token ordering changes on a paragraph with anchored ranges.
+  if([...Object.values(state.document.bookmarks?.items??{}),...Object.values(state.document.comments?.items??{})]
+    .some(b=>b.start?.paragraphId===c.p.id||b.end?.paragraphId===c.p.id))return false;
+  return collectXeOccurrences(state.document)!==undefined;
+}
+export function canInsertIndex(state:EditorState):boolean{
+  const c=safeContext(state);
+  if(!c||Object.keys(state.document.bookmarks?.items??{}).length||
+    Object.keys(state.document.comments?.items??{}).length||
+    (c.section.pageSettings.columns?.count??1)>1)return false;
+  if(c.graph.spans.some(f=>f.begin.paragraphIndex<=c.at&&(f.end?.paragraphIndex??Infinity)>c.at))return false;
+  for(const section of c.sections){
+    if(section.blocks.some(b=>b.type!=="paragraph"))return false;
+    const graph=buildFieldStoryGraph(section.blocks as EditorParagraphNode[]);
+    if(graph.diagnostics.length||graph.spans.some(f=>{
+      return !!collectXeOccurrences(state.document)?.length;
+}
+export function canUpdateIndex(state:EditorState):boolean{
+  if(getActiveZone(state)!=="main"||state.trackChangesEnabled)return false;
+  const section=getDocumentSections(state.document)[getActiveSectionIndex(state)];
+  return !!section&&(section.pageSettings.columns?.count??1)===1&&!!findQualifiedIndexRegion(section.blocks);
 }

@@ -4,6 +4,8 @@ import {
 } from "@/core/commands/fieldDate.js";
 import { refreshBodyFieldCaches } from "@/layoutProjection/bodyFieldCacheRefresh.js";
 import { getActiveZone } from "@/core/model.js";
+import {markIndexEntry,insertIndex,updateIndex,canMarkIndexEntry,canInsertIndex,canUpdateIndex} from "@/core/commands/indexEntries.js";
+import type {EditorState} from "@/core/model.js";
 import { insertCrossReference } from "@/core/commands/crossReference.js";
 import type { EssentialsFieldsCapability } from "@/plugins/internal/essentialsCapabilities.js";
 import type { CreateEditorEssentialsPluginOptions } from "./types.js";
@@ -28,7 +30,26 @@ export function buildEssentialsFields(
     options.clearPreferredColumn();
     options.focusInput();
   };
+  const mutateIndex=(can:(s:EditorState)=>boolean,produce:(s:EditorState)=>EditorState):boolean=>{
+    if(options.isReadOnly()||!can(options.state()))return false;
+    let changed=false;
+    options.resetTransactionGrouping();
+    options.applyTransactionalState(state=>{
+      if(options.isReadOnly()||!can(state))return state;
+      const next=produce(state);
+      changed=next!==state;
+      return next;
+    });
+    if(changed){options.clearPreferredColumn();options.focusInput();}
+    return changed;
+  };
   return {
+    canMarkIndexEntry:()=>!options.isReadOnly()&&canMarkIndexEntry(options.state()),
+    canInsertIndex:()=>!options.isReadOnly()&&canInsertIndex(options.state()),
+    canUpdateIndex:()=>!options.isReadOnly()&&canUpdateIndex(options.state()),
+    markIndexEntry:p=>mutateIndex(canMarkIndexEntry,s=>markIndexEntry(s,p)),
+    insertIndex:p=>mutateIndex(canInsertIndex,s=>insertIndex(s,p)),
+    updateIndex:locale=>mutateIndex(canUpdateIndex,s=>updateIndex(s,locale)),
     canUpdateBodyFields,
     updateBodyFields: () => update("all"),
     updateSelectedFields: () => update("selection"),

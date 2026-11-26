@@ -324,6 +324,9 @@ export interface OasisCommandPayloads {
   updateBodyFields: undefined;
   updateSelectedFields: undefined;
   insertDateTime: { dateFormat?: string } | undefined;
+  markIndexEntry: import("./indexEntries.js").MarkIndexEntryOptions;
+  insertIndex: import("./indexEntries.js").InsertIndexOptions;
+  updateIndex: { locale?: string } | undefined;
   insertCrossReference: {
     type?: "REF" | "PAGEREF";
     bookmark: string;
@@ -442,6 +445,9 @@ export interface OasisCommandPayloads {
 
 /** Maps commands to their typed return values. Commands not listed return `unknown`. */
 export interface OasisCommandResults {
+  markIndexEntry: boolean;
+  insertIndex: boolean;
+  updateIndex: boolean;
   documentStyles: unknown;
   [command: string]: unknown;
 }
