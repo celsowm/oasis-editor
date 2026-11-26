@@ -1,3 +1,4 @@
+import { IndexEntryPanel } from "@/ui/components/Toolbar/controls/IndexEntryPanel.js";
 import type { TranslateFn } from "@/i18n/index.js";
 import type { ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
 import { UnderlineControl } from "@/ui/components/Toolbar/controls/UnderlineControl.js";
@@ -865,6 +866,28 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     render: (api) => MetricGroup({ api }),
   });
   items.push({ type: "separator", id: "sep-metrics" });
+
+  // --- References: index authoring ---
+  items.push({
+    type: "menu", id: "editor-toolbar-mark-index-entry", testId: "editor-toolbar-mark-index-entry",
+    tab: "references", group: "index", row: 1, ribbonSize: "large",
+    iconName: "markIndexEntryGlyph", labelKey: "ribbon.markIndexEntry", tooltipKey: "ribbon.markIndexEntry",
+    isDisabled: api => !api.commands.state("markIndexEntry").isEnabled,
+    content: {kind:"custom",render:api=>IndexEntryPanel({api,mode:"mark"})},
+  });
+  items.push({
+    type: "menu", id: "editor-toolbar-insert-index", testId: "editor-toolbar-insert-index",
+    tab: "references", group: "index", row: 1, ribbonSize: "large",
+    iconName: "insertIndexGlyph", labelKey: "ribbon.insertIndex", tooltipKey: "ribbon.insertIndex",
+    isDisabled: api => !api.commands.state("insertIndex").isEnabled,
+    content: {kind:"custom",render:api=>IndexEntryPanel({api,mode:"insert"})},
+  });
+  items.push({
+    type:"button",id:"editor-toolbar-update-index",testId:"editor-toolbar-update-index",
+    tab:"references",group:"index",row:1,ribbonSize:"large",
+    iconName:"updateIndexGlyph",labelKey:"ribbon.updateIndex",tooltipKey:"ribbon.updateIndex",
+    command:"updateIndex",
+  });
 
   // --- References: commands previously available only in the menu ---
   items.push({

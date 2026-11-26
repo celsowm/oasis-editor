@@ -74,10 +74,6 @@ export function insertIndex(state:EditorState,options:InsertIndexOptions,
     !/^[A-Za-z]{2,3}(?:-[A-Za-z]{2})?$/.test(options.locale)||
     Object.keys(state.document.bookmarks?.items??{}).length||Object.keys(state.document.comments?.items??{}).length)return state;
   if(!canInsertIndex(state))return state;
-  const raw=f.code.map(p=>p.kind==="instruction"?p.raw:"").join("");
-      return parseFieldInstruction(raw).command==="INDEX"||/^\s*INDEX(?=\s|\\|"|$)/i.test(raw);
-    }))return state;
-  }
   const raw=' INDEX \\z "'+options.locale+'"'+(options.identifier?' \\f '+options.identifier:"")+" ";
   if(!parseIndexInstruction(raw))return state;
   const begin=createEditorParagraph("");begin.runs=[control("begin"),instruction(raw),control("separate")];
@@ -113,7 +109,11 @@ export function canInsertIndex(state:EditorState):boolean{
     if(section.blocks.some(b=>b.type!=="paragraph"))return false;
     const graph=buildFieldStoryGraph(section.blocks as EditorParagraphNode[]);
     if(graph.diagnostics.length||graph.spans.some(f=>{
-      return !!collectXeOccurrences(state.document)?.length;
+      const raw=f.code.map(p=>p.kind==="instruction"?p.raw:"").join("");
+      return parseFieldInstruction(raw).command==="INDEX"||/^\s*INDEX(?=\s|\\|"|$)/i.test(raw);
+    }))return false;
+  }
+  return !!collectXeOccurrences(state.document)?.length;
 }
 export function canUpdateIndex(state:EditorState):boolean{
   if(getActiveZone(state)!=="main"||state.trackChangesEnabled)return false;

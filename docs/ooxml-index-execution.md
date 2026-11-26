@@ -39,3 +39,7 @@ F4B3B independent extended SDK/OPC validation passed all nine documents with zer
 ## F4B4B — public command registration
 
 F4B4A passed all seven PR workflows. Expose typed markIndexEntry/insertIndex/updateIndex through the public payload/results interfaces, built-in registry and Essentials fields capability. Preserve actual mutation results, reject malformed runtime payloads, honor read-only/main-story/track-change and structural gates, and use one transaction per action. Cheap capability checks do not paginate. Tests cover real core-backed capability, runtime invalid input and read-only. Ribbon dialogs are not enabled yet. CI pending.
+
+## F4B4C — Ribbon authoring panels
+
+F4B4B CI failed at syntax checking because an extraction left the existing INDEX guard split between functions. Restore the complete guard in canInsertIndex. Add References > Index with mark/insert form popovers and update command, localized EN/PT-BR labels, custom editorial glyphs and responsive group registration. Validate inputs and show refusal without reporting success. Forms use the existing popup lifecycle. Browser interaction, keyboard/focus qualification and Word-style modal parity remain pending. CI pending.
