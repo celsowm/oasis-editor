@@ -15,8 +15,10 @@ export interface TocFieldSettings {
   /** Present only for an explicit custom paragraph-style mapping. */
   styleMappings?:readonly {name:string;level:number}[];
   customOnly?:true;
-  /** Explicit TC-only identifier; mixed heading sources are not qualified. */
+  /** Explicit TC identifier. If tcMixedRange is absent the TOC is TC-only. */
   tcIdentifier?:string;
+  /** Separate TC level range for a mixed paragraph/marker TOC. */
+  tcMixedRange?:readonly [number,number];
 }
 export interface QualifiedTocRegion extends TocFieldSettings {
   startBlockIndex:number;
@@ -76,18 +78,19 @@ export function parseTocInstruction(raw:string):TocFieldSettings|undefined{
     else if(sw==="u")useOutline=true;
     else return undefined;
   }
-  if(tcIdentifier!==undefined){
-    // Mixed-source ordering requires later qualification.
-    if(startLevel!==undefined||styleMappings||useOutline)return undefined;
+  if(tcIdentifier!==undefined&&startLevel===undefined&&!styleMappings&&!useOutline){
     return {startLevel:tcRange?.[0]??1,endLevel:tcRange?.[1]??9,hyperlinks,hideWebNumbers,useOutline,tcIdentifier};
   }
-  if(tcRange)return undefined;
+  // Mixed sources use independent ranges; the TC range must not truncate
+  // outline/style entries. Linked mixed caches use the same qualified source vector.
+  if(tcRange&&tcIdentifier===undefined)return undefined;
+  const mixed=tcIdentifier===undefined?{}:{tcIdentifier,tcMixedRange:tcRange??[1,9] as [number,number]};
   if(startLevel===undefined||endLevel===undefined){
-    if(useOutline&&!styleMappings)return {startLevel:1,endLevel:9,hyperlinks,hideWebNumbers,useOutline};
+    if(useOutline&&!styleMappings)return {startLevel:1,endLevel:9,hyperlinks,hideWebNumbers,useOutline,...mixed};
     if(!styleMappings||useOutline)return undefined;
-    return {startLevel:1,endLevel:Math.max(...styleMappings.map(m=>m.level)),hyperlinks,hideWebNumbers,useOutline,styleMappings,customOnly:true};
+    return {startLevel:1,endLevel:Math.max(...styleMappings.map(m=>m.level)),hyperlinks,hideWebNumbers,useOutline,styleMappings,customOnly:true,...mixed};
   }
-  return {startLevel,endLevel,hyperlinks,hideWebNumbers,useOutline,...(styleMappings?{styleMappings}:{})};
+  return {startLevel,endLevel,hyperlinks,hideWebNumbers,useOutline,...(styleMappings?{styleMappings}:{}),...mixed};
 }
 
 function safeMarkerRun(p:EditorParagraphNode):boolean{

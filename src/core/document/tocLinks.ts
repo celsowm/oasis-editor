@@ -112,7 +112,7 @@ export function linkQualifiedTableOfContents(
   if(region.tcIdentifier!==undefined){
     const afterGeometry=createDocumentFieldContext(document,after);
     if(headings.some(h=>{
-      if(!h.tc)return true;
+      if(!h.tc)return false;
       const page=afterGeometry.pageIndexAt(h.id,h.tc.offset);
       return page===undefined||afterGeometry.forPage(page).sectionNumber!==h.tc.sectionIndex+1;
     }))return fail("unresolved",before);

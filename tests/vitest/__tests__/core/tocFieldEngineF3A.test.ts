@@ -28,7 +28,7 @@ describe("F3A safe TOC graph recognition and page geometry",()=>{
     expect(parseTocInstruction('TOC \\o "2-4"')).toMatchObject({startLevel:2,endLevel:4});
     for(const raw of [
       'IF "TOC" = "TOC" "yes" "no"',
-      'TOC \\o "1-3" \\f A',
+      'TOC \\o "1-3" \\f A \\h \\h',
       'TOC \\o "1-3" \\o "2-4"',
       'TOC \\o "5-3"',
       'TOC \\o "0-3"',

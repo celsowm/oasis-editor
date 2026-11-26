@@ -88,9 +88,28 @@ export function collectQualifiedTocHeadings(state:EditorState,options:TocFieldSe
     if(!occurrences)return undefined;
     // Default/unlabelled TC classification is not yet qualified for a C table.
     if(options.tcIdentifier==="C"&&occurrences.some(e=>e.identifier===undefined))return undefined;
-    return occurrences.filter(e=>e.identifier?.toUpperCase()===options.tcIdentifier&&
-      e.level>=options.startLevel&&e.level<=options.endLevel)
-      .map(e=>({id:e.paragraphId,level:e.level,text:e.text,tc:e}));
+    const [first,last]=options.tcMixedRange??[options.startLevel,options.endLevel];
+    if(last>maxLevel)return undefined;
+    const markers:TocHeading[]=occurrences.filter(e=>e.identifier?.toUpperCase()===options.tcIdentifier&&
+      e.level>=first&&e.level<=last).map(e=>({id:e.paragraphId,level:e.level,text:e.text,tc:e}));
+    if(!options.tcMixedRange)return markers;
+    const {tcIdentifier:_identifier,tcMixedRange:_range,...paragraphOptions}=options;
+    const headings=collectQualifiedTocHeadings(state,paragraphOptions,maxLevel);
+    if(!headings)return undefined;
+    const order=new Map<string,number>(),cacheIds=new Set<string>();
+    for(const section of sections){
+      const region=findQualifiedTocRegion(section.blocks);
+      if(region)for(const b of section.blocks.slice(region.startBlockIndex,region.endBlockIndex+1))cacheIds.add(b.id);
+      for(const b of section.blocks)order.set(b.id,order.size);
+    }
+    // Same-paragraph heading + marker ordering and field-bearing heading
+    // projection need a separate Word-authored oracle. Do not deduplicate or
+    // guess; refuse the entire refresh when either source overlaps.
+    const markerIds=new Set(occurrences.map(e=>e.paragraphId));
+    if(headings.some(h=>markerIds.has(h.id)||cacheIds.has(h.id)||!order.has(h.id))||
+      markers.some(h=>cacheIds.has(h.id)||!order.has(h.id)))return undefined;
+    return [...headings,...markers].sort((a,b)=>
+      order.get(a.id)!-order.get(b.id)!||(a.tc?.offset??0)-(b.tc?.offset??0));
   }
   if(!options.styleMappings&&!options.useOutline)return collectTocHeadings(state,options.endLevel).filter(h=>h.level>=options.startLevel);
   const resolveOutline=options.useOutline?createTocOutlineResolver(state.document):undefined;
@@ -328,7 +347,7 @@ export function updateTableOfContents(
   const prior=section.blocks.slice(region.startBlockIndex+1,region.endBlockIndex);
   const pageValues=headings.map(h=>h.tc?.omitPageNumber?"":resolvePage(h.id,h.tc));
   if(pageValues.some((n,i)=>headings[i]!.tc?.omitPageNumber?false:
-    (n!==undefined&&!isValidTocPageLabel(n))||(n===undefined&&!!headings[i]!.tc)))return state;
+    (n!==undefined&&!isValidTocPageLabel(n))||(n===undefined&&(!!headings[i]!.tc||!!region.tcMixedRange))))return state;
   // Do not erase printed labels from a source TOC when no certified
   // pagination value was supplied for a heading.
   if(pageValues.some(n=>n===undefined)&&prior.some(p=>

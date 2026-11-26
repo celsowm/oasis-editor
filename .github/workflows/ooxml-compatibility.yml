@@ -106,6 +106,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Qualify TC source selection and linked cache regressions
+        run: npx vitest run tests/vitest/__tests__/core/tcEntriesF4A1.test.ts tests/vitest/__tests__/core/tocTcF4A2.test.ts tests/vitest/__tests__/core/tocTcMixedF4A3.test.ts tests/vitest/__tests__/core/tocFieldEngineF3A.test.ts tests/vitest/__tests__/core/tocStyleMappingsF3E.test.ts tests/vitest/__tests__/core/tocOutlineF3F.test.ts
       - name: Qualify existing repository DOCX TOC and retain evidence
         run: npx vitest run tests/vitest/__tests__/core/tocCorpusF3H4.test.ts --reporter=verbose
         env:
