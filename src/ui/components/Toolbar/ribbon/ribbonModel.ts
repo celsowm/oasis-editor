@@ -79,6 +79,7 @@ const GROUP_LABEL_KEYS: Record<string, TranslationKey> = {
   pages: "ribbon.group.pages",
   tableOfContents: "ribbon.group.tableOfContents",
   fields: "ribbon.group.fields",
+  index: "ribbon.group.index",
   tracking: "ribbon.group.tracking",
   comments: "ribbon.group.comments",
   changes: "ribbon.group.changes",
@@ -210,6 +211,7 @@ const RIBBON_GROUP_ORDER: Partial<Record<RibbonTabId, Record<string, number>>> =
       tableOfContents: 5,
       footnotes: 10,
       fields: 15,
+      index: 20,
     },
     review: {
       tracking: 10,
@@ -335,6 +337,7 @@ const RIBBON_GROUP_RESIZE_DEFAULTS: Partial<
   },
   references: {
     tableOfContents: { priority: 10, collapsedIcon: "tableOfContents" },
+    index: { priority: 30, collapsedIcon: "insertIndexGlyph" },
     footnotes: { priority: 20, collapsedIcon: "footnote" },
   },
   review: {

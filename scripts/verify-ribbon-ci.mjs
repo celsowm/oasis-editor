@@ -68,6 +68,8 @@ try {
   } else if (suite === "style-gallery") {
     await run("scripts/verify-ribbon-style-gallery.mjs");
   } else {
+    // Qualify the new INDEX workflow before the older resize matrix.
+    await run("scripts/verify-ribbon-index.mjs");
     await run("scripts/verify-ribbon-reference.mjs");
   await run("scripts/verify-ribbon-resize.mjs");
   await run("scripts/verify-ribbon-contexts.mjs");

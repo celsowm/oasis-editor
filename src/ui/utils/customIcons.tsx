@@ -54,6 +54,17 @@ export function SvgIcon(props: SvgIconProps): JSX.Element {
   );
 }
 
+function IndexGlyph(props:{mode:"mark"|"insert"|"update"}):JSX.Element{
+  return <SvgIcon stroke="currentColor" stroke-width={1.5} stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3.5" y="2.5" width="17" height="19" rx="1.2"/>
+    <path d="M6 9V6.5L7.5 4.8 9 6.5V9M6 7.4H9M6 12h7M8 15h5M6 18h7"/>
+    <path d="M16 6h2v3h-2l2-3M16 12h2M16 15h2M16 18h2"/>
+    <Show when={props.mode==="mark"}><path d="M11 5h4v6l-2-1.5-2 1.5z" fill="var(--oasis-accent, #1a73e8)" stroke="var(--oasis-accent, #1a73e8)"/></Show>
+    <Show when={props.mode==="insert"}><path d="M12 6h4M14 4v4" stroke="var(--oasis-accent, #1a73e8)" stroke-width={2}/></Show>
+    <Show when={props.mode==="update"}><rect x="12" y="11" width="11" height="11" rx="2" fill="var(--oasis-surface, white)" stroke="none"/><path d="M21 15a4 4 0 1 0 0 4M21 12v3h-3" stroke="var(--oasis-accent, #1a73e8)" stroke-width={1.8}/></Show>
+  </SvgIcon>;
+}
+
 /** Reference actions use editorial notation rather than generic file symbols.
  * All lettering and dots are vectors, legible without a system font. */
 function ContentsGlyph(props: { update?: boolean }): JSX.Element {
@@ -1450,6 +1461,9 @@ const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   reviewDisplay: reviewDisplayIcon,
   reviewMarkupFilter: reviewMarkupFilterIcon,
   footnote: FootnoteIcon,
+  markIndexEntryGlyph: () => <IndexGlyph mode="mark"/>,
+  insertIndexGlyph: () => <IndexGlyph mode="insert"/>,
+  updateIndexGlyph: () => <IndexGlyph mode="update"/>,
   tableOfContents: TableOfContentsIcon,
   updateTableOfContents: UpdateTableOfContentsIcon,
   underlineGlyph: UnderlineGlyphIcon,

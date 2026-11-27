@@ -598,6 +598,12 @@ export interface EssentialsBookmarkCapability {
 }
 
 export interface EssentialsFieldsCapability {
+  markIndexEntry?: (options: import("@/core/commands/indexEntries.js").MarkIndexEntryOptions) => boolean;
+  insertIndex?: (options: import("@/core/commands/indexEntries.js").InsertIndexOptions) => boolean;
+  updateIndex?: (locale?: string) => boolean;
+  canMarkIndexEntry?: () => boolean;
+  canInsertIndex?: () => boolean;
+  canUpdateIndex?: () => boolean;
   /** Explicit bounded refresh of eligible main-body fields. */
   updateBodyFields?: () => void;
   updateSelectedFields?: () => void;
