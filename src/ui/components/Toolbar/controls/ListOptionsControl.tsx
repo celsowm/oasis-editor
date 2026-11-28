@@ -37,6 +37,32 @@ export function ListOptionsControl(props: {
             </option>
             <option value="lowerRoman">{t("toolbar.formatLowerRoman")}</option>
             <option value="upperRoman">{t("toolbar.formatUpperRoman")}</option>
+            <option value="decimalZero">
+              {t("toolbar.formatDecimalZero")}
+            </option>
+            <option value="decimalFullWidth">
+              {t("toolbar.formatFullWidth")}
+            </option>
+            <option value="decimalEnclosedCircle">
+              {t("toolbar.formatEnclosed")}
+            </option>
+            <option value="hex">{t("toolbar.formatHex")}</option>
+            <option value="ideographDigital">
+              {t("toolbar.formatIdeographic")}
+            </option>
+            <option value="aiueo">{t("toolbar.formatAiueo")}</option>
+            <option value="iroha">{t("toolbar.formatIroha")}</option>
+            <option value="ganada">{t("toolbar.formatGanada")}</option>
+            <option value="hebrew1">{t("toolbar.formatHebrew")}</option>
+            <option value="russianLower">{t("toolbar.formatRussian")}</option>
+            <option value="ordinal">{t("toolbar.formatOrdinal")}</option>
+            <option value="ordinalText">
+              {t("toolbar.formatOrdinalText")}
+            </option>
+            <option value="cardinalText">
+              {t("toolbar.formatCardinalText")}
+            </option>
+            <option value="none">{t("toolbar.formatNone")}</option>
             <option value="bullet">{t("toolbar.formatBullet")}</option>
           </Select>
         </label>
