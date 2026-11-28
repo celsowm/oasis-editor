@@ -111,6 +111,10 @@ N1 concluída: catálogo completo de `ST_NumberFormat`, resolvedor de locale em 
 
 Gates N1: `npm run typecheck` limpo; `npm test` 2554 passed / 3 skipped.
 
+| N2 | `src/core/model/listNumbering.ts` (formato por nível referenciado, `lvlRestart`, counters de nível pai) | `core/multilevelNumbering.test.ts` (5) |
+
+N2 concluída: rótulos de 3 níveis com formato distinto por nível referenciado, reinício de contadores por `w:lvlRestart`, `isLgl`, literais e continuidade através de tabelas. Matriz de cobertura corrigida para `w:lvlRestart`.
+
 ## 14. Limitações restantes (deliberadas, fail-closed)
 
 - Tier C (contagem CJK/Thai/Vietnamita): fallback decimal + token preservado enquanto não houver fonte oficial do algoritmo.
