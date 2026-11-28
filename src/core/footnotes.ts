@@ -15,6 +15,7 @@ import type {
   EditorTextRun,
 } from "./model.js";
 import { getBlockParagraphs, getRunFootnoteReference } from "./model.js";
+import { formatNumberValue } from "./format/numberFormat.js";
 import {
   collectNoteReferences,
   computeNoteRenumber,
@@ -42,48 +43,6 @@ export function collectFootnoteReferences(
   return collectNoteReferences(document, "footnoteReference");
 }
 
-const LOWER_LETTERS = "abcdefghijklmnopqrstuvwxyz";
-const ROMAN_NUMERALS: Array<[number, string]> = [
-  [1000, "m"],
-  [900, "cm"],
-  [500, "d"],
-  [400, "cd"],
-  [100, "c"],
-  [90, "xc"],
-  [50, "l"],
-  [40, "xl"],
-  [10, "x"],
-  [9, "ix"],
-  [5, "v"],
-  [4, "iv"],
-  [1, "i"],
-];
-
-function toRoman(value: number): string {
-  if (value <= 0) return String(value);
-  let remaining = value;
-  let result = "";
-  for (const [size, glyph] of ROMAN_NUMERALS) {
-    while (remaining >= size) {
-      result += glyph;
-      remaining -= size;
-    }
-  }
-  return result;
-}
-
-function toLetters(value: number): string {
-  if (value <= 0) return String(value);
-  let remaining = value;
-  let result = "";
-  while (remaining > 0) {
-    const digit = (remaining - 1) % 26;
-    result = LOWER_LETTERS[digit] + result;
-    remaining = Math.floor((remaining - 1) / 26);
-  }
-  return result;
-}
-
 const SYMBOL_MARKS = ["*", "†", "‡", "§", "¶", "#"];
 
 export function getFootnoteDisplayMarker(
@@ -92,13 +51,10 @@ export function getFootnoteDisplayMarker(
 ): string {
   switch (format) {
     case "lowerRoman":
-      return toRoman(oneBasedIndex);
     case "upperRoman":
-      return toRoman(oneBasedIndex).toUpperCase();
     case "lowerLetter":
-      return toLetters(oneBasedIndex);
     case "upperLetter":
-      return toLetters(oneBasedIndex).toUpperCase();
+      return formatNumberValue(oneBasedIndex, format, "en-US");
     case "symbol": {
       const slot = (oneBasedIndex - 1) % SYMBOL_MARKS.length;
       const cycles = Math.floor((oneBasedIndex - 1) / SYMBOL_MARKS.length) + 1;

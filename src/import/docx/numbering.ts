@@ -11,6 +11,10 @@ import {
 } from "./xmlHelpers.js";
 import { twipsToPx } from "./units.js";
 import { setEditorListOoxmlNumberingMetadata } from "@/ooxml/word/numberingMetadata.js";
+import {
+  isDeterministicNumberFormat,
+  needsLocaleNumberFormat,
+} from "@/ooxml/word/numberFormat.js";
 import { parseRevisionMetadata } from "./revisionMetadata.js";
 
 type ListFormat = NonNullable<EditorParagraphListStyle["format"]>;
@@ -38,15 +42,6 @@ export interface NumberingMaps {
   numToAbstractId: Map<string, string>;
   seenInstances: Set<string>;
 }
-
-const FORMAT_MAP: Record<string, ListFormat> = {
-  decimal: "decimal",
-  lowerLetter: "lowerLetter",
-  upperLetter: "upperLetter",
-  lowerRoman: "lowerRoman",
-  upperRoman: "upperRoman",
-  bullet: "bullet",
-};
 
 function isXmlTrue(value: string | null | undefined): boolean {
   return value == null || value === "1" || value === "true" || value === "on";
@@ -80,7 +75,14 @@ function parseLevel(level: XmlElement): NumberingLevel {
   );
   if (formatRaw) {
     result.kind = formatRaw === "bullet" ? "bullet" : "ordered";
-    result.format = FORMAT_MAP[formatRaw];
+    // Model only formats Oasis can actually render. Counting systems and
+    // unknown spellings stay solely in rawFormat/metadata and are re-emitted
+    // verbatim — preservation is not a claim of rendering support.
+    result.format =
+      isDeterministicNumberFormat(formatRaw) ||
+      needsLocaleNumberFormat(formatRaw)
+        ? (formatRaw as ListFormat)
+        : undefined;
     result.rawFormat = formatRaw;
   }
   const suffix = getAttributeValue(

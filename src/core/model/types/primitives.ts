@@ -100,30 +100,77 @@ export interface EditorTabStop {
   leader?: "none" | "dot" | "hyphen" | "underscore" | "heavy" | "middleDot";
 }
 
+/**
+ * `ST_NumberFormat` (ECMA-376 §17.18.41). The token is kept verbatim so source
+ * formats survive round-trips even when Oasis cannot render them; rendering is
+ * classified separately by `src/ooxml/word/numberFormat.ts`.
+ */
+export type NumberFormatToken =
+  | "decimal"
+  | "decimalZero"
+  | "decimalFullWidth"
+  | "decimalFullWidth2"
+  | "decimalHalfWidth"
+  | "decimalEnclosedCircle"
+  | "decimalEnclosedCircleChinese"
+  | "decimalEnclosedFullstop"
+  | "decimalEnclosedParen"
+  | "lowerLetter"
+  | "upperLetter"
+  | "lowerRoman"
+  | "upperRoman"
+  | "ordinal"
+  | "ordinalText"
+  | "cardinalText"
+  | "chicago"
+  | "hex"
+  | "ideographDigital"
+  | "ideographEnclosedCircle"
+  | "ideographTraditional"
+  | "ideographLegal"
+  | "ideographZodiac"
+  | "ideographZodiac2"
+  | "ideographZodiac3"
+  | "aiueo"
+  | "aiueoFullWidth"
+  | "iroha"
+  | "irohaFullWidth"
+  | "chosung"
+  | "ganada"
+  | "hebrew1"
+  | "hebrew2"
+  | "russianLower"
+  | "russianUpper"
+  | "koreanDigital"
+  | "koreanDigital2"
+  | "japaneseCounting"
+  | "japaneseDigitalTenThousand"
+  | "chineseCounting"
+  | "chineseCountingThousand"
+  | "chineseLegalSimplified"
+  | "koreanCounting"
+  | "koreanLegal"
+  | "taiwaneseCounting"
+  | "taiwaneseCountingThousand"
+  | "taiwaneseDigital"
+  | "thaiCounting"
+  | "thaiLetters"
+  | "thaiNumbers"
+  | "vietnameseCounting"
+  | "bullet"
+  | "none";
+
 export interface EditorParagraphListStyle {
   kind: "bullet" | "ordered";
   level?: number;
   /** Imported OOXML `w:numId`; paragraphs sharing it use the same counters. */
   instanceId?: string;
-  format?:
-    | "decimal"
-    | "lowerLetter"
-    | "upperLetter"
-    | "lowerRoman"
-    | "upperRoman"
-    | "bullet";
+  format?: NumberFormatToken;
   startAt?: number;
   /** Effective `w:lvlText` pattern, for example `%1.%2.`. */
   levelText?: string;
   /** Effective formats for referenced levels in a multilevel label. */
-  levelFormats?: Array<
-    | "decimal"
-    | "lowerLetter"
-    | "upperLetter"
-    | "lowerRoman"
-    | "upperRoman"
-    | "bullet"
-  >;
+  levelFormats?: NumberFormatToken[];
   /** `w:lvlJc`: alignment of the label inside its hanging-indent area. */
   alignment?: "left" | "center" | "right";
   /** `w:isLgl`: render referenced ordered levels with decimal digits. */

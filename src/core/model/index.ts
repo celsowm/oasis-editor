@@ -13,6 +13,7 @@ export type {
   EditorLigatures,
   EditorNumberSpacing,
   EditorNumberForm,
+  NumberFormatToken,
   EditorTextLanguage,
   EditorBorderStyle,
   EditorEmphasisMark,

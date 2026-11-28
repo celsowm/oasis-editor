@@ -5,11 +5,7 @@ import type {
   EditorState,
   EditorParagraphNode,
 } from "@/core/model.js";
-import {
-  getParagraphLength,
-  getParagraphs,
-  paragraphOffsetToPosition,
-} from "@/core/model.js";
+import { getParagraphs, paragraphOffsetToPosition } from "@/core/model.js";
 import { createEditorParagraph } from "@/core/editorState.js";
 import { isSelectionCollapsed, normalizeSelection } from "@/core/selection.js";
 import type { ParagraphListKind } from "@/core/textStyle/textStyleKeys.js";
@@ -26,6 +22,7 @@ import {
   cloneParagraph,
 } from "@/core/document/clone.js";
 import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
+import { isKnownNumberFormat } from "@/ooxml/word/numberFormat.js";
 import {
   deleteSelectionRange,
   getFocusParagraph,
@@ -34,13 +31,16 @@ import {
 } from "@/core/selection/rangeEditing.js";
 
 export function splitListItemAtSelection(state: EditorState): EditorState {
-  if(fieldSelectionProtected(state))return state;
+  if (fieldSelectionProtected(state)) return state;
   const collapsedState = isSelectionCollapsed(state.selection)
     ? state
     : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
-  if(fieldSelectionProtected(collapsedState))return state;
-  const {beforeRuns,afterRuns:secondRuns}=splitForFieldAdjacentInsertion(paragraph,offset);
+  if (fieldSelectionProtected(collapsedState)) return state;
+  const { beforeRuns, afterRuns: secondRuns } = splitForFieldAdjacentInsertion(
+    paragraph,
+    offset,
+  );
   const firstParagraph = buildParagraphFromRuns(
     paragraph,
     beforeRuns,
@@ -48,7 +48,10 @@ export function splitListItemAtSelection(state: EditorState): EditorState {
   );
   const nextParagraph =
     secondRuns.length > 0
-      ? buildParagraphFromRuns(createParagraphFromRunsLike(paragraph,[]),secondRuns)
+      ? buildParagraphFromRuns(
+          createParagraphFromRunsLike(paragraph, []),
+          secondRuns,
+        )
       : ((): EditorParagraphNode => {
           const emptyParagraph = createEditorParagraph("");
           emptyParagraph.style = paragraph.style
@@ -205,6 +208,9 @@ export function setParagraphListFormat(
   state: EditorState,
   format: EditorParagraphListStyle["format"] | null,
 ): EditorState {
+  // Fail closed: an unfamiliar ST_NumberFormat spelling must not be silently
+  // rewritten into a model value the renderer does not understand.
+  if (format !== null && !isKnownNumberFormat(format)) return state;
   const normalized = normalizeSelection(state);
   const paragraphs = getParagraphs(state);
 

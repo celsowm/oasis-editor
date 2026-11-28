@@ -4,9 +4,15 @@
  * Mirrors WordCraft's `NUMBER_FORMATS` (dialogs_insert::field.rs): the switch
  * value is case-sensitive in OOXML (`\* roman` vs `\* ROMAN`), so the format
  * id and its serialized switch are identical. Decimal is the default when no
- * switch (or "decimal") is present.
+ * switch (or "decimal") is present. The actual glyphs come from the shared
+ * `numberFormat.ts` service together with lists, notes and STYLEREF.
  */
-import type { PageNumberFormat } from "@/core/model.js";
+import type { NumberFormatToken, PageNumberFormat } from "@/core/model.js";
+import {
+  fieldSwitchToNumberFormat,
+  formatNumberValue,
+  numberFormatToFieldSwitch,
+} from "@/core/format/numberFormat.js";
 
 export const PAGE_NUMBER_FORMATS: ReadonlyArray<{
   id: PageNumberFormat;
@@ -20,30 +26,41 @@ export const PAGE_NUMBER_FORMATS: ReadonlyArray<{
   { id: "Ordinal", label: "1st, 2nd, 3rd, …" },
 ];
 
+const FORMAT_TO_TOKEN: Record<PageNumberFormat, NumberFormatToken> = {
+  decimal: "decimal",
+  roman: "lowerRoman",
+  ROMAN: "upperRoman",
+  alphabetic: "lowerLetter",
+  ALPHABETIC: "upperLetter",
+  Ordinal: "ordinal",
+};
+
+const TOKEN_TO_FORMAT = new Map<NumberFormatToken, PageNumberFormat>(
+  (Object.keys(FORMAT_TO_TOKEN) as PageNumberFormat[]).map((id) => [
+    FORMAT_TO_TOKEN[id],
+    id,
+  ]),
+);
+
 /** The `\*` switch emitted for a format. Absent for decimal. */
 export function pageNumberFormatToSwitch(
   format: PageNumberFormat | undefined,
 ): string | undefined {
-  if (!format || format === "decimal") {
-    return undefined;
-  }
-  return format;
+  return format
+    ? numberFormatToFieldSwitch(FORMAT_TO_TOKEN[format])
+    : undefined;
 }
 
 /** Recover a format from a `\*` switch value (case-sensitive), if recognized. */
 export function pageNumberFormatFromSwitch(
   switchValue: string | undefined,
 ): PageNumberFormat | undefined {
-  if (!switchValue) {
-    return undefined;
-  }
   // Word authors both `Arabic` and `ARABIC`; both are decimal and carry no
   // visual transformation, unlike the case-sensitive roman/alphabetic forms.
+  if (!switchValue) return undefined;
   if (switchValue.toUpperCase() === "ARABIC") return "decimal";
-  const id = PAGE_NUMBER_FORMATS.find(
-    (entry): boolean => entry.id === switchValue,
-  )?.id;
-  return id;
+  const token = fieldSwitchToNumberFormat(switchValue);
+  return token ? TOKEN_TO_FORMAT.get(token) : undefined;
 }
 
 /** Convert a page number to its displayed form under the given format. */
@@ -51,85 +68,13 @@ export function formatPageNumber(
   value: number,
   format: PageNumberFormat | undefined,
 ): string {
-  switch (format) {
-    case "roman":
-      return toRoman(value, false);
-    case "ROMAN":
-      return toRoman(value, true);
-    case "alphabetic":
-      return toAlpha(value, false);
-    case "ALPHABETIC":
-      return toAlpha(value, true);
-    case "Ordinal":
-      return toOrdinal(value);
-    default:
-      return String(value);
-  }
-}
-
-const ROMAN_SYMBOLS: ReadonlyArray<[number, string]> = [
-  [1000, "M"],
-  [900, "CM"],
-  [500, "D"],
-  [400, "CD"],
-  [100, "C"],
-  [90, "XC"],
-  [50, "L"],
-  [40, "XL"],
-  [10, "X"],
-  [9, "IX"],
-  [5, "V"],
-  [4, "IV"],
-  [1, "I"],
-];
-
-function toRoman(value: number, upper: boolean): string {
-  if (value <= 0) {
-    return String(value);
-  }
-  let remaining = Math.floor(value);
-  let result = "";
-  for (const [numeral, glyph] of ROMAN_SYMBOLS) {
-    while (remaining >= numeral) {
-      result += glyph;
-      remaining -= numeral;
-    }
-  }
-  return upper ? result : result.toLowerCase();
-}
-
-function toAlpha(value: number, upper: boolean): string {
-  if (value <= 0) {
-    return String(value);
-  }
-  const base = upper ? 65 : 97; // 'A' or 'a'
-  let result = "";
-  let remaining = value;
-  while (remaining > 0) {
-    remaining -= 1;
-    result = String.fromCharCode(base + (remaining % 26)) + result;
-    remaining = Math.floor(remaining / 26);
-  }
-  return result;
-}
-
-function toOrdinal(value: number): string {
-  const n = Math.floor(value);
-  const abs = Math.abs(n);
-  const lastTwo = abs % 100;
-  if (lastTwo >= 11 && lastTwo <= 13) {
-    return `${n}th`;
-  }
-  const lastDigit = abs % 10;
-  const suffix =
-    lastDigit === 1
-      ? "st"
-      : lastDigit === 2
-        ? "nd"
-        : lastDigit === 3
-          ? "rd"
-          : "th";
-  return `${n}${suffix}`;
+  // `\* Ordinal` is a fixed English field switch, not a document-language
+  // format; the other forms are locale-independent glyph systems.
+  return formatNumberValue(
+    value,
+    format ? FORMAT_TO_TOKEN[format] : "decimal",
+    "en-US",
+  );
 }
 
 /** Section w:pgNumType/@w:fmt is ST_NumberFormat, not a PAGE field
@@ -148,11 +93,11 @@ export function formatSectionPageLabel(
     case "decimal":
       return value;
     case "decimalZero":
-      return String(value).padStart(2, "0");
+      return formatNumberValue(value, "decimalZero", "en-US");
     case "upperRoman":
     case "lowerRoman":
       return value <= 3999
-        ? formatPageNumber(value, format === "upperRoman" ? "ROMAN" : "roman")
+        ? formatNumberValue(value, format, "en-US")
         : undefined;
     case "upperLetter":
     case "lowerLetter": {

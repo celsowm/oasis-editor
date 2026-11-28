@@ -3,6 +3,8 @@ import type { EditorBlockNode, EditorParagraphNode } from "./types/nodes.js";
 import type { EditorParagraphListStyle } from "./types/primitives.js";
 import { getDocumentParagraphs } from "./documentIndex.js";
 import { assertNever } from "../assertNever.js";
+import { formatNumberValue } from "@/core/format/numberFormat.js";
+import { resolveNumberingLocale } from "@/core/format/resolveNumberingLocale.js";
 
 const BULLET_GLYPHS = ["•", "○", "▪", "•", "○", "▪"];
 const ORDERED_DEFAULT_FORMATS: NonNullable<
@@ -26,63 +28,6 @@ const PUA_BULLET_MAP: Record<number, string> = {
   0xf0e7: "⚡",
   0xf020: " ",
 };
-
-function toAlpha(value: number): string {
-  if (value <= 0) return String(value);
-  let remaining = value;
-  let output = "";
-  while (remaining > 0) {
-    output = String.fromCharCode(65 + ((remaining - 1) % 26)) + output;
-    remaining = Math.floor((remaining - 1) / 26);
-  }
-  return output;
-}
-
-function toRoman(value: number): string {
-  if (value <= 0 || value >= 4000) return String(value);
-  const numerals: Array<[number, string]> = [
-    [1000, "M"],
-    [900, "CM"],
-    [500, "D"],
-    [400, "CD"],
-    [100, "C"],
-    [90, "XC"],
-    [50, "L"],
-    [40, "XL"],
-    [10, "X"],
-    [9, "IX"],
-    [5, "V"],
-    [4, "IV"],
-    [1, "I"],
-  ];
-  let remaining = value;
-  let output = "";
-  for (const [amount, text] of numerals) {
-    while (remaining >= amount) {
-      output += text;
-      remaining -= amount;
-    }
-  }
-  return output;
-}
-
-function formatOrdinal(
-  value: number,
-  format: EditorParagraphListStyle["format"],
-): string {
-  switch (format) {
-    case "lowerLetter":
-      return toAlpha(value).toLowerCase();
-    case "upperLetter":
-      return toAlpha(value).toUpperCase();
-    case "lowerRoman":
-      return toRoman(value).toLowerCase();
-    case "upperRoman":
-      return toRoman(value).toUpperCase();
-    default:
-      return String(value);
-  }
-}
 
 function normalizeBulletGlyph(glyph: string): string {
   const code = glyph.codePointAt(0);
@@ -129,9 +74,13 @@ function collectNumberingParagraphs(
   return result;
 }
 
-export function buildListLabels(document: EditorDocument): Map<string, string> {
+export function buildListLabels(
+  document: EditorDocument,
+  locale?: string,
+): Map<string, string> {
   const labels = new Map<string, string>();
   const states = new Map<string, ListCounterState>();
+  const effectiveLocale = locale ?? resolveNumberingLocale(document);
 
   for (const paragraph of collectNumberingParagraphs(document)) {
     const list = paragraph.list;
@@ -178,7 +127,7 @@ export function buildListLabels(document: EditorDocument): Map<string, string> {
         const format = list.legal
           ? "decimal"
           : (state.formats[referencedLevel] ?? "decimal");
-        return formatOrdinal(value, format);
+        return formatNumberValue(value, format, effectiveLocale);
       }),
     );
   }
