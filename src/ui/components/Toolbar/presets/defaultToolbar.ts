@@ -1,4 +1,7 @@
 import { IndexEntryPanel } from "@/ui/components/Toolbar/controls/IndexEntryPanel.js";
+import { FieldFamilyPanel } from "@/ui/components/Toolbar/controls/FieldFamilyPanel.js";
+import type { FieldFamilyMode } from "@/ui/components/Toolbar/controls/FieldFamilyPanel.js";
+import type { TranslationKey } from "@/i18n/index.js";
 import type { TranslateFn } from "@/i18n/index.js";
 import type { ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
 import { UnderlineControl } from "@/ui/components/Toolbar/controls/UnderlineControl.js";
@@ -869,24 +872,51 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
 
   // --- References: index authoring ---
   items.push({
-    type: "menu", id: "editor-toolbar-mark-index-entry", testId: "editor-toolbar-mark-index-entry",
-    tab: "references", group: "index", row: 1, ribbonSize: "large",
-    iconName: "markIndexEntryGlyph", labelKey: "ribbon.markIndexEntry", tooltipKey: "ribbon.markIndexEntry",
-    isDisabled: api => !api.commands.state("markIndexEntry").isEnabled,
-    content: {kind:"custom",render:api=>IndexEntryPanel({api,mode:"mark"})},
+    type: "menu",
+    id: "editor-toolbar-mark-index-entry",
+    testId: "editor-toolbar-mark-index-entry",
+    tab: "references",
+    group: "index",
+    row: 1,
+    ribbonSize: "large",
+    iconName: "markIndexEntryGlyph",
+    labelKey: "ribbon.markIndexEntry",
+    tooltipKey: "ribbon.markIndexEntry",
+    isDisabled: (api) => !api.commands.state("markIndexEntry").isEnabled,
+    content: {
+      kind: "custom",
+      render: (api) => IndexEntryPanel({ api, mode: "mark" }),
+    },
   });
   items.push({
-    type: "menu", id: "editor-toolbar-insert-index", testId: "editor-toolbar-insert-index",
-    tab: "references", group: "index", row: 1, ribbonSize: "large",
-    iconName: "insertIndexGlyph", labelKey: "ribbon.insertIndex", tooltipKey: "ribbon.insertIndex",
-    isDisabled: api => !api.commands.state("insertIndex").isEnabled,
-    content: {kind:"custom",render:api=>IndexEntryPanel({api,mode:"insert"})},
+    type: "menu",
+    id: "editor-toolbar-insert-index",
+    testId: "editor-toolbar-insert-index",
+    tab: "references",
+    group: "index",
+    row: 1,
+    ribbonSize: "large",
+    iconName: "insertIndexGlyph",
+    labelKey: "ribbon.insertIndex",
+    tooltipKey: "ribbon.insertIndex",
+    isDisabled: (api) => !api.commands.state("insertIndex").isEnabled,
+    content: {
+      kind: "custom",
+      render: (api) => IndexEntryPanel({ api, mode: "insert" }),
+    },
   });
   items.push({
-    type:"button",id:"editor-toolbar-update-index",testId:"editor-toolbar-update-index",
-    tab:"references",group:"index",row:1,ribbonSize:"large",
-    iconName:"updateIndexGlyph",labelKey:"ribbon.updateIndex",tooltipKey:"ribbon.updateIndex",
-    command:"updateIndex",
+    type: "button",
+    id: "editor-toolbar-update-index",
+    testId: "editor-toolbar-update-index",
+    tab: "references",
+    group: "index",
+    row: 1,
+    ribbonSize: "large",
+    iconName: "updateIndexGlyph",
+    labelKey: "ribbon.updateIndex",
+    tooltipKey: "ribbon.updateIndex",
+    command: "updateIndex",
   });
 
   // --- References: commands previously available only in the menu ---
@@ -921,6 +951,144 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     command: "updateBodyFields",
     ribbonSize: "large",
   });
+
+  // --- Extended field families (transversal + TOA/TOF/merge/variables/forms) ---
+  const fieldFamilyButtons = [
+    {
+      id: "show-field-codes",
+      label: "ribbon.showFieldCodes",
+      command: "toggleFieldCodes",
+      icon: "tableOfContents",
+    },
+    {
+      id: "next-field",
+      label: "ribbon.nextField",
+      command: "nextField",
+      icon: "refresh-cw",
+    },
+    {
+      id: "previous-field",
+      label: "ribbon.previousField",
+      command: "previousField",
+      icon: "refresh-cw",
+    },
+    {
+      id: "update-authorities",
+      label: "ribbon.updateTableOfAuthorities",
+      command: "updateTableOfAuthorities",
+      icon: "updateIndexGlyph",
+    },
+    {
+      id: "update-figures",
+      label: "ribbon.updateTableOfFigures",
+      command: "updateTableOfFigures",
+      icon: "updateTableOfContents",
+    },
+    {
+      id: "update-variables",
+      label: "ribbon.updateVariableFields",
+      command: "updateVariableFields",
+      icon: "refresh-cw",
+    },
+  ] as const;
+  for (const button of fieldFamilyButtons) {
+    items.push({
+      type: "button",
+      id: `editor-toolbar-${button.id}`,
+      testId: `editor-toolbar-${button.id}`,
+      tab: "references",
+      group: "fields",
+      row: 2,
+      ribbonSize: "normal",
+      iconName: button.icon,
+      labelKey: button.label,
+      tooltipKey: button.label,
+      command: button.command,
+    });
+  }
+  const fieldFamilyMenus: ReadonlyArray<{
+    id: string;
+    mode: FieldFamilyMode;
+    label: TranslationKey;
+    command: string;
+    icon: string;
+  }> = [
+    {
+      id: "insert-field-code",
+      mode: "insert-code",
+      label: "ribbon.insertFieldCode",
+      command: "insertFieldCode",
+      icon: "markIndexEntryGlyph",
+    },
+    {
+      id: "edit-field-code",
+      mode: "edit-code",
+      label: "ribbon.editFieldCode",
+      command: "editFieldCodeAtSelection",
+      icon: "markIndexEntryGlyph",
+    },
+    {
+      id: "mark-authority",
+      mode: "authority",
+      label: "ribbon.markAuthorityEntry",
+      command: "markAuthorityEntry",
+      icon: "markIndexEntryGlyph",
+    },
+    {
+      id: "insert-toa",
+      mode: "toa",
+      label: "ribbon.insertTableOfAuthorities",
+      command: "insertTableOfAuthorities",
+      icon: "insertIndexGlyph",
+    },
+    {
+      id: "insert-tof",
+      mode: "tof",
+      label: "ribbon.insertTableOfFigures",
+      command: "insertTableOfFigures",
+      icon: "tableOfContents",
+    },
+    {
+      id: "merge-preview",
+      mode: "merge-preview",
+      label: "ribbon.previewMergeRecord",
+      command: "previewMergeRecord",
+      icon: "insertIndexGlyph",
+    },
+    {
+      id: "merge-all",
+      mode: "merge-all",
+      label: "ribbon.mergeToNewDocuments",
+      command: "mergeToNewDocuments",
+      icon: "insertIndexGlyph",
+    },
+    {
+      id: "form-value",
+      mode: "form-value",
+      label: "ribbon.setFormFieldValue",
+      command: "setFormFieldValue",
+      icon: "markIndexEntryGlyph",
+    },
+  ];
+  for (const menu of fieldFamilyMenus) {
+    items.push({
+      type: "menu",
+      id: `editor-toolbar-${menu.id}`,
+      testId: `editor-toolbar-${menu.id}`,
+      tab: "references",
+      group: "fields",
+      row: 3,
+      ribbonSize: "normal",
+      iconName: menu.icon,
+      labelKey: menu.label,
+      tooltipKey: menu.label,
+      isDisabled: (api) => !api.commands.state(menu.command).isEnabled,
+      content: {
+        kind: "custom",
+        render: (api) => FieldFamilyPanel({ api, mode: menu.mode }),
+      },
+    });
+  }
 
   // --- Review: reuse existing tracked-revision commands ---
   items.push({

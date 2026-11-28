@@ -51,6 +51,7 @@ export function createCanvasPageRenderer(options: {
   let lastDesign: unknown;
   let lastShowMargins: boolean | undefined;
   let lastShowParagraphMarks: boolean | undefined;
+  let lastShowFieldCodes: boolean | undefined;
   let lastActiveZone: EditorEditingZone | undefined;
   let lastActiveFootnoteId: string | undefined;
   let lastWidth = 0;
@@ -72,6 +73,7 @@ export function createCanvasPageRenderer(options: {
   const invalidateDecorations = (): void => {
     lastShowMargins = undefined;
     lastShowParagraphMarks = undefined;
+    lastShowFieldCodes = undefined;
   };
 
   const invalidateActiveZone = (): void => {
@@ -92,6 +94,7 @@ export function createCanvasPageRenderer(options: {
     const design = state.document.design;
     const showMargins = state.showMargins;
     const showParagraphMarks = state.showParagraphMarks;
+    const showFieldCodes = state.showFieldCodes;
     const activeZone = state.activeZone ?? "main";
     const activeFootnoteId = state.activeFootnoteId;
     if (
@@ -100,6 +103,7 @@ export function createCanvasPageRenderer(options: {
       design === lastDesign &&
       showMargins === lastShowMargins &&
       showParagraphMarks === lastShowParagraphMarks &&
+      showFieldCodes === lastShowFieldCodes &&
       activeZone === lastActiveZone &&
       activeFootnoteId === lastActiveFootnoteId
     ) {
@@ -110,6 +114,7 @@ export function createCanvasPageRenderer(options: {
     lastDesign = design;
     lastShowMargins = showMargins;
     lastShowParagraphMarks = showParagraphMarks;
+    lastShowFieldCodes = showFieldCodes;
     lastActiveZone = activeZone;
     lastActiveFootnoteId = activeFootnoteId;
 

@@ -29,6 +29,10 @@ import {
 import { getCachedCanvasImage } from "./canvasImageCache.js";
 import { resolveImageSrc } from "@/core/model.js";
 import { drawMathExpression } from "@/ui/math/mathPainter.js";
+import {
+  fieldCodeHiddenOffsets,
+  getFieldCodeOverlays,
+} from "@/core/document/fieldCodeDisplay.js";
 
 // Sub-module imports — each owns one rendering concern.
 import {
@@ -120,6 +124,7 @@ function drawTextFragment(
   styles: ReturnType<typeof resolveEffectiveTextStyleForParagraph>,
   originX: number,
   baselineY: number,
+  hiddenOffsets?: ReadonlySet<number>,
 ): void {
   const scale =
     styles.characterScale && styles.characterScale > 0
@@ -152,6 +157,10 @@ function drawTextFragment(
   };
 
   for (const char of fragment.chars) {
+    if (hiddenOffsets?.has(char.paragraphOffset)) {
+      flushSegment();
+      continue;
+    }
     if (char.char === "\n") {
       flushSegment();
       continue;
@@ -241,6 +250,8 @@ export function drawParagraph(
   painters: CanvasBlockPainters,
   pageIndex = 0,
 ): void {
+  const overlays = state.showFieldCodes ? getFieldCodeOverlays(paragraph) : [];
+  const hiddenOffsets = fieldCodeHiddenOffsets(overlays);
   for (const line of lines) {
     const slotByOffset = new Map<number, (typeof line.slots)[number]>();
     for (const slot of line.slots) {
@@ -363,20 +374,38 @@ export function drawParagraph(
       }
 
       if (fragment.opaque) {
-        const slot=slotByOffset.get(fragment.startOffset);
-        if(slot){
-          const object=fragment.opaque;
-          const rect=resolveInlineObjectRect({
-            originLeft:originX,originTop:originY,lineTop:line.top,lineHeight:line.height,
-            slotLeft:slot.left,objectWidth:object.width,objectHeight:object.height,
+        const slot = slotByOffset.get(fragment.startOffset);
+        if (slot) {
+          const object = fragment.opaque;
+          const rect = resolveInlineObjectRect({
+            originLeft: originX,
+            originTop: originY,
+            lineTop: line.top,
+            lineHeight: line.height,
+            slotLeft: slot.left,
+            objectWidth: object.width,
+            objectHeight: object.height,
           });
           ctx.save();
-          ctx.fillStyle="#f1f5f9";ctx.fillRect(rect.left,rect.top,rect.width,rect.height);
-          ctx.strokeStyle="#64748b";ctx.lineWidth=1;ctx.strokeRect(rect.left,rect.top,rect.width,rect.height);
-          if(rect.width>36&&rect.height>20){
-            ctx.beginPath();ctx.rect(rect.left,rect.top,rect.width,rect.height);ctx.clip();
-            ctx.fillStyle="#334155";ctx.font="12px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
-            ctx.fillText("Preserved "+object.objectKind,rect.left+rect.width/2,rect.top+rect.height/2,Math.max(1,rect.width-8));
+          ctx.fillStyle = "#f1f5f9";
+          ctx.fillRect(rect.left, rect.top, rect.width, rect.height);
+          ctx.strokeStyle = "#64748b";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(rect.left, rect.top, rect.width, rect.height);
+          if (rect.width > 36 && rect.height > 20) {
+            ctx.beginPath();
+            ctx.rect(rect.left, rect.top, rect.width, rect.height);
+            ctx.clip();
+            ctx.fillStyle = "#334155";
+            ctx.font = "12px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(
+              "Preserved " + object.objectKind,
+              rect.left + rect.width / 2,
+              rect.top + rect.height / 2,
+              Math.max(1, rect.width - 8),
+            );
           }
           ctx.restore();
         }
@@ -453,6 +482,7 @@ export function drawParagraph(
               fontSize,
               line.height,
             ),
+          hiddenOffsets,
         );
         if (styles.reflection) {
           drawFragmentReflection(
@@ -509,6 +539,18 @@ export function drawParagraph(
           styles.emphasisMark,
           styles.color ?? "#000000",
         );
+      }
+      ctx.restore();
+    }
+
+    if (overlays.length) {
+      ctx.save();
+      ctx.font = `italic ${DEFAULT_FONT_SIZE_PX}px sans-serif`;
+      ctx.fillStyle = "#1a73e8";
+      for (const overlay of overlays) {
+        const slot = slotByOffset.get(overlay.start);
+        if (!slot) continue;
+        ctx.fillText(overlay.text, originX + slot.left, baselineY);
       }
       ctx.restore();
     }

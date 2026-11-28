@@ -323,6 +323,26 @@ export interface OasisCommandPayloads {
   insertDateField: undefined;
   updateBodyFields: undefined;
   updateSelectedFields: undefined;
+  insertFieldCode: string;
+  editFieldCode: { instructionRunId: string; code: string };
+  editFieldCodeAtSelection: string;
+  toggleFieldLock: string;
+  toggleFieldCodes: boolean | undefined;
+  nextField: undefined;
+  previousField: undefined;
+  markAuthorityEntry: import("./tableOfAuthorities.js").MarkAuthorityEntryOptions;
+  insertTableOfAuthorities: import("./tableOfAuthorities.js").InsertTableOfAuthoritiesOptions;
+  updateTableOfAuthorities: { locale?: string } | undefined;
+  insertTableOfFigures: import("./tableOfFigures.js").InsertTableOfFiguresOptions;
+  updateTableOfFigures: undefined;
+  previewMergeRecord: {
+    records: readonly Readonly<Record<string, string>>[];
+    index: number;
+  };
+  mergeToNewDocuments: { records: readonly Readonly<Record<string, string>>[] };
+  updateVariableFields: undefined;
+  setFormFieldValue: { name: string; value: string };
+  toggleFormCheckbox: string;
   insertDateTime: { dateFormat?: string } | undefined;
   markIndexEntry: import("./indexEntries.js").MarkIndexEntryOptions;
   insertIndex: import("./indexEntries.js").InsertIndexOptions;
@@ -448,6 +468,16 @@ export interface OasisCommandResults {
   markIndexEntry: boolean;
   insertIndex: boolean;
   updateIndex: boolean;
+  insertFieldCode: boolean;
+  editFieldCode: boolean;
+  toggleFieldLock: boolean;
+  markAuthorityEntry: boolean;
+  insertTableOfAuthorities: boolean;
+  updateTableOfAuthorities: boolean;
+  insertTableOfFigures: boolean;
+  updateTableOfFigures: boolean;
+  setFormFieldValue: boolean;
+  toggleFormCheckbox: boolean;
   documentStyles: unknown;
   [command: string]: unknown;
 }

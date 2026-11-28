@@ -598,8 +598,12 @@ export interface EssentialsBookmarkCapability {
 }
 
 export interface EssentialsFieldsCapability {
-  markIndexEntry?: (options: import("@/core/commands/indexEntries.js").MarkIndexEntryOptions) => boolean;
-  insertIndex?: (options: import("@/core/commands/indexEntries.js").InsertIndexOptions) => boolean;
+  markIndexEntry?: (
+    options: import("@/core/commands/indexEntries.js").MarkIndexEntryOptions,
+  ) => boolean;
+  insertIndex?: (
+    options: import("@/core/commands/indexEntries.js").InsertIndexOptions,
+  ) => boolean;
   updateIndex?: (locale?: string) => boolean;
   canMarkIndexEntry?: () => boolean;
   canInsertIndex?: () => boolean;
@@ -608,6 +612,38 @@ export interface EssentialsFieldsCapability {
   updateBodyFields?: () => void;
   updateSelectedFields?: () => void;
   canUpdateBodyFields?: () => boolean;
+  /** Generic field-code editing (preserved complex fields). */
+  insertFieldCode?: (code: string) => boolean;
+  editFieldCode?: (instructionRunId: string, code: string) => boolean;
+  editFieldCodeAtSelection?: (code: string) => boolean;
+  toggleFieldLock?: (fieldRunId: string) => boolean;
+  toggleFieldCodes?: (show: boolean) => void;
+  navigateField?: (direction: "next" | "previous") => void;
+  /** Table of authorities / figures. */
+  markAuthorityEntry?: (
+    options: import("@/core/commands/tableOfAuthorities.js").MarkAuthorityEntryOptions,
+  ) => boolean;
+  insertTableOfAuthorities?: (
+    options: import("@/core/commands/tableOfAuthorities.js").InsertTableOfAuthoritiesOptions,
+  ) => boolean;
+  updateTableOfAuthorities?: (locale?: string) => boolean;
+  insertTableOfFigures?: (
+    options: import("@/core/commands/tableOfFigures.js").InsertTableOfFiguresOptions,
+  ) => boolean;
+  updateTableOfFigures?: () => boolean;
+  /** Mail merge with caller-supplied records only. */
+  previewMergeRecord?: (
+    records: readonly Readonly<Record<string, string>>[],
+    index: number,
+  ) => boolean;
+  mergeToNewDocuments?: (
+    records: readonly Readonly<Record<string, string>>[],
+  ) => number;
+  /** Variable/ASK/FILLIN/formula refresh with an injected prompt resolver. */
+  updateVariableFields?: () => boolean;
+  /** Legacy form fields. */
+  setFormFieldValue?: (name: string, value: string) => boolean;
+  toggleFormCheckbox?: (name: string) => boolean;
   /** Insert a DATE field at the active caret with the current date. */
   insertDate: () => void;
   /** Insert the current date as plain text (WordCraft `insert.dateTime`, update:false). */
