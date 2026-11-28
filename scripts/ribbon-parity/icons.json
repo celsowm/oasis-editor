@@ -240,721 +240,833 @@
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 59,
+      "line": 62,
       "role": "iconName",
       "name": "themes",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 73,
+      "line": 76,
       "role": "iconName",
       "name": "designDefault",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 86,
+      "line": 89,
       "role": "iconName",
       "name": "watermark",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 101,
+      "line": 104,
       "role": "iconName",
       "name": "pageColor",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 116,
+      "line": 119,
       "role": "iconName",
       "name": "pageBorders",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 131,
+      "line": 134,
       "role": "iconName",
       "name": "save",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 141,
+      "line": 144,
       "role": "iconName",
       "name": "file-plus",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 151,
+      "line": 154,
       "role": "iconName",
       "name": "fileImportDocx",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 161,
+      "line": 164,
       "role": "iconName",
       "name": "fileExportDocx",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 171,
+      "line": 174,
       "role": "iconName",
       "name": "fileExportPdf",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 181,
+      "line": 184,
       "role": "iconName",
       "name": "printer",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 193,
+      "line": 196,
       "role": "iconName",
       "name": "undo",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 201,
+      "line": 204,
       "role": "iconName",
       "name": "redo",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 212,
+      "line": 215,
       "role": "iconName",
       "name": "clipboardPaste",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 225,
+      "line": 228,
       "role": "iconName",
       "name": "clipboardPaste",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 233,
+      "line": 236,
       "role": "iconName",
       "name": "formatPainter",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 241,
+      "line": 244,
       "role": "iconName",
       "name": "clipboard",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 252,
+      "line": 255,
       "role": "iconName",
       "name": "formatPainter",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 263,
+      "line": 266,
       "role": "iconName",
       "name": "formatPainter",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 271,
+      "line": 274,
       "role": "iconName",
       "name": "formatPainterContinuous",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 279,
+      "line": 282,
       "role": "iconName",
       "name": "formatPainterCancel",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 290,
+      "line": 293,
       "role": "iconName",
       "name": "clipboardCut",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 299,
+      "line": 302,
       "role": "iconName",
       "name": "copy",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 308,
+      "line": 311,
       "role": "iconName",
       "name": "search",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 317,
+      "line": 320,
       "role": "iconName",
       "name": "text-select",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 356,
+      "line": 359,
       "role": "iconName",
       "name": "a-arrow-up",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 364,
+      "line": 367,
       "role": "iconName",
       "name": "a-arrow-down",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 372,
+      "line": 375,
       "role": "iconName",
       "name": "case-sensitive",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 431,
+      "line": 434,
       "role": "iconName",
       "name": "remove-formatting",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 441,
+      "line": 444,
       "role": "iconName",
       "name": "bold",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 449,
+      "line": 452,
       "role": "iconName",
       "name": "italic",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 462,
+      "line": 465,
       "role": "iconName",
       "name": "strikethrough",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 470,
+      "line": 473,
       "role": "iconName",
       "name": "subscript",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 478,
+      "line": 481,
       "role": "iconName",
       "name": "superscript",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 488,
+      "line": 491,
       "role": "iconName",
       "name": "fontColor",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 498,
+      "line": 501,
       "role": "iconName",
       "name": "highlight",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 508,
+      "line": 511,
       "role": "iconName",
       "name": "shading",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 521,
+      "line": 524,
       "role": "iconName",
       "name": "pageBreak",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 531,
+      "line": 534,
       "role": "iconName",
       "name": "image",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 541,
+      "line": 544,
       "role": "iconName",
       "name": "shapes",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 571,
+      "line": 574,
       "role": "iconName",
       "name": "link",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 581,
+      "line": 584,
       "role": "iconName",
       "name": "unlink",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 591,
+      "line": 594,
       "role": "iconName",
       "name": "bookmark",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 601,
+      "line": 604,
       "role": "iconName",
       "name": "calendar",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 611,
+      "line": 614,
       "role": "iconName",
       "name": "footnote",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 621,
+      "line": 624,
       "role": "iconName",
       "name": "pageHeaderFooter",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 632,
+      "line": 635,
       "role": "iconName",
       "name": "pageHeader",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 642,
+      "line": 645,
       "role": "iconName",
       "name": "pageFooter",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 652,
+      "line": 655,
       "role": "iconName",
       "name": "pageNumber",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 662,
+      "line": 665,
       "role": "iconName",
       "name": "pageCount",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 672,
+      "line": 675,
       "role": "iconName",
       "name": "pageNumberTop",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 682,
+      "line": 685,
       "role": "iconName",
       "name": "pageNumberBottom",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 692,
+      "line": 695,
       "role": "iconName",
       "name": "x",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 705,
+      "line": 708,
       "role": "iconName",
       "name": "file-text",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 716,
+      "line": 719,
       "role": "iconName",
       "name": "subtitles",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 730,
+      "line": 733,
       "role": "iconName",
       "name": "crop",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 787,
+      "line": 790,
+      "role": "iconName",
+      "name": "rotate-ccw",
+      "origin": "lucide"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 798,
+      "role": "iconName",
+      "name": "corner-down-right",
+      "origin": "lucide"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 806,
       "role": "iconName",
       "name": "indent-decrease",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 795,
+      "line": 814,
       "role": "iconName",
       "name": "indent-increase",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 808,
+      "line": 827,
       "role": "iconName",
       "name": "specialIndentFirstLine",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 821,
+      "line": 840,
       "role": "iconName",
       "name": "minus",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 831,
+      "line": 850,
       "role": "iconName",
       "name": "list-collapse",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 844,
+      "line": 863,
       "role": "iconName",
       "name": "list-indent-increase",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 874,
+      "line": 898,
       "role": "iconName",
       "name": "markIndexEntryGlyph",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 881,
+      "line": 915,
       "role": "iconName",
       "name": "insertIndexGlyph",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 888,
+      "line": 932,
       "role": "iconName",
       "name": "updateIndexGlyph",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 897,
+      "line": 943,
       "role": "iconName",
       "name": "tableOfContents",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 907,
+      "line": 953,
       "role": "iconName",
       "name": "updateTableOfContents",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 918,
+      "line": 964,
       "role": "iconName",
       "name": "refresh-cw",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 930,
+      "line": 977,
+      "role": "icon",
+      "name": "tableOfContents",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 983,
+      "role": "icon",
+      "name": "refresh-cw",
+      "origin": "lucide"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 989,
+      "role": "icon",
+      "name": "refresh-cw",
+      "origin": "lucide"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 995,
+      "role": "icon",
+      "name": "updateIndexGlyph",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1001,
+      "role": "icon",
+      "name": "updateTableOfContents",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1007,
+      "role": "icon",
+      "name": "refresh-cw",
+      "origin": "lucide"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1037,
+      "role": "icon",
+      "name": "markIndexEntryGlyph",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1044,
+      "role": "icon",
+      "name": "markIndexEntryGlyph",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1051,
+      "role": "icon",
+      "name": "markIndexEntryGlyph",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1058,
+      "role": "icon",
+      "name": "insertIndexGlyph",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1065,
+      "role": "icon",
+      "name": "tableOfContents",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1072,
+      "role": "icon",
+      "name": "insertIndexGlyph",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1079,
+      "role": "icon",
+      "name": "insertIndexGlyph",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1086,
+      "role": "icon",
+      "name": "markIndexEntryGlyph",
+      "origin": "oasis"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1114,
       "role": "iconName",
       "name": "reviewTrackChanges",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 940,
+      "line": 1124,
       "role": "iconName",
       "name": "reviewMarkup",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 961,
+      "line": 1145,
       "role": "iconName",
       "name": "reviewPane",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 970,
+      "line": 1154,
       "role": "iconName",
       "name": "reviewAccept",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 980,
+      "line": 1164,
       "role": "iconName",
       "name": "reviewReject",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 991,
+      "line": 1175,
       "role": "iconName",
       "name": "reviewAcceptAll",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1000,
+      "line": 1184,
       "role": "iconName",
       "name": "reviewRejectAll",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1010,
+      "line": 1194,
       "role": "iconName",
       "name": "reviewPrevious",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1019,
+      "line": 1203,
       "role": "iconName",
       "name": "reviewNext",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1028,
+      "line": 1212,
       "role": "iconName",
       "name": "commentNew",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1038,
+      "line": 1222,
       "role": "iconName",
       "name": "commentsPane",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1048,
+      "line": 1232,
       "role": "iconName",
       "name": "commentReply",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1057,
+      "line": 1241,
       "role": "iconName",
       "name": "commentEdit",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1066,
+      "line": 1250,
       "role": "iconName",
       "name": "commentPrevious",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1075,
+      "line": 1259,
       "role": "iconName",
       "name": "commentNext",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1084,
+      "line": 1268,
       "role": "iconName",
       "name": "commentResolve",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1093,
+      "line": 1277,
       "role": "iconName",
       "name": "commentReopen",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1102,
+      "line": 1286,
       "role": "iconName",
       "name": "commentDelete",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1113,
+      "line": 1297,
       "role": "iconName",
       "name": "pageMargins",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1122,
+      "line": 1306,
       "role": "iconName",
       "name": "pilcrow",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1131,
+      "line": 1315,
       "role": "iconName",
       "name": "type",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1140,
+      "line": 1324,
       "role": "iconName",
       "name": "list",
       "origin": "lucide"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1180,
+      "line": 1364,
       "role": "iconName",
       "name": "shading",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1198,
+      "line": 1382,
       "role": "iconName",
       "name": "formatPainter",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1225,
+      "line": 1409,
       "role": "iconName",
       "name": "tableDistributeRows",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1234,
+      "line": 1418,
       "role": "iconName",
       "name": "tableDistributeColumns",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1243,
+      "line": 1427,
       "role": "iconName",
       "name": "tableAutoFit",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1255,
+      "line": 1439,
       "role": "iconName",
       "name": "tableToText",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1267,
+      "line": 1451,
       "role": "iconName",
       "name": "textToTable",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1279,
+      "line": 1463,
       "role": "iconName",
       "name": "splitTable",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1291,
+      "line": 1475,
       "role": "iconName",
       "name": "sortAscending",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1300,
+      "line": 1484,
       "role": "iconName",
       "name": "sortDescending",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1312,
+      "line": 1496,
       "role": "iconName",
       "name": "deleteTable",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1324,
+      "line": 1508,
       "role": "iconName",
       "name": "repeatHeaderRow",
       "origin": "oasis"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1338,
+      "line": 1522,
       "role": "iconName",
       "name": "tableVerticalAlign",
       "origin": "oasis"
@@ -1416,19 +1528,31 @@
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 768,
+      "line": 771,
       "role": "iconName",
       "expression": "button.icon"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 778,
+      "line": 781,
       "role": "iconName",
       "expression": "button.icon"
     },
     {
       "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
-      "line": 1155,
+      "line": 1019,
+      "role": "iconName",
+      "expression": "button.icon"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1098,
+      "role": "iconName",
+      "expression": "menu.icon"
+    },
+    {
+      "file": "src/ui/components/Toolbar/presets/defaultToolbar.ts",
+      "line": 1339,
       "role": "iconName",
       "expression": "spec.icon"
     },

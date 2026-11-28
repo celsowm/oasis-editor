@@ -177,20 +177,20 @@ try {
         const bulleted = await snapshot(page);
         listChars(bulleted, "bulleted", 0);
         await click(page, "undo", "history");
-        // Numbered list
+        // Numbered list: indent/outdent change the list level while a list
+        // is active; on a plain paragraph they change whole-paragraph indent.
         await click(page, "list-ordered");
         const numbered = await snapshot(page);
         listChars(numbered, "ordered", 0);
-        await click(page, "undo", "history");
-        // Increase indent (promote/demote)
         await click(page, "list-indent");
         const indented = await snapshot(page);
         listChars(indented, "ordered", 1);
-        await click(page, "undo", "history");
-        // Decrease indent
         await click(page, "list-outdent");
         const outdented = await snapshot(page);
         listChars(outdented, "ordered", 0);
+        // Unwind outdent, indent and list creation before the indent tests.
+        await click(page, "undo", "history");
+        await click(page, "undo", "history");
         await click(page, "undo", "history");
         // Special indent: first line - click split button chevron then menu item
         await click(page, "special-indent-dropdown");

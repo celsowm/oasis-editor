@@ -632,7 +632,7 @@ export const en = {
   "ribbon.nextField": "Next Field",
   "ribbon.previousField": "Previous Field",
   "ribbon.markAuthorityEntry": "Mark Authority",
-  "ribbon.insertTableOfAuthorities": "Insert Table of Authorities",
+  "ribbon.insertTableOfAuthorities": "Insert TOA",
   "ribbon.updateTableOfAuthorities": "Update Authorities",
   "ribbon.insertTableOfFigures": "Insert Table of Figures",
   "ribbon.updateTableOfFigures": "Update Figures",
