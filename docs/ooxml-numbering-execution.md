@@ -129,6 +129,10 @@ N4 concluída: `w:numPicBullet` (VML/DrawingML) resolvido via `word/_rels/number
 
 **Correção de arquitetura:** o tipo `NumberFormatToken` passou a viver em `src/ooxml/word/numberFormat.ts` (antes no modelo) para eliminar ciclos de import detectados por `npm run check:imports`.
 
+| N6 | patchers existentes (`numberingSourcePatcher`, `wordSingletonSourcePatcher`) | `core/numberingAdvancedPreservation.test.ts` (1) |
+
+N6 concluída: `multiLevelType`, `nsid`, `tmpl`, `w:tplc`, `w:tentative`, `w:legacy`, `latentStyles` e `lsdException` preservados no round-trip source-backed — sem nova semântica. Matriz de cobertura atualizada para não confundir preservação com suporte.
+
 ## 14. Limitações restantes (deliberadas, fail-closed)
 
 - Tier C (contagem CJK/Thai/Vietnamita): fallback decimal + token preservado enquanto não houver fonte oficial do algoritmo.

@@ -245,8 +245,8 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Styles | `w:styles` | `word/styles.xml` root | — | Style definitions part root. | Must be parsed before rendering document body for fidelity. | P0 | Supported |
 | Styles | `w:docDefaults` | `w:styles` | — | Document default paragraph/run properties. | Base of formatting cascade. | P0 | Supported |
 | Styles | `w:rPrDefault` / `w:pPrDefault` | `w:docDefaults` | — | Default run/paragraph props. | Apply when no more specific formatting exists. | P0 | Supported |
-| Styles | `w:latentStyles` | `w:styles` | `w:defLockedState`, `w:defUIPriority`, `w:defSemiHidden`, `w:defUnhideWhenUsed`, `w:defQFormat`, `w:count` | Latent built-in style metadata. | Mostly UI metadata; can help map built-in styles. | P3 | Not supported |
-| Styles | `w:lsdException` | `w:latentStyles` | `w:name`, `w:locked`, `w:uiPriority`, `w:semiHidden`, `w:unhideWhenUsed`, `w:qFormat` | Latent style exception. | Preserve for round-trip. | P4 | Not supported |
+| Styles | `w:latentStyles` | `w:styles` | `w:defLockedState`, `w:defUIPriority`, `w:defSemiHidden`, `w:defUnhideWhenUsed`, `w:defQFormat`, `w:count` | Latent built-in style metadata. | Preserved byte-for-byte via `mergeStylesXml`; not used by the gallery. | P3 | Partial |
+| Styles | `w:lsdException` | `w:latentStyles` | `w:name`, `w:locked`, `w:uiPriority`, `w:semiHidden`, `w:unhideWhenUsed`, `w:qFormat` | Latent style exception. | Preserved for round-trip via `mergeStylesXml`. | P4 | Partial |
 | Styles | `w:style` | `w:styles` | `w:type`, `w:styleId`, `w:default`, `w:customStyle` | Style definition. | Types include paragraph, character, table, numbering. | P0 | Partial |
 | Styles | `w:name` | `w:style` | `w:val` | Human-readable style name. | Not always equal to `styleId`. | P1 | Supported |
 | Styles | `w:basedOn` | `w:style` | `w:val` | Base style reference. | Follow inheritance chain while avoiding cycles. | P0 | Supported |
@@ -290,8 +290,8 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Numbering | `w:numPicBullet` | `w:numbering` | `w:numPicBulletId` | Picture bullet definition. | VML `v:imagedata/@r:id` and DrawingML `a:blip/@r:embed` resolved via `word/_rels/numbering.xml.rels`; dimensions from VML style / `wp:extent`. Authoring new picture bullets is not offered. | P2 | Supported |
 | Numbering | `w:lvlOverride` | `w:num` | `w:ilvl` | Override for one list level. | Effective replacement levels are imported; export materializes the effective level in an instance-specific abstract definition. | P1 | Partial |
 | Numbering | `w:startOverride` | `w:lvlOverride` | `w:val` | Concrete restart value. | Imported as the instance-level start and preserved semantically on export. | P1 | Supported |
-| Numbering | `w:multiLevelType` | `w:abstractNum` | `w:val` | List type. | singleLevel, multilevel, hybridMultilevel. | P2 | Not supported |
-| Numbering | `w:nsid` / `w:tmpl` | `w:abstractNum` | `w:val` | List identity/template metadata. | Preserve; not needed for rendering. | P4 | Not supported |
+| Numbering | `w:multiLevelType` | `w:abstractNum` | `w:val` | List type. | Preserved byte-for-byte via the source numbering patcher; no distinct layout semantics. | P2 | Partial |
+| Numbering | `w:nsid` / `w:tmpl` | `w:abstractNum` | `w:val` | List identity/template metadata. | Preserved via the source numbering patcher; not needed for rendering. | P4 | Partial |
 
 ## Hyperlinks, fields, bookmarks, and legacy forms
 
