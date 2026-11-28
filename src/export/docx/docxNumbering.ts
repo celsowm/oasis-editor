@@ -160,14 +160,17 @@ export function buildNumberingContext(
 
   const definitionForList = (
     list: NonNullable<EditorParagraphNode["list"]>,
+    keyOverride?: string,
   ): { numId: number; level: number } => {
     const level = Math.max(0, list.level ?? 0);
     // Imported numIds remain independent. Lists created by the editor retain
     // the historical appearance-based sharing behaviour.
     const bulletGlyph = list.bulletGlyph ?? "";
-    const key = list.instanceId
-      ? `instance:${list.instanceId}`
-      : `legacy:${list.kind}:${level}:${bulletGlyph}`;
+    const key =
+      keyOverride ??
+      (list.instanceId
+        ? `instance:${list.instanceId}`
+        : `legacy:${list.kind}:${level}:${bulletGlyph}`);
     let definition = definitionMap.get(key);
     if (!definition) {
       const sourceMetadata = getEditorListOoxmlNumberingMetadata(list);
@@ -219,9 +222,42 @@ export function buildNumberingContext(
     return { numId: definition.numId, level };
   };
 
+  const instanceCounts = new Map<string, number>();
+  const activeRestartByBase = new Map<string, string>();
+  let lastRestart:
+    { baseKey: string; startAt: number; key: string } | undefined;
   for (const paragraph of listParagraphs) {
-    const numbering = definitionForList(paragraph.list!);
-    numberingInfo.set(paragraph.id, numbering);
+    const list = paragraph.list!;
+    const baseKey = list.instanceId
+      ? `instance:${list.instanceId}`
+      : `legacy:${list.kind}:${list.level ?? 0}:${list.bulletGlyph ?? ""}`;
+    const count = instanceCounts.get(baseKey) ?? 0;
+    instanceCounts.set(baseKey, count + 1);
+    let keyOverride: string | undefined;
+    if (typeof list.startAt === "number" && count > 0) {
+      // A mid-list restart must not change w:start for the whole abstract
+      // definition: give the restarted segment its own w:num instance.
+      if (
+        lastRestart?.baseKey !== baseKey ||
+        lastRestart.startAt !== list.startAt
+      ) {
+        lastRestart = {
+          baseKey,
+          startAt: list.startAt,
+          key: `${baseKey}:restart:${paragraph.id}`,
+        };
+      }
+      activeRestartByBase.set(baseKey, lastRestart.key);
+      keyOverride = lastRestart.key;
+    } else if (activeRestartByBase.has(baseKey)) {
+      // Items after a restart keep counting in the restarted segment until a
+      // later explicit restart creates a new one.
+      keyOverride = activeRestartByBase.get(baseKey);
+      lastRestart = undefined;
+    } else {
+      lastRestart = undefined;
+    }
+    numberingInfo.set(paragraph.id, definitionForList(list, keyOverride));
   }
 
   // Paragraphs that become list items only through their named style must

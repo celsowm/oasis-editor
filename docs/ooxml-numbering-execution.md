@@ -119,6 +119,10 @@ N2 concluída: rótulos de 3 níveis com formato distinto por nível referenciad
 
 N5 concluída: `w:numPr` em estilos é importado, herdado via `basedOn`, usado em rótulos e STYLEREF, e reemitido em `styles.xml`; numPr direto vence. `numStyleLink`/`styleLink` sobrevivem em `w:abstractNum`. Matriz atualizada.
 
+| N3 | `src/core/document/listRestart.ts`, `src/core/commands/list.ts`, `docxNumbering.ts` (segmentos de reinício), comandos/capability/ribbon/i18n | `core/listRestart.test.ts` (2) |
+
+N3 concluída: comandos `restartList`/`continueList`, availability no modelo, e reinício no meio da lista gerando um `w:num` próprio com `w:start` — round-trip verificado. Matriz corrigida para `w:lvlRestart` (N2) e `w:numPr` em estilos (N5).
+
 ## 14. Limitações restantes (deliberadas, fail-closed)
 
 - Tier C (contagem CJK/Thai/Vietnamita): fallback decimal + token preservado enquanto não houver fonte oficial do algoritmo.

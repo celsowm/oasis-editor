@@ -244,6 +244,19 @@ export function setParagraphListFormat(
   );
 }
 
+/** Restart the selected list items at the given value (1 by default). */
+export function restartListAtSelection(
+  state: EditorState,
+  startAt = 1,
+): EditorState {
+  return setParagraphListStartAt(state, startAt);
+}
+
+/** Drop an explicit restart so the items continue the instance counter. */
+export function continueListAtSelection(state: EditorState): EditorState {
+  return setParagraphListStartAt(state, null);
+}
+
 export function setParagraphListStartAt(
   state: EditorState,
   startAt: number | null,
