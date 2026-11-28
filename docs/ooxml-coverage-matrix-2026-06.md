@@ -261,7 +261,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Styles | `w:personal` / `w:personalCompose` / `w:personalReply` | `w:style` | `w:val` | Email/personal style metadata. | Preserve. | P4 | Not supported |
 | Styles | `w:pPr` / `w:rPr` / `w:tblPr` / `w:trPr` / `w:tcPr` | `w:style` | property children | Style-contained properties. | Merge into cascade based on style type and context. | P0 | Partial |
 | Styles | `w:tblStylePr` | `w:style[type='table']` | `w:type` | Conditional table style bucket. | Already covered in table matrix; essential for banded/header rows. | P2 | Not supported |
-| Styles | `w:numPr` | `w:pPr` in style | `ilvl`, `numId` | Style-level numbering. | Paragraph may become list item via style alone. | P1 | Not supported |
+| Styles | `w:numPr` | `w:pPr` in style | `ilvl`, `numId` | Style-level numbering. | Imported into `EditorParagraphStyle.list`, inherited through `w:basedOn`, used for labels/STYLEREF and re-emitted in `styles.xml`; direct paragraph `numPr` wins. | P1 | Supported |
 | Styles | `w:rsid` | `w:style` | `w:val` | Revision session id for style. | Preserve only. | P4 | Not supported |
 
 ## Numbering and lists
@@ -684,8 +684,8 @@ This pass fills the practical gaps left after the broad matrix above. It still a
 
 | Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
 |---|---|---|---|---|---|---|---|
-| Numbering | `w:numStyleLink` | `w:abstractNum` | `w:val` | Link numbering to numbering style. | Needed when numbering definitions delegate through styles. | P2 | Not supported |
-| Numbering | `w:styleLink` | `w:abstractNum` | `w:val` | Link to paragraph style. | Resolve to avoid missing list definitions. | P2 | Not supported |
+| Numbering | `w:numStyleLink` | `w:abstractNum` | `w:val` | Link numbering to numbering style. | Token preserved on `ooxmlNumbering` and re-emitted on `w:abstractNum`; no separate numbering-style semantics. | P2 | Partial |
+| Numbering | `w:styleLink` | `w:abstractNum` | `w:val` | Link to paragraph style. | Token preserved and re-emitted on `w:abstractNum`; style-level `w:numPr` is resolved independently. | P2 | Partial |
 | Numbering | `w:lvlText` literal escaping | `w:lvl` | `%1`, `%2`, literal text | Label format string. | Literal text and level placeholders are resolved without discarding punctuation. | P1 | Supported |
 | Numbering | Level `w:rPr/w:rFonts` | `w:lvl` | symbol fonts | Bullet font/glyph. | Bullet glyph and font are imported and re-emitted, and legacy PUA glyphs are normalized; canvas/PDF still use the paragraph font for the normalized glyph. | P1 | Partial |
 | Numbering | Counter restart by paragraph style | list state | style/level changes | List continuity/restart heuristics. | `numId`, level starts, and start overrides are handled; style-implied restarts are not. | P2 | Partial |

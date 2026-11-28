@@ -158,8 +158,10 @@ function toDocxJustification(align: EditorParagraphStyle["align"]): string {
  */
 export function serializeParagraphStyleXml(
   style: EditorParagraphStyle,
+  numPrXml?: string,
 ): string {
   const parts: string[] = [];
+  if (numPrXml) parts.push(numPrXml);
 
   if (style.align) {
     parts.push(`<w:jc w:val="${toDocxJustification(style.align)}"/>`);
@@ -243,7 +245,9 @@ export function serializeParagraphStyleXml(
     parts.push(serializeParagraphPropertyRevision(style.propertyRevision));
   }
 
-  return parts.length > 0 ? `<w:pPr>${orderedPropertyFragments(parts, P_PR_CHILD_ORDER)}</w:pPr>` : "";
+  return parts.length > 0
+    ? `<w:pPr>${orderedPropertyFragments(parts, P_PR_CHILD_ORDER)}</w:pPr>`
+    : "";
 }
 
 export function serializeParagraphProperties(
@@ -363,5 +367,7 @@ export function serializeParagraphProperties(
     );
   }
 
-  return parts.length > 0 ? `<w:pPr>${orderedPropertyFragments(parts, P_PR_CHILD_ORDER)}</w:pPr>` : "";
+  return parts.length > 0
+    ? `<w:pPr>${orderedPropertyFragments(parts, P_PR_CHILD_ORDER)}</w:pPr>`
+    : "";
 }

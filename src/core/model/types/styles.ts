@@ -10,6 +10,7 @@ import type {
   EditorLigatures,
   EditorNumberForm,
   EditorNumberSpacing,
+  EditorParagraphListStyle,
   EditorPropertyRevision,
   EditorReflection,
   EditorStructuralRevision,
@@ -102,6 +103,8 @@ export interface EditorTextStyle {
 
 export interface EditorParagraphStyle {
   styleId?: string;
+  /** `w:pPr/w:numPr`: a paragraph using this style becomes a list item. */
+  list?: EditorParagraphListStyle;
   align?: "left" | "center" | "right" | "justify";
   spacingBefore?: number | null;
   spacingAfter?: number | null;

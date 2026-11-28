@@ -1,3 +1,4 @@
+import type { EditorNamedStyle } from "./types/styles.js";
 import type { EditorDocument } from "./types/document.js";
 import type { EditorBlockNode, EditorParagraphNode } from "./types/nodes.js";
 import type { EditorParagraphListStyle } from "./types/primitives.js";
@@ -81,6 +82,30 @@ function collectNumberingParagraphs(
   return result;
 }
 
+function resolveStyleList(
+  styleId: string | undefined,
+  styles: Record<string, EditorNamedStyle> | undefined,
+  seen: Set<string> = new Set(),
+): EditorParagraphListStyle | undefined {
+  if (!styleId || !styles || seen.has(styleId)) return undefined;
+  seen.add(styleId);
+  const style =
+    styles[styleId] ??
+    Object.values(styles).find((candidate) => candidate.id === styleId);
+  if (!style) return undefined;
+  return (
+    style.paragraphStyle?.list ?? resolveStyleList(style.basedOn, styles, seen)
+  );
+}
+
+/** Direct `w:numPr` wins; a paragraph style may supply the list instead. */
+export function resolveParagraphList(
+  paragraph: EditorParagraphNode,
+  styles?: Record<string, EditorNamedStyle>,
+): EditorParagraphListStyle | undefined {
+  return paragraph.list ?? resolveStyleList(paragraph.style?.styleId, styles);
+}
+
 export function buildListLabels(
   document: EditorDocument,
   locale?: string,
@@ -90,7 +115,7 @@ export function buildListLabels(
   const effectiveLocale = locale ?? resolveNumberingLocale(document);
 
   for (const paragraph of collectNumberingParagraphs(document)) {
-    const list = paragraph.list;
+    const list = resolveParagraphList(paragraph, document.styles);
     if (!list) continue;
     const level = Math.max(0, list.level ?? 0);
     if (list.kind === "bullet") {

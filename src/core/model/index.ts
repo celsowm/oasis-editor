@@ -287,7 +287,11 @@ export {
 } from "./paragraphWalker.js";
 
 // ---- List numbering ----
-export { buildListLabels, resolveListLabel } from "./listNumbering.js";
+export {
+  buildListLabels,
+  resolveListLabel,
+  resolveParagraphList,
+} from "./listNumbering.js";
 
 // ---- Editing zones (LSP via tryGet* variant) ----
 export {

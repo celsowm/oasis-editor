@@ -35,7 +35,10 @@ export interface NumberingDefinition {
 
 export interface DocContext {
   /** Internal source-backed rebuild only; exact raw fragments from fresh source inspection. */
-  authorizedOpaqueFragments?: ReadonlyMap<string, { signature: string; kind: string; relationshipIds: readonly string[] }>;
+  authorizedOpaqueFragments?: ReadonlyMap<
+    string,
+    { signature: string; kind: string; relationshipIds: readonly string[] }
+  >;
   numberingInfo: Map<string, { numId: number; level: number }>;
   definitions: NumberingDefinition[];
   images: Array<{
@@ -96,11 +99,16 @@ export interface DocContext {
 
 export interface NumberingContext {
   numberingInfo: Map<string, { numId: number; level: number }>;
+  /** `w:numPr` emitted inside `w:style/w:pPr` for style-driven lists. */
+  styleNumbering?: Map<string, { numId: number; level: number }>;
   definitions: NumberingDefinition[];
 }
 
 export interface ExportBuildState {
-  authorizedOpaqueFragments?: ReadonlyMap<string, { signature: string; kind: string; relationshipIds: readonly string[] }>;
+  authorizedOpaqueFragments?: ReadonlyMap<
+    string,
+    { signature: string; kind: string; relationshipIds: readonly string[] }
+  >;
   nextImageId: number;
   /**
    * Next `wp:docPr/@id` for a text-box drawing. Starts in a high range so it

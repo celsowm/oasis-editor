@@ -84,6 +84,7 @@ export function buildNumberingContext(
   document: EditorDocument,
 ): NumberingContext {
   const numberingInfo = new Map<string, { numId: number; level: number }>();
+  const styleNumbering = new Map<string, { numId: number; level: number }>();
   const definitionMap = new Map<string, NumberingDefinition>();
   const definitions: NumberingDefinition[] = [];
   const usedAbstractNumIds = new Set<number>();
@@ -157,8 +158,9 @@ export function buildNumberingContext(
     }
   }
 
-  for (const paragraph of listParagraphs) {
-    const list = paragraph.list!;
+  const definitionForList = (
+    list: NonNullable<EditorParagraphNode["list"]>,
+  ): { numId: number; level: number } => {
     const level = Math.max(0, list.level ?? 0);
     // Imported numIds remain independent. Lists created by the editor retain
     // the historical appearance-based sharing behaviour.
@@ -214,10 +216,22 @@ export function buildNumberingContext(
           : {}),
       });
     }
-    numberingInfo.set(paragraph.id, { numId: definition.numId, level });
+    return { numId: definition.numId, level };
+  };
+
+  for (const paragraph of listParagraphs) {
+    const numbering = definitionForList(paragraph.list!);
+    numberingInfo.set(paragraph.id, numbering);
   }
 
-  return { numberingInfo, definitions };
+  // Paragraphs that become list items only through their named style must
+  // still receive a concrete w:numPr in styles.xml.
+  for (const style of Object.values(document.styles ?? {})) {
+    if (style.type !== "paragraph" || !style.paragraphStyle?.list) continue;
+    styleNumbering.set(style.id, definitionForList(style.paragraphStyle.list));
+  }
+
+  return { numberingInfo, definitions, styleNumbering };
 }
 
 export function buildNumberingXml(definitions: NumberingDefinition[]): string {
@@ -267,7 +281,18 @@ export function buildNumberingXml(definitions: NumberingDefinition[]): string {
           },
         )
         .join("");
-      return `<w:abstractNum w:abstractNumId="${abstractNumId}">${levelsXml}</w:abstractNum>`;
+      const firstLevelMetadata = levels[0]?.ooxml;
+      // w:styleLink / w:numStyleLink belong to w:abstractNum, not to a level;
+      // take them from the first level that carried the parsed metadata.
+      const linksXml = [
+        firstLevelMetadata?.styleLink
+          ? `<w:styleLink w:val="${escapeXml(firstLevelMetadata.styleLink)}"/>`
+          : "",
+        firstLevelMetadata?.numStyleLink
+          ? `<w:numStyleLink w:val="${escapeXml(firstLevelMetadata.numStyleLink)}"/>`
+          : "",
+      ].join("");
+      return `<w:abstractNum w:abstractNumId="${abstractNumId}">${linksXml}${levelsXml}</w:abstractNum>`;
     })
     .join("");
 

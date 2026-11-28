@@ -14,6 +14,10 @@ export interface EditorListOoxmlNumberingMetadata {
   restartAfterLevel?: number;
   /** `w:pStyle/@w:val` associated with this numbering level. */
   paragraphStyleId?: string;
+  /** `w:abstractNum/w:numStyleLink/@w:val`. */
+  numStyleLink?: string;
+  /** `w:abstractNum/w:styleLink/@w:val`. */
+  styleLink?: string;
 }
 
 type EditorListWithOoxmlMetadata = EditorParagraphListStyle & {

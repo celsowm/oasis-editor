@@ -40,6 +40,10 @@ export interface NumberingMaps {
   numOverrideLevels: Map<string, NumberingLevel>;
   numStartOverrides: Map<string, number>;
   numToAbstractId: Map<string, string>;
+  abstractStyleLinks: Map<
+    string,
+    { numStyleLink?: string; styleLink?: string }
+  >;
   seenInstances: Set<string>;
 }
 
@@ -155,6 +159,7 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
     numOverrideLevels: new Map(),
     numStartOverrides: new Map(),
     numToAbstractId: new Map(),
+    abstractStyleLinks: new Map(),
     seenInstances: new Set(),
   };
   if (!numberingXml) return maps;
@@ -171,6 +176,20 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
   )) {
     const abstractId = getAttributeValue(abstractNum, "abstractNumId");
     if (!abstractId) continue;
+    const numStyleLink = getAttributeValue(
+      getFirstChildByTagNameNS(abstractNum, WORD_NS, "numStyleLink"),
+      "val",
+    );
+    const styleLink = getAttributeValue(
+      getFirstChildByTagNameNS(abstractNum, WORD_NS, "styleLink"),
+      "val",
+    );
+    if (numStyleLink || styleLink) {
+      maps.abstractStyleLinks.set(abstractId, {
+        ...(numStyleLink ? { numStyleLink } : {}),
+        ...(styleLink ? { styleLink } : {}),
+      });
+    }
     for (const level of getChildrenByTagNameNS(abstractNum, WORD_NS, "lvl")) {
       const ilvl = getAttributeValue(level, "ilvl") ?? "0";
       maps.abstractLevels.set(`${abstractId}:${ilvl}`, parseLevel(level));
@@ -244,6 +263,7 @@ export function parseParagraphNumberingRevision(
 export function parseParagraphList(
   paragraphProperties: XmlElement | null,
   numberingMaps: NumberingMaps,
+  options: { trackInstance?: boolean } = {},
 ):
   | { list: EditorParagraphListStyle; indent?: NumberingLevel["indent"] }
   | undefined {
@@ -271,7 +291,11 @@ export function parseParagraphList(
 
   const instanceKey = `${numId}:${safeLevel}`;
   const isFirstInInstance = !numberingMaps.seenInstances.has(instanceKey);
-  numberingMaps.seenInstances.add(instanceKey);
+  // Style definitions are not paragraphs: resolving their numPr must not
+  // consume the instance's start override before the first real paragraph.
+  if (options.trackInstance !== false) {
+    numberingMaps.seenInstances.add(instanceKey);
+  }
   const startAt = isFirstInInstance
     ? (numberingMaps.numStartOverrides.get(instanceKey) ?? effective.startAt)
     : undefined;
@@ -296,12 +320,17 @@ export function parseParagraphList(
     numberingMaps.numToAbstractId.get(numId),
     0,
   );
+  const abstractId = numberingMaps.numToAbstractId.get(numId);
+  const styleLinks = abstractId
+    ? numberingMaps.abstractStyleLinks.get(abstractId)
+    : undefined;
   if (
     sourceNumId !== undefined ||
     sourceAbstractNumId !== undefined ||
     effective.rawFormat ||
     effective.restartAfterLevel !== undefined ||
-    effective.paragraphStyleId
+    effective.paragraphStyleId ||
+    styleLinks
   ) {
     setEditorListOoxmlNumberingMetadata(list, {
       ...(sourceNumId !== undefined ? { sourceNumId } : {}),
@@ -313,6 +342,10 @@ export function parseParagraphList(
       ...(effective.paragraphStyleId
         ? { paragraphStyleId: effective.paragraphStyleId }
         : {}),
+      ...(styleLinks?.numStyleLink
+        ? { numStyleLink: styleLinks.numStyleLink }
+        : {}),
+      ...(styleLinks?.styleLink ? { styleLink: styleLinks.styleLink } : {}),
     });
   }
 

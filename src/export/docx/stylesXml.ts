@@ -121,7 +121,9 @@ function serializeTableStyleProperties(
       .join("");
     if (xml) parts.push(`<w:tblBorders>${xml}</w:tblBorders>`);
   }
-  return parts.length > 0 ? `<w:tblPr>${orderedPropertyFragments(parts, TBL_PR_CHILD_ORDER)}</w:tblPr>` : "";
+  return parts.length > 0
+    ? `<w:tblPr>${orderedPropertyFragments(parts, TBL_PR_CHILD_ORDER)}</w:tblPr>`
+    : "";
 }
 
 function serializeConditionalBlock(
@@ -145,7 +147,10 @@ function serializeConditionalBlock(
   return `<w:tblStylePr w:type="${escapeXml(type)}">${parts.join("")}</w:tblStylePr>`;
 }
 
-function serializeNamedStyle(style: EditorNamedStyle): string {
+function serializeNamedStyle(
+  style: EditorNamedStyle,
+  styleNumbering?: ReadonlyMap<string, { numId: number; level: number }>,
+): string {
   const parts: string[] = [];
   parts.push(`<w:name w:val="${escapeXml(style.name)}"/>`);
   if (style.basedOn) {
@@ -171,7 +176,11 @@ function serializeNamedStyle(style: EditorNamedStyle): string {
 
   if (style.type === "paragraph" || style.type === "table") {
     if (style.paragraphStyle) {
-      const pPr = serializeParagraphStyleXml(style.paragraphStyle);
+      const numbering = styleNumbering?.get(style.id);
+      const numPrXml = numbering
+        ? `<w:numPr><w:ilvl w:val="${numbering.level}"/><w:numId w:val="${numbering.numId}"/></w:numPr>`
+        : undefined;
+      const pPr = serializeParagraphStyleXml(style.paragraphStyle, numPrXml);
       if (pPr) parts.push(pPr);
     }
   }
@@ -215,7 +224,10 @@ function serializeNamedStyle(style: EditorNamedStyle): string {
 
 export function buildStylesXml(
   styles: Record<string, EditorNamedStyle>,
+  styleNumbering?: ReadonlyMap<string, { numId: number; level: number }>,
 ): string {
-  const styleElements = Object.values(styles).map(serializeNamedStyle).join("");
+  const styleElements = Object.values(styles)
+    .map((style) => serializeNamedStyle(style, styleNumbering))
+    .join("");
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="${WORD_NS}" xmlns:w14="${WORD14_NS}">${styleElements}</w:styles>`;
 }

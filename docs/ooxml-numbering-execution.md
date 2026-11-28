@@ -115,6 +115,10 @@ Gates N1: `npm run typecheck` limpo; `npm test` 2554 passed / 3 skipped.
 
 N2 concluída: rótulos de 3 níveis com formato distinto por nível referenciado, reinício de contadores por `w:lvlRestart`, `isLgl`, literais e continuidade através de tabelas. Matriz de cobertura corrigida para `w:lvlRestart`.
 
+| N5 | `EditorParagraphStyle.list`, `parseImportedStyles`/`buildStylesXml`, `resolveParagraphList`, `buildNumberingContext` (estilos), links de numeração | `core/styleLinkedNumbering.test.ts` (4) |
+
+N5 concluída: `w:numPr` em estilos é importado, herdado via `basedOn`, usado em rótulos e STYLEREF, e reemitido em `styles.xml`; numPr direto vence. `numStyleLink`/`styleLink` sobrevivem em `w:abstractNum`. Matriz atualizada.
+
 ## 14. Limitações restantes (deliberadas, fail-closed)
 
 - Tier C (contagem CJK/Thai/Vietnamita): fallback decimal + token preservado enquanto não houver fonte oficial do algoritmo.

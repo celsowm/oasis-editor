@@ -15,6 +15,7 @@ import {
 } from "./xmlHelpers.js";
 import { type DocxImportTheme } from "./theme.js";
 import { parseRunStyle } from "./runStyle.js";
+import { parseParagraphList, type NumberingMaps } from "./numbering.js";
 import {
   parseParagraphStyle,
   withDocxImplicitSingleLineHeight,
@@ -30,6 +31,7 @@ import {
 export function parseImportedStyles(
   stylesXml: string | null,
   theme: DocxImportTheme,
+  numberingMaps?: NumberingMaps,
 ): Record<string, EditorNamedStyle> | undefined {
   if (!stylesXml) {
     return undefined;
@@ -92,7 +94,12 @@ export function parseImportedStyles(
       ) ?? id;
     const customAttr = getAttributeValue(styleElement, "customStyle");
     const customStyle = customAttr == null ? undefined : isWordTrue(customAttr);
-    const builtinStyle = identifyImportedBuiltinStyle({ id, name, type, customStyle });
+    const builtinStyle = identifyImportedBuiltinStyle({
+      id,
+      name,
+      type,
+      customStyle,
+    });
     const basedOn =
       getAttributeValue(
         getFirstChildByTagNameNS(styleElement, WORD_NS, "basedOn"),
@@ -122,6 +129,16 @@ export function parseImportedStyles(
         theme.colors,
       ),
     );
+    // A paragraph style can make list items without any direct w:numPr on the
+    // paragraph. Resolve it without consuming the instance's start override.
+    if (numberingMaps && type === "paragraph" && !paragraphStyle.list) {
+      const pPr = getFirstChildByTagNameNS(styleElement, WORD_NS, "pPr");
+      const listResult = parseParagraphList(pPr, numberingMaps, {
+        trackInstance: false,
+      });
+      if (listResult) paragraphStyle.list = listResult.list;
+    }
+
     const textStyle = parseRunStyle(
       getFirstChildByTagNameNS(styleElement, WORD_NS, "rPr"),
       theme,
@@ -245,6 +262,22 @@ export function parseImportedStyles(
           : textStyle,
       tableStyle,
     };
+  }
+
+  // List membership follows w:basedOn. A cycle is ignored rather than followed
+  // indefinitely, and an explicit style-level numPr always wins.
+  for (const style of Object.values(styles)) {
+    let baseId = style.basedOn;
+    const seen = new Set<string>([style.id]);
+    while (baseId && !seen.has(baseId)) {
+      seen.add(baseId);
+      const base = styles[baseId];
+      if (!base) break;
+      if (!style.paragraphStyle?.list && base.paragraphStyle?.list) {
+        (style.paragraphStyle ??= {}).list = { ...base.paragraphStyle.list };
+      }
+      baseId = base.basedOn;
+    }
   }
 
   if (defaultParagraphStyleId && styles[defaultParagraphStyleId]) {

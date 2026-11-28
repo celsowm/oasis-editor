@@ -1,7 +1,11 @@
 import JSZip from "jszip";
 import { applyPackageCoreTimestamps } from "@/ooxml/opc/coreProperties.js";
-import {applyCanonicalDocumentProperties} from "@/ooxml/opc/documentProperties.js";
-import type { EditorBlockNode, EditorDocument, EditorDocxSourcePackage } from "@/core/model.js";
+import { applyCanonicalDocumentProperties } from "@/ooxml/opc/documentProperties.js";
+import type {
+  EditorBlockNode,
+  EditorDocument,
+  EditorDocxSourcePackage,
+} from "@/core/model.js";
 import { getDocumentSections, resolveImageSrc } from "@/core/model.js";
 import { EMU_PER_PX } from "@/core/units.js";
 import { imageExtensionFromMime } from "@/utils/imageFormats.js";
@@ -44,7 +48,10 @@ import { visitBlocks } from "./docxBlockVisitor.js";
 import { buildDocumentXml, buildHeaderFooterXml } from "./docxDocumentXml.js";
 import { renumberImageCaptionsInDocument } from "@/core/document/imageCaptions.js";
 import { buildThemeXml } from "./themeXml.js";
-import { inspectDocxOpaqueObjects, OpaqueObjectPreservationError } from "@/ooxml/word/opaqueObjects.js";
+import {
+  inspectDocxOpaqueObjects,
+  OpaqueObjectPreservationError,
+} from "@/ooxml/word/opaqueObjects.js";
 import { planOpaqueStoryRelocation } from "@/ooxml/word/opaqueStoryRelocation.js";
 
 function buildPartContext(
@@ -196,7 +203,10 @@ function writeNotePart(
 export async function exportEditorDocumentToDocx(
   document: EditorDocument,
 ): Promise<ArrayBuffer> {
-  return applyPackageCoreTimestamps(await applyCanonicalDocumentProperties(await buildDocx(document),document),document);
+  return applyPackageCoreTimestamps(
+    await applyCanonicalDocumentProperties(await buildDocx(document), document),
+    document,
+  );
 }
 
 /** Internal incomplete package: usable ONLY for original-source overlay or
@@ -209,22 +219,41 @@ export async function rebuildDocxForSourceOverlay(
   source: EditorDocxSourcePackage,
 ): Promise<ArrayBuffer> {
   const inspected = inspectDocxOpaqueObjects(source);
-  const errors = inspected.diagnostics.filter(d => d.level === "error");
+  const errors = inspected.diagnostics.filter((d) => d.level === "error");
   if (errors.length) throw new OpaqueObjectPreservationError(errors);
-  const authorized: NonNullable<DocContext["authorizedOpaqueFragments"]> = new Map(
-    inspected.objects.map(object => [object.fragmentXml, {
-      signature: object.signature, kind: object.kind, relationshipIds: object.relationshipIds,
-    }]),
-  );
+  const authorized: NonNullable<DocContext["authorizedOpaqueFragments"]> =
+    new Map(
+      inspected.objects.map((object) => [
+        object.fragmentXml,
+        {
+          signature: object.signature,
+          kind: object.kind,
+          relationshipIds: object.relationshipIds,
+        },
+      ]),
+    );
   const intent = document.opaqueRelocationIntent;
   if (!intent) return buildDocx(document, authorized);
-  const plan = planOpaqueStoryRelocation(source, intent, intent.destinationOwner);
+  const plan = planOpaqueStoryRelocation(
+    source,
+    intent,
+    intent.destinationOwner,
+  );
   const moved = plan.destinationRun;
-  return buildDocx(document, new Map([
-    ...authorized, [moved.fragmentXml, {
-      signature: moved.signature, kind: moved.objectKind, relationshipIds: moved.relationshipIds,
-    }],
-  ]));
+  return buildDocx(
+    document,
+    new Map([
+      ...authorized,
+      [
+        moved.fragmentXml,
+        {
+          signature: moved.signature,
+          kind: moved.objectKind,
+          relationshipIds: moved.relationshipIds,
+        },
+      ],
+    ]),
+  );
 }
 
 async function buildDocx(
@@ -356,7 +385,8 @@ async function buildDocx(
     document.settings?.doNotHyphenateCaps !== undefined ||
     document.footnotes?.settings !== undefined ||
     document.endnotes?.settings !== undefined ||
-    (document.documentVariables!==undefined&&Object.keys(document.documentVariables).length>0);
+    (document.documentVariables !== undefined &&
+      Object.keys(document.documentVariables).length > 0);
   const allImages = [
     ...bodyContext.images,
     ...parts.flatMap((part) => part.context.images),
@@ -427,7 +457,10 @@ async function buildDocx(
   );
 
   if (hasStyles) {
-    zip.file("word/styles.xml", buildStylesXml(document.styles!));
+    zip.file(
+      "word/styles.xml",
+      buildStylesXml(document.styles!, numberingContext.styleNumbering),
+    );
   }
 
   if (hasNumbering) {
