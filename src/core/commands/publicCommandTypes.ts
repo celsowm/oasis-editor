@@ -276,6 +276,8 @@ export interface OasisCommandPayloads {
   setLineHeight: number | null;
   setListFormat: string;
   setListStartAt: number | null;
+  restartList: number | undefined;
+  continueList: undefined;
   setListLevel: number;
   toggleOrientation: undefined;
   setOrientation: "portrait" | "landscape";

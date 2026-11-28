@@ -12,7 +12,9 @@ interface RibbonPlacement {
 }
 
 /** Only deliberately paired rows opt into shared intrinsic columns. */
-const RIBBON_GRIDS: Partial<Record<RibbonTabId, Record<string, RibbonGroupGrid>>> = {
+const RIBBON_GRIDS: Partial<
+  Record<RibbonTabId, Record<string, RibbonGroupGrid>>
+> = {
   review: {
     tracking: { columns: 2, fullRows: [1, 2] },
     changes: { columns: 2 },
@@ -58,7 +60,11 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
     group: "tableOfContents",
     row: 1,
   },
-  "editor-toolbar-update-body-fields": { tab: "references", group: "fields", row: 1 },
+  "editor-toolbar-update-body-fields": {
+    tab: "references",
+    group: "fields",
+    row: 1,
+  },
   "editor-toolbar-update-toc": {
     tab: "references",
     group: "tableOfContents",
@@ -204,6 +210,8 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-align-justify": { tab: "home", group: "paragraph", row: 2 },
   "editor-toolbar-list-bullet": { tab: "home", group: "paragraph", row: 1 },
   "editor-toolbar-list-ordered": { tab: "home", group: "paragraph", row: 1 },
+  "editor-toolbar-list-restart": { tab: "home", group: "paragraph", row: 1 },
+  "editor-toolbar-list-continue": { tab: "home", group: "paragraph", row: 1 },
   "editor-toolbar-list-outdent": { tab: "home", group: "paragraph", row: 1 },
   "editor-toolbar-list-indent": { tab: "home", group: "paragraph", row: 1 },
   "editor-toolbar-list-options": { tab: "home", group: "paragraph", row: 1 },
@@ -420,7 +428,9 @@ export function withDefaultRibbonPlacement(
       tab: item.tab ?? placement.tab,
       group: placement.group,
       row: item.row ?? placement.row,
-      ribbonGroupGrid: item.ribbonGroupGrid ?? RIBBON_GRIDS[item.tab ?? placement.tab]?.[placement.group],
+      ribbonGroupGrid:
+        item.ribbonGroupGrid ??
+        RIBBON_GRIDS[item.tab ?? placement.tab]?.[placement.group],
       order: item.order ?? index,
     };
   });

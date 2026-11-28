@@ -151,6 +151,8 @@ export const en = {
   "toolbar.decreaseIndent": "Decrease indent (Shift+Tab)",
   "toolbar.listFormat": "Change list numbering format",
   "toolbar.listStartAt": "Start numbering at",
+  "toolbar.restartNumbering": "Restart numbering at 1",
+  "toolbar.continueNumbering": "Continue previous numbering",
   "toolbar.specialIndent": "Special Indent",
   "toolbar.specialIndentNone": "None",
   "toolbar.specialIndentFirstLine": "First Line",

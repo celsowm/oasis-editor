@@ -445,6 +445,10 @@ export interface EssentialsParagraphCapability {
   setLineHeight: (value: number | null) => void;
   setListFormat: (format: string) => void;
   setListStartAt: (value: number | null) => void;
+  /** Restart the selected list items at `value` (default 1). */
+  restartList: (value?: number) => void;
+  /** Remove an explicit restart so the items continue the instance counter. */
+  continueList: () => void;
   /** Set the selected list paragraphs' explicit list level (0-8, WordCraft para.listLevel). */
   setListLevel: (level: number) => void;
   outdent: () => void;

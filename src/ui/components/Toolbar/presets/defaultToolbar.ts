@@ -785,6 +785,22 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   }
   items.push({
     type: "button",
+    id: "editor-toolbar-list-restart",
+    testId: "editor-toolbar-list-restart",
+    iconName: "rotate-ccw",
+    tooltipKey: "toolbar.restartNumbering",
+    command: "restartList",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-list-continue",
+    testId: "editor-toolbar-list-continue",
+    iconName: "corner-down-right",
+    tooltipKey: "toolbar.continueNumbering",
+    command: "continueList",
+  });
+  items.push({
+    type: "button",
     id: "editor-toolbar-list-outdent",
     testId: "editor-toolbar-list-outdent",
     iconName: "indent-decrease",

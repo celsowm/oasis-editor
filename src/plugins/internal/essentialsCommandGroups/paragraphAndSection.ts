@@ -326,6 +326,17 @@ export function buildParagraphAndSectionCommands({
     setListStartAt: actionCommand("setListStartAt", (p): void =>
       paragraph.setListStartAt(numOrNull(p)),
     ),
+    restartList: actionCommand("restartList", (p): void => {
+      const value = p as number | undefined;
+      paragraph.restartList(
+        typeof value === "number" && Number.isFinite(value)
+          ? Math.max(0, Math.floor(value))
+          : undefined,
+      );
+    }),
+    continueList: actionCommand("continueList", (): void =>
+      paragraph.continueList(),
+    ),
     setListLevel: actionCommand("setListLevel", (p): void =>
       paragraph.setListLevel(numOrNull(p) ?? 0),
     ),

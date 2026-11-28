@@ -12,6 +12,10 @@ import { editParagraphTabStops } from "@/core/commands/paragraphTabs.js";
 import { setParagraphOutlineLevel } from "@/core/commands/paragraphOutlineLevel.js";
 import { setParagraphAlign } from "@/core/commands/paragraphAlign.js";
 import { setParagraphListLevel } from "@/core/commands/paragraphListLevel.js";
+import {
+  continueListAtSelection,
+  restartListAtSelection,
+} from "@/core/commands/list.js";
 import { setParagraphContextualSpacing } from "@/core/commands/paragraphContextualSpacing.js";
 import { setParagraphMirrorIndents } from "@/core/commands/paragraphMirrorIndents.js";
 import { setParagraphLineRule } from "@/core/commands/paragraphLineRule.js";
@@ -210,6 +214,16 @@ export function buildEssentialsParagraph(
       ),
     setListStartAt: (value: number | null): void =>
       options.commandsController.handleListStartAtChange(value),
+    restartList: (value?: number): void => {
+      options.applyTransactionalState((current) =>
+        restartListAtSelection(current, value),
+      );
+      options.focusInput();
+    },
+    continueList: (): void => {
+      options.applyTransactionalState(continueListAtSelection);
+      options.focusInput();
+    },
     setListLevel: (level: number): void => {
       options.applyTransactionalState((current): EditorState =>
         setParagraphListLevel(current, level),
@@ -219,13 +233,17 @@ export function buildEssentialsParagraph(
     outdent: (): void => {
       options.clearPreferredColumn();
       options.resetTransactionGrouping();
-      options.tableOps.applySelectionAwareParagraphCommand(current => stepTabParagraphIndent(current, -1));
+      options.tableOps.applySelectionAwareParagraphCommand((current) =>
+        stepTabParagraphIndent(current, -1),
+      );
       options.focusInput();
     },
     indent: (): void => {
       options.clearPreferredColumn();
       options.resetTransactionGrouping();
-      options.tableOps.applySelectionAwareParagraphCommand(current => stepTabParagraphIndent(current, 1));
+      options.tableOps.applySelectionAwareParagraphCommand((current) =>
+        stepTabParagraphIndent(current, 1),
+      );
       options.focusInput();
     },
     moveParagraphsUp: (): void => {

@@ -151,6 +151,8 @@ export const ptBR = {
   "toolbar.decreaseIndent": "Diminuir recuo (Shift+Tab)",
   "toolbar.listFormat": "Alterar formato de numeração",
   "toolbar.listStartAt": "Iniciar numeração em",
+  "toolbar.restartNumbering": "Reiniciar numeração em 1",
+  "toolbar.continueNumbering": "Continuar numeração anterior",
   "toolbar.specialIndent": "Recuo especial",
   "toolbar.specialIndentNone": "Nenhum",
   "toolbar.specialIndentFirstLine": "Primeira linha",
