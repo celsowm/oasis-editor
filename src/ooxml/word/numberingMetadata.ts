@@ -1,4 +1,4 @@
-import type { EditorParagraphListStyle } from "@/core/model.js";
+import type { EditorParagraphListStyle } from "@/core/model/types/primitives.js";
 
 export interface EditorListOoxmlNumberingMetadata {
   /** Original `w:num/@w:numId` for an imported list instance. */

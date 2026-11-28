@@ -119,11 +119,14 @@ export function buildListLabels(
     if (!list) continue;
     const level = Math.max(0, list.level ?? 0);
     if (list.kind === "bullet") {
+      // A picture bullet is drawn as an image, not as a text glyph.
       labels.set(
         paragraph.id,
-        list.bulletGlyph
-          ? normalizeBulletGlyph(list.bulletGlyph)
-          : BULLET_GLYPHS[level % BULLET_GLYPHS.length]!,
+        list.bulletPicture
+          ? ""
+          : list.bulletGlyph
+            ? normalizeBulletGlyph(list.bulletGlyph)
+            : BULLET_GLYPHS[level % BULLET_GLYPHS.length]!,
       );
       continue;
     }

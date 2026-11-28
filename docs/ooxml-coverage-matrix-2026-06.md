@@ -286,8 +286,8 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Numbering | `w:suff` | `w:lvl` | `w:val` | Suffix after number. | Tab/space/nothing affect marker spacing and round-trip. | P1 | Supported |
 | Numbering | `w:lvlRestart` | `w:lvl` | `w:val` | Restart behavior after higher level. | Nested counters reset when their trigger level increments; `w:val="0"` means never restart. | P2 | Supported |
 | Numbering | `w:legacy` | `w:lvl` | `w:legacy`, `w:legacySpace`, `w:legacyIndent` | Legacy numbering metrics. | Preserve/approximate for old documents. | P3 | Not supported |
-| Numbering | `w:lvlPicBulletId` | `w:lvl` | `w:val` | Picture bullet reference. | Resolve `numPicBullet`. | P2 | Not supported |
-| Numbering | `w:numPicBullet` | `w:numbering` | `w:numPicBulletId` | Picture bullet definition. | May contain VML/Drawing picture. | P2 | Not supported |
+| Numbering | `w:lvlPicBulletId` | `w:lvl` | `w:val` | Picture bullet reference. | Resolved through `w:numPicBullet` into `document.assets`; drawn as an image in Canvas and PDF. Source XML is preserved for export. | P2 | Supported |
+| Numbering | `w:numPicBullet` | `w:numbering` | `w:numPicBulletId` | Picture bullet definition. | VML `v:imagedata/@r:id` and DrawingML `a:blip/@r:embed` resolved via `word/_rels/numbering.xml.rels`; dimensions from VML style / `wp:extent`. Authoring new picture bullets is not offered. | P2 | Supported |
 | Numbering | `w:lvlOverride` | `w:num` | `w:ilvl` | Override for one list level. | Effective replacement levels are imported; export materializes the effective level in an instance-specific abstract definition. | P1 | Partial |
 | Numbering | `w:startOverride` | `w:lvlOverride` | `w:val` | Concrete restart value. | Imported as the instance-level start and preserved semantically on export. | P1 | Supported |
 | Numbering | `w:multiLevelType` | `w:abstractNum` | `w:val` | List type. | singleLevel, multilevel, hybridMultilevel. | P2 | Not supported |
@@ -980,7 +980,7 @@ This section condenses the per-table Status column into a high-level capability 
 | Area | What's partial | Why |
 |---|---|---|
 | `w:fldSimple` / `w:fldChar` | PAGE and NUMPAGES are full round-trip; other instructions are stored as static text and re-emitted as plain runs. | The editor has no field type registry beyond these two. |
-| Numbering | Numbering instances, multilevel formats/patterns (format per referenced level), starts/overrides, suffixes, legal numbering, `lvlRestart`, marker alignment, bullet metadata, and level indentation are imported and regenerated semantically. | Picture bullets, style-linked numbering, `multiLevelType`, `nsid`, and `tmpl` remain unsupported. |
+| Numbering | Numbering instances, multilevel formats/patterns (format per referenced level), starts/overrides, suffixes, legal numbering, `lvlRestart`, picture bullets, style-linked numbering, marker alignment, bullet metadata, and level indentation are imported and regenerated semantically. | `multiLevelType`, `nsid`, `tmpl` and latent styles remain preserve-only. |
 | Images | Inline pictures plus floating anchor metadata; crop, fill mode, rotation/flip, embedded binaries, external `a:blip/@r:link`, and simple VML `w:pict/v:imagedata` fallback are supported. | Floating images render with inline fallback in the editor; VML shapes/text boxes, effects, recolor, charts, SmartArt, and OLE are still outside the image model. |
 | `w:rFonts` | `ascii`/`hAnsi`/`cs` and `asciiTheme`/`hAnsiTheme`/`cstheme` with `w:hint` are read; `eastAsia`/`eastAsiaTheme` are not exported. | Run font resolution is partial. |
 | `w:color` | Hex `w:val` and theme colors (`themeColor`/`themeTint`/`themeShade` against `a:clrScheme`) are resolved to concrete hex on import; export writes the resolved value. `clrSchemeMapping` overrides in the document settings are not applied. | Full theme → concrete-hex pipeline is in place; per-document scheme remapping is not. |

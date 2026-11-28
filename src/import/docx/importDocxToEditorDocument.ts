@@ -21,6 +21,7 @@ import {
 } from "./xmlHelpers.js";
 import { createAssetRegistry } from "./assetRegistry.js";
 import { loadEmbeddedImage } from "./runs/relationships.js";
+import { withResolvedPictureBullet } from "@/ooxml/word/pictureBullets.js";
 import {
   parseRelationshipsXml,
   loadPartRelationships,
@@ -123,6 +124,25 @@ export async function importDocxToEditorDocument(
   // Single registry shared across body, headers and footers so identical
   // images referenced from multiple places dedupe to one stored payload.
   const assets = createAssetRegistry();
+
+  // Picture bullets live in numbering.xml and use that part's own rels.
+  // Resolve them into the shared asset registry before parsing paragraphs.
+  const numberingRelsXml =
+    (await zip.file("word/_rels/numbering.xml.rels")?.async("string")) ?? null;
+  const numberingRels = parseRelationshipsXml(numberingRelsXml);
+  for (const [id, bullet] of numberingMaps.parsedPictureBullets) {
+    const target = bullet.relationshipId
+      ? numberingRels.get(bullet.relationshipId)
+      : undefined;
+    if (!target) continue;
+    const src = await loadEmbeddedImage(zip, assets, target);
+    if (!src) continue;
+    numberingMaps.pictureBullets.set(
+      id,
+      withResolvedPictureBullet(bullet, src),
+    );
+  }
+
   let importedWatermark: import("@/core/model.js").EditorWatermark | null =
     null;
 

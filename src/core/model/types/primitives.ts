@@ -4,6 +4,8 @@
  * Kept dependency-free so it can be imported by every other model module
  * without risk of circular imports.
  */
+import type { NumberFormatToken } from "@/ooxml/word/numberFormat.js";
+
 
 export type EditorUnderlineStyle =
   | "single"
@@ -100,66 +102,6 @@ export interface EditorTabStop {
   leader?: "none" | "dot" | "hyphen" | "underscore" | "heavy" | "middleDot";
 }
 
-/**
- * `ST_NumberFormat` (ECMA-376 §17.18.41). The token is kept verbatim so source
- * formats survive round-trips even when Oasis cannot render them; rendering is
- * classified separately by `src/ooxml/word/numberFormat.ts`.
- */
-export type NumberFormatToken =
-  | "decimal"
-  | "decimalZero"
-  | "decimalFullWidth"
-  | "decimalFullWidth2"
-  | "decimalHalfWidth"
-  | "decimalEnclosedCircle"
-  | "decimalEnclosedCircleChinese"
-  | "decimalEnclosedFullstop"
-  | "decimalEnclosedParen"
-  | "lowerLetter"
-  | "upperLetter"
-  | "lowerRoman"
-  | "upperRoman"
-  | "ordinal"
-  | "ordinalText"
-  | "cardinalText"
-  | "chicago"
-  | "hex"
-  | "ideographDigital"
-  | "ideographEnclosedCircle"
-  | "ideographTraditional"
-  | "ideographLegal"
-  | "ideographZodiac"
-  | "ideographZodiac2"
-  | "ideographZodiac3"
-  | "aiueo"
-  | "aiueoFullWidth"
-  | "iroha"
-  | "irohaFullWidth"
-  | "chosung"
-  | "ganada"
-  | "hebrew1"
-  | "hebrew2"
-  | "russianLower"
-  | "russianUpper"
-  | "koreanDigital"
-  | "koreanDigital2"
-  | "japaneseCounting"
-  | "japaneseDigitalTenThousand"
-  | "chineseCounting"
-  | "chineseCountingThousand"
-  | "chineseLegalSimplified"
-  | "koreanCounting"
-  | "koreanLegal"
-  | "taiwaneseCounting"
-  | "taiwaneseCountingThousand"
-  | "taiwaneseDigital"
-  | "thaiCounting"
-  | "thaiLetters"
-  | "thaiNumbers"
-  | "vietnameseCounting"
-  | "bullet"
-  | "none";
-
 export interface EditorParagraphListStyle {
   kind: "bullet" | "ordered";
   level?: number;
@@ -185,6 +127,18 @@ export interface EditorParagraphListStyle {
   bulletGlyph?: string;
   /** Font family used to render the bullet glyph (e.g. "Symbol", "Wingdings"). */
   bulletFont?: string;
+  /** `w:lvl/w:lvlPicBulletId` resolved through `w:numPicBullet` relationships. */
+  bulletPicture?: EditorPictureBullet;
+}
+
+/** An imported picture bullet: the image payload lives in `document.assets`. */
+export interface EditorPictureBullet {
+  numPicBulletId: string;
+  /** `asset:<id>` reference, or the source relationship id when unresolved. */
+  src: string;
+  widthPx?: number;
+  heightPx?: number;
+  altText?: string;
 }
 
 /**

@@ -6,7 +6,64 @@
  * editable. An unrecognised token is always classed as `unknown`: callers must
  * keep its source spelling instead of inventing a meaning.
  */
-import type { NumberFormatToken } from "@/core/model.js";
+/**
+ * `ST_NumberFormat` tokens, kept here as the single source of truth so the
+ * model and the formatter cannot drift apart.
+ */
+export type NumberFormatToken =
+  | "decimal"
+  | "decimalZero"
+  | "decimalFullWidth"
+  | "decimalFullWidth2"
+  | "decimalHalfWidth"
+  | "decimalEnclosedCircle"
+  | "decimalEnclosedCircleChinese"
+  | "decimalEnclosedFullstop"
+  | "decimalEnclosedParen"
+  | "lowerLetter"
+  | "upperLetter"
+  | "lowerRoman"
+  | "upperRoman"
+  | "ordinal"
+  | "ordinalText"
+  | "cardinalText"
+  | "chicago"
+  | "hex"
+  | "ideographDigital"
+  | "ideographEnclosedCircle"
+  | "ideographTraditional"
+  | "ideographLegal"
+  | "ideographZodiac"
+  | "ideographZodiac2"
+  | "ideographZodiac3"
+  | "aiueo"
+  | "aiueoFullWidth"
+  | "iroha"
+  | "irohaFullWidth"
+  | "chosung"
+  | "ganada"
+  | "hebrew1"
+  | "hebrew2"
+  | "russianLower"
+  | "russianUpper"
+  | "koreanDigital"
+  | "koreanDigital2"
+  | "japaneseCounting"
+  | "japaneseDigitalTenThousand"
+  | "chineseCounting"
+  | "chineseCountingThousand"
+  | "chineseLegalSimplified"
+  | "koreanCounting"
+  | "koreanLegal"
+  | "taiwaneseCounting"
+  | "taiwaneseCountingThousand"
+  | "taiwaneseDigital"
+  | "thaiCounting"
+  | "thaiLetters"
+  | "thaiNumbers"
+  | "vietnameseCounting"
+  | "bullet"
+  | "none";
 
 export type NumberFormatClass =
   | "counterless"

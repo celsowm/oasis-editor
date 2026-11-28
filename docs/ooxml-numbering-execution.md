@@ -123,6 +123,12 @@ N5 concluída: `w:numPr` em estilos é importado, herdado via `basedOn`, usado e
 
 N3 concluída: comandos `restartList`/`continueList`, availability no modelo, e reinício no meio da lista gerando um `w:num` próprio com `w:start` — round-trip verificado. Matriz corrigida para `w:lvlRestart` (N2) e `w:numPr` em estilos (N5).
 
+| N4 | `src/ooxml/word/pictureBullets.ts`, `NumberingMaps`, `importDocxToEditorDocument.ts`, Canvas/PDF | `core/pictureBullets.test.ts` (3) |
+
+N4 concluída: `w:numPicBullet` (VML/DrawingML) resolvido via `word/_rels/numbering.xml.rels` para `document.assets`, pintado no Canvas e no PDF, com round-trip do XML e do relacionamento via export source-backed. Sem glifo inventado quando a imagem não resolve. Matriz atualizada.
+
+**Correção de arquitetura:** o tipo `NumberFormatToken` passou a viver em `src/ooxml/word/numberFormat.ts` (antes no modelo) para eliminar ciclos de import detectados por `npm run check:imports`.
+
 ## 14. Limitações restantes (deliberadas, fail-closed)
 
 - Tier C (contagem CJK/Thai/Vietnamita): fallback decimal + token preservado enquanto não houver fonte oficial do algoritmo.

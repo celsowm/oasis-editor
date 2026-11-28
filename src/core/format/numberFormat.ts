@@ -8,8 +8,10 @@
  * original OOXML token for export — preserving a format is not the same as
  * rendering it.
  */
-import type { NumberFormatToken } from "@/core/model.js";
-import { isKnownNumberFormat } from "@/ooxml/word/numberFormat.js";
+import {
+  isKnownNumberFormat,
+  type NumberFormatToken,
+} from "@/ooxml/word/numberFormat.js";
 
 export interface LocaleNumberFormatters {
   ordinal?(value: number): string | null;

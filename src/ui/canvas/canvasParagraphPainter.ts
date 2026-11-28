@@ -3,7 +3,10 @@ import type {
   EditorParagraphNode,
   EditorState,
 } from "@/core/model.js";
-import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
+import {
+  resolveEffectiveTextStyleForParagraph,
+  resolveParagraphList,
+} from "@/core/model.js";
 import { resolveEffectiveParagraphStyle } from "@/core/model.js";
 import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
 import {
@@ -304,7 +307,33 @@ export function drawParagraph(
         first !== undefined && labelInset + labelWidth > first.left
           ? Math.max(0, first.left - gap)
           : alignedLeft;
-      ctx.fillText(listPrefix, originX + left, baselineY);
+      const effectiveList = resolveParagraphList(
+        paragraph,
+        state.document.styles,
+      );
+      const picture =
+        effectiveList?.kind === "bullet"
+          ? effectiveList.bulletPicture
+          : undefined;
+      const pictureSrc = picture
+        ? resolveImageSrc(state.document, picture.src)
+        : undefined;
+      if (picture && pictureSrc) {
+        const image = getCachedCanvasImage(pictureSrc, () => {});
+        if (image.complete && image.naturalWidth > 0) {
+          const width = picture.widthPx ?? 16;
+          const height = picture.heightPx ?? width;
+          ctx.drawImage(
+            image,
+            originX + left,
+            baselineY - height,
+            width,
+            height,
+          );
+        }
+      } else {
+        ctx.fillText(listPrefix, originX + left, baselineY);
+      }
       ctx.restore();
     }
 

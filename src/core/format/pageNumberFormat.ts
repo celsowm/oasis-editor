@@ -7,7 +7,8 @@
  * switch (or "decimal") is present. The actual glyphs come from the shared
  * `numberFormat.ts` service together with lists, notes and STYLEREF.
  */
-import type { NumberFormatToken, PageNumberFormat } from "@/core/model.js";
+import type { PageNumberFormat } from "@/core/model.js";
+import type { NumberFormatToken } from "@/ooxml/word/numberFormat.js";
 import {
   fieldSwitchToNumberFormat,
   formatNumberValue,

@@ -2,6 +2,7 @@ import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 import type {
   EditorNumberingRevision,
   EditorParagraphListStyle,
+  EditorPictureBullet,
 } from "@/core/model.js";
 import {
   WORD_NS,
@@ -15,6 +16,10 @@ import {
   isDeterministicNumberFormat,
   needsLocaleNumberFormat,
 } from "@/ooxml/word/numberFormat.js";
+import {
+  parsePictureBullets,
+  type ParsedPictureBullet,
+} from "@/ooxml/word/pictureBullets.js";
 import { parseRevisionMetadata } from "./revisionMetadata.js";
 
 type ListFormat = NonNullable<EditorParagraphListStyle["format"]>;
@@ -32,6 +37,7 @@ interface NumberingLevel {
   bulletFont?: string;
   restartAfterLevel?: number;
   paragraphStyleId?: string;
+  levelPictureId?: string;
   indent?: { left?: number; hanging?: number };
 }
 
@@ -44,6 +50,10 @@ export interface NumberingMaps {
     string,
     { numStyleLink?: string; styleLink?: string }
   >;
+  /** Raw picture bullet definitions by `w:numPicBulletId`. */
+  parsedPictureBullets: Map<string, ParsedPictureBullet>;
+  /** Asset-resolved picture bullets, filled by the DOCX importer. */
+  pictureBullets: Map<string, EditorPictureBullet>;
   seenInstances: Set<string>;
 }
 
@@ -128,6 +138,11 @@ function parseLevel(level: XmlElement): NumberingLevel {
       getFirstChildByTagNameNS(level, WORD_NS, "pStyle"),
       "val",
     ) ?? undefined;
+  result.levelPictureId =
+    getAttributeValue(
+      getFirstChildByTagNameNS(level, WORD_NS, "lvlPicBulletId"),
+      "val",
+    ) ?? undefined;
 
   if (result.kind === "bullet" && result.levelText) {
     result.bulletGlyph = result.levelText;
@@ -160,6 +175,8 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
     numStartOverrides: new Map(),
     numToAbstractId: new Map(),
     abstractStyleLinks: new Map(),
+    parsedPictureBullets: new Map(),
+    pictureBullets: new Map(),
     seenInstances: new Set(),
   };
   if (!numberingXml) return maps;
@@ -170,6 +187,9 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
   );
   const numbering = document.documentElement;
   if (!numbering) return maps;
+  for (const [id, bullet] of parsePictureBullets(numbering)) {
+    maps.parsedPictureBullets.set(id, bullet);
+  }
 
   for (const abstractNum of Array.from(
     numbering.getElementsByTagNameNS(WORD_NS, "abstractNum"),
@@ -300,8 +320,19 @@ export function parseParagraphList(
     ? (numberingMaps.numStartOverrides.get(instanceKey) ?? effective.startAt)
     : undefined;
 
+  const abstractIdForPicture = numberingMaps.numToAbstractId.get(numId);
+  const abstractPictureId = abstractIdForPicture
+    ? numberingMaps.abstractLevels.get(`${abstractIdForPicture}:${safeLevel}`)
+        ?.levelPictureId
+    : undefined;
+  const pictureId = effective.levelPictureId ?? abstractPictureId;
+  // An unresolved picture bullet falls back to the text level definition;
+  // its XML stays preserved in the source package. No glyph is invented.
+  const pictureBullet = pictureId
+    ? numberingMaps.pictureBullets.get(pictureId)
+    : undefined;
   const list: EditorParagraphListStyle = {
-    kind: effective.kind ?? "ordered",
+    kind: pictureBullet ? "bullet" : (effective.kind ?? "ordered"),
     level: safeLevel,
     instanceId: numId,
     suffix: effective.suffix ?? "tab",
@@ -313,6 +344,7 @@ export function parseParagraphList(
     ...(startAt !== undefined && startAt !== 1 ? { startAt } : {}),
     ...(effective.bulletGlyph ? { bulletGlyph: effective.bulletGlyph } : {}),
     ...(effective.bulletFont ? { bulletFont: effective.bulletFont } : {}),
+    ...(pictureBullet ? { bulletPicture: pictureBullet } : {}),
   };
 
   const sourceNumId = parseSourceNumberingId(numId, 1);
