@@ -29,8 +29,9 @@ describe("F4B2 INDEX read-only entry plan",()=>{
     expect(parseIndexInstruction('INDEX \\z "1046" \\f A \\e "; " \\l " / " \\k ": " \\c 1')).toEqual({
       locale:"pt-BR",identifier:"A",entrySeparator:"; ",pageSeparator:" / ",crossReferenceSeparator:": ",
     });
-    for(const field of ['INDEX \\f','INDEX \\f AB','INDEX \\z 9999','INDEX \\c 2','INDEX \\r',
-      'INDEX \\h "A"','INDEX \\b Bookmark','INDEX \\e "," \\e "."','INDEX \\l "1234567890123456"'])
+    for(const field of ['INDEX \\f','INDEX \\f AB','INDEX \\z 9999','INDEX \\c 5','INDEX \\a "A"',
+      'INDEX \\n "A"','INDEX \\t "A"','INDEX \\w','INDEX \\x','INDEX \\y "A"',
+      'INDEX \\e "," \\e "."','INDEX \\l "1234567890123456"'])
       expect(parseIndexInstruction(field),field).toBeUndefined();
   });
   it("sorts a hierarchy, creates parents, deduplicates physical pages and retains emphasis",async()=>{

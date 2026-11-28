@@ -31,6 +31,8 @@ export interface EditorState {
   trackChangesEnabled?: boolean;
   showMargins?: boolean;
   showParagraphMarks?: boolean;
+  /** Presentation toggle: show field instructions instead of cached results. */
+  showFieldCodes?: boolean;
   /**
    * Display for Review: how tracked revisions render in the canvas.
    *   "all"      — show markup (default)

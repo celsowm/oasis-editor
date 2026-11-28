@@ -1,8 +1,12 @@
-import { canProjectFieldResult, inspectScalarFieldSpan } from "./runs/fieldPreservation.js";
+import {
+  canProjectFieldResult,
+  inspectScalarFieldSpan,
+} from "./runs/fieldPreservation.js";
 import { projectOpaqueRunElement } from "@/ooxml/word/opaqueObjects.js";
 import JSZip from "jszip";
 import { XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
 import { projectScalarFieldInstruction } from "./runs/fieldProjection.js";
+import { parseFfData } from "@/ooxml/word/legacyFormFields.js";
 import type {
   EditorTextStyle,
   EditorImageRunData,
@@ -361,12 +365,24 @@ export async function parseRunsContainer(
     if (fldCharType === "begin") {
       const nested = fieldStack.length > 0;
       for (const parent of fieldStack) parent.nested = true;
+      let formField:
+        import("@/core/model.js").EditorLegacyFormFieldData | undefined;
+      for (let i = 0; i < el.childNodes.length; i++) {
+        const node = el.childNodes.item(i);
+        if (
+          node?.nodeType === 1 &&
+          (node as XmlElement).localName === "ffData" &&
+          (node as XmlElement).namespaceURI === WORD_NS
+        )
+          formField = parseFfData(node as XmlElement);
+      }
       runs.push({
         text: "",
         fieldChar: {
           kind: "begin",
           ...(fieldLock ? { fieldLock: true } : {}),
           ...(isDirty ? { dirty: true } : {}),
+          ...(formField ? { formField } : {}),
         },
         ...(runStyles ? { styles: runStyles } : {}),
       });
@@ -379,13 +395,21 @@ export async function parseRunsContainer(
     } else if (fldCharType === "separate") {
       runs.push({
         text: "",
-        fieldChar: { kind: "separate", ...(fieldLock ? { fieldLock: true } : {}), ...(isDirty ? { dirty: true } : {}) },
+        fieldChar: {
+          kind: "separate",
+          ...(fieldLock ? { fieldLock: true } : {}),
+          ...(isDirty ? { dirty: true } : {}),
+        },
         ...(runStyles ? { styles: runStyles } : {}),
       });
     } else if (fldCharType === "end") {
       runs.push({
         text: "",
-        fieldChar: { kind: "end", ...(fieldLock ? { fieldLock: true } : {}), ...(isDirty ? { dirty: true } : {}) },
+        fieldChar: {
+          kind: "end",
+          ...(fieldLock ? { fieldLock: true } : {}),
+          ...(isDirty ? { dirty: true } : {}),
+        },
         ...(runStyles ? { styles: runStyles } : {}),
       });
       const entry = fieldStack.pop();
@@ -520,39 +544,85 @@ export async function parseRunsContainer(
         theme,
       );
 
-      const contentChildren=Array.from(element.childNodes).filter((node): node is XmlElement =>
-        node.nodeType===1 && !(node.namespaceURI===WORD_NS && node.localName==="rPr"));
+      const contentChildren = Array.from(element.childNodes).filter(
+        (node): node is XmlElement =>
+          node.nodeType === 1 &&
+          !(node.namespaceURI === WORD_NS && node.localName === "rPr"),
+      );
       // Project direct children in document order when an opaque object is
       // mixed with understood text, native inline content or range markers.
       // Never detach an opaque element from its source namespace scope.
-      const projected = contentChildren.map(child => ({ child, opaque: projectOpaqueRunElement(child) }));
+      const projected = contentChildren.map((child) => ({
+        child,
+        opaque: projectOpaqueRunElement(child),
+      }));
       const textChild = (child: XmlElement): boolean =>
         child.namespaceURI === WORD_NS &&
-        ["t","delText","tab","noBreakHyphen","softHyphen","br","cr","lastRenderedPageBreak"].includes(child.localName ?? "");
+        [
+          "t",
+          "delText",
+          "tab",
+          "noBreakHyphen",
+          "softHyphen",
+          "br",
+          "cr",
+          "lastRenderedPageBreak",
+        ].includes(child.localName ?? "");
       const structuredChild = (child: XmlElement): boolean =>
         (child.namespaceURI === WORD_NS &&
-          ["drawing","pict","sym","bookmarkStart","bookmarkEnd","commentRangeStart","commentRangeEnd"].includes(child.localName ?? "")) ||
-        (child.namespaceURI === "http://schemas.openxmlformats.org/markup-compatibility/2006" &&
+          [
+            "drawing",
+            "pict",
+            "sym",
+            "bookmarkStart",
+            "bookmarkEnd",
+            "commentRangeStart",
+            "commentRangeEnd",
+          ].includes(child.localName ?? "")) ||
+        (child.namespaceURI ===
+          "http://schemas.openxmlformats.org/markup-compatibility/2006" &&
           child.localName === "AlternateContent");
-      const containsOpaque = projected.some(entry => entry.opaque);
-      if (containsOpaque && (contentChildren.length === 1 ||
-          (!fieldStack.length && projected.every(entry => entry.opaque || textChild(entry.child) || structuredChild(entry.child))))) {
+      const containsOpaque = projected.some((entry) => entry.opaque);
+      if (
+        containsOpaque &&
+        (contentChildren.length === 1 ||
+          (!fieldStack.length &&
+            projected.every(
+              (entry) =>
+                entry.opaque ||
+                textChild(entry.child) ||
+                structuredChild(entry.child),
+            )))
+      ) {
         let text = "";
-        const styles = inheritedLink ? { ...runStyles, link: inheritedLink } : runStyles;
+        const styles = inheritedLink
+          ? { ...runStyles, link: inheritedLink }
+          : runStyles;
         const flush = (): void => {
           if (!text.length) return;
-          runs.push({ text, ...(styles ? {styles: {...styles}} : {}) });
+          runs.push({ text, ...(styles ? { styles: { ...styles } } : {}) });
           text = "";
         };
-        for (const {child, opaque} of projected) {
+        for (const { child, opaque } of projected) {
           if (opaque) {
             flush();
-            runs.push({text:"\uFFFC", opaque, ...(styles ? {styles:{...styles}} : {})});
+            runs.push({
+              text: "\uFFFC",
+              opaque,
+              ...(styles ? { styles: { ...styles } } : {}),
+            });
             continue;
           }
           if (structuredChild(child)) {
             flush();
-            const native = await parseRunElement(element, zip, relsMap, assets, parseNestedBlocks, [child]);
+            const native = await parseRunElement(
+              element,
+              zip,
+              relsMap,
+              assets,
+              parseNestedBlocks,
+              [child],
+            );
             // The reused native parser returns at most one object or marker
             // for this single source child. Preserve its position, not the
             // last image encountered in the entire run.
@@ -563,8 +633,10 @@ export async function parseRunsContainer(
               runs.push({ text: "", comment: marker.marker });
             }
             if (native.text.length || native.image || native.textBox) {
-              const nativeStyles = native.sym && !styles?.fontFamily
-                ? { ...styles, fontFamily: native.sym.font } : styles;
+              const nativeStyles =
+                native.sym && !styles?.fontFamily
+                  ? { ...styles, fontFamily: native.sym.font }
+                  : styles;
               runs.push({
                 text: native.text,
                 ...(native.image ? { image: native.image } : {}),
@@ -575,15 +647,31 @@ export async function parseRunsContainer(
             }
             continue;
           }
-          switch(child.localName) {
-            case "t": case "delText": text += child.textContent ?? ""; break;
-            case "tab": text += "\t"; break;
-            case "noBreakHyphen": text += "\u2011"; break;
-            case "softHyphen": text += "\u00AD"; break;
-            case "cr": text += "\n"; break;
+          switch (child.localName) {
+            case "t":
+            case "delText":
+              text += child.textContent ?? "";
+              break;
+            case "tab":
+              text += "\t";
+              break;
+            case "noBreakHyphen":
+              text += "\u2011";
+              break;
+            case "softHyphen":
+              text += "\u00AD";
+              break;
+            case "cr":
+              text += "\n";
+              break;
             case "br": {
-              const type = getAttributeValue(child,"type");
-              text += type === "page" ? PAGE_BREAK_MARKER : type === "column" ? COLUMN_BREAK_MARKER : "\n";
+              const type = getAttributeValue(child, "type");
+              text +=
+                type === "page"
+                  ? PAGE_BREAK_MARKER
+                  : type === "column"
+                    ? COLUMN_BREAK_MARKER
+                    : "\n";
               break;
             }
           }
@@ -614,8 +702,19 @@ export async function parseRunsContainer(
           ) {
             onInstrText(childElement, runStyles);
           } else if (textChild(childElement)) {
-            const native = await parseRunElement(element, zip, relsMap, assets, parseNestedBlocks, [childElement]);
-            if (native.text.length) runs.push({ text: native.text, ...(runStyles ? { styles: { ...runStyles } } : {}) });
+            const native = await parseRunElement(
+              element,
+              zip,
+              relsMap,
+              assets,
+              parseNestedBlocks,
+              [childElement],
+            );
+            if (native.text.length)
+              runs.push({
+                text: native.text,
+                ...(runStyles ? { styles: { ...runStyles } } : {}),
+              });
           }
         }
         continue;
@@ -756,7 +855,13 @@ export async function parseRunsContainer(
       const dirty = getAttributeValue(element, "dirty");
       const fieldLock = lock === "true" || lock === "1" || lock === "on";
       const isDirty = dirty === "true" || dirty === "1" || dirty === "on";
-      if (field && !fieldLock && !isDirty && !fieldStack.length && canProjectFieldResult(fieldRuns)) {
+      if (
+        field &&
+        !fieldLock &&
+        !isDirty &&
+        !fieldStack.length &&
+        canProjectFieldResult(fieldRuns)
+      ) {
         const displayText =
           fieldRuns.map((run): string => run.text).join("") || "1";
         const styles = fieldRuns.find(
@@ -769,7 +874,14 @@ export async function parseRunsContainer(
         });
       } else {
         for (const parent of fieldStack) parent.nested = true;
-        runs.push({ text: "", fieldChar: { kind: "begin", ...(fieldLock ? { fieldLock: true } : {}), ...(isDirty ? { dirty: true } : {}) } });
+        runs.push({
+          text: "",
+          fieldChar: {
+            kind: "begin",
+            ...(fieldLock ? { fieldLock: true } : {}),
+            ...(isDirty ? { dirty: true } : {}),
+          },
+        });
         runs.push({ text: "", fieldInstruction: instr });
         runs.push({ text: "", fieldChar: { kind: "separate" } });
         runs.push(...fieldRuns);

@@ -37,6 +37,9 @@ export function pageNumberFormatFromSwitch(
   if (!switchValue) {
     return undefined;
   }
+  // Word authors both `Arabic` and `ARABIC`; both are decimal and carry no
+  // visual transformation, unlike the case-sensitive roman/alphabetic forms.
+  if (switchValue.toUpperCase() === "ARABIC") return "decimal";
   const id = PAGE_NUMBER_FORMATS.find(
     (entry): boolean => entry.id === switchValue,
   )?.id;
@@ -134,27 +137,42 @@ function toOrdinal(value: number): string {
  * WordprocessingML letter numbering repeats the same glyph after Z
  * (AA, BB, ...), unlike the legacy alphabetic field formatter.
  */
-export function formatSectionPageLabel(value:number,format:string|undefined):number|string|undefined{
-  if(!Number.isSafeInteger(value)||value<1||value>1_000_000)return undefined;
-  switch(format){
+export function formatSectionPageLabel(
+  value: number,
+  format: string | undefined,
+): number | string | undefined {
+  if (!Number.isSafeInteger(value) || value < 1 || value > 1_000_000)
+    return undefined;
+  switch (format) {
     case undefined:
-    case "decimal": return value;
-    case "decimalZero": return String(value).padStart(2,"0");
+    case "decimal":
+      return value;
+    case "decimalZero":
+      return String(value).padStart(2, "0");
     case "upperRoman":
-    case "lowerRoman": return value<=3999?formatPageNumber(value,format==="upperRoman"?"ROMAN":"roman"):undefined;
+    case "lowerRoman":
+      return value <= 3999
+        ? formatPageNumber(value, format === "upperRoman" ? "ROMAN" : "roman")
+        : undefined;
     case "upperLetter":
     case "lowerLetter": {
-      if(value>26*128)return undefined;
-      const base=format==="upperLetter"?65:97;
-      return String.fromCharCode(base+(value-1)%26).repeat(Math.ceil(value/26));
+      if (value > 26 * 128) return undefined;
+      const base = format === "upperLetter" ? 65 : 97;
+      return String.fromCharCode(base + ((value - 1) % 26)).repeat(
+        Math.ceil(value / 26),
+      );
     }
-    default:return undefined;
+    default:
+      return undefined;
   }
 }
 
 /** Validate both legacy numeric resolvers and bounded formatted labels. */
-export function isValidTocPageLabel(value:number|string):boolean{
-  return typeof value==="number"
-    ?Number.isSafeInteger(value)&&value>=1&&value<=1_000_000
-    :typeof value==="string"&&value.length<=128&&/^(?:[A-Z]+|[a-z]+|[0-9]+)$/.test(value)&&!/[\r\n]/.test(value);
+export function isValidTocPageLabel(value: number | string): boolean {
+  return typeof value === "number"
+    ? Number.isSafeInteger(value) && value >= 1 && value <= 1_000_000
+    : typeof value === "string" &&
+        value.length <= 128 &&
+        /^(?:[A-Z]+|[a-z]+|[0-9]+)$/.test(value) &&
+        !/[\r\n]/.test(value);
 }

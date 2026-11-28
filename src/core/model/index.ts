@@ -30,6 +30,7 @@ export type {
   EditorWrapPolygonPoint,
   EditorFieldData,
   EditorFieldChar,
+  EditorLegacyFormFieldData,
   EditorFootnoteReferenceData,
   EditorEndnoteReferenceData,
   PageNumberFormat,

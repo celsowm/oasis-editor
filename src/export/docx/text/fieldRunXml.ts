@@ -1,6 +1,7 @@
 import type { EditorFieldChar, EditorFieldData } from "@/core/model.js";
 import { pageNumberFormatToSwitch } from "@/core/format/pageNumberFormat.js";
 import { escapeXml } from "@/export/docx/xmlUtils.js";
+import { serializeFfData } from "@/ooxml/word/legacyFormFields.js";
 
 export function serializeFieldRun(
   field: EditorFieldData,
@@ -40,7 +41,10 @@ export function serializeFieldCharRun(
   const attrs =
     (fieldChar.fieldLock ? ` w:fldLock="true"` : "") +
     (fieldChar.dirty ? ` w:dirty="true"` : "");
-  return `<w:r>${rPrXml}<w:fldChar w:fldCharType="${fieldChar.kind}"${attrs}/></w:r>`;
+  const body = fieldChar.formField
+    ? `>${serializeFfData(fieldChar.formField)}</w:fldChar>`
+    : "/>";
+  return `<w:r>${rPrXml}<w:fldChar w:fldCharType="${fieldChar.kind}"${attrs}${body}</w:r>`;
 }
 
 /** Serialize preserved `w:instrText` (the field instruction) as its own `w:r`. */

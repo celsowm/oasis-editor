@@ -1,174 +1,408 @@
-import type {EditorBlockNode,EditorDocument,EditorLayoutDocument,EditorParagraphNode} from "@/core/model.js";
-import {getDocumentSections} from "@/core/model.js";
-import {buildFieldStoryGraph} from "@/core/document/fieldStoryGraph.js";
-import {parseFieldInstruction} from "@/ooxml/word/fieldInstruction.js";
-import {createDocumentFieldContext} from "@/core/document/fieldDocumentContext.js";
-import {resolveTcPageLabel,type TcOccurrence} from "./tcEntries.js";
-import {formatSectionPageLabel} from "@/core/format/pageNumberFormat.js";
+import type {
+  EditorBlockNode,
+  EditorDocument,
+  EditorLayoutDocument,
+  EditorParagraphNode,
+} from "@/core/model.js";
+import { getDocumentSections } from "@/core/model.js";
+import { buildFieldStoryGraph } from "@/core/document/fieldStoryGraph.js";
+import { parseFieldInstruction } from "@/ooxml/word/fieldInstruction.js";
+import { createDocumentFieldContext } from "@/core/document/fieldDocumentContext.js";
+import { resolveTcPageLabel, type TcOccurrence } from "./tcEntries.js";
+import { formatSectionPageLabel } from "@/core/format/pageNumberFormat.js";
 
 export interface TocFieldSettings {
-  startLevel:number;
-  endLevel:number;
-  hyperlinks:boolean;
-  hideWebNumbers:boolean;
-  useOutline:boolean;
+  startLevel: number;
+  endLevel: number;
+  hyperlinks: boolean;
+  hideWebNumbers: boolean;
+  useOutline: boolean;
   /** Present only for an explicit custom paragraph-style mapping. */
-  styleMappings?:readonly {name:string;level:number}[];
-  customOnly?:true;
+  styleMappings?: readonly { name: string; level: number }[];
+  customOnly?: true;
   /** Explicit TC identifier. If tcMixedRange is absent the TOC is TC-only. */
-  tcIdentifier?:string;
+  tcIdentifier?: string;
   /** Separate TC level range for a mixed paragraph/marker TOC. */
-  tcMixedRange?:readonly [number,number];
+  tcMixedRange?: readonly [number, number];
+  /** Caption source: `TOC \c "SEQIdentifier"`. */
+  captionIdentifier?: string;
+  /** Caption source without a SEQ label/number: `TOC \a Identifier`. */
+  unlabeledIdentifier?: string;
+  /** Restrict collection to a bookmarked range. */
+  scopeBookmark?: string;
+  /** Chapter prefix from a SEQ identifier (`\s` + `\d`). */
+  chapterIdentifier?: string;
+  chapterSeparator?: string;
+  entryPageSeparator?: string;
+  omitPages?: readonly [number, number];
+  preserveTabs?: true;
+  preserveLineBreaks?: true;
 }
 export interface QualifiedTocRegion extends TocFieldSettings {
-  startBlockIndex:number;
-  endBlockIndex:number;
+  startBlockIndex: number;
+  endBlockIndex: number;
 }
 
 /** Word TOC switch grammar (bounded F3A subset). Unknown and duplicate
  * switches are not ignored; quoted field-name occurrences are not commands. */
-export function parseTocInstruction(raw:string):TocFieldSettings|undefined{
-  const parsed=parseFieldInstruction(raw);
-  if(parsed.error||parsed.command!=="TOC")return undefined;
-  const args=parsed.tokens.slice(1);
-  let startLevel:number|undefined,endLevel:number|undefined;
-  let hyperlinks=false,hideWebNumbers=false,useOutline=false;
-  let styleMappings:TocFieldSettings["styleMappings"];
-  let tcIdentifier:string|undefined,tcRange:[number,number]|undefined;
-  const seen=new Set<string>();
-  for(let i=0;i<args.length;i++){
-    const token=args[i]!;
-    if(token.kind!=="switch")return undefined;
-    const sw=token.value.toLowerCase();
-    if(seen.has(sw))return undefined;
+export function parseTocInstruction(raw: string): TocFieldSettings | undefined {
+  const parsed = parseFieldInstruction(raw);
+  if (parsed.error || parsed.command !== "TOC") return undefined;
+  const args = parsed.tokens.slice(1);
+  let startLevel: number | undefined, endLevel: number | undefined;
+  let hyperlinks = false,
+    hideWebNumbers = false,
+    useOutline = false;
+  let styleMappings: TocFieldSettings["styleMappings"];
+  let tcIdentifier: string | undefined, tcRange: [number, number] | undefined;
+  let captionIdentifier: string | undefined,
+    unlabeledIdentifier: string | undefined;
+  let scopeBookmark: string | undefined, chapterIdentifier: string | undefined;
+  let chapterSeparator: string | undefined,
+    entryPageSeparator: string | undefined;
+  let omitPages: [number, number] | undefined,
+    preserveTabs: true | undefined,
+    preserveLineBreaks: true | undefined;
+  const seen = new Set<string>();
+  for (let i = 0; i < args.length; i++) {
+    const token = args[i]!;
+    if (token.kind !== "switch") return undefined;
+    const sw = token.value.toLowerCase();
+    if (seen.has(sw)) return undefined;
     seen.add(sw);
-    if(sw==="f"){
-      const arg=args[++i];
-      if(!arg||arg.kind==="switch"||!/^[A-Za-z]$/.test(arg.value))return undefined;
-      tcIdentifier=arg.value.toUpperCase();
-    }else if(sw==="l"){
-      const arg=args[++i];
-      if(!arg||arg.kind==="switch")return undefined;
-      const match=/^([1-9])-([1-9])$/.exec(arg.value);
-      if(!match||Number(match[1])>Number(match[2]))return undefined;
-      tcRange=[Number(match[1]),Number(match[2])];
-    }else if(sw==="o"){
-      const arg=args[++i];
-      if(arg?.kind!=="quoted")return undefined;
-      const match=/^([1-9])-([1-9])$/.exec(arg.value);
-      if(!match)return undefined;
-      startLevel=Number(match[1]);endLevel=Number(match[2]);
-      if(startLevel>endLevel)return undefined;
-    }else if(sw==="t"){
-      const arg=args[++i];
-      if(arg?.kind!=="quoted"||arg.value.length>4096||/[\r\n\t\\]/.test(arg.value))return undefined;
-      const parts=arg.value.split(",").map(s=>s.trim());
-      if(parts.length<2||parts.length%2||parts.length>128)return undefined;
-      const names=new Set<string>();
-      const mappings:{name:string;level:number}[]=[];
-      for(let j=0;j<parts.length;j+=2){
-        const name=parts[j]!,level=parts[j+1]!;
-        const key=name.toLowerCase();
-        if(!name||name.length>256||! /^[1-9]$/.test(level)||names.has(key))return undefined;
-        names.add(key);mappings.push({name,level:Number(level)});
+    if (sw === "f") {
+      const arg = args[++i];
+      if (!arg || arg.kind === "switch" || !/^[A-Za-z]$/.test(arg.value))
+        return undefined;
+      tcIdentifier = arg.value.toUpperCase();
+    } else if (sw === "l") {
+      const arg = args[++i];
+      if (!arg || arg.kind === "switch") return undefined;
+      const match = /^([1-9])-([1-9])$/.exec(arg.value);
+      if (!match || Number(match[1]) > Number(match[2])) return undefined;
+      tcRange = [Number(match[1]), Number(match[2])];
+    } else if (sw === "o") {
+      const arg = args[++i];
+      if (arg?.kind !== "quoted") return undefined;
+      const match = /^([1-9])-([1-9])$/.exec(arg.value);
+      if (!match) return undefined;
+      startLevel = Number(match[1]);
+      endLevel = Number(match[2]);
+      if (startLevel > endLevel) return undefined;
+    } else if (sw === "t") {
+      const arg = args[++i];
+      if (
+        arg?.kind !== "quoted" ||
+        arg.value.length > 4096 ||
+        /[\r\n\t\\]/.test(arg.value)
+      )
+        return undefined;
+      const parts = arg.value.split(",").map((s) => s.trim());
+      if (parts.length < 2 || parts.length % 2 || parts.length > 128)
+        return undefined;
+      const names = new Set<string>();
+      const mappings: { name: string; level: number }[] = [];
+      for (let j = 0; j < parts.length; j += 2) {
+        const name = parts[j]!,
+          level = parts[j + 1]!;
+        const key = name.toLowerCase();
+        if (
+          !name ||
+          name.length > 256 ||
+          !/^[1-9]$/.test(level) ||
+          names.has(key)
+        )
+          return undefined;
+        names.add(key);
+        mappings.push({ name, level: Number(level) });
       }
-      styleMappings=mappings;
-    }else if(sw==="h")hyperlinks=true;
-    else if(sw==="z")hideWebNumbers=true;
-    else if(sw==="u")useOutline=true;
+      styleMappings = mappings;
+    } else if (sw === "h") hyperlinks = true;
+    else if (sw === "z") hideWebNumbers = true;
+    else if (sw === "u") useOutline = true;
+    else if (sw === "c" || sw === "a" || sw === "b" || sw === "s") {
+      const value = args[++i];
+      if (
+        !value ||
+        value.kind === "switch" ||
+        !value.value ||
+        value.value.length > 64 ||
+        !/^[A-Za-z_][A-Za-z0-9_ ]*$/.test(value.value)
+      )
+        return undefined;
+      if (sw === "c") {
+        if (
+          captionIdentifier !== undefined ||
+          unlabeledIdentifier !== undefined
+        )
+          return undefined;
+        captionIdentifier = value.value;
+      } else if (sw === "a") {
+        if (
+          captionIdentifier !== undefined ||
+          unlabeledIdentifier !== undefined
+        )
+          return undefined;
+        unlabeledIdentifier = value.value;
+      } else if (sw === "b") {
+        if (scopeBookmark !== undefined) return undefined;
+        scopeBookmark = value.value;
+      } else {
+        if (chapterIdentifier !== undefined) return undefined;
+        chapterIdentifier = value.value;
+      }
+    } else if (sw === "d" || sw === "p") {
+      const value = args[++i];
+      if (
+        value?.kind !== "quoted" ||
+        !value.value ||
+        value.value.length > 15 ||
+        [...value.value.replace(/^\t$/, "")].some(
+          (ch) => ch.charCodeAt(0) < 32 || ch.charCodeAt(0) === 127,
+        )
+      )
+        return undefined;
+      if (sw === "d") {
+        if (chapterSeparator !== undefined) return undefined;
+        chapterSeparator = value.value;
+      } else {
+        if (entryPageSeparator !== undefined) return undefined;
+        entryPageSeparator = value.value;
+      }
+    } else if (sw === "n") {
+      const value = args[++i];
+      if (!value || value.kind === "switch") return undefined;
+      const match = /^([1-9])-([1-9])$/.exec(value.value);
+      if (!match || Number(match[1]) > Number(match[2]) || omitPages)
+        return undefined;
+      omitPages = [Number(match[1]), Number(match[2])];
+    } else if (sw === "w") preserveTabs = true;
+    else if (sw === "x") preserveLineBreaks = true;
     else return undefined;
   }
-  if(tcIdentifier!==undefined&&startLevel===undefined&&!styleMappings&&!useOutline){
-    return {startLevel:tcRange?.[0]??1,endLevel:tcRange?.[1]??9,hyperlinks,hideWebNumbers,useOutline,tcIdentifier};
+  if (captionIdentifier !== undefined || unlabeledIdentifier !== undefined) {
+    if (
+      startLevel !== undefined ||
+      styleMappings ||
+      useOutline ||
+      tcIdentifier !== undefined ||
+      tcRange
+    )
+      return undefined;
+    return {
+      startLevel: 1,
+      endLevel: 9,
+      hyperlinks,
+      hideWebNumbers,
+      useOutline: false,
+      ...(captionIdentifier ? { captionIdentifier } : {}),
+      ...(unlabeledIdentifier ? { unlabeledIdentifier } : {}),
+      ...(scopeBookmark ? { scopeBookmark } : {}),
+      ...(chapterIdentifier ? { chapterIdentifier } : {}),
+      ...(chapterSeparator ? { chapterSeparator } : {}),
+      ...(entryPageSeparator ? { entryPageSeparator } : {}),
+      ...(omitPages ? { omitPages } : {}),
+      ...(preserveTabs ? { preserveTabs } : {}),
+      ...(preserveLineBreaks ? { preserveLineBreaks } : {}),
+    };
+  }
+  if (
+    tcIdentifier !== undefined &&
+    startLevel === undefined &&
+    !styleMappings &&
+    !useOutline
+  ) {
+    return {
+      startLevel: tcRange?.[0] ?? 1,
+      endLevel: tcRange?.[1] ?? 9,
+      hyperlinks,
+      hideWebNumbers,
+      useOutline,
+      tcIdentifier,
+    };
   }
   // Mixed sources use independent ranges; the TC range must not truncate
   // outline/style entries. Linked mixed caches use the same qualified source vector.
-  if(tcRange&&tcIdentifier===undefined)return undefined;
-  const mixed=tcIdentifier===undefined?{}:{tcIdentifier,tcMixedRange:tcRange??[1,9] as [number,number]};
-  if(startLevel===undefined||endLevel===undefined){
-    if(useOutline&&!styleMappings)return {startLevel:1,endLevel:9,hyperlinks,hideWebNumbers,useOutline,...mixed};
-    if(!styleMappings||useOutline)return undefined;
-    return {startLevel:1,endLevel:Math.max(...styleMappings.map(m=>m.level)),hyperlinks,hideWebNumbers,useOutline,styleMappings,customOnly:true,...mixed};
+  if (tcRange && tcIdentifier === undefined) return undefined;
+  const mixed =
+    tcIdentifier === undefined
+      ? {}
+      : { tcIdentifier, tcMixedRange: tcRange ?? ([1, 9] as [number, number]) };
+  if (startLevel === undefined || endLevel === undefined) {
+    if (useOutline && !styleMappings)
+      return {
+        startLevel: 1,
+        endLevel: 9,
+        hyperlinks,
+        hideWebNumbers,
+        useOutline,
+        ...mixed,
+      };
+    if (!styleMappings || useOutline) return undefined;
+    return {
+      startLevel: 1,
+      endLevel: Math.max(...styleMappings.map((m) => m.level)),
+      hyperlinks,
+      hideWebNumbers,
+      useOutline,
+      styleMappings,
+      customOnly: true,
+      ...mixed,
+    };
   }
-  return {startLevel,endLevel,hyperlinks,hideWebNumbers,useOutline,...(styleMappings?{styleMappings}:{}),...mixed};
+  return {
+    startLevel,
+    endLevel,
+    hyperlinks,
+    hideWebNumbers,
+    useOutline,
+    ...(styleMappings ? { styleMappings } : {}),
+    ...mixed,
+  };
 }
 
-function safeMarkerRun(p:EditorParagraphNode):boolean{
-  return !p.sdtWrappers?.length&&!p.numberingRevision&&!p.dropCap&&
-    p.runs.every(r=>!r.revision&&!r.revisionRangeMarker&&!r.sdtWrappers?.length&&
-      !r.styles?.hidden&&!r.styles?.rtl);
+function safeMarkerRun(p: EditorParagraphNode): boolean {
+  return (
+    !p.sdtWrappers?.length &&
+    !p.numberingRevision &&
+    !p.dropCap &&
+    p.runs.every(
+      (r) =>
+        !r.revision &&
+        !r.revisionRangeMarker &&
+        !r.sdtWrappers?.length &&
+        !r.styles?.hidden &&
+        !r.styles?.rtl,
+    )
+  );
 }
-function isPlainTocEntry(p:EditorParagraphNode,allowNoPage=false):boolean{
-  if(!safeMarkerRun(p)||p.list||p.dropCap||p.runs.length!==1)return false;
-  const run=p.runs[0]!;
-  return run.kind==="text"&&run.text.length<=8192&&(run.text.includes("\t")||(allowNoPage&&run.text.length>0))&&
-    !/[\r\n]/.test(run.text);
+function isPlainTocEntry(p: EditorParagraphNode, allowNoPage = false): boolean {
+  if (!safeMarkerRun(p) || p.list || p.dropCap || p.runs.length !== 1)
+    return false;
+  const run = p.runs[0]!;
+  return (
+    run.kind === "text" &&
+    run.text.length <= 8192 &&
+    (run.text.includes("\t") || (allowNoPage && run.text.length > 0)) &&
+    !/[\r\n]/.test(run.text)
+  );
 }
 
 /** Only regenerate complete, flat TOC regions: the begin/instruction/separator
  * occupy one marker paragraph; a separate end marker closes plain text entries.
  * Other document content is never rewritten, even on malformed TOC markup. */
-export function findQualifiedTocRegion(blocks:readonly EditorBlockNode[]):QualifiedTocRegion|undefined{
-  const found:QualifiedTocRegion[]=[];
-  for(let i=0;i<blocks.length;){
-    if(blocks[i]?.type!=="paragraph"){i++;continue;}
-    const offset=i;
-    const paragraphs:EditorParagraphNode[]=[];
-    while(i<blocks.length&&blocks[i]?.type==="paragraph"){
-      paragraphs.push(blocks[i] as EditorParagraphNode);i++;
+export function findQualifiedTocRegion(
+  blocks: readonly EditorBlockNode[],
+): QualifiedTocRegion | undefined {
+  const found: QualifiedTocRegion[] = [];
+  for (let i = 0; i < blocks.length;) {
+    if (blocks[i]?.type !== "paragraph") {
+      i++;
+      continue;
     }
-    const graph=buildFieldStoryGraph(paragraphs);
-    if(graph.diagnostics.length)continue;
-    for(const span of graph.spans){
-      if(span.parentIndex!==null||!span.separator||!span.end||span.beginMarker.fieldLock||
-         span.beginMarker.dirty||span.code.some(part=>part.kind!=="instruction")||
-         span.begin.paragraphIndex!==span.separator.paragraphIndex||
-         span.begin.paragraphIndex>=span.end.paragraphIndex)continue;
-      const head=paragraphs[span.begin.paragraphIndex]!,tail=paragraphs[span.end.paragraphIndex]!;
-      if(!safeMarkerRun(head)||!safeMarkerRun(tail)||
-         span.begin.runIndex!==0||span.separator.runIndex!==head.runs.length-1||
-         span.end.runIndex!==0||tail.runs.length!==1||
-         head.runs[0]?.kind!=="fieldChar"||
-         head.runs.at(-1)?.kind!=="fieldChar"||
-         tail.runs[0]?.kind!=="fieldChar")continue;
-      const options=parseTocInstruction(span.code.map(part=>part.kind==="instruction"?part.raw:"").join(""));
-      if(!options)continue;
-      const start=span.begin.paragraphIndex,end=span.end.paragraphIndex;
-      if(!paragraphs.slice(start+1,end).every(p=>isPlainTocEntry(p,options.tcIdentifier!==undefined)))continue;
+    const offset = i;
+    const paragraphs: EditorParagraphNode[] = [];
+    while (i < blocks.length && blocks[i]?.type === "paragraph") {
+      paragraphs.push(blocks[i] as EditorParagraphNode);
+      i++;
+    }
+    const graph = buildFieldStoryGraph(paragraphs);
+    if (graph.diagnostics.length) continue;
+    for (const span of graph.spans) {
+      if (
+        span.parentIndex !== null ||
+        !span.separator ||
+        !span.end ||
+        span.beginMarker.fieldLock ||
+        span.beginMarker.dirty ||
+        span.code.some((part) => part.kind !== "instruction") ||
+        span.begin.paragraphIndex !== span.separator.paragraphIndex ||
+        span.begin.paragraphIndex >= span.end.paragraphIndex
+      )
+        continue;
+      const head = paragraphs[span.begin.paragraphIndex]!,
+        tail = paragraphs[span.end.paragraphIndex]!;
+      if (
+        !safeMarkerRun(head) ||
+        !safeMarkerRun(tail) ||
+        span.begin.runIndex !== 0 ||
+        span.separator.runIndex !== head.runs.length - 1 ||
+        span.end.runIndex !== 0 ||
+        tail.runs.length !== 1 ||
+        head.runs[0]?.kind !== "fieldChar" ||
+        head.runs.at(-1)?.kind !== "fieldChar" ||
+        tail.runs[0]?.kind !== "fieldChar"
+      )
+        continue;
+      const options = parseTocInstruction(
+        span.code
+          .map((part) => (part.kind === "instruction" ? part.raw : ""))
+          .join(""),
+      );
+      if (!options) continue;
+      const start = span.begin.paragraphIndex,
+        end = span.end.paragraphIndex;
+      if (
+        !paragraphs
+          .slice(start + 1, end)
+          .every((p) => isPlainTocEntry(p, options.tcIdentifier !== undefined))
+      )
+        continue;
       // Refuse nested or otherwise structured cached content, including
       // marker-bearing entries that the regeneration would discard.
-      if(span.result.length!==end-start-1||
-         span.result.some((part,j)=>part.kind!=="run"||part.point.paragraphIndex!==start+j+1))continue;
-      found.push({...options,startBlockIndex:offset+start,endBlockIndex:offset+end});
+      if (
+        span.result.length !== end - start - 1 ||
+        span.result.some(
+          (part, j) =>
+            part.kind !== "run" || part.point.paragraphIndex !== start + j + 1,
+        )
+      )
+        continue;
+      found.push({
+        ...options,
+        startBlockIndex: offset + start,
+        endBlockIndex: offset + end,
+      });
     }
   }
-  return found.length===1?found[0]:undefined;
+  return found.length === 1 ? found[0] : undefined;
 }
 
 /** Read-only, geometry-certified heading page numbers; never infer from
  * paragraph order. A missing or uncertain physical section/page is unresolved. */
 export function createTocPageNumberResolver(
-  document:EditorDocument,layout:EditorLayoutDocument,
-):(headingId:string,tc?:TcOccurrence)=>number|string|undefined{
-  const context=createDocumentFieldContext(document,layout);
-  const sections=getDocumentSections(document);
-  const owners=new Map<string,number|null>();
-  sections.forEach((section,s)=>{
-    for(const block of section.blocks){
-      if(block.type!=="paragraph")continue;
-      owners.set(block.id,owners.has(block.id)?null:s);
+  document: EditorDocument,
+  layout: EditorLayoutDocument,
+): (headingId: string, tc?: TcOccurrence) => number | string | undefined {
+  const context = createDocumentFieldContext(document, layout);
+  const sections = getDocumentSections(document);
+  const owners = new Map<string, number | null>();
+  sections.forEach((section, s) => {
+    for (const block of section.blocks) {
+      if (block.type !== "paragraph") continue;
+      owners.set(block.id, owners.has(block.id) ? null : s);
     }
   });
-  return (headingId:string,tc?:TcOccurrence):number|string|undefined=>{
-    if(tc)return tc.paragraphId===headingId?resolveTcPageLabel(document,layout,tc,context):undefined;
-    const owner=owners.get(headingId);
-    if(owner===undefined||owner===null)return undefined;
-    const section=sections[owner]!;
-    const page=context.pageIndexAt(headingId,0);
-    if(page===undefined)return undefined;
-    const facts=context.forPage(page);
+  return (
+    headingId: string,
+    tc?: TcOccurrence,
+  ): number | string | undefined => {
+    if (tc)
+      return tc.paragraphId === headingId
+        ? resolveTcPageLabel(document, layout, tc, context)
+        : undefined;
+    const owner = owners.get(headingId);
+    if (owner === undefined || owner === null) return undefined;
+    const section = sections[owner]!;
+    const page = context.pageIndexAt(headingId, 0);
+    if (page === undefined) return undefined;
+    const facts = context.forPage(page);
     // Ensure the measured heading really belongs to its source section.
-    if(facts.sectionNumber!==owner+1||facts.pageNumber===undefined)return undefined;
-    return formatSectionPageLabel(facts.pageNumber,section.pageNumbering?.format);
+    if (facts.sectionNumber !== owner + 1 || facts.pageNumber === undefined)
+      return undefined;
+    return formatSectionPageLabel(
+      facts.pageNumber,
+      section.pageNumbering?.format,
+    );
   };
 }

@@ -81,7 +81,7 @@ describe("F4B3A flat INDEX transactional regeneration",()=>{
     const anchored={...state,document:{...state.document,bookmarks:{order:["a"],items:{a:{id:"a",name:"Cache",
       start:{paragraphId:stale.id,offset:0},end:{paragraphId:stale.id,offset:1}}}}}};
     expect(refreshIndexConvergently(anchored)).toMatchObject({state:anchored,status:"unsupported"});
-    const locked=fixture(' INDEX \\c 2 \\z "1046" ').state;
+    const locked=fixture(' INDEX \\a "a" \\z "1046" ').state;
     expect(refreshIndexConvergently(locked)).toMatchObject({state:locked,status:"unsupported"});
   });
   it("rolls back when a second pagination pass fails",()=>{

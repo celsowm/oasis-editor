@@ -288,12 +288,42 @@ export interface EditorFieldData {
  * {@link EditorTextRun.fieldInstruction}. A field may span multiple paragraphs
  * (e.g. a TOC); document order reconstructs the structure on export.
  */
+export interface EditorLegacyFormFieldData {
+  /** `w:ffData/w:name`; legacy form fields are addressed by this name. */
+  name: string;
+  control: "text" | "checkBox" | "dropDown";
+  /** Current cached value shown between `separate` and `end`. */
+  value: string;
+  enabled: boolean;
+  calcOnExit: boolean;
+  helpText?: string;
+  statusText?: string;
+  /** Preserved as opaque strings; never executed. */
+  entryMacro?: string;
+  exitMacro?: string;
+  textInput?: {
+    default?: string;
+    format?: string;
+    maxLength?: number;
+    type?: string;
+  };
+  checkBox?: {
+    checked: boolean;
+    default: boolean;
+    size?: number;
+    sizeAuto?: boolean;
+  };
+  ddList?: { defaultResult?: string; listEntries: readonly string[] };
+}
+
 export interface EditorFieldChar {
   kind: "begin" | "separate" | "end";
   /** `w:fldChar/@w:fldLock`. */
   fieldLock?: boolean;
   /** `w:fldChar/@w:dirty`. */
   dirty?: boolean;
+  /** `w:ffData` on a legacy FORMTEXT/FORMCHECKBOX/FORMDROPDOWN field. */
+  formField?: EditorLegacyFormFieldData;
 }
 
 export interface EditorFootnoteReferenceData {
